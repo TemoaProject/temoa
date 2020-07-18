@@ -216,13 +216,12 @@ def temoa_create_model(name="Temoa"):
     M.RampUp = Param(M.tech_ramping)
     M.RampDown = Param(M.tech_ramping)
     M.CapacityCredit = Param(M.time_optimize, M.tech_all, default=1)
+    M.OpResCapacityCredit = Param(M.time_optimize, M.tech_all, default=1)
     M.PlanningReserveMargin = Param(default=0.2)
+    M.OpReserveMargin = Param(default=0.075)
     # Storage duration is expressed in hours
     M.StorageDuration = Param(M.tech_storage, default=4)
-    # Initial storage charge level, expressed as fraction of full energy capacity.
-    # If the parameter is not defined, the model optimizes the initial storage charge level.
-    M.StorageInit_tv = Set(dimen=2, initialize=StorageInitIndices)
-    M.StorageInitFrac = Param(M.StorageInit_tv)
+    # Initial storage charge level, expressed as fraction of full energy capacity
 
     # ---------------------------------------------------------------
     # Define Decision Variables.
@@ -245,7 +244,7 @@ def temoa_create_model(name="Temoa"):
     M.V_FlowIn = Var(M.FlowInStorage_psditvo, domain=NonNegativeReals)
     M.StorageLevel_psdtv = Set(dimen=5, initialize=StorageVariableIndices)
     M.V_StorageLevel = Var(M.StorageLevel_psdtv, domain=NonNegativeReals)
-    M.V_StorageInit = Var(M.StorageInit_tv, domain=NonNegativeReals)
+    M.StorageInit = Var(M.tech_storage, domain=NonNegativeReals)
 
     # Derived decision variables
 
@@ -356,11 +355,6 @@ def temoa_create_model(name="Temoa"):
         M.StorageConstraints_psdtv, rule=StorageThroughput_Constraint
     )
 
-    M.StorageInitConstraint_tv = Set(dimen=2,initialize=StorageInitConstraintIndices)
-    M.StorageInitConstraint = Constraint(
-        M.StorageInitConstraint_tv, rule=StorageInit_Constraint
-    )
-
     M.RampConstraintDay_psdtv = Set(dimen=5, initialize=RampConstraintDayIndices)
     M.RampUpConstraintDay = Constraint(
         M.RampConstraintDay_psdtv, rule=RampUpDay_Constraint
@@ -388,6 +382,11 @@ def temoa_create_model(name="Temoa"):
     M.ReserveMargin_psd = Set(dimen=3, initialize=ReserveMarginIndices)
     M.ReserveMarginConstraint = Constraint(
         M.ReserveMargin_psd, rule=ReserveMargin_Constraint
+    )
+
+    M.OperReserveMargin_psd = Set(dimen=3, initialize=ReserveMarginIndices)
+    M.OperReserveMarginConstraint = Constraint(
+        M.OperReserveMargin_psd, rule=OperReserveMargin_Constraint
     )
 
     M.EmissionLimitConstraint_pe = Set(
