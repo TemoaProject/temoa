@@ -772,12 +772,12 @@ def StorageEnergy_Constraint(M, p, s, d, t, v):
     r"""
 
 This constraint tracks the storage charge level (:math:`\textbf{SL}_{p, s, d, t, v}`)
-assuming ordered time slices. The storage capacity is initialized at a user-specified
-charge level (0-1) in the first time slice of each period, and then the charge level
-is updated each time slice based on the amount of energy stored or discharged. At the
-end of the last time slice associated with each period, the charge level must equal
-the starting charge level. In the formulation below, note that :math:`\textbf{stored_energy}`
-and :math:`\textbf{initial_energy}` are internal model decision variables.
+assuming ordered time slices. The initial storage charge level is optimized
+for the first time slice in each period, and then the charge level is updated each time
+slice based on the amount of energy stored or discharged. At the end of the last time
+slice associated with each period, the charge level must equal the starting charge level.
+In the formulation below, note that :math:`\textbf{stored_energy}` is an internal model
+decision variable.
 
 First, the amount of stored energy in a given time slice is calculated as the
 difference between the amount of energy stored (first term) and the amount of energy
@@ -793,27 +793,13 @@ on the input side:
       -
       \sum_{I, O} \textbf{FO}_{p, s, d, i, t, v, o}
 
-Next, the initial charge level is calculated. Because the number and duration of time
-slices are user-defined, we need to adjust the storage duration, which is specified in
-hours. First, the hourly duration is divided by the number of hours in a year to obtain
-the duration as a fraction of the year. Since the :math:`C2A` parameter assumes the conversion
-of capacity to annual activity, we need to express the storage duration as fraction of a year.
-Then, :math:`SEG_{s,d}` summed over the time-of-day slices (:math:`d`) multiplied by 365 days /
-yr yields the number of days per season. This step is necessary because conventional time sliced
-models use a single day to represent many days within a given season. Thus, it is necessary to
-scale the storage duration to account for the number of days in each season.
-
-.. math::
-      \textbf{initial_storage} = SI_{t} \cdot \textbf{CAP}_{t,v} \cdot C2A_{t} \cdot
-      \frac {SD_{t}}{8760 hrs/yr} \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr
-
-With :math:`\bf{initial\_storage}` and :math:`\bf{stored\_energy}` calculated, the storage
+With :math:`\bf{stored\_energy}` calculated, the storage
 charge level (:math:`\textbf{SL}_{p,s,d,t,v}`) is updated, but the update procedure varies
 based on the time slice within each time period. For the first season and time-of-day within
 a given period:
 
 .. math::
-      \textbf{SL}_{p, s, d, t, v} = \textbf{initial_storage} + \textbf{stored_energy}
+      \textbf{SL}_{p, s, d, t, v} = \textbf{SI}_{t,v} + \textbf{stored_energy}
 
 For the first time-of-day slice in any other season except the first:
 
@@ -825,7 +811,7 @@ For the last season and time-of-day in the year, the ending storage charge level
 should be equal to the starting charge level:
 
 .. math::
-      \textbf{SL}_{p, s, d, t, v} + \textbf{stored_energy} = \textbf{initial_storage}
+      \textbf{SL}_{p, s, d, t, v} + \textbf{stored_energy} = \textbf{SI}_{t,v}
 
 For all other time slices not explicitly outlined above:
 
@@ -861,11 +847,11 @@ All equations below are sparsely indexed such that:
     # the last time slice of the last season must zero out
     if d == M.time_of_day.last() and s == M.time_season.last():
         d_prev = M.time_of_day.prev(d)
-        expr = M.V_StorageLevel[p, s, d_prev, t, v] + stored_energy == M.StorageInit[t]
+        expr = M.V_StorageLevel[p, s, d_prev, t, v] + stored_energy == M.V_StorageInit[t,v]
 
     # First time slice of the first season (i.e., start of period), starts at StorageInit level
     elif d == M.time_of_day.first() and s == M.time_season.first():
-        expr = M.V_StorageLevel[p, s, d, t, v] == M.StorageInit[t] + stored_energy
+        expr = M.V_StorageLevel[p, s, d, t, v] == M.V_StorageInit[t,v] + stored_energy
 
     # First time slice of any season that is NOT the first season
     elif d == M.time_of_day.first():
@@ -893,6 +879,16 @@ def StorageEnergyUpperBound_Constraint(M, p, s, d, t, v):
 This constraint ensures that the amount of energy stored does not exceed
 the upper bound set by the energy capacity of the storage device, as calculated
 on the right-hand side.
+
+Because the number and duration of time slices are user-defined, we need to adjust
+the storage duration, which is specified in hours. First, the hourly duration is divided
+by the number of hours in a year to obtain the duration as a fraction of the year.
+Since the :math:`C2A` parameter assumes the conversion of capacity to annual activity,
+we need to express the storage duration as fraction of a year. Then, :math:`SEG_{s,d}`
+summed over the time-of-day slices (:math:`d`) multiplied by 365 days / yr yields the
+number of days per season. This step is necessary because conventional time sliced models
+use a single day to represent many days within a given season. Thus, it is necessary to
+scale the storage duration to account for the number of days in each season.
 
 .. math::
    :label: StorageEnergyUpperBound
@@ -1032,6 +1028,46 @@ the capacity (typically GW) of the storage unit.
         * value(M.ProcessLifeFrac[p, t, v])
     )
     expr = throughput <= max_throughput
+    return expr
+
+
+def StorageInit_Constraint(M,t,v):
+    r"""
+
+This constraint is used if the users wishes to force a specific initial storage charge level
+for certain storage technologies and vintages. In this case, the value of the decision variable
+:math:`\textbf{SI}_{t,v}` is set by this constraint rather than being optimized.
+User-specified initial storage charge levels that are sufficiently different from the optimial
+:math:`\textbf{SI}_{t,v}` could impact the cost-effectiveness of storage. For example, if the
+optimial initial charge level happens to be 50% of the full energy capacity, forced initial
+charge levels (specified by parameter :math:`SIF_{t,v}`) equal to 10% or 90% of the full energy
+capacity could lead to more expensive solutions.
+
+
+.. math::
+   :label: StorageInit
+
+      \textbf{SI}_{t, v} \le
+      \ SIF_{t,v}
+      \cdot
+      \textbf{CAP}_{t,v} \cdot C2A_{t} \cdot \frac {SD_{t}}{8760 hrs/yr}
+      \cdot \sum_{d} SEG_{s_{first},d} \cdot 365 days/yr
+
+      \\
+      \forall \{t, v\} \in \Theta_{\text{StorageInit}}
+"""
+
+    s = M.time_season.first()
+    energy_capacity = (
+        M.V_Capacity[t, v]
+        * M.CapacityToActivity[t]
+        * (M.StorageDuration[t] / 8760)
+        * sum(M.SegFrac[s,S_d] for S_d in M.time_of_day) * 365
+        * value(M.ProcessLifeFrac[v, t, v])
+    )
+
+    expr = M.V_StorageInit[t,v] ==  energy_capacity * M.StorageInitFrac[t,v]
+
     return expr
 
 
@@ -1375,68 +1411,6 @@ we write this equation for all the time-slices defined in the database in each r
     cap_target = total_generation * (1 + value(M.PlanningReserveMargin))
 
     return cap_avail >= cap_target
-
-
-def OperReserveMargin_Constraint(M, p, s, d):
-    r"""
-
-During each period :math:`p`, the sum of the available operational capacity of all reserve
-technologies :math:`\sum_{t \in T^{e}} \textbf{OPCAPAVL}_{p,t}`, which are
-defined in the set :math:`\textbf{T}^{e}`, should exceed the load by
-:math:`OPRES`, the regional operational reserve margin. 
-
-.. math::
-   :label: op_reserve_margin
-
-       \sum_{t \in T^{e}} {
-       CC_t \cdot
-       \textbf{OPCAPAVL}_{p,t} \cdot
-       SEG_{s^*,d^*} \cdot C2A_t }
-       \geq
-       \sum_{ t \in T^{e},V,I,O } {
-           \textbf{FO}_{p, s, d, i, t, v, o}  \cdot (OPRES)
-       }
-
-       \\
-       \forall \{p, s, d\} \in \Theta_{\text{OpReserveMargin}}
-
-"""
-    if not M.tech_reserve:  # If reserve set empty, skip the constraint
-        return Constraint.Skip
-
-    opcap_total = sum(
-        value(M.OpResCapacityCredit[p, t])*
-        M.V_CapacityAvailableByPeriodAndTech[p, t]
-        * value(M.CapacityToActivity[t])
-        * value(M.SegFrac[s, d])
-        for t in M.tech_reserve
-        # Make sure (p,t) combinations are defined
-        if (p,t) in M.activeCapacityAvailable_pt
-        
-    )  
-        
-    opcap_running = sum(
-        value(M.OpResCapacityCredit[p, t])*    
-        M.V_FlowOut[p, s, d, S_i, t, S_v, S_o] 
-        for (t,S_v) in M.processReservePeriods[p] 
-        for S_i in M.processInputs[p, t, S_v] 
-        for S_o in M.ProcessOutputsByInput[p, t, S_v, S_i]
-        #for t in M.tech_reserve 
-        # Make sure (p,t) combinations are defined
-        if (p,t) in M.activeCapacityAvailable_pt
-    )
-
-    # the operating reserve margin is a function of the load/demand at any given time.
-    total_generation = sum(
-        M.V_FlowOut[p, s, d, S_i, t, S_v, S_o] 
-        for (t,S_v) in M.processReservePeriods[p] 
-        for S_i in M.processInputs[p, t, S_v] 
-        for S_o in M.ProcessOutputsByInput[p, t, S_v, S_i] 
-    )
-
-    opcap_target = total_generation * (value(M.OpReserveMargin))
-
-    return opcap_total - opcap_running >= opcap_target
 
 
 def EmissionLimit_Constraint(M, p, e):
