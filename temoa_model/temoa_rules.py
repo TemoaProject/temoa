@@ -1412,6 +1412,66 @@ we write this equation for all the time-slices defined in the database in each r
 
     return cap_avail >= cap_target
 
+def OperReserveMargin_Constraint(M, p, s, d):
+    r"""
+
+During each period :math:`p`, the sum of the available operating capacity of all reserve
+technologies :math:`\sum_{t \in T^{e}} \textbf{OPCAPAVL}_{p,t}`, which are
+defined in the set :math:`\textbf{T}^{e}`, should exceed the load by
+:math:`OPRES`, the regional operational reserve margin. 
+
+.. math::
+   :label: op_reserve_margin
+
+       \sum_{t \in T^{e}} {
+       CC_t \cdot
+       \textbf{OPCAPAVL}_{p,t} \cdot
+       SEG_{s^*,d^*} \cdot C2A_t }
+       \geq
+       \sum_{ t \in T^{e},V,I,O } {
+           \textbf{FO}_{p, s, d, i, t, v, o}  \cdot (OPRES)
+       }
+
+       \\
+       \forall \{p, s, d\} \in \Theta_{\text{OpReserveMargin}}
+
+"""
+    if not M.tech_reserve:  # If reserve set empty, skip the constraint
+        return Constraint.Skip
+
+    opcap_total = sum(
+        value(M.OpResCapacityCredit[p, t])*
+        M.V_CapacityAvailableByPeriodAndTech[p, t]
+        * value(M.CapacityToActivity[t])
+        * value(M.SegFrac[s, d])
+        for t in M.tech_reserve
+        # Make sure (p,t) combinations are defined
+        if (p,t) in M.activeCapacityAvailable_pt
+        
+    )  
+        
+    opcap_running = sum(
+        value(M.OpResCapacityCredit[p, t])*    
+        M.V_FlowOut[p, s, d, S_i, t, S_v, S_o] 
+        for (t,S_v) in M.processReservePeriods[p] 
+        for S_i in M.processInputs[p, t, S_v] 
+        for S_o in M.ProcessOutputsByInput[p, t, S_v, S_i]
+        #for t in M.tech_reserve 
+        # Make sure (p,t) combinations are defined
+        if (p,t) in M.activeCapacityAvailable_pt
+    )
+
+    # the operating reserve margin is a function of the load/demand at any given time.
+    total_generation = sum(
+        M.V_FlowOut[p, s, d, S_i, t, S_v, S_o] 
+        for (t,S_v) in M.processReservePeriods[p] 
+        for S_i in M.processInputs[p, t, S_v] 
+        for S_o in M.ProcessOutputsByInput[p, t, S_v, S_i] 
+    )
+
+    opcap_target = total_generation * (value(M.OpReserveMargin))
+
+    return opcap_total - opcap_running >= opcap_target
 
 def EmissionLimit_Constraint(M, p, e):
     r"""
