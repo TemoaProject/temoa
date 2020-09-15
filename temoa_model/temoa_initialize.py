@@ -616,7 +616,7 @@ def CreateSparseDicts ( M ):
 			if t in M.tech_storage and (r, p, t) not in M.storageVintages:
 				M.storageVintages[r, p, t] = set()
 			if t in M.tech_ramping and (r, p, t) not in M.rampVintages:
-				M.rampVintages[p,t] = set()
+				M.rampVintages[r, p,t] = set()
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys() and (r, p, i, t) not in M.inputsplitVintages:
 				M.inputsplitVintages[r,p,i,t] = set()
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys() and (r, p, t, o) not in M.outputsplitVintages:
@@ -649,7 +649,7 @@ def CreateSparseDicts ( M ):
 			if t in M.tech_storage:
 				M.storageVintages[r, p, t].add( v )
 			if t in M.tech_ramping:
-				M.rampVintages[r, p , t].add( v )
+				M.rampVintages[r, p, t].add( v )
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys():
 				M.inputsplitVintages[r,p,i,t].add( v )
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys():

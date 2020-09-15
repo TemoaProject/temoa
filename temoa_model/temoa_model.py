@@ -375,28 +375,28 @@ def temoa_create_model(name="Temoa"):
         M.StorageInitConstraint_rtv, rule=StorageInit_Constraint
     )
 
-    M.RampConstraintDay_psdtv = Set(dimen=5, initialize=RampConstraintDayIndices)
+    M.RampConstraintDay_rpsdtv = Set(dimen=6, initialize=RampConstraintDayIndices)
     M.RampUpConstraintDay = Constraint(
-        M.RampConstraintDay_psdtv, rule=RampUpDay_Constraint
+        M.RampConstraintDay_rpsdtv, rule=RampUpDay_Constraint
     )
     M.RampDownConstraintDay = Constraint(
-        M.RampConstraintDay_psdtv, rule=RampDownDay_Constraint
+        M.RampConstraintDay_rpsdtv, rule=RampDownDay_Constraint
     )
 
-    M.RampConstraintSeason_pstv = Set(dimen=4, initialize=RampConstraintSeasonIndices)
+    M.RampConstraintSeason_rpstv = Set(dimen=5, initialize=RampConstraintSeasonIndices)
     M.RampUpConstraintSeason = Constraint(
-        M.RampConstraintSeason_pstv, rule=RampUpSeason_Constraint
+        M.RampConstraintSeason_rpstv, rule=RampUpSeason_Constraint
     )
     M.RampDownConstraintSeason = Constraint(
-        M.RampConstraintSeason_pstv, rule=RampDownSeason_Constraint
+        M.RampConstraintSeason_rpstv, rule=RampDownSeason_Constraint
     )
 
-    M.RampConstraintPeriod_ptv = Set(dimen=3, initialize=RampConstraintPeriodIndices)
+    M.RampConstraintPeriod_rptv = Set(dimen=4, initialize=RampConstraintPeriodIndices)
     M.RampUpConstraintPeriod = Constraint(
-        M.RampConstraintPeriod_ptv, rule=RampUpPeriod_Constraint
+        M.RampConstraintPeriod_rptv, rule=RampUpPeriod_Constraint
     )
     M.RampDownConstraintPeriod = Constraint(
-        M.RampConstraintPeriod_ptv, rule=RampDownPeriod_Constraint
+        M.RampConstraintPeriod_rptv, rule=RampDownPeriod_Constraint
     )
 
     M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)

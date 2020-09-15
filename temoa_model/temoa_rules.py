@@ -1370,7 +1370,7 @@ between any two adjacent seasons.
     return expr
 
 
-def RampUpPeriod_Constraint(M, p, t, v):
+def RampUpPeriod_Constraint(M, r, p, t, v):
 
     # if p != M.time_future.first():
     # 	p_prev  = M.time_future.prev(p)
@@ -1397,7 +1397,7 @@ def RampUpPeriod_Constraint(M, p, t, v):
     return Constraint.Skip  # We don't need inter-period ramp up/down constraint.
 
 
-def RampDownPeriod_Constraint(M, p, t, v):
+def RampDownPeriod_Constraint(M, r, p, t, v):
 
     # if p != M.time_future.first():
     # 	p_prev  = M.time_future.prev(p)
