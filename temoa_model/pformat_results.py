@@ -41,7 +41,7 @@ from temoa_config import TemoaConfig
 
 # Need line below to import DB_to_Excel.py from data_processing
 sys.path.append(os.path.join(os.getcwd(), 'data_processing'))
-from DB_to_Excel import make_excel
+from thirdparty.temoa.data_processing.DB_to_Excel import make_excel
 
 # Ensure compatibility with Python 2.7 and 3
 try:
@@ -61,7 +61,7 @@ def stringify_data ( data, ostream=SO, format='plain' ):
 	# This padding code is what makes the display of the output values
 	# line up on the decimal point.
 	for i, (v, val) in enumerate( data ):
-		ipart, fpart = repr(f"{val:.6f}").split('.')
+		ipart, fpart = repr(float(val)).split('.')
 		data[i] = (ipart, fpart, v)
 	cell_lengths = ( map(len, l[:-1] ) for l in data )
 	max_lengths = map(max, zip(*cell_lengths))   # max length of each column

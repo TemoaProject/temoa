@@ -1759,8 +1759,7 @@ refers to the :code:`MinGenGroupTarget` parameter.
 
     activity_p = sum(
         M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t not in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
+        for r, p, S_t in M.processVintages.keys() if (S_t in M.tech_groups) & (S_t not in M.tech_annual)
         for S_v in M.processVintages[r, p, S_t]
         for S_i in M.processInputs[r, p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
@@ -1770,8 +1769,7 @@ refers to the :code:`MinGenGroupTarget` parameter.
 
     activity_p_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())        
+        for r, p, S_t in M.processVintages.keys() if (S_t in M.tech_groups) & (S_t in M.tech_annual)
         for S_v in M.processVintages[r, p, S_t]
         for S_i in M.processInputs[r, p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]

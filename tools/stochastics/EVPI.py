@@ -193,7 +193,7 @@ def solve_ef(p_model, p_data, dummy_temoa_options = None):
             temoa_options.config = dummy_temoa_options.config
             temoa_options.keepPyomoLP = dummy_temoa_options.keepPyomoLP
             temoa_options.saveTEXTFILE = dummy_temoa_options.saveTEXTFILE
-            temoa_options.path_to_db_io = dummy_temoa_options.path_to_db_io
+            temoa_options.path_to_data = dummy_temoa_options.path_to_data
             temoa_options.saveEXCEL = dummy_temoa_options.saveEXCEL
             ef_result.solution.Status = 'feasible' # Assume it is feasible
             for s in manager.scenario_tree.scenarios:
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # dummy_temoa_options.config = None
     # dummy_temoa_options.keepPyomoLP = False
     # dummy_temoa_options.saveTEXTFILE = False
-    # dummy_temoa_options.path_to_db_io = None
+    # dummy_temoa_options.path_to_data = None
     # dummy_temoa_options.saveEXCEL = False
     # dummy_temoa_options.output = "NCreference.db"
     # do_test(p_model, p_data, dummy_temoa_options)
