@@ -395,7 +395,111 @@ def PeriodCost_rule(M, p):
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
     )
 
-    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual
+
+    # The emissions costs occur over the five possible
+    # emission sources.
+    # First, sum over all actual emissions:
+    variable_emission_costs = sum(
+            M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, S_o]
+            * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+            * (
+                value(M.CostEmissions[r, p, e])
+                * (
+                    value(MPL[r, p, S_t, S_v])
+                    if not GDR
+                    else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+                )
+            )
+            for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+            for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+            if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+            # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+            if (r, p, S_t, S_v) in M.processInputs.keys()
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+        )
+    # Second, sum over all flex emissions
+    variable_emission_costs += sum(
+            M.V_Flex[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
+            * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+            * (
+                value(M.CostEmissions[r, p, e])
+                * (
+                    value(MPL[r, p, S_t, S_v])
+                    if not GDR
+                    else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+                )
+            )
+            for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+            for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+            if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+                and S_t in M.tech_flex and S_o in M.flex_commodities
+            if (r, p, S_t, S_v) in M.processInputs.keys()
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+        )
+    # Third, sum over all curtailment emission
+    variable_emission_costs += sum(
+            M.V_Curtailment[r, p, S_s, S_d, S_i, S_t, S_v, S_o]
+            * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+            * (
+                value(M.CostEmissions[r, p, e])
+                * (
+                    value(MPL[r, p, S_t, S_v])
+                    if not GDR
+                    else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+                )
+            )
+            for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+            for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+            if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+                and S_t in M.tech_curtailment
+            # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+            if (r, p, S_t, S_v) in M.processInputs.keys()
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+            )
+
+    # Fourth, sum over all annual emissions
+    variable_emission_costs += sum(
+            M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o]
+            * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+            * (
+                value(M.CostEmissions[r, p, e])
+                * (
+                    value(MPL[r, p, S_t, S_v])
+                    if not GDR
+                    else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+                )
+            )
+            for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+            for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+            if tmp_e == e and tmp_r == r and S_p == p and S_t in M.tech_annual
+            # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+            if (r, p, S_t, S_v) in M.processInputs.keys()
+            )
+    # Finally, sum over all flex annual emissions
+    variable_emission_costs += sum(
+            M.V_FlexAnnual[r, p, S_i, S_t, S_v, S_o]
+            * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+            * (
+                value(M.CostEmissions[r, p, e])
+                * (
+                    value(MPL[r, p, S_t, S_v])
+                    if not GDR
+                    else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+                )
+            )
+            for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+            for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+            if tmp_e == e and tmp_r == r and S_p == p and S_t in M.tech_annual
+                and S_t in M.tech_flex and S_o in M.flex_commodities
+            # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+            if (r, p, S_t, S_v) in M.processInputs.keys()
+            )
+
+
+    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual + variable_emission_costs
     return period_costs
 
 
@@ -1389,24 +1493,24 @@ between any two adjacent seasons.
 def RampUpPeriod_Constraint(M, r, p, t, v):
 
     # if p != M.time_future.first():
-    # 	p_prev  = M.time_future.prev(p)
-    # 	s_first = M.time_season.first()
-    # 	s_last  = M.time_season.last()
-    # 	d_first = M.time_of_day.first()
-    # 	d_last  = M.time_of_day.last()
-    # 	expr_left = (
-    # 		M.V_Activity[ p, s_first, d_first, t, v ] -
-    # 		M.V_Activity[ p_prev, s_last, d_last, t, v ]
-    # 		)
-    # 	expr_right = (
-    # 		M.V_Capacity[t, v]*
-    # 		value( M.RampUp[t] )*
-    # 		value( M.CapacityToActivity[ t ] )*
-    # 		value( M.SegFrac[s, d])
-    # 		)
-    # 	expr = (expr_left <= expr_right)
+    #     p_prev  = M.time_future.prev(p)
+    #     s_first = M.time_season.first()
+    #     s_last  = M.time_season.last()
+    #     d_first = M.time_of_day.first()
+    #     d_last  = M.time_of_day.last()
+    #     expr_left = (
+    #         M.V_Activity[ p, s_first, d_first, t, v ] -
+    #         M.V_Activity[ p_prev, s_last, d_last, t, v ]
+    #         )
+    #     expr_right = (
+    #         M.V_Capacity[t, v]*
+    #         value( M.RampUp[t] )*
+    #         value( M.CapacityToActivity[ t ] )*
+    #         value( M.SegFrac[s, d])
+    #         )
+    #     expr = (expr_left <= expr_right)
     # else:
-    # 	return Constraint.Skip
+    #     return Constraint.Skip
 
     # return expr
 
@@ -1416,25 +1520,25 @@ def RampUpPeriod_Constraint(M, r, p, t, v):
 def RampDownPeriod_Constraint(M, r, p, t, v):
 
     # if p != M.time_future.first():
-    # 	p_prev  = M.time_future.prev(p)
-    # 	s_first = M.time_season.first()
-    # 	s_last  = M.time_season.last()
-    # 	d_first = M.time_of_day.first()
-    # 	d_last  = M.time_of_day.last()
-    # 	expr_left = (
-    # 		M.V_Activity[ p, s_first, d_first, t, v ] -
-    # 		M.V_Activity[ p_prev, s_last, d_last, t, v ]
-    # 		)
-    # 	expr_right = (
-    # 		-1*
-    # 		M.V_Capacity[t, v]*
-    # 		value( M.RampDown[t] )*
-    # 		value( M.CapacityToActivity[ t ] )*
-    # 		value( M.SegFrac[s, d])
-    # 		)
-    # 	expr = (expr_left >= expr_right)
+    #     p_prev  = M.time_future.prev(p)
+    #     s_first = M.time_season.first()
+    #     s_last  = M.time_season.last()
+    #     d_first = M.time_of_day.first()
+    #     d_last  = M.time_of_day.last()
+    #     expr_left = (
+    #         M.V_Activity[ p, s_first, d_first, t, v ] -
+    #         M.V_Activity[ p_prev, s_last, d_last, t, v ]
+    #         )
+    #     expr_right = (
+    #         -1*
+    #         M.V_Capacity[t, v]*
+    #         value( M.RampDown[t] )*
+    #         value( M.CapacityToActivity[ t ] )*
+    #         value( M.SegFrac[s, d])
+    #         )
+    #     expr = (expr_left >= expr_right)
     # else:
-    # 	return Constraint.Skip
+    #     return Constraint.Skip
 
     # return expr
 
@@ -1771,7 +1875,7 @@ refers to the :code:`MinGenGroupTarget` parameter.
     activity_p_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
         for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())        
+        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
         for S_v in M.processVintages[r, p, S_t]
         for S_i in M.processInputs[r, p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]

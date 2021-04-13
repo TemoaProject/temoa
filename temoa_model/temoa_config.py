@@ -96,7 +96,7 @@ def db_2_dat(ifile, ofile, options):
 				after_comments = line[t_index+2:]
 				after_comments = re.sub('[(]', '', str(after_comments))
 				after_comments = re.sub('[\',)]', '    ', str(after_comments))
-				search_afcom = re.search(r'^\W+$', str(after_comments))		#Search if after_comments is empty.
+				search_afcom = re.search(r'^\W+$', str(after_comments))        #Search if after_comments is empty.
 				if not search_afcom :
 					str_row = before_comments + "# " + after_comments + "\n"
 				else :
@@ -111,14 +111,14 @@ def db_2_dat(ifile, ofile, options):
 		['set',  'time_periods',              'time_future',         'f',            0],
 		['set',  'time_season',               '',                    '',             0],
 		['set',  'time_of_day',               '',                    '',             0],
-		['set',  'regions',        	          '',                    '',             0],
+		['set',  'regions',                   '',                    '',             0],
 		['set',  'tech_curtailment',          '',                    '',             0],
-		['set',  'tech_flex',          		  '',                    '',             0],
+		['set',  'tech_flex',                 '',                    '',             0],
 		['set',  'tech_reserve',              '',                    '',             0],
 		['set',  'technologies',              'tech_resource',       'r',            0],
 		['set',  'technologies',              'tech_production',    ['p','pb','ps'], 0],
 		['set',  'technologies',              'tech_baseload',       'pb',           0],
-		['set',  'technologies',              'tech_storage',  		 'ps',           0],
+		['set',  'technologies',              'tech_storage',        'ps',           0],
 		['set',  'tech_ramping',              '',                    '',             0],
 		['set',  'tech_exchange',             '',                    '',             0],
 		['set',  'commodities',               'commodity_physical',  'p',            0],
@@ -158,6 +158,7 @@ def db_2_dat(ifile, ofile, options):
 		['param','CostInvest',                '',                    '',             3],
 		['param','CostFixed',                 '',                    '',             4],
 		['param','CostVariable',              '',                    '',             4],
+		['param','CostEmissions',             '',                    '',             3],
 		['param','CapacityCredit',            '',                    '',             4],
 		['param','RampUp',                    '',                    '',             2],
 		['param','RampDown',                  '',                    '',             2],
@@ -264,7 +265,7 @@ class TemoaConfig( object ):
 		self.path_to_data    = re.sub('temoa_model$', 'data_files', dirname(abspath(__file__)))# Path to where automated excel and text log folder will be save as output.
 		self.path_to_logs     = self.path_to_data+sep+"debug_logs" #Path to where debug logs will be generated for each run. By default in debug_logs folder in db_io.
 		self.path_to_lp_files = None
-		self.abort_temoa	  = False
+		self.abort_temoa      = False
 
 		if 'd_solver' in kwargs.keys():
 			self.solver = kwargs['d_solver']

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -16,8 +16,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -37,12 +37,12 @@ def temoa_create_model(name="Temoa"):
     M = TemoaModel(name)
 
     # ---------------------------------------------------------------
-    # Define sets. 
+    # Define sets.
     # Sets are collections of items used to index parameters and variables
     # ---------------------------------------------------------------
 
     # Define time periods
-    M.time_exist = Set(ordered=True) 
+    M.time_exist = Set(ordered=True)
     M.time_future = Set(ordered=True)
     M.time_optimize = Set(ordered=True, initialize=init_set_time_optimize)
     # Define time period vintages to track capacity installation
@@ -58,7 +58,7 @@ def temoa_create_model(name="Temoa"):
 
     # Define regions
     M.regions = Set()
-    # RegionalIndices is the set of all the possible combinations of interregional 
+    # RegionalIndices is the set of all the possible combinations of interregional
     # exhanges plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
     M.RegionalIndices = Set(initialize=CreateRegionalIndices)
 
@@ -128,12 +128,12 @@ def temoa_create_model(name="Temoa"):
 
     M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
     M.initialize_Demands = BuildAction(rule=CreateDemands)
-    
+
     M.ResourceBound = Param(M.regions, M.time_optimize, M.commodity_physical)
 
     # Define technology performance parameters
     M.CapacityToActivity = Param(M.RegionalIndices, M.tech_all, default=1)
-    
+
     M.ExistingCapacity = Param(M.RegionalIndices, M.tech_all, M.vintage_exist)
 
     M.Efficiency = Param(
@@ -182,10 +182,18 @@ def temoa_create_model(name="Temoa"):
     M.CostVariable_rptv = Set(dimen=4, initialize=CostVariableIndices)
     M.CostVariable = Param(M.CostVariable_rptv, mutable=True)
 
+    M.CostEmissions_rpe = Set(dimen=3, initialize=CostEmissionsIndices)
+    M.CostEmissions = Param(M.CostEmissions_rpe, mutable=True, default=0.0)
+
     M.CostVariableVintageDefault_rtv = Set(
         dimen=3, initialize=lambda M: set((r, t, v) for r, p, t, v in M.CostVariable_rptv)
     )
     M.CostVariableVintageDefault = Param(M.CostVariableVintageDefault_rtv)
+
+    M.CostEmissionsDefault_re = Set(
+        dimen=2, initialize=lambda M: set((r, e) for r, p, e in M.CostEmissions_rpe)
+    )
+    M.CostEmissionsDefault = Param(M.CostEmissionsDefault_re)
 
     M.initialize_Costs = BuildAction(rule=CreateCosts)
 
@@ -197,14 +205,14 @@ def temoa_create_model(name="Temoa"):
 
     M.ModelLoanLife_rtv = Set(dimen=3, initialize=lambda M: M.CostInvest.keys())
     M.ModelLoanLife = Param(M.ModelLoanLife_rtv, initialize=ParamModelLoanLife_rule)
-    
+
     M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ModelProcessLife = Param(
         M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule
     )
-    
+
     M.LoanLifeFrac_rptv = Set(dimen=4, initialize=LoanLifeFracIndices)
-    
+
     M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ProcessLifeFrac = Param(
         M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule
@@ -340,7 +348,7 @@ def temoa_create_model(name="Temoa"):
     )
     M.CommodityBalanceAnnualConstraint = Constraint(
         M.CommodityBalanceAnnualConstraint_rpc, rule=CommodityBalanceAnnual_Constraint
-    )    
+    )
 
     M.ResourceConstraint_rpr = Set(
         dimen=3, initialize=lambda M: M.ResourceBound.sparse_iterkeys()
