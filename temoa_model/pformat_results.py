@@ -104,11 +104,16 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		# epsilon = absolute value below which to ignore a result
 		results = defaultdict(list)
 		for name, data in cgroup.items():
-			if not (abs( data['Value'] ) > epsilon ): continue
-
-			# name looks like "Something[some,index]"
-			group, index = name[:-1].split('[')
-			results[ group ].append( (name.replace("'", ''), data['Value']) )
+			if 'Value' in data.keys():
+				if not (abs( data['Value'] ) > epsilon ): continue
+				# name looks like "Something[some,index]"
+				group, index = name[:-1].split('[')
+				results[ group ].append( (name.replace("'", ''), data['Value']) )
+			# If you want to print out all dual variable information, use the
+			# following block of code:
+			# elif 'Dual' in data.keys():
+			# group, index = name[:-1].split('[')
+			# results[ group ].append( (name.replace("'", ''), data['Dual']) )
 		clist.extend( t for i in sorted( results ) for t in sorted(results[i]))
 
 	#Create a dictionary in which to store "solved" variable values
@@ -230,6 +235,14 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		val = value( m.V_CapacityAvailableByPeriodAndTech[r, p, t] )
 		if abs(val) < epsilon: continue
 		svars['V_CapacityAvailableByPeriodAndTech'][r, p, t] = val
+
+	# Extract the implicit emissions prices. These are equivalent to the
+	# shadow price/dual variable of the emission limit constraint.
+	if options.keepDUALS:
+		for r, p, e in m.EmissionLimitConstraint:
+			# dual variables are given as non-positive. For consistency we
+			# report them as non-negative.
+			svars['EmissionShadowPrice'][r, p, e] = abs(m.dual[m.EmissionLimitConstraint[r,p,e]])
 
 	# Calculate model costs:
 	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
@@ -376,7 +389,6 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 				svars[    'Costs'    ][(item[0],item[1][item[1].find("-")+1:],item[2],item[3])] = svars[    'Costs'    ][item]
 				del svars[    'Costs'    ][item]
 
-
 	collect_result_data( Cons, con_info, epsilon=1e-9 )
 
 	msg = ( 'Model name: %s\n'
@@ -425,7 +437,8 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 			   "V_CapacityAvailableByPeriodAndTech"   : "Output_CapacityByPeriodAndTech",  \
 			   "V_EmissionActivityByPeriodAndProcess" : "Output_Emissions", \
 			   "Objective"  : "Output_Objective", \
-			   "Costs"      : "Output_Costs"
+			   "Costs"      : "Output_Costs",
+			   "EmissionShadowPrice" : "Output_ImplicitEmissionsPrice"
 			   }
 
 	db_tables = ['time_periods', 'time_season', 'time_of_day', 'technologies', 'commodities',\
@@ -516,13 +529,20 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 					if hasattr(options, 'file_location') and options.scenario == val[0] and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
 						cur.execute("DELETE FROM "+tables[table]+" \
 									WHERE scenario is '"+options.scenario+"'")
-				if table == 'Objective' : # Only table without sector info
+				if table == 'Objective' : # First of two table without sector info
 					for key in svars[table].keys():
 						key_str = str(key) # only 1 row to write
 						key_str = key_str[1:-1] # Remove parentheses
 						cur.execute("INSERT INTO "+tables[table]+" \
 									VALUES('"+options.scenario+"',"+key_str+", \
 									"+str(svars[table][key])+");")
+				elif table == 'EmissionShadowPrice' and options.keepDUALS: # Second of two tables without sector info
+					for key in svars[table].keys() : # Need to loop over keys (rows)
+						key_str = str(key)
+						key_str = key_str[1:-1] # Remove
+						cur.execute("INSERT INTO "+tables[table]+ \
+									" VALUES('"+str(key[0])+"', '"+options.scenario+"', \
+										"+key_str[key_str.find(',')+1:]+","+str(svars[table][key])+");")
 				else : # First add 'NULL' for sector then update
 					for key in svars[table].keys() : # Need to loop over keys (rows)
 						key_str = str(key)

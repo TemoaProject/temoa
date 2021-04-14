@@ -351,6 +351,10 @@ class TemoaSolverInstance(object):
 			SE.write( '\r[%8.2f]\n' % duration() )
 			self.txt_file.write( '[%8.2f]\n' % duration() )
 
+			# Tell pyomo to store the dual variables in memory
+			if self.options.keepDUALS:
+				self.instance.dual = Suffix(direction=Suffix.IMPORT)
+
 		except Exception as model_exc:
 			yield "Exception found in create_temoa_instance\n"
 			SE.write("Exeception found in create_temoa_instance\n")

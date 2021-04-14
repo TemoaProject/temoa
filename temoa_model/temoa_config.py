@@ -217,6 +217,7 @@ class TemoaConfig( object ):
 		'saveEXCEL',
 		'myopic'
 		'keep_myopic_databases'
+		'keepDUALS'
 		'saveTEXTFILE',
 		'mgaslack',
 		'mgaiter',
@@ -245,6 +246,7 @@ class TemoaConfig( object ):
 		self.saveEXCEL        = False
 		self.myopic           = False
 		self.KeepMyopicDBs    = False
+		self.keepDUALS 		  = False
 		self.saveTEXTFILE     = False
 		self.how_to_cite      = None
 		self.version          = False
@@ -287,6 +289,7 @@ class TemoaConfig( object ):
 		msg += '{:>{}s}: {}\n'.format('Spreadsheet output', width, self.saveEXCEL)
 		msg += '{:>{}s}: {}\n'.format('Myopic scheme', width, self.myopic)
 		msg += '{:>{}s}: {}\n'.format('Retain myopic databases', width, self.KeepMyopicDBs)
+		msg += '{:>{}s}: {}\n'.format('Saving dual variables', width, self.keepDUALS)
 		msg += spacer
 		msg += '{:>{}s}: {}\n'.format('Citation output status', width, self.how_to_cite)
 		msg += '{:>{}s}: {}\n'.format('NEOS status', width, self.neos)
@@ -333,6 +336,10 @@ class TemoaConfig( object ):
 	def t_saveTEXTFILE(self, t):
 		r'--saveTEXTFILE\b'
 		self.saveTEXTFILE = True
+
+	def t_keepDUALS(self, t):
+		r'--keepDUALS\b'
+		self.keepDUALS = True
 
 	def t_path_to_data(self, t):
 		r'--path_to_data[\s\=]+[-\\\/\:\.\~\w\ ]+\b'
