@@ -1794,6 +1794,48 @@ set.
     expr = activity_rpt <= max_act
     return expr
 
+def MaxSeasonalActivity_Constraint(M, r, p, s, t):
+    r"""
+
+The MaxSeasonalActivity sets an upper bound on the activity from a specific technology.
+Note that the indices for these constraints are region, period, season, and tech, not tech
+and vintage. The first version of the constraint pertains to technologies with
+variable output at the time slice level, and the second version pertains to
+technologies with constant annual output belonging to the :code:`tech_annual`
+set.
+
+.. math::
+   :label: MaxSeasonalActivity
+
+   \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAXSSNACT_{r, p, s, t}
+
+   \forall \{r, p, s, t\} \in \Theta_{\text{MaxSeasonalActivity}}
+
+   \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le MAXSSNACT_{r, p, s, t}
+
+   \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{MaxSeasonalActivity}}
+
+"""
+    try:
+      activity_rpst = sum(
+          M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] / (M.SegFrac[s,d]*365*24)
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+          for d in M.time_of_day
+      )
+    except:
+      activity_rpst = sum(
+          M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+      )
+
+    max_act = value(M.MaxSeasonalActivity[r, p, s, t])
+    expr = activity_rpst <= max_act
+    return expr
+
 
 def MinActivity_Constraint(M, r, p, t):
     r"""
@@ -1838,6 +1880,49 @@ set.
     min_act = value(M.MinActivity[r, p, t])
     expr = activity_rpt >= min_act
     return expr
+
+def MinSeasonalActivity_Constraint(M, r, p, s, t):
+        r"""
+
+    The MinSeasonalActivity sets a lower bound on the activity from a specific technology
+    over a specific season. Note that the indices for these constraints are region,
+    period, season and tech, not tech and vintage. The first version of the constraint
+    pertains to technologies with variable output at the time slice level, and the
+    second version pertains to technologies with constant annual output belonging to
+    the :code:`tech_annual` set.
+
+    .. math::
+       :label: MinSeasonalActivity
+
+       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MINSSNACT_{r, p, t}
+
+       \forall \{r, p, s, t\} \in \Theta_{\text{MinSeasonalActivity}}
+
+       \sum_{I,V,O} \textbf{FOA}_{r, p, s, i, t, v, o} \ge MINSSNACT_{r, p, s, t}
+
+       \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{MinSeasonalActivity}}
+
+    """
+
+        try:
+          activity_rpst = sum(
+              M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] / (M.SegFrac[s,d]*365*24)
+              for S_v in M.processVintages[r, p, t]
+              for S_i in M.processInputs[r, p, t, S_v]
+              for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+              for d in M.time_of_day
+          )
+        except:
+          activity_rpst = sum(
+              M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
+              for S_v in M.processVintages[r, p, t]
+              for S_i in M.processInputs[r, p, t, S_v]
+              for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+          )
+
+        min_act = value(M.MinSeasonalActivity[r, p, s, t])
+        expr = activity_rpst >= min_act
+        return expr
 
 
 def MinActivityGroup_Constraint(M, p, g):
