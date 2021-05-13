@@ -1,5 +1,5 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
+Tools for Energy Model Optimization and Analysis (Temoa): 
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -14,24 +14,24 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
+A complete copy of the GNU General Public License v2 (GPLv2) is available 
+in LICENSE.txt.  Users uncompressing this from an archive may not have 
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 
-This file aims at enabling the myopic/rolling horizon solve using a sqlite
-database as input.
-The algorithm works by: i) asking the user to enter the number of years that
-are to be included in each run, ii) preparing a database from the original
-database with the same number of years as the user specified, and solving it.
-The assumption is that regardless of the number of years, only the results of
-the first period are used in the subsequent run. iii) progressing over the
-model time periods by repeating step ii until the end of horizon is reached.
+This file aims at enabling the myopic/rolling horizon solve using a sqlite 
+database as input. 
+The algorithm works by: i) asking the user to enter the number of years that 
+are to be included in each run, ii) preparing a database from the original 
+database with the same number of years as the user specified, and solving it. 
+The assumption is that regardless of the number of years, only the results of 
+the first period are used in the subsequent run. iii) progressing over the 
+model time periods by repeating step ii until the end of horizon is reached. 
 All the results are written in the original database specified in the config file.
 
 """
 
 import sqlite3
-import pandas as pd
+import pandas as pd    
 from shutil import copyfile
 import os
 import sys
@@ -43,7 +43,7 @@ def myopic_db_generator_solver ( self ):
     db_path_org = self.options.output
     # original database specified in the ../config_sample file
     con_org = sqlite3.connect(db_path_org)
-    cur_org = con_org.cursor()
+    cur_org = con_org.cursor()            
     table_list = cur_org.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'Output%'").fetchall()
     time_periods = cur_org.execute("SELECT t_periods FROM time_periods WHERE flag='f'").fetchall()
     cur_org.execute("DELETE FROM MyopicBaseyear")
@@ -54,13 +54,13 @@ def myopic_db_generator_solver ( self ):
     db_name = self.options.output[loc1+1:loc2]
     copyfile(db_path_org, os.path.join(self.options.path_to_data,db_name)+"_blank"+self.options.output[loc2:])
 
-    # group 1 consists of non output tables in which "periods" is a column name
-    tables_group1 = ['CostFixed','CostVariable','Demand','EmissionLimit','MaxActivity','MaxSeasonalActivity','MaxCapacity', \
-                     'MinActivity','MinSeasonalActivity','MinCapacity','TechInputSplit','TechOutputSplit','CapacityCredit','MinGenGroupTarget']
+    # group 1 consists of non output tables in which "periods" is a column name 
+    tables_group1 = ['CostFixed','CostVariable','Demand','EmissionLimit','MaxActivity','MaxCapacity', \
+                     'MinActivity','MinCapacity','TechInputSplit','TechOutputSplit','CapacityCredit','MinGenGroupTarget']
     # group 2 consists of non output tables in which "vintage" is a column name except for CostFixed and CostVariable (taken care of above)
     tables_group2 = ['CapacityFactorProcess','CostInvest','DiscountRate', \
-                     'Efficiency','EmissionActivity','ExistingCapacity','LifetimeProcess']
-
+                     'Efficiency','EmissionActivity','ExistingCapacity','LifetimeProcess']    
+    
     version = int(sys.version[0])
 
     if version >= 3:
@@ -72,8 +72,8 @@ def myopic_db_generator_solver ( self ):
             else:
                 print ("The integer must be between 1 and "+str(time_periods[-2][0]))
           except ValueError:
-              print("Please input integer only...")
-              continue
+              print("Please input integer only...")  
+              continue    
     else:
         while True:
           try:
@@ -84,8 +84,8 @@ def myopic_db_generator_solver ( self ):
             else:
                 print ("The integer must be between 1 and "+str(len(time_periods)-2))
           except ValueError:
-              print("Please input integer only...")
-              continue
+              print("Please input integer only...")  
+              continue        
 
     for i in range(N-1,len(time_periods)-1):
 
@@ -105,28 +105,28 @@ def myopic_db_generator_solver ( self ):
         # Start modifying the Efficiency table
         # ---------------------------------------------------------------
         cur.execute("DELETE FROM Efficiency WHERE vintage > "+str(time_periods[i][0])+";")
-
+        
         cur.execute("UPDATE Efficiency SET tech = TRIM(tech);") #trim spaces. Need to trim carriage return
-
+        
         # Delete row from Efficiency if (t,v) retires at the begining of current period (which is time_periods[i][0])
         cur.execute("DELETE FROM Efficiency WHERE tech IN (SELECT tech FROM LifetimeProcess WHERE \
                      LifetimeProcess.life_process+LifetimeProcess.vintage<="+str(time_periods[i-(N-1)][0])+") \
                      AND vintage IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.life_process+\
                      LifetimeProcess.vintage<="+str(time_periods[i-(N-1)][0])+");")
-
+        
         # Delete row from Efficiency if (t,v) retires at the begining of current period (which is time_periods[i][0])
         cur.execute("DELETE FROM Efficiency WHERE tech IN (SELECT tech FROM LifetimeTech WHERE \
                      LifetimeTech.life+Efficiency.vintage<="+str(time_periods[i-(N-1)][0])+") AND \
                      vintage NOT IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.tech\
                      =Efficiency.tech);")
-
+        
         # If row is not deleted via the last two DELETE commands, it might still be invalid for period
-        #  time_periods[i][0] since they can have model default lifetime of 40 years.
+        #  time_periods[i][0] since they can have model default lifetime of 40 years. 
         cur.execute("DELETE FROM Efficiency WHERE tech IN (SELECT tech FROM Efficiency WHERE \
                     40+Efficiency.vintage<="+str(time_periods[i-(N-1)][0])+") AND \
                     tech NOT IN (SELECT tech FROM LifetimeTech) AND \
                     vintage NOT IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.tech=Efficiency.tech);")
-
+        
         # Above commits could break commodity flows defined in the Efficiecny table. We need to delete rows with
         # output commodities that are not generated by any other process. The exception is demand commodities (flag='d')
         iterval = 0
@@ -138,9 +138,9 @@ def myopic_db_generator_solver ( self ):
             iterval+=1
             if iterval>10:
                 break
-
+        
         # ---------------------------------------------------------------
-        # Sufficient changes were made on the Efficiency table.
+        # Sufficient changes were made on the Efficiency table. 
         # Start modifying other tables.
         # ---------------------------------------------------------------
         for table in tables_group1:
@@ -158,7 +158,7 @@ def myopic_db_generator_solver ( self ):
 
         cur.execute("DELETE FROM time_periods WHERE t_periods > "+str(time_periods[i][0])+";")
 
-
+        
         # ---------------------------------------------------------------
         # Add the buildups from the previous period to the ExistingCapacity
         # table. The data is stored in the Output_V_Capacity of the con_org
@@ -170,10 +170,10 @@ def myopic_db_generator_solver ( self ):
                                                          vintage < "+str(time_periods[i-(N-1)][0])+";", con_org)
             df_new_ExistingCapacity.columns = ['regions','tech','vintage','exist_cap']
             df_new_ExistingCapacity.to_sql('ExistingCapacity',con, if_exists='append', index=False)
-
-            #Create a copy of the first time period vintages for the two current vintage
-            #to prevent infeasibility (if it is not an 'existing' vintage in the
-            #original database and if it doesn't already have a current vintage). One example:
+    
+            #Create a copy of the first time period vintages for the two current vintage 
+            #to prevent infeasibility (if it is not an 'existing' vintage in the 
+            #original database and if it doesn't already have a current vintage). One example: 
             # dummy technologies that have only the first time period vintage (p0)
             for j in range(N-1,-1,-1): #backward loop
                 cur.execute("INSERT INTO Efficiency (regions,input_comm,tech,vintage,output_comm,efficiency) \
@@ -181,7 +181,7 @@ def myopic_db_generator_solver ( self ):
                              ",output_comm,efficiency FROM Efficiency WHERE tech NOT IN (SELECT tech \
                              FROM Efficiency WHERE vintage < "+str(time_periods[0][0])+") AND tech NOT IN (SELECT \
                              tech FROM Efficiency WHERE vintage >= "+str(time_periods[i-j][0])+");")
-
+            
             # delete (t,v) from efficiecny table if it doesn't appear in the ExistingCapacity (v is an existing vintage).
             # (note that the model throws a warning if (t,v) is an existing vintage but it doesn't appear in ExistingCapacity)
             cur.execute("DELETE FROM Efficiency \
@@ -191,13 +191,13 @@ def myopic_db_generator_solver ( self ):
             iterval = 0
             while len(cur.execute("SELECT * FROM Efficiency WHERE output_comm NOT IN (SELECT input_comm FROM Efficiency)\
                                    AND output_comm NOT IN (SELECT comm_name FROM commodities WHERE flag='d');").fetchall()) > 0:
-
+    
                 cur.execute("DELETE FROM Efficiency WHERE output_comm NOT IN (SELECT input_comm FROM Efficiency) \
                          AND output_comm NOT IN (SELECT comm_name FROM commodities WHERE flag='d');")
                 iterval+=1
                 if iterval>10:
-                    break
-
+                    break          
+        
             # Discard the results associated with time_periods[i-N][0] P time_periods[i-N][0] period in rolling horizon fashion. Otherwise, UNIQUE CONSTRAINT error is thrown.
             # Re Output_Costs, a delete is not needed because in pformat_results.py, future periods costs get added to what is already in the table
             cur_org.execute("DELETE FROM Output_CapacityByPeriodAndTech WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
@@ -212,18 +212,18 @@ def myopic_db_generator_solver ( self ):
         # The Efficiency table is now ready. Continue modifying other tables.
         # ---------------------------------------------------------------
         for table in table_list:
-            if table[0] == 'Efficiency': continue
+            if table[0] == 'Efficiency': continue 
             try:
                 cur.execute("UPDATE "+str(table[0])+" SET tech = TRIM(tech, CHAR(37,10));")
-                # If t doesn't exist in Efficiency table after the deletions made above,
-                # it is deleted from other tables.
+                # If t doesn't exist in Efficiency table after the deletions made above, 
+                # it is deleted from other tables.                
                 cur.execute("DELETE FROM "+str(table[0])+" WHERE tech NOT IN (SELECT tech FROM Efficiency);")
                 cursor = con.execute("SELECT * FROM "+str(table[0]))
                 names = list(map(lambda x: x[0], cursor.description))
                 if 'regions' in names:
                     query = "DELETE FROM "+str(table[0])+" WHERE (regions, tech) NOT IN (SELECT DISTINCT regions, tech FROM Efficiency)"
                     cur.execute(query)
-                if 'vintage' in names:
+                if 'vintage' in names:                
                     if table[0]!='ExistingCapacity':
                         for j in range(N-1,-1,-1):
                             names = list(map(lambda x: x[0], cursor.description))
@@ -243,7 +243,7 @@ def myopic_db_generator_solver ( self ):
                             df_table.columns = ['vintage' if x==str(time_periods[i-j][0]) else x for x in df_table.columns]
                             df_table.to_sql(str(table[0]),con, if_exists='append', index=False)
 
-                    # For these two table we only want current vintages.
+                    # For these two table we only want current vintages. 
                     if table[0] == 'CostInvest' or table[0] == 'DiscountRate':
                         cur.execute("DELETE FROM "+str(table[0])+" WHERE vintage > "+str(time_periods[i][0])+" OR vintage < "+str(time_periods[i-(N-1)][0])+";")
                     if table[0] == 'CostVariable' or table[0] == 'CostFixed':
@@ -252,7 +252,7 @@ def myopic_db_generator_solver ( self ):
                     # For the EmissionActivity, (i,t,v,o) tuple must be checked.
                     if table[0] == 'EmissionActivity':
                         cur.execute("DELETE FROM EmissionActivity WHERE regions || input_comm || tech || vintage || output_comm \
-                                    NOT IN (SELECT regions || input_comm || tech || vintage || output_comm FROM Efficiency)")
+                                    NOT IN (SELECT regions || input_comm || tech || vintage || output_comm FROM Efficiency)")                        
                     else:
                         cur.execute("DELETE FROM "+str(table[0])+" WHERE tech IN (SELECT tech FROM Efficiency) AND vintage \
                                  NOT IN (SELECT vintage FROM Efficiency WHERE Efficiency.tech="+str(table[0])+".tech \
@@ -280,7 +280,7 @@ def myopic_db_generator_solver ( self ):
                                                         tech='" + row['tech'] + "' AND \
                                                         scenario="+"'"+str(self.options.scenario)+"' AND \
                                                         vintage < "+str(time_periods[i-(N-1)][0]), con_org)
-                try:
+                try: 
                     updated_resource = row['maxres'] - df_existing_resources.iloc[0,0]
                     query = "UPDATE MaxResource SET maxres=" + str(updated_resource) + " WHERE regions='"\
                     + row['regions'] + "' AND tech='" + row['tech'] + "'"
@@ -301,7 +301,7 @@ def myopic_db_generator_solver ( self ):
         con.commit()
         con.close()
         # ---------------------------------------------------------------
-        # the database is ready. It is run via a temporary config file in
+        # the database is ready. It is run via a temporary config file in 
         # a perfect foresight fashion.
         # ---------------------------------------------------------------
         new_config = os.path.join(os.getcwd(), "temoa_model", "config_sample")+new_myopic_name
@@ -313,8 +313,8 @@ def myopic_db_generator_solver ( self ):
         ofile = open(new_config,'w')
         for line in ifile:
             new_line = line.replace("--input=data_files/"+db_name, "--input=data_files/"+db_name+new_myopic_name)
-            # the temporary config file is created from the original config file. Since for individual periods we are
-            # going to have a standard run, '--rollinghorizon' needs to be commented out.
+            # the temporary config file is created from the original config file. Since for individual periods we are 
+            # going to have a standard run, '--rollinghorizon' needs to be commented out. 
             new_line = new_line.replace("--myopic","#--myopic")
             if version<3:
                 ofile.write(new_line.encode('utf-8'))
@@ -330,5 +330,5 @@ def myopic_db_generator_solver ( self ):
             os.remove(new_db_loc)
             os.remove(os.path.join(self.options.path_to_data, db_name) +new_myopic_name+".dat")
 
-
+    
     os.remove(os.path.join(self.options.path_to_data,db_name)+"_blank"+self.options.output[loc2:])
