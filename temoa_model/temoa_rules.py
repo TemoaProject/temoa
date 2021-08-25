@@ -1935,6 +1935,35 @@ of the :math:`tech_annual` set) are considered.
     expr = inp >= M.TechInputSplit[r, p, i, t] * total_inp
     return expr
 
+def TechInputSplitAverage_Constraint(M, r, p, i, t, v):
+    r"""
+Allows users to specify fixed or minimum shares of commodity inputs to a process
+producing a single output. Under this constraint, only the technologies with variable
+output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
+This constraint differs from TechInputSplit as it specifies shares on an annual basis,
+so even though it applies to technologies with variable output at the timeslice level, 
+the constraint only fixes the input over the course of a year. 
+"""
+
+    inp = sum(
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+
+    expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
+    return expr 
+
 def TechOutputSplit_Constraint(M, r, p, s, d, t, v, o):
     r"""
 
