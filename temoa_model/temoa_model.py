@@ -78,7 +78,7 @@ def temoa_create_model(name="Temoa"):
     M.groups = Set(dimen=1) # Define groups for technologies
     M.tech_groups = Set(within=M.tech_all) # Define techs used in groups
     M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
-    M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
+
 
     # Define commodity-related sets
     M.commodity_demand = Set()
@@ -160,7 +160,6 @@ def temoa_create_model(name="Temoa"):
     M.initialize_Lifetimes = BuildAction(rule=CreateLifetimes)
 
     M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-    M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_variable)
     M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
 
     # The method below creates a series of helper functions that are used to
@@ -227,7 +226,6 @@ def temoa_create_model(name="Temoa"):
     M.EmissionActivity = Param(M.EmissionActivity_reitvo)
     M.MinGenGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default = 0)
     M.MinGenGroupTarget = Param(M.time_optimize, M.groups)
-    M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions)
 
     # Define parameters associated with electric sector operation
     M.RampUp = Param(M.regions, M.tech_ramping)
@@ -508,14 +506,7 @@ def temoa_create_model(name="Temoa"):
     M.TechInputSplitAnnualConstraint = Constraint(
         M.TechInputSplitAnnualConstraint_rpitv, rule=TechInputSplitAnnual_Constraint
     )
-    
-    M.TechInputSplitAverageConstraint_rpitv = Set(
-        dimen=5, initialize=TechInputSplitAverageConstraintIndices
-    )
-    M.TechInputSplitAverageConstraint = Constraint(
-        M.TechInputSplitAverageConstraint_rpitv, rule=TechInputSplitAverage_Constraint
-    )
-    
+
     M.TechOutputSplitConstraint_rpsdtvo = Set(
         dimen=7, initialize=TechOutputSplitConstraintIndices
     )
@@ -529,9 +520,6 @@ def temoa_create_model(name="Temoa"):
     M.TechOutputSplitAnnualConstraint = Constraint(
         M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
     )
-    M.LinkedEmissionsTechConstraint_rpsdtve = Set(dimen=7, initialize=LinkedTechConstraintIndices)
-    M.LinkedEmissionsTechConstraint = Constraint(
-        M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint)
     return M
 
 

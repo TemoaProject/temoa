@@ -630,8 +630,6 @@ def CreateSparseDicts ( M ):
 				M.rampVintages[r, p,t] = set()
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys() and (r, p, i, t) not in M.inputsplitVintages:
 				M.inputsplitVintages[r,p,i,t] = set()
-			if (r, p, i, t) in M.TechInputSplitAverage.sparse_iterkeys() and (r, p, i, t) not in M.inputsplitVintages:
-				M.inputsplitVintages[r,p,i,t] = set()
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys() and (r, p, t, o) not in M.outputsplitVintages:
 				M.outputsplitVintages[r,p,t,o] = set()
 			if t in M.tech_resource and (r,p,o) not in M.ProcessByPeriodAndOutput:
@@ -664,8 +662,6 @@ def CreateSparseDicts ( M ):
 			if t in M.tech_ramping:
 				M.rampVintages[r, p, t].add( v )
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys():
-				M.inputsplitVintages[r,p,i,t].add( v )
-			if (r, p, i, t) in M.TechInputSplitAverage.sparse_iterkeys():
 				M.inputsplitVintages[r,p,i,t].add( v )
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys():
 				M.outputsplitVintages[r,p,t,o].add( v )
@@ -989,20 +985,6 @@ def CapacityConstraintIndices ( M ):
 
 	return capacity_indices
 
-def LinkedTechConstraintIndices ( M ):
-	linkedtech_indices = set(
-	  (r, p, s, d, t, v, e)
-
-	  for r, t, e in M.LinkedTechs.sparse_iterkeys() 
-	  for p in M.time_optimize if (r, p, t) in M.processVintages.keys()
-	  for v in M.processVintages[ r, p, t ] if (r, p, t, v) in M.activeActivity_rptv
-	  for s in M.time_season
-	  for d in M.time_of_day
-
-	)
-
-	return linkedtech_indices
-
 def CapacityAnnualConstraintIndices ( M ):
 	capacity_indices = set(
 	  (r, p, t, v)
@@ -1198,7 +1180,7 @@ def TechInputSplitConstraintIndices ( M ):
 	indices = set(
 	  (r, p, s, d, i, t, v)
 
-	  for r, p, i, t in M.inputsplitVintages.keys() if t not in M.tech_annual and t not in M.tech_variable
+	  for r, p, i, t in M.inputsplitVintages.keys() if t not in M.tech_annual
 	  for v in M.inputsplitVintages[ r, p, i, t ]
 	  for s in M.time_season
 	  for d in M.time_of_day
@@ -1211,16 +1193,6 @@ def TechInputSplitAnnualConstraintIndices ( M ):
 	  (r, p, i, t, v)
 
 	  for r, p, i, t in M.inputsplitVintages.keys() if t in M.tech_annual
-	  for v in M.inputsplitVintages[ r, p, i, t ]
-	)
-
-	return indices	
-
-def TechInputSplitAverageConstraintIndices ( M ):
-	indices = set(
-	  (r, p, i, t, v)
-
-	  for r, p, i, t in M.inputsplitVintages.keys() if t in M.tech_variable 
 	  for v in M.inputsplitVintages[ r, p, i, t ]
 	)
 
@@ -1242,7 +1214,7 @@ def TechOutputSplitAnnualConstraintIndices ( M ):
 	indices = set(
 	  (r, p, t, v, o)
 
-	  for r, p, t, o in M.outputsplitVintages.keys() if t in M.tech_annual and t not in M.tech_variable
+	  for r, p, t, o in M.outputsplitVintages.keys() if t in M.tech_annual
 	  for v in M.outputsplitVintages[ r, p, t, o ]
 	)
 

@@ -1636,15 +1636,13 @@ horizon.
         return Constraint.Skip
 
     if p == periods[0]:
-        expr = CapPT[r, p, t] <= GRS * GRM
+        expr = CapPT[r, p, t] <= GRS
 
     else:
         p_prev = periods.index(p)
         p_prev = periods[p_prev - 1]
-        if (r, p_prev, t) in CapPT.keys():
-            expr = CapPT[r, p, t] <= GRM * CapPT[r, p_prev, t]
-        else:
-            expr = CapPT[r, p, t] <= GRS * GRM
+
+        expr = CapPT[r, p, t] <= GRM * CapPT[r, p_prev, t] + GRS
 
     return expr
 
@@ -1773,7 +1771,7 @@ refers to the :code:`MinGenGroupTarget` parameter.
     activity_p_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
         for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
+        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())        
         for S_v in M.processVintages[r, p, S_t]
         for S_i in M.processInputs[r, p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
@@ -1935,35 +1933,6 @@ of the :math:`tech_annual` set) are considered.
     expr = inp >= M.TechInputSplit[r, p, i, t] * total_inp
     return expr
 
-def TechInputSplitAverage_Constraint(M, r, p, i, t, v):
-    r"""
-Allows users to specify fixed or minimum shares of commodity inputs to a process
-producing a single output. Under this constraint, only the technologies with variable
-output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-This constraint differs from TechInputSplit as it specifies shares on an annual basis,
-so even though it applies to technologies with variable output at the timeslice level, 
-the constraint only fixes the input over the course of a year. 
-"""
-
-    inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
-        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
-    )
-
-    total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
-    )
-
-
-    expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
-    return expr 
-
 def TechOutputSplit_Constraint(M, r, p, s, d, t, v, o):
     r"""
 
@@ -2124,54 +2093,3 @@ def ParamLoanAnnualize_rule(M, r, t, v):
     annualized_rate = dr / (1.0 - (1.0 + dr) ** (-lln))
 
     return annualized_rate
-
-
-
-def LinkedEmissionsTech_Constraint(M, r, p, s, d, t, v, e):
-    r"""
-This constraint is necessary for carbon capture technologies that produce
-CO2 as an emissions commodity, but the CO2 also serves as a physical
-input commodity to a downstream process, such as synthetic fuel production.
-To accomplish this, a dummy technology is linked to the CO2-producing
-technology, converting the emissions activity into a physical commodity
-amount as follows:
-
-.. math::
-   :label: LinkedEmissionsTech
-
-     - \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o} \cdot EAC_{r, e, i, t, v, o}
-     = \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-
-    \forall \{r, p, s, d, t, v, e\} \in \Theta_{\text{LinkedTechs}}
-
-The relationship between the primary and linked technologies is given
-in the :code:`LinkedTechs` table. Note that the primary and linked
-technologies cannot be part of the :code:`tech_annual` set. It is implicit that
-the primary region corresponds to the linked technology as well. The lifetimes
-of the primary and linked technologies should be specified and identical. 
-"""
-    linked_t = M.LinkedTechs[r, t, e]
-    if (r,t,v) in M.LifetimeProcess.keys() and M.LifetimeProcess[r, linked_t,v] != M.LifetimeProcess[r, t,v]:
-        msg = ('the LifetimeProcess values of the primary and linked technologies '
-          'in the LinkedTechs table have to be specified and identical')
-        raise Exception( msg )
-    if (r,t) in M.LifetimeTech.keys() and M.LifetimeTech[r, linked_t] != M.LifetimeTech[r, t]:
-        msg = ('the LifetimeTech values of the primary and linked technologies '
-          'in the LinkedTechs table have to be specified and identical')
-        raise Exception( msg )
-
-    primary_flow = sum(
-    M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]*M.EmissionActivity[r, e, S_i, t, v, S_o]
-    for S_i in M.processInputs[r, p, t, v]
-    for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-    )
-
-    linked_flow = sum(
-    M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
-    for S_i in M.processInputs[r, p, linked_t, v]
-    for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
-    )
-
-    expr = -primary_flow == linked_flow
-    return expr
-

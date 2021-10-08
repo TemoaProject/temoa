@@ -5,6 +5,7 @@ import getopt
 import re
 from collections import OrderedDict
 
+
 def get_tperiods(inp_f):
 	file_ty = re.search(r"(\w+)\.(\w+)\b", inp_f) # Extract the input filename and extension
 	
@@ -37,6 +38,7 @@ def get_tperiods(inp_f):
 	cur.close()
 	con.close()
 	return dict ( OrderedDict ( sorted(periods_list.items(), key=lambda x: x[1]) ) )
+
 
 def get_scenario(inp_f):
 	file_ty = re.search(r"(\w+)\.(\w+)\b", inp_f) # Extract the input filename and extension
@@ -315,12 +317,12 @@ if __name__ == "__main__":
 	
 	try:
 		argv = sys.argv[1:]
-		opts, args = getopt.getopt(argv, "hctsi:p", ["help", "comm", "tech", "scenario","input=", "period"])
+		opts, args = getopt.getopt(argv, "hctsi:p", ["help", "comm", "tech", "scenario", "input=", "period"])
 		
 		print(opts)
+
+	except getopt.GetoptError:
+		help_user()
+		sys.exit(2)
 		
- 	except getopt.GetoptError:          
- 		help_user()                          
- 		sys.exit(2)
-		
-	print(get_info( dict(opts) ))
+	print(get_info( dict(opts)))

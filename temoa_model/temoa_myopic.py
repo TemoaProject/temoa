@@ -214,9 +214,6 @@ def myopic_db_generator_solver ( self ):
         for table in table_list:
             if table[0] == 'Efficiency': continue 
             try:
-                if table[0]=='LinkedTechs':
-                    cur.execute("DELETE FROM LinkedTechs WHERE primary_tech NOT IN (SELECT DISTINCT(tech) FROM Efficiency)")
-                    cur.execute("DELETE FROM LinkedTechs WHERE linked_tech NOT IN (SELECT DISTINCT(tech) FROM Efficiency)")
                 cur.execute("UPDATE "+str(table[0])+" SET tech = TRIM(tech, CHAR(37,10));")
                 # If t doesn't exist in Efficiency table after the deletions made above, 
                 # it is deleted from other tables.                
@@ -226,7 +223,6 @@ def myopic_db_generator_solver ( self ):
                 if 'regions' in names:
                     query = "DELETE FROM "+str(table[0])+" WHERE (regions, tech) NOT IN (SELECT DISTINCT regions, tech FROM Efficiency)"
                     cur.execute(query)
-                
                 if 'vintage' in names:                
                     if table[0]!='ExistingCapacity':
                         for j in range(N-1,-1,-1):
@@ -263,7 +259,6 @@ def myopic_db_generator_solver ( self ):
                                  AND Efficiency.regions="+str(table[0])+".regions);")
             #except:
             #    raise Exception(table[0],j)
-
             except:
             	pass
 
@@ -273,8 +268,6 @@ def myopic_db_generator_solver ( self ):
         cur.execute("DELETE FROM commodities WHERE flag!='e' AND comm_name NOT IN (SELECT input_comm from Efficiency UNION SELECT output_comm from Efficiency);")
         cur.execute("INSERT INTO `time_periods` (t_periods,flag) VALUES ("+str(time_periods[i+1][0])+",'f');")
         cur.execute("UPDATE `time_periods` SET flag='e' WHERE t_periods < "+str(time_periods[i-(N-1)][0]))
-
-
 
         # --------------------------------------------------------------------------------------------------
         # Update the maximum resource table to include flows that already contribute to resource consumption
