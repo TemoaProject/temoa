@@ -1479,9 +1479,33 @@ we write this equation for all the time-slices defined in the database in each r
         for v in M.processVintages[r, p, t]
         # Make sure (r,p,t,v) combinations are defined
         if (r,p,t,v) in M.activeCapacityAvailable_rptv
-
-
     )
+    # The above code does not consider exchange techs, e.g. electricity
+    # transmission between two distinct regions.
+    # We take exchange takes into account below:
+    for r1r2 in M.RegionalIndices:
+        if '-' not in r1r2:
+            continue
+        r1, r2 = r1r2.split("-")
+        # Only consider the capacity of technologies that import to
+        # the region in question -- i.e. for cases where r2 = r.
+        if r2 != r:
+            continue
+
+        # add the available capacity of the exchange tech.
+        cap_avail += sum(
+            value(M.CapacityCredit[r1r2, p, t, v])
+            * M.ProcessLifeFrac[r1r2, p, t, v]
+            * M.V_Capacity[r1r2, t, v]
+            * value(M.CapacityToActivity[r1r2, t])
+            * value(M.SegFrac[s, d])
+            for t in M.tech_reserve
+            if (r1r2, p, t) in M.processVintages.keys()
+            for v in M.processVintages[r1r2, p, t]
+            # Make sure (r,p,t,v) combinations are defined
+            if (r1r2,p,t,v) in M.activeCapacityAvailable_rptv
+            )
+
 
     # In most Temoa input databases, demand is endogenous, so we use electricity
     # generation instead.
@@ -1491,6 +1515,31 @@ we write this equation for all the time-slices defined in the database in each r
         for S_i in M.processInputs[r, p, t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
     )
+
+    # The above code does not consider exchange techs, e.g. electricity
+    # transmission between two distinct regions.
+    # We take exchange takes into account below:
+    for r1r2 in M.RegionalIndices: #ensure the region is of the form r1-r2
+        if '-' not in r1r2:
+            continue
+        if (r1r2, p) not in M.processReservePeriods: #ensure the technology in question exists
+            continue
+        r1, r2 = r1r2.split("-")
+        if r1 == r: # these are exports. We subtract this from the tally.
+            total_generation -= sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                for (t,S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.ProcessOutputsByInput[r1r2, p, t, S_v, S_i]
+            )
+        elif r2 == r: # these are imports and need to be included in the tally.
+            total_generation += sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                for (t,S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.ProcessOutputsByInput[r1r2, p, t, S_v, S_i]
+                if (t,S_v) in M.processReservePeriods[r1r2, p]
+            )
 
     cap_target = total_generation * (1 + value(M.PlanningReserveMargin[r]))
 
@@ -1938,8 +1987,8 @@ Allows users to specify fixed or minimum shares of commodity inputs to a process
 producing a single output. Under this constraint, only the technologies with variable
 output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
 This constraint differs from TechInputSplit as it specifies shares on an annual basis,
-so even though it applies to technologies with variable output at the timeslice level, 
-the constraint only fixes the input over the course of a year. 
+so even though it applies to technologies with variable output at the timeslice level,
+the constraint only fixes the input over the course of a year.
 """
 
     inp = sum(
@@ -1959,7 +2008,7 @@ the constraint only fixes the input over the course of a year.
 
 
     expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
-    return expr 
+    return expr
 
 def TechOutputSplit_Constraint(M, r, p, s, d, t, v, o):
     r"""
@@ -2145,7 +2194,7 @@ The relationship between the primary and linked technologies is given
 in the :code:`LinkedTechs` table. Note that the primary and linked
 technologies cannot be part of the :code:`tech_annual` set. It is implicit that
 the primary region corresponds to the linked technology as well. The lifetimes
-of the primary and linked technologies should be specified and identical. 
+of the primary and linked technologies should be specified and identical.
 """
     linked_t = M.LinkedTechs[r, t, e]
     if (r,t,v) in M.LifetimeProcess.keys() and M.LifetimeProcess[r, linked_t,v] != M.LifetimeProcess[r, t,v]:
@@ -2171,4 +2220,3 @@ of the primary and linked technologies should be specified and identical.
 
     expr = -primary_flow == linked_flow
     return expr
-
