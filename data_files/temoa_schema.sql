@@ -33,6 +33,11 @@ CREATE TABLE "technologies" (
 	FOREIGN KEY("flag") REFERENCES "technology_labels"("tech_labels"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector")
 );
+CREATE TABLE "tech_ramping" (
+	"tech"	text,
+	PRIMARY KEY("tech")
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
 CREATE TABLE "tech_reserve" (
 	"tech"	text,
 	"notes"	text,
@@ -146,6 +151,21 @@ CREATE TABLE "PlanningReserveMargin" (
 	PRIMARY KEY(regions),
 	FOREIGN KEY(`regions`) REFERENCES regions
 );
+CREATE TABLE "RampDown" (
+	`regions`	text,
+	`tech`	text,
+	`ramp_down` real,
+	PRIMARY KEY("regions", "tech"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
+CREATE TABLE "RampUp" (
+	`regions`	text,
+	`tech`	text,
+	`ramp_up` real,
+	PRIMARY KEY("regions", "tech"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
+
 CREATE TABLE "Output_V_Capacity" (
 	"regions"	text,
 	"scenario"	text,
