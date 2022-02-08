@@ -26,7 +26,7 @@ from temoa_initialize import *
 from temoa_run import *
 
 import IPython
-
+temoa_italy
 
 def temoa_create_model(name="Temoa"):
     """\
