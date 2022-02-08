@@ -8,11 +8,11 @@
 # Input File (Mandatory) 
 # Input can be a .sqlite or .dat file
 # Both relative path and absolute path are accepted
---input=data_files/temoa_utopia.sqlite
+--input=data_files/temoa_italy.sqlite
 
 # Output File (Mandatory)
 # The output file must be a existing .sqlite file
---output=data_files/temoa_utopia.sqlite
+--output=data_files/temoa_italy.sqlite
 
 # Scenario Name (Mandatory) 
 # This scenario name is used to store results within the output .sqlite file
