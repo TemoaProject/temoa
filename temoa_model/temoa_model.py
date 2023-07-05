@@ -223,6 +223,8 @@ def temoa_create_model(name="Temoa"):
     M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices, ordered=False)
     M.MinCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MaxCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
+    M.MinNewCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
+    M.MaxNewCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MaxResource = Param(M.RegionalIndices, M.tech_all)
     M.MinCapacitySum = Param(M.time_optimize)  # for techs in tech_capacity
     M.MaxCapacitySum = Param(M.time_optimize)  # for techs in tech_capacity
@@ -481,6 +483,13 @@ def temoa_create_model(name="Temoa"):
         M.MaxCapacityConstraint_rpt, rule=MaxCapacity_Constraint
     )
 
+    M.MaxNewCapacityConstraint_rpt = Set(
+        dimen=3, initialize=lambda M: M.MaxNewCapacity.sparse_iterkeys()
+    )
+    M.MaxNewCapacityConstraint = Constraint(
+        M.MaxNewCapacityConstraint_rpt, rule=MaxNewCapacity_Constraint
+    )
+
     M.MaxResourceConstraint_rt = Set(
         dimen=2, initialize=lambda M: M.MaxResource.sparse_iterkeys()
     )
@@ -500,6 +509,13 @@ def temoa_create_model(name="Temoa"):
     )
     M.MinCapacityConstraint = Constraint(
         M.MinCapacityConstraint_rpt, rule=MinCapacity_Constraint
+    )
+
+    M.MinNewCapacityConstraint_rpt = Set(
+        dimen=3, initialize=lambda M: M.MinNewCapacity.sparse_iterkeys()
+    )
+    M.MinNewCapacityConstraint = Constraint(
+        M.MinNewCapacityConstraint_rpt, rule=MinNewCapacity_Constraint
     )
 
     M.MinCapacitySetConstraint_rp = Set(

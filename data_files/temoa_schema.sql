@@ -338,6 +338,17 @@ CREATE TABLE "MinCapacity" (
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
 );
+CREATE TABLE "MinNewCapacity" (
+	"regions"	text,
+	"periods"	integer,
+	"tech"	text,
+	"minnewcap"	real,
+	"minnewcap_units"	text,
+	"minnewcap_notes"	text,
+	PRIMARY KEY("regions","periods","tech"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
 CREATE TABLE "MinActivity" (
 	"regions"	text,
 	"periods"	integer,
@@ -356,6 +367,17 @@ CREATE TABLE "MaxCapacity" (
 	"maxcap"	real,
 	"maxcap_units"	text,
 	"maxcap_notes"	text,
+	PRIMARY KEY("regions","periods","tech"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
+CREATE TABLE "MaxNewCapacity" (
+	"regions"	text,
+	"periods"	integer,
+	"tech"	text,
+	"maxnewcap"	real,
+	"maxnewcap_units"	text,
+	"maxnewcap_notes"	text,
 	PRIMARY KEY("regions","periods","tech"),
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")

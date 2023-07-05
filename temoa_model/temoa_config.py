@@ -148,6 +148,8 @@ def db_2_dat(ifile, ofile, options):
 		['param','TechInputSplitAverage',     '',                    '',             4],
 		['param','MinCapacity',               '',                    '',             3],
 		['param','MaxCapacity',               '',                    '',             3],
+		['param', 'MinNewCapacity',           '',                    '',             3],
+		['param', 'MaxNewCapacity',           '',                    '',             3],
 		['param','MaxActivity',               '',                    '',             3],
 		['param','MinActivity',               '',                    '',             3],
 		['param', 'MinAnnualCapacityFactor',  '',                    '',             3],
