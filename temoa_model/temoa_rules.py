@@ -335,12 +335,18 @@ def PeriodCost_rule(M, p):
             )
         )
         * (
-            (1 - x ** (-min(value(M.LifetimeProcess[r, S_t, S_v]), P_e - S_v)))
-            / (1 - x ** (-value(M.LifetimeProcess[r, S_t, S_v])))
+            min(value(M.LifetimeLoanProcess[r, S_t, S_v]), P_e - S_v) /
+            value(M.LifetimeLoanProcess[r, S_t, S_v])
+            if not GDR
+            else (
+                (1 - x ** (-min(value(M.LifetimeLoanProcess[r, S_t, S_v]), P_e - S_v)))
+                / (1 - x ** (-value(M.LifetimeLoanProcess[r, S_t, S_v])))
+        )
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p
     )
+
 
     fixed_costs = sum(
         M.V_Capacity[r, S_t, S_v]

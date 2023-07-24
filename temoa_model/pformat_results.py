@@ -255,12 +255,18 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 			icost = value( m.V_Capacity[r, t, v] )
 			if abs(icost) < epsilon: continue
-			icost *= value( m.CostInvest[r, t, v] )*(
-				(
-					1 -  x**( -min( value(m.LifetimeProcess[r, t, v]), P_e - v ) )
-				)/(
-					1 -  x**( -value( m.LifetimeProcess[r, t, v] ) )
-				)
+			icost *= value( m.CostInvest[r, t, v] ) \
+			* (
+				min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) /
+				value( m.LifetimeLoanProcess[r, t, v] )
+				if not GDR
+				else (
+						(
+							1 -  x**( -min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) )
+						)/(
+							1 -  x**( -value( m.LifetimeLoanProcess[r, t, v] ) )
+						)
+					)
 			)
 			svars[	'Costs'	][ 'V_UndiscountedInvestmentByProcess', r, t, v] += icost
 
