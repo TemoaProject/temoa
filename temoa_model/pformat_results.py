@@ -130,7 +130,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 	con_info = list()
 	epsilon = 1e-5   # threshold for "so small it's zero"
-
+	capacity_epsilon = 0.001
 	emission_keys = { (r, i, t, v, o) : set() for r, e, i, t, v, o in m.EmissionActivity }
 	for r, e, i, t, v, o in m.EmissionActivity:
 		emission_keys[(r, i, t, v, o)].add(e)
@@ -230,18 +230,18 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
 		for r, t, v in m.V_Capacity:
 			val = value( m.V_Capacity[r, t, v] )
-			if abs(val) < epsilon: continue
+			if abs(val) < capacity_epsilon: continue
 			svars['V_Capacity'][r, t, v] = val
 	else:
 		for r, t, v in m.V_Capacity:
 			if v in m.time_optimize:
 				val = value( m.V_Capacity[r, t, v] )
-				if abs(val) < epsilon: continue
+				if abs(val) < capacity_epsilon: continue
 				svars['V_Capacity'][r, t, v] = val
 
 	for r, p, t in m.V_CapacityAvailableByPeriodAndTech:
 		val = value( m.V_CapacityAvailableByPeriodAndTech[r, p, t] )
-		if abs(val) < epsilon: continue
+		if abs(val) < capacity_epsilon: continue
 		svars['V_CapacityAvailableByPeriodAndTech'][r, p, t] = val
 
 	# Calculate model costs:
