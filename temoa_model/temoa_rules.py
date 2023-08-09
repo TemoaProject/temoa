@@ -390,8 +390,38 @@ def PeriodCost_rule(M, p):
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
     )
 
-    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual
-    return period_costs
+
+    # SCC: 3% DR
+    #tax_C = {2020:0, 2025:51.52, 2030:57.04, 2035:61.64, 2040:767.16, 2045:72.68, 2050:78.2}
+    # SCC: 3% DR 95th percentile
+    tax_C = {2020:0, 2025:155.48, 2030:172.04, 2035:189.52, 2040:207, 2045:222.64, 2050:239.2}
+
+    carbon_tax = sum(
+       M.V_FlowOut[r, p, S_s, S_d, S_i, t, S_v, S_o] * tax_C[p]
+       * M.EmissionActivity[r, 'co2', S_i, t, S_v, S_o]
+       for t in (M.tech_all - M.tech_annual)
+       for r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+       if tmp_e == 'co2' and S_t == t 
+       if int(M.EmissionActivity[r, 'co2', S_i, t, S_v, S_o]) >= 0
+       if (r, p, S_t, S_v) in M.processInputs.keys()
+       for S_s in M.time_season
+       for S_d in M.time_of_day
+       )
+     
+    carbon_tax_annual = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o] * tax_C[p]
+        * M.EmissionActivity[r, 'co2', S_i, t, S_v, S_o]
+        for t in M.tech_annual
+        for r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == 'co2' and S_t == t
+        if int(M.EmissionActivity[r, 'co2', S_i, t, S_v, S_o]) >= 0
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+        ) 
+    carbon_tax = 0
+    carbon_tax_annual = 0 
+
+    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual + (carbon_tax + carbon_tax_annual)*.001
+    return period_costs 
 
 
 # ---------------------------------------------------------------
@@ -1483,9 +1513,34 @@ we write this equation for all the time-slices defined in the database in each r
         for v in M.processVintages[r, p, t]
         # Make sure (r,p,t,v) combinations are defined
         if (r,p,t,v) in M.activeCapacityAvailable_rptv
-
-
     )
+
+# The above code does not consider exchange techs, e.g. electricity
+    # transmission between two distinct regions.
+    # We take exchange takes into account below:
+    for r1r2 in M.RegionalIndices:
+        if '-' not in r1r2:
+            continue
+        r1, r2 = r1r2.split("-")
+        # Only consider the capacity of technologies that import to
+        # the region in question -- i.e. for cases where r2 = r.
+        if r2 != r:
+            continue
+
+        # add the available capacity of the exchange tech.
+        cap_avail += sum(
+            value(M.CapacityCredit[r1r2, p, t, v])
+            * M.ProcessLifeFrac[r1r2, p, t, v]
+            * M.V_Capacity[r1r2, t, v]
+            * value(M.CapacityToActivity[r1r2, t])
+            * value(M.SegFrac[s, d])
+            for t in M.tech_reserve
+            if (r1r2, p, t) in M.processVintages.keys()
+            for v in M.processVintages[r1r2, p, t]
+            # Make sure (r,p,t,v) combinations are defined
+            if (r1r2,p,t,v) in M.activeCapacityAvailable_rptv
+            )
+
 
     # In most Temoa input databases, demand is endogenous, so we use electricity
     # generation instead.
@@ -1495,6 +1550,45 @@ we write this equation for all the time-slices defined in the database in each r
         for S_i in M.processInputs[r, p, t, S_v]
         for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
     )
+
+    # We must take into account flows into storage technologies.
+    # Flows into storage technologies need to be subtracted from the
+    # load calculation.
+    total_generation -= sum(
+        M.V_FlowIn[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in M.processReservePeriods[r, p]
+        if t in M.tech_storage
+        for S_i in M.processInputs[r, p, t, S_v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+    )
+
+    # The above code does not consider exchange techs, e.g. electricity
+    # transmission between two distinct regions.
+    # We take exchange takes into account below:
+    for r1r2 in M.RegionalIndices: #ensure the region is of the form r1-r2
+        if '-' not in r1r2:
+            continue
+        if (r1r2, p) not in M.processReservePeriods: #ensure the technology in question exists
+            continue
+        r1, r2 = r1r2.split("-")
+        if r1 == r: # these are exports. We subtract this from the tally.
+            total_generation -= sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]/ ( value(M.Efficiency[r1r2, S_i, t, S_v, S_o]) * value(M.EfficiencyVariable[r1r2, S_i, t, s, d, S_o]) )
+                for (t,S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.ProcessOutputsByInput[r1r2, p, t, S_v, S_i]
+            )
+        elif r2 == r: # these are imports and need to be included in the tally.
+            total_generation += sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                for (t,S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.ProcessOutputsByInput[r1r2, p, t, S_v, S_i]
+                if (t,S_v) in M.processReservePeriods[r1r2, p]
+            )
+
+
+
 
     cap_target = total_generation * (1 + value(M.PlanningReserveMargin[r]))
 
@@ -1765,50 +1859,156 @@ set.
     return expr
 
 
-def MinActivityGroup_Constraint(M, p, g):
+def MinActivityGroup_Constraint(M, r, p, g):
     r"""
 
 The MinActivityGroup constraint sets a minimum activity limit for a user-defined
 technology group. Each technology within each group is multiplied by a
-weighting function (:math:`MGW_{r,t}`), which determines the technology activity
-share that can count towards the constraint.
-
+weighting function, which determines what technology activity share can count
+towards the constraint.
+technology group.
 .. math::
    :label: MinActivityGroup
-
-       \sum_{S,D,I,T,V,O} \textbf{FO}_{p, s, d, i, t, v, o} \cdot MGW_{t|t \not \in T^{a}}
-       + \sum_{I,T,V,O} \textbf{FOA}_{p, i, t \in T^{a}, v, o} \cdot MGW_{t \in T^{a}}
-       \ge MGT_{p, g}
-
+       \sum_{S,D,I,T,V,O} \textbf{FO}_{p, s, d, i, t, v, o} \cdot WEIGHT_{t|t \not \in T^{a}}
+       + \sum_{I,T,V,O} \textbf{FOA}_{p, i, t, v, o} \cdot WEIGHT_{t \in T^{a}}
+       \ge MGGT_{p, g}
+       \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
+       \textbf{FOA}_{r, p, i, t, v, o}
+       \ge MnAG_{r, p, g}
+       \forall \{r, p, g\} \in \Theta_{\text{MinActivityGroup}}
        \forall \{p, g\} \in \Theta_{\text{MinActivityGroup}}
-
-where :math:`g` represents the assigned technology group and :math:`MGT_r`
+where :math:`g` represents the assigned technology group and :math:`MGGT`
 refers to the :code:`MinGenGroupTarget` parameter.
+where :math:`g` represents the assigned technology group and :math:`MnAG`
+refers to the :code:`MinActivityGroup` parameter.
 """
 
-    activity_p = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t not in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
-        for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v]
-        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
-        for s in M.time_season
-        for d in M.time_of_day
-    )
+    if r == 'global':
+      reg = M.regions
+    elif '+' in r:
+      reg = r.split('+')
+    else:
+      reg = [r]
+    
+    activity_p = 0 
+    activity_p_annual = 0  
+    for r_i in reg:
+        if r == 'global':
+            activity_p += sum(
+                M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                for s in M.time_season
+                for d in M.time_of_day
+                if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
 
-    activity_p_annual = sum(
-        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r in M.RegionalIndices
-        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
-        for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v]
-        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
-    )
+            activity_p_annual += sum(
+                M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                if (S_t in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
 
 
-    min_act = value(M.MinGenGroupTarget[p, g])
+        else:
+            activity_p += sum(
+                M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r_i and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                for s in M.time_season
+                for d in M.time_of_day
+                if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+
+            activity_p_annual += sum(
+                M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r_i and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                if (S_t in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+    min_act = value(M.MinActivityGroup[r, p, g])
     expr = activity_p + activity_p_annual >= min_act
+    return expr
+
+
+def MaxActivityGroup_Constraint(M, r, p, g):
+    r"""
+The MaxActivityGroup constraint sets a maximum activity limit for a user-defined
+technology group.
+.. math::
+   :label: MaxActivityGroup
+       \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
+       \textbf{FOA}_{r, p, i, t, v, o}
+       \le MxAG_{r, p, g}
+       \forall \{r, p, g\} \in \Theta_{\text{MaxActivityGroup}}
+where :math:`g` represents the assigned technology group and :math:`MxAG`
+refers to the :code:`MaxActivityGroup` parameter.
+"""
+
+    if r == 'global':
+      reg = M.regions
+    elif '+' in r:
+      reg = r.split('+')
+    else:
+      reg = [r]
+
+    activity_p = 0 
+    activity_p_annual = 0 
+    for r_i in reg:
+        if r == 'global':
+            activity_p += sum(
+                M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                for s in M.time_season
+                for d in M.time_of_day
+                if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+        
+            activity_p_annual += sum(
+                M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                if (S_t in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+
+        else:
+            activity_p += sum(
+                M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r_i and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                for s in M.time_season
+                for d in M.time_of_day
+                if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+
+            activity_p_annual += sum(
+                M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+                for _r, _g, S_t in M.tech_groups if _r == r_i and _g == g and (r_i, p, S_t) in M.processVintages
+                for S_v in M.processVintages[r_i, p, S_t]
+                for S_i in M.processInputs[r_i, p, S_t, S_v]
+                for S_o in M.ProcessOutputsByInput[r_i, p, S_t, S_v, S_i]
+                if (S_t in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
+            )
+
+    max_act = value(M.MaxActivityGroup[r, p, g])
+    expr = activity_p + activity_p_annual <= max_act
+    print(expr)
     return expr
 
 
@@ -1830,6 +2030,62 @@ tech, not tech and vintage.
     expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] <= max_cap
     return expr
 
+
+def MaxCapacityGroup_Constraint(M, r, p, g):
+
+    if r == 'global':
+        reg = M.regions
+    elif '+' in r:
+        reg = r.split('+')
+    else:
+        reg = [r]
+    max_capgroup = value(M.MaxCapacityGroup[r, p, g])
+    
+    cap = 0
+    for r_i in reg:
+        if r == 'global':
+            cap += sum(
+                        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
+                        for _r, _g, t in M.tech_groups
+                        if _r == r and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
+                    )
+        else:
+            cap += sum(
+                        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
+                        for _r, _g, t in M.tech_groups
+                        if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
+                    )   
+                
+    expr = cap <= max_capgroup
+    return expr
+
+def MinCapacityGroup_Constraint(M, r, p, g):
+
+    if r == 'global':
+        reg = M.regions
+    elif '+' in r:
+        reg = r.split('+')
+    else:
+        reg = [r]
+    max_capgroup = value(M.MaxCapacityGroup[r, p, g])
+    
+    cap = 0
+    for r_i in reg:
+        if r == 'global':
+            cap += sum(
+                        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
+                        for _r, _g, t in M.tech_groups
+                        if _r == r and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
+                    )
+        else:
+            cap += sum(
+                        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
+                        for _r, _g, t in M.tech_groups
+                        if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
+                    )   
+                
+    expr = cap >= min_capgroup
+    return expr
 
 def MaxResource_Constraint(M, r, t):
     r"""
@@ -1989,7 +2245,8 @@ the constraint only fixes the input shares over the course of a year.
 
 
     expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
-    return expr 
+    return expr
+
 
 def TechOutputSplit_Constraint(M, r, p, s, d, t, v, o):
     r"""

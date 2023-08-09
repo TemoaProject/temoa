@@ -1175,6 +1175,7 @@ def ReserveMarginIndices ( M ):
 	)
 	return indices
 
+
 def TechInputSplitConstraintIndices ( M ):
 	indices = set(
 	  (r, p, s, d, i, t, v)
