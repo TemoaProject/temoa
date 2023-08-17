@@ -37,12 +37,12 @@ def temoa_create_model(name="Temoa"):
     M = TemoaModel(name)
 
     # ---------------------------------------------------------------
-    # Define sets. 
+    # Define sets.
     # Sets are collections of items used to index parameters and variables
     # ---------------------------------------------------------------
 
     # Define time periods
-    M.time_exist = Set(ordered=True) 
+    M.time_exist = Set(ordered=True)
     M.time_future = Set(ordered=True)
     M.time_optimize = Set(ordered=True, initialize=init_set_time_optimize)
     # Define time period vintages to track capacity installation
@@ -58,7 +58,7 @@ def temoa_create_model(name="Temoa"):
 
     # Define regions
     M.regions = Set()
-    # RegionalIndices is the set of all the possible combinations of interregional 
+    # RegionalIndices is the set of all the possible combinations of interregional
     # exhanges plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
     M.RegionalIndices = Set(initialize=CreateRegionalIndices)
 
@@ -75,10 +75,12 @@ def temoa_create_model(name="Temoa"):
     M.tech_curtailment = Set(within=M.tech_all)
     M.tech_flex = Set(within=M.tech_all)
     M.tech_exchange = Set(within=M.tech_all)
-    M.groups = Set(dimen=1) # Define groups for technologies
-    M.tech_groups = Set(within=M.tech_all) # Define techs used in groups
-    M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
-    M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
+    M.groups = Set(dimen=1)  # Define groups for technologies
+    M.tech_groups = Set(within=M.tech_all)  # Define techs used in groups
+    M.tech_annual = Set(within=M.tech_all)  # Define techs with constant output
+    M.tech_variable = Set(
+        within=M.tech_all
+    )  # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
 
     # Define commodity-related sets
     M.commodity_demand = Set()
@@ -126,16 +128,20 @@ def temoa_create_model(name="Temoa"):
 
     M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
     M.initialize_Demands = BuildAction(rule=CreateDemands)
-    
+
     M.ResourceBound = Param(M.regions, M.time_optimize, M.commodity_physical)
 
     # Define technology performance parameters
     M.CapacityToActivity = Param(M.RegionalIndices, M.tech_all, default=1)
-    
+
     M.ExistingCapacity = Param(M.RegionalIndices, M.tech_all, M.vintage_exist)
 
     M.Efficiency = Param(
-        M.RegionalIndices, M.commodity_physical, M.tech_all, M.vintage_all, M.commodity_carrier
+        M.RegionalIndices,
+        M.commodity_physical,
+        M.tech_all,
+        M.vintage_all,
+        M.commodity_carrier,
     )
     M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
 
@@ -157,9 +163,15 @@ def temoa_create_model(name="Temoa"):
     M.LifetimeLoanProcess = Param(M.LifetimeLoanProcess_rtv, mutable=True)
     M.initialize_Lifetimes = BuildAction(rule=CreateLifetimes)
 
-    M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-    M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_variable)
-    M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+    M.TechInputSplit = Param(
+        M.regions, M.time_optimize, M.commodity_physical, M.tech_all
+    )
+    M.TechInputSplitAverage = Param(
+        M.regions, M.time_optimize, M.commodity_physical, M.tech_variable
+    )
+    M.TechOutputSplit = Param(
+        M.regions, M.time_optimize, M.tech_all, M.commodity_carrier
+    )
 
     # The method below creates a series of helper functions that are used to
     # perform the sparse matrix of indexing for the parameters, variables, and
@@ -182,7 +194,8 @@ def temoa_create_model(name="Temoa"):
     M.CostVariable = Param(M.CostVariable_rptv, mutable=True)
 
     M.CostVariableVintageDefault_rtv = Set(
-        dimen=3, initialize=lambda M: set((r, t, v) for r, p, t, v in M.CostVariable_rptv)
+        dimen=3,
+        initialize=lambda M: set((r, t, v) for r, p, t, v in M.CostVariable_rptv),
     )
     M.CostVariableVintageDefault = Param(M.CostVariableVintageDefault_rtv)
 
@@ -194,12 +207,11 @@ def temoa_create_model(name="Temoa"):
     M.Loan_rtv = Set(dimen=3, initialize=lambda M: M.CostInvest.keys())
     M.LoanAnnualize = Param(M.Loan_rtv, initialize=ParamLoanAnnualize_rule)
 
-    
     M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ModelProcessLife = Param(
         M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule
     )
-    
+
     M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ProcessLifeFrac = Param(
         M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule
@@ -216,17 +228,21 @@ def temoa_create_model(name="Temoa"):
     M.MinActivity = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all)
     M.GrowthRateMax = Param(M.RegionalIndices, M.tech_all)
     M.GrowthRateSeed = Param(M.RegionalIndices, M.tech_all)
-    M.EmissionLimit = Param(M.RegionalGlobalIndices, M.time_optimize, M.commodity_emissions)
+    M.EmissionLimit = Param(
+        M.RegionalGlobalIndices, M.time_optimize, M.commodity_emissions
+    )
     M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
     M.EmissionActivity = Param(M.EmissionActivity_reitvo)
-    M.MinGenGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default = 0)
+    M.MinGenGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default=0)
     M.MinGenGroupTarget = Param(M.time_optimize, M.groups)
     M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions)
 
     # Define parameters associated with electric sector operation
     M.RampUp = Param(M.regions, M.tech_ramping)
     M.RampDown = Param(M.regions, M.tech_ramping)
-    M.CapacityCredit = Param(M.RegionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=1)
+    M.CapacityCredit = Param(
+        M.RegionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=1
+    )
     M.PlanningReserveMargin = Param(M.regions, default=0.2)
     # Storage duration is expressed in hours
     M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
@@ -294,11 +310,15 @@ def temoa_create_model(name="Temoa"):
 
     M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
     M.CapacityConstraint = Constraint(
-        M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
+        M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint
+    )
 
-    M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)
+    M.CapacityAnnualConstraint_rptv = Set(
+        dimen=4, initialize=CapacityAnnualConstraintIndices
+    )
     M.CapacityAnnualConstraint = Constraint(
-        M.CapacityAnnualConstraint_rptv, rule=CapacityAnnual_Constraint)
+        M.CapacityAnnualConstraint_rptv, rule=CapacityAnnual_Constraint
+    )
 
     M.CapacityAvailableByPeriodAndTechConstraint = Constraint(
         M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
@@ -336,7 +356,7 @@ def temoa_create_model(name="Temoa"):
     )
     M.CommodityBalanceAnnualConstraint = Constraint(
         M.CommodityBalanceAnnualConstraint_rpc, rule=CommodityBalanceAnnual_Constraint
-    )    
+    )
 
     M.ResourceConstraint_rpr = Set(
         dimen=3, initialize=lambda M: M.ResourceBound.sparse_iterkeys()
@@ -356,7 +376,9 @@ def temoa_create_model(name="Temoa"):
         dimen=4, initialize=RegionalExchangeCapacityConstraintIndices
     )
     M.RegionalExchangeCapacityConstraint = Constraint(
-        M.RegionalExchangeCapacityConstraint_rrtv, rule=RegionalExchangeCapacity_Constraint)
+        M.RegionalExchangeCapacityConstraint_rrtv,
+        rule=RegionalExchangeCapacity_Constraint,
+    )
 
     # This set works for all the storage-related constraints
     M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageVariableIndices)
@@ -380,7 +402,7 @@ def temoa_create_model(name="Temoa"):
         M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
     )
 
-    M.StorageInitConstraint_rtv = Set(dimen=2,initialize=StorageInitConstraintIndices)
+    M.StorageInitConstraint_rtv = Set(dimen=2, initialize=StorageInitConstraintIndices)
     M.StorageInitConstraint = Constraint(
         M.StorageInitConstraint_rtv, rule=StorageInit_Constraint
     )
@@ -502,14 +524,14 @@ def temoa_create_model(name="Temoa"):
     M.TechInputSplitAnnualConstraint = Constraint(
         M.TechInputSplitAnnualConstraint_rpitv, rule=TechInputSplitAnnual_Constraint
     )
-    
+
     M.TechInputSplitAverageConstraint_rpitv = Set(
         dimen=5, initialize=TechInputSplitAverageConstraintIndices
     )
     M.TechInputSplitAverageConstraint = Constraint(
         M.TechInputSplitAverageConstraint_rpitv, rule=TechInputSplitAverage_Constraint
     )
-    
+
     M.TechOutputSplitConstraint_rpsdtvo = Set(
         dimen=7, initialize=TechOutputSplitConstraintIndices
     )
@@ -523,9 +545,12 @@ def temoa_create_model(name="Temoa"):
     M.TechOutputSplitAnnualConstraint = Constraint(
         M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
     )
-    M.LinkedEmissionsTechConstraint_rpsdtve = Set(dimen=7, initialize=LinkedTechConstraintIndices)
+    M.LinkedEmissionsTechConstraint_rpsdtve = Set(
+        dimen=7, initialize=LinkedTechConstraintIndices
+    )
     M.LinkedEmissionsTechConstraint = Constraint(
-        M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint)
+        M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint
+    )
     return M
 
 

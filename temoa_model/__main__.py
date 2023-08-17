@@ -22,10 +22,9 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 # This script is invoked when either the 'temoa_model' folder or the 'temoa.py'
 # zipped archived is called from the command line:
 # $ python temoa_model/ path/to/dat/file
-# or 
+# or
 # $ python temoa.py path/to/dat/file
 
 from temoa_model import *
 
 runModel()
-

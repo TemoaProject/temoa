@@ -31,18 +31,19 @@ from zipfile import PyZipFile, ZIP_DEFLATED
 # Ensure compatibility with Python 2.7 and 3
 try:
     from cStringIO import StringIO
+
     temoa_pkg = StringIO()
 except ImportError:
     from io import BytesIO
+
     temoa_pkg = BytesIO()
 
-with PyZipFile( temoa_pkg, mode='w', compression=ZIP_DEFLATED ) as zf:
-	zf.debug = 3
-	zf.writepy( 'temoa_model/' )
+with PyZipFile(temoa_pkg, mode="w", compression=ZIP_DEFLATED) as zf:
+    zf.debug = 3
+    zf.writepy("temoa_model/")
 
-fname = 'temoa.py'
-with open( fname, 'wb' ) as f:
-	f.write( temoa_pkg.getvalue() )
+fname = "temoa.py"
+with open(fname, "wb") as f:
+    f.write(temoa_pkg.getvalue())
 
-os.chmod( fname, stat.S_IRWXU )
-
+os.chmod(fname, stat.S_IRWXU)
