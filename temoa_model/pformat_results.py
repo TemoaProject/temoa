@@ -253,31 +253,56 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 		for r, t, v in m.CostInvest.sparse_iterkeys():   # Returns only non-zero values
 
+			# icost = value( m.V_Capacity[r, t, v] )
+			# if abs(icost) < epsilon: continue
+			# icost *= value( m.CostInvest[r, t, v] ) \
+			# * (
+			# 	min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) /
+			# 	value( m.LifetimeLoanProcess[r, t, v] )
+			# 	if not GDR
+			# 	else (
+			# 			(
+			# 				1 -  x**( -min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) )
+			# 			)/(
+			# 				1 -  x**( -value( m.LifetimeLoanProcess[r, t, v] ) )
+			# 			)
+			# 		)
+			# )
+			# svars[	'Costs'	][ 'V_UndiscountedInvestmentByProcess', r, t, v] += icost
+			#
+			# icost *= value( m.LoanAnnualize[r, t, v] )
+			# icost *= (
+			#   value( LLN[r, t, v] ) if not GDR else
+			# 	(x **(P_0 - v + 1) * (1 - x **(-value( LLN[r, t, v] ))) / GDR)
+			# )
+			#
+			# svars[	'Costs'	][ 'V_DiscountedInvestmentByProcess', r, t, v] += icost
 			icost = value( m.V_Capacity[r, t, v] )
 			if abs(icost) < epsilon: continue
-			icost *= value( m.CostInvest[r, t, v] ) \
-			* (
-				min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) /
-				value( m.LifetimeLoanProcess[r, t, v] )
-				if not GDR
-				else (
-						(
-							1 -  x**( -min( value(m.LifetimeLoanProcess[r, t, v]), P_e - v ) )
-						)/(
-							1 -  x**( -value( m.LifetimeLoanProcess[r, t, v] ) )
-						)
-					)
-			)
+			icost *= value( m.CostInvest[r, t, v] ) * value(m.LoanAnnualize[r, t, v]) \
+				* min(value(m.LifetimeLoanProcess[r, t, v]), P_e - v)
+
 			svars[	'Costs'	][ 'V_UndiscountedInvestmentByProcess', r, t, v] += icost
-
-			icost *= value( m.LoanAnnualize[r, t, v] )
-			icost *= (
-			  value( LLN[r, t, v] ) if not GDR else
-				(x **(P_0 - v + 1) * (1 - x **(-value( LLN[r, t, v] ))) / GDR)
-			)
-
-			svars[	'Costs'	][ 'V_DiscountedInvestmentByProcess', r, t, v] += icost
-
+			if not GDR:
+				svars[	'Costs'	][ 'V_DiscountedInvestmentByProcess', r, t, v] += icost
+			else:
+				icost = value( m.V_Capacity[r, t, v] )
+				if abs(icost) < epsilon: continue
+				icost *= value( m.CostInvest[r, t, v] ) * value(m.LoanAnnualize[r, t, v]) \
+				* (
+					x ** (P_0 - v + 1)
+					* (1 - x ** (-value(m.LifetimeLoanProcess[r, t, v])))
+					/ GDR
+				) \
+				* (
+					min(value(m.LifetimeLoanProcess[r, t, v]), P_e - v)
+					if not GDR
+					else (
+						(1 - x ** (-min(value(m.LifetimeLoanProcess[r, t, v]), P_e - v)))
+						/ (1 - x ** (-value(m.LifetimeLoanProcess[r, t, v])))
+						)
+				)
+				svars[	'Costs'	][ 'V_DiscountedInvestmentByProcess', r, t, v] += icost
 
 		for r, p, t, v in m.CostFixed.sparse_iterkeys():
 			fcost = value( m.V_Capacity[r, t, v] )
