@@ -989,16 +989,15 @@ scale the storage duration to account for the number of days in each season.
 
 """
 
-    energy_capacity = (
-        M.V_Capacity[r, t, v]
-        * M.CapacityToActivity[r, t]
-        * (M.StorageDuration[r, t] / 8760)
-        * M.SegFracPerSeason[p,s] * 365
-        * value(M.ProcessLifeFrac[r, p, t, v])
-    )
-
+    # energy_capacity = (
+    #     M.V_Capacity[r, t, v]
+    #     * M.CapacityToActivity[r, t]
+    #     * (M.StorageDuration[r, t] / 8760)
+    #     * M.SegFracPerSeason[p,s] * 365
+    #     * value(M.ProcessLifeFrac[r, p, t, v])
+    # )
+    energy_capacity = M.V_Capacity[r, t, v] * M.StorageDuration[r, t]
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
-
     return expr
 
 
