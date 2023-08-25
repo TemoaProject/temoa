@@ -130,7 +130,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 	con_info = list()
 	epsilon = 1e-5   # threshold for "so small it's zero"
-	capacity_epsilon = 0.001
+	capacity_epsilon = 0.01
 	emission_keys = { (r, i, t, v, o) : set() for r, e, i, t, v, o in m.EmissionActivity }
 	for r, e, i, t, v, o in m.EmissionActivity:
 		emission_keys[(r, i, t, v, o)].add(e)
@@ -228,16 +228,28 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 	# Extract optimal decision variable values related to capacity:
 	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
-		for r, t, v in m.V_Capacity:
-			val = value( m.V_Capacity[r, t, v] )
+		for r, t, v in m.V_NewCapacity:
+			val = value( m.V_NewCapacity[r, t, v] )
 			if abs(val) < capacity_epsilon: continue
-			svars['V_Capacity'][r, t, v] = val
+			svars['V_NewCapacity'][r, t, v] = val
 	else:
-		for r, t, v in m.V_Capacity:
+		for r, t, v in m.V_NewCapacity:
 			if v in m.time_optimize:
-				val = value( m.V_Capacity[r, t, v] )
+				val = value( m.V_NewCapacity[r, t, v] )
 				if abs(val) < capacity_epsilon: continue
-				svars['V_Capacity'][r, t, v] = val
+				svars['V_NewCapacity'][r, t, v] = val
+
+	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
+		for r, p, t, v in m.V_RetiredCapacity:
+			val = value( m.V_RetiredCapacity[r, p, t, v] )
+			if abs(val) < capacity_epsilon: continue
+			svars['V_RetiredCapacity'][r, p, t, v] = val
+	else:
+		for r, p, t, v in m.V_RetiredCapacity:
+			if p in m.time_optimize:
+				val = value( m.V_RetiredCapacity[r, p, t, v] )
+				if abs(val) < capacity_epsilon: continue
+				svars['V_RetiredCapacity'][r, p, t, v] = val
 
 	for r, p, t in m.V_CapacityAvailableByPeriodAndTech:
 		val = value( m.V_CapacityAvailableByPeriodAndTech[r, p, t] )
@@ -253,7 +265,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 		for r, t, v in m.CostInvest.sparse_iterkeys():   # Returns only non-zero values
 
-			icost = value( m.V_Capacity[r, t, v] )
+			icost = value( m.V_NewCapacity[r, t, v] )
 			if abs(icost) < epsilon: continue
 			icost *= value( m.CostInvest[r, t, v] ) \
 			* (
@@ -280,7 +292,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 
 		for r, p, t, v in m.CostFixed.sparse_iterkeys():
-			fcost = value( m.V_Capacity[r, t, v] )
+			fcost = value( m.V_Capacity[r, p, t, v] )
 			if abs(fcost) < epsilon: continue
 
 			fcost *= value( m.CostFixed[r, p, t, v] )
@@ -331,13 +343,13 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		# assumption 3: Unlike other output tables in which Ri-Rj and Rj-Ri entries
 		# are allowed in the region column, for the Output_Costs table the region
 		#to the right of the hyphen sign gets the costs.
-		for i in m.RegionalExchangeCapacityConstraint_rrtv.keys():
+		for i in m.RegionalExchangeCapacityConstraint_rrptv.keys():
 			if i == None:
 				continue
 			reg_dir1  = i[0]+"-"+i[1]
 			reg_dir2 = i[1]+"-"+i[0]
-			tech = i[2]
-			vintage  = i[3]
+			tech = i[3]
+			vintage  = i[4]
 			key = (reg_dir1, tech, vintage)
 			try:
 				act_dir1 = value (sum(m.V_FlowOut[reg_dir1, p, s, d, S_i, tech, vintage, S_o]
@@ -429,7 +441,8 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	tables = { "V_FlowIn"   : "Output_VFlow_In",  \
 			   "V_FlowOut"  : "Output_VFlow_Out", \
 			   "V_Curtailment"  : "Output_Curtailment", \
-			   "V_Capacity" : "Output_V_Capacity",       \
+			   "V_NewCapacity" : "Output_V_NewCapacity",       \
+			   "V_RetiredCapacity" : "Output_V_RetiredCapacity",       \
 			   "V_CapacityAvailableByPeriodAndTech"   : "Output_CapacityByPeriodAndTech",  \
 			   "V_EmissionActivityByPeriodAndProcess" : "Output_Emissions", \
 			   "Objective"  : "Output_Objective", \

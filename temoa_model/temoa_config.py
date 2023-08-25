@@ -129,6 +129,7 @@ def db_2_dat(ifile, ofile, options):
 		['set',  'tech_groups',               '',                    '',             0],
 		['set',  'tech_annual',               '',                    '',             0],
 		['set',  'tech_variable',             '',                    '',             0],
+		['set',  'tech_retirement',           '',                    '',             0],
 		['set',  'groups',                    '',                    '',             0],
 		['param','MinGenGroupTarget',         '',                    '',             2],
 		['param','MinGenGroupWeight',         '',                    '',             3],
