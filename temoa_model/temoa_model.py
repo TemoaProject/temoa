@@ -73,6 +73,7 @@ def temoa_create_model(name="Temoa"):
     M.tech_capacity_min = Set(within=M.tech_all)
     M.tech_capacity_max = Set(within=M.tech_all)
     M.tech_curtailment = Set(within=M.tech_all)
+    M.tech_rps = Set(within=M.regions*M.tech_all)
     M.tech_flex = Set(within=M.tech_all)
     M.tech_exchange = Set(within=M.tech_all)
     M.groups = Set(dimen=1) # Define groups for technologies
@@ -160,6 +161,8 @@ def temoa_create_model(name="Temoa"):
     M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
     M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_variable)
     M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+
+    M.RenewablePortfolioStandard = Param(M.regions, M.time_optimize)
 
     # The method below creates a series of helper functions that are used to
     # perform the sparse matrix of indexing for the parameters, variables, and
@@ -633,6 +636,14 @@ def temoa_create_model(name="Temoa"):
     M.TechOutputSplitAnnualConstraint = Constraint(
         M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
     )
+
+    M.RenewablePortfolioStandardConstraint_rpt = Set(
+        dimen=2, initialize=lambda M: M.RenewablePortfolioStandard.sparse_iterkeys()
+    )
+    M.RenewablePortfolioStandardConstraint = Constraint(
+        M.RenewablePortfolioStandardConstraint_rpt, rule=RenewablePortfolioStandard_Constraint
+    )
+
     M.LinkedEmissionsTechConstraint_rpsdtve = Set(dimen=7, initialize=LinkedTechConstraintIndices)
     M.LinkedEmissionsTechConstraint = Constraint(
         M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint)

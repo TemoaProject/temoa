@@ -2540,6 +2540,35 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
     expr = out >= M.TechOutputSplit[r, p, t, o] * total_out
     return expr
 
+def RenewablePortfolioStandard_Constraint(M, r, p):
+    r"""
+Allows users to specify the share of electricity generation in a region
+coming from RPS-eligible technologies. 
+"""
+
+    inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for (_r,t) in M.tech_rps if _r == r
+        for (_t,v) in M.processReservePeriods[r, p] if _t == t
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for (t,v) in M.processReservePeriods[r, p] 
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    
+    expr = inp >= (value(M.RenewablePortfolioStandard[r, p]) * total_inp)
+    return expr 
+
 # ---------------------------------------------------------------
 # Define rule-based parameters
 # ---------------------------------------------------------------
