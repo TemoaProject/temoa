@@ -940,6 +940,16 @@ CostInvest parameter.
 def CapacityVariableIndices ( M ):
 	return M.activeCapacity_rtv
 
+def RetiredCapacityVariableIndices ( M ):
+	return set(
+			  (r, p, t, v)
+
+			  for r,p,t in M.processVintages.keys()
+			  if t in M.tech_retirement
+			  for v in M.processVintages[ r, p, t ]
+			  if p > v
+			  )
+
 def CapacityAvailableVariableIndices ( M ):
 	return M.activeCapacityAvailable_rpt
 
@@ -1071,7 +1081,7 @@ def BaseloadDiurnalConstraintIndices ( M ):
 
 def RegionalExchangeCapacityConstraintIndices ( M ):
 	indices = set(
-		(r_e, r_i, t, v)
+		(r_e, r_i, p, t, v)
 
 		for r_e, p, i in M.exportRegions.keys()
 		for r_i, t, v, o in M.exportRegions[r_e, p, i]

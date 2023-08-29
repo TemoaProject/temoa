@@ -30,6 +30,26 @@ from temoa_initialize import *
 # and constraints below.
 # ---------------------------------------------------------------
 
+def AdjustedCapacity_Constraint(M, r, p, t, v):
+    r"""
+This constraint updates the capacity of a process by taking into account retirements.
+For a given :code:`(r,p,t,v)` index, this constraint sets the capacity equal to
+the amount installed in period :code:`v` and subtracts from it any and all retirements
+that occured up until the period in question, :code:`p`.
+"""
+    if t not in M.tech_retirement:
+        if v in M.time_exist:
+            return M.V_Capacity[r, p, t, v] == M.ExistingCapacity[r, t, v]
+        else:
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v]
+
+    else:
+        retired_cap = sum(M.V_RetiredCapacity[r, S_p, t, v] for S_p in M.time_optimize if S_p <= p and S_p > v)
+        if v in M.time_exist:
+            return M.V_Capacity[r, p, t, v] == M.ExistingCapacity[r, t, v] - retired_cap
+        else:
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] - retired_cap
+
 def Capacity_Constraint(M, r, p, s, d, t, v):
     r"""
 This constraint ensures that the capacity of a given process is sufficient
@@ -81,7 +101,7 @@ possibility.
         return value(M.CapacityFactorProcess[r, s, d, t, v]) \
             * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[s, d]) \
             * value(M.ProcessLifeFrac[r, p, t, v]) \
-            * M.V_Capacity[r, t, v] == useful_activity + sum( \
+            * M.V_Capacity[r, p, t, v] == useful_activity + sum( \
             M.V_Curtailment[r, p, s, d, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i])
@@ -90,7 +110,7 @@ possibility.
         * value(M.CapacityToActivity[r, t]) \
         * value(M.SegFrac[s, d]) \
         * value(M.ProcessLifeFrac[r, p, t, v]) \
-        * M.V_Capacity[r, t, v] >= useful_activity
+        * M.V_Capacity[r, p, t, v] >= useful_activity
 
 
 def CapacityAnnual_Constraint(M, r, p, t, v):
@@ -130,7 +150,7 @@ capacity.
     return CF \
     * value(M.CapacityToActivity[r, t]) \
     * value(M.ProcessLifeFrac[r, p, t, v]) \
-    * M.V_Capacity[r, t, v] >= activity_rptv
+    * M.V_Capacity[r, p, t, v] >= activity_rptv
 
 
 def ActivityByTech_Constraint(M, t):
@@ -194,36 +214,40 @@ throughout the period.
 .. math::
    :label: CapacityAvailable
 
-   \textbf{CAPAVL}_{r, p, t} = \sum_{V} {PLF}_{r, p, t, v} \cdot \textbf{CAP}_{r, t, v}
+   \textbf{CAPAVL}_{r, p, t} = \sum_{v, p_i \leq p} {PLF}_{r, p, t, v} \cdot \left ( \textbf{CAP}_{r, t, v} - \textbf{CAPRET}_{r, p_i, t, v} \right )
 
    \\
    \forall p \in \text{P}^o, r \in R, t \in T
 """
     cap_avail = sum(
-        value(M.ProcessLifeFrac[r, p, t, S_v]) * M.V_Capacity[r, t, S_v]
+        value(M.ProcessLifeFrac[r, p, t, S_v]) * M.V_Capacity[r, p, t, S_v]
         for S_v in M.processVintages[r, p, t]
     )
 
     expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
     return expr
 
-def ExistingCapacity_Constraint(M, r, t, v):
+def RetiredCapacity_Constraint(M, r, p, t, v):
     r"""
 
-Temoa treats existing capacity installed prior to the beginning of the model's
-optimization horizon as regular processes that require the same parameter
-specification as do new vintage technologies, except for the :code:`CostInvest`
-parameter.  This constraint sets the capacity of processes for model periods
-that exist prior to the optimization horizon to user-specified values.
+Temoa allows for the economic retirement of technologies presented in the
+:code:`tech_retirement` set. This constraint sets the upper limit of retired
+capacity to the total installed capacity.
+In the equation below, we set the upper bound of the retired capacity to the
+previous period's total installed capacity (CAPAVL)
 
 .. math::
-   :label: ExistingCapacity
+   :label: RetiredCapacity
 
-   \textbf{CAP}_{r, t, v} = ECAP_{r, t, v}
-
-   \forall \{r, t, v\} \in \Theta_{\text{ExistingCapacity}}
+   \textbf{CAPRET}_{r, p, t, v} \leq \sum_{V} {PLF}_{r, p, t, v} \cdot \textbf{CAP}_{r, t, v}
+   \\
+   \forall \{r, p, t, v\} \in \Theta_{\text{RetiredCapacity}}
 """
-    expr = M.V_Capacity[r, t, v] == M.ExistingCapacity[r, t, v]
+    if p == M.time_optimize.first():
+        cap_avail = M.ExistingCapacity[r, t, v]
+    else:
+        cap_avail = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
+    expr = M.V_RetiredCapacity[r, p, t, v] <= cap_avail
     return expr
 
 # ---------------------------------------------------------------
@@ -320,7 +344,7 @@ def PeriodCost_rule(M, p):
 
 
     loan_costs = sum(
-        M.V_Capacity[r, S_t, S_v]
+        M.V_NewCapacity[r, S_t, S_v]
         * (
             value(M.CostInvest[r, S_t, S_v])
             * value(M.LoanAnnualize[r, S_t, S_v])
@@ -343,7 +367,7 @@ def PeriodCost_rule(M, p):
     )
 
     fixed_costs = sum(
-        M.V_Capacity[r, S_t, S_v]
+        M.V_Capacity[r, p, S_t, S_v]
         * (
             value(M.CostFixed[r, p, S_t, S_v])
             * (
@@ -825,7 +849,7 @@ functionality is currently on the Temoa TODO list.
 
     return expr
 
-def RegionalExchangeCapacity_Constraint(M, r_e, r_i, t, v):
+def RegionalExchangeCapacity_Constraint(M, r_e, r_i, p, t, v):
     r"""
 
 This constraint ensures that the process (t,v) connecting regions
@@ -842,7 +866,7 @@ r_e and r_i is handled by one capacity variables.
       \forall \{r_e, r_i, t, v\} \in \Theta_{\text{RegionalExchangeCapacity}}
 """
 
-    expr = M.V_Capacity[r_e+"-"+r_i, t, v] == M.V_Capacity[r_i+"-"+r_e, t, v]
+    expr = M.V_Capacity[r_e+"-"+r_i, p, t, v] == M.V_Capacity[r_i+"-"+r_e, p, t, v]
 
     return expr
 
@@ -982,7 +1006,7 @@ scale the storage duration to account for the number of days in each season.
 """
 
     energy_capacity = (
-        M.V_Capacity[r, t, v]
+        M.V_Capacity[r, p, t, v]
         * M.CapacityToActivity[r, t]
         * (M.StorageDuration[r, t] / 8760)
         * M.SegFracPerSeason[s] * 365
@@ -1019,7 +1043,7 @@ limited by the power capacity (typically GW) of the storage unit.
 
     # Maximum energy charge in each time slice
     max_charge = (
-        M.V_Capacity[r, t, v]
+        M.V_Capacity[r, p, t, v]
         * M.CapacityToActivity[r, t]
         * M.SegFrac[s, d]
         * value(M.ProcessLifeFrac[r, p, t, v])
@@ -1056,7 +1080,7 @@ is limited by the power capacity (typically GW) of the storage unit.
 
     # Maximum energy discharge in each time slice
     max_discharge = (
-        M.V_Capacity[r, t, v]
+        M.V_Capacity[r, p, t, v]
         * M.CapacityToActivity[r, t]
         * M.SegFrac[s, d]
         * value(M.ProcessLifeFrac[r, p, t, v])
@@ -1101,7 +1125,7 @@ the capacity (typically GW) of the storage unit.
 
     throughput = charge + discharge
     max_throughput = (
-        M.V_Capacity[r, t, v]
+        M.V_Capacity[r, p, t, v]
         * M.CapacityToActivity[r, t]
         * M.SegFrac[s, d]
         * value(M.ProcessLifeFrac[r, p, t, v])
@@ -1138,11 +1162,12 @@ capacity could lead to more expensive solutions.
 
     s = M.time_season.first()
     energy_capacity = (
-        M.V_Capacity[r, t, v]
+        M.V_Capacity[r, p, t, v]
         * M.CapacityToActivity[r, t]
         * (M.StorageDuration[r, t] / 8760)
         * sum(M.SegFrac[s,S_d] for S_d in M.time_of_day) * 365
         * value(M.ProcessLifeFrac[r, v, t, v])
+        for p in M.time_optimize if p >= v
     )
 
     expr = M.V_StorageInit[r, t, v] ==  energy_capacity * M.StorageInitFrac[r, t, v]
@@ -1215,7 +1240,7 @@ In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
             activity_sd / value(M.SegFrac[s, d])
             - activity_sd_prev / value(M.SegFrac[s, d_prev])
         ) / value(M.CapacityToActivity[r,t])
-        expr_right = M.V_Capacity[r, t, v] * value(M.RampUp[r, t])
+        expr_right = M.V_Capacity[r, p, t, v] * value(M.RampUp[r, t])
         expr = expr_left <= expr_right
     else:
         return Constraint.Skip
@@ -1266,7 +1291,7 @@ constraint to limit ramp down rates between any two adjacent time slices.
             activity_sd / value(M.SegFrac[s, d])
             - activity_sd_prev / value(M.SegFrac[s, d_prev])
         ) / value(M.CapacityToActivity[r,t])
-        expr_right = -(M.V_Capacity[r, t, v] * value(M.RampDown[r, t]))
+        expr_right = -(M.V_Capacity[r, p, t, v] * value(M.RampDown[r, t]))
         expr = expr_left >= expr_right
     else:
         return Constraint.Skip
@@ -1320,7 +1345,7 @@ respectively.
             activity_sd_first / M.SegFrac[s, d_first]
             - activity_s_prev_d_last / M.SegFrac[s_prev, d_last]
         ) / value(M.CapacityToActivity[r,t])
-        expr_right = M.V_Capacity[r, t, v] * value(M.RampUp[r, t])
+        expr_right = M.V_Capacity[r, p, t, v] * value(M.RampUp[r, t])
         expr = expr_left <= expr_right
     else:
         return Constraint.Skip
@@ -1375,7 +1400,7 @@ between any two adjacent seasons.
             activity_sd_first / value(M.SegFrac[s, d_first])
             - activity_s_prev_d_last / value(M.SegFrac[s_prev, d_last])
         ) / value(M.CapacityToActivity[r,t])
-        expr_right = -(M.V_Capacity[r, t, v] * value(M.RampDown[r, t]))
+        expr_right = -(M.V_Capacity[r, p, t, v] * value(M.RampDown[r, t]))
         expr = expr_left >= expr_right
     else:
         return Constraint.Skip
@@ -1489,7 +1514,7 @@ we write this equation for all the time-slices defined in the database in each r
     cap_avail = sum(
         value(M.CapacityCredit[r, p, t, v])
         * M.ProcessLifeFrac[r, p, t, v]
-        * M.V_Capacity[r, t, v]
+        * M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[s, d])
         for t in M.tech_reserve
@@ -1521,7 +1546,7 @@ we write this equation for all the time-slices defined in the database in each r
         cap_avail += sum(
             value(M.CapacityCredit[r1r2, p, t, v])
             * M.ProcessLifeFrac[r1r2, p, t, v]
-            * M.V_Capacity[r1r2, t, v]
+            * M.V_Capacity[r1r2, p, t, v]
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[s, d])
             for t in M.tech_reserve
@@ -1939,7 +1964,7 @@ period and tech.
    \textbf{CAP}_{r, t, p} \le MAX_{r, p, t}
 """
     max_cap = value(M.MaxNewCapacity[r, p, t])
-    expr = M.V_Capacity[r, t, p] <= max_cap
+    expr = M.V_NewCapacity[r, t, p] <= max_cap
     return expr
 
 def MaxCapacity_Constraint(M, r, p, t):
@@ -2024,7 +2049,7 @@ period, and tech.
    \textbf{CAP}_{r, t, p} \ge MIN_{r, p, t}
 """
     min_cap = value(M.MinNewCapacity[r, p, t])
-    expr = M.V_Capacity[r, t, p] >= min_cap
+    expr = M.V_NewCapacity[r, t, p] >= min_cap
     return expr
 
 
@@ -2066,7 +2091,7 @@ Similar to the :code:`MinNewCapacity` constraint, but works on a group of techno
 """
     min_new_cap = value(M.MinNewCapacityGroup[r, p, g])
     agg_new_cap = sum(
-        M.V_Capacity[r, t, p]
+        M.V_NewCapacity[r, t, p]
         for _r, _g, t in M.tech_groups if _r == r and _g == g and (r, p, t) in M.V_CapacityAvailableByPeriodAndTech.keys()
     )
     expr = agg_new_cap >= min_new_cap
@@ -2079,7 +2104,7 @@ Similar to the :code:`MinNewCapacity` constraint, but works on a group of techno
 """
     max_new_cap = value(M.MaxNewCapacityGroup[r, p, g])
     agg_new_cap = sum(
-        M.V_Capacity[r, t, p]
+        M.V_NewCapacity[r, t, p]
         for _r, _g, t in M.tech_groups if _r == r and _g == g and (r, p, t) in M.V_CapacityAvailableByPeriodAndTech.keys()
     )
     expr = max_new_cap >= agg_new_cap
@@ -2257,11 +2282,11 @@ members are different types for LDVs. This constraint could be used to enforce
 that no less than 10% of new LDV purchases in a given year must be of a certain type.
 """
 
-    capacity_t = M.V_Capacity[r, t, p]
+    capacity_t = M.V_NewCapacity[r, t, p]
     capacity_group = sum(
-        M.V_Capacity[r, S_t, p]
+        M.V_NewCapacity[r, S_t, p]
             for (S_r, S_g, S_t) in M.tech_groups.keys()
-            if S_r == r and S_g == g and (r, S_t, p) in M.V_Capacity.keys()
+            if S_r == r and S_g == g and (r, S_t, p) in M.V_NewCapacity.keys()
     )
     min_cap_share = value(M.MinNewCapacityShare[r, p, t, g])
 
@@ -2278,11 +2303,11 @@ members are different types for LDVs. This constraint could be used to enforce
 that no more than 10% of LDV purchases in a given year must be of a certain type.
 """
 
-    capacity_t = M.V_Capacity[r, t, p]
+    capacity_t = M.V_NewCapacity[r, t, p]
     capacity_group = sum(
-        M.V_Capacity[r, S_t, p]
+        M.V_NewCapacity[r, S_t, p]
             for (S_r, S_g, S_t) in M.tech_groups.keys()
-            if S_r == r and S_g == g and (r, S_t, p) in M.V_Capacity.keys()
+            if S_r == r and S_g == g and (r, S_t, p) in M.V_NewCapacity.keys()
     )
     max_cap_share = value(M.MaxNewCapacityShare[r, p, t, g])
 

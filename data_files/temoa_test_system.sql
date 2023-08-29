@@ -97,6 +97,12 @@ CREATE TABLE "tech_annual" (
 	PRIMARY KEY("tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+CREATE TABLE "tech_retirement" (
+	"tech"	text,
+	"notes"	TEXT,
+	PRIMARY KEY("tech"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+);
 CREATE TABLE "sector_labels" (
 	"sector"	text,
 	PRIMARY KEY("sector")
@@ -231,13 +237,41 @@ CREATE TABLE "Output_V_Capacity" (
 	"regions"	text,
 	"scenario"	text,
 	"sector"	text,
+	"t_periods"	integer,
+	"tech"	text,
+	"vintage"	integer,
+	"capacity"	real,
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	PRIMARY KEY("regions","scenario","t_periods","tech","vintage")
+);
+CREATE TABLE "Output_V_NewCapacity" (
+	"regions"	text,
+	"scenario"	text,
+	"sector"	text,
 	"tech"	text,
 	"vintage"	integer,
 	"capacity"	real,
 	PRIMARY KEY("regions","scenario","tech","vintage"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
+);
+CREATE TABLE "Output_V_RetiredCapacity" (
+	"regions"	text,
+	"scenario"	text,
+	"sector"	text,
+	"t_periods"	integer,
+	"tech"	text,
+	"vintage"	integer,
+	"capacity"	real,
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	PRIMARY KEY("regions","scenario","t_periods","tech","vintage")
 );
 CREATE TABLE "Output_VFlow_Out" (
 	"regions"	text,
@@ -358,7 +392,7 @@ CREATE TABLE "Output_CapacityByPeriodAndTech" (
 );
 CREATE TABLE "MyopicBaseyear" (
 	"year"	real
-	"notes"	text	
+	"notes"	text
 );
 CREATE TABLE "MinGenGroupWeight" (
 	"regions"	text,
@@ -1034,7 +1068,7 @@ CREATE TABLE "MaxResource" (
 CREATE TABLE "LinkedTechs" (
 	"primary_region"	text,
 	"primary_tech"	text,
-	"emis_comm" text, 
+	"emis_comm" text,
  	"linked_tech"	text,
 	"tech_linked_notes"	text,
 	FOREIGN KEY("primary_tech") REFERENCES "technologies"("tech"),

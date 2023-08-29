@@ -128,6 +128,7 @@ def db_2_dat(ifile, ofile, options):
 		['set',  'tech_groups',               '',                    '',             2],
 		['set',  'tech_annual',               '',                    '',             0],
 		['set',  'tech_variable',             '',                    '',             0],
+		['set',  'tech_retirement',           '',                    '',             0],
 		['set',  'groups',                    '',                    '',             0],
 		['param','LinkedTechs',               '',                    '',             3],
 		['param','SegFrac',                   '',                    '',             2],
@@ -211,6 +212,8 @@ def db_2_dat(ifile, ofile, options):
 			cur.execute("DELETE FROM Output_VFlow_In WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_VFlow_Out WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_V_NewCapacity WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_V_RetiredCapacity WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_Curtailment WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_Duals WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("VACUUM")

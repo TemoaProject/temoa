@@ -80,6 +80,7 @@ def temoa_create_model(name="Temoa"):
     M.tech_groups = Set(within=M.RegionalIndices * M.groups * M.tech_all)
     M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
     M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
+    M.tech_retirement = Set(within=M.tech_all) # Define techs for which economic retirement is an option
 
     # Define commodity-related sets
     M.commodity_demand = Set()
@@ -285,8 +286,14 @@ def temoa_create_model(name="Temoa"):
 
     # Derived decision variables
 
-    M.CapacityVar_rtv = Set(dimen=3, initialize=CapacityVariableIndices)
-    M.V_Capacity = Var(M.CapacityVar_rtv, domain=NonNegativeReals)
+    M.CapacityVar_rptv = Set(dimen=4, initialize=CostFixedIndices)
+    M.V_Capacity = Var(M.CapacityVar_rptv, domain=NonNegativeReals)
+
+    M.NewCapacityVar_rtv = Set(dimen=3, initialize=CapacityVariableIndices)
+    M.V_NewCapacity = Var(M.NewCapacityVar_rtv, domain=NonNegativeReals, initialize=0)
+
+    M.RetiredCapacityVar_rptv = Set(dimen=4, initialize=RetiredCapacityVariableIndices)
+    M.V_RetiredCapacity = Var(M.RetiredCapacityVar_rptv, domain=NonNegativeReals, initialize=0)
 
     M.CapacityAvailableVar_rpt = Set(
         dimen=3, initialize=CapacityAvailableVariableIndices
@@ -322,11 +329,11 @@ def temoa_create_model(name="Temoa"):
         M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
     )
 
-    M.ExistingCapacityConstraint_rtv = Set(
-        dimen=3, initialize=lambda M: M.ExistingCapacity.sparse_iterkeys()
+    M.RetiredCapacityConstraint = Constraint(
+        M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
     )
-    M.ExistingCapacityConstraint = Constraint(
-        M.ExistingCapacityConstraint_rtv, rule=ExistingCapacity_Constraint
+    M.AdjustedCapacityConstraint = Constraint(
+        M.CostFixed_rptv, rule=AdjustedCapacity_Constraint
     )
 
     # Declare core model constraints that ensure proper system functioning
@@ -370,11 +377,11 @@ def temoa_create_model(name="Temoa"):
         M.BaseloadDiurnalConstraint_rpsdtv, rule=BaseloadDiurnal_Constraint
     )
 
-    M.RegionalExchangeCapacityConstraint_rrtv = Set(
-        dimen=4, initialize=RegionalExchangeCapacityConstraintIndices
+    M.RegionalExchangeCapacityConstraint_rrptv = Set(
+        dimen=5, initialize=RegionalExchangeCapacityConstraintIndices
     )
     M.RegionalExchangeCapacityConstraint = Constraint(
-        M.RegionalExchangeCapacityConstraint_rrtv, rule=RegionalExchangeCapacity_Constraint)
+        M.RegionalExchangeCapacityConstraint_rrptv, rule=RegionalExchangeCapacity_Constraint)
 
     # This set works for all the storage-related constraints
     M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageVariableIndices)
