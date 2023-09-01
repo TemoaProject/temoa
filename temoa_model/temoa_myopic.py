@@ -59,7 +59,7 @@ def myopic_db_generator_solver ( self ):
                     'MaxNewCapacity', 'MinNewCapacity', 'MinNewCapacityGroup', 'MaxNewCapacityGroup', 'MinNewCapacityShare',\
                     'MaxNewCapacityShare','MinAnnualCapacityFactor','MaxAnnualCapacityFactor','MinCapacityGroup','MaxCapacityGroup',\
                     'MaxCapacityShare', 'MinCapacityShare','MinActivityGroup','MaxActivityGroup', 'MinActivityShare', 'MaxActivityShare',\
-                    'TechInputSplit','TechInputSplitAverage','TechOutputSplit','CapacityCredit']
+                    'TechInputSplit','TechInputSplitAverage','TechOutputSplit','CapacityCredit', 'RenewablePortfolioStandard']
     # group 2 consists of non output tables in which "vintage" is a column name except for CostFixed and CostVariable (taken care of above)
     tables_group2 = ['CapacityFactorProcess','CostInvest','DiscountRate', \
                      'Efficiency','EmissionActivity','ExistingCapacity','LifetimeProcess']
