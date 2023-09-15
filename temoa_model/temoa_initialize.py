@@ -1027,12 +1027,27 @@ and "first_d" are the reference season and time-of-day, respectively used to
 ensure demand activity remains consistent across time slices.
 """
 
+	# First, we only want to run this for demands for which there are more than
+	# one technology that meet it.
+	# Initialize an empty dictionary to hold unique "t" values for each "dem"
+	unique_t_per_dem = {}
+
+	# Loop through the Pyomo set to get each index tuple
+	for r,p,t,v,dem in M.ProcessInputsByOutput.keys():
+		if (dem not in M.commodity_demand) or (t in M.tech_annual):
+			continue
+		# Add the "t" value to the set corresponding to each "dem"
+		if dem not in unique_t_per_dem:
+			unique_t_per_dem[dem] = set()
+		unique_t_per_dem[dem].add(t)
+
+	# Now the logic of the constraint begins.
 	# Find the first timestep of the year where the demand is non-zero:
 	eps = 0.000001
 	for r,p,t,v,dem in M.ProcessInputsByOutput.keys():
 		# No need for constraint if dem is not a demand commodity or
-		# if t is in tech_annual.
-		if (dem not in M.commodity_demand) or (t in M.tech_annual):
+		# if t is in tech_annual or if there's only one tech meeting the demand.
+		if (dem not in M.commodity_demand) or (t in M.tech_annual) or (len(unique_t_per_dem[dem]) <= 1):
 			continue
 
 		# Find the first time step where the DSD is not 0
