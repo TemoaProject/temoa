@@ -139,6 +139,7 @@ def myopic_db_generator_solver ( self ):
         # ---------------------------------------------------------------
         for table in tables_group1:
             if table in [x[0] for x in table_list]:
+                print(table)
                 cur.execute("DELETE FROM "+table +" WHERE periods > "+str(time_periods[i][0])+" OR periods < "+str(time_periods[i-(N-1)][0])+";")
 
 
@@ -229,16 +230,18 @@ def myopic_db_generator_solver ( self ):
                                 cur_org.execute(query)
 
         # ---------------------------------------------------------------
-        # Add the buildups from the previous period to the ExistingCapacity
+        # Add the buildups and retirements from the previous period to the ExistingCapacity
         # table. The data is stored in the Output_V_Capacity of the con_org
         # ---------------------------------------------------------------
 
         if i!=(N-1):
             df_new_ExistingCapacity = pd.read_sql_query("SELECT regions, tech, vintage, capacity FROM Output_V_Capacity \
                                                          WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
-                                                         vintage < "+str(time_periods[i-(N-1)][0])+";", con_org)
+                                                         t_periods <= "+str(time_periods[i-(N-1)][0])+";", con_org)
             df_new_ExistingCapacity.columns = ['regions','tech','vintage','exist_cap']
-            df_new_ExistingCapacity.to_sql('ExistingCapacity',con, if_exists='append', index=False)
+            # Need to remove technologies that have been age-based retired.
+
+            df_new_ExistingCapacity.to_sql('ExistingCapacity',con, if_exists='replace', index=False)
 
             #Create a copy of the first time period vintages for the two current vintage
             #to prevent infeasibility (if it is not an 'existing' vintage in the
@@ -273,7 +276,9 @@ def myopic_db_generator_solver ( self ):
             cur_org.execute("DELETE FROM Output_Emissions WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
             cur_org.execute("DELETE FROM Output_VFlow_In WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
             cur_org.execute("DELETE FROM Output_VFlow_Out WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
-            cur_org.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(self.options.scenario)+"' AND vintage>"+str(time_periods[i-N][0]))
+            cur_org.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
+            cur_org.execute("DELETE FROM Output_V_NewCapacity WHERE scenario="+"'"+str(self.options.scenario)+"' AND vintage>"+str(time_periods[i-N][0]))
+            cur_org.execute("DELETE FROM Output_V_RetiredCapacity WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
             cur_org.execute("DELETE FROM Output_Curtailment WHERE scenario="+"'"+str(self.options.scenario)+"' AND t_periods>"+str(time_periods[i-N][0]))
             con_org.commit()
 

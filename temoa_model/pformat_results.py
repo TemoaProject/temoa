@@ -228,11 +228,25 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 
 	# Extract optimal decision variable values related to capacity:
 	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
+
+
+		for r, p, t, v in m.V_Capacity:
+			val = value( m.V_Capacity[r, p, t, v] )
+			if abs(val) < capacity_epsilon: continue
+			svars['V_Capacity'][r, p, t, v] = val
+
 		for r, t, v in m.V_NewCapacity:
 			val = value( m.V_NewCapacity[r, t, v] )
 			if abs(val) < capacity_epsilon: continue
 			svars['V_NewCapacity'][r, t, v] = val
 	else:
+		for r, p, t, v in m.V_Capacity:
+			if p in m.time_optimize:
+				val = value( m.V_Capacity[r, p, t, v] )
+				if abs(val) < capacity_epsilon: continue
+				svars['V_Capacity'][r, p, t, v] = val
+
+
 		for r, t, v in m.V_NewCapacity:
 			if v in m.time_optimize:
 				val = value( m.V_NewCapacity[r, t, v] )
@@ -444,6 +458,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	tables = { "V_FlowIn"   : "Output_VFlow_In",  \
 			   "V_FlowOut"  : "Output_VFlow_Out", \
 			   "V_Curtailment"  : "Output_Curtailment", \
+			   "V_Capacity" : "Output_V_Capacity",       \
 			   "V_NewCapacity" : "Output_V_NewCapacity",       \
 			   "V_RetiredCapacity" : "Output_V_RetiredCapacity",       \
 			   "V_CapacityAvailableByPeriodAndTech"   : "Output_CapacityByPeriodAndTech",  \

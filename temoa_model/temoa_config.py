@@ -202,6 +202,8 @@ def db_2_dat(ifile, ofile, options):
 			cur.execute("DELETE FROM Output_VFlow_In WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_VFlow_Out WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_V_NewCapacity WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_V_RetiredCapacity WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_Curtailment WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("DELETE FROM Output_Duals WHERE scenario="+"'"+str(options.scenario)+"'")
 			cur.execute("VACUUM")
