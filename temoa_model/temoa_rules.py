@@ -1020,13 +1020,13 @@ scale the storage duration to account for the number of days in each season.
 """
 
     # energy_capacity = (
-    #     M.V_Capacity[r, t, v]
+    #     M.V_Capacity[r, p, t, v]
     #     * M.CapacityToActivity[r, t]
     #     * (M.StorageDuration[r, t] / 8760)
     #     * M.SegFracPerSeason[p,s] * 365
     #     * value(M.ProcessLifeFrac[r, p, t, v])
     # )
-    energy_capacity = M.V_Capacity[r, t, v] * M.StorageDuration[r, t]
+    energy_capacity = M.V_Capacity[r, p, t, v] * M.StorageDuration[r, t]
 
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
     return expr
@@ -2247,7 +2247,6 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
 def ParamModelProcessLife_rule(M, r, p, t, v):
     life_length = value(M.LifetimeProcess[r, t, v])
     tpl = min(v + life_length - p, value(M.PeriodLength[p]))
-
     return tpl
 
 
@@ -2283,9 +2282,9 @@ create useful output.
         return 1
 
         # number of years into final period loan is complete
-
-    frac /= float(period_length)
-    return frac
+    return 1
+    # frac /= float(period_length)
+    # return frac
 
 
 def ParamLoanAnnualize_rule(M, r, t, v):
