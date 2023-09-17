@@ -160,7 +160,7 @@ def db_2_dat(ifile, ofile, options):
 		['param','MinNewCapacityGroup',       '',                    '',             3],
 		['param','MaxNewCapacityGroup',       '',                    '',             3],
 		['param','TechGroupWeight',           '',                    '',             3],
-		['param','MinInputGroup', 		 	  '',                    '',             4],
+		['param','MinInputGroup',             '',                    '',             4],
 		['param','MaxInputGroup',             '',                    '',             4],
 		['param','MinOutputGroup',            '',                    '',             4],
 		['param','MaxOutputGroup',            '',                    '',             4],
