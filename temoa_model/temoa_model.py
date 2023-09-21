@@ -61,7 +61,8 @@ def temoa_create_model(name="Temoa"):
     # RegionalIndices is the set of all the possible combinations of interregional
     # exhanges plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
     M.RegionalIndices = Set(initialize=CreateRegionalIndices)
-
+    M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices)
+    
     # Define technology-related sets
     M.tech_resource = Set()
     M.tech_production = Set()
@@ -77,7 +78,7 @@ def temoa_create_model(name="Temoa"):
     M.tech_flex = Set(within=M.tech_all)
     M.tech_exchange = Set(within=M.tech_all)
     M.groups = Set(dimen=1) # Define groups for technologies
-    M.tech_groups = Set(within=M.RegionalIndices * M.groups * M.tech_all)
+    M.tech_groups = Set(within=M.RegionalGlobalIndices * M.groups * M.tech_all)
     M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
     M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
     M.tech_retirement = Set(within=M.tech_all) # Define techs for which economic retirement is an option
@@ -210,7 +211,7 @@ def temoa_create_model(name="Temoa"):
     )
 
     # Define parameters associated with user-defined constraints
-    M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices)
+
     M.MinCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MaxCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MinNewCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
