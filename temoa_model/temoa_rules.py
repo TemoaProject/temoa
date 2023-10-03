@@ -958,29 +958,16 @@ All equations below are sparsely indexed such that:
 
     stored_energy = charge - discharge
 
-    # This storage formulation allows stored energy to carry over through
-    # time of day and seasons, but must be zeroed out at the end of each period, i.e.,
-    # the last time slice of the last season must zero out
-    if d == M.time_of_day.last() and s == M.time_seasons_per_period_dict[p][-1]:
+    # Enforce the charge level of the first and final timestep of each season be equal
+    if d == M.time_of_day.last():
         d_prev = M.time_of_day.prev(d)
-        expr = M.V_StorageLevel[r, p, s, d_prev, t, v] + stored_energy == M.V_StorageInit[r, t,v]
+        expr = M.V_StorageLevel[r, p, s, d_prev, t, v] + stored_energy == M.V_StorageInit[r,p,s,t,v]
 
-    # First time slice of the first season (i.e., start of period), starts at StorageInit level
-    elif d == M.time_of_day.first() and s == M.time_seasons_per_period_dict[p][0]:
-        expr = M.V_StorageLevel[r, p, s, d, t, v] == M.V_StorageInit[r,t,v] + stored_energy
-
-    # First time slice of any season that is NOT the first season
+    # First time slice of each first season starts at StorageInit level
     elif d == M.time_of_day.first():
-        d_last = M.time_of_day.last()
-        s_idx = M.time_seasons_per_period_dict[p].index(s)
-        s_prev = M.time_seasons_per_period_dict[p][s_idx-1]
-        expr = (
-            M.V_StorageLevel[r, p, s, d, t, v]
-            == M.V_StorageLevel[r, p, s_prev, d_last, t, v] + stored_energy
-        )
+        expr = M.V_StorageLevel[r, p, s, d, t, v] == M.V_StorageInit[r,p,s,t,v] + stored_energy
 
-    # Any time slice that is NOT covered above (i.e., not the time slice ending
-    # the period, or the first time slice of any season)
+    # Any time slice that is NOT covered above
     else:
         d_prev = M.time_of_day.prev(d)
         expr = (
@@ -1026,9 +1013,13 @@ scale the storage duration to account for the number of days in each season.
     #     * M.SegFracPerSeason[p,s] * 365
     #     * value(M.ProcessLifeFrac[r, p, t, v])
     # )
-    energy_capacity = M.V_Capacity[r, p, t, v] * M.StorageDuration[r, t]
-
+    #energy_capacity = M.V_Capacity[r, p, t, v] * M.StorageDuration[r, t]
+    energy_capacity = M.V_Capacity[r, p, t, v] * M.StorageDuration[r, t] \
+                        * M.SegFrac[p,s,d] * 8760
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
+    if p == 2050 and r == 'NYUP' and s == 'p1' and str(d) == '1':
+        print(expr)
+
     return expr
 
 
@@ -1149,7 +1140,7 @@ the capacity (typically GW) of the storage unit.
     return expr
 
 
-def StorageInit_Constraint( M, r, t, v ):
+def StorageInit_Constraint( M, r, p, s, t, v ):
     r"""
 
 This constraint is used if the users wishes to force a specific initial storage charge level
@@ -1174,20 +1165,11 @@ capacity could lead to more expensive solutions.
       \\
       \forall \{r, t, v\} \in \Theta_{\text{StorageInit}}
 """
-    period_seasons = M.SeasonWeights.sparse_keys()
-    year_one = M.time_optimize.first()
-    #seasons_year_1 = set(s in M.time_season if (p, s) in period_seasons)
-    seasons_year_1 = set(M.time_season[year_one, :])
-    s = seasons_year_1.first()
-    energy_capacity = (
-        M.V_Capacity[r, p, t, v]
-        * M.CapacityToActivity[r, t]
-        * (M.StorageDuration[r, t] / 8760)
-        * sum(M.SegFrac[p,s,S_d] for S_d in M.time_of_day) * 365
-        * value(M.ProcessLifeFrac[r, v, t, v])
-    )
+    d = M.time_of_day.first()
+    energy_capacity = M.V_Capacity[r, p, t, v] * M.StorageDuration[r, t] \
+                        * M.SegFrac[p,s,d] * 8760
 
-    expr = M.V_StorageInit[r, t, v] ==  energy_capacity * M.StorageInitFrac[r, t, v]
+    expr = M.V_StorageInit[r, p, s, t, v] ==  energy_capacity * M.StorageInitFrac[r, p, t, v]
 
     return expr
 

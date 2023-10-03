@@ -1191,10 +1191,11 @@ def StorageVariableIndices ( M ):
 
 def StorageInitIndices ( M ):
 	indices = set(
-		(r, t, v)
+		(r, p, s, t, v)
 
 		for r,p,t in M.storageVintages.keys()
 		for v in M.storageVintages[ r, p, t ]
+		for s in M.time_seasons_per_period_dict[p]
 	)
 
 	return indices
@@ -1202,9 +1203,9 @@ def StorageInitIndices ( M ):
 
 def StorageInitConstraintIndices ( M ):
 	indices = set(
-		(r,t,v)
+		(r,p,s,t,v)
 
-		for r,t,v in M.StorageInitFrac.sparse_iterkeys()
+		for r,p,s,t,v in M.StorageInitFrac.sparse_iterkeys()
 	)
 
 	return indices
