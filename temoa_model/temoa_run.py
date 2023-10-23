@@ -391,10 +391,16 @@ class TemoaSolverInstance(object):
 						self.optimizer.options["solutiontype"] = 2 # non basic solution, ie no crossover
 						self.optimizer.options["barrier convergetol"] = 1.e-5
 						self.optimizer.options["feasopt tolerance"] = 1.e-6
+					elif self.options.solver == 'gurobi':
+						# Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
+						self.optimizer.options["Method"] = 2 # barrier
+						self.optimizer.options["Crossover"] = 0 # non basic solution, ie no crossover
+						self.optimizer.options["BarConvTol"] = 1.e-5
+						self.optimizer.options["FeasibilityTol"] = 1.e-6
 
 					# Note: still need to add gurobi parameters.
 
-					self.result = self.optimizer.solve( self.instance, suffixes=['dual'],# 'rc', 'slack'],
+					self.result = self.optimizer.solve( self.instance, suffixes=['dual'], tee=True,# 'rc', 'slack'],
 								keepfiles=self.options.keepPyomoLP,
 								symbolic_solver_labels=self.options.keepPyomoLP )
 				yield '\t\t\t\t\t\t[%8.2f]\n' % duration()
