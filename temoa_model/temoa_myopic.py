@@ -230,7 +230,7 @@ def myopic_db_generator_solver ( self ):
         if i!=(N-1):
             df_new_ExistingCapacity = pd.read_sql_query("SELECT regions, tech, vintage, capacity FROM Output_V_Capacity \
                                                          WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
-                                                         t_periods <= "+str(time_periods[i-(N-1)][0])+";", con_org)
+                                                         t_periods == "+str(time_periods[i-(N)][0])+";", con_org)
             df_new_ExistingCapacity.columns = ['regions','tech','vintage','exist_cap']
             # Need to remove technologies that have been age-based retired.
 
