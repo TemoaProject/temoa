@@ -1817,6 +1817,65 @@ set.
     return expr
 
 
+
+def AnnualBalancing_Constraint(M, r, p, t_big, c_big, t_small, c_small):
+    r"""
+
+The Annual Balancing constraint is implemented for the 45V analysis.
+It states that in region r and period p, that the annual activity of t_big
+must be greater than or equal to the activity of t_small.
+
+
+"""
+	# r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'), or 'global'.
+    # if r == 'global', the constraint is system-wide
+    if r == 'global':
+      reg = M.regions
+    elif '+' in r:
+      reg = r.split('+')
+    else:
+      reg = [r]
+
+    try:
+      activity_rpt_small = sum(
+          M.V_FlowOut[r, p, s, d, S_i, t_small, S_v, S_o]
+          for r in reg
+          for S_v in M.processVintages[r, p, t_small]
+          for S_i in M.processInputs[r, p, t_small, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t_small, S_v, S_i] if S_o == c_small
+          for s in M.time_season
+          for d in M.time_of_day
+      )
+    except:
+      activity_rpt_small = sum(
+          M.V_FlowOutAnnual[r, p, S_i, t_small, S_v, S_o]
+          for r in reg
+          for S_v in M.processVintages[r, p, t_small]
+          for S_i in M.processInputs[r, p, t_small, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t_small, S_v, S_i] if S_o == c_small
+      )
+
+    try:
+      activity_rpt_big = sum(
+          M.V_FlowOut[r, p, s, d, S_i, t_big, S_v, S_o]
+          for r in reg
+          for S_v in M.processVintages[r, p, t_big]
+          for S_i in M.processInputs[r, p, t_big, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t_big, S_v, S_i] if S_o == c_big
+          for s in M.time_season
+          for d in M.time_of_day
+      )
+    except:
+      activity_rpt_big = sum(
+          M.V_FlowOutAnnual[r, p, S_i, t_big, S_v, S_o]
+          for r in reg
+          for S_v in M.processVintages[r, p, t_big]
+          for S_i in M.processInputs[r, p, t_big, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t_big, S_v, S_i] if S_o == c_big
+      )
+    expr = activity_rpt_small <= activity_rpt_big
+    return expr
+
 def MinActivity_Constraint(M, r, p, t):
     r"""
 
@@ -1896,9 +1955,9 @@ refers to the :code:`MinActivityGroup` parameter.
       reg = r.split('+')
     else:
       reg = [r]
-    
-    activity_p = 0 
-    activity_p_annual = 0  
+
+    activity_p = 0
+    activity_p_annual = 0
     for r_i in reg:
         if r == 'global':
             activity_p += sum(
@@ -1966,8 +2025,8 @@ refers to the :code:`MaxActivityGroup` parameter.
     else:
       reg = [r]
 
-    activity_p = 0 
-    activity_p_annual = 0 
+    activity_p = 0
+    activity_p_annual = 0
     for r_i in reg:
         if r == 'global':
             activity_p += sum(
@@ -1980,7 +2039,7 @@ refers to the :code:`MaxActivityGroup` parameter.
                 for d in M.time_of_day
                 if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
             )
-        
+
             activity_p_annual += sum(
                 M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
                 for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
@@ -2099,7 +2158,7 @@ Similar to the :code:`MaxCapacity` constraint, but works on a group of technolog
     else:
         reg = [r]
     max_capgroup = value(M.MaxCapacityGroup[r, p, g])
-    
+
     cap = 0
     for r_i in reg:
         if r == 'global':
@@ -2113,8 +2172,8 @@ Similar to the :code:`MaxCapacity` constraint, but works on a group of technolog
                         M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
                         for _r, _g, t in M.tech_groups
                         if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
-                    )   
-                
+                    )
+
     expr = cap <= max_capgroup
     return expr
 def MinNewCapacity_Constraint(M, r, p, t):
@@ -2162,7 +2221,7 @@ Similar to the :code:`MinCapacity` constraint, but works on a group of technolog
     else:
         reg = [r]
     min_capgroup = value(M.MinCapacityGroup[r, p, g])
-    
+
     cap = 0
     for r_i in reg:
         if r == 'global':
@@ -2176,8 +2235,8 @@ Similar to the :code:`MinCapacity` constraint, but works on a group of technolog
                         M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
                         for _r, _g, t in M.tech_groups
                         if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
-                    )   
-                
+                    )
+
     expr = cap >= min_capgroup
     return expr
 
@@ -2665,7 +2724,7 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
 def RenewablePortfolioStandard_Constraint(M, r, p):
     r"""
 Allows users to specify the share of electricity generation in a region
-coming from RPS-eligible technologies. 
+coming from RPS-eligible technologies.
 """
 
     inp = sum(
@@ -2680,16 +2739,16 @@ coming from RPS-eligible technologies.
 
     total_inp = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for (t,v) in M.processReservePeriods[r, p] 
+        for (t,v) in M.processReservePeriods[r, p]
         for s in M.time_season
         for d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    
+
     expr = inp >= (value(M.RenewablePortfolioStandard[r, p]) * total_inp)
-    return expr 
+    return expr
 
 # ---------------------------------------------------------------
 # Define rule-based parameters

@@ -62,7 +62,7 @@ def temoa_create_model(name="Temoa"):
     # exhanges plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
     M.RegionalIndices = Set(initialize=CreateRegionalIndices)
     M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices)
-    
+
     # Define technology-related sets
     M.tech_resource = Set()
     M.tech_production = Set()
@@ -242,6 +242,8 @@ def temoa_create_model(name="Temoa"):
     M.MinNewCapacityShare = Param(M.MinCapShare_rptg)
     M.MaxNewCapacityShare = Param(M.MinCapShare_rptg)
     M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions)
+
+    M.AnnualBalancing = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all, M.commodity_carrier, M.tech_all, M.commodity_carrier)
 
     # Define parameters associated with electric sector operation
     M.RampUp = Param(M.regions, M.tech_ramping)
@@ -468,6 +470,13 @@ def temoa_create_model(name="Temoa"):
     )
     M.MaxActivityConstraint = Constraint(
         M.MaxActivityConstraint_rpt, rule=MaxActivity_Constraint
+    )
+
+    M.AnnualBalancingConstraint_rptoto = Set(
+        dimen=6, initialize=lambda M: M.AnnualBalancing.sparse_iterkeys()
+    )
+    M.AnnualBalancingConstraint = Constraint(
+        M.AnnualBalancingConstraint_rptoto, rule=AnnualBalancing_Constraint
     )
 
     M.MinActivityConstraint_rpt = Set(
