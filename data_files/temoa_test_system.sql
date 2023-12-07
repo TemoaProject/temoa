@@ -840,6 +840,18 @@ INSERT INTO `CostVariable` VALUES ('R1-R2',2030,'E_TRANS',2015,0.1,'$M/PJ','');
 INSERT INTO `CostVariable` VALUES ('R2-R1',2020,'E_TRANS',2015,0.1,'$M/PJ','');
 INSERT INTO `CostVariable` VALUES ('R2-R1',2025,'E_TRANS',2015,0.1,'$M/PJ','');
 INSERT INTO `CostVariable` VALUES ('R2-R1',2030,'E_TRANS',2015,0.1,'$M/PJ','');
+CREATE TABLE IF NOT EXISTS "CostEmissions" (
+	"regions"	text,
+	"periods"	integer,
+	"emis_comm"	text,
+	"emis_penalty"	real,
+	"emis_penalty_units"	text,
+	"emis_penalty_notes"	text,
+	PRIMARY KEY("regions","periods","emis_comm"),
+	FOREIGN KEY("regions") REFERENCES "regions"("regions"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name")
+);
 CREATE TABLE "CostInvest" (
 	"regions"	text,
 	"tech"	text,

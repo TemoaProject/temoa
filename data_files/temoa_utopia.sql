@@ -773,6 +773,18 @@ INSERT INTO `CostVariable` VALUES ('utopia',2000,'SRE',2000,10.0,'','');
 INSERT INTO `CostVariable` VALUES ('utopia',2010,'SRE',1990,10.0,'','');
 INSERT INTO `CostVariable` VALUES ('utopia',2010,'SRE',2000,10.0,'','');
 INSERT INTO `CostVariable` VALUES ('utopia',2010,'SRE',2010,10.0,'','');
+CREATE TABLE IF NOT EXISTS "CostEmissions" (
+	"regions"	text,
+	"periods"	integer,
+	"emis_comm"	text,
+	"emis_penalty"	real,
+	"emis_penalty_units"	text,
+	"emis_penalty_notes"	text,
+	PRIMARY KEY("regions","periods","emis_comm"),
+	FOREIGN KEY("regions") REFERENCES "regions"("regions"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name")
+);
 CREATE TABLE "CostInvest" (
 	"regions"	text,
 	"tech"	text,

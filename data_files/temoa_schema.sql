@@ -713,6 +713,18 @@ CREATE TABLE "CostVariable" (
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
 );
+CREATE TABLE IF NOT EXISTS "CostEmissions" (
+	"regions"	text,
+	"periods"	integer,
+	"emis_comm"	text,
+	"emis_penalty"	real,
+	"emis_penalty_units"	text,
+	"emis_penalty_notes"	text,
+	PRIMARY KEY("regions","periods","emis_comm"),
+	FOREIGN KEY("regions") REFERENCES "regions"("regions"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name")
+);
 CREATE TABLE "CostInvest" (
 	"regions"	text,
 	"tech"	text,
