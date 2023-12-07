@@ -450,22 +450,25 @@ def CreateDemands ( M ):
 def CreateCosts ( M ):
 	"""
 	Steps to creating fixed and variable costs:
-	1. Collect all possible cost indices (CostFixed, CostVariable)
-	2. Find the ones _not_ specified in CostFixed and CostVariable
+	1. Collect all possible cost indices (CostFixed, CostVariable, CostEmissions)
+	2. Find the ones _not_ specified in CostFixed, CostVariable and CostEmissions
 	3. Set them, based on Cost*VintageDefault
 	"""
 
 	# Shorter names, for us lazy programmer types
 	CF = M.CostFixed
 	CV = M.CostVariable
+	CE = M.CostEmissions
 
 	# Step 1
 	fixed_indices = set( M.CostFixed_rptv )
 	var_indices   = set( M.CostVariable_rptv )
+	emis_indices = set(M.CostEmissions_rpe)
 
 	# Step 2
 	unspecified_fixed_prices = fixed_indices.difference( CF.sparse_iterkeys() )
 	unspecified_var_prices   = var_indices.difference( CV.sparse_iterkeys() )
+	unspecified_emis_prices = emis_indices.difference(CE.sparse_iterkeys())
 
 	# Step 3
 
@@ -487,6 +490,13 @@ def CreateCosts ( M ):
 			if (r, t, v) in M.CostVariableVintageDefault:
 				CV[r, p, t, v] = M.CostVariableVintageDefault[r, t, v]
 		# CV._constructed = True
+
+	if unspecified_emis_prices:
+		# CE._constructed = False
+		for r, p, e in unspecified_emis_prices:
+			if (r, e) in M.CostEmissionsDefault:
+				CE[r, p, e] = M.CostEmissionsDefault[r, e]
+		# CE._constructed = True
 
 
 def init_set_time_optimize ( M ):
@@ -831,6 +841,17 @@ def CostInvestIndices ( M ):
 
 	return indices
 
+def CostEmissionsIndices(M):
+	indices = set(
+		(r, p, e)
+
+		for r in M.regions
+		for p in M.time_optimize
+		for e in M.commodity_emissions
+	)
+
+	return indices
+
 def RegionalGlobalInitializedIndices ( M ):
 	from itertools import permutations
 	indices = set()
@@ -1061,7 +1082,7 @@ ensure demand activity remains consistent across time slices.
 					except:
 						continue
 			else:
-			 	continue
+				continue
 			break
 
 		# Start yielding the constraint indices

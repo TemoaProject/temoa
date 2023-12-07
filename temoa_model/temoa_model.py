@@ -62,7 +62,7 @@ def temoa_create_model(name="Temoa"):
     # exhanges plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
     M.RegionalIndices = Set(initialize=CreateRegionalIndices)
     M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices)
-    
+
     # Define technology-related sets
     M.tech_resource = Set()
     M.tech_production = Set()
@@ -190,6 +190,14 @@ def temoa_create_model(name="Temoa"):
         dimen=3, initialize=lambda M: set((r, t, v) for r, p, t, v in M.CostVariable_rptv)
     )
     M.CostVariableVintageDefault = Param(M.CostVariableVintageDefault_rtv)
+
+    M.CostEmissions_rpe = Set(dimen=3, initialize=CostEmissionsIndices)
+    M.CostEmissions = Param(M.CostEmissions_rpe, mutable=True, default=0.0)
+
+    M.CostEmissionsDefault_re = Set(
+        dimen=2, initialize=lambda M: set((r, e) for r, p, e in M.CostEmissions_rpe)
+    )
+    M.CostEmissionsDefault = Param(M.CostEmissionsDefault_re)
 
     M.initialize_Costs = BuildAction(rule=CreateCosts)
 

@@ -256,10 +256,10 @@ previous period's total installed capacity (CAPAVL)
 def TotalCost_rule(M):
     r"""
 
-Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
+Using the :code:`FlowOut`, :code:`EmissionActivity` and :code:`Capacity` variables, the Temoa objective
 function calculates the cost of energy supply, under the assumption that capital
 costs are paid through loans. This implementation sums up all the costs incurred,
-and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable}`. Each
+and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable} + C_{emissions}`. Each
 term on the right-hand side represents the cost incurred over the model
 time horizon and discounted to the initial year in the horizon (:math:`{P}_0`).
 The calculation of each term is given below.
@@ -317,6 +317,28 @@ loan rates and periods.
      }\cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
      \right ) \\ &\quad + \sum_{r, p, t \not \in T^{a}, v \in \Theta_{VC}} \left (
            CV_{r, p, t, v}
+     \cdot
+     \frac{
+       (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
+     }{
+       GDR
+     }
+     \cdot \sum_{I, O} \textbf{FOA}_{r, p,i, t \in T^{a}, v, o}
+     \right )
+
+.. math::
+   :label: obj_emissions
+
+   &C_{emissions} = \\ &\quad \sum_{r, p, t, v \in \Theta_{CV}} \left (
+           CE_{r, p, c} \cdot EAC_{r,e,i,t,v,o}
+     \cdot
+     \frac{
+       (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
+     }{
+       GDR
+     }\cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
+     \right ) \\ &\quad + \sum_{r, p, t \not \in T^{a}, v \in \Theta_{CE}} \left (
+           CE_{r, p, c} \cdot EAC_{r,e,i,t,v,o}
      \cdot
      \frac{
        (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
@@ -414,7 +436,109 @@ def PeriodCost_rule(M, p):
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
     )
 
-    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual
+        # The emissions costs occur over the five possible
+    # emission sources.
+    # First, sum over all actual emissions:
+    variable_emission_costs = sum(
+        M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, S_o]
+        * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+        * (
+            value(M.CostEmissions[r, p, e])
+            * (
+                value(MPL[r, p, S_t, S_v])
+                if not GDR
+                else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+            )
+        )
+        for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+    )
+    # Second, sum over all flex emissions
+    variable_emission_costs += sum(
+        M.V_Flex[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
+        * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+        * (
+            value(M.CostEmissions[r, p, e])
+            * (
+                value(MPL[r, p, S_t, S_v])
+                if not GDR
+                else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+            )
+        )
+        for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+        and S_t in M.tech_flex and S_o in M.flex_commodities
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+    )
+    # Third, sum over all curtailment emission
+    variable_emission_costs += sum(
+        M.V_Curtailment[r, p, S_s, S_d, S_i, S_t, S_v, S_o]
+        * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+        * (
+            value(M.CostEmissions[r, p, e])
+            * (
+                value(MPL[r, p, S_t, S_v])
+                if not GDR
+                else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+            )
+        )
+        for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == e and tmp_r == r and S_p == p and S_t not in M.tech_annual
+        and S_t in M.tech_curtailment
+        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+    )
+
+    # Fourth, sum over all annual emissions
+    variable_emission_costs += sum(
+        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o]
+        * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+        * (
+            value(M.CostEmissions[r, p, e])
+            * (
+                value(MPL[r, p, S_t, S_v])
+                if not GDR
+                else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+            )
+        )
+        for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == e and tmp_r == r and S_p == p and S_t in M.tech_annual
+        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+    )
+    # Finally, sum over all flex annual emissions
+    variable_emission_costs += sum(
+        M.V_FlexAnnual[r, p, S_i, S_t, S_v, S_o]
+        * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
+        * (
+            value(M.CostEmissions[r, p, e])
+            * (
+                value(MPL[r, p, S_t, S_v])
+                if not GDR
+                else (x ** (P_0 - p + 1) * (1 - x ** (-value(MPL[r, p, S_t, S_v]))) / GDR)
+            )
+        )
+        for r, S_p, e in M.CostEmissions.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
+        if tmp_e == e and tmp_r == r and S_p == p and S_t in M.tech_annual
+        and S_t in M.tech_flex and S_o in M.flex_commodities
+        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
+        if (r, p, S_t, S_v) in M.processInputs.keys()
+    )
+
+    period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual + variable_emission_costs
     return period_costs
 
 
@@ -1896,9 +2020,9 @@ refers to the :code:`MinActivityGroup` parameter.
       reg = r.split('+')
     else:
       reg = [r]
-    
-    activity_p = 0 
-    activity_p_annual = 0  
+
+    activity_p = 0
+    activity_p_annual = 0
     for r_i in reg:
         if r == 'global':
             activity_p += sum(
@@ -1966,8 +2090,8 @@ refers to the :code:`MaxActivityGroup` parameter.
     else:
       reg = [r]
 
-    activity_p = 0 
-    activity_p_annual = 0 
+    activity_p = 0
+    activity_p_annual = 0
     for r_i in reg:
         if r == 'global':
             activity_p += sum(
@@ -1980,7 +2104,7 @@ refers to the :code:`MaxActivityGroup` parameter.
                 for d in M.time_of_day
                 if (S_t not in M.tech_annual) and ((r_i, p, S_t) in M.processVintages.keys())
             )
-        
+
             activity_p_annual += sum(
                 M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
                 for _r, _g, S_t in M.tech_groups if _r == r and _g == g and (r_i, p, S_t) in M.processVintages
@@ -2099,7 +2223,7 @@ Similar to the :code:`MaxCapacity` constraint, but works on a group of technolog
     else:
         reg = [r]
     max_capgroup = value(M.MaxCapacityGroup[r, p, g])
-    
+
     cap = 0
     for r_i in reg:
         if r == 'global':
@@ -2113,8 +2237,8 @@ Similar to the :code:`MaxCapacity` constraint, but works on a group of technolog
                         M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
                         for _r, _g, t in M.tech_groups
                         if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
-                    )   
-                
+                    )
+
     expr = cap <= max_capgroup
     return expr
 def MinNewCapacity_Constraint(M, r, p, t):
@@ -2162,7 +2286,7 @@ Similar to the :code:`MinCapacity` constraint, but works on a group of technolog
     else:
         reg = [r]
     min_capgroup = value(M.MinCapacityGroup[r, p, g])
-    
+
     cap = 0
     for r_i in reg:
         if r == 'global':
@@ -2176,8 +2300,8 @@ Similar to the :code:`MinCapacity` constraint, but works on a group of technolog
                         M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
                         for _r, _g, t in M.tech_groups
                         if _r == r_i and _g == g and (r_i,p,t) in M.V_CapacityAvailableByPeriodAndTech.keys()
-                    )   
-                
+                    )
+
     expr = cap >= min_capgroup
     return expr
 
@@ -2665,7 +2789,7 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
 def RenewablePortfolioStandard_Constraint(M, r, p):
     r"""
 Allows users to specify the share of electricity generation in a region
-coming from RPS-eligible technologies. 
+coming from RPS-eligible technologies.
 """
 
     inp = sum(
@@ -2680,16 +2804,16 @@ coming from RPS-eligible technologies.
 
     total_inp = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for (t,v) in M.processReservePeriods[r, p] 
+        for (t,v) in M.processReservePeriods[r, p]
         for s in M.time_season
         for d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    
+
     expr = inp >= (value(M.RenewablePortfolioStandard[r, p]) * total_inp)
-    return expr 
+    return expr
 
 # ---------------------------------------------------------------
 # Define rule-based parameters

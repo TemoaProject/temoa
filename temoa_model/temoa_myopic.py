@@ -55,7 +55,7 @@ def myopic_db_generator_solver ( self ):
     copyfile(db_path_org, os.path.join(self.options.path_to_data,db_name)+"_blank"+self.options.output[loc2:])
 
     # group 1 consists of non output tables in which "periods" is a column name
-    tables_group1 = ['CostFixed','CostVariable','Demand','EmissionLimit','MaxActivity','MaxCapacity','MinActivity','MinCapacity',\
+    tables_group1 = ['CostFixed','CostEmissions','CostVariable','Demand','EmissionLimit','MaxActivity','MaxCapacity','MinActivity','MinCapacity',\
                     'MaxNewCapacity', 'MinNewCapacity', 'MinNewCapacityGroup', 'MaxNewCapacityGroup', 'MinNewCapacityShare',\
                     'MaxNewCapacityShare','MinAnnualCapacityFactor','MaxAnnualCapacityFactor','MinCapacityGroup','MaxCapacityGroup',\
                     'MaxCapacityShare', 'MinCapacityShare','MinActivityGroup','MaxActivityGroup', 'MinActivityShare', 'MaxActivityShare',\
