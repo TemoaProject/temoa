@@ -460,7 +460,7 @@ def PeriodCost_rule(M, p):
     )
     # Second, sum over all flex emissions
     variable_emission_costs += sum(
-        M.V_Flex[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
+        M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, S_o]
         * M.EmissionActivity[r, e, S_i, S_t, S_v, S_o]
         * (
             value(M.CostEmissions[r, p, e])
