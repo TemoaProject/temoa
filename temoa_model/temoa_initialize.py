@@ -74,6 +74,7 @@ class TemoaModel( AbstractModel ):
 		self.storageVintages = dict()
 		self.rampVintages = dict()
 		self.inputsplitVintages = dict()
+		self.inputsplitaverageVintages = dict()
 		self.outputsplitVintages = dict()
 		self.ProcessByPeriodAndOutput = dict()
 		self.exportRegions = dict()
@@ -222,10 +223,6 @@ def CheckEfficiencyIndices ( M ):
 	c_outputs  = set( o for r, i, t, v, o in M.Efficiency.sparse_iterkeys() )
 
 	symdiff = c_physical.symmetric_difference( M.commodity_physical )
-	for i in M.commodity_emissions.keys(): #For letting emission commodities as input cmmodities in the efficiency table
-		if i in symdiff:
-			symdiff.remove(i)
-
 	if symdiff:
 		msg = ('Unused or unspecified physical carriers.  Either add or remove '
 		  'the following elements to the Set commodity_physical.'
@@ -630,6 +627,8 @@ def CreateSparseDicts ( M ):
 				M.rampVintages[r, p,t] = set()
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys() and (r, p, i, t) not in M.inputsplitVintages:
 				M.inputsplitVintages[r,p,i,t] = set()
+			if (r, p, i, t) in M.TechInputSplitAverage.sparse_iterkeys() and (r, p, i, t) not in M.inputsplitaverageVintages:
+				M.inputsplitaverageVintages[r,p,i,t] = set()
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys() and (r, p, t, o) not in M.outputsplitVintages:
 				M.outputsplitVintages[r,p,t,o] = set()
 			if t in M.tech_resource and (r,p,o) not in M.ProcessByPeriodAndOutput:
@@ -663,6 +662,8 @@ def CreateSparseDicts ( M ):
 				M.rampVintages[r, p, t].add( v )
 			if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys():
 				M.inputsplitVintages[r,p,i,t].add( v )
+			if (r, p, i, t) in M.TechInputSplitAverage.sparse_iterkeys():
+				M.inputsplitaverageVintages[r,p,i,t].add( v )
 			if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys():
 				M.outputsplitVintages[r,p,t,o].add( v )
 			if t in M.tech_resource:
@@ -830,14 +831,15 @@ def CostInvestIndices ( M ):
 
 	return indices
 
-def RegionalEmissionLimitIndices ( M ):
+def RegionalGlobalInitializedIndices ( M ):
 	from itertools import permutations
 	indices = set()
 	for n in range(1,len(M.regions)+1):
 		regional_perms = permutations(M.regions,n)
 		for i in regional_perms:
-			indices.add("-".join(i))
+			indices.add("+".join(i))
 	indices.add('global')
+	indices = indices.union(M.RegionalIndices)
 
 	return indices
 
@@ -882,23 +884,6 @@ def EmissionActivityByPeriodAndTechVariableIndices ( M ):
 
 	return indices	
 	
-def LoanLifeFracIndices ( M ):
-	"""\
-Returns the set of (region, period, tech, vintage) tuples of process loans that die
-between period boundaries.  The tuple indicates the last period in which a
-process is active.
-"""
-	l_periods = set( M.time_optimize )
-	l_max_year = max( M.time_future )
-
-	indices = set()
-	for r, t, v in M.LifetimeLoanProcess.sparse_iterkeys():
-		l_death_year = v + value(M.LifetimeLoanProcess[r, t, v])
-		if l_death_year < l_max_year and l_death_year not in l_periods:
-			p = max( yy for yy in M.time_optimize if yy < l_death_year )
-			indices.add( (r, p, t, v) )
-
-	return indices
 
 def ModelProcessLifeIndices ( M ):
 	"""\
@@ -984,6 +969,20 @@ def CapacityConstraintIndices ( M ):
 	)
 
 	return capacity_indices
+
+def LinkedTechConstraintIndices ( M ):
+	linkedtech_indices = set(
+	  (r, p, s, d, t, v, e)
+
+	  for r, t, e in M.LinkedTechs.sparse_iterkeys() 
+	  for p in M.time_optimize if (r, p, t) in M.processVintages.keys()
+	  for v in M.processVintages[ r, p, t ] if (r, p, t, v) in M.activeActivity_rptv
+	  for s in M.time_season
+	  for d in M.time_of_day
+
+	)
+
+	return linkedtech_indices
 
 def CapacityAnnualConstraintIndices ( M ):
 	capacity_indices = set(
@@ -1180,7 +1179,7 @@ def TechInputSplitConstraintIndices ( M ):
 	indices = set(
 	  (r, p, s, d, i, t, v)
 
-	  for r, p, i, t in M.inputsplitVintages.keys() if t not in M.tech_annual
+	  for r, p, i, t in M.inputsplitVintages.keys() if t not in M.tech_annual and t not in M.tech_variable
 	  for v in M.inputsplitVintages[ r, p, i, t ]
 	  for s in M.time_season
 	  for d in M.time_of_day
@@ -1196,6 +1195,15 @@ def TechInputSplitAnnualConstraintIndices ( M ):
 	  for v in M.inputsplitVintages[ r, p, i, t ]
 	)
 
+	return indices	
+
+def TechInputSplitAverageConstraintIndices ( M ):
+	indices = set(
+	  (r, p, i, t, v)
+
+	  for r, p, i, t in M.inputsplitaverageVintages.keys() if t in M.tech_variable 
+	  for v in M.inputsplitaverageVintages[ r, p, i, t ]
+	)
 	return indices	
 
 def TechOutputSplitConstraintIndices ( M ):
@@ -1214,7 +1222,7 @@ def TechOutputSplitAnnualConstraintIndices ( M ):
 	indices = set(
 	  (r, p, t, v, o)
 
-	  for r, p, t, o in M.outputsplitVintages.keys() if t in M.tech_annual
+	  for r, p, t, o in M.outputsplitVintages.keys() if t in M.tech_annual and t not in M.tech_variable
 	  for v in M.outputsplitVintages[ r, p, t, o ]
 	)
 

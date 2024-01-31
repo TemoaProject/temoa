@@ -1,5 +1,5 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -14,8 +14,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -50,13 +50,13 @@ possibility.
                \text{CFP}_{r, t, v}
          \cdot \text{C2A}_{r, t}
          \cdot \text{SEG}_{s, d}
-         \cdot \text{TLF}_{r, p, t, v}
+         \cdot \text{PLF}_{r, p, t, v}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
        =
-       \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
+       \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
        +
-       \sum_{I, O} \textbf{CUR}_{r, p,s,d,i,t,v,o}
+       \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
    \\
    \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
@@ -68,10 +68,10 @@ possibility.
         return Constraint.Skip
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
-    
-    useful_activity = sum( 
-    M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] 
-    for S_i in M.processInputs[r, p, t, v] 
+
+    useful_activity = sum(
+    M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+    for S_i in M.processInputs[r, p, t, v]
     for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
@@ -108,29 +108,29 @@ capacity.
        \left (
                \text{CFP}_{r, t, v}
          \cdot \text{C2A}_{r, t}
-         \cdot \text{TLF}_{r, p, t, v}
+         \cdot \text{PLF}_{r, p, t, v}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
    =
-       \sum_{I, O} \textbf{FOA}_{r, p, i, t, v, o}
+       \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
    \\
-   \forall \{r, p, t, v\} \in \Theta_{\text{Activity}}
+   \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
 
 
 """
     CF = 1 #placeholder CF
 
-    activity_rptv = sum( 
-        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o] 
-        for S_i in M.processInputs[r, p, t, v] 
-        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] 
+    activity_rptv = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
     return CF \
     * value(M.CapacityToActivity[r, t]) \
     * value(M.ProcessLifeFrac[r, p, t, v]) \
-    * M.V_Capacity[r, t, v] >= activity_rptv 
+    * M.V_Capacity[r, t, v] >= activity_rptv
 
 
 def ActivityByTech_Constraint(M, t):
@@ -145,32 +145,30 @@ in the :code:`tech_annual` set.
    :label: ActivityByTech
 
        \textbf{ACT}_{t} = \sum_{R, P, S, D, I, V, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-
-       \\
+       \;
        \forall t \not\in T^{a}
 
        \textbf{ACT}_{t} = \sum_{R, P, I, V, O} \textbf{FOA}_{r, p, i, t, v, o}
-
-       \\
+       \;
        \forall t \in T^{a}
 
 """
     if t not in M.tech_annual:
-      activity = sum( M.V_FlowOut[r, S_p, s, d, S_i, t, S_v, S_o]
-          for r in M.RegionalIndices
-          for S_p, S_v in M.processTechs[r,t]
-          for S_i in M.processInputs[S_p, t, S_v]
-          for S_o in M.ProcessOutputsByInput[S_p, t, S_v, S_i]
-          for s in M.time_season
-          for d in M.time_of_day
-      )
+        indices = []
+        for s_index in M.FlowVar_rpsditvo:
+            if t in s_index:
+                indices.append(s_index)
+        activity = sum( M.V_FlowOut[s_index]
+              for s_index in indices
+          )
     else:
-      activity = sum( M.V_FlowOutAnnual[r, S_p, S_i, t, S_v, S_o]
-          for r in M.RegionalIndices          
-          for S_p, S_v in M.processTechs[t]
-          for S_i in M.processInputs[S_p, t, S_v]
-          for S_o in M.ProcessOutputsByInput[S_p, t, S_v, S_i]
-      )  
+        indices = []
+        for s_index in M.FlowVarAnnual_rpitvo:
+            if t in s_index:
+                indices.append(s_index)
+        activity = sum( M.V_FlowOutAnnual[s_index]
+              for s_index in indices
+          )
 
     if int is type(activity):
         return Constraint.Skip
@@ -185,7 +183,7 @@ def CapacityAvailableByPeriodAndTech_Constraint(M, r, p, t):
 The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
 but is also used in the Max and Min constraint calculations.  For any process
 with an end-of-life (EOL) on a period boundary, all of its capacity is available
-for use in all periods in which it is active (the process' TLF is 1). However,
+for use in all periods in which it is active (the process' PLF is 1). However,
 for any process with an EOL that falls between periods, Temoa makes the
 simplifying assumption that the available capacity from the expiring technology
 is available through the whole period in proportion to its remaining lifetime.
@@ -196,10 +194,10 @@ throughout the period.
 .. math::
    :label: CapacityAvailable
 
-   \textbf{CAPAVL}_{r, p, t} = \sum_{V} {TLF}_{r, p, t, v} \cdot \textbf{CAP}
+   \textbf{CAPAVL}_{r, p, t} = \sum_{V} {PLF}_{r, p, t, v} \cdot \textbf{CAP}_{r, t, v}
 
    \\
-   \forall p \in \text{P}^o, t \in T, r \in R 
+   \forall p \in \text{P}^o, r \in R, t \in T
 """
     cap_avail = sum(
         value(M.ProcessLifeFrac[r, p, t, S_v]) * M.V_Capacity[r, t, S_v]
@@ -235,11 +233,11 @@ def TotalCost_rule(M):
     r"""
 
 Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
-function calculates the cost of energy supply, under the assumption that capital 
-costs are paid through loans. This implementation sums up all the costs incurred, 
-and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable}`. Each 
-term on the right-hand side represents the cost incurred over the model 
-time horizon and discounted to the initial year in the horizon (:math:`{P}_0`). 
+function calculates the cost of energy supply, under the assumption that capital
+costs are paid through loans. This implementation sums up all the costs incurred,
+and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable}`. Each
+term on the right-hand side represents the cost incurred over the model
+time horizon and discounted to the initial year in the horizon (:math:`{P}_0`).
 The calculation of each term is given below.
 
 .. math::
@@ -247,36 +245,36 @@ The calculation of each term is given below.
 
    C_{loans} = \sum_{r, t, v \in \Theta_{IC}} \left (
      \left [
-             IC_{r, t, v} \cdot LA_{r, t, v}
-             \cdot \frac{(1 + GDR)^{P_0 - v +1} \cdot (1 - (1 + GDR)^{-LLN_{r, t, v}})}{GDR}
-             \cdot \frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LP_{r,t,v}} }
+             CI_{r, t, v} \cdot LA_{r, t, v}
+             \cdot \frac{(1 + GDR)^{P_0 - v +1} \cdot (1 - (1 + GDR)^{-LLP_{r, t, v}})}{GDR} \right. \right.
+             \\ \left. \left. \cdot \frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LTP_{r,t,v}} }
      \right ]
      \cdot \textbf{CAP}_{r, t, v}
      \right )
 
-Note that capital costs (:math:`{IC}_{r,t,v}`) are handled in several steps. First, each capital cost 
-is amortized using the loan rate (i.e., technology-specific discount rate) and loan 
-period. Second, the annual stream of payments is converted into a lump sum using 
-the global discount rate and loan period. Third, the new lump sum is amortized 
-at the global discount rate and technology lifetime. Fourth, loan payments beyond 
-the model time horizon are removed and the lump sum recalculated. The terms used 
-in Steps 3-4 are :math:`\frac{ GDR }{ 1-(1+GDR)^{-LP_{r,t,v} } }\cdot
+Note that capital costs (:math:`{IC}_{r,t,v}`) are handled in several steps. First, each capital cost
+is amortized using the loan rate (i.e., technology-specific discount rate) and loan
+period. Second, the annual stream of payments is converted into a lump sum using
+the global discount rate and loan period. Third, the new lump sum is amortized
+at the global discount rate and technology lifetime. Fourth, loan payments beyond
+the model time horizon are removed and the lump sum recalculated. The terms used
+in Steps 3-4 are :math:`\frac{ GDR }{ 1-(1+GDR)^{-LTP_{r,t,v} } }\cdot
 \frac{ 1-(1+GDR)^{-LPA_{t,v}} }{ GDR }`. The product simplifies to 
-:math:`\frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LP_{r,t,v}} }`, where 
-:math:`LPA_{r,t,v}` represents the active lifetime of process t in region r :math:`(r,t,v)` 
-before the end of the model horizon, and :math:`LP_{r,t,v}` represents the full 
-lifetime of a regional process :math:`(r,t,v)`. Fifth, the lump sum is discounted back to the 
-beginning of the horizon (:math:`P_0`) using the global discount rate. While an 
-explicit salvage term is not included, this approach properly captures the capital 
-costs incurred within the model time horizon, accounting for technology-specific 
+:math:`\frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LTP_{r,t,v}} }`, where 
+:math:`LPA_{r,t,v}` represents the active lifetime of process t in region r :math:`(r,t,v)`
+before the end of the model horizon, and :math:`LTP_{r,t,v}` represents the full
+lifetime of a regional process :math:`(r,t,v)`. Fifth, the lump sum is discounted back to the
+beginning of the horizon (:math:`P_0`) using the global discount rate. While an
+explicit salvage term is not included, this approach properly captures the capital
+costs incurred within the model time horizon, accounting for technology-specific
 loan rates and periods.
 
 .. math::
    :label: obj_fixed
 
-   C_{fixed} = \sum_{r, p, t, v \in \Theta_{FC}} \left (
+   C_{fixed} = \sum_{r, p, t, v \in \Theta_{CF}} \left (
      \left [
-             FC_{r, p, t, v}
+             CF_{r, p, t, v}
        \cdot \frac{(1 + GDR)^{P_0 - p +1} \cdot (1 - (1 + GDR)^{-{MPL}_{r, t, v}})}{GDR}
      \right ]
      \cdot \textbf{CAP}_{r, t, v}
@@ -285,25 +283,23 @@ loan rates and periods.
 .. math::
    :label: obj_variable
 
-   C_{variable} = \sum_{r, p, t, v \in \Theta_{VC}} \left (
-           MC_{r, p, t, v}
+   &C_{variable} = \\ &\quad \sum_{r, p, t, v \in \Theta_{CV}} \left (
+           CV_{r, p, t, v}
+     \cdot
+     \frac{
+       (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
+     }{
+       GDR
+     }\cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
+     \right ) \\ &\quad + \sum_{r, p, t \not \in T^{a}, v \in \Theta_{VC}} \left (
+           CV_{r, p, t, v}
      \cdot
      \frac{
        (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
      }{
        GDR
      }
-
-     \cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-     \right )+ \sum_{r, p, t, v \in \Theta_{VC}} \left (
-           MC_{r, p, t, v}
-     \cdot
-     \frac{
-       (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
-     }{
-       GDR
-     }
-     \cdot \sum_{I, O} \textbf{FOA}_{r, p,i, t, v, o}
+     \cdot \sum_{I, O} \textbf{FOA}_{r, p,i, t \in T^{a}, v, o}
      \right )
 
 """
@@ -314,7 +310,6 @@ def PeriodCost_rule(M, p):
     P_0 = min(M.time_optimize)
     P_e = M.time_future.last()  # End point of modeled horizon
     GDR = value(M.GlobalDiscountRate)
-    MLL = M.ModelLoanLife
     MPL = M.ModelProcessLife
     x = 1 + GDR  # convenience variable, nothing more.
 
@@ -376,7 +371,7 @@ def PeriodCost_rule(M, p):
         for S_i in M.processInputs[r, S_p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
         for s in M.time_season
-        for d in M.time_of_day       
+        for d in M.time_of_day
     )
 
     variable_costs_annual = sum(
@@ -392,8 +387,8 @@ def PeriodCost_rule(M, p):
         for r, S_p, S_t, S_v in M.CostVariable.sparse_iterkeys()
         if S_p == p and S_t in M.tech_annual
         for S_i in M.processInputs[r, S_p, S_t, S_v]
-        for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]     
-    )    
+        for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
+    )
 
     period_costs = loan_costs + fixed_costs + variable_costs + variable_costs_annual
     return period_costs
@@ -419,10 +414,10 @@ in each time slice.
 .. math::
    :label: Demand
 
-       \sum_{I, T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, dem} +
-       SEG_{s,d} \cdot  \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, i, t, v, dem}
+       \sum_{I, T-T^{a}, V} \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem} +
+       SEG_{s,d} \cdot  \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, i, t \in T^{a}, v, dem}
        =
-       {DEM}_{p, dem} \cdot {DSD}_{s, d, dem}
+       {DEM}_{r, p, dem} \cdot {DSD}_{r, s, d, dem}
 
 Note that the validity of this constraint relies on the fact that the
 :math:`C^d` set is distinct from both :math:`C^e` and :math:`C^p`. In other
@@ -468,15 +463,15 @@ slice and demand.  This is transparently handled by the :math:`\Theta` superset.
 .. math::
    :label: DemandActivity
 
-      DEM_{r, p, s, d, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s_0, d_0, i, t, v, dem}
+      DEM_{r, p, s, d, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s_0, d_0, i, t \not \in T^{a}, v, dem}
    =
-      DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s, d, i, t, v, dem}
+      DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem}
 
    \\
    \forall \{r, p, s, d, t, v, dem, s_0, d_0\} \in \Theta_{\text{DemandActivity}}
 
-Note that this constraint is only applied to the demand commodities with diurnal 
-variations, and therefore the equation above only includes :math:`\textbf{FO}` 
+Note that this constraint is only applied to the demand commodities with diurnal
+variations, and therefore the equation above only includes :math:`\textbf{FO}`
 and not  :math:`\textbf{FOA}`
 """
     if (r,s,d,dem) not in M.DemandSpecificDistribution.sparse_keys():
@@ -504,7 +499,7 @@ met.  This constraint requires the total production of a given commodity
 to equal the amount consumed, thus ensuring an energy balance at the system
 level. In this most general form of the constraint, the energy commodity being
 balanced has variable production at the time slice level. The energy commodity
-can then be consumed by three types of processes: storage stechnologies, non-storage
+can then be consumed by three types of processes: storage technologies, non-storage
 technologies with output that varies at the time slice level, and non-storage
 technologies with constant annual output.
 
@@ -534,7 +529,7 @@ refined products, such as diesel or kerosene. In such cases, we need to
 track the excess production of these commodities. To do so, the technology
 producing the excess commodity should be added to the :code:`tech_flex` set.
 This flexible technology designation will activate a slack variable
-(:math:`\textbf{FX}_{r, p, s, d, i, t, v, c})representing
+(:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`) representing
 the excess production in the :code:`CommodityBalanceAnnual_Constraint`. Note
 that the :code:`tech_flex` set is different from :code:`tech_curtailment` set;
 the latter is technology- rather than commodity-focused and is used in the
@@ -542,7 +537,14 @@ the latter is technology- rather than commodity-focused and is used in the
 output and the amount curtailed, and to ensure that the installed capacity
 covers both.
 
-For commodities that are exclusively produced at a constant annual rate, the
+This constraint also accounts for imports and exports between regions
+when solving multi-regional systems. The import (:math:`\textbf{FIM}`) and export
+(:math:`\textbf{FEX}`) variables are created on-the-fly by summing the 
+:math:`\textbf{FO}` variables over the appropriate import and export regions,
+respectively, which are defined in :code:`temoa_initialize.py` by parsing the 
+:code:`tech_exchange` processes.
+
+Finally, for commodities that are exclusively produced at a constant annual rate, the
 :code:`CommodityBalanceAnnual_Constraint` is used, which is simplified and
 reduces computational burden.
 
@@ -553,21 +555,20 @@ reduces computational burden.
 
        \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, c}
        +
-       \sum_{reg} \textbf{FIM}_{reg-r, p, s, d, i, t, v, c} \forall reg\neqr
-       =
-       \sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
-       +
+       &\sum_{reg} \textbf{FIM}_{r-reg, p, s, d, i, t, v, c} \; \forall reg \neq r
+       \\
+       = &\sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
+       \\ &\quad +
        \sum_{T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-       +
-       SEG_{s,d} \cdot
-       \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t, v, o} /EFF_{r, c,t,v,o}
-       +
-       \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \forall reg\neqr
-       +
-       \textbf{FX}_{r, p, s, d, i, t, v, c}
+       \\
+       &\quad + \; SEG_{s,d} \cdot
+       \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o} \\
+       &\quad + \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \; \forall reg \neq r
+       \\ &\quad + \;
+       \textbf{FLX}_{r, p, s, d, i, t, v, c}
 
        \\
-       \forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}   
+       &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
 """
     if c in M.commodity_demand:
@@ -597,7 +598,7 @@ reduces computational burden.
           for S_t, S_v in M.commodityUStreamProcess[r, p, c]
           for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
       )
-      
+
       #export of commodity c from region r to other regions
       interregional_exports = 0
       if (r, p, c) in M.exportRegions:
@@ -621,14 +622,14 @@ reduces computational burden.
             for S_t, S_v in M.commodityUStreamProcess[r, p, c] if S_t not in M.tech_storage and S_t not in M.tech_annual and S_t in M.tech_flex
             for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
         )
-        
+
     except:
       raise Exception('The commodity "'+str(c)+'" can be produced \
       by at least one technology in the tech_annual set and one technology \
       not in the tech_annual set. All the producers of the commodity must \
       either be in tech_annual or not in tech_annual')
 
-    
+
 
     CommodityBalanceConstraintErrorCheck(vflow_out + interregional_imports,  vflow_in_ToStorage +  vflow_in_ToNonStorage + vflow_in_ToNonStorageAnnual + interregional_exports + v_out_excess, r, p, s, d, c)
 
@@ -652,25 +653,25 @@ While the commodity :math:`c` can only be produced by technologies in the
 .. math::
    :label: CommodityBalanceAnnual
 
-       \sum_{I,T, V} \textbf{FOA}_{r, p, i, t, v, c}
+       \sum_{I,T, V} \textbf{FOA}_{r, p, i, t \in T^{a}, v, c}
         +
-       \sum_{reg} \textbf{FIM}_{reg-r, p, i, t, v, c} \forall reg\neqr
-        =
-       \sum_{S, D, T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-       +
-       \sum_{I, T^{a}, V, O} \textbf{FOA}_{r, p, c, t, v, o} /EFF_{r, c,t,v,o}
-       +
-       \sum_{reg} \textbf{FEX}_{r-reg, p, c, t, v, o} \forall reg\neqr
-       +
+       &\sum_{reg} \textbf{FIM}_{reg-r, p, i, t, v, c} \; \forall reg \neq r
+       \\ =
+       &\sum_{S, D, T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
+       \\ + &\quad
+       \sum_{I, T^{a}, V, O} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o}
+       \\ &+
+       \sum_{reg} \textbf{FEX}_{r-reg, p, c, t, v, o} \; \forall reg \neq r
+       \\ &+
        \textbf{FX}_{r, p, i, t, v, c}
 
        \\
-       \forall \{r, p, c\} \in \Theta_{\text{CommodityBalanceAnnual}}
+       &\forall \{r, p, c\} \in \Theta_{\text{CommodityBalanceAnnual}}
 
 """
     if c in M.commodity_demand:
         return Constraint.Skip
-    
+
     vflow_in = sum(
         M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
         for S_t, S_v in M.commodityDStreamProcess[r, p, c] if S_t not in M.tech_annual
@@ -752,7 +753,7 @@ belonging to the :code:`tech_annual` set.
       collected = sum(
           M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
           for S_i, S_t, S_v in M.ProcessByPeriodAndOutput.keys()
-      )      
+      )
 
     expr = collected <= M.ResourceBound[reg, p, r]
     return expr
@@ -824,20 +825,20 @@ functionality is currently on the Temoa TODO list.
     expr = (
         activity_sd * M.SegFrac[s, d_0]
         == activity_sd_0 * M.SegFrac[s, d]
-    ) 
+    )
 
     return expr
 
 def RegionalExchangeCapacity_Constraint(M, r_e, r_i, t, v):
     r"""
 
-This constraint ensures that the process (t,v) connecting regions 
-r_e and r_i is handled by one capacity variables. 
+This constraint ensures that the process (t,v) connecting regions
+r_e and r_i is handled by one capacity variables.
 
 .. math::
    :label: RegionalExchangeCapacity
 
-      \textbf{CAP}_{r_e,t,v} 
+      \textbf{CAP}_{r_e,t,v}
       =
       \textbf{CAP}_{r_i,t,v}
 
@@ -858,7 +859,7 @@ assuming ordered time slices. The initial storage charge level is optimized
 for the first time slice in each period, and then the charge level is updated each time
 slice based on the amount of energy stored or discharged. At the end of the last time
 slice associated with each period, the charge level must equal the starting charge level.
-In the formulation below, note that :math:`\textbf{stored_energy}` is an internal model
+In the formulation below, note that :math:`\textbf{stored\_energy}` is an internal model
 decision variable.
 
 First, the amount of stored energy in a given time slice is calculated as the
@@ -869,36 +870,36 @@ on the input side:
 .. math::
    :label: StorageEnergy
 
-      \textbf{stored_energy} =
+      \textbf{stored\_energy} =
       \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot
       EFF_{r,i,t,v,o}
       -
       \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-With :math:`\bf{stored\_energy}` calculated, the storage
+With :math:`\textbf{stored\_energy}` calculated, the storage
 charge level (:math:`\textbf{SL}_{r,p,s,d,t,v}`) is updated, but the update procedure varies
 based on the time slice within each time period. For the first season and time-of-day within
 a given period:
 
 .. math::
-      \textbf{SL}_{r, p, s, d, t, v} = \textbf{SI}_{r,t,v} + \textbf{stored_energy}
+      \textbf{SL}_{r, p, s, d, t, v} = \textbf{SI}_{r,t,v} + \textbf{stored\_energy}
 
 For the first time-of-day slice in any other season except the first:
 
 .. math::
       \textbf{SL}_{r, p, s, d, t, v} =
-      \textbf{SL}_{r, p, s_{prev}, d_{last}, t, v} + \textbf{stored_energy}
+      \textbf{SL}_{r, p, s_{prev}, d_{last}, t, v} + \textbf{stored\_energy}
 
 For the last season and time-of-day in the year, the ending storage charge level
 should be equal to the starting charge level:
 
 .. math::
-      \textbf{SL}_{r, p, s, d, t, v} + \textbf{stored_energy} = \textbf{SI}_{r,t,v}
+      \textbf{SL}_{r, p, s, d, t, v} + \textbf{stored\_energy} = \textbf{SI}_{r,t,v}
 
 For all other time slices not explicitly outlined above:
 
 .. math::
-      \textbf{SL}_{r, p, s, d, t, v} = \textbf{SL}_{r, p, s, d_{prev}, t, v} + \textbf{stored_energy}
+      \textbf{SL}_{r, p, s, d, t, v} = \textbf{SL}_{r, p, s, d_{prev}, t, v} + \textbf{stored\_energy}
 
 All equations below are sparsely indexed such that:
 
@@ -1178,8 +1179,8 @@ Therefore, the ramp rate constraints between two adjacent seasons are
 represented in :code:`RampUpSeason`.
 
 In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
-:math:`\textbf{S} = \{s_i, i = 1, 2, \cdots, ns\}` and 
-:math:`\textbf{D} = \{d_i, i=1, 2, \cdots, nd\}`.
+:math:`\textbf{S} = \{s_i, i = 1, 2, \cdots, ns\}` and
+:math:`\textbf{D} = \{d_i, i = 1, 2, \cdots, nd\}`.
 
 .. math::
    :label: RampUpDay
@@ -1206,13 +1207,13 @@ In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
             M.V_FlowOut[r, p, s, d_prev, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )        
+        )
 
         activity_sd = sum( \
             M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )  
+        )
 
         expr_left = (
             activity_sd / value(M.SegFrac[s, d])
@@ -1257,14 +1258,14 @@ constraint to limit ramp down rates between any two adjacent time slices.
             M.V_FlowOut[r, p, s, d_prev, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )        
+        )
 
         activity_sd = sum( \
             M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )         
-        
+        )
+
         expr_left = (
             activity_sd / value(M.SegFrac[s, d])
             - activity_sd_prev / value(M.SegFrac[s, d_prev])
@@ -1311,7 +1312,7 @@ respectively.
             M.V_FlowOut[r, p, s, d_first, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )        
+        )
 
         activity_s_prev_d_last = sum( \
             M.V_FlowOut[r, p, s_prev, d_last, S_i, t, v, S_o] \
@@ -1366,7 +1367,7 @@ between any two adjacent seasons.
             M.V_FlowOut[r, p, s, d_first, S_i, t, v, S_o] \
             for S_i in M.processInputs[r, p, t, v] \
             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i] \
-        )        
+        )
 
         activity_s_prev_d_last = sum( \
             M.V_FlowOut[r, p, s_prev, d_last, S_i, t, v, S_o] \
@@ -1445,9 +1446,9 @@ def ReserveMargin_Constraint(M, r, p, s, d):
     r"""
 
 During each period :math:`p`, the sum of the available capacity of all reserve
-technologies :math:`\sum_{t \in T^{e}} \textbf{CAPAVL}_{r,p,t}`, which are
-defined in the set :math:`\textbf{T}^{r,e}`, should exceed the peak load by
-:math:`RES`, the regional reserve margin. Note that the reserve
+technologies :math:`\sum_{t \in T^{res}} \textbf{CAPAVL}_{r,p,t}`, which are
+defined in the set :math:`\textbf{T}^{res}`, should exceed the peak load by
+:math:`PRM`, the region-specific planning reserve margin. Note that the reserve
 margin is expressed in percentage of the peak load. Generally speaking, in
 a database we may not know the peak demand before running the model, therefore,
 we write this equation for all the time-slices defined in the database in each region.
@@ -1455,13 +1456,13 @@ we write this equation for all the time-slices defined in the database in each r
 .. math::
    :label: reserve_margin
 
-       \sum_{t \in T^{r,e}} {
+       \sum_{t \in T^{res}} {
        CC_{t,r} \cdot
        \textbf{CAPAVL}_{p,t} \cdot
        SEG_{s^*,d^*} \cdot C2A_{r,t} }
        \geq
        \sum_{ t \in T^{r,e},V,I,O } {
-           \textbf{FO}_{r, p, s, d, i, t, v, o}  \cdot (1 + RES_r)
+           \textbf{FO}_{r, p, s, d, i, t, v, o}  \cdot (1 + PRM_r)
        }
 
        \\
@@ -1479,7 +1480,7 @@ we write this equation for all the time-slices defined in the database in each r
         * value(M.SegFrac[s, d])
         for t in M.tech_reserve
         if (r, p, t) in M.processVintages.keys()
-        for v in M.processVintages[r, p, t] 
+        for v in M.processVintages[r, p, t]
         # Make sure (r,p,t,v) combinations are defined
         if (r,p,t,v) in M.activeCapacityAvailable_rptv
 
@@ -1489,10 +1490,10 @@ we write this equation for all the time-slices defined in the database in each r
     # In most Temoa input databases, demand is endogenous, so we use electricity
     # generation instead.
     total_generation = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] 
-        for (t,S_v) in M.processReservePeriods[r, p] 
-        for S_i in M.processInputs[r, p, t, S_v] 
-        for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
+        M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
+        for (t,S_v) in M.processReservePeriods[r, p]
+        for S_i in M.processInputs[r, p, t, S_v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
     )
 
     cap_target = total_generation * (1 + value(M.PlanningReserveMargin[r]))
@@ -1516,29 +1517,34 @@ output in separate terms.
 
        \sum_{S,D,I,T,V,O|{r,e,i,t,v,o} \in EAC} \left (
        EAC_{r, e, i, t, v, o} \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
-       \right )
+       \right ) & \\
        +
-       \sum_{I,T,V,O|{r,e,i,t \in T^{a},v,o} \in EAC} \left (
-       EAC_{r, e, i, t, v, o} \cdot \textbf{FOA}_{r, p, i, t, v, o}
-       \right )
+       \sum_{I,T,V,O|{r,e,i,t \in T^{a},v,o} \in EAC} (
+       EAC_{r, e, i, t, v, o} \cdot & \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+        )
        \le
        ELM_{r, p, e}
 
        \\
-       \forall \{r, p, e\} \in \Theta_{\text{EmissionLimit}}
+       & \forall \{r, p, e\} \in \Theta_{\text{EmissionLimit}}
 
 """
     emission_limit = M.EmissionLimit[r, p, e]
 
-     # r can be an individual region (r='US'), or a combination of regions separated by hyphen (r='Mexico-US-Canada'), or 'global'.
-     # Note that regions!=M.regions. We iterate over regions to find actural_emissions and actual_emissions_annual.
-    regions = set(r.split("-"))
+     # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'), or 'global'.
+     # Note that regions!=M.regions. We iterate over regions to find actual_emissions and actual_emissions_annual.
+    
 
     # if r == 'global', the constraint is system-wide
-    if regions == {'global'}:
-      regions = M.regions
 
-    
+    if r == 'global':
+      regions = M.regions
+    elif '+' in r:
+      regions = r.split('+')
+    else:
+      regions = [r]
+
+
     actual_emissions = sum(
         M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
         * M.EmissionActivity[reg, e, S_i, S_t, S_v, S_o]
@@ -1620,10 +1626,10 @@ This constraint sets an upper bound growth rate on technology-specific capacity.
    \\
    \forall \{r, p, t\} \in \Theta_{\text{GrowthRate}}
 
-where :math:`GRM` is the maximum growth rate, and should be specified as 
-:math:`(1+r)` and :math:`GRS` is the growth rate seed, which has units of 
-capacity. Without the seed, any technology with zero capacity in the first time 
-period would be restricted to zero capacity for the remainder of the time 
+where :math:`GRM` is the maximum growth rate, and should be specified as
+:math:`(1+r)` and :math:`GRS` is the growth rate seed, which has units of
+capacity. Without the seed, any technology with zero capacity in the first time
+period would be restricted to zero capacity for the remainder of the time
 horizon.
 """
     GRS = value(M.GrowthRateSeed[r, t])
@@ -1636,13 +1642,15 @@ horizon.
         return Constraint.Skip
 
     if p == periods[0]:
-        expr = CapPT[r, p, t] <= GRS
+        expr = CapPT[r, p, t] <= GRS * GRM
 
     else:
         p_prev = periods.index(p)
         p_prev = periods[p_prev - 1]
-
-        expr = CapPT[r, p, t] <= GRM * CapPT[r, p_prev, t] + GRS
+        if (r, p_prev, t) in CapPT.keys():
+            expr = CapPT[r, p, t] <= GRM * CapPT[r, p_prev, t]
+        else:
+            expr = CapPT[r, p, t] <= GRS * GRM
 
     return expr
 
@@ -1650,8 +1658,8 @@ horizon.
 def MaxActivity_Constraint(M, r, p, t):
     r"""
 
-The MaxActivity sets an upper bound on the activity from a specific technology. 
-Note that the indices for these constraints are region, period and tech, not tech 
+The MaxActivity sets an upper bound on the activity from a specific technology.
+Note that the indices for these constraints are region, period and tech, not tech
 and vintage. The first version of the constraint pertains to technologies with
 variable output at the time slice level, and the second version pertains to
 technologies with constant annual output belonging to the :code:`tech_annual`
@@ -1660,32 +1668,43 @@ set.
 .. math::
    :label: MaxActivity
 
-   \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAXACT_{r, p, t}
+   \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAA_{r, p, t}
 
    \forall \{r, p, t\} \in \Theta_{\text{MaxActivity}}
 
-   \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le MAXACT_{r, p, t}
+   \sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}  \le MAA_{r, p, t}
 
    \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{MaxActivity}}
 
 """
+	# r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'), or 'global'.
+    # if r == 'global', the constraint is system-wide
+    if r == 'global':
+      reg = M.regions
+    elif '+' in r:
+      reg = r.split('+')
+    else:
+      reg = [r]
+
     try:
-      activity_rpt = sum( 
+      activity_rpt = sum(
           M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
+          for r in reg
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
           for s in M.time_season
           for d in M.time_of_day
       )
     except:
-      activity_rpt = sum( 
+      activity_rpt = sum(
           M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
-      )      
-     
+          for r in reg
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+      )
+
     max_act = value(M.MaxActivity[r, p, t])
     expr = activity_rpt <= max_act
     return expr
@@ -1704,32 +1723,42 @@ set.
 .. math::
    :label: MinActivity
 
-   \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MINACT_{r, p, t}
+   \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MIA_{r, p, t}
 
    \forall \{r, p, t\} \in \Theta_{\text{MinActivity}}
 
-   \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge MINACT_{r, p, t}
+   \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge MIA_{r, p, t}
 
    \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{MinActivity}}
 
 """
+	# r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'), or 'global'.
+    # if r == 'global', the constraint is system-wide
+    if r == 'global':
+      reg = M.regions
+    elif '+' in r:
+      reg = r.split('+')
+    else:
+      reg = [r]
 
     try:
-      activity_rpt = sum( 
+      activity_rpt = sum(
           M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
+          for r in reg
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
           for s in M.time_season
           for d in M.time_of_day
       )
     except:
-      activity_rpt = sum( 
+      activity_rpt = sum(
           M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
-      )  
+          for r in reg
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+      )
 
     min_act = value(M.MinActivity[r, p, t])
     expr = activity_rpt >= min_act
@@ -1741,39 +1770,41 @@ def MinActivityGroup_Constraint(M, p, g):
 
 The MinActivityGroup constraint sets a minimum activity limit for a user-defined
 technology group. Each technology within each group is multiplied by a
-weighting function, which determines what technology activity share can count
-towards the constraint.
+weighting function (:math:`MGW_{r,t}`), which determines the technology activity
+share that can count towards the constraint.
 
 .. math::
    :label: MinActivityGroup
 
-       \sum_{S,D,I,T,V,O} \textbf{FO}_{p, s, d, i, t, v, o} \cdot WEIGHT_{t|t \not \in T^{a}}
-       + \sum_{I,T,V,O} \textbf{FOA}_{p, i, t, v, o} \cdot WEIGHT_{t \in T^{a}}
-       \ge MGGT_{p, g}
+       \sum_{S,D,I,T,V,O} \textbf{FO}_{p, s, d, i, t, v, o} \cdot MGW_{t|t \not \in T^{a}}
+       + \sum_{I,T,V,O} \textbf{FOA}_{p, i, t \in T^{a}, v, o} \cdot MGW_{t \in T^{a}}
+       \ge MGT_{p, g}
 
        \forall \{p, g\} \in \Theta_{\text{MinActivityGroup}}
 
-where :math:`g` represents the assigned technology group and :math:`MGGT` 
+where :math:`g` represents the assigned technology group and :math:`MGT_r`
 refers to the :code:`MinGenGroupTarget` parameter.
 """
 
-    activity_p = sum( 
+    activity_p = sum(
         M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r, p, S_t in M.processVintages.keys() if (S_t in M.tech_groups) & (S_t not in M.tech_annual)
+        for r in M.RegionalIndices
+        for S_t in M.tech_groups if (S_t not in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
         for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v] 
-        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i] 
+        for S_i in M.processInputs[r, p, S_t, S_v]
+        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
         for s in M.time_season
         for d in M.time_of_day
     )
-    
-    activity_p_annual = sum( 
+
+    activity_p_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o] * M.MinGenGroupWeight[r, S_t, g]
-        for r, p, S_t in M.processVintages.keys() if (S_t in M.tech_groups) & (S_t in M.tech_annual)
+        for r in M.RegionalIndices
+        for S_t in M.tech_groups if (S_t in M.tech_annual) and ((r, p, S_t) in M.processVintages.keys())
         for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v] 
-        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i] 
-    )   
+        for S_i in M.processInputs[r, p, S_t, S_v]
+        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, S_i]
+    )
 
 
     min_act = value(M.MinGenGroupTarget[p, g])
@@ -1791,7 +1822,7 @@ tech, not tech and vintage.
 .. math::
    :label: MaxCapacity
 
-   \textbf{CAPAVL}_{r, p, t} \le MAX_{r, p, t}
+   \textbf{CAPAVL}_{r, p, t} \le MAC_{r, p, t}
 
    \forall \{r, p, t\} \in \Theta_{\text{MaxCapacity}}
 """
@@ -1804,37 +1835,37 @@ def MaxResource_Constraint(M, r, t):
     r"""
 
 The MaxResource constraint sets a limit on the maximum available resource of a
-given technology across all model time periods. Note that the indices for these 
+given technology across all model time periods. Note that the indices for these
 constraints are region and tech.
 
 .. math::
    :label: MaxResource
 
-   \textbf{CAPAVL}_{r, p, t} \le MAX_{r, p, t}
+   \sum_{P} \textbf{CAPAVL}_{r, p, t} \le MAR_{r, t}
 
-   \forall \{r, p, t\} \in \Theta_{\text{MaxCapacity}}
+   \forall \{r, t\} \in \Theta_{\text{MaxCapacity}}
 """
     max_resource = value(M.MaxResource[r, t])
     try:
-      activity_rt = sum( 
+      activity_rt = sum(
           M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
           for p in M.time_optimize
           if (r, p, t) in M.processVintages.keys()
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
           for s in M.time_season
           for d in M.time_of_day
       )
     except:
-      activity_rt = sum( 
+      activity_rt = sum(
           M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
           for p in M.time_optimize
           if (r, p, t) in M.processVintages.keys()
-          for S_v in M.processVintages[r, p, t] 
-          for S_i in M.processInputs[r, p, t, S_v] 
-          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
-      )  
+          for S_v in M.processVintages[r, p, t]
+          for S_i in M.processInputs[r, p, t, S_v]
+          for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
+      )
 
     expr = activity_rt <= max_resource
     return expr
@@ -1864,7 +1895,7 @@ tech, not tech and vintage.
 .. math::
    :label: MinCapacityCapacityAvailableByPeriodAndTech
 
-   \textbf{CAPAVL}_{r, p, t} \ge MIN_{r, p, t}
+   \textbf{CAPAVL}_{r, p, t} \ge MIC_{r, p, t}
 
    \forall \{r, p, t\} \in \Theta_{\text{MinCapacity}}
 """
@@ -1889,8 +1920,8 @@ specified in the :code:`tech_capacity_min` subset.
 
 def TechInputSplit_Constraint(M, r, p, s, d, i, t, v):
     r"""
-Allows users to specify fixed or minimum shares of commodity inputs to a process 
-producing a single output. These shares can vary by model time period. See 
+Allows users to specify fixed or minimum shares of commodity inputs to a process
+producing a single output. These shares can vary by model time period. See
 TechOutputSplit_Constraint for an analogous explanation. Under this constraint,
 only the technologies with variable output at the timeslice level (i.e.,
 NOT in the :code:`tech_annual` set) are considered.
@@ -1911,11 +1942,11 @@ NOT in the :code:`tech_annual` set) are considered.
 
 def TechInputSplitAnnual_Constraint(M, r, p, i, t, v):
     r"""
-Allows users to specify fixed or minimum shares of commodity inputs to a process 
-producing a single output. These shares can vary by model time period. See 
+Allows users to specify fixed or minimum shares of commodity inputs to a process
+producing a single output. These shares can vary by model time period. See
 TechOutputSplitAnnual_Constraint for an analogous explanation. Under this
 function, only the technologies with constant annual output (i.e., members
-of the :math:`tech_annual` set) are considered. 
+of the :math:`tech_annual` set) are considered.
 """
     inp = sum(
         M.V_FlowOutAnnual[r, p, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
@@ -1930,6 +1961,35 @@ of the :math:`tech_annual` set) are considered.
 
     expr = inp >= M.TechInputSplit[r, p, i, t] * total_inp
     return expr
+
+def TechInputSplitAverage_Constraint(M, r, p, i, t, v):
+    r"""
+Allows users to specify fixed or minimum shares of commodity inputs to a process
+producing a single output. Under this constraint, only the technologies with variable
+output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
+This constraint differs from TechInputSplit as it specifies shares on an annual basis,
+so even though it applies to technologies with variable output at the timeslice level, 
+the constraint only fixes the input shares over the course of a year. 
+"""
+
+    inp = sum(
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+
+    expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
+    return expr 
 
 def TechOutputSplit_Constraint(M, r, p, s, d, t, v, o):
     r"""
@@ -1963,7 +2023,7 @@ The constraint is formulated as follows:
 
      \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
    \geq
-     SPL_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
+     TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
    \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{TechOutputSplit}}
 """
@@ -1977,7 +2037,7 @@ The constraint is formulated as follows:
       for S_i in M.processInputs[r, p, t, v]
       for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
-    
+
     expr = out >= M.TechOutputSplit[r, p, t, o] * total_out
     return expr
 
@@ -1990,13 +2050,13 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
 .. math::
    :label: TechOutputSplitAnnual
 
-     \sum_{I, t \in T^{a}} \textbf{FOA}_{r, p, i, t, v, o}
+     \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
    \geq
 
-     SPL_{r, p, t, o} \cdot \sum_{I, O, t \in T^{a}} \textbf{FOA}_{r, p, s, d, i, t, v, o}
+     TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-   \forall \{r, p, t, v, o\} \in \Theta_{\text{TechOutputSplitAnnual}}
+   \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{TechOutputSplitAnnual}}
 """
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o]
@@ -2015,13 +2075,6 @@ output (i.e., members of the :math:`tech_annual` set) are considered.
 # ---------------------------------------------------------------
 # Define rule-based parameters
 # ---------------------------------------------------------------
-def ParamModelLoanLife_rule(M, r, t, v):
-    loan_length = value(M.LifetimeLoanProcess[r, t, v])
-    mll = min(loan_length, max(M.time_future) - v)
-
-    return mll
-
-
 def ParamModelProcessLife_rule(M, r, p, t, v):
     life_length = value(M.LifetimeProcess[r, t, v])
     tpl = min(v + life_length - p, value(M.PeriodLength[p]))
@@ -2041,23 +2094,6 @@ def ParamPeriodLength(M, p):
     length = periods[i + 1] - periods[i]
 
     return length
-
-
-def ParamPeriodRate(M, p):
-    """\
-        
-The "Period Rate" is a multiplier against the costs incurred within a period to
-bring the time-value back to the base year.  The parameter PeriodRate is not
-directly specified by the modeler, but is a convenience calculation based on the
-GlobalDiscountRate and the length of each period.  One may refer to this
-(pseudo) parameter via M.PeriodRate[ a_period ]
-"""
-    rate_multiplier = sum(
-        (1 + M.GlobalDiscountRate) ** (M.time_optimize.first() - p - y)
-        for y in range(0, M.PeriodLength[p])
-    )
-
-    return value(rate_multiplier)
 
 
 def ParamProcessLifeFraction_rule(M, r, p, t, v):
@@ -2091,3 +2127,54 @@ def ParamLoanAnnualize_rule(M, r, t, v):
     annualized_rate = dr / (1.0 - (1.0 + dr) ** (-lln))
 
     return annualized_rate
+
+
+
+def LinkedEmissionsTech_Constraint(M, r, p, s, d, t, v, e):
+    r"""
+This constraint is necessary for carbon capture technologies that produce
+CO2 as an emissions commodity, but the CO2 also serves as a physical
+input commodity to a downstream process, such as synthetic fuel production.
+To accomplish this, a dummy technology is linked to the CO2-producing
+technology, converting the emissions activity into a physical commodity
+amount as follows:
+
+.. math::
+   :label: LinkedEmissionsTech
+
+     - \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o} \cdot EAC_{r, e, i, t, v, o}
+     = \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+
+    \forall \{r, p, s, d, t, v, e\} \in \Theta_{\text{LinkedTechs}}
+
+The relationship between the primary and linked technologies is given
+in the :code:`LinkedTechs` table. Note that the primary and linked
+technologies cannot be part of the :code:`tech_annual` set. It is implicit that
+the primary region corresponds to the linked technology as well. The lifetimes
+of the primary and linked technologies should be specified and identical. 
+"""
+    linked_t = M.LinkedTechs[r, t, e]
+    if (r,t,v) in M.LifetimeProcess.keys() and M.LifetimeProcess[r, linked_t,v] != M.LifetimeProcess[r, t,v]:
+        msg = ('the LifetimeProcess values of the primary and linked technologies '
+          'in the LinkedTechs table have to be specified and identical')
+        raise Exception( msg )
+    if (r,t) in M.LifetimeTech.keys() and M.LifetimeTech[r, linked_t] != M.LifetimeTech[r, t]:
+        msg = ('the LifetimeTech values of the primary and linked technologies '
+          'in the LinkedTechs table have to be specified and identical')
+        raise Exception( msg )
+
+    primary_flow = sum(
+    M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]*M.EmissionActivity[r, e, S_i, t, v, S_o]
+    for S_i in M.processInputs[r, p, t, v]
+    for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    linked_flow = sum(
+    M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
+    for S_i in M.processInputs[r, p, linked_t, v]
+    for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
+    )
+
+    expr = -primary_flow == linked_flow
+    return expr
+

@@ -78,7 +78,7 @@ def temoa_create_model(name="Temoa"):
     M.groups = Set(dimen=1) # Define groups for technologies
     M.tech_groups = Set(within=M.tech_all) # Define techs used in groups
     M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
-
+    M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
 
     # Define commodity-related sets
     M.commodity_demand = Set()
@@ -86,7 +86,6 @@ def temoa_create_model(name="Temoa"):
     M.commodity_physical = Set()
     M.commodity_carrier = M.commodity_physical | M.commodity_demand
     M.commodity_all = M.commodity_carrier | M.commodity_emissions
-    M.commodity_SNG = M.commodity_physical | M.commodity_emissions
 
     # Define sets for MGA weighting
     M.tech_mga = Set(within=M.tech_all)
@@ -116,7 +115,6 @@ def temoa_create_model(name="Temoa"):
 
     # Define time-related parameters
     M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
-    M.PeriodRate = Param(M.time_optimize, initialize=ParamPeriodRate)
     M.SegFrac = Param(M.time_season, M.time_of_day)
     M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
 
@@ -137,7 +135,7 @@ def temoa_create_model(name="Temoa"):
     M.ExistingCapacity = Param(M.RegionalIndices, M.tech_all, M.vintage_exist)
 
     M.Efficiency = Param(
-        M.RegionalIndices, M.commodity_SNG, M.tech_all, M.vintage_all, M.commodity_carrier
+        M.RegionalIndices, M.commodity_physical, M.tech_all, M.vintage_all, M.commodity_carrier
     )
     M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
 
@@ -160,6 +158,7 @@ def temoa_create_model(name="Temoa"):
     M.initialize_Lifetimes = BuildAction(rule=CreateLifetimes)
 
     M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+    M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_variable)
     M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
 
     # The method below creates a series of helper functions that are used to
@@ -195,15 +194,11 @@ def temoa_create_model(name="Temoa"):
     M.Loan_rtv = Set(dimen=3, initialize=lambda M: M.CostInvest.keys())
     M.LoanAnnualize = Param(M.Loan_rtv, initialize=ParamLoanAnnualize_rule)
 
-    M.ModelLoanLife_rtv = Set(dimen=3, initialize=lambda M: M.CostInvest.keys())
-    M.ModelLoanLife = Param(M.ModelLoanLife_rtv, initialize=ParamModelLoanLife_rule)
     
     M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ModelProcessLife = Param(
         M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule
     )
-    
-    M.LoanLifeFrac_rptv = Set(dimen=4, initialize=LoanLifeFracIndices)
     
     M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
     M.ProcessLifeFrac = Param(
@@ -211,21 +206,22 @@ def temoa_create_model(name="Temoa"):
     )
 
     # Define parameters associated with user-defined constraints
+    M.RegionalGlobalIndices = Set(initialize=RegionalGlobalInitializedIndices)
     M.MinCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MaxCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
     M.MaxResource = Param(M.RegionalIndices, M.tech_all)
     M.MinCapacitySum = Param(M.time_optimize)  # for techs in tech_capacity
     M.MaxCapacitySum = Param(M.time_optimize)  # for techs in tech_capacity
-    M.MaxActivity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
-    M.MinActivity = Param(M.RegionalIndices, M.time_optimize, M.tech_all)
+    M.MaxActivity = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all)
+    M.MinActivity = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all)
     M.GrowthRateMax = Param(M.RegionalIndices, M.tech_all)
     M.GrowthRateSeed = Param(M.RegionalIndices, M.tech_all)
-    M.RegionalEmissionLimit = Set(initialize=RegionalEmissionLimitIndices)
-    M.EmissionLimit = Param(M.RegionalEmissionLimit, M.time_optimize, M.commodity_emissions)
+    M.EmissionLimit = Param(M.RegionalGlobalIndices, M.time_optimize, M.commodity_emissions)
     M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
     M.EmissionActivity = Param(M.EmissionActivity_reitvo)
     M.MinGenGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default = 0)
     M.MinGenGroupTarget = Param(M.time_optimize, M.groups)
+    M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions)
 
     # Define parameters associated with electric sector operation
     M.RampUp = Param(M.regions, M.tech_ramping)
@@ -506,7 +502,14 @@ def temoa_create_model(name="Temoa"):
     M.TechInputSplitAnnualConstraint = Constraint(
         M.TechInputSplitAnnualConstraint_rpitv, rule=TechInputSplitAnnual_Constraint
     )
-
+    
+    M.TechInputSplitAverageConstraint_rpitv = Set(
+        dimen=5, initialize=TechInputSplitAverageConstraintIndices
+    )
+    M.TechInputSplitAverageConstraint = Constraint(
+        M.TechInputSplitAverageConstraint_rpitv, rule=TechInputSplitAverage_Constraint
+    )
+    
     M.TechOutputSplitConstraint_rpsdtvo = Set(
         dimen=7, initialize=TechOutputSplitConstraintIndices
     )
@@ -520,6 +523,9 @@ def temoa_create_model(name="Temoa"):
     M.TechOutputSplitAnnualConstraint = Constraint(
         M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
     )
+    M.LinkedEmissionsTechConstraint_rpsdtve = Set(dimen=7, initialize=LinkedTechConstraintIndices)
+    M.LinkedEmissionsTechConstraint = Constraint(
+        M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint)
     return M
 
 

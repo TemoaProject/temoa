@@ -52,40 +52,22 @@ def myopic_db_generator_solver ( self ):
     loc1 = max(loc for loc, val in enumerate(self.options.output) if val == '/' or val=='\\')
     loc2 = max(loc for loc, val in enumerate(self.options.output) if val == '.')
     db_name = self.options.output[loc1+1:loc2]
-    copyfile(db_path_org, os.path.join(self.options.path_to_db_io,db_name)+"_blank"+self.options.output[loc2:])
+    copyfile(db_path_org, os.path.join(self.options.path_to_data,db_name)+"_blank"+self.options.output[loc2:])
 
     # group 1 consists of non output tables in which "periods" is a column name 
     tables_group1 = ['CostFixed','CostVariable','Demand','EmissionLimit','MaxActivity','MaxCapacity', \
-                     'MinActivity','MinCapacity','TechInputSplit','TechOutputSplit','CapacityCredit','MinGenGroupTarget']
+                     'MinActivity','MinCapacity','TechInputSplit','TechInputSplitAverage','TechOutputSplit','CapacityCredit','MinGenGroupTarget']
     # group 2 consists of non output tables in which "vintage" is a column name except for CostFixed and CostVariable (taken care of above)
     tables_group2 = ['CapacityFactorProcess','CostInvest','DiscountRate', \
                      'Efficiency','EmissionActivity','ExistingCapacity','LifetimeProcess']    
     
     version = int(sys.version[0])
 
-    if version >= 3:
-        while True:
-          try:
-            N = int(input("Enter the number of years that are to be included in each individual myopic run: "))
-            if 1 <= N <= len(time_periods)-2:
-                break
-            else:
-                print ("The integer must be between 1 and "+str(time_periods[-2][0]))
-          except ValueError:
-              print("Please input integer only...")  
-              continue    
+    N = self.options.myopic_periods
+    if 1 <= int(N) <= len(time_periods)-2:
+        N = int(N)
     else:
-        while True:
-          try:
-            N = raw_input("Enter the number of years that are to be included in each individual myopic run: ")
-            if 1 <= int(N) <= len(time_periods)-2:
-                N = int(N)
-                break
-            else:
-                print ("The integer must be between 1 and "+str(len(time_periods)-2))
-          except ValueError:
-              print("Please input integer only...")  
-              continue        
+        print ("Error: The number of myopic years must between 1 and "+str(len(time_periods)-2))
 
     for i in range(N-1,len(time_periods)-1):
 
@@ -95,8 +77,8 @@ def myopic_db_generator_solver ( self ):
         for j in range(i-(N-1),i+1):
             new_myopic_name += "_"+str(time_periods[j][0])
 
-        new_db_loc = os.path.join(self.options.path_to_db_io, db_name)+new_myopic_name+self.options.output[loc2:]
-        copyfile(os.path.join(self.options.path_to_db_io, db_name) +"_blank"+self.options.output[loc2:], new_db_loc)
+        new_db_loc = os.path.join(self.options.path_to_data, db_name)+new_myopic_name+self.options.output[loc2:]
+        copyfile(os.path.join(self.options.path_to_data, db_name) +"_blank"+self.options.output[loc2:], new_db_loc)
         con = sqlite3.connect(new_db_loc)
         cur = con.cursor()
         table_list.sort()
@@ -114,12 +96,15 @@ def myopic_db_generator_solver ( self ):
                      AND vintage IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.life_process+\
                      LifetimeProcess.vintage<="+str(time_periods[i-(N-1)][0])+");")
         
-        # Delete row from Efficiency if (t,v) retires at the begining of current period (which is time_periods[i][0])
-        cur.execute("DELETE FROM Efficiency WHERE tech IN (SELECT tech FROM LifetimeTech WHERE \
-                     LifetimeTech.life+Efficiency.vintage<="+str(time_periods[i-(N-1)][0])+") AND \
-                     vintage NOT IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.tech\
-                     =Efficiency.tech);")
-        
+        # # Delete row from Efficiency if (t,v) retires at the begining of current period (which is time_periods[i][0])
+        query = "DELETE FROM Efficiency \
+        WHERE (Efficiency.regions, input_comm, Efficiency.tech, vintage, output_comm) IN \
+        (SELECT DISTINCT Efficiency.regions, input_comm, Efficiency.tech, vintage, output_comm \
+        FROM Efficiency INNER JOIN LifetimeTech ON (LifetimeTech.regions=Efficiency.regions AND LifetimeTech.tech=Efficiency.tech) \
+        WHERE Efficiency.vintage + LifetimeTech.life <= "+str(time_periods[i-(N-1)][0])+")\
+        AND vintage NOT IN (SELECT vintage FROM LifetimeProcess WHERE LifetimeProcess.tech=Efficiency.tech)"
+        cur.execute(query)
+
         # If row is not deleted via the last two DELETE commands, it might still be invalid for period
         #  time_periods[i][0] since they can have model default lifetime of 40 years. 
         cur.execute("DELETE FROM Efficiency WHERE tech IN (SELECT tech FROM Efficiency WHERE \
@@ -144,21 +129,96 @@ def myopic_db_generator_solver ( self ):
         # Start modifying other tables.
         # ---------------------------------------------------------------
         for table in tables_group1:
-            cur.execute("DELETE FROM "+table +" WHERE periods > "+str(time_periods[i][0])+" OR periods < "+str(time_periods[i-(N-1)][0])+";")
+            if table in [x[0] for x in table_list]:
+                cur.execute("DELETE FROM "+table +" WHERE periods > "+str(time_periods[i][0])+" OR periods < "+str(time_periods[i-(N-1)][0])+";")
 
 
         for table in tables_group2:
-            if table == 'CostInvest' or table == 'DiscountRate':
-                cur.execute("UPDATE "+table+" SET tech = TRIM(tech);")
-                cur.execute("DELETE FROM "+table +" WHERE vintage > "+str(time_periods[i][0])+";")
-            else:
-                cur.execute("DELETE FROM "+table +" WHERE vintage > "+str(time_periods[i][0])+";")
+            if table in [x[0] for x in table_list]:
+                if table == 'CostInvest' or table == 'DiscountRate':
+                    cur.execute("UPDATE "+table+" SET tech = TRIM(tech);")
+                    cur.execute("DELETE FROM "+table +" WHERE vintage > "+str(time_periods[i][0])+";")
+                else:
+                    cur.execute("DELETE FROM "+table +" WHERE vintage > "+str(time_periods[i][0])+";")
 
         # time_periods is the only non output table with "t_periods" as a column
 
         cur.execute("DELETE FROM time_periods WHERE t_periods > "+str(time_periods[i][0])+";")
 
         
+        # ---------------------------------------------------------------
+        # Ensure that linked technologies appear in the Output data tables
+        # only if the primary technologies appear as well. 
+        # Check Output_CapacityByPeriodAndTech and Output_V_Capacity in con_org
+        # ---------------------------------------------------------------
+
+        
+        dict_table_column = {}
+        dict_table_column['Output_CapacityByPeriodAndTech'] = 't_periods'
+        dict_table_column['Output_V_Capacity'] = 'vintage'
+
+        for table in ['Output_CapacityByPeriodAndTech', 'Output_V_Capacity']:
+            if i!=(N-1):
+                #delete primary_techs where capacity is a small negative value
+                query = "DELETE FROM " + table + "  \
+                WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                tech in (SELECT primary_tech FROM LinkedTechs) AND  \
+                capacity < 0 AND " + dict_table_column[table] + " = "+str(time_periods[j-1][0])+";"
+                cur_org.execute(query)
+
+                #if linked tech exists but primary tech does not
+                df_linkedtechs = pd.read_sql_query("SELECT * FROM " + table + "  \
+                                                             WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                                             tech in (SELECT linked_tech FROM LinkedTechs) AND " + \
+                                                             dict_table_column[table] + " = "+str(time_periods[j-1][0])+";", con_org)
+                for ind, row in df_linkedtechs.iterrows():
+                    primary_tech = pd.read_sql_query("SELECT primary_tech FROM LinkedTechs WHERE primary_region = '" +  row['regions'] + \
+                        "' AND linked_tech = '" + row['tech'] + "'", con_org)
+                    primary_tech = primary_tech['primary_tech'].values[0]
+                    df_primary_tech = pd.read_sql_query("SELECT * FROM " + table + " \
+                                                             WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                                             tech = '" + primary_tech + "' AND \
+                                                             regions = '" + row['regions'] + "' AND " + \
+                                                             dict_table_column[table] + " = "+str(time_periods[j-1][0])+";", con_org)
+                    if len(df_primary_tech)==0:
+                        query = "DELETE FROM " + table + " WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                        tech = '" + row['tech'] + "' AND regions = '" + row['regions'] + "' AND " + \
+                        dict_table_column[table] + " = "+str(time_periods[j-1][0])
+                        cur_org.execute(query)
+                        if table=='Output_V_Capacity':
+                            for aux_table in ['Output_VFlow_Out', 'Output_VFlow_In']:
+                                query = "DELETE FROM " + aux_table + " WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                tech = '" + row['tech'] + "' AND regions = '" + row['regions'] + "' AND " + \
+                                dict_table_column[table] + " = "+str(time_periods[j-1][0])
+                                cur_org.execute(query)
+                
+
+                #if primary tech exists but linked tech does not
+                df_primarytechs = pd.read_sql_query("SELECT * FROM " + table + "  \
+                                                             WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                                             tech in (SELECT primary_tech FROM LinkedTechs) AND " + \
+                                                             dict_table_column[table] + " = "+str(time_periods[j-1][0])+";", con_org)
+                for ind, row in df_primarytechs.iterrows():
+                    linked_tech = pd.read_sql_query("SELECT linked_tech FROM LinkedTechs WHERE primary_region = '" +  row['regions'] + \
+                        "' AND primary_tech = '" + row['tech'] + "'", con_org)
+                    linked_tech = linked_tech['linked_tech'].values[0]
+                    df_linked_tech = pd.read_sql_query("SELECT * FROM " + table + " \
+                                                             WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                                             tech = '" + linked_tech + "' AND \
+                                                             regions = '" + row['regions'] + "' AND " + \
+                                                             dict_table_column[table] + " = "+str(time_periods[j-1][0])+";", con_org)
+                    if len(df_linked_tech)==0:
+                        query = "DELETE FROM " + table + " WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                        tech = '" + row['tech'] + "' AND regions = '" + row['regions'] + "' AND " + \
+                        dict_table_column[table] + " = "+str(time_periods[j-1][0])
+                        cur_org.execute(query)
+                        if table=='Output_V_Capacity':
+                            for aux_table in ['Output_VFlow_Out', 'Output_VFlow_In']:
+                                query = "DELETE FROM " + aux_table + " WHERE scenario="+"'"+str(self.options.scenario)+"' AND \
+                                tech = '" + row['tech'] + "' AND regions = '" + row['regions'] + "' AND " + \
+                                dict_table_column[table] + " = "+str(time_periods[j-1][0])
+                                cur_org.execute(query)
+
         # ---------------------------------------------------------------
         # Add the buildups from the previous period to the ExistingCapacity
         # table. The data is stored in the Output_V_Capacity of the con_org
@@ -214,12 +274,23 @@ def myopic_db_generator_solver ( self ):
         for table in table_list:
             if table[0] == 'Efficiency': continue 
             try:
+                if table[0]=='LinkedTechs':
+                    cur.execute("DELETE FROM LinkedTechs WHERE primary_tech NOT IN (SELECT DISTINCT(tech) FROM Efficiency)")
+                    cur.execute("DELETE FROM LinkedTechs WHERE linked_tech NOT IN (SELECT DISTINCT(tech) FROM Efficiency)")
                 cur.execute("UPDATE "+str(table[0])+" SET tech = TRIM(tech, CHAR(37,10));")
                 # If t doesn't exist in Efficiency table after the deletions made above, 
-                # it is deleted from other tables.
+                # it is deleted from other tables.                
                 cur.execute("DELETE FROM "+str(table[0])+" WHERE tech NOT IN (SELECT tech FROM Efficiency);")
                 cursor = con.execute("SELECT * FROM "+str(table[0]))
                 names = list(map(lambda x: x[0], cursor.description))
+                if 'regions' in names:
+                    query = "DELETE FROM "+str(table[0])+" WHERE (regions, tech) NOT IN (SELECT DISTINCT regions, tech FROM Efficiency) \
+                    AND regions!='global'"
+                    cur.execute(query)
+                    query = "DELETE FROM "+str(table[0])+" WHERE tech NOT IN (SELECT tech FROM Efficiency) \
+                    AND regions='global'"
+                    cur.execute(query)
+                
                 if 'vintage' in names:                
                     if table[0]!='ExistingCapacity':
                         for j in range(N-1,-1,-1):
@@ -256,6 +327,7 @@ def myopic_db_generator_solver ( self ):
                                  AND Efficiency.regions="+str(table[0])+".regions);")
             #except:
             #    raise Exception(table[0],j)
+
             except:
             	pass
 
@@ -265,6 +337,8 @@ def myopic_db_generator_solver ( self ):
         cur.execute("DELETE FROM commodities WHERE flag!='e' AND comm_name NOT IN (SELECT input_comm from Efficiency UNION SELECT output_comm from Efficiency);")
         cur.execute("INSERT INTO `time_periods` (t_periods,flag) VALUES ("+str(time_periods[i+1][0])+",'f');")
         cur.execute("UPDATE `time_periods` SET flag='e' WHERE t_periods < "+str(time_periods[i-(N-1)][0]))
+
+
 
         # --------------------------------------------------------------------------------------------------
         # Update the maximum resource table to include flows that already contribute to resource consumption
@@ -277,10 +351,13 @@ def myopic_db_generator_solver ( self ):
                                                         tech='" + row['tech'] + "' AND \
                                                         scenario="+"'"+str(self.options.scenario)+"' AND \
                                                         vintage < "+str(time_periods[i-(N-1)][0]), con_org)
-                updated_resource = row['maxres'] - df_existing_resources.iloc[0,0]
-                query = "UPDATE MaxResource SET maxres=" + str(updated_resource) + " WHERE regions='"\
-                + row['regions'] + "' AND tech='" + row['tech'] + "'"
-                cur.execute(query)
+                try: 
+                    updated_resource = row['maxres'] - df_existing_resources.iloc[0,0]
+                    query = "UPDATE MaxResource SET maxres=" + str(updated_resource) + " WHERE regions='"\
+                    + row['regions'] + "' AND tech='" + row['tech'] + "'"
+                    cur.execute(query)
+                except:
+                    pass
 
 
         con.commit()
@@ -322,7 +399,7 @@ def myopic_db_generator_solver ( self ):
         os.remove(new_config)
         if not self.options.KeepMyopicDBs:
             os.remove(new_db_loc)
-            os.remove(os.path.join(self.options.path_to_db_io, db_name) +new_myopic_name+".dat")
+            os.remove(os.path.join(self.options.path_to_data, db_name) +new_myopic_name+".dat")
 
     
-    os.remove(os.path.join(self.options.path_to_db_io,db_name)+"_blank"+self.options.output[loc2:])    
+    os.remove(os.path.join(self.options.path_to_data,db_name)+"_blank"+self.options.output[loc2:])

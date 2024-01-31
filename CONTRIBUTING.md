@@ -35,7 +35,7 @@ In general, we try to follow [these 7 rules](https://chris.beams.io/posts/git-co
 6. Wrap the body at 72 characters
 7. Use the body to explain what and why vs. how
 
-Regarding how we format code, please see Chapter 7 of our user manual, which serves as the Temoa Code Style Guide.
+Regarding how we format code, please see Chapter 7 of our user manual, which serves as the Temoa Code Style Guide. Be sure that all modified files included in the pull request have unix line endings.
 
 Thanks,
 Joe DeCarolis

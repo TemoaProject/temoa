@@ -317,6 +317,12 @@ CREATE TABLE "Output_Costs" (
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	PRIMARY KEY("regions","scenario","output_name","tech","vintage")
 );
+CREATE TABLE "Output_Duals" (
+	"constraint_name"	text,
+	"scenario"	text,
+	"dual"	real,
+	PRIMARY KEY("constraint_name","scenario")
+);
 CREATE TABLE "Output_CapacityByPeriodAndTech" (
 	"regions"	text,
 	"scenario"	text,
@@ -994,5 +1000,15 @@ CREATE TABLE "MaxResource" (
 	PRIMARY KEY("regions","tech")
 );
 #INSERT INTO `MaxResource` VALUES ('utopia','IMPGSL1',60,'','');
-
+CREATE TABLE "LinkedTechs" (
+	"primary_region"	text,
+	"primary_tech"	text,
+	"emis_comm" text, 
+ 	"linked_tech"	text,
+	"tech_linked_notes"	text,
+	FOREIGN KEY("primary_tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("linked_tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name"),
+	PRIMARY KEY("primary_region","primary_tech", "emis_comm")
+);
 COMMIT;

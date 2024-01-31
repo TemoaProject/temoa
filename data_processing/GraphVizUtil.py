@@ -24,6 +24,7 @@ def processInput(args):
 
 	parser.add_argument('-s', '--scenario', action="store", dest="scenario_name", help="Model run scenario name", default=None)
 	parser.add_argument('-y', '--year', action="store", dest="period", type=int, help="The period for which the graph is to be generated (Used only for output plots)")
+	parser.add_argument('-r', '--region', action="store", dest="region", help="The region for which the graph is to be generated", default=None)
 
 	options = parser.parse_args(args)
 

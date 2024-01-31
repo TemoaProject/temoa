@@ -3,26 +3,43 @@ CREATE TABLE "time_season" (
 	"t_season"	text,
 	PRIMARY KEY("t_season")
 );
+INSERT INTO `time_season` VALUES ('spring');
+INSERT INTO `time_season` VALUES ('summer');
+INSERT INTO `time_season` VALUES ('fall');
+INSERT INTO `time_season` VALUES ('winter');
 CREATE TABLE "time_periods" (
 	"t_periods"	integer,
 	"flag"	text,
 	PRIMARY KEY("t_periods"),
 	FOREIGN KEY("flag") REFERENCES "time_period_labels"("t_period_labels")
 );
+INSERT INTO `time_periods` VALUES (2015,'e');
+INSERT INTO `time_periods` VALUES (2020,'f');
+INSERT INTO `time_periods` VALUES (2025,'f');
+INSERT INTO `time_periods` VALUES (2030,'f');
+INSERT INTO `time_periods` VALUES (2035,'f');
 CREATE TABLE "time_period_labels" (
 	"t_period_labels"	text,
 	"t_period_labels_desc"	text,
 	PRIMARY KEY("t_period_labels")
 );
+INSERT INTO `time_period_labels` VALUES ('e','existing vintages');
+INSERT INTO `time_period_labels` VALUES ('f','future');
 CREATE TABLE "time_of_day" (
 	"t_day"	text,
 	PRIMARY KEY("t_day")
 );
+INSERT INTO `time_of_day` VALUES ('day');
+INSERT INTO `time_of_day` VALUES ('night');
 CREATE TABLE "technology_labels" (
 	"tech_labels"	text,
 	"tech_labels_desc"	text,
 	PRIMARY KEY("tech_labels")
 );
+INSERT INTO `technology_labels` VALUES ('r','resource technology');
+INSERT INTO `technology_labels` VALUES ('p','production technology');
+INSERT INTO `technology_labels` VALUES ('pb','baseload production technology');
+INSERT INTO `technology_labels` VALUES ('ps','storage production technology');
 CREATE TABLE "technologies" (
 	"tech"	text,
 	"flag"	text,
@@ -30,14 +47,19 @@ CREATE TABLE "technologies" (
 	"tech_desc"	text,
 	"tech_category"	text,
 	PRIMARY KEY("tech"),
-	FOREIGN KEY("flag") REFERENCES "technology_labels"("tech_labels"),
-	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector")
+	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
+	FOREIGN KEY("flag") REFERENCES "technology_labels"("tech_labels")
 );
-CREATE TABLE "tech_ramping" (
-	"tech"	text,
-	PRIMARY KEY("tech")
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
-);
+
+INSERT INTO `technologies` VALUES ('S_IMPNG','r','supply',' imported natural gas','');
+INSERT INTO `technologies` VALUES ('E_NGCC_CCS','p','electric','#NGCC with carbon capture and storage','');
+INSERT INTO `technologies` VALUES ('E_NGCC_CCS_emissions','r','electric','linked process that produces emissions associated with NGCC_CCS','');
+INSERT INTO `technologies` VALUES ('co2_passthrough','r','supply','dummy CCS','');
+INSERT INTO `technologies` VALUES ('co2_to_seq','r','supply','dummy CCS','');
+INSERT INTO `technologies` VALUES ('co2_blend','r','supply','blending carbon for sequestration','');
+
+
+
 CREATE TABLE "tech_reserve" (
 	"tech"	text,
 	"notes"	text,
@@ -61,21 +83,33 @@ CREATE TABLE "tech_flex" (
 	PRIMARY KEY("tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
+
 CREATE TABLE "tech_annual" (
 	"tech"	text,
 	"notes"	TEXT,
 	PRIMARY KEY("tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
+
 CREATE TABLE "sector_labels" (
 	"sector"	text,
 	PRIMARY KEY("sector")
 );
+INSERT INTO `sector_labels` VALUES ('supply');
+INSERT INTO `sector_labels` VALUES ('electric');
+INSERT INTO `sector_labels` VALUES ('transport');
+INSERT INTO `sector_labels` VALUES ('commercial');
+INSERT INTO `sector_labels` VALUES ('residential');
+INSERT INTO `sector_labels` VALUES ('industrial');
 CREATE TABLE "regions" (
 	"regions"	TEXT,
 	"region_note"	TEXT,
 	PRIMARY KEY("regions")
 );
+INSERT INTO `regions` VALUES ('R1',NULL);
+INSERT INTO `regions` VALUES ('R2',NULL);
 CREATE TABLE "groups" (
 	"group_name"	text,
 	"notes"	text,
@@ -86,6 +120,9 @@ CREATE TABLE "commodity_labels" (
 	"comm_labels_desc"	text,
 	PRIMARY KEY("comm_labels")
 );
+INSERT INTO `commodity_labels` VALUES ('p','physical commodity');
+INSERT INTO `commodity_labels` VALUES ('e','emissions commodity');
+INSERT INTO `commodity_labels` VALUES ('d','demand commodity');
 CREATE TABLE "commodities" (
 	"comm_name"	text,
 	"flag"	text,
@@ -93,18 +130,30 @@ CREATE TABLE "commodities" (
 	PRIMARY KEY("comm_name"),
 	FOREIGN KEY("flag") REFERENCES "commodity_labels"("comm_labels")
 );
+INSERT INTO `commodities` VALUES ('ethos','p','dummy commodity to supply inputs (makes graph easier to read)');
+
+INSERT INTO `commodities` VALUES ('NG','p','natural gas');
+INSERT INTO `commodities` VALUES ('ELC','d','electricity');
+INSERT INTO `commodities` VALUES ('CO2','e','CO2 emissions commodity');
+INSERT INTO `commodities` VALUES ('CO2_ccs','p','physical CO2 emissions commodity');
+INSERT INTO `commodities` VALUES ('CO2_ccs_blnd','p','physical CO2 emissions commodity');
+INSERT INTO `commodities` VALUES ('CO2_seq','d','dummy sink for physical CO2 emissions commodity');
+INSERT INTO `commodities` VALUES ('co2_dummy','p','dummy sink for physical CO2 emissions commodity');
+INSERT INTO `commodities` VALUES ('co2_dummy_blnd','p','dummy sink for physical CO2 emissions commodity');
+
 CREATE TABLE "TechOutputSplit" (
 	"regions"	TEXT,
 	"periods"	integer,
-	"tech"	TEXT,
+	"tech"	text,
 	"output_comm"	text,
 	"to_split"	real,
 	"to_split_notes"	text,
 	PRIMARY KEY("regions","periods","tech","output_comm"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
 );
+
 CREATE TABLE "TechInputSplit" (
 	"regions"	TEXT,
 	"periods"	integer,
@@ -113,22 +162,11 @@ CREATE TABLE "TechInputSplit" (
 	"ti_split"	real,
 	"ti_split_notes"	text,
 	PRIMARY KEY("regions","periods","input_comm","tech"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
-);
-CREATE TABLE "TechInputSplitAverage" (
-	"regions"	TEXT,
-	"periods"	integer,
-	"input_comm"	text,
-	"tech"	text,
-	"ti_split"	real,
-	"ti_split_notes"	text,
-	PRIMARY KEY("regions","periods","input_comm","tech"),
 	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
 );
+
 CREATE TABLE "StorageDuration" (
 	"regions"	text,
 	"tech"	text,
@@ -136,6 +174,7 @@ CREATE TABLE "StorageDuration" (
 	"duration_notes"	text,
 	PRIMARY KEY("regions","tech")
 );
+
 CREATE TABLE "SegFrac" (
 	"season_name"	text,
 	"time_of_day_name"	text,
@@ -145,27 +184,20 @@ CREATE TABLE "SegFrac" (
 	FOREIGN KEY("season_name") REFERENCES "time_season"("t_season"),
 	FOREIGN KEY("time_of_day_name") REFERENCES "time_of_day"("t_day")
 );
+INSERT INTO `SegFrac` VALUES ('spring','day',0.125,'Spring - Day');
+INSERT INTO `SegFrac` VALUES ('spring','night',0.125,'Spring - Night');
+INSERT INTO `SegFrac` VALUES ('summer','day',0.125,'Summer - Day');
+INSERT INTO `SegFrac` VALUES ('summer','night',0.125,'Summer - Night');
+INSERT INTO `SegFrac` VALUES ('fall','day',0.125,'Fall - Day');
+INSERT INTO `SegFrac` VALUES ('fall','night',0.125,'Fall - Night');
+INSERT INTO `SegFrac` VALUES ('winter','day',0.125,'Winter - Day');
+INSERT INTO `SegFrac` VALUES ('winter','night',0.125,'Winter - Night');
 CREATE TABLE "PlanningReserveMargin" (
 	`regions`	text,
 	`reserve_margin`	REAL,
 	PRIMARY KEY(regions),
 	FOREIGN KEY(`regions`) REFERENCES regions
 );
-CREATE TABLE "RampDown" (
-	`regions`	text,
-	`tech`	text,
-	`ramp_down` real,
-	PRIMARY KEY("regions", "tech"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
-);
-CREATE TABLE "RampUp" (
-	`regions`	text,
-	`tech`	text,
-	`ramp_up` real,
-	PRIMARY KEY("regions", "tech"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
-);
-
 CREATE TABLE "Output_V_Capacity" (
 	"regions"	text,
 	"scenario"	text,
@@ -174,8 +206,8 @@ CREATE TABLE "Output_V_Capacity" (
 	"vintage"	integer,
 	"capacity"	real,
 	PRIMARY KEY("regions","scenario","tech","vintage"),
-	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
 );
 CREATE TABLE "Output_VFlow_Out" (
@@ -191,14 +223,14 @@ CREATE TABLE "Output_VFlow_Out" (
 	"output_comm"	text,
 	"vflow_out"	real,
 	PRIMARY KEY("regions","scenario","t_periods","t_season","t_day","input_comm","tech","vintage","output_comm"),
-	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
 	FOREIGN KEY("t_day") REFERENCES "time_of_day"("t_day"),
-	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name")
+	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name")
 );
 CREATE TABLE "Output_VFlow_In" (
 	"regions"	text,
@@ -213,14 +245,14 @@ CREATE TABLE "Output_VFlow_In" (
 	"output_comm"	text,
 	"vflow_in"	real,
 	PRIMARY KEY("regions","scenario","t_periods","t_season","t_day","input_comm","tech","vintage","output_comm"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
-	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("t_day") REFERENCES "time_of_day"("t_day"),
+	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector")
 );
 CREATE TABLE "Output_Objective" (
 	"scenario"	text,
@@ -237,11 +269,11 @@ CREATE TABLE "Output_Emissions" (
 	"vintage"	integer,
 	"emissions"	real,
 	PRIMARY KEY("regions","scenario","t_periods","emissions_comm","tech","vintage"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("emissions_comm") REFERENCES "EmissionActivity"("emis_comm"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("emissions_comm") REFERENCES "EmissionActivity"("emis_comm"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
-	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
 );
 CREATE TABLE "Output_Curtailment" (
 	"regions"	text,
@@ -256,13 +288,13 @@ CREATE TABLE "Output_Curtailment" (
 	"output_comm"	text,
 	"curtailment"	real,
 	PRIMARY KEY("regions","scenario","t_periods","t_season","t_day","input_comm","tech","vintage","output_comm"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
 	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("t_day") REFERENCES "time_of_day"("t_day"),
+	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("t_day") REFERENCES "time_of_day"("t_day")
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("t_season") REFERENCES "time_periods"("t_periods")
 );
 CREATE TABLE "Output_Costs" (
 	"regions"	text,
@@ -273,8 +305,8 @@ CREATE TABLE "Output_Costs" (
 	"vintage"	integer,
 	"output_cost"	real,
 	PRIMARY KEY("regions","scenario","output_name","tech","vintage"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
 CREATE TABLE "Output_Duals" (
@@ -292,8 +324,8 @@ CREATE TABLE "Output_CapacityByPeriodAndTech" (
 	"capacity"	real,
 	PRIMARY KEY("regions","scenario","t_periods","tech"),
 	FOREIGN KEY("sector") REFERENCES "sector_labels"("sector"),
-	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("t_periods") REFERENCES "time_periods"("t_periods")
 );
 CREATE TABLE "MyopicBaseyear" (
 	"year"	real
@@ -323,9 +355,10 @@ CREATE TABLE "MinCapacity" (
 	"mincap_units"	text,
 	"mincap_notes"	text,
 	PRIMARY KEY("regions","periods","tech"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
 CREATE TABLE "MinActivity" (
 	"regions"	text,
 	"periods"	integer,
@@ -334,9 +367,11 @@ CREATE TABLE "MinActivity" (
 	"minact_units"	text,
 	"minact_notes"	text,
 	PRIMARY KEY("regions","periods","tech"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
+
 CREATE TABLE "MaxCapacity" (
 	"regions"	text,
 	"periods"	integer,
@@ -359,6 +394,12 @@ CREATE TABLE "MaxActivity" (
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
+#INSERT INTO MaxActivity VALUES ("R1", 2020, 'co2_passthrough', 1000, '', '');
+#INSERT INTO MaxActivity VALUES ("R1", 2025, 'co2_passthrough', 1000, '', '');
+#INSERT INTO MaxActivity VALUES ("R1", 2030, 'co2_passthrough', 1000, '', '');
+
+
 CREATE TABLE "LifetimeTech" (
 	"regions"	text,
 	"tech"	text,
@@ -367,6 +408,7 @@ CREATE TABLE "LifetimeTech" (
 	PRIMARY KEY("regions","tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
 CREATE TABLE "LifetimeProcess" (
 	"regions"	text,
 	"tech"	text,
@@ -385,6 +427,7 @@ CREATE TABLE "LifetimeLoanTech" (
 	PRIMARY KEY("regions","tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
 CREATE TABLE "GrowthRateSeed" (
 	"regions"	text,
 	"tech"	text,
@@ -405,6 +448,7 @@ CREATE TABLE "GrowthRateMax" (
 CREATE TABLE "GlobalDiscountRate" (
 	"rate"	real
 );
+INSERT INTO `GlobalDiscountRate` VALUES (0.05);
 CREATE TABLE "ExistingCapacity" (
 	"regions"	text,
 	"tech"	text,
@@ -416,6 +460,7 @@ CREATE TABLE "ExistingCapacity" (
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
 );
+
 CREATE TABLE "EmissionLimit" (
 	"regions"	text,
 	"periods"	integer,
@@ -423,10 +468,11 @@ CREATE TABLE "EmissionLimit" (
 	"emis_limit"	real,
 	"emis_limit_units"	text,
 	"emis_limit_notes"	text,
-	PRIMARY KEY("periods","emis_comm"),
+	PRIMARY KEY("regions","periods","emis_comm"),
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name")
 );
+
 CREATE TABLE "EmissionActivity" (
 	"regions"	text,
 	"emis_comm"	text,
@@ -438,12 +484,16 @@ CREATE TABLE "EmissionActivity" (
 	"emis_act_units"	text,
 	"emis_act_notes"	text,
 	PRIMARY KEY("regions","emis_comm","input_comm","tech","vintage","output_comm"),
-	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
 	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
-	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name")
+	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+INSERT INTO `EmissionActivity` VALUES ('R1','CO2','ethos','S_IMPNG',2020,'NG',50.3,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO `EmissionActivity` VALUES ('R1','CO2','NG','E_NGCC_CCS',2020,'ELC',-99.0,'#kt/PJout',NULL);
+
+
 CREATE TABLE "Efficiency" (
 	"regions"	text,
 	"input_comm"	text,
@@ -458,6 +508,15 @@ CREATE TABLE "Efficiency" (
 	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name")
 );
+
+INSERT INTO `Efficiency` VALUES ('R1','ethos','S_IMPNG',2020,'NG',1.0,'');
+INSERT INTO `Efficiency` VALUES ('R1','NG','E_NGCC_CCS',2020,'ELC',0.45,NULL);
+INSERT INTO `Efficiency` VALUES ('R1','ethos','E_NGCC_CCS_emissions',2020,'CO2_ccs',1,NULL);
+INSERT INTO `Efficiency` VALUES ('R1','co2_dummy','co2_passthrough',2020,'co2_dummy_blnd',1.0,'');
+INSERT INTO `Efficiency` VALUES ('R1','CO2_ccs','co2_to_seq',2020,'CO2_ccs_blnd',1.0,'');
+INSERT INTO `Efficiency` VALUES ('R1','co2_dummy_blnd','co2_blend',2020,'CO2_seq',1.0,'');
+INSERT INTO `Efficiency` VALUES ('R1','CO2_ccs_blnd','co2_blend',2020,'CO2_seq',1.0,'');
+
 CREATE TABLE "DiscountRate" (
 	"regions"	text,
 	"tech"	text,
@@ -465,8 +524,8 @@ CREATE TABLE "DiscountRate" (
 	"tech_rate"	real,
 	"tech_rate_notes"	text,
 	PRIMARY KEY("regions","tech","vintage"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
 CREATE TABLE "DemandSpecificDistribution" (
 	"regions"	text,
@@ -476,10 +535,19 @@ CREATE TABLE "DemandSpecificDistribution" (
 	"dds"	real CHECK("dds" >= 0 AND "dds" <= 1),
 	"dds_notes"	text,
 	PRIMARY KEY("regions","season_name","time_of_day_name","demand_name"),
-	FOREIGN KEY("season_name") REFERENCES "time_season"("t_season"),
 	FOREIGN KEY("time_of_day_name") REFERENCES "time_of_day"("t_day"),
+	FOREIGN KEY("season_name") REFERENCES "time_season"("t_season"),
 	FOREIGN KEY("demand_name") REFERENCES "commodities"("comm_name")
 );
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','spring','day','ELC',0.05,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','spring','night','ELC',0.1,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','summer','day','ELC',0.1,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','summer','night','ELC',0.1,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','fall','day','ELC',0.05,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','fall','night','ELC',0.1,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','winter','day','ELC',0.2,'');
+INSERT INTO `DemandSpecificDistribution` VALUES ('R1','winter','night','ELC',0.3,'');
+
 CREATE TABLE "Demand" (
 	"regions"	text,
 	"periods"	integer,
@@ -488,9 +556,16 @@ CREATE TABLE "Demand" (
 	"demand_units"	text,
 	"demand_notes"	text,
 	PRIMARY KEY("regions","periods","demand_comm"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("demand_comm") REFERENCES "commodities"("comm_name")
+	FOREIGN KEY("demand_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
 );
+INSERT INTO `Demand` VALUES ('R1',2020,'ELC',30.0,'','');
+INSERT INTO `Demand` VALUES ('R1',2025,'ELC',33.0,'','');
+INSERT INTO `Demand` VALUES ('R1',2030,'ELC',36.0,'','');
+INSERT INTO `Demand` VALUES ('R1',2020,'CO2_seq',30000000,'NULL','#dummy demand. Serves as the sink for the co2 coming from CCS plant or DAC ');
+INSERT INTO `Demand` VALUES ('R1',2025,'CO2_seq',30000000,'NULL','#dummy demand. Serves as the sink for the co2 coming from CCS plant or DAC ');
+INSERT INTO `Demand` VALUES ('R1',2030,'CO2_seq',30000000,'NULL','#dummy demand. Serves as the sink for the co2 coming from CCS plant or DAC ');
+
 CREATE TABLE "CostVariable" (
 	"regions"	text NOT NULL,
 	"periods"	integer NOT NULL,
@@ -501,9 +576,21 @@ CREATE TABLE "CostVariable" (
 	"cost_variable_notes"	text,
 	PRIMARY KEY("regions","periods","tech","vintage"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
 );
+
+INSERT INTO `CostVariable` VALUES ('R1',2020,'S_IMPNG',2020,4.0,'$M/PJ','');
+INSERT INTO `CostVariable` VALUES ('R1',2025,'S_IMPNG',2020,4.0,'$M/PJ','');
+INSERT INTO `CostVariable` VALUES ('R1',2030,'S_IMPNG',2020,4.0,'$M/PJ','');
+#INSERT INTO `CostVariable` VALUES ('R1',2020,'E_NGCC',2020,1.6,'$M/PJ','');
+#INSERT INTO `CostVariable` VALUES ('R1',2025,'E_NGCC',2020,1.6,'$M/PJ','');
+#INSERT INTO `CostVariable` VALUES ('R1',2030,'E_NGCC',2020,1.6,'$M/PJ','');
+-- INSERT INTO `CostVariable` VALUES ('R1',2020,'co2_passthrough',2020,10000,'$M/PJ','');
+-- INSERT INTO `CostVariable` VALUES ('R1',2025,'co2_passthrough',2020,10000,'$M/PJ','');
+-- INSERT INTO `CostVariable` VALUES ('R1',2030,'co2_passthrough',2020,10000,'$M/PJ','');
+
+
 CREATE TABLE "CostInvest" (
 	"regions"	text,
 	"tech"	text,
@@ -512,9 +599,12 @@ CREATE TABLE "CostInvest" (
 	"cost_invest_units"	text,
 	"cost_invest_notes"	text,
 	PRIMARY KEY("regions","tech","vintage"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+INSERT INTO `CostInvest` VALUES ('R1','E_NGCC_CCS',2020,5000,'$M/GW','');
+
+
 CREATE TABLE "CostFixed" (
 	"regions"	text NOT NULL,
 	"periods"	integer NOT NULL,
@@ -525,9 +615,13 @@ CREATE TABLE "CostFixed" (
 	"cost_fixed_notes"	text,
 	PRIMARY KEY("regions","periods","tech","vintage"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
-	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods"),
-	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods")
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	FOREIGN KEY("vintage") REFERENCES "time_periods"("t_periods")
 );
+#INSERT INTO `CostFixed` VALUES ('R1',2020,'E_NGCC',2020,30.6,'$M/GWyr','');
+#INSERT INTO `CostFixed` VALUES ('R1',2025,'E_NGCC',2020,9.78,'$M/GWyr','');
+#INSERT INTO `CostFixed` VALUES ('R1',2030,'E_NGCC',2020,9.78,'$M/GWyr','');
+
 CREATE TABLE "CapacityToActivity" (
 	"regions"	text,
 	"tech"	text,
@@ -536,6 +630,9 @@ CREATE TABLE "CapacityToActivity" (
 	PRIMARY KEY("regions","tech"),
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
 );
+
+INSERT INTO `CapacityToActivity` VALUES ('R1','E_NGCC_CCS',31.54,'');
+
 CREATE TABLE "CapacityFactorTech" (
 	"regions"	text,
 	"season_name"	text,
@@ -545,9 +642,10 @@ CREATE TABLE "CapacityFactorTech" (
 	"cf_tech_notes"	text,
 	PRIMARY KEY("regions","season_name","time_of_day_name","tech"),
 	FOREIGN KEY("season_name") REFERENCES "time_season"("t_season"),
-	FOREIGN KEY("time_of_day_name") REFERENCES "time_of_day"("t_day"),
-	FOREIGN KEY("tech") REFERENCES "technologies"("tech")
+	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
+	FOREIGN KEY("time_of_day_name") REFERENCES "time_of_day"("t_day")
 );
+
 CREATE TABLE "CapacityFactorProcess" (
 	"regions"	text,
 	"season_name"	text,
@@ -579,6 +677,7 @@ CREATE TABLE "MaxResource" (
 	FOREIGN KEY("tech") REFERENCES "technologies"("tech"),
 	PRIMARY KEY("regions","tech")
 );
+
 CREATE TABLE "LinkedTechs" (
 	"primary_region"	text,
 	"primary_tech"	text,
@@ -590,4 +689,6 @@ CREATE TABLE "LinkedTechs" (
 	FOREIGN KEY("emis_comm") REFERENCES "commodities"("comm_name"),
 	PRIMARY KEY("primary_region","primary_tech", "emis_comm")
 );
+INSERT INTO `LinkedTechs` VALUES ('R1', 'E_NGCC_CCS', 'CO2', 'E_NGCC_CCS_emissions', NULL);
+
 COMMIT;

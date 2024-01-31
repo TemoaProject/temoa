@@ -158,7 +158,7 @@ def solve_ef(p_model, p_data, temoa_options = None):
             # temoa_options.config = temoa_options.config
             # temoa_options.keepPyomoLP = temoa_options.keepPyomoLP
             # temoa_options.saveTEXTFILE = temoa_options.saveTEXTFILE
-            # temoa_options.path_to_db_io = temoa_options.path_to_db_io
+            # temoa_options.path_to_data = temoa_options.path_to_data
             # temoa_options.saveEXCEL = temoa_options.saveEXCEL
             ef_result.solution.Status = 'feasible' # Assume it is feasible
             # Maybe there is a better solution using manager, but now it is a 

@@ -18,16 +18,20 @@
 # This scenario name is used to store results within the output .sqlite file
 --scenario=test_run
 
-# Path to the “db_io” folder (Mandatory) 
+# Path to folder containing input dataset (Mandatory)
 # This is the location where database files reside
---path_to_db_io=data_files
+--path_to_data=data_files
 
 # Solve Myopically (Optional)
 # Allows user to solve one model time period at a time, sequentially
 # Default operation is "perfect foresight"
 #--myopic
+#--myopic_periods=2
 #--keep_myopic_databases
 
+# Report Duals (Optional) 
+# Store Duals results in the output .sqlite file
+#--saveDUALS
 
 # Spreadsheet Output (Optional) 
 # Direct model output to a spreadsheet

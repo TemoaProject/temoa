@@ -30,19 +30,19 @@ __all__ = ('pformat_results', 'stringify_data')
 
 from collections import defaultdict
 from sys import stderr as SE, stdout as SO
-import sys
-import os
-
-# Need line below to import DB_to_Excel.py
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'data_processing'))
-
-from temoa_config import TemoaConfig
-from DB_to_Excel import make_excel
-
 from shutil import rmtree
 import sqlite3
 import re
 import subprocess
+import sys
+import pandas as pd
+
+from temoa_config import TemoaConfig
+
+# Need line below to import DB_to_Excel.py from data_processing
+sys.path.append(os.path.join(os.getcwd(), 'data_processing'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'data_processing'))
+from DB_to_Excel import make_excel
 
 # Ensure compatibility with Python 2.7 and 3
 try:
@@ -51,7 +51,6 @@ except ImportError:
     from io import StringIO
 
 from pyomo.core import value
-from IPython import embed as IP
 
 
 def stringify_data ( data, ostream=SO, format='plain' ):
@@ -63,7 +62,7 @@ def stringify_data ( data, ostream=SO, format='plain' ):
 	# This padding code is what makes the display of the output values
 	# line up on the decimal point.
 	for i, (v, val) in enumerate( data ):
-		ipart, fpart = repr(float(val)).split('.')
+		ipart, fpart = repr(f"{val:.6f}").split('.')
 		data[i] = (ipart, fpart, v)
 	cell_lengths = ( map(len, l[:-1] ) for l in data )
 	max_lengths = map(max, zip(*cell_lengths))   # max length of each column
@@ -106,12 +105,25 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		# epsilon = absolute value below which to ignore a result
 		results = defaultdict(list)
 		for name, data in cgroup.items():
-			if not (abs( data['Value'] ) > epsilon ): continue
+			if 'Value' not in data.keys() or (abs( data['Value'] ) < epsilon ) : continue
 
 			# name looks like "Something[some,index]"
 			group, index = name[:-1].split('[')
 			results[ group ].append( (name.replace("'", ''), data['Value']) )
 		clist.extend( t for i in sorted( results ) for t in sorted(results[i]))
+
+		supp_outputs_df = pd.DataFrame.from_dict(cgroup, orient='index')
+		supp_outputs_df = supp_outputs_df.loc[(supp_outputs_df != 0).any(axis=1)]
+		if 'Dual' in supp_outputs_df.columns:
+			duals = supp_outputs_df['Dual'].copy()
+			duals = duals[abs(duals)>1e-5]
+			duals.index.name = 'constraint_name'
+			duals = duals.to_frame()
+			if (hasattr(options, 'scenario')) & (len(duals)>0):
+				duals.loc[:,'scenario'] = options.scenario
+				return duals
+			else:
+				return []
 
 	#Create a dictionary in which to store "solved" variable values
 	svars = defaultdict( lambda: defaultdict( float ))
@@ -125,7 +137,6 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	P_0 = min( m.time_optimize )
 	P_e = m.time_future.last()
 	GDR = value( m.GlobalDiscountRate )
-	MLL = m.ModelLoanLife
 	MPL = m.ModelProcessLife
 	LLN = m.LifetimeLoanProcess
 	x   = 1 + GDR    # convenience variable, nothing more
@@ -322,14 +333,14 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 			key = (reg_dir1, tech, vintage)
 			try:
 				act_dir1 = value (sum(m.V_FlowOut[reg_dir1, p, s, d, S_i, tech, vintage, S_o]
-					for p in m.time_optimize if p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])
+					for p in m.time_optimize if (p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])) and (p >= vintage)
 					for s in m.time_season
 					for d in m.time_of_day
 					for S_i in m.processInputs[reg_dir1, p, tech, vintage]
 					for S_o in m.ProcessOutputsByInput[reg_dir1, p, tech, vintage, S_i]
 					))
 				act_dir2 = value (sum(m.V_FlowOut[reg_dir2, p, s, d, S_i, tech, vintage, S_o]
-					for p in m.time_optimize if p < vintage + value(m.LifetimeProcess[reg_dir2, tech, vintage])
+					for p in m.time_optimize if (p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])) and (p >= vintage)
 					for s in m.time_season
 					for d in m.time_of_day
 					for S_i in m.processInputs[reg_dir2, p, tech, vintage]
@@ -337,12 +348,12 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 					))
 			except:
 				act_dir1 = value (sum(m.V_FlowOutAnnual[reg_dir1, p, S_i, tech, vintage, S_o]
-					for p in m.time_optimize if p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])
+					for p in m.time_optimize if (p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])) and (p >= vintage)
 					for S_i in m.processInputs[reg_dir1, p, tech, vintage]
 					for S_o in m.ProcessOutputsByInput[reg_dir1, p, tech, vintage, S_i]
 					))
 				act_dir2 = value (sum(m.V_FlowOutAnnual[reg_dir2, p, S_i, tech, vintage, S_o]
-					for p in m.time_optimize if p < vintage + value(m.LifetimeProcess[reg_dir2, tech, vintage])
+					for p in m.time_optimize if (p < vintage + value(m.LifetimeProcess[reg_dir1, tech, vintage])) and (p >= vintage)
 					for S_i in m.processInputs[reg_dir2, p, tech, vintage]
 					for S_o in m.ProcessOutputsByInput[reg_dir2, p, tech, vintage, S_i]
 					))
@@ -353,8 +364,9 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 					if (item[0],opposite_dir,item[2],item[3]) in svars[	'Costs'	].keys():
 						continue #if both directional entries are already in svars[	'Costs'	], they're left intact.
 					if item[1] == reg_dir1:
-						svars[	'Costs'	][(item[0],reg_dir2,item[2],item[3])] = svars[	'Costs'	][item] * act_dir2 / (act_dir1 + act_dir2)
-						svars[	'Costs'	][item] = svars[	'Costs'	][item] * act_dir1 / (act_dir1 + act_dir2)
+						if (act_dir1+act_dir2)>0:
+							svars[	'Costs'	][(item[0],reg_dir2,item[2],item[3])] = svars[	'Costs'	][item] * act_dir2 / (act_dir1 + act_dir2)
+							svars[	'Costs'	][item] = svars[	'Costs'	][item] * act_dir1 / (act_dir1 + act_dir2)
 
 
 		#Remove Ri-Rj entries from being populated in the Outputs_Costs. Ri-Rj means a cost
@@ -364,8 +376,8 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 				svars[	'Costs'	][(item[0],item[1][item[1].find("-")+1:],item[2],item[3])] = svars[	'Costs'	][item]
 				del svars[	'Costs'	][item]
 
-
-	collect_result_data( Cons, con_info, epsilon=1e-9 )
+	if options.saveDUALS:
+		duals = collect_result_data( Cons, con_info, epsilon=1e-9 )
 
 	msg = ( 'Model name: %s\n'
 	   'Objective function value (%s): %s\n'
@@ -425,7 +437,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 				for inpu in options.dot_dat:
 					print(inpu)
 					file_ty = re.search(r"\b([\w-]+)\.(\w+)\b", inpu)
-				new_dir = options.path_to_db_io+os.sep+file_ty.group(1)+'_'+options.scenario+'_model'
+				new_dir = options.path_to_data+os.sep+file_ty.group(1)+'_'+options.scenario+'_model'
 				if os.path.exists( new_dir ):
 					rmtree( new_dir )
 				os.mkdir(new_dir)
@@ -528,13 +540,23 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 					cur.execute("UPDATE "+tables[table]+" SET sector = \
 								(SELECT technologies.sector FROM technologies \
 								WHERE "+tables[table]+".tech = technologies.tech);")
+
+		#WRITE DUALS RESULTS
+		if (options.saveDUALS):
+			if (len(duals)!=0):
+				overwrite_keys = [str(tuple(x)) for x in duals.reset_index()[['constraint_name','scenario']].to_records(index=False)]
+				#delete records that will be overwritten by new duals dataframe
+				cur.execute("DELETE FROM Output_Duals WHERE (constraint_name, scenario) IN (VALUES " + ','.join(overwrite_keys) + ")")
+				#write new records from new duals dataframe
+				duals.to_sql('Output_Duals',con, if_exists='append')
+
 		con.commit()
 		con.close()
 
 		if options.saveEXCEL or options.saveTEXTFILE or options.keepPyomoLP:
 			for inpu in options.dot_dat:
 				file_ty = re.search(r"\b([\w-]+)\.(\w+)\b", inpu)
-			new_dir = options.path_to_db_io+os.sep+file_ty.group(1)+'_'+options.scenario+'_model'
+			new_dir = options.path_to_data+os.sep+file_ty.group(1)+'_'+options.scenario+'_model'
 			if os.path.exists( new_dir ):
 				rmtree( new_dir )
 			os.mkdir(new_dir)
@@ -542,9 +564,9 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 			if options.saveEXCEL:
 				file_type = re.search(r"([\w-]+)\.(\w+)\b", options.output)
 				file_n = file_type.group(1)
-				from DB_to_Excel import make_excel
 				temp_scenario = set()
 				temp_scenario.add(options.scenario)
+				#make_excel function imported near the top
 				make_excel(options.output, new_dir+os.sep+options.scenario, temp_scenario)
 				#os.system("python data_processing"+os.sep+"DB_to_Excel.py -i \
 				#		  ""+options.output+" \

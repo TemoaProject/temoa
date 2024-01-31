@@ -1,5 +1,5 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -14,8 +14,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 from os.path import abspath, isfile, splitext, dirname
@@ -29,14 +29,14 @@ def db_2_dat(ifile, ofile, options):
 	import sys
 	import re
 	import getopt
-	
+
 	def write_tech_mga(f):
 		cur.execute("SELECT tech FROM technologies")
 		f.write("set tech_mga :=\n")
 		for row in cur:
 			f.write(row[0] + '\n')
 		f.write(';\n\n')
-	
+
 	def write_tech_sector(f):
 		sectors = set()
 		cur.execute("SELECT sector FROM technologies")
@@ -90,12 +90,12 @@ def db_2_dat(ifile, ofile, options):
 				print(str_row)
 		else:
 			for line in cur:
-				before_comments = line[:t_index+1]    
+				before_comments = line[:t_index+1]
 				before_comments = re.sub('[(]', '', str(before_comments))
 				before_comments = re.sub('[\',)]', '    ', str(before_comments))
 				after_comments = line[t_index+2:]
 				after_comments = re.sub('[(]', '', str(after_comments))
-				after_comments = re.sub('[\',)]', '    ', str(after_comments)) 
+				after_comments = re.sub('[\',)]', '    ', str(after_comments))
 				search_afcom = re.search(r'^\W+$', str(after_comments))		#Search if after_comments is empty.
 				if not search_afcom :
 					str_row = before_comments + "# " + after_comments + "\n"
@@ -114,33 +114,36 @@ def db_2_dat(ifile, ofile, options):
 		['set',  'regions',        	          '',                    '',             0],
 		['set',  'tech_curtailment',          '',                    '',             0],
 		['set',  'tech_flex',          		  '',                    '',             0],
-		['set',  'tech_reserve',              '',                    '',             0],		
+		['set',  'tech_reserve',              '',                    '',             0],
 		['set',  'technologies',              'tech_resource',       'r',            0],
 		['set',  'technologies',              'tech_production',    ['p','pb','ps'], 0],
 		['set',  'technologies',              'tech_baseload',       'pb',           0],
 		['set',  'technologies',              'tech_storage',  		 'ps',           0],
 		['set',  'tech_ramping',              '',                    '',             0],
-		['set',  'tech_exchange',             '',                    '',             0],		
+		['set',  'tech_exchange',             '',                    '',             0],
 		['set',  'commodities',               'commodity_physical',  'p',            0],
 		['set',  'commodities',               'commodity_emissions', 'e',            0],
 		['set',  'commodities',               'commodity_demand',    'd',            0],
 		['set',  'tech_groups',               '',                    '',             0],
-		['set',  'tech_annual',               '',                    '',             0],				
-		['set',  'groups',                    '',                    '',             0],		
-		['param','MinGenGroupTarget',         '',                    '',             2], 
-		['param','MinGenGroupWeight',         '',                    '',             3], 
+		['set',  'tech_annual',               '',                    '',             0],
+		['set',  'tech_variable',             '',                    '',             0],
+		['set',  'groups',                    '',                    '',             0],
+		['param','MinGenGroupTarget',         '',                    '',             2],
+		['param','MinGenGroupWeight',         '',                    '',             3],
+		['param','LinkedTechs',               '',                    '',             3],
 		['param','SegFrac',                   '',                    '',             2],
 		['param','DemandSpecificDistribution','',                    '',             4],
 		['param','CapacityToActivity',        '',                    '',             2],
 		['param','PlanningReserveMargin',     '',                    '',             2],
 		['param','GlobalDiscountRate',        '',                    '',             0],
-		['param','MyopicBaseyear',            '',                    '',             0],		
+		['param','MyopicBaseyear',            '',                    '',             0],
 		['param','DiscountRate',              '',                    '',             3],
 		['param','EmissionActivity',          '',                    '',             6],
 		['param','EmissionLimit',             '',                    '',             3],
 		['param','Demand',                    '',                    '',             3],
 		['param','TechOutputSplit',           '',                    '',             4],
 		['param','TechInputSplit',            '',                    '',             4],
+		['param','TechInputSplitAverage',     '',                    '',             4],
 		['param','MinCapacity',               '',                    '',             3],
 		['param','MaxCapacity',               '',                    '',             3],
 		['param','MaxActivity',               '',                    '',             3],
@@ -170,11 +173,11 @@ def db_2_dat(ifile, ofile, options):
 		con = sqlite3.connect(ifile, isolation_level=None)
 		cur = con.cursor()   # a database cursor is a control structure that enables traversal over the records in a database
 		con.text_factory = str #this ensures data is explored with the correct UTF-8 encoding
-	
+
 		# Return the full list of existing tables.
 		table_exist = cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
 		table_exist = [i[0] for i in table_exist]
-	
+
 		for table in table_list:
 			if table[1] in table_exist:
 				query_table(table, f)
@@ -182,19 +185,20 @@ def db_2_dat(ifile, ofile, options):
 			write_tech_mga(f)
 		if options.mga_weight == 'normalized':
 			write_tech_sector(f)
-			
+
 		# Making sure the database is empty from the begining for a myopic solve
 		if options.myopic:
-   			cur.execute("DELETE FROM Output_CapacityByPeriodAndTech WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_Emissions WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_Costs WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_Objective WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_VFlow_In WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_VFlow_Out WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("DELETE FROM Output_Curtailment WHERE scenario="+"'"+str(options.scenario)+"'")
-   			cur.execute("VACUUM")
-   			con.commit()			
+			cur.execute("DELETE FROM Output_CapacityByPeriodAndTech WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_Emissions WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_Costs WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_Objective WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_VFlow_In WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_VFlow_Out WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_V_Capacity WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_Curtailment WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("DELETE FROM Output_Duals WHERE scenario="+"'"+str(options.scenario)+"'")
+			cur.execute("VACUUM")
+			con.commit()
 
 		cur.close()
 		con.close()
@@ -203,7 +207,7 @@ class TemoaConfig( object ):
 	states = (
 	('mga', 'exclusive'),
 	)
-	
+
 	tokens = (
 		'dot_dat',
 		'output',
@@ -215,35 +219,39 @@ class TemoaConfig( object ):
 		'keep_pyomo_lp_file',
 		'saveEXCEL',
 		'myopic'
+		'myopic_periods'
 		'keep_myopic_databases'
+		'saveDUALS'
 		'saveTEXTFILE',
 		'mgaslack',
 		'mgaiter',
-		'path_to_db_io',
+		'path_to_data',
 		'path_to_logs',
 		'mgaweight'
 	)
-	
+
 	t_ANY_ignore  = '[ \t]'
-	
+
 	def __init__(self, **kwargs):
 		# Make compatible with Python 2.7 and 3
-		try: 
+		try:
 			import queue
 		except:
-			import Queue as queue		
+			import Queue as queue
 
 		self.__error          = list()
 		self.__mga_todo       = queue.Queue()
 		self.__mga_done       = queue.Queue()
-		
+
 		self.file_location    = None
 		self.dot_dat          = list() # Use Kevin's name.
 		self.output           = None # May update to a list if multiple output is required.
 		self.scenario         = None
 		self.saveEXCEL        = False
 		self.myopic           = False
-		self.KeepMyopicDBs    = False		
+		self.myopic_periods     = 0
+		self.KeepMyopicDBs    = False
+		self.saveDUALS     	  = False
 		self.saveTEXTFILE     = False
 		self.how_to_cite      = None
 		self.version          = False
@@ -261,17 +269,17 @@ class TemoaConfig( object ):
 		self.use_splines      = False
 
 		#Introduced during UI Development
-		self.path_to_db_io    = re.sub('temoa_model$', 'data_files', dirname(abspath(__file__)))# Path to where automated excel and text log folder will be save as output.
-		self.path_to_logs     = self.path_to_db_io+sep+"debug_logs" #Path to where debug logs will be generated for each run. By default in debug_logs folder in db_io.
-		self.path_to_lp_files = None 
+		self.path_to_data    = re.sub('temoa_model$', 'data_files', dirname(abspath(__file__)))# Path to where automated excel and text log folder will be save as output.
+		self.path_to_logs     = self.path_to_data+sep+"debug_logs" #Path to where debug logs will be generated for each run. By default in debug_logs folder in db_io.
+		self.path_to_lp_files = None
 		self.abort_temoa	  = False
-		
-		if 'd_solver' in kwargs.keys(): 
+
+		if 'd_solver' in kwargs.keys():
 			self.solver = kwargs['d_solver']
 		else:
 			self.solver = None
 
-	def __repr__(self): 
+	def __repr__(self):
 		width = 25
 		spacer = '\n' + '-'*width + '\n'
 		msg = spacer
@@ -282,9 +290,10 @@ class TemoaConfig( object ):
 			else:
 				msg += '{:>25s}  {}\n'.format(' ', i)
 		msg += '{:>{}s}: {}\n'.format('Output file', width, self.output)
-		msg += '{:>{}s}: {}\n'.format('Scenario', width, self.scenario)	
+		msg += '{:>{}s}: {}\n'.format('Scenario', width, self.scenario)
 		msg += '{:>{}s}: {}\n'.format('Spreadsheet output', width, self.saveEXCEL)
 		msg += '{:>{}s}: {}\n'.format('Myopic scheme', width, self.myopic)
+		msg += '{:>{}s}: {}\n'.format('Myopic years', width, self.myopic_periods)
 		msg += '{:>{}s}: {}\n'.format('Retain myopic databases', width, self.KeepMyopicDBs)
 		msg += spacer
 		msg += '{:>{}s}: {}\n'.format('Citation output status', width, self.how_to_cite)
@@ -304,43 +313,51 @@ class TemoaConfig( object ):
 	def t_ANY_COMMENT(self, t):
 		r'\#.*'
 		pass
-	
+
 	def t_dot_dat(self, t):
 		r'--input[\s\=]+[-\\\/\:\.\~\w]+(\.dat|\.db|\.sqlite)\b'
 		self.dot_dat.append(abspath(t.value.replace('=', ' ').split()[1]))
-	
+
 	def t_output(self, t):
 		r'--output[\s\=]+[-\\\/\:\.\~\w]+(\.db|\.sqlite)\b'
 		self.output = abspath(t.value.replace('=', ' ').split()[1])
-	
+
 	def t_scenario(self, t):
 		r'--scenario[\s\=]+\w+\b'
 		self.scenario = t.value.replace('=', ' ').split()[1]
-	
+
 	def t_saveEXCEL(self, t):
 		r'--saveEXCEL\b'
 		self.saveEXCEL = True
 
+	def t_saveDUALS(self, t):
+		r'--saveDUALS\b'
+		self.saveDUALS = True
+
 	def t_myopic(self, t):
 		r'--myopic\b'
-		self.myopic = True		
+		self.myopic = True
+
+	def t_myopic_periods(self, t):
+		r'--myopic_periods[\s\=]+[\d]+'
+		self.myopic_periods = int(t.value.replace('=', ' ').split()[1])
 
 	def t_keep_myopic_databases(self, t):
 		r'--keep_myopic_databases\b'
-		self.KeepMyopicDBs = True			
-	
+		self.KeepMyopicDBs = True
+
 	def t_saveTEXTFILE(self, t):
 		r'--saveTEXTFILE\b'
 		self.saveTEXTFILE = True
-		
-	def t_path_to_db_io(self, t):
-		r'--path_to_db_io[\s\=]+[-\\\/\:\.\~\w\ ]+\b'
-		self.path_to_db_io = abspath(t.value.replace('=', ',').split(",")[1])
-		
+
+	def t_path_to_data(self, t):
+		r'--path_to_data[\s\=]+[-\\\/\:\.\~\w\ ]+\b'
+		self.path_to_data = abspath(t.value.replace('=', ',').split(",")[1])
+
 	def t_path_to_logs(self, t):
 		r'--path_to_logs[\s\=]+[-\\\/\:\.\~\w\ ]+\b'
 		self.path_to_logs = abspath(t.value.replace('=', ',').split(",")[1])
-	
+
 	def t_how_to_cite(self, t):
 		r'--how_to_cite\b'
 		self.how_to_cite = True
@@ -356,37 +373,37 @@ class TemoaConfig( object ):
 	def t_solver(self, t):
 		r'--solver[\s\=]+\w+\b'
 		self.solver = t.value.replace('=', ' ').split()[1]
-	
+
 	def t_keep_pyomo_lp_file(self, t):
 		r'--keep_pyomo_lp_file\b'
 		self.keepPyomoLP = True
-		
+
 	def t_begin_mga(self, t):
 		r'--mga[\s\=]+\{'
 		t.lexer.push_state('mga')
 		t.lexer.level = 1
-	
+
 	def t_mga_mgaslack(self, t):
 		r'slack[\s\=]+[\.\d]+'
 		self.mga = float(t.value.replace('=', ' ').split()[1])
-		
+
 	def t_mga_mgaiter(self, t):
 		r'iteration[\s\=]+[\d]+'
 		self.mga_iter = int(t.value.replace('=', ' ').split()[1])
-	
+
 	def t_mga_mgaweight(self, t):
 		r'weight[\s\=]+(integer|normalized|distance)\b'
 		self.mga_weight = t.value.replace('=', ' ').split()[1]
-		
+
 	def t_mga_end(self, t):
 		r'\}'
 		t.lexer.pop_state()
 		t.lexer.level -= 1
-	
+
 	def t_ANY_newline(self,t):
 		r'\n+|(\r\n)+|\r+' # '\n' (In linux) = '\r\n' (In Windows) = '\r' (In Mac OS)
 		t.lexer.lineno += len(t.value)
-	
+
 	def t_ANY_error(self, t):
 		if not self.__error:
 			self.__error.append({'line': [t.lineno, t.lineno], 'index': [t.lexpos, t.lexpos], 'value': t.value[0]})
@@ -405,12 +422,12 @@ class TemoaConfig( object ):
 			return True
 		else:
 			return False
-	
+
 	def build(self,**kwargs):
 		import ply.lex as lex, os, sys
-		
+
 		db_or_dat = True # True means input file is a db file. False means input is a dat file.
-		
+
 		if 'config' in kwargs:
 			if isfile(kwargs['config']):
 				self.file_location= abspath(kwargs.pop('config'))
@@ -429,7 +446,7 @@ class TemoaConfig( object ):
 			while True:
 				tok = self.lexer.token()
 				if not tok: break
-		
+
 		if self.__error:
 			width = 25
 			msg = '\nIllegal character(s) in config file:\n'
@@ -438,7 +455,7 @@ class TemoaConfig( object ):
 				msg += "Line {} to {}: '{}'\n".format(e['line'][0], e['line'][1], e['value'])
 			msg += '-'*width + '\n'
 			sys.stderr.write(msg)
-		
+
 			try:
 				txt_file = open(self.path_to_logs+os.sep+"Complete_OutputLog.log", "w")
 			except BaseException as io_exc:
@@ -448,11 +465,11 @@ class TemoaConfig( object ):
 			txt_file.write( msg )
 			txt_file.close()
 			self.abort_temoa = True
-		
-		
+
+
 		if not self.dot_dat:
 			raise Exception('Input file not specified.')
-		
+
 		for i in self.dot_dat:
 			if not isfile(i):
 				raise Exception('Cannot locate input file: {}'.format(i))
@@ -461,25 +478,25 @@ class TemoaConfig( object ):
 				db_or_dat = False
 			elif (i_ext == '.db') or (i_ext == '.sqlite') or (i_ext == '.sqlite3') or (i_ext == 'sqlitedb'):
 				db_or_dat = True
-			
+
 		if not self.output and db_or_dat:
 			raise Exception('Output file not specified.')
-		
+
 		if db_or_dat and not isfile(self.output):
 			raise Exception('Cannot locate output file: {}.'.format(self.output))
-		
+
 		if not self.scenario and db_or_dat:
 			raise Exception('Scenario name not specified.')
-		
+
 		if self.mga_iter:
 			for i in range(self.mga_iter):
 				self.__mga_todo.put(self.scenario + '_mga_' + str(i))
 
-		f = open(os.devnull, 'w'); 
+		f = open(os.devnull, 'w');
 		sys.stdout = f # Suppress the original DB_to_DAT.py output
-		
+
 		counter = 0
-		
+
 		for ifile in self.dot_dat:
 			i_name, i_ext = splitext(ifile)
 			if i_ext != '.dat':

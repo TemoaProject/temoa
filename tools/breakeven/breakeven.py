@@ -79,7 +79,6 @@ def coef_IC(instance, target_tech, target_year):
     P_0 = min( instance.time_optimize )
     P_e = instance.time_future.last()
     GDR = value( instance.GlobalDiscountRate )
-    MLL = instance.ModelLoanLife
     MPL = instance.ModelProcessLife
     LLN = instance.LifetimeLoanProcess
     x   = 1 + GDR    # convenience variable, nothing more.
@@ -112,7 +111,6 @@ def coef_FC(instance, target_tech, target_year):
     P_0 = min( instance.time_optimize )
     P_e = instance.time_future.last()
     GDR = value( instance.GlobalDiscountRate )
-    MLL = instance.ModelLoanLife
     MPL = instance.ModelProcessLife
     LLN = instance.LifetimeLoanProcess
     x   = 1 + GDR    # convenience variable, nothing more.
@@ -178,7 +176,6 @@ def sensitivity(dat, techs):
         vintages = instance.vintage_optimize
         P_0 = min( instance.time_optimize )
         GDR = value( instance.GlobalDiscountRate )
-        MLL = instance.ModelLoanLife
         MPL = instance.ModelProcessLife
         LLN = instance.LifetimeLoanProcess
         x   = 1 + GDR    # convenience variable, nothing more.

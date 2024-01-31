@@ -6,7 +6,7 @@ Preface
 
 This manual, in both `PDF`_ and `HTML`_ form, is the official documentation of
 Tools for Energy Model Optimization and Analysis (Temoa).  It describes all 
-functionality of the Temoa model, and explains the mathematical underpinnings of 
+functionality of the Temoa model, and provides a mathematical description of 
 the implemented equations.
 
 Besides this documentation, there are a couple other sources for Temoa-oriented 
@@ -65,7 +65,7 @@ Why Temoa?
 ----------
 
 In short, because we believe that ESOM-based analyses should be repeatable by
-independent third parties.  The only realistic method to make this happen is to
+independent third parties.  The only way to make this happen is to
 have a freely available model, and to create an ecosystem of freely shared data
 and model inputs.
 
@@ -128,8 +128,9 @@ Next, download the `environment.yml
 <https://github.com/TemoaProject/temoa/blob/energysystem/environment.yml>`_ file
 from our `Github repo <https://github.com/TemoaProject/temoa>`__, and place it in
 a new directory named ‘temoa-py3.’ Create this new directory in a location where
-you wish to store the environment. Navigate to this directory and execute the
-following from the command line:
+you wish to store the environment. On a MAc, the anaconda environment files are
+stored in the following location by default: :code:`<user>/opt/anaconda/envs`
+Navigate to this directory and execute the following from the command line:
 
 .. parsed-literal::
   $ conda env create
@@ -139,21 +140,22 @@ Then activate the environment as follows:
 .. parsed-literal::
   $ conda activate temoa-py3
 
-More information on virtual environments can be found `here
-<https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/>`_.
+For additional guidance, `This YouTube tutorial <https://youtu.be/XYoxUGuZG2A>`
+walks through the creation of the Temoa environment. More information on virtual
+environments can be found 
+`here <https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/>`_.
 This new conda environment contains several elements, including Python 3, a
 compatible version of Pyomo, matplotlib, numpy, scipy, and two free solvers
 (`GLPK <https://www.gnu.org/software/glpk/>`_ and `CBC
 <https://github.com/coin-or/Cbc>`_). Windows users: the CBC solver is not
 available for Windows through conda. Thus, in order to install the environment
-properly, the last line of the ‘environment.yml’ file specifying ‘coincbc’
+properly, the last line of the :code:`environment.yml` file specifying :code:`coincbc`
 should be deleted. A few notes for on the choice of solvers. Different solvers
 have widely varying solution times. If you plan to run Temoa with large datasets
 and/or conduct uncertainty analysis, you may want to consider installing
 commercial linear solvers such as `CPLEX
 <https://www.ibm.com/analytics/cplex-optimizer>`_ or `Gurobi
-<https://www.gurobi.com/>`_. Both offer free academic licenses. Another option
-is to run CPLEX on the `NEOS <https://neos-server.org/neos/>`_ server.
+<https://www.gurobi.com/>`_. Both offer free academic licenses.
 
 There are three ways to run the model, each of which is detailed below. Note that
 the example commands utilize 'temoa_utopia', a commonly used test case for ESOMs.
@@ -166,7 +168,7 @@ for Temoa. There are a couple of options for obtaining and running Temoa from
 GitHub. If you want to simply run the model, you can download Temoa from GitHub
 as a zip file. Navigate to our `Github repo <https://github.com/TemoaProject/temoa>`__,
 and click the green ‘clone or download’ button near the top-right corner. Select
-‘Download ZIP,’ and you can download the entire Temoa ‘energysystem’ (our main branch)
+‘Download ZIP,’ and you can download the entire Temoa :code:`energysystem` (our main branch)
 to your local machine. The second option creates a local copy of the model source
 code in our GitHub repository. This is a two step process: first install git and
 then ‘clone’ the repository. Under Linux, git can be installed through the default
@@ -182,7 +184,7 @@ Note that cloning the repository will supply the latest version of the code, and
 allow you to archive changes to the code and data in your own local git
 repository.
 
-A few basic input data files are included in the ‘temoa/data_files’ folder.
+A few basic input data files are included in the :code:`temoa/data_files`` folder.
 Additional Temoa-compatible datasets are available in `this separate GitHub
 repo <https://github.com/TemoaProject/data>`_.
 
@@ -193,7 +195,9 @@ conditions inevitably arise. Please use the `Temoa forum
 
 Running Temoa
 -------------
-The most basic way to run Temoa is with an input data (DAT) file:
+Temoa should always be run from the top-level from the top-level
+:code:`temoa` directory. The most basic way to run Temoa is with an input data
+(DAT) file:
 
 .. parsed-literal::
   $ python temoa_model/ /path/to/dat/file
@@ -206,14 +210,12 @@ dataset:
   $ python temoa_model/ data_files/utopia-15.dat
 
 To run the model with more features, use a configuration (‘config’) file. An
-example config file called ‘config_sample’ resides within the ‘temoa_model’
+example config file called :code:`config_sample`` resides within the :code:`temoa_model``
 folder. Running the model with a config file allows the user to (1) use a sqlite
 database for storing input and output data, (2) create a formatted Excel output
 file, (2) specify the solver to use, (3) return the log file produced during
 model execution, (4) return the lp file utilized by the solver, and (5) to
-execute modeling-to-generate alternatives (MGA). Note that if you do not have
-access to a commercial solver, it may be faster run cplex on the NEOS server.
-To do so, simply specify cplex as the solver and uncomment the ‘–neos’ flag.
+execute modeling-to-generate alternatives (MGA).
 
 .. parsed-literal::
   $ python temoa_model/ --config=temoa_model/config_sample
@@ -241,6 +243,12 @@ To do so, simply specify cplex as the solver and uncomment the ‘–neos’ fla
                           solvers' for a list of solvers with which Pyomo can
                           interface. The list shown here is what Pyomo can
                           currently find on this system. [Default: cplex]
+
+To supplement this documentation, we have also created a
+`YouTube video tutorial <https://youtu.be/WtzCrroAXnQ>` that explains
+how to run Temoa from the command line. There is also an option to run 
+`Temoa on the cloud <https://model.temoacloud.com>`, which
+is explained in `this video tutorial <https://youtu.be/fxYO_kIs364>`. 
 
 ====================================
 Database Construction
@@ -357,21 +365,22 @@ Visualization
 Network Diagrams
 ----------------
 
-From the definition of the Temoa model as "an algebraic network of linked
-processes," a directed network graph is a natural visualization.  Temoa utilizes
-an open source graphics package called `Graphviz`_ to create a series of data-specific and
-interactive energy-system maps. Currently, the output graphs consist of a full 
-energy system map as well as capacity and activity results per model time period. 
+Since Temoa model consists of an energy network in which technologies are connected
+by the flow of energy commodities, a directed network graph represents an excellent way
+to visualize a given energy system representation in a Temoa-compatible input database.
+Temoa utilizes an open source graphics package called `Graphviz`_ to create a series of
+data-specific and interactive energy-system maps. Currently, the output graphs consist of
+a full energy system map as well as capacity and activity results per model time period. 
 In addition, users can create subgraphs focused on a particular commodity or technology.
 
-The programmatic interaction with Graphviz is entirely text based.  The input files 
-created by Temoa for Graphviz provide another means to debug the model and create 
-an archive of visualizations for auditing purposes.  In addition, we 
-have taken care to make these intermediate files well-formatted.
+There are a couple ways to utilize Graphviz. The first way is to use the version embedded
+in the :code:`Network_diagrams.ipynb` jupyter notebook available in the :code:`data_processing`
+folder. This `YouTube video tutorial <https://youtu.be/06SMhFilwLo>` walks through the process
+of using the jupyter notebook.
 
-To utilize graphviz, make sure it is installed on your local machine. Then 
-navigate to the :code:`data_processing` folder, where the graphviz script and database
-files reside. To review all of the graphviz options, use the :code:`--help` flag:
+The second way is to use graphviz from the command line. To do so, navigate to the
+:code:`data_processing` folder, where the graphviz script resides. To review all of the
+graphviz options, use the :code:`--help` flag:
 
 .. parsed-literal::
   $ python MakeGraphviz.py --help
@@ -379,9 +388,11 @@ files reside. To review all of the graphviz options, use the :code:`--help` flag
 The most basic way to use graphviz is to view the full energy system map:
 
 .. parsed-literal::
-  $ python MakeGraphviz.py -i temoa_utopia.sqlite
+  $ python MakeGraphviz.py -i ../data_files/temoa_utopia.sqlite
 
-The resultant system map will look like this:
+In the command above, note that we have to point the Graphviz module to the
+:code:`temoa_utopia` database file, which resides in the :code:`data_files`
+directory. The resultant system map will look like this:
 
 .. Figure:: images/simple_model.*
    :align: center
@@ -399,8 +410,17 @@ and technology flows in a particular model time period. These results are associ
 with a specific model run stored in the model database. To view the results, include 
 the scenario flag (:code:`-s`) and a specific model year (:code:`-y`).
 
+Note that when Graphiz runs, it creates a folder within the :code:`data_processing`
+folder. The folder itself is assigned the name of the database file, with
+:code:`input_graphviz` appended to the end. This descriptor changes if using Graphviz
+to visualize output graphics. Within this Graphviz-generated folder are two files. The
+graphics file (default: svg) is a viewable image of the network. The dot file is the
+input file to Graphviz that is created programmatically. Note that the dot files provide
+another means to debug the model and create an archive of visualizations for auditing
+purposes. In addition, we have taken care to make these intermediate files well-formatted.
+
 .. parsed-literal::
-  $ python MakeGraphviz.py -i temoa_utopia.sqlite -s test_run -y 1990
+  $ python MakeGraphviz.py -i ../data_files/temoa_utopia.sqlite -s test_run -y 1990
 
 .. figure:: images/global_results.*
    :align: center
@@ -414,7 +434,7 @@ The output can also be fine-tuned to show results associated with a specific
 commodity or technology. For example:
 
 .. parsed-literal::
-  $ python MakeGraphviz.py -i dbs/temoa_utopia.sqlite -s test_run -y 2010 -b E31
+  $ python MakeGraphviz.py -i ../data_files/temoa_utopia.sqlite -s test_run -y 2010 -b E31
 
 .. figure:: images/techvintage_results.*
    :align: center
@@ -428,9 +448,8 @@ commodity or technology. For example:
 Output Graphs
 -------------
 
-Temoa can also be used to generate output graphs using matplotlib 
-(https://matplotlib.org/). From the command line, navigate to the :code:`db_io` 
-folder and execute the following command:
+Temoa can also be used to generate output graphs using `matplotlib <https://matplotlib.org/>`.
+From the command line, navigate to the :code:`data_processing` folder and execute the following command:
 
 .. parsed-literal::
   $ python MakeOutputPlots.py --help
@@ -439,7 +458,7 @@ The command above will specify all of the flags required to created a stacked ba
 or line plot. For example, consider the following command:
 
 .. parsed-literal::
-  $ python MakeOutputPlots.py -i dbs/temoa_utopia.sqlite -s test_run -p capacity -c electric --super
+  $ python MakeOutputPlots.py -i ../data_files/temoa_utopia.sqlite -s test_run -p capacity -c electric --super
 
 Here is the result:
 
@@ -452,8 +471,8 @@ Here is the result:
    associated with each technology in the electric sector from the 'test_run' 
    scenario drawn from the 'temoa_utopia' database. Because the :code:`super` 
    flag was specified, technologies are grouped together based on user-specified 
-   categories in the 'tech_category' column of the 'technologies' table of the 
-   database.
+   categories in the :code:`tech_category`` column of the :code:`technologies`
+   table of the database.
 
 
 =====================
@@ -468,8 +487,8 @@ The Math Behind Temoa
    definitions.
 
 The heart of Temoa is a technology explicit energy system optimization model.
-It is an algebraic network of linked processes -- understood by the model as a
-set of engineering characteristics (e.g. capital cost, efficiency, capacity
+It is an algebraic network of linked processes -- where each process is defined
+by a set of engineering characteristics (e.g. capital cost, efficiency, capacity
 factor, emission rates) -- that transform raw energy sources into end-use
 demands.  The model objective function minimizes the present-value cost of
 energy supply by optimizing installed capacity and its utilization over time.
@@ -484,58 +503,32 @@ energy supply by optimizing installed capacity and its utilization over time.
    :figclass: align-center
    :figwidth: 70%
 
-   A common visualization of energy system models is a directed network graph, with energy
-   sources on the left and end-use demands on the right.  The modeler must
-   specify the specific end-use demands to be met, the technologies of the
-   system (rectangles), and the inputs and outputs of each (red and green
-   arrows).  The circles represent distinct types of energy carriers.
+   A common visualization of energy system models is a directed network graph,
+   with energy sources on the left and end-use demands on the right.  The
+   modeler must specify the end-use demands to be met, the technologies defined
+   within the system (rectangles), and the inputs and outputs of each (red and green
+   arrows).  The circles represent distinct energy carriers that connect
+   technologies within the energy system network.
 
 The most fundamental tenet of the model is the understanding of energy flow,
 treating all processes as black boxes that take inputs and produce outputs.
 Specifically, Temoa does not care about the inner workings of a process, only
 its global input and output characteristics.  In this vein, the above graphic
-can be broken down into process-specific elements.  For example, the coal power plant
-takes as input coal and produces electricity, and is subject to various costs
-(e.g. variable costs) and constraints (e.g. efficiency) along the way.
+can be broken down into process-specific elements.  For example, the coal power
+plant takes as input coal and produces electricity, and is subject to various
+costs (e.g. variable costs) and constraints (e.g. efficiency) along the way.
 
-.. graphviz::
-   :alt: A single process, with various engineering characteristics.
-
-   digraph coal {
-   	rankdir = "LR" ;
-   	node [ style="filled", shape="circle" ] ;
-   	edge [ arrowhead="vee", labelfontcolor="lightgreen" ] ;
-
-   	coal [ label="coal" ];
-   	coal_plant [ shape="none", style="rounded", label=<
-   <font color="#666666" face="Helvetica Bold">
-   <table border="0" cellborder="0" cellspacing="0">
-   	<tr>
-   		<td cellpadding="4" align="center" bgcolor="green4"><font color="#ffffff">Process: coal_power_plant</font></td>
-   	</tr>
-   	<tr><td></td></tr>
-   	<tr><td align="left">installed capacity</td></tr>
-   	<tr><td align="left">efficiency</td></tr>
-   	<tr><td align="left">install cost</td></tr>
-   	<tr><td align="left">fixed cost</td></tr>
-   	<tr><td align="left">variable cost</td></tr>
-   	<tr><td align="left">emission per unit activity</td></tr>
-   	<tr><td align="left">useful life</td></tr>
-   	<tr><td align="left">loan life</td></tr>
-   	<tr><td align="left">...</td></tr>
-   </table>
-   </font>> ] ;
-   	electricity [ label="electricity" ];
-
-   	coal -> coal_plant [ label="Input, (V_FlowIn)" ];
-   	coal_plant -> electricity [ label="Output, (V_FlowOut)"];
-   }
+.. figure:: images/coal_process.png
+   :align: center
+   :figclass: center
+   :figwidth: 60%
 
 
-The modeler defines the processes and engineering characteristics through an
-amalgam of sets and parameters, described in the next few sections.  Temoa then
-translates these into variables and constraints that an optimizer may then
-solve.
+The modeler defines the processes and engineering characteristics through a
+combination of sets and parameters, described in the next few sections.  Temoa then
+utilizes these parameters, along with the associated technology-specific decision
+variables for capacity and activity, to create the objective function and
+constraints that are used during the optimization process.
 
 .. _Sets:
 
@@ -572,9 +565,9 @@ Conventions
 
    .. math::
 
-      C_{variable} = \sum_{p, s, d, i, t, v, o \in \Theta_{VC}} \left (
-              \textbf{FO}_{p, s, d, i, t, v, o}
-        \cdot {VC}_{p, t, v}
+      C_{variable} = \sum_{r, p, s, d, i, t, v, o \in \Theta_{VC}} \left (
+              \textbf{FO}_{r, p, s, d, i, t, v, o}
+        \cdot {VC}_{r, p, t, v}
         \cdot R_p
         \right )
 
@@ -587,32 +580,29 @@ Conventions
    .. math::
 
        \left (
-               \text{CFP}_{t, v}
-         \cdot \text{C2A}_{t}
+               \text{CFP}_{r, t, v}
+         \cdot \text{C2A}_{r, t}
          \cdot \text{SEG}_{s, d}
-         \cdot \text{TLF}_{p, t, v}
+         \cdot \text{TLF}_{r, p, t, v}
        \right )
-       \cdot \textbf{CAP}_{t, v}
+       \cdot \textbf{CAP}_{r, t, v}
        =
-       \sum_{I, O} \textbf{FO}_{p, s, d,i, t, v, o}
+       \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
        +
-       \sum_{I, O} \textbf{CUR}_{p,s,d,i,t,v,o}
+       \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
        \\
-       \forall \{p, s, d, t, v\} \in \Theta_{\text{FO}}
+       \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
 
  * We use the word 'slice' to refer to the tuple of season and time of day
-   :math:`\{s,d\}`. For example, "winter-night".
+   :math:`\{s,d\}`. Note that these time slices are user-defined, and can
+   represent time ranging large blocks of time (e.g., winter-night) to every
+   hour in a given season.
 
  * We use the word 'process' to refer to the tuple of technology and vintage
-   (:math:`\{t,v\}`), when knowing the vintage of a process is not pertinent
-   to the context at hand.
+   (:math:`\{t,v\}`). For example, solar PV (technology) installed in 2030
+   (vintage).
 
-   * In fact, in contrast to most other ESOMs, Temoa is "process centric."
-     This is a fairly large conceptual difference that we explain in detail in
-     the rest of the documentation.  However, it is a large enough point that
-     we make it here for even the no-time quick-start modelers: think in terms
-     of "processes" while modeling, not "technologies and start times".
 
  * Mathematical notation:
 
@@ -638,91 +628,102 @@ Sets
              asterisked (\*) elements are automatically derived by the model and
              are not user-specifiable.
    :header: "Set","Temoa Name","Data Type","Short Description"
-   :widths: 10, 25, 15, 50
+   :widths: 8, 28, 14, 50
 
    ":math:`{}^*\text{C}`",":code:`commodity_all`","string","union of all commodity sets"
    ":math:`\text{C}^d`",":code:`commodity_demand`","string","end-use demand commodities"
-   ":math:`\text{C}^e`",":code:`commodity_emissions`","string","emission commodities (e.g. :math:`\text{CO}_\text{2}`, :math:`\text{NO}_\text{x}`)"
+   ":math:`\text{C}^e`",":code:`commodity_emissions`","string","emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`)"
    ":math:`\text{C}^p`",":code:`commodity_physical`","string","general energy forms (e.g. electricity, coal, uranium, oil)"
    ":math:`{}^*\text{C}^c`",":code:`commodity_carrier`","string","physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`)"
-   ":math:`\text{I}`",,"string","alias of :math:`\text{C}_p`; used in documentation only to mean ""input"""
-   ":math:`\text{O}`",,"string","alias of :math:`\text{C}_c`; used in documentation only to mean ""output"""
+   ":math:`\text{I}`",,"string","alias of :math:`\text{C}^p`; used in documentation only to mean ""input"""
+   ":math:`\text{O}`",,"string","alias of :math:`\text{C}^c`; used in documentation only to mean ""output"""
    ":math:`\text{P}^e`",":code:`time_existing`",":math:`\mathbb{Z}`","model periods before optimization begins"
    ":math:`\text{P}^f`",":code:`time_future`",":math:`\mathbb{Z}`","model time scale of interest; the last year is not optimized"
    ":math:`{}^*\text{P}^o`",":code:`time_optimize`",":math:`\mathbb{Z}`","model time periods to optimize; (:math:`\text{P}^f - \text{max}(\text{P}^f)`)"
+   ":math:`\text{R}`",":code:`regions`","string","distinct geographical regions"
    ":math:`{}^*\text{V}`",":code:`vintage_all`",":math:`\mathbb{Z}`","possible tech vintages; (:math:`\text{P}^e \cup \text{P}^o`)"
    ":math:`\text{S}`",":code:`time_season`","string","seasonal divisions (e.g. winter, summer)"
    ":math:`\text{D}`",":code:`time_of_day`","string","time-of-day divisions (e.g. morning)"
    ":math:`{}^*\text{T}`",":code:`tech_all`","string","all technologies to be modeled; (:math:`{T}^r \cup {T}^p`)"
-   ":math:`\text{T}^r`",":code:`tech_resource`","string","resource extraction techs"
-   ":math:`\text{T}^p`",":code:`tech_production`","string","techs producing intermediate commodities"
-   ":math:`\text{T}^b`",":code:`tech_baseload`","string","baseload electric generators; (:math:`{T}^b \subset T`)"
-   ":math:`\text{T}^m`",":code:`tech_ramp`","string","electric generators with a ramp rate limit; (:math:`{T}^m \subset T`)"
-   ":math:`\text{T}^e`",":code:`tech_reserve`","string","electric generators contributing to the reserve margin requirement; (:math:`{T}^e \subset T`)"
-   ":math:`\text{T}^s`",":code:`tech_storage`","string","storage technologies; (:math:`{T}^s \subset T`)"
-   ":math:`\text{T}^c`",":code:`tech_curtailment`","string","technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset T`)"
    ":math:`\text{T}^a`",":code:`tech_annual`","string","technologies that produce constant annual output; (:math:`{T}^a \subset T`)" 
+   ":math:`\text{T}^b`",":code:`tech_baseload`","string","baseload electric generators; (:math:`{T}^b \subset T`)"
+   ":math:`\text{T}^c`",":code:`tech_curtailment`","string","technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset T`)"
+   ":math:`\text{T}^e`",":code:`tech_exchange`","string","technologies used for interregional commodity flow; (:math:`{T}^e \subset T`)"   
+   ":math:`\text{T}^f`",":code:`tech_flex`","string","technologies producing excess commodity flows; (:math:`{T}^f \subset T`)"
+   "",":code:`groups`","string","defined groups of technologies"
+   ":math:`\text{T}^f`",":code:`tech_groups`","string","technologies belonging to each group defined above"
+   ":math:`\text{T}^p`",":code:`tech_production`","string","techs producing intermediate commodities"
+   ":math:`\text{T}^r`",":code:`tech_resource`","string","resource extraction technologies"
+   ":math:`\text{T}^m`",":code:`tech_ramping`","string","electric generators with a ramp rate limit; (:math:`{T}^m \subset T`)"
+   ":math:`\text{T}^{res}`",":code:`tech_reserve`","string","electric generators contributing to the reserve margin requirement; (:math:`{T}^e \subset T`)"
+   ":math:`\text{T}^s`",":code:`tech_storage`","string","storage technologies; (:math:`{T}^s \subset T`)"
+   ":math:`\text{T}^v`",":code:`tech_variable`","string","technologies used in TechInputSplitAverage constraint; (:math:`{T}^v \subset T`)"
    ":math:`\text{T}^{cmax}`",":code:`tech_capacity_max`","string","subset of technologies used in MaxCapacitySet constraint; (:math:`{T}^{cmax} \subset T`)"
    ":math:`\text{T}^{cmin}`",":code:`tech_capacity_min`","string","subset of technologies used in MinCapacitySet constraint; (:math:`{T}^{cmin} \subset T`)"
 
-
 Temoa uses two different set notation styles, one for code representation and
 one that utilizes standard algebraic notation.  For brevity, the mathematical
-representation uses capital glyphs to denote sets, and small glyphs to represent
-items within sets.  For example, :math:`T` represents the set of all
+representation uses capital letters to denote sets, and lower case letters to
+represent items within sets.  For example, :math:`T` represents the set of all
 technologies and :math:`t` represents an item within :math:`T`.
 
 The code representation is more verbose than the algebraic version, using full
 words.  This documentation presents them in an italicized font.  The same
 example of all technologies is represented in the code as :code:`tech_all`.
-Note that regardless, the meanings are identical, with only minor interaction
-differences inherent to "implementation details."  :ref:`Table 1 <table_set>`
-lists all of the Temoa sets, with both notational schemes.
+:ref:`Table 1 <table_set>` lists all of the Temoa sets, with both sets of notation.
 
-Their are four basic set "groups" within Temoa: periods, annual "slices",
-technology, and energy commodities.  The technological sets contain all the
+There are four basic set "groups" within Temoa: periods, sub-annual "time slices",
+technologies, and energy commodities.  The technology-related sets contain all the
 possible energy technologies that the model may build and the commodities sets
 contain all the input and output forms of energy that technologies consume and
-produce.  The period and slice sets merit a slightly longer discussion.
+produce.  The period and time slice sets merit a slightly longer discussion.
 
-Temoa's conceptual model of *time* is broken up into three levels:
+Temoa's conceptual model of *time* is broken up into three levels, and energy supply
+and demand is balanced at each of these levels:
 
  * **Periods** - consecutive blocks of years, marked by the first year in the
    period.  For example, a two-period model might consist of :math:`\text{P}^f =
    \{2010, 2015, 2025\}`, representing the two periods of years from 2010
-   through 2014, and from 2015 through 2024.
+   through 2014, and from 2015 through 2024. Note the that last period element
+   \(2025\) does not represent a new time period, but rather defines the upper bound
+   for the second time period.
 
- * **Seasonal** - Each year may have multiple seasons.  For example, winter
-   might demand more heating, while spring might demand more cooling and
-   transportation.
+ * **Seasonal** - Each year may have multiple seasons. In a conventional time-sliced
+   model, the seasons may typically represent the four seasons: winter, spring summer,
+   and fall. However, the seasonal slices can represent any amount of time at the
+   sub-period scale. For example, in a database with representative days, the seasonal
+   slices can be used as generic containers to represent blocks of days.
 
- * **Daily** - Within a season, a day might have various times of interest.
-   For instance, the peak electrical load might occur midday in the summer, and
-   a secondary peak might happen in the evening.
+ * **Daily** - Within a season, a given day can be further subdivided into different
+   time segments. Less detailed databases may include larger blocks of time, such as morning,
+   afternoon, and night. In a database with representative days, each daily segment can
+   be used to represent every hour of the day.
+
 
 There are two specifiable period sets: :code:`time_exist` (:math:`\text{P}^e`)
 and :code:`time_future` (:math:`\text{P}^f`).  The :code:`time_exist` set
 contains periods before :code:`time_future`.  Its primary purpose is to specify
-the vintages for capacity that exist prior to the model optimization.  (This is
-part of Temoa's answer to what most other efforts model as "residual capacity".)
+the vintages for capacity that exist prior to the model optimization.
 The :code:`time_future` set contains the future periods that the model will
 optimize.  As this set must contain only integers, Temoa interprets the elements
 to be the boundaries of each period of interest.  Thus, this is an ordered set
 and Temoa uses its elements to automatically calculate the length of each
 optimization period; modelers may exploit this to create variable period lengths
-within a model. Temoa "names" each optimization period by the first year, and
-makes them easily accessible via the :code:`time_optimize` set.  This final
+within a given input database. Temoa "names" each optimization period by the first
+year, and makes them easily accessible via the :code:`time_optimize` set.  This final
 "period" set is not user-specifiable, but is an exact duplicate of
 :code:`time_future`, less the largest element.  In the above example, since
 :math:`\text{P}^f = \{2010, 2015, 2025\}`, :code:`time_optimize` does not
 contain 2025: :math:`\text{P}^o =\{2010, 2015\}`.
 
 One final note on periods: rather than optimizing each year within a period
-individually, Temoa makes a simplifying assumption that each period contains
-:math:`n` copies of a single, representative year.  Temoa optimizes just this
-characteristic year, and only delineates each year within a period through a
-time-value of money calculation in the objective function.  Figure 3.3 gives a
-graphical explanation of the annual delineation.
+individually, Temoa makes the simplifying assumption that each time period contains
+:math:`n` copies of a single, representative year.  Temoa optimizes capacity
+and activity for just this characteristic year within each time period, assuming
+the results for different years in the same time period are identical. The Temoa
+objective function, however, accounts for the total cost across all years in all
+model time periods. Figure 3.3 gives a graphical explanation of the annual
+delineation.
 
 .. _FigureObjectiveComparison:
 
@@ -734,7 +735,7 @@ graphical explanation of the annual delineation.
    :figwidth: 60%
 
    The left graph is of energy, while the right graph is of the annual costs.
-   In other words, the energy used in a period by a process is the same for all
+   The energy used in a period by a process is the same for all
    years (with exception for those processes that cease their useful life
    mid-period).  However, even though the costs incurred will be the same, the
    time-value of money changes due to the discount-rate.  As the fixed costs of
@@ -742,11 +743,10 @@ graphical explanation of the annual delineation.
    not fall on a period boundary require unique time-value multipliers in the
    objective function.
 
-Many model-based analyses require sub-annual variations in demand as well.  Temoa
-allows the modeler to subdivide years into slices, comprised of a season and a
-time of day (e.g.  winter evening).  Unlike the periods, there is no restriction
-on what labels the modeler may assign to the :code:`time_season` and
-:code:`time_of_day` set elements.  
+As noted above, Temoa allows the modeler to subdivide each year into a set of time
+slices, comprised of a season and a time of day.  Unlike :code:`time_future`, there
+is no restriction on what labels the modeler may assign to the :code:`time_season`
+and :code:`time_of_day` set elements.  
 
 
 A Word on Index Ordering
@@ -755,18 +755,18 @@ A Word on Index Ordering
 The ordering of the indices is consistent throughout the model to promote an
 intuitive "left-to-right" description of each parameter, variable, and
 constraint set.  For example, Temoa's output commodity flow variable
-:math:`FO_{p,s,d,i,t,v,o}` may be described as "in period (:math:`p`) during
-season (:math:`s`) at time of day (:math:`d`), the flow of input commodity
-(:math:`i`) to technology (:math:`t`) of vintage (:math:`v`) generates an output
-commodity flow (:math:`o`) of :math:`FO_{p,s,d,i,t,v,o}`."  For any indexed
-parameter or variable within Temoa, our intent is to enable a mental model of a
-left-to-right arrow-box-arrow as a simple mnemonic to describe the "input
-:math:`\rightarrow` process :math:`\rightarrow` output" flow of energy.  And
-while not all variables, parameters, or constraints have 7 indices, the 7-index
-order mentioned here (p, s, d, i, t, v, o) is the canonical ordering.  If you
-note any case where, for example, d comes before s, that is an oversight.  In
-general, if there is an index ordering that does not follow this rubric, we view
-that as a bug.
+:math:`FO_{r,p,s,d,i,t,v,o}` may be described as "in region (:math:`r`),
+in period (:math:`p`) during season (:math:`s`) at time of day (:math:`d`),
+the flow of input commodity (:math:`i`) to technology (:math:`t`) of vintage
+(:math:`v`) generates an output commodity flow (:math:`o`) of
+:math:`FO_{r,p,s,d,i,t,v,o}`."  For any indexed parameter or variable within
+Temoa, our intent is to enable a mental model of a simple left-to-right, arrow-box-arrow
+mnemonic to describe the "input :math:`\rightarrow` process
+:math:`\rightarrow` output" flow of energy.  And while not all variables, parameters,
+or constraints have 8 indices, the 8-index order mentioned here (r, p, s, d, i, t, v, o)
+is the canonical ordering.  If you note any case where, for example, d comes before s,
+that is an oversight.  In general, if there is an index ordering that does not follow
+this rubric, we view that as a bug.
 
 
 Deviations from Standard Mathematical Notation
@@ -781,12 +781,12 @@ ordered, such that the minimum element is "naught".  For example, if
 :math:`\text{P}^f = \{2015, 2020, 2030\}`, then :math:`P_0 = 2015`.  In
 other words, the capital :math:`\text{P}` with the naught subscript indicates
 the first element in the :code:`time_future` set.  We will explain the reason
-for this deviation shortly.
+for this notation shortly.
 
 The second set of deviations revolves around the use of the Theta superset
 (:math:`\Theta`).  The Temoa code makes heavy use of sparse sets, for both
 correctness and efficient use of computational resources.  For brevity, and
-to avoid discussion of some "implementation details," we do not enumerate their
+to avoid discussion of implementation details, we do not enumerate their
 logical creation here.  Instead, we rely on the readers general understanding of
 the context.  For example, in the sparse creation of the constraints of the
 Demand constraint class (explained in :ref:`NetworkConstraints` and
@@ -794,7 +794,7 @@ Demand constraint class (explained in :ref:`NetworkConstraints` and
 "for all the :math:`\{p, s, d, dem\}` tuples in
 :math:`\Theta_{\text{demand}}`".  This means that the constraint is only defined
 for the exact indices for which the modeler specified end-use demands via the
-Demand parameter.
+Demand parameter in the input data file.
 
 Summations also occur in a sparse manner.  For example, let's take another look at
 the :code:`Capacity` :eq:`Capacity` Constraint:
@@ -802,16 +802,16 @@ the :code:`Capacity` :eq:`Capacity` Constraint:
 .. math::
 
        \left (
-               \text{CFP}_{t, v}
-         \cdot \text{C2A}_{t}
+               \text{CFP}_{r, s, d, t, v}
+         \cdot \text{C2A}_{r, t}
          \cdot \text{SEG}_{s, d}
-         \cdot \text{TLF}_{p, t, v}
+         \cdot \text{TLF}_{r, p, t, v}
        \right )
-       \cdot \textbf{CAP}_{t, v}
+       \cdot \textbf{CAP}_{r, t, v}
    =
-       \sum_{I, O} \textbf{FO}_{p, s, d,i, t, v, o}
+       \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
        +
-       \sum_{I, O} \textbf{CUR}_{p,s,d,i,t,v,o}
+       \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
    \\
    \forall \{p, s, d, t, v\} \in \Theta_{\text{Capacity}}
@@ -819,10 +819,10 @@ the :code:`Capacity` :eq:`Capacity` Constraint:
 It defines the Capacity variable for every valid combination of :math:`\{p, v\}`,
 and includes the sum over all inputs and outputs of the FlowOut variable.  A
 naive implementation of this equation might include nonsensical items in each
-summation, such as an input of vehicle miles traveled and an output of
-sunlight for a wind powered turbine.  However, in this context, summing over the
-inputs and outputs (:math:`i` and :math:`o`) implicitly includes only the valid
-combinations of :math:`\{p, s, d, i, t, v, o\}`.
+summation, such as an input of vehicle miles traveled to an oil refinery or an
+output of sunlight from nuclear generating capacity.  However, in this context,
+summing over the inputs and outputs (:math:`i` and :math:`o`) implicitly
+includes only the valid combinations of :math:`\{p, s, d, i, t, v, o\}`.
 
 
 Parameters
@@ -831,45 +831,58 @@ Parameters
 .. _table_parameter:
 
 .. csv-table:: List of Temoa parameters with which a modeler might interact.
-           The asterisked (\*) elements are automatically derived by the model
-           and are not user-specifiable.
+           The asterisked (\*) parameters specified at the end of the table
+           are automatically derived by the model and are not user-specifiable.
    :header: "Parameter","Temoa Name","Domain","Short Description"
-   :widths: 12, 25, 10, 50
+   :widths: 14, 27, 10, 49
 
-   ":math:`\text{CFT}_{s,d,t}`","CapacityFactorTech",":math:`\mathbb{I}`","Technology-specific capacity factor"
-   ":math:`\text{CFD}_{s,d,t,v}`","CapacityFactorProcess",":math:`\mathbb{I}`","Process-specific capacity factor"
-   ":math:`\text{C2A}_{t,v}`","Capacity2Activity",":math:`\mathbb{R}^+_0`","Converts from capacity to activity units"
-   ":math:`\text{FC}_{p,t,v}`","CostFixed",":math:`\mathbb{R}`","Fixed operations \& maintenance cost"
-   ":math:`\text{IC}_{t,v}`","CostInvest",":math:`\mathbb{R}`","Tech-specific investment cost"
-   ":math:`\text{MC}_{p,t,v}`","CostVariable",":math:`\mathbb{R}`","Variable operations \& maintenance cost"
-   ":math:`\text{DEM}_{p,c}`","Demand",":math:`\mathbb{R}^+_0`","End-use demands, by period"
+   ":math:`\text{CC}_{r,p,t,v}`","CapacityCredit",":math:`\mathbb{I}`","Process-specific capacity credit"
+   ":math:`\text{CFT}_{r,s,d,t}`","CapacityFactorTech",":math:`\mathbb{I}`","Technology-specific capacity factor"
+   ":math:`\text{CFP}_{r,s,d,t,v}`","CapacityFactorProcess",":math:`\mathbb{I}`","Process-specific capacity factor"
+   ":math:`\text{C2A}_{r,t,v}`","CapacityToActivity",":math:`\mathbb{R}^+_0`","Converts from capacity to activity units"
+   ":math:`\text{CF}_{r,p,t,v}`","CostFixed",":math:`\mathbb{R}`","Fixed operations \& maintenance cost"
+   ":math:`\text{CI}_{r,t,v}`","CostInvest",":math:`\mathbb{R}`","Tech-specific investment cost"
+   ":math:`\text{CV}_{r,p,t,v}`","CostVariable",":math:`\mathbb{R}`","Variable operations \& maintenance cost"
+   ":math:`\text{DEM}_{r,p,c}`","Demand",":math:`\mathbb{R}^+_0`","End-use demands, by period"
    ":math:`\text{DDD}_{p,s,d}`","DemandDefaultDistribution",":math:`\mathbb{I}`","Default demand distribution"
-   ":math:`\text{DSD}_{p,s,d,c}`","DemandSpecificDistribution",":math:`\mathbb{I}`","Demand-specific distribution"
-   ":math:`\text{DR}_t`","DiscountRate",":math:`\mathbb{R}`","Tech-specific interest rate on investment"
-   ":math:`\text{EFF}_{i,t,v,o}`","Efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
-   ":math:`\text{EAC}_{i,t,v,o,e}`","EmissionsActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
-   ":math:`\text{ELM}_{p,e}`","EmissionsLimit",":math:`\mathbb{R}^+_0`","Emissions limit by time period"
-   ":math:`\text{ECAP}_{t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
+   ":math:`\text{DSD}_{r,p,s,d,c}`","DemandSpecificDistribution",":math:`\mathbb{I}`","Demand-specific distribution"
+   ":math:`\text{DR}_{r,t,v}`","DiscountRate",":math:`\mathbb{R}`","Tech-specific interest rate on investment"
+   ":math:`\text{EFF}_{r,i,t,v,o}`","Efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
+   ":math:`\text{EAC}_{r,i,t,v,o,e}`","EmissionActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
+   ":math:`\text{ELM}_{r,p,e}`","EmissionLimit",":math:`\mathbb{R}^+_0`","Emissions limit by region and period"
+   ":math:`\text{ECAP}_{r,t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
    ":math:`\text{GDR}`","GlobalDiscountRate",":math:`\mathbb{R}`","Global rate used to calculate present cost"
-   ":math:`\text{GRM}`","GrowthRateMax",":math:`\mathbb{R}`","Global rate used to calculate present cost"
-   ":math:`\text{GRS}`","GrowthRateSeed",":math:`\mathbb{R}`","Global rate used to calculate present cost"
-   ":math:`\text{LLN}_{t,v}`","LifetimeLoanProcess",":math:`\mathbb{N}`","Tech- and vintage-specific loan term"
-   ":math:`\text{LTC}_{p,t,v}`","LifetimeTech",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime"
-   ":math:`\text{MAX}_{p,t}`","MaxCapacity",":math:`\mathbb{R}^+_0`","maximum tech-specific capacity by period"
-   ":math:`\text{MIN}_{p,t}`","MinCapacity",":math:`\mathbb{R}^+_0`","minimum tech-specific capacity by period"
-   ":math:`\text{RSC}_{p,c}`","ResourceBound",":math:`\mathbb{R}^+_0`","Upper bound on resource use"
-   ":math:`\text{SD}_{t}`","StorageDuration",":math:`\mathbb{N}`","Storage duration per technology specified in hours"
+   ":math:`\text{GRM}_{r,t}`","GrowthRateMax",":math:`\mathbb{R}`","Global rate used to calculate present cost"
+   ":math:`\text{GRS}_{r,t}`","GrowthRateSeed",":math:`\mathbb{R}`","Global rate used to calculate present cost"
+   ":math:`\text{LLP}_{r,t,v}`","LifetimeLoanProcess",":math:`\mathbb{N}`","Tech- and vintage-specific loan term"
+   ":math:`\text{LLT}_{r,t}`","LifetimeLoanTech",":math:`\mathbb{N}`","Tech-specific loan term"
+   ":math:`\text{LTP}_{r,t,v}`","LifetimeProcess",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime"
+   ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime"
+   ":math:`\text{LIT}_{r,t,e,t}`","LinkedTechs","text","Dummy techs used to convert CO2 emissions to physical commodity"
+   ":math:`\text{MAA}_{r,p,t}`","MaxActivity",":math:`\mathbb{R}^+_0`","Maximum tech-specific activity by region and period"
+   ":math:`\text{MAC}_{r,p,t}`","MaxCapacity",":math:`\mathbb{R}^+_0`","Maximum tech-specific capacity by period"
+   ":math:`\text{MCS}_{t}`","MaxCapacitySum",":math:`\mathbb{R}^+_0`","Maximum capacity for a technology group"
+   ":math:`\text{MAR}_{r,t}`","MaxResource",":math:`\mathbb{R}^+_0`","Maximum resource production by tech across time periods"
+   ":math:`\text{MIA}_{r,p,t}`","MinActivity",":math:`\mathbb{R}^+_0`","Minimum tech-specific activity by region and period"
+   ":math:`\text{MIC}_{r,p,t}`","MinCapacity",":math:`\mathbb{R}^+_0`","Minimum tech-specific capacity by period"
+   ":math:`\text{MCS}_{t}`","MinCapacitySum",":math:`\mathbb{R}^+_0`","Minimum capacity for a technology group"
+   ":math:`\text{MGT}_{r}`","MinGenGroupTarget",":math:`\mathbb{R}^+_0`","Target applied to techs in MinActivityGroup constraint"
+   ":math:`\text{MGW}_{r,t}`","MinGenGroupWeight",":math:`\mathbb{R}^+_0`","Weight applied to techs in MinActivityGroup constraint"
+   ":math:`\text{MBY}`","MyopicBaseYear",":math:`\mathbb{N}`","Objective function base year when running myopically"   
+   ":math:`\text{PRM}_{r}`","PlanningReserveMargin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"   
+   ":math:`\text{RMD}_{r,t}`","RampDown",":math:`\mathbb{R}`","Rate at which generation techs can ramp output down"
+   ":math:`\text{RMU}_{r,t}`","RampUp",":math:`\mathbb{R}`","Rate at which generation techs can ramp output up"
+   ":math:`\text{RSC}_{r.p,c}`","ResourceBound",":math:`\mathbb{R}^+_0`","Maximum resource production by tech and period"
+   ":math:`\text{SD}_{r,t}`","StorageDuration",":math:`\mathbb{N}`","Storage duration per technology, specified in hours"
    ":math:`\text{SEG}_{s,d}`","SegFrac",":math:`\mathbb{I}`","Fraction of year represented by each (s, d) tuple"
    ":math:`\text{SIF}_{t}`","StorageInitFrac",":math:`\mathbb{I}`","Initial storage charge level expressed as fraction of full charge"
-   ":math:`\text{TIS}_{i,t}`","TechInputSplit",":math:`\mathbb{I}`","Technology input fuel ratio"
-   ":math:`\text{TOS}_{t,o}`","TechOutputSplit",":math:`\mathbb{I}`","Technology output fuel ratio"
+   ":math:`\text{TIS}_{r,i,t}`","TechInputSplit",":math:`\mathbb{I}`","Technology input fuel ratio at time slice level"
+   ":math:`\text{TISA}_{r,i,t}`","TechInputSplitAverage",":math:`\mathbb{I}`","Average annual technology input fuel ratio"   
+   ":math:`\text{TOS}_{r,t,o}`","TechOutputSplit",":math:`\mathbb{I}`","Technology output fuel ratio at time slice level"
    ":math:`{}^*\text{LA}_{t,v}`","LoanAnnualize",":math:`\mathbb{R}^+_0`","Loan amortization by tech and vintage; based on :math:`DR_t`"
-   ":math:`{}^*\text{MLL}_{t,v}`","ModelLoanLife",":math:`\mathbb{N}`","Smaller of model horizon or process loan life"
-   ":math:`{}^*\text{MPL}_{p,t,v}`","ModelTechLife",":math:`\mathbb{N}`","Smaller of model horizon or process tech life"
+   ":math:`{}^*\text{MPL}_{p,t,v}`","ModelProcessLife",":math:`\mathbb{N}`","Smaller of remaining model horizon or process tech life"
+   ":math:`{}^*\text{PLF}_{r,p,t,v}`","ProcessLifeFrac",":math:`\mathbb{I}`","Fraction of available process capacity by region and period "
    ":math:`{}^*\text{LEN}_p`","PeriodLength",":math:`\mathbb{N}`","Number of years in period :math:`p`"
-   ":math:`{}^*\text{R}_p`","PeriodRate",":math:`\mathbb{R}`","Converts future annual cost to discounted period cost"
-   ":math:`{}^*\text{TLF}_{p,t,v}`","TechLifetimeFrac",":math:`\mathbb{I}`","Fraction of last time period that tech is active"
-
 
 
 .. _influential_efficiency:
@@ -877,7 +890,7 @@ Parameters
 Efficiency
 ^^^^^^^^^^
 
-:math:`{EFF}_{i \in C_p,t \in T,v \in V,o \in C_c}`
+:math:`{EFF}_{r \in R, i \in C_p, t \in T, v \in V, o \in C_c}`
 
 We present the efficiency (:math:`EFF`) parameter first as it is one of the most
 critical model parameters.  Beyond defining the conversion efficiency of each
@@ -892,10 +905,20 @@ and will provide the user a warning with pointed debugging information.
 
 .. _CapacityFactorTech:
 
+CapacityCredit
+^^^^^^^^^^^^^^
+
+:math:`{CC}_{r \in R, p \in P, t \in T, v \in V}`
+
+The capacity credit represents the fraction of total installed capacity of
+a process that can be relied upon during the time slice in which peak 
+electricity demand occurs. This parameter is used in the :math:`ReserveMargin`
+constraint.
+
 CapacityFactorTech
 ^^^^^^^^^^^^^^^^^^
 
-:math:`{CFT}_{s \in S, d \in D, t \in T}`
+:math:`{CFT}_{r \in R, s \in S, d \in D, t \in T}`
 
 Temoa indexes the :code:`CapacityFactorTech` parameter by season, time-of-day,
 and technology.
@@ -903,19 +926,19 @@ and technology.
 CapacityFactorProcess
 ^^^^^^^^^^^^^^^^^^^^^
 
-:math:`{CF}_{s \in S, d \in D, t \in T, v \in V}`
+:math:`{CFP}_{r \in R, s \in S, d \in D, t \in T, v \in V}`
 
 In addition to :ref:`CapacityFactorTech`, there may be cases where different
 vintages of the same technology have different capacity factors. For example,
-newer vintages of wind turbines may have higher capacity factors. So , 
+newer vintages of wind turbines may have higher capacity factors. So, 
 :code:`CapacityFactorProcess` allows users to specify the capacity factor by
 season, time-of-day, technology, and vintage.
 
 
-Capacity2Activity
-^^^^^^^^^^^^^^^^^
+CapacityToActivity
+^^^^^^^^^^^^^^^^^^
 
-:math:`{C2A}_{t \in T}`
+:math:`{C2A}_{r \in R, t \in T}`
 
 Capacity and Activity are inherently two different units of measure.  Capacity
 represents the maximum flow of energy per time (:math:`\frac{energy}{time}`),
@@ -946,7 +969,7 @@ used 100% of the time?"
 CostFixed
 ^^^^^^^^^
 
-:math:`{FC}_{p \in P,t \in T,v \in V}`
+:math:`{CF}_{r \in R, p \in P, t \in T, v \in V}`
 
 The :code:`CostFixed` parameter specifies the fixed cost associated with any
 process.  Fixed costs are those that must be paid, regardless of how much the
@@ -964,7 +987,7 @@ Cap}`).
 CostInvest
 ^^^^^^^^^^
 
-:math:`{IC}_{t \in T,v \in P}`
+:math:`{CI}_{r \in R, t \in T, v \in P}`
 
 The :code:`CostInvest` parameter specifies the process-specific investment cost.
 Unlike the :code:`CostFixed` and :code:`CostVariable` parameters,
@@ -977,7 +1000,7 @@ only used in the default objective function (:math:`\tfrac{Dollars}{Unit Cap}`).
 CostVariable
 ^^^^^^^^^^^^
 
-:math:`{MC}_{p \in P,t \in T,v \in V}`
+:math:`{CV}_{r \in R, p \in P,t \in T,v \in V}`
 
 The :code:`CostVariable` parameter represents the cost of a process-specific unit
 of activity. Thus the incurred variable costs are proportional to the activity
@@ -989,7 +1012,7 @@ of the process.
 Demand
 ^^^^^^
 
-:math:`{DEM}_{p \in P,c \in C^d}`
+:math:`{DEM}_{r \in r, p \in P, c \in C^d}`
 
 The :code:`Demand` parameter allows the modeler to define the total end-use
 demand levels for all periods.  In combination with the :code:`Efficiency`
@@ -1024,14 +1047,15 @@ by the :code:`SegFrac` parameter via:
 
 Temoa enables this default action by automatically setting DDD equivalent to
 :code:`SegFrac` for all seasons and times of day.  If a modeler would like a
-different default demand distribution, the modeler must specify any indices of
-the DDD parameter.  Like the :ref:`SegFrac` parameter, the sum of DDD must be 1.
+different default demand distribution, the indices and values of the DDD
+parameter must be specified.  Like the :ref:`SegFrac` parameter, the sum of
+DDD must be 1.
 
 
 DemandSpecificDistribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:math:`{DSD}_{s \in S, d \in D, c \in C^d}`
+:math:`{DSD}_{r \in R, s \in S, d \in D, c \in C^d}`
 
 If there is an end-use demand that varies over the course of a day or across
 seasons -- for example, heating or cooling in the summer or winter -- the 
@@ -1046,16 +1070,16 @@ in the Demand constraint.
 DiscountRate
 ^^^^^^^^^^^^
 
-:math:`{DR}_{t \in T}`
+:math:`{DR}_{r \in r, t \in T, v \in V}`
 
 In addition to the :code:`GlobalDiscountRate`, a modeler may also specify a
 technology-specific discount rate.  If not specified, this rate defaults to 0.05.
 
 
 EmissionActivity
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
-:math:`{EAC}_{e \in C_e,\{i,t,v,o\} \in \Theta_{\text{efficiency}}}`
+:math:`{EAC}_{e \in C_e,\{r,i,t,v,o\} \in \Theta_{\text{efficiency}}}`
 
 Temoa currently has two methods for enabling a process to produce an output: the
 :code:`Efficiency` parameter, and the :code:`EmissionActivity` parameter.  Where
@@ -1068,9 +1092,9 @@ to account for emissions per unit activity, but it more accurately describes
 
 
 EmissionLimit
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
-:math:`{ELM}_{p \in P, e \in C^e}`
+:math:`{ELM}_{r \in R, p \in P, e \in C^e}`
 
 The :code:`EmissionLimit` parameter ensures that Temoa finds a solution that
 fits within the modeler-specified limit of emission :math:`e` in time period
@@ -1080,13 +1104,12 @@ fits within the modeler-specified limit of emission :math:`e` in time period
 ExistingCapacity
 ^^^^^^^^^^^^^^^^
 
-:math:`{ECAP}_{t \in T, v \in \text{P}^e}`
+:math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
 
-In contrast to some competing models, technologies in Temoa can have
-vintage-specific characteristics within the same period.  Thus, Temoa treats
-existing technological capacity as processes, requiring all of the engineering
-characteristics of a standard process, with the exception of an investment cost.
-
+The :code:`ExistingCapacity` parameter defines the capacity installed prior to the
+beginning of :code:`time_optimize`. Note that processes with existing capacity
+require all of the engineering-economic characteristics of a standard process,
+with the exception of an investment cost.
 
 .. _GDR:
 
@@ -1095,9 +1118,10 @@ GlobalDiscountRate
 
 :math:`{GDR}`
 
-Because Temoa is a cpaacity expansion model, it must account for the time value
-of money. The future value (FV) of a sum of currency is related to the net\
-present value (NPV) via the formula:
+The :code:`GDR` parameter represents the global discount rate used to convert
+cash flows in future model time periods into a present value. The future value
+(FV) of a sum of currency is related to the net present value (NPV) via the
+formula:
 
 .. math::
 
@@ -1106,61 +1130,252 @@ present value (NPV) via the formula:
 where :math:`n` is in years.  This parameter is only used in Temoa's objective
 function.
 
+GrowthRateMax
+^^^^^^^^^^^^^
 
-LifetimeLoan
-^^^^^^^^^^^^
+:math:`{GRM}_{r \in R, t \in T}`
 
-:math:`{LLN}_{t \in T,v \in P}`
+The :code:`GRM` parameter defines the maximum annual rate at which the capacity of
+a given technology can grow. Note that the growth rate is not defined by vintage,
+but rather across all vintages of a given technology.
+
+
+GrowthRateSeed
+^^^^^^^^^^^^^^
+
+:math:`{GRS}_{r \in R, t \in T}`
+
+The :code:`GRS` parameter defines the maximum capacity of a given technology when
+first installed in a given time period. The growth rate is applied to this initial
+capacity seed in subsequent time periods.
+
+
+LifetimeLoanProcess
+^^^^^^^^^^^^^^^^^^^
+
+:math:`{LLP}_{r \in R, t \in T, v \in P}`
 
 Temoa gives the modeler the ability to separate the loan lifetime from the
-useful life of the technology.  This parameter specifies the length of the loan
-associated with investing in a process, in years.  If not specified, the default
-is 10 years.
+useful life of a process.  This parameter specifies the loan term associated
+with capital investment in a process, in years.  If not specified, the model
+assigns the technology lifetime to the loan period in :code:`temoa_initialize.py`.
+
+
+LifetimeLoanTech
+^^^^^^^^^^^^^^^^
+
+:math:`{LLT}_{r \in R, t \in T}`
+
+Same as the :code:`LifetimeLoanProcess` but without the vintage index. If all
+vintages of a given technology are assumed to have the same loan term, then
+:code:`LifetimeLoanTech` can be defined instead of :code:`LifetimeLoanProcess`.
+
+
+LifetimeProcess
+^^^^^^^^^^^^^^^
+
+:math:`{LTP}_{r \in R, t \in T, v \in P}`
+
+This parameter specifies the total useful life of a given process in years.
 
 
 LifetimeTech
 ^^^^^^^^^^^^
 
-:math:`{LTC}_{p \in P,t \in T,v \in V}`
+:math:`{LTT}_{r \in R, t \in T}`
 
-Similar to LifetimeLoan, this parameter specifies the total useful life of a
-given technology in years.  If not specified, the default is 30 years.
+Similar to LifetimeProcess, this parameter specifies the total useful life of a
+given technology in years. If all vintages of a given technology have the same
+lifetime, then :code:`LifeTimeTech` can be used instead of :code:`LifeTimeProcess`.
 
+
+LinkedTechs
+^^^^^^^^^^^
+
+:math:`{LIT}_{r \in R, t \in T, e \in C^e, t \in T}`
+
+In power-to-gas pathways, :math:`CO2` is an input to some processes, including
+synthetic natural gas production and liquid fuel production via Fischer-Tropsch.
+Within the model, :math:`CO2` must be converted from an emissions commodity to a
+physical commodity that can be included in the :code:`Efficiency` table. The
+:code:`LinkedTechs` parameter specifies the dummy technology used to convert an
+emissions commodity to a physical commodity. Note that the first :code:`t`
+represents the primary upstream technology linked to the dummy linked technology,
+which is represented by the second :code:`t` index.
 
 .. _ParamMaxCapacity:
+
+
+MaxActivity
+^^^^^^^^^^^
+
+:math:`{MAA}_{r \in R, p \in P, t \in T}`
+
+The :code:`MaxActivity` parameter is used to constrain the total activity (i.e.,
+energy production) from a given technology in each model time period. Note that the
+total activity is constrained across all vintages of a technology. This parameter
+is used in the :code:`MaxActivity_Constraint`.
+
 
 MaxCapacity
 ^^^^^^^^^^^
 
-:math:`{MAX}_{p \in P,t \in T}`
+:math:`{MAC}_{r \in R, p \in P, t \in T}`
 
-The MaxCapacity parameter enables a modeler to ensure that a certain technology
-is constrained to an upper bound capacity. The constraint ensures that the max
-total capacity (summed across vintages) of a technology class is under this
-maximum. That is, all active vintages are constrained. This parameter is used
-only in the :ref:`maximum capacity constraint <MaxCapacity_Constraint>`.
+The :code:`MaxCapacity` parameter represents an upper bound on the total installed
+capacity of a given technology in each model time period. Note that the total
+capacity is constrained across all vintages of a technology. This parameter is
+used in the :code:`MaxCapacity_Constraint`.
+
+
+MaxCapacitySum
+^^^^^^^^^^^^^^
+
+:math:`{MCS}_{t \in T}`
+
+Similar to the :code:`MaxCapacity` parameter, but represents an upper bound on
+the total installed capacity across all model time periods. In addition,
+this parameter specifies the upper bound on a group of technologies specified
+in the :code:`tech_capacity_max` subset. This parameter is used in the
+:code:`MaxCapacitySet_Constraint`.
+
+
+MaxResource
+^^^^^^^^^^^
+
+:math:`{MAR}_{r \in R, t \in T}`
+
+The :code:`MaxResource` parameter represents an upper bound on the cumulative
+amount of commodity that can be produced by region and technology over the model time
+horizon. This parameter is used in :code:`MaxResource_Constraint`. Note that
+this parameter differs from :code:`ResourceBound`, which is also indexed by
+model time period.
+
+
+MinActivity
+^^^^^^^^^^^
+
+:math:`{MIA}_{r \in R, p \in P, t \in T}`
+
+The :code:`MinActivity` parameter represents a lower bound on the total activity (i.e.,
+energy production) of a given technology in each model time period. Note that the
+total activity is constrained across all vintages of a technology. This parameter
+is used in the :code:`MinActivity_Constraint`.
 
 
 MinCapacity
 ^^^^^^^^^^^
 
-:math:`{MIN}_{p \in P,t \in T}`
+:math:`{MIC}_{r \in R, p \in P,t \in T}`
 
-The MinCapacity parameter is analogous to the :ref:`MaxCapacity parameter
-<ParamMaxCapacity>`, except that it specifies the minimum capacity for
-which Temoa must ensure installation.
+The :code:`MinCapacity` parameter represents a lower bound on the total installed
+capacity of a given technology in each model time period. Note that the total
+capacity is constrained across all vintages of a technology. This parameter is
+used in the :code:`MinCapacity_Constraint`.
+
+
+MinCapacitySum
+^^^^^^^^^^^^^^
+
+:math:`{MCS}_{t \in T}`
+
+The :code:`MinCapacitySum` parameter represents the minimum cumulative
+capacity associated with technologies belonging to :code:`tech_group`.
+This parameter is used in the :code:`MinActivityGroup_Constraint`.
+
+
+MinGenGroupTarget
+^^^^^^^^^^^^^^^^^
+
+:math:`{MGT}_{r \in R}`
+
+The :code:`MinGenGroupTarget` parameter is similar to :code:`MinActivity`, but
+represents a minimum activity limit for a user-defined technology group
+(:code:`tech_groups`) rather than a single technology. This parameter is used
+in the :code:`MinActivityGroup_Constraint`.
+
+
+MinGenGroupWeight
+^^^^^^^^^^^^^^^^^
+
+:math:`{MGW}_{r \in R, t \in T}`
+
+The :code:`MinGenGroupWeight` parameter represents a weight that is applied
+to each technology within each :code:`tech_group`, which determines the
+technology-specific activity shares that can count towards meeting the
+:code:`MinActivityGroup_Constraint`.
+
+
+MyopicBaseYear
+^^^^^^^^^^^^^^
+
+:math:`MBY`
+
+Temoa is typically run in "perfect foresight" mode, where all decision variables
+in all time periods are solved simultaneously. However, it is also possible to
+solve the model myopically, whereby the model solves a subset of time periods
+in sequence. The :code:`MyopicBaseYear` parameter specifies the base year to which
+all future costs are discounted.
+
+
+PlanningReserveMargin
+^^^^^^^^^^^^^^^^^^^^^
+
+:math:`{PRM}_{r \in R}`
+
+The :code:`PlanningReserveMargin` parameter specifies that capacity reserve margin
+in the electric sector by region. The capacity reserve margin represents the
+installed generating capacity - expressed as a share of peak load - that must be
+available to meet contingencies. Note that since electricity demand is often
+endogeous in Temoa databases, we calculate electricity production by time slice
+to estimate the peak electricity demand. This parameter is used in
+:code:`ReserveMargin_Constraint`.
+
+
+RampDown
+^^^^^^^^
+
+:math:`{RMD}_{r \in R, t \in T}`
+
+To account for the limited ramping capability of some thermal generators, a
+ramp down rate can be specified via the :code:`RampDown` parameter. The specified
+value represents the fraction of installed capacity that can be ramped down when moving
+from one time slice to the next. There is an equivalent :code:`RampUp` parameter, to
+specify ramping limits in the upward direction. This parameter is used in the
+:code:`RampDownDay_Constraint` and `RampDownSeason_Constraint`. The former constrains
+the downward ramp rate between time-of-day slices, and the latter constrains the downward
+ramp rate between the last time-of-day slice in a given season and the first time-of-day
+slice in the next season.
+
+
+RampUp
+^^^^^^
+
+:math:`{RMU}_{r \in R, t \in T}`
+
+To account for the limited ramping capability of some thermal generators, a
+ramp up rate can be specified via the :code:`RampUp` parameter. The specified
+value represents the fraction of installed capacity that can be ramped up when moving
+from one time slice to the next. There is an equivalent :code:`RampDown` parameter, to
+specify ramping limits in the downward direction. This parameter is used in the
+:code:`RampUpDay_Constraint` and `RampUpSeason_Constraint`. The former constrains
+the upward ramp rate between time-of-day slices, and the latter constrains the upward
+ramp rate between the last time-of-day slice in a given season and the first time-of-day
+slice in the next season.
 
 
 ResourceBound
 ^^^^^^^^^^^^^
 
-:math:`{RSC}_{p \in P,c \in C_p}`
+:math:`{RSC}_{r \in R, p \in P, c \in C_p}`
 
-This parameter allows the modeler to specify resources to constrain per period.
+This parameter allows the modeler to specify commodity production limits per period.
 Note that a constraint in one period does not relate to any other periods.  For
 instance, if the modeler specifies a limit in period 1 and does not specify a
 limit in period 2, then the model may use as much of that resource as it would
-like in period 2.
+like in period 2. This parameter is used in :code:`ResourceExtraction_Constraint`.
+Note that the :code:`MaxResource` parameter is similar, but constrains total
+cumulative resource consumption across all model time periods.
 
 
 .. _SegFrac:
@@ -1175,10 +1390,20 @@ each combination of season and time of day.  The sum of all combinations within
 :code:`SegFrac` must be 1, representing 100% of a year.
 
 
+StorageDuration
+^^^^^^^^^^^^^^^
+
+:math:`{SD}_{r \in R, t \in T^{S}}`
+
+The :code:`StorageDuration` parameter represents the number of hours over which
+storage can discharge if it starts at full charge and produces maximum output
+until empty. The parameter value defaults to 4 hours if not specified by the user.
+
+
 StorageInitFrac
 ^^^^^^^^^^^^^^^
 
-:math:`{SI}_{t \in T^{S}}`
+:math:`{SI}_{r \in R, t \in T^{S}, v \in P}`
 
 The :code:`StorageInitFrac` parameter determines the initial charge level associated
 with each storage technology. The value should be expressed as a fraction between
@@ -1186,54 +1411,70 @@ with each storage technology. The value should be expressed as a fraction betwee
 user wishes to set the initial charge rather than allowing the model to optimize it.
 
 
-StorageDuration
-^^^^^^^^^^^^^^^
-
-:math:`{SD}_{t \in T^{S}}`
-
-The :code:`StorageDuration` parameter represents the number of hours over which
-storage can discharge if it starts at full charge and produces maximum output
-until empty.
-
-
 TechInputSplit
 ^^^^^^^^^^^^^^
 
-:math:`{SPL}_{i \in C_p, t \in T}`
+:math:`{TIS}_{r \in R, p \in P, i \in C_p, t \in T}`
 
-Some technologies have a single output but have multiple input fuels. Some
-technologies require fixed shares of input. See the :ref:`TechOutputSplit
-constraint <TechOutputSplit_Constraint>` for the implementation concept.
+Some technologies have a single output but have multiple input fuels. The
+:code:`TechInputSplit` parameter fixes the shares of commodity input to a
+specific technology in a given period. Note that this fixed share is maintained
+across all model time slices. This parameter is used in
+:code:`TechInputSplit_Constraint`.
+
+
+TechInputSplitAverage
+^^^^^^^^^^^^^^^^^^^^^
+
+:math:`{TISA}_{r \in R, p \in P, i \in C_p, t \in T}`
+
+The :code:`TechInputSplitAverage` is similar to :code:`TechInputSplit`, as
+they both fix input commodity shares to technologies with multiple inputs.
+However, :code:`TechInputSplitAverage` only fixes the average shares at the
+annual level, allowing the shares at the time slice level to vary. This
+parameter is used in :code:`TechInputSplitAverage_Constraint`.
 
 
 TechOutputSplit
 ^^^^^^^^^^^^^^^
 
-:math:`{SPL}_{t \in T, o \in C_c}`
+:math:`{TOS}_{t \in T, o \in C_c}`
 
-Some technologies have a single input fuel but have multiple outputs. For the
-sake of modeling, certain technologies require fixed shares of output. For
-example, an oil refinery might have an input energy of crude oil, and the
-modeler wants to ensure that its output is 70% diesel and 30% gasoline. See the
-:ref:`TechOutputSplit constraint <TechOutputSplit_Constraint>` for the
-implementation details.
+Some technologies have a single input fuel but have multiple outputs. The
+:code:`TechOutputSplit` parameter fixes the shares of commodity input to a
+specific technology in a given period. Note that this fixed share is maintained
+across all model time slices. This parameter is used in
+:code:`TechOutputSplit_Constraint`.
 
 
 \*LoanAnnualize
 ^^^^^^^^^^^^^^^
 
-:math:`{LA}_{t \in T,v \in P}`
+:math:`{LA}_{r \in R, t \in T, v \in P}`
 
 This is a model-calculated parameter based on the process-specific loan length
-(it's indices are the same as the :code:`LifetimeLoan` parameter), and
+(its indices are the same as the :code:`LifetimeLoan` parameter), and
 process-specific discount rate (the :code:`DiscountRate` parameter).  It is
 calculated via the formula:
 
 .. math::
 
-   LA_{t,v} = \frac{DR_{t,v}}{1 - (1 + DR_{t,v})^{{}^- LLN_{t,v}}}
+   LA_{t,v} = \frac{DR_{r,t,v}}{1 - (1 + DR_{r,t,v})^{{}^- LLN_{r,t,v}}}
 
    \forall \{t, v\} \in \Theta_\text{CostInvest}
+
+
+ModelProcessLife
+^^^^^^^^^^^^^^^^
+
+:math:`{MPL}_{r \in R, p \in P, t \in T, v \in P}`
+
+The :code:`ModelProcessLife` parameter is internally-derived by the model calcuated in
+:code:`ParamModelProcessLife_rule` and which makes use of the :code:`LifetimeProcess`
+parameter. For a given technology vintage in a given model time period, it returns the
+lesser of the period length and the remaining process lifetime. This parameter is used
+to sum the annual :code:`fixed_costs` and :code:`variable_costs` across all years within
+a given time period.
 
 
 \*PeriodLength
@@ -1276,51 +1517,28 @@ Note that LEN is only defined for elements in :math:`\text{P}^o`, and is
 specifically not defined for the final element in :math:`\text{P}^f`.
 
 
-\*PeriodRate
-^^^^^^^^^^^^
-
-:math:`R_{p \in P}`
-
-Temoa optimizes a single characteristic year within a period, and differentiates
-the :math:`n` copies of that single year solely by the appropriate discount
-factor.  Rather than calculating the same summation for every technology and
-vintage within a period, we calculate it once per period and lookup the sum as
-necessary during the objective function generation.  The formula is the sum of
-discount factors corresponding to each year within a period:
-
-.. math::
-
-   R_p = \sum_{y = 0}^{{LEN}_p} \frac{1}{{(1 + GDR)}^{(P_0 - p - y)}}
-
-   \\
-   \forall p \in P
-
-Note that this parameter is the implementation of the single "characteristic
-year" optimization per period concept discussed in the :ref:`Sets` section.
-
-
 \*ProcessLifeFrac
 ^^^^^^^^^^^^^^^^^
 
-:math:`{TLF}_{p \in P,t \in T,v \in V}`
+:math:`{PLF}_{r \in R, p \in P,t \in T,v \in P}`
 
 The modeler may specify a useful lifetime of a process such that the process
 will be decommissioned part way through a period.  Rather than attempt to
-delineate each year within that final period, Temoa makes the choice to average
-the total output of the process over the entire period but limit the
-available capacity and output of the decommissioning process by the ratio of how
-long through the period the process is active.  This parameter is that ratio,
-formally defined as:
+delineate each year within that final period, Temoa averages the total output
+of the process over the entire period but limits the available capacity and
+output of the decommissioning process by the ratio of how long through the
+period the process is active.  This parameter is that ratio, formally defined
+as:
 
 .. math::
 
-   TLF_{p,t,v} = \frac{v + LTC_{t,v} - p}{LEN_p}
+   PLF_{p,t,v} = \frac{v + LTP_{t,v} - p}{LEN_p}
 
    \\
    \forall \{p,t,v\} & \in \Theta_\text{Activity by PTV} | \\
-   v + LTC_{t,v} & \notin P, \\
-   v + LTC_{t,v} & \le max(F), \\
-   p & = max(P | p < v + LTC_{t,v})
+   v + LTP_{t,v} & \notin P, \\
+   v + LTP_{t,v} & \le max(F), \\
+   p & = max(P | p < v + LTP_{t,v})
 
 Note that this parameter is defined over the same indices as
 :code:`CostVariable` -- the active periods for each process :math:`\{p, t,
@@ -1332,12 +1550,6 @@ activity indices for the process.  Namely, :math:`p \in \{2010, 2012\}` as
 2010\}\}`.  The values would be :math:`{TLF}_{2010, car, 2010} = 1`, and
 :math:`{TLF}_{2012, car, 2010} = \frac{3}{8}`.
 
-In combination with the :code:`PeriodRate` parameter, this parameter is used to
-implement the "single characteristic year" simplification.  Specifically,
-instead of trying to account for partial period decommissioning, Temoa assumes
-that processes can only produce :code:`ProcessLifeFrac` of their installed
-capacity.
-
 
 Variables
 ---------
@@ -1345,74 +1557,115 @@ Variables
 .. _table_variable:
 .. csv-table:: Temoa's Main Variables
    :header: "Variable","Temoa Name","Domain","Short Description"
-   :widths: 20, 15, 15, 60
+   :widths: 18, 22, 10, 50
 
-   ":math:`FO_{p,s,d,i,t,v,o}`","V_FlowOut",":math:`\mathbb{R}^+_0`","Commodity flow by time slice out of a tech based on a given input"
-   ":math:`FOA_{p,s,d,i,t,v,o}`","V_FlowOutAnnual",":math:`\mathbb{R}^+_0`","Annual commodity flow out of a tech based on a given input"
-   ":math:`FIS_{p,s,d,i,t,v,o}`","V\_FlowInStorage",":math:`\mathbb{R}^+_0`","Commodity flow into a storage tech to produce a given output"
-   ":math:`CUR_{p,s,d,i,t,v,o}`","V_Curtailment",":math:`\mathbb{R}^+_0`","Commodity flow out of a tech that is curtailed"
-   ":math:`CAP_{t,v}`","V_Capacity",":math:`\mathbb{R}^+_0`","Required tech capacity to support associated activity"
-   ":math:`CAPAVL_{p,t}`","V_CapacityAvailableByPeriodAndTech",":math:`\mathbb{R}^+_0`","The Capacity of technology :math:`t` available in period :math:`p`"
-   ":math:`SI_{t,v}`","V_StorageInit",":math:`\mathbb{R}^+_0`","Initial charge level associated with storage techs"
-   ":math:`SL_{p,s,d,t,v}`","V_StorageLevel",":math:`\mathbb{R}^+_0`","Charge level each time slice associated with storage techs"
+   ":math:`FO_{r,p,s,d,i,t,v,o}`","V_FlowOut",":math:`\mathbb{R}^+_0`","Commodity flow by time slice out of a tech based on a given input"
+   ":math:`FOA_{r,p,s,d,i,t,v,o}`","V_FlowOutAnnual",":math:`\mathbb{R}^+_0`","Annual commodity flow out of a tech based on a given input"
+   ":math:`FIS_{r,p,s,d,i,t,v,o}`","V_FlowIn",":math:`\mathbb{R}^+_0`","Commodity flow into a storage tech to produce a given output"
+   ":math:`FLX_{r,p,s,d,i,t,v,o}`","V_Flex",":math:`\mathbb{R}^+_0`","The portion of commodity production exceeding demand"   
+   ":math:`FLXA_{r,p,i,t,v,o}`","V_FlexAnnual",":math:`\mathbb{R}^+_0`","The portion of commodity production from constant production techs exceeding demand"   
+   ":math:`CUR_{r,p,s,d,i,t,v,o}`","V_Curtailment",":math:`\mathbb{R}^+_0`","Commodity flow out of a tech that is curtailed"
+   ":math:`CAP_{r,t,v}`","V_Capacity",":math:`\mathbb{R}^+_0`","Required tech capacity to support associated activity"
+   ":math:`CAPAVL_{r,p,t}`","V_CapacityAvailable ByPeriodAndTech",":math:`\mathbb{R}^+_0`","Derived variable representing the capacity of technology :math:`t` available in period :math:`p`"
+   ":math:`SI_{r,t,v}`","V_StorageInit",":math:`\mathbb{R}^+_0`","Initial charge level associated with storage techs"
+   ":math:`SL_{r,p,s,d,t,v}`","V_StorageLevel",":math:`\mathbb{R}^+_0`","Charge level each time slice associated with storage techs"
 
 V_FlowOut
 ^^^^^^^^^
 
-:math:`FO_{p,s,d,i,t,v,o}`
+:math:`FO_{r,p,s,d,i,t,v,o}`
 
-The most fundamental variable in the Temoa formulation is the :code:`V_FlowOut` variable.
-It describes the commodity flow out of a process in a given time slice. To balance input
-and output flows in the :code:`CommodityBalance_Constraint`, the commodity flow into a
-given process can be calculated as :math:`\sum_{T, V, O} \textbf{FO}_{p, s, d, c, t, v, o}
+The most fundamental variable in the Temoa formulation is the
+:code:`V_FlowOut` variable. It describes the commodity flow out of a
+process in a given time slice. To balance input and output flows in the
+:code:`CommodityBalance_Constraint`, the commodity flow into a given
+process can be calculated as 
+:math:`\sum_{T, V, O} \textbf{FO}_{p, s, d, c, t, v, o}
 /EFF_{c,t,v,o}`.
 
 V_FlowOutAnnual
 ^^^^^^^^^^^^^^^
 
-:math:`FOA_{p,i,t,v,o}`
+:math:`FOA_{r,p,i,t,v,o}`
 
-Similar to :code:`V_FlowOut`, but used for technologies that are members of the :code:`tech_annual`
-set, whose output does not vary across seasons and times-of-day. Eliminating the :code:`s,d` indices
-for these technologies improves computational performance.
+Similar to :code:`V_FlowOut`, but used for technologies that are members
+of the :code:`tech_annual` set, whose output does not vary across seasons
+and times-of-day. Eliminating the :code:`s,d` indices for these technologies
+improves computational performance.
+
+
+V_Flex
+^^^^^^
+
+:math:`FLX_{r,p,s,d,i,t,v,o}`
+
+In some cases, the overproduction of a commodity may be required, such
+that supply exceeds the endogenous demand. Refineries represent a
+common example, where the share of different refined products are governed
+by TechOutputSplit, but total production is driven by a particular commodity.
+For example, gasoline production may be artificially constrained in order to
+ensure the appropriate balance for lower demand fuels such as propane or
+kerosene. Instead, we allow overproduction, i.e., production exceeding
+endogenous demand, for commodities produced by technologies belonging to
+the :code:`tech_flex` set. In the example above, adding the refinery to
+the :code:`tech_flex` set allows for the overproduction of propane and
+kerosene, allowing the model to fulfill the endogenous demand
+for gasoline. This flexible technology designation activates a slack
+variable (:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`)representing
+the excess production in the :code:`CommodityBalanceAnnual_Constraint`.
+
+
+V_FlexAnnual
+^^^^^^^^^^^^
+
+:math:`FLXA_{r,p,i,t,v,o}`
+
+Similar to :code:`V_Flex`, but used for technologies that are members
+of the :code:`tech_flex` set, whose output does not vary across seasons
+and times-of-day. Eliminating the :code:`s,d` indices for these technologies
+improves computational performance.
 
 
 V_Curtailment
 ^^^^^^^^^^^^^
 
-:math:`CUR_{p,s,d,i,t,v,o}`
+:math:`CUR_{r,p,s,d,i,t,v,o}`
 
-The :code:`V_Curtailment` variable allows for the overproduction and curtailment of technologies belonging
-to the :code:`tech_curtailment` set. Renewables such as wind and solar are often placed in this set. While
-we used to simply formulate the :code:`Capacity` and :code:`CommodityBalance` constraints as inequalities that
-implicitly allowed for curtailment, this simpler approch does not work with renewable targets because the
-curtailed portion of the electricity production counts towards the target, and there is no way to distinguish
-it from the useful production. Including an explicit curtailment term addresses the issue.
+The :code:`V_Curtailment` variable allows for the overproduction and
+curtailment of technologies belonging to the :code:`tech_curtailment` set.
+Renewables such as wind and solar are often placed in this set. While we
+used to simply formulate the :code:`Capacity` and :code:`CommodityBalance`
+constraints as inequalities that implicitly allowed for curtailment, this
+simpler approch does not work with renewable targets because the curtailed
+portion of the electricity production counts towards the target, and there is
+no way to distinguish it from the useful production. Including an explicit
+curtailment term addresses the issue.
 
 
 V_FlowInStorage
 ^^^^^^^^^^^^^^^
 
-:math:`FIS_{p,s,d,i,t,v,o}`
+:math:`FIS_{r,p,s,d,i,t,v,o}`
 
-Because the production and consumption associated with storage techs occur across different
-time slices, the comodity flow into a storage technologiy cannot be discerned from :code:`V_FlowOut`. Thus
-an explicit :math:`FlowIn` variable is required for storage.
+Because the production and consumption associated with storage techs occur
+across different time slices, the comodity flow into a storage technologiy
+cannot be discerned from :code:`V_FlowOut`. Thus an explicit :math:`FlowIn`
+variable is required for storage.
 
 V_Capacity
 ^^^^^^^^^^
 
-:math:`CAP_{t,v}`
+:math:`CAP_{r,t,v}`
 
-The :code:`V_Capacity` variable determines the required capacity of all processes across the
-user-defined system.  It is indexed for each process (t,v), and Temoa constrains the capacity
-variable to be able to meet the total commodity flow out of that process in all time slices
-in which it is active :eq:`Capacity`.
+The :code:`V_Capacity` variable determines the required capacity of all processes
+across the user-defined system.  It is indexed for each process (t,v), and Temoa
+constrains the capacity variable to be able to meet the total commodity flow out
+of that process in all time slices in which it is active :eq:`Capacity`.
 
 V_CapacityAvailableByPeriodAndTech
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:math:`CAPAVL_{p,t}`
+:math:`CAPAVL_{r,p,t}`
 
 :code:`CapacityAvailableByPeriodAndTech` is a convenience variable that is
 not strictly necessary, but used where the individual vintages of a technology
@@ -1422,7 +1675,7 @@ allowed in a given time period).
 V_StorageInit
 ^^^^^^^^^^^^^
 
-:math:`SI_{t,v}`
+:math:`SI_{r,t,v}`
 
 The :code:`V_StorageInit` variable determines the initial storage charge level
 at the beginning of the first time slice within a given time period. Each vintage
@@ -1433,7 +1686,7 @@ last time slice within each model time period.
 V_StorageLevel
 ^^^^^^^^^^^^^^
 
-:math:`SL_{p,s,d,t,v}`
+:math:`SL_{r,p,s,d,t,v}`
 
 The :code:`V_StorageLevel` variable tracks the storage charge level across ordered
 time slices and is critical to ensure that storage charge and dispatch is constrained
@@ -1451,14 +1704,14 @@ Equations
 ---------
 
 There are four main equations that govern the flow of energy through the model
-network.  The :code:`Demand_Constrant` :eq:`Demand` ensures that the supply meets demand in every
-time slice.  For each process, the :code:`Capacity_Constraint` :eq:`Capacity` ensures that there is
-sufficient capacity to meet the optimal commodity flows across all time slices. Between
-processes, the :code:`CommodityBalance_Constraint` :eq:`CommodityBalance` ensures that global commodity
-production across the energy system is sufficient to meet the intermediate demand
-for that commodity. Finally, the objective function :eq:`obj_loan` drives the model to
-minimize the system-wide cost of energy supply by optimizing the deployment and utilization
-of energy technologies across the system.
+network.  The :code:`Demand_Constrant` :eq:`Demand` ensures that the supply meets
+demand in every time slice.  For each process, the :code:`Capacity_Constraint` :eq:`Capacity`
+ensures that there is sufficient capacity to meet the optimal commodity flows across all
+time slices. Between processes, the :code:`CommodityBalance_Constraint` :eq:`CommodityBalance`
+ensures that global commodity production across the energy system is sufficient to meet the
+endogenous demands for that commodity. Finally, the objective function :eq:`obj_loan` drives
+the model to minimize the system-wide cost of energy supply by optimizing the deployment and
+utilization of energy technologies across the system.
 
 One additional point regarding the model formulation. Technologies that
 produce constant annual output can be placed in the :code:`tech_annual` set.
@@ -1615,12 +1868,12 @@ The Temoa Computational Implementation
 ======================================
 
 We have implemented Temoa within an algebraic modeling environment (AME).  AMEs
-provide both a convenient avenue to describe mathematical optimization models
+provide both a convenient way to describe mathematical optimization models
 for a computational context, and allow for abstract model\ [#abstract_model]_
 formulations :cite:`Kallrath_2004`.  In contrast to describing a model in a
 formal computer programming language like C or Java, AMEs generally have syntax
 that directly translates to standard mathematical notation.  Consequently,
-models written in AMEs are more easily understood by a wider variety of people.
+models written in AMEs are more easily understood by a wider variety of researchers.
 Further, by allowing abstract formulations, a model written with an AME may be
 used with many different input data sets.
 
@@ -1628,7 +1881,7 @@ Three well-known and popular algebraic modeling environments are the General
 Algebraic Modeling System (GAMS) :cite:`Brooke_Rosenthal_2003`, AMPL
 :cite:`Fourer_etal_1987`, and GNU MathProg :cite:`Makhorin_2000`.  All three
 environments provide concise syntax that closely resembles standard (paper)
-notation.  We decided to implement Temoa within a recently developed AME called
+notation.  We decided to implement Temoa within an AME called
 Python Optimization Modeling Objects (Pyomo).
 
 Pyomo provides similar functionality to GAMS, AMPL, and MathProg, but is open
@@ -1656,12 +1909,13 @@ To help explain the Pyomo implementation, we discuss a single constraint in
 detail. Consider the :code:`Demand` :eq:`Demand` constraint:
 
 .. math::
-   \sum_{I, T, V} \textbf{FO}_{p, s, d, i, t, v, dem}
+   \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, dem} +
+   SEG_{s,d} \cdot  \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, i, t, v, dem}
    \ge
-   {DEM}_{p, dem} \cdot {DSD}_{s, d, dem}
+   {DEM}_{r, p, dem} \cdot {DSD}_{r, s, d, dem}
 
    \\
-   \forall \{p, s, d, dem\} \in \Theta_{\text{Demand}}
+   \forall \{r, p, s, d, dem\} \in \Theta_{\text{Demand}}
 
 Implementing this with Pyomo requires two pieces, and optionally a third:
 
@@ -1682,7 +1936,7 @@ A simple definition of this constraint is:
       :linenos:
 
       M.DemandConstraint = Constraint(
-        M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand,
+        M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand,
         rule=Demand_Constraint
       )
 
@@ -1707,25 +1961,25 @@ is:
    .. code-block:: python
       :linenos:
 
-      def Demand_Constraint ( M, p, s, d, dem ):
-         if (p, s, d, dem) not in M.DemandSpecificDistribution.sparse_keys():  # If user did not specify this Demand, tell
+      def Demand_Constraint ( M, r, p, s, d, dem ):
+         if (r,p,s,d,dem) not in M.DemandSpecificDistribution.sparse_keys():  # If user did not specify this Demand, tell
             return Constraint.Skip           # Pyomo to ignore this constraint index.
 
-           # store the summation into the local variable 'supply' for later reference
          supply = sum(
-           M.V_FlowOut[p, s, d, S_i, S_t, S_v, dem]
-
-           for S_t, S_v in M.commodityUStreamProcess[p, dem]
-           for S_i in M.ProcessInputsByOutput[p, S_t, S_v, dem]
+            M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, dem] if S_t not in M.tech_annual
+            for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, dem]
          )
 
-           # The '=' operator creates (in this case) a "Equal" *object*, not a
-           # True/False value as a Python programmer might expect; the intermediate
-           # variable 'expr' is thus not strictly necessary, but we leave it as reminder
-           # of this potentially confusing behavior
-         expr = (supply = M.Demand[p, s, d, dem])
+         supply_annual = sum(
+            M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, dem]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, dem] if S_t in M.tech_annual
+            for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, dem]
+         ) * value( M.SegFrac[ s, d])
 
-         # finally, return the new "Equal" object (not boolean) to Pyomo
+         DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
+
+         expr = supply + supply_annual == M.Demand[r, p, dem] * M.DemandSpecificDistribution[r, s, d, dem]
          return expr
 
    ...
@@ -1737,10 +1991,10 @@ The argument list will always start with the model (Temoa convention shortens
 this to just :code:`M`) followed by local variable names in which to store the
 index set elements passed by Pyomo.  Note that the ordering is the same as
 specified in the constraint definition.  Thus the first item after :code:`M`
-will be an item from :code:`time_optimize`, the second from :code:`time_season`,
-the third from :code:`time_of_day`, and the fourth from
-:code:`commodity_demand`.  Though one could choose :code:`a`, :code:`b`,
-:code:`c`, and :code:`d` (or any naming scheme), we chose :code:`p`, :code:`s`,
+will be an item from :code:`region`, the second from :code:`time_optimize`,
+the third from :code:`time_season`, fourth from :code:`time_of_day`, and the
+fifth from :code:`commodity_demand`.  Though one could choose :code:`a`, :code:`b`,
+:code:`c`, :code:`d`, and :code:`e` (or any naming scheme), we chose :code:`p`, :code:`s`,
 :code:`d`, and :code:`dem` as part of a :ref:`naming scheme
 <naming_conventions>` to aid in mnemonic understanding.  Consequently, the rule
 signature (Line 1) is another place to look to discover what indices define a
@@ -1749,21 +2003,23 @@ constraint.
 Lines 2 and 3 are an indication that this constraint is implemented in a
 non-sparse manner.  That is, Pyomo does not inherently know the valid indices
 for a given model parameter or equation.  In ``temoa_model``, the constraint definition
-listed four index sets, so Pyomo will naively call this function for every
-possible combination of tuple :math:`\{p, s, d, dem\}`.  However, as there
+listed five index sets, so Pyomo will naively call this function for every
+possible combination of tuple :math:`\{r, p, s, d, dem\}`.  However, as there
 may be slices for which a demand does not exist (e.g., the winter season might
 have no cooling demand), there is no need to create a constraint for any tuple
 involving 'winter' and 'cooling'.  Indeed, an attempt to access a demand for
 which the modeler has not specified a value results in a Pyomo error, so it is
 necessary to ignore any tuple for which no Demand exists.
 
-Lines 6 through 12 are a single *source-line* that we split over 7 lines for
-clarity.  These lines implement the summation of the Demand constraint, summing
-over all technologies, vintages, and the inputs that generate the end-use demand
-``dem``. Note that the sum is performed with sparse indices, which are returned
-from dictionaries created in :code:`temoa_initialize.py`.
+Lines 5 through 11 represent two *source-lines* that we split over several lines for
+clarity.  These lines implement the summations of the demand commodity ``dem``
+produced by demand technologies with both variable and constant output across the
+year, summed over all relevant technologies, vintages, and the inputs. The 
+:code:`supply` and :code:`supply_annual` are local variables used in the expression
+(:code:`expr`) shown below. Note that the sum is performed with sparse indices, which
+are returned from dictionaries created in :code:`temoa_initialize.py`.
 
-Lines 6 through 12 also showcase a very common idiom in Python:
+Lines 5 through 11 also showcase a very common idiom in Python:
 list-comprehension.  List comprehension is a concise and efficient syntax to
 create lists.  As opposed to building a list element-by-element with for-loops,
 list comprehension can convert many statements into a single operation.
@@ -1776,11 +2032,10 @@ Consider a naive approach to calculating the supply::
             to_sum.append( M.V_FlowOut[p, s, d, S_i, S_t, S_v, dem] )
    supply = sum( to_sum )
 
-While both implementations have the same number of lines, this last one creates
-an extra list (:code:`to_sum`), then builds the list element by element with
-:code:`.append()`, before finally calculating the summation.  This means that
-the Python interpreter must iterate through the elements of the summation, not
-once, but twice.
+This implementation creates an extra list (:code:`to_sum`), then builds the list
+element by element with :code:`.append()`, before finally calculating the summation.
+This means that the Python interpreter must iterate through the elements of the
+summation, not once, but twice.
 
 A less naive approach would replace the :code:`.append()` call with the
 :code:`+=` operator, reducing the number of iterations through the elements to
@@ -1800,12 +2055,24 @@ the more efficient route for many list manipulations.  (It also *may* seem
 slightly more familiar to those used to a more mainstream algebraic modeling
 language.)
 
-With the correct model variables summed and stored in the ``supply`` variable,
-line 18 creates the actual inequality comparison.  This line is superfluous, but
+With the correct model variables summed and stored in the ``supply`` and
+``supply_annual`` variables, Line 17 calls a function defined in
+:code:`temoa_initialize.py` that checks to make sure there is technology
+that can supply each demand commodity ``dem`` in each :math:`\{r, p, s, d\}`.
+
+If no process supplies the demand, then it quits computation immediately rather
+than completing a potentially lengthy model generation and waiting for the
+solver to recognize the infeasibility of the model. Further, the function
+lists potential ways for the modeler to correct the problem. This is one of the
+benefits of Temoa: we've incorporated error handling in several places to
+try and capture the most common user errors. This capability is subtle, but in
+practice extremely useful while building and debugging a model.
+
+Line 19 creates the actual inequality comparison.  This line is superfluous, but
 we leave it in the code as a reminder that inequality operators (i.e. :code:`<=`
 and :code:`>=`) with a Pyomo object (like supply) generate a Pyomo *expression
 object*, not a boolean True or False as one might expect.\ [#return_expression]_
-It is this expression object that must be returned to Pyomo, as on line 19.
+It is this expression object that must be returned to Pyomo, as on Line 20.
 
 In the above implementation, the constraint is called for every tuple in the
 Cartesian product of the indices, and the constraint must then decide whether
@@ -1819,72 +2086,45 @@ implementation above.
    .. code-block:: python
       :linenos:
 
-      M.DemandConstraint_psdc = Set( dimen=4, rule=DemandConstraintIndices )
+      M.DemandConstraint_rpsdc = Set( dimen=5, rule=DemandConstraintIndices )
       # ...
-      M.DemandConstraint = Constraint( M.DemandConstraint_psdc, rule=Demand_Constraint )
+      M.DemandConstraint = Constraint( M.DemandConstraint_rpsdc, rule=Demand_Constraint )
 
 
 As discussed above, the DemandConstraint is only valid for certain
-:math:`\{p, s, d, dem\}` tuples.  Since the modeler can specify demand
+:math:`\{r, p, s, d, dem\}` tuples.  Since the modeler can specify the demand
 distribution per commodity (necessary to model demands like heating, that do not
-make sense in the summer), Temoa must ascertain the exact valid tuples. We have
+apply in all time slices), Temoa must ascertain the valid tuples. We have
 implemented this logic in the function :code:`DemandConstraintIndices` in
 ``temoa_initialize.py``.  Thus, Line 1 tells Pyomo to instantiate
-:code:`DemandConstraint_psdc` as a Set of 4-length tuples indices
-(:code:`dimen=4`), and populate it with what Temoa's rule
+:code:`DemandConstraint_rpsdc` as a Set of 5-length tuples indices
+(:code:`dimen=5`), and populate it with what Temoa's rule
 :code:`DemandConstraintIndices` returns.  We omit here an explanation of the
 implementation of the :code:`DemandConstraintIndices` function, stating merely
 that it returns the exact indices over which the DemandConstraint must to be
-created.  With the sparse set :code:`DemandConstraint_psdc` created, we can now
-can use it in place of the four sets specified in the non-sparse
+created.  With the sparse set :code:`DemandConstraint_rpsdc` created, we can now
+can use it in place of the five sets specified in the non-sparse
 implementation.  Pyomo will now call the constraint implementation rule the
 minimum number of times.
 
-On the choice of the :code:`_psdc` suffix for the index set name, there is no
+On the choice of the :code:`_rpsdc` suffix for the index set name, there is no
 Pyomo-enforced restriction.  However, use of an index set in place of the
 non-sparse specification obfuscates over what indexes a constraint is defined.
 While it is not impossible to deduce, either from this documentation
 or from looking at the :code:`DemandConstraintIndices` or
 :code:`Demand_Constraint` implementations, the Temoa convention includes
 index set names that feature the one-character representation of each set dimension.
-In this case, the name :code:`DemandConstraint_psdc` implies that this set has a
-dimensionality of 4, and (following the :ref:`naming scheme
+In this case, the name :code:`DemandConstraint_rpsdc` implies that this set has a
+dimensionality of 5, and (following the :ref:`naming scheme
 <naming_conventions>`) the first index of each tuple will be an element of
-:code:`time_optimize`, the second an element of :code:`time_season`, the third
-an element of :code:`time_of_day`, and the fourth a commodity.  From the
-contextual information that this is the Demand constraint, one can assume that
-the ``c`` represents an element from :code:`commodity_demand`.
+:code:`region`, the second an element of :code:`time_optimize`, the third
+an element of :code:`time_season`, fourth an element of :code:`time_of_day`,
+and fifth a commodity.  From the contextual information that this is the
+Demand constraint, one can assume that the ``c`` represents an element from
+:code:`commodity_demand`.
 
-Over a sparse-index, the constraint implementation changes only slightly:
 
-.. topic:: in ``temoa_rules.py`` (actual implementation)
 
-   .. code-block:: python
-      :linenos:
-
-      def Demand_Constraint ( M, p, s, d, dem ):
-         supply = sum(
-           M.V_FlowOut[p, s, d, S_i, S_t, S_v, dem]
-           for S_t, S_v in M.commodityUStreamProcess[p, dem]
-           for S_i in M.ProcessInputsByOutput[p, S_t, S_v, dem]
-         )
-
-         DemandConstraintErrorCheck ( supply, dem, p, s, d )
-
-         expr = (supply = M.Demand[p, dem] * M.DemandSpecificDistribution[s, d, dem])
-         return expr
-
-As this constraint is guaranteed to be called only for necessary demand
-constraint indices, there is no need to check for the existence of a tuple in
-the Demand parameter.  The only other change is the error check on line 10.
-This function is defined in ``temoa_initialize.py``, and simply ensures that at least one
-process supplies the demand ``dem`` in time slice :math:`\{p, s, d\}`.  If
-no process supplies the demand, then it quits computation immediately (as
-opposed to completing a potentially lengthy model generation and waiting for the
-solver to recognize the infeasibility of the model).  Further, the function
-lists potential places for the modeler to look to correct the problem.  This
-last capability is subtle, but in practice extremely useful while building and
-debugging a model.
 
 
 A Word on Verbosity

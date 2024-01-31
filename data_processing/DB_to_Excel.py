@@ -25,7 +25,7 @@ def make_excel(ifile, ofile, scenario):
 	cur = con.cursor()   # a database cursor is a control structure that enables traversal over the records in a database
 	con.text_factory = str #this ensures data is explored with the correct UTF-8 encoding
 	scenario = scenario.pop()
-	writer = pd.ExcelWriter(ofile+'.xlsx', engine = 'xlsxwriter', options={'strings_to_formulas': False})
+	writer = pd.ExcelWriter(ofile+'.xlsx', engine = 'xlsxwriter', engine_kwargs = {'options':{'strings_to_formulas': False}})
 
 	workbook  = writer.book
 
