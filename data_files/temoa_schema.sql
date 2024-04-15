@@ -496,6 +496,62 @@ CREATE TABLE IF NOT EXISTS "MaxNewCapacityGroup" (
 	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
 	FOREIGN KEY("group_name") REFERENCES "groups"("group_name")
 );
+CREATE TABLE IF NOT EXISTS "TechGroupWeight" (
+	"regions"	        text,
+	"tech"		        text,
+	"group_name"	    text,
+	"weight"        	real,
+	"tech_desc"	        text,
+	PRIMARY KEY("tech","group_name","regions")
+);
+CREATE TABLE IF NOT EXISTS "MinInputGroup" (
+	"regions"	      text,
+	"periods"	      integer,
+	"input_comm"	  text,
+	"group_name" 	  text,
+	"gi_min"	      real,
+	"gi_min_notes"    text,
+	FOREIGN KEY("group_name") REFERENCES "groups"("group_name"),
+	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	PRIMARY KEY("regions","periods","input_comm","group_name")
+);
+CREATE TABLE IF NOT EXISTS "MaxInputGroup" (
+	"regions"	      text,
+	"periods"	      integer,
+	"input_comm"	  text,
+	"group_name" 	  text,
+	"gi_max"	      real,
+	"gi_max_notes"    text,
+	FOREIGN KEY("group_name") REFERENCES "groups"("group_name"),
+	FOREIGN KEY("input_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	PRIMARY KEY("regions","periods","input_comm","group_name")
+);
+CREATE TABLE IF NOT EXISTS "MinOutputGroup" (
+	"regions"	      text,
+	"periods"	      integer,
+	"output_comm"	text,
+	"group_name" 	text,
+	"go_min"	      real,
+	"go_min_notes"    text,
+	FOREIGN KEY("group_name") REFERENCES "groups"("group_name"),
+	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	PRIMARY KEY("regions","periods","output_comm","group_name")
+);
+CREATE TABLE IF NOT EXISTS "MaxOutputGroup" (
+	"regions"	      text,
+	"periods"	      integer,
+	"output_comm"	  text,
+	"group_name" 	  text,
+	"go_max"	      real,
+	"go_max_notes"    text,
+	FOREIGN KEY("group_name") REFERENCES "groups"("group_name"),
+	FOREIGN KEY("output_comm") REFERENCES "commodities"("comm_name"),
+	FOREIGN KEY("periods") REFERENCES "time_periods"("t_periods"),
+	PRIMARY KEY("regions","periods","output_comm","group_name")
+);
 CREATE TABLE IF NOT EXISTS "MinActivityShare" (
 	"regions"	text,
 	"periods"	integer,

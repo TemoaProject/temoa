@@ -242,6 +242,11 @@ def temoa_create_model(name="Temoa"):
     M.MaxCapacityGroup = Param(M.RegionalGlobalIndices, M.time_optimize, M.groups)
     M.MinNewCapacityGroup = Param(M.RegionalIndices, M.time_optimize, M.groups)
     M.MaxNewCapacityGroup = Param(M.RegionalIndices, M.time_optimize, M.groups)
+    M.TechGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default=0)
+    M.MinInputGroup = Param(M.regions, M.time_optimize, M.commodity_physical, M.groups)
+    M.MaxInputGroup = Param(M.regions, M.time_optimize, M.commodity_physical, M.groups)
+    M.MinOutputGroup = Param(M.regions, M.time_optimize, M.commodity_physical, M.groups)
+    M.MaxOutputGroup = Param(M.regions, M.time_optimize, M.commodity_physical, M.groups)
     M.MinCapShare_rptg = Set(dimen=4, initialize=MinCapShareIndices)
     M.MinCapacityShare = Param(M.MinCapShare_rptg)
     M.MaxCapacityShare = Param(M.MinCapShare_rptg)
@@ -539,6 +544,34 @@ def temoa_create_model(name="Temoa"):
     )
     M.MaxNewCapacityGroupConstraint = Constraint(
         M.MinNewCapacityGroupConstraint_rpg, rule=MaxNewCapacityGroup_Constraint
+    )
+
+    M.MinInputGroup_Constraint_rpig = Set(
+        dimen=4, initialize=lambda M: M.MinInputGroup.sparse_iterkeys()
+    )
+    M.MinInputGroupConstraint = Constraint(
+        M.MinInputGroup_Constraint_rpig, rule=MinInputGroup_Constraint
+    )
+
+    M.MaxInputGroup_Constraint_rpig = Set(
+        dimen=4, initialize=lambda M: M.MaxInputGroup.sparse_iterkeys()
+    )
+    M.MaxInputGroupConstraint = Constraint(
+        M.MaxInputGroup_Constraint_rpig, rule=MaxInputGroup_Constraint
+    )
+
+    M.MinOutputGroup_Constraint_rpig = Set(
+        dimen=4, initialize=lambda M: M.MinOutputGroup.sparse_iterkeys()
+    )
+    M.MinOutputGroupConstraint = Constraint(
+        M.MinOutputGroup_Constraint_rpig, rule=MinOutputGroup_Constraint
+    )
+
+    M.MaxOutputGroup_Constraint_rpig = Set(
+        dimen=4, initialize=lambda M: M.MaxOutputGroup.sparse_iterkeys()
+    )
+    M.MaxOutputGroupConstraint = Constraint(
+        M.MaxOutputGroup_Constraint_rpig, rule=MaxOutputGroup_Constraint
     )
 
     M.MinCapacityShareConstraint_rptg = Set(
