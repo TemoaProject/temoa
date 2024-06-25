@@ -69,7 +69,7 @@ solver_name = "cbc"
 save_excel = true
 
 # save the duals in the output Database (may slow execution slightly?)
-save_duals = false
+save_duals = true
 
 # save a copy of the pyomo-generated lp file(s) to the outputs folder (maybe a large file(s)!)
 save_lp_file = false

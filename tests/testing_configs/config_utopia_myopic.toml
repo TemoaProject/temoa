@@ -12,13 +12,13 @@ neos = false
 solver_name = "cbc"
 
 # generate an excel file in the output_files folder
-save_excel = false
+save_excel = true
 
 # save the duals in the output .sqlite database
-save_duals = false
+save_duals = true
 
 # save a copy of the pyomo-generated lp file to the outputs folder (may be large file!)
-save_lp_file = false
+save_lp_file = true
 
 # ---------------------------------------------------
 #                   MODE OPTIONS

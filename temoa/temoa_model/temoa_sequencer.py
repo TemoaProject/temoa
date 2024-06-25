@@ -210,8 +210,18 @@ class TemoaSequencer:
                     good_prices = price_checker(instance)
                     if not good_prices and not self.config.silent:
                         print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
+                suffixes = (
+                    [
+                        'dual',
+                    ]
+                    if self.config.save_duals
+                    else None
+                )
                 self.pf_solved_instance, self.pf_results = solve_instance(
-                    instance, self.config.solver_name, silent=self.config.silent
+                    instance,
+                    self.config.solver_name,
+                    silent=self.config.silent,
+                    solver_suffixes=suffixes,
                 )
                 good_solve, msg = check_solve_status(self.pf_results)
                 if not good_solve:

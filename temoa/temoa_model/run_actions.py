@@ -268,7 +268,7 @@ def solve_instance(
         #            solve command for highspy and no suffixes because it works so well.
         if solver_suffixes:
             solver_suffixes = set(solver_suffixes)
-            legit_suffixes = {'duals', 'slack', 'rc'}
+            legit_suffixes = {'dual', 'slack', 'rc'}
             bad_apples = solver_suffixes - legit_suffixes
             solver_suffixes &= legit_suffixes
             if bad_apples:
@@ -276,6 +276,8 @@ def solve_instance(
                     'Solver suffix %s is not in pyomo standards (see pyomo dox).  Removed',
                     bad_apples,
                 )
+            # convert back to list...
+            solver_suffixes = list(solver_suffixes)
         else:
             solver_suffixes = []
         result: SolverResults | None = None
