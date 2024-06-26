@@ -42,7 +42,7 @@ def summarize(config: TemoaConfig, orig_cost: float, option_cost: float) -> None
     activity_labels = config.svmga_inputs.get('activity_labels', [])
 
     conn = sqlite3.connect(config.output_database)
-    records = [['Category', 'Label', 'Origingal', 'Option', 'Delta [%]']]
+    records = [['Category', 'Label', 'Original', 'Option', 'Delta [%]']]
     delta = (option_cost - orig_cost) / orig_cost * 100
     records.append(['Cost', 'Total Cost', orig_cost, option_cost, delta])
 
