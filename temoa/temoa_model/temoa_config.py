@@ -47,6 +47,7 @@ class TemoaConfig:
         save_duals: bool = False,
         save_lp_file: bool = False,
         MGA: dict | None = None,
+        SVMGA: dict | None = None,
         myopic: dict | None = None,
         morris: dict | None = None,
         config_file: Path | None = None,
@@ -118,6 +119,7 @@ class TemoaConfig:
         self.save_lp_file = save_lp_file
 
         self.mga_inputs = MGA
+        self.svmga_inputs = SVMGA
         self.myopic_inputs = myopic
         self.morris_inputs = morris
         self.silent = silent
