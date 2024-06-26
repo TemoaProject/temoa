@@ -151,12 +151,12 @@ class TableWriter:
         e_costs, e_flows = self._gather_emission_costs_and_flows(M)
         self.emission_register = e_flows
         self.write_emissions(iteration=iteration)
-        self.write_costs(M, emission_entries=e_costs)
+        self.write_costs(M, emission_entries=e_costs, iteration=iteration)
         self.flow_register = self.calculate_flows(M)
         self.check_flow_balance(M)
         self.write_flow_tables(iteration=iteration)
         if results_with_duals:  # write the duals
-            self.write_dual_variables(results_with_duals)
+            self.write_dual_variables(results_with_duals, iteration=iteration)
         # catch-all
         self.con.commit()
         self.con.execute('VACUUM')
@@ -256,7 +256,7 @@ class TableWriter:
         if not self.tech_sectors:
             raise RuntimeError('tech sectors not available... code error')
         scenario = self.config.scenario
-        if iteration:
+        if iteration is not None:
             scenario = scenario + f'-{iteration}'
         # Built Capacity
         data = []
@@ -554,9 +554,10 @@ class TableWriter:
         )
         return model_ic, undiscounted_cost
 
-    def write_costs(self, M: TemoaModel, emission_entries=None):
+    def write_costs(self, M: TemoaModel, emission_entries=None, iteration=None):
         """
         Gather the cost data vars
+        :param iteration: tag for iteration in scenario name
         :param emission_entries: cost dictionary for emissions
         :param M: the Temoa Model
         :return: dictionary of results of format variable name -> {idx: value}
@@ -705,8 +706,8 @@ class TableWriter:
                 entries[k].update(emission_entries[k])
         # write to table
         # translate the entries into fodder for the query
-        self._write_cost_rows(entries)
-        self._write_cost_rows(exchange_costs.get_entries())
+        self._write_cost_rows(entries, iteration=iteration)
+        self._write_cost_rows(exchange_costs.get_entries(), iteration=iteration)
 
     def _gather_emission_costs_and_flows(self, M: 'TemoaModel'):
         """Gather all emission flows and price them"""
@@ -784,11 +785,16 @@ class TableWriter:
         # wow, that was like pulling teeth
         return costs, flows
 
-    def _write_cost_rows(self, entries):
+    def _write_cost_rows(self, entries, iteration=None):
         """Write the entries to the OutputCost table"""
+        scenario_name = (
+            self.config.scenario + f'-{iteration}'
+            if iteration is not None
+            else self.config.scenario
+        )
         rows = [
             (
-                self.config.scenario,
+                scenario_name,
                 r,
                 p,
                 t,
@@ -811,11 +817,15 @@ class TableWriter:
         cur.executemany(qry, rows)
         self.con.commit()
 
-    def write_dual_variables(self, results: SolverResults):
+    def write_dual_variables(self, results: SolverResults, iteration=None):
         """Write the dual variables to the OutputCost table"""
-        # collect the values
+        scenario_name = (
+            self.config.scenario + f'-{iteration}'
+            if iteration is not None
+            else self.config.scenario
+        )  # collect the values
         constraint_data = results['Solution'].Constraint.items()
-        dual_data = [(self.config.scenario, t[0], t[1]['Dual']) for t in constraint_data]
+        dual_data = [(scenario_name, t[0], t[1]['Dual']) for t in constraint_data]
         qry = 'INSERT INTO OutputDualVariable VALUES (?, ?, ?)'
         self.con.executemany(qry, dual_data)
         self.con.commit()
