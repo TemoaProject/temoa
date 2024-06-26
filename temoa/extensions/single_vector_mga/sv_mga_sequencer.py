@@ -103,6 +103,8 @@ class SvMgaSequencer:
             good_prices = price_checker(instance)
             if not good_prices and not self.config.silent:
                 print('Warning:  Cost anomalies discovered.  Check log file for details.')
+        # # tag the instance by name, so we can sort out the multiple results...
+        # instance.name = '-'.join((self.config.scenario, '0'))
 
         # 2. Base solve
         #   ============ First Solve ============
@@ -252,7 +254,7 @@ class SvMgaSequencer:
             for idx in idxs:
                 # for each indexed item in EmissionActivity, we need to search both the regular
                 # flows and the annual flows.  And, we need to sum across the "expanded" index
-                # for both which includes period, season, tod or jut period respectively
+                # for both which includes period, season, tod or just period respectively
                 expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(M, idx)
                 element = sum(
                     M.V_FlowOut[flow_idx] * M.EmissionActivity[idx]
