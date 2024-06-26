@@ -565,7 +565,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     # 2. flex emissions -- removed (double counting)
 
-    # 3. curtailment emissions -- removed (curtailment consumes not input, so no emittances)
+    # 3. curtailment emissions -- removed (curtailment consumes no input, so no emittances)
 
     # 4. annual emissions
     var_annual_emissions = sum(

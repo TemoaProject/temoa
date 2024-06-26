@@ -188,11 +188,13 @@ class SvMgaSequencer:
             summarize(self.config, tot_cost, value(TotalCost_rule(instance)))
 
     @staticmethod
-    def flow_idxs_from_eac_idx(M: TemoaModel, reitvo: tuple) -> list[tuple]:
+    def flow_idxs_from_eac_idx(M: TemoaModel, reitvo: tuple) -> tuple[list[tuple], ...]:
         r, _, i, t, v, o = reitvo
         psd_set = [(p, s, d) for p in M.time_optimize for s in M.time_season for d in M.time_of_day]
-        res = [(r, *psd, i, t, v, o) for psd in psd_set]
-        return res
+        flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
+        annual_flow_idxs = [(r, p, i, t, v, o) for p in M.time_optimize]
+
+        return flow_idxs, annual_flow_idxs
 
     @staticmethod
     def construct_obj(
@@ -240,13 +242,22 @@ class SvMgaSequencer:
             idxs = [idx for idx in M.EmissionActivity if idx[1] == label]
             logger.debug('Located %d items for emission label: %s', len(idxs), label)
             for idx in idxs:
-                expanded_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(M, idx)
+                # for each indexed item in EmissionActivity, we need to search both the regular
+                # flows and the annual flows.  And, we need to sum across the "expanded" index
+                # for both which includes period, season, tod / period respectively
+                expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(M, idx)
                 element = sum(
                     M.V_FlowOut[flow_idx] * M.EmissionActivity[idx]
                     for flow_idx in expanded_idxs
                     if flow_idx in M.V_FlowOut
                 )
                 expr += element
+                annual_element = sum(
+                    M.V_FlowOutAnnual[annual_flow_idx] * M.EmissionActivity[idx]
+                    for annual_flow_idx in expanded_annual_idxs
+                    if annual_flow_idx in M.V_FlowOutAnnual
+                )
+                expr += annual_element
 
         # handle activity...
         for label in activity_labels:
