@@ -434,7 +434,7 @@ def CreateDemands(M: 'TemoaModel'):
             if DSD_dem_getter(k) == dem and DSD_region_getter(k) == r
         ]
         if len(keys) != expected_key_length:
-            logger.degug(
+            logger.debug(
                 'Missing some keys in this set for creation of Demand Distribution %s: %s',
                 dem,
                 keys,

@@ -95,7 +95,7 @@ def poll_activity(conn: Connection, scenario: str, label: str) -> float:
     poll the Flow Out activity for the given emission label total
     """
     raw = conn.execute(
-        'SELECT sum(flow) FROM main.OutputFlowOut WHERE scenario=? AND output_comm=?',
+        'SELECT sum(flow) FROM main.OutputFlowOut WHERE scenario=? AND tech=?',
         (scenario, label),
     ).fetchone()[0]
     return raw
