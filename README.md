@@ -102,6 +102,8 @@ and has all parameters in it.  It can be copied/renamed, etc.
 ## Currently Supported Modes
 ### Check
 Build the model and run the numerous checks on it.  Results will be in the log file.  No solve is attempted.
+Note:  The LP file for the model can be saved with this option and solved later/independently by selecting
+the ``save_lp_file`` option in the config.
 ### Perfect Foresight
 All-in-one run that solves the entire model at once.  It is possible to run this without source tracing, which will
 use raw data in the model without checking the integrity of the underlying network.  It is highly advised to use
@@ -111,6 +113,10 @@ Solve the model sequentially through iterative solves based on Myopic settings. 
 accommodate build/no-build decisions made per iteration to ensure follow-on models are well built.
 ### MGA (Modeling to Generate Alternatives)
 An iterative solving process to explore near cost-optimal solutions.  See the documentation on this mode.
+### SVMGA (Single Vector MGA)
+A sequence of 2 model solves that establishes a base optimal cost, then relaxes the cost then minimizes an
+alternate unweighted objective function comprised of variables associated with labels selected in lists in the
+config file.
 ### Method of Morris
 A limited sensitivity analysis of user-selected variables using a Method of Morris approach.  See the documentation
 on this mode.

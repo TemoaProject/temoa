@@ -739,7 +739,7 @@ Sets
    ":math:`\text{T}^a`",":code:`tech_annual`","string","technologies that produce constant annual output; (:math:`{T}^a \subset T`)"
    ":math:`\text{T}^b`",":code:`tech_baseload`","string","baseload electric generators; (:math:`{T}^b \subset T`)"
    ":math:`\text{T}^c`",":code:`tech_curtailment`","string","technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset (T - T^{res})`)"
-   ":math:`\text{T}^e`",":code:`tech_exchange`","string","technologies used for interregional commodity flow; (:math:`{T}^e \subset T`)"   
+   ":math:`\text{T}^e`",":code:`tech_exchange`","string","technologies used for interregional commodity flow; (:math:`{T}^e \subset T`).  See Note 1 below on capacity and cost application for `tech_exchange`"
    ":math:`\text{T}^f`",":code:`tech_flex`","string","technologies producing excess commodity flows; (:math:`{T}^f \subset T`)"
    "",":code:`TechGroupName`","string","named groups for use in group parameters or RegionalPortfolioStandard"
    "",":code:`TechGroupMember`","(TechGroupName, tech)","technologies belonging to each group defined above"
@@ -749,6 +749,12 @@ Sets
    ":math:`\text{T}^{res}`",":code:`tech_reserve`","string","electric generators contributing to the reserve margin requirement; (:math:`{T}^e \subset T`)"
    ":math:`\text{T}^s`",":code:`tech_storage`","string","storage technologies; (:math:`{T}^s \subset T`)"
    ":math:`\text{T}^v`",":code:`tech_variable`","string","technologies used in TechInputSplitAverage constraint; (:math:`{T}^v \subset T`)"
+
+Note 1:  Temoa sets Capacity for Exchange Technologies to be equal in both directions on the link automatically.
+Costs are apportioned as follows:  If both directions of the link have a cost parameter, costs are accrued to
+each region region directly based on flow *to* that region.  If only 1 element of the link holds a populated cost value,
+then that cost divided between the 2 regions automatically based on use, where each region is "billed" according
+to use as a receiver.
 
 Temoa uses two different set notation styles, one for code representation and
 one that utilizes standard algebraic notation.  For brevity, the mathematical
