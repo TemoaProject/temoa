@@ -4,7 +4,7 @@
 # to use pip to install (in a venv, if desired):
 # $: pip install -r requirements.txt
 
-pyomo>=6.7.1
+pyomo>=6.7.3
 #  pyomo.extras  <-- not avaialable on PyPi.  Does not appear to be used in project
 # xlwt  # not used
 ipython
@@ -44,5 +44,5 @@ Deprecated~=1.2.14
 openpyxl~=3.1.2
 networkx~=3.2.1
 gravis~=0.1.0
-highspy>=1.7.1.dev1
+highspy>=1.7.1
 scipy~=1.13.0
