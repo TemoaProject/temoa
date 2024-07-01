@@ -40,7 +40,7 @@ from pyomo.opt import check_optimal_termination
 from temoa.extensions.single_vector_mga.output_summary import summarize
 from temoa.temoa_model.hybrid_loader import HybridLoader
 from temoa.temoa_model.model_checking.pricing_check import price_checker
-from temoa.temoa_model.run_actions import build_instance, solve_instance
+from temoa.temoa_model.run_actions import build_instance, solve_instance, handle_results, save_lp
 from temoa.temoa_model.table_writer import TableWriter
 from temoa.temoa_model.temoa_config import TemoaConfig
 from temoa.temoa_model.temoa_model import TemoaModel
@@ -91,15 +91,18 @@ class SvMgaSequencer:
         # 1. Load data
         hybrid_loader = HybridLoader(db_connection=self.con, config=self.config)
         data_portal: DataPortal = hybrid_loader.load_data_portal(myopic_index=None)
+        lp_path = self.config.output_path / f'base_model'
         instance: TemoaModel = build_instance(
-            loaded_portal=data_portal, model_name=self.config.scenario, silent=self.config.silent
+            loaded_portal=data_portal,
+            model_name=self.config.scenario,
+            silent=self.config.silent,
+            keep_lp_file=self.config.save_lp_file,
+            lp_path=lp_path,
         )
         if self.config.price_check:
             good_prices = price_checker(instance)
             if not good_prices and not self.config.silent:
                 print('Warning:  Cost anomalies discovered.  Check log file for details.')
-        # # tag the instance by name, so we can sort out the multiple results...
-        # instance.name = '-'.join((self.config.scenario, '0'))
 
         # 2. Base solve
         #   ============ First Solve ============
@@ -123,9 +126,7 @@ class SvMgaSequencer:
             raise RuntimeError('Baseline SVMGA solve failed.  Terminating run.')
 
         # record the 0-solve in all tables
-        self.writer.write_results(instance, iteration=0)
-        # self.writer.make_summary_flow_table()  # make the flow summary table, if it doesn't exist
-        # self.writer.write_summary_flow(instance, iteration=0)
+        handle_results(instance, results=res, config=self.config, append=False, iteration=0)
 
         # 3a. Capture cost and make it a constraint
         tot_cost = value(instance.TotalCost)
@@ -155,6 +156,10 @@ class SvMgaSequencer:
             sys.exit(1)
 
         instance.svmga_obj = Objective(expr=new_obj)
+        # save it, if requested...
+        if self.config.save_lp_file:
+            lp_path = self.config.output_path / f'option_model'
+            save_lp(instance, lp_path)
 
         # 5. Re-solve and report
         suffixes = (
@@ -180,15 +185,18 @@ class SvMgaSequencer:
         )
 
         # record the 1-solve in all tables
-        self.writer.write_results(instance, iteration=1, append=True)
-        # self.writer.make_summary_flow_table()  # make the flow summary table, if it doesn't exist
-        # self.writer.write_summary_flow(instance, iteration=0)
+        handle_results(instance, results=res, config=self.config, append=True, iteration=1)
 
         if not self.config.silent:
             summarize(self.config, tot_cost, value(TotalCost_rule(instance)))
 
     @staticmethod
     def flow_idxs_from_eac_idx(M: TemoaModel, reitvo: tuple) -> tuple[list[tuple], ...]:
+        """
+        From the emission index, expand to create the full list of possible flow indices
+        for regular and annual flows.  These may/may not be valid and must be screened
+        for membership later
+        """
         r, _, i, t, v, o = reitvo
         psd_set = [(p, s, d) for p in M.time_optimize for s in M.time_season for d in M.time_of_day]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
@@ -216,9 +224,9 @@ class SvMgaSequencer:
         :param activity_labels: labels of techs
         :return: a suitable pyomo expression
         """
-        # inputs = zip(('emission', 'capacity', 'activity'), (emission_labels, capacity_labels, activity_labels))
         # iterate through the collections
         expr = 0
+        # run a simple check to produce warning if multiple categories are enabled...
         categories_used = 0
         if emission_labels:
             categories_used += 1
@@ -244,7 +252,7 @@ class SvMgaSequencer:
             for idx in idxs:
                 # for each indexed item in EmissionActivity, we need to search both the regular
                 # flows and the annual flows.  And, we need to sum across the "expanded" index
-                # for both which includes period, season, tod / period respectively
+                # for both which includes period, season, tod or jut period respectively
                 expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(M, idx)
                 element = sum(
                     M.V_FlowOut[flow_idx] * M.EmissionActivity[idx]

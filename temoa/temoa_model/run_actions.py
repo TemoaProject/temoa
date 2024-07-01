@@ -180,13 +180,7 @@ def build_instance(
 
     # save LP if requested
     if keep_lp_file:
-        if not lp_path:
-            logger.warning('Requested "keep LP file", but no path is provided...skipped')
-        else:
-            if not Path.is_dir(lp_path):
-                Path.mkdir(lp_path)
-            filename = lp_path / 'model.lp'
-            instance.write(filename, format='lp', io_options={'symbolic_solver_labels': True})
+        save_lp(instance, lp_path)
 
     # gather some stats...
     c_count = 0
@@ -197,6 +191,20 @@ def build_instance(
         v_count += len(var)
     logger.info('model built...  Variables: %d, Constraints: %d', v_count, c_count)
     return instance
+
+
+def save_lp(instance: TemoaModel, lp_path: Path) -> None:
+    """
+    quick utility to save the LP file to disc.
+    Note:  if saving multiple LP's they need to be differentiated by path
+    """
+    if not lp_path:
+        logger.warning('Requested "keep LP file", but no path is provided...skipped')
+    else:
+        if not Path.is_dir(lp_path):
+            Path.mkdir(lp_path)
+        filename = lp_path / 'model.lp'
+        instance.write(filename, format='lp', io_options={'symbolic_solver_labels': True})
 
 
 def solve_instance(
@@ -333,7 +341,9 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
         return False, f'{soln.Status} was returned from solve'
 
 
-def handle_results(instance: TemoaModel, results, config: TemoaConfig):
+def handle_results(
+    instance: TemoaModel, results, config: TemoaConfig, append=False, iteration=None
+):
     hack = time()
     if not config.silent:
         msg = '[        ] Calculating reporting variables and formatting results.'
@@ -341,12 +351,13 @@ def handle_results(instance: TemoaModel, results, config: TemoaConfig):
         SE.write(msg)
         SE.flush()
 
-    # output_stream = pformat_results(instance, results, config)
     table_writer = TableWriter(config=config)
     if config.save_duals:
-        table_writer.write_results(M=instance, results_with_duals=results)
+        table_writer.write_results(
+            M=instance, results_with_duals=results, append=append, iteration=iteration
+        )
     else:
-        table_writer.write_results(M=instance)
+        table_writer.write_results(M=instance, append=append, iteration=iteration)
 
     if not config.silent:
         SE.write(
@@ -355,14 +366,14 @@ def handle_results(instance: TemoaModel, results, config: TemoaConfig):
         SE.flush()
 
     if config.save_excel:
+        scenario_name = (
+            config.scenario + f'-{iteration}' if iteration is not None else config.scenario
+        )
         temp_scenario = set()
-        temp_scenario.add(config.scenario)
-        # make_excel function imported near the top
-        excel_filename = config.output_path / config.scenario
+        temp_scenario.add(scenario_name)
+        excel_filename = config.output_path / scenario_name
         make_excel(str(config.output_database), excel_filename, temp_scenario)
 
-    # if config.stream_output:
-    #     print(output_stream.getvalue())
     # normal (non-MGA) run will have a TotalCost as the OBJ:
     if hasattr(instance, 'TotalCost'):
         logger.info('TotalCost value: %0.2f', value(instance.TotalCost))
