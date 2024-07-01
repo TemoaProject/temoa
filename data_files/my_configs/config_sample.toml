@@ -100,4 +100,11 @@ cores = 0               # number of CPU cores to use.  0 (default) = cpu count
 # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox
 #        Groups = number of unique labels used in MM analysis columns in DB
 
+[SVMGA]
+cost_epsilon = 0.05
+# labels from appropriate tables in database.  It is recommended to only use one of the lists below and leave
+# the others blank
+emission_labels = ['co2', 'nox']
+capacity_labels = ['TXD', 'TXG']
+activity_labels = []
 
