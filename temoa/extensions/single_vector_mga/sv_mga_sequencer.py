@@ -91,7 +91,7 @@ class SvMgaSequencer:
         # 1. Load data
         hybrid_loader = HybridLoader(db_connection=self.con, config=self.config)
         data_portal: DataPortal = hybrid_loader.load_data_portal(myopic_index=None)
-        lp_path = self.config.output_path / f'base_model'
+        lp_path = self.config.output_path / 'base_model'
         instance: TemoaModel = build_instance(
             loaded_portal=data_portal,
             model_name=self.config.scenario,
@@ -160,7 +160,7 @@ class SvMgaSequencer:
         instance.svmga_obj = Objective(expr=new_obj)
         # save it, if requested...
         if self.config.save_lp_file:
-            lp_path = self.config.output_path / f'option_model'
+            lp_path = self.config.output_path / 'option_model'
             save_lp(instance, lp_path)
 
         # 5. Re-solve and report

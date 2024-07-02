@@ -145,51 +145,6 @@ class TemoaConfig:
                     SE.write('Warning: ' + msg)
 
     @staticmethod
-    def validate_schema(data: dict):
-        """
-        Validate the schema against what is expected in init
-        :return: None
-        """
-        # dev note:  we can use match statement to compare the schema to a structural pattern.
-        #            This does not provide great feedback.  If it gets more complicated, a shift
-        #            to Pydantic would be in order.
-        match data:
-            case {
-                'scenario': str(),
-                'scenario_mode': str(),
-                'input_database': str(),
-                'output_database': str(),
-                'neos': bool(),
-                'solver_name': str(),
-                'save_excel': bool(),
-                'save_duals': bool(),
-                'save_lp_file': bool(),
-                'MGA': {'slack': int(), 'iterations': int(), 'weight': str()},
-                'myopic': {'myopic_view': int(), 'keep_myopic_databases': bool()},
-                'price_check': bool(),
-                'source_trace': bool(),
-                'plot_commodity_network': bool(),
-            }:
-                # full schema OK
-                pass
-            case {
-                'scenario': str(),
-                'scenario_mode': str(),
-                'input_database': str(),
-                'output_database': str(),
-                'solver_name': str(),
-                'save_excel': bool(),
-            }:
-                # ALL optional args omitted, OK
-                pass
-            case _:
-                # didn't match
-                raise ValueError(
-                    'Schema received from TOML is not correct.  x-check field names '
-                    'and values with example'
-                )
-
-    @staticmethod
     def build_config(config_file: Path, output_path: Path, silent=False) -> 'TemoaConfig':
         """
         build a Temoa Config from a config file
@@ -200,7 +155,7 @@ class TemoaConfig:
         """
         with open(config_file, 'rb') as f:
             data = tomllib.load(f)
-        TemoaConfig.validate_schema(data=data)
+
         tc = TemoaConfig(output_path=output_path, config_file=config_file, silent=silent, **data)
         logger.info('Scenario Name:  %s', tc.scenario)
         logger.info('Data source:  %s', tc.input_database)
@@ -273,6 +228,21 @@ class TemoaConfig:
             )
             msg += '{:>{}s}: {}\n'.format(
                 'Morris CPU Cores Requested', width, self.morris_inputs.get('cores')
+            )
+
+        if self.scenario_mode == TemoaMode.SVMGA:
+            msg += spacer
+            msg += '{:>{}s}: {}\n'.format(
+                'SVMGA Cost Epsilon', width, self.svmga_inputs.get('cost_epsilon')
+            )
+            msg += '{:>{}s}: {}\n'.format(
+                'Emission Labels', width, self.svmga_inputs.get('emission_labels')
+            )
+            msg += '{:>{}s}: {}\n'.format(
+                'Capacity Labels', width, self.svmga_inputs.get('capacity_labels')
+            )
+            msg += '{:>{}s}: {}\n'.format(
+                'Activity Labels', width, self.svmga_inputs.get('activity_labels')
             )
 
         return msg

@@ -24,6 +24,10 @@ jeff@westernspark.us
 https://westernspark.us
 Created on:  3/10/24
 
+The purpose of this module is to build an Object to hold all of the network data for the entire
+model in a usable format for the commodity_network_manager to use in building the individual
+network.
+
 """
 
 import logging

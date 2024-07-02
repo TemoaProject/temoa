@@ -73,16 +73,20 @@ class TemoaModel(AbstractModel):
         M.processLoans = dict()
         M.activeFlow_rpsditvo = None
         """a flow index for techs NOT in tech_annual"""
+
         M.activeFlow_rpitvo = None
         """a flow index for techs in tech_annual only"""
+
         M.activeFlex_rpsditvo = None
         M.activeFlex_rpitvo = None
         M.activeFlowInStorage_rpsditvo = None
         M.activeCurtailment_rpsditvo = None
         M.activeActivity_rptv = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
+
         M.activeRegionsForTech = None
         """currently available regions by period and tech {(p, t) : r}"""
+
         M.activeCapacity_rtv = None
         M.activeCapacityAvailable_rpt = None
         M.activeCapacityAvailable_rptv = None
@@ -94,6 +98,7 @@ class TemoaModel(AbstractModel):
         M.processReservePeriods = dict()
         M.processVintages = dict()
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
+
         M.baseloadVintages = dict()
         M.curtailmentVintages = dict()
         M.storageVintages = dict()
@@ -150,16 +155,18 @@ class TemoaModel(AbstractModel):
         # ensure there is no overlap flex <=> curtailable technologies
         M.check_flex_and_curtailment = BuildAction(rule=check_flex_curtail)
         M.tech_exchange = Set(within=M.tech_all)
-        # Define groups for technologies
 
+        # Define groups for technologies
         M.tech_group_names = Set()
         M.tech_group_members = Set(M.tech_group_names, within=M.tech_all)
 
         M.tech_uncap = Set(within=M.tech_all - M.tech_reserve)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
+
         # the below is a convenience for domain checking in params below that should not accept uncap techs...
         M.tech_with_capacity = Set(initialize=M.tech_all - M.tech_uncap)
         """techs eligible for capacitization"""
+
         # Define techs for use with TechInputSplitAverage constraint,
         # where techs have variable annual output but the user wishes to constrain them annually
         M.tech_variable = Set(within=M.tech_all)
