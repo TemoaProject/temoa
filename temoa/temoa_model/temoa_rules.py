@@ -647,32 +647,32 @@ def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
 def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem, s_0, d_0):
     r"""
 
-For end-use demands, it is unreasonable to let the model arbitrarily shift the
-use of demand technologies across time slices. For instance, if household A buys
-a natural gas furnace while household B buys an electric furnace, then both units
-should be used throughout the year.  Without this constraint, the model might choose
-to only use the electric furnace during the day, and the natural gas furnace during the
-night.
+    For end-use demands, it is unreasonable to let the model arbitrarily shift the
+    use of demand technologies across time slices. For instance, if household A buys
+    a natural gas furnace while household B buys an electric furnace, then both units
+    should be used throughout the year.  Without this constraint, the model might choose
+    to only use the electric furnace during the day, and the natural gas furnace during the
+    night.
 
-This constraint ensures that the ratio of a process activity to demand is
-constant for all time slices.  Note that if a demand is not specified in a given
-time slice, or is zero, then this constraint will not be considered for that
-slice and demand.  This is transparently handled by the :math:`\Theta` superset.
+    This constraint ensures that the ratio of a process activity to demand is
+    constant for all time slices.  Note that if a demand is not specified in a given
+    time slice, or is zero, then this constraint will not be considered for that
+    slice and demand.  This is transparently handled by the :math:`\Theta` superset.
 
-.. math::
-   :label: DemandActivity
+    .. math::
+       :label: DemandActivity
 
-      DEM_{r, p, s, d, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s_0, d_0, i, t \not \in T^{a}, v, dem}
-   =
-      DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem}
+          DEM_{r, p, s, d, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s_0, d_0, i, t \not \in T^{a}, v, dem}
+       =
+          DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem}
 
-   \\
-   \forall \{r, p, s, d, t, v, dem, s_0, d_0\} \in \Theta_{\text{DemandActivity}}
+       \\
+       \forall \{r, p, s, d, t, v, dem, s_0, d_0\} \in \Theta_{\text{DemandActivity}}
 
-Note that this constraint is only applied to the demand commodities with diurnal
-variations, and therefore the equation above only includes :math:`\textbf{FO}`
-and not  :math:`\textbf{FOA}`
-"""
+    Note that this constraint is only applied to the demand commodities with diurnal
+    variations, and therefore the equation above only includes :math:`\textbf{FO}`
+    and not  :math:`\textbf{FOA}`
+    """
 
     act_a = sum(
         M.V_FlowOut[r, p, s_0, d_0, S_i, t, v, dem]
@@ -691,84 +691,84 @@ and not  :math:`\textbf{FOA}`
 
 def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     r"""
-Where the Demand constraint :eq:`Demand` ensures that end-use demands are met,
-the CommodityBalance constraint ensures that the endogenous system demands are
-met.  This constraint requires the total production of a given commodity
-to equal the amount consumed, thus ensuring an energy balance at the system
-level. In this most general form of the constraint, the energy commodity being
-balanced has variable production at the time slice level. The energy commodity
-can then be consumed by three types of processes: storage technologies, non-storage
-technologies with output that varies at the time slice level, and non-storage
-technologies with constant annual output.
+    Where the Demand constraint :eq:`Demand` ensures that end-use demands are met,
+    the CommodityBalance constraint ensures that the endogenous system demands are
+    met.  This constraint requires the total production of a given commodity
+    to equal the amount consumed, thus ensuring an energy balance at the system
+    level. In this most general form of the constraint, the energy commodity being
+    balanced has variable production at the time slice level. The energy commodity
+    can then be consumed by three types of processes: storage technologies, non-storage
+    technologies with output that varies at the time slice level, and non-storage
+    technologies with constant annual output.
 
-Separate expressions are required in order to account for the consumption of
-commodity :math:`c` by downstream processes. For the commodity flow into storage
-technologies, we use :math:`\textbf{FI}_{r, p, s, d, i, t, v, c}`. Note that the FlowIn
-variable is defined only for storage technologies, and is required because storage
-technologies balance production and consumption across time slices rather than
-within a single time slice. For commodity flows into non-storage processes with time
-varying output, we use :math:`\textbf{FO}_{r, p, s, d, i, t, v, c}/EFF_{r, i,t,v,o}`.
-The division by :math:`EFF_{r, c,t,v,o}` is applied to the output flows that consume
-commodity :math:`c` to determine input flows. Finally, we need to account
-for the consumption of commodity :math:`c` by the processes in
-:code:`tech_annual`. Since the commodity flow of these processes is on an
-annual basis, we use :math:`SEG_{s,d}` to calculate the consumption of
-commodity :math:`c` in time-slice :math:`(s,d)` from the annual flows.
-Formulating an expression for the production of commodity :math:`c` is
-more straightforward, and is simply calculated by
-:math:`\textbf{FO}_{r, p, s, d, i, t, v, c}`.
+    Separate expressions are required in order to account for the consumption of
+    commodity :math:`c` by downstream processes. For the commodity flow into storage
+    technologies, we use :math:`\textbf{FI}_{r, p, s, d, i, t, v, c}`. Note that the FlowIn
+    variable is defined only for storage technologies, and is required because storage
+    technologies balance production and consumption across time slices rather than
+    within a single time slice. For commodity flows into non-storage processes with time
+    varying output, we use :math:`\textbf{FO}_{r, p, s, d, i, t, v, c}/EFF_{r, i,t,v,o}`.
+    The division by :math:`EFF_{r, c,t,v,o}` is applied to the output flows that consume
+    commodity :math:`c` to determine input flows. Finally, we need to account
+    for the consumption of commodity :math:`c` by the processes in
+    :code:`tech_annual`. Since the commodity flow of these processes is on an
+    annual basis, we use :math:`SEG_{s,d}` to calculate the consumption of
+    commodity :math:`c` in time-slice :math:`(s,d)` from the annual flows.
+    Formulating an expression for the production of commodity :math:`c` is
+    more straightforward, and is simply calculated by
+    :math:`\textbf{FO}_{r, p, s, d, i, t, v, c}`.
 
-In some cases, the overproduction of a commodity may be required, such
-that the supply exceeds the endogenous demand. Refineries represent a
-common example, where the share of different refined products are governed
-by TechOutputSplit, but total production is driven by a particular commodity
-like gasoline. Such a situtation can result in the overproduction of other
-refined products, such as diesel or kerosene. In such cases, we need to
-track the excess production of these commodities. To do so, the technology
-producing the excess commodity should be added to the :code:`tech_flex` set.
-This flexible technology designation will activate a slack variable
-(:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`) representing
-the excess production in the :code:`CommodityBalanceAnnual_Constraint`. Note
-that the :code:`tech_flex` set is different from :code:`tech_curtailment` set;
-the latter is technology- rather than commodity-focused and is used in the
-:code:`Capacity_Constraint` to track output that is used to produce useful
-output and the amount curtailed, and to ensure that the installed capacity
-covers both.
+    In some cases, the overproduction of a commodity may be required, such
+    that the supply exceeds the endogenous demand. Refineries represent a
+    common example, where the share of different refined products are governed
+    by TechOutputSplit, but total production is driven by a particular commodity
+    like gasoline. Such a situtation can result in the overproduction of other
+    refined products, such as diesel or kerosene. In such cases, we need to
+    track the excess production of these commodities. To do so, the technology
+    producing the excess commodity should be added to the :code:`tech_flex` set.
+    This flexible technology designation will activate a slack variable
+    (:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`) representing
+    the excess production in the :code:`CommodityBalanceAnnual_Constraint`. Note
+    that the :code:`tech_flex` set is different from :code:`tech_curtailment` set;
+    the latter is technology- rather than commodity-focused and is used in the
+    :code:`Capacity_Constraint` to track output that is used to produce useful
+    output and the amount curtailed, and to ensure that the installed capacity
+    covers both.
 
-This constraint also accounts for imports and exports between regions
-when solving multi-regional systems. The import (:math:`\textbf{FIM}`) and export
-(:math:`\textbf{FEX}`) variables are created on-the-fly by summing the
-:math:`\textbf{FO}` variables over the appropriate import and export regions,
-respectively, which are defined in :code:`temoa_initialize.py` by parsing the
-:code:`tech_exchange` processes.
+    This constraint also accounts for imports and exports between regions
+    when solving multi-regional systems. The import (:math:`\textbf{FIM}`) and export
+    (:math:`\textbf{FEX}`) variables are created on-the-fly by summing the
+    :math:`\textbf{FO}` variables over the appropriate import and export regions,
+    respectively, which are defined in :code:`temoa_initialize.py` by parsing the
+    :code:`tech_exchange` processes.
 
-Finally, for commodities that are exclusively produced at a constant annual rate, the
-:code:`CommodityBalanceAnnual_Constraint` is used, which is simplified and
-reduces computational burden.
+    Finally, for commodities that are exclusively produced at a constant annual rate, the
+    :code:`CommodityBalanceAnnual_Constraint` is used, which is simplified and
+    reduces computational burden.
 
-*production + imports = consumption + exports + excess*
+    *production + imports = consumption + exports + excess*
 
-.. math::
-   :label: CommodityBalance
+    .. math::
+       :label: CommodityBalance
 
-       \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, c}
-       +
-       &\sum_{reg} \textbf{FIM}_{r-reg, p, s, d, i, t, v, c} \; \forall reg \neq r
-       \\
-       = &\sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
-       \\ &\quad +
-       \sum_{T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-       \\
-       &\quad + \; SEG_{s,d} \cdot
-       \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o} \\
-       &\quad + \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \; \forall reg \neq r
-       \\ &\quad + \;
-       \textbf{FLX}_{r, p, s, d, i, t, v, c}
+           \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, c}
+           +
+           &\sum_{reg} \textbf{FIM}_{r-reg, p, s, d, i, t, v, c} \; \forall reg \neq r
+           \\
+           = &\sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
+           \\ &\quad +
+           \sum_{T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
+           \\
+           &\quad + \; SEG_{s,d} \cdot
+           \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o} \\
+           &\quad + \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \; \forall reg \neq r
+           \\ &\quad + \;
+           \textbf{FLX}_{r, p, s, d, i, t, v, c}
 
-       \\
-       &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
+           \\
+           &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
-"""
+    """
     if c in M.commodity_demand:
         return Constraint.Skip
 
@@ -864,36 +864,36 @@ reduces computational burden.
 
 def CommodityBalanceAnnual_Constraint(M: 'TemoaModel', r, p, c):
     r"""
-Similar to the CommodityBalance_Constraint, but this version applies only
-to commodities produced at a constant annual rate. This version of the
-constraint improves computational performance for commodities that do not
-need to be balanced at the timeslice level.
+    Similar to the CommodityBalance_Constraint, but this version applies only
+    to commodities produced at a constant annual rate. This version of the
+    constraint improves computational performance for commodities that do not
+    need to be balanced at the timeslice level.
 
-While the commodity :math:`c` can only be produced by technologies in the
-:code:`tech_annual` set, it can be consumed by any technology in the
-:math:`T-T^{s}` set.
+    While the commodity :math:`c` can only be produced by technologies in the
+    :code:`tech_annual` set, it can be consumed by any technology in the
+    :math:`T-T^{s}` set.
 
-*production + imports = consumption + exports + excess*
+    *production + imports = consumption + exports + excess*
 
-.. math::
-   :label: CommodityBalanceAnnual
+    .. math::
+       :label: CommodityBalanceAnnual
 
-       \sum_{I,T, V} \textbf{FOA}_{r, p, i, t \in T^{a}, v, c}
-        +
-       &\sum_{reg} \textbf{FIM}_{reg-r, p, i, t, v, c} \; \forall reg \neq r
-       \\ =
-       &\sum_{S, D, T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-       \\ + &\quad
-       \sum_{I, T^{a}, V, O} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o}
-       \\ &+
-       \sum_{reg} \textbf{FEX}_{r-reg, p, c, t, v, o} \; \forall reg \neq r
-       \\ &+
-       \textbf{FX}_{r, p, i, t, v, c}
+           \sum_{I,T, V} \textbf{FOA}_{r, p, i, t \in T^{a}, v, c}
+            +
+           &\sum_{reg} \textbf{FIM}_{reg-r, p, i, t, v, c} \; \forall reg \neq r
+           \\ =
+           &\sum_{S, D, T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
+           \\ + &\quad
+           \sum_{I, T^{a}, V, O} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o}
+           \\ &+
+           \sum_{reg} \textbf{FEX}_{r-reg, p, c, t, v, o} \; \forall reg \neq r
+           \\ &+
+           \textbf{FX}_{r, p, i, t, v, c}
 
-       \\
-       &\forall \{r, p, c\} \in \Theta_{\text{CommodityBalanceAnnual}}
+           \\
+           &\forall \{r, p, c\} \in \Theta_{\text{CommodityBalanceAnnual}}
 
-"""
+    """
     if c in M.commodity_demand:
         return Constraint.Skip
 
@@ -978,7 +978,8 @@ def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
 
        \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}"""
+       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+    """
     logger.warning(
         'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
         'Recommend removing data from supporting table'
@@ -1006,28 +1007,28 @@ def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
 def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-Some electric generators cannot ramp output over a short period of time (e.g.,
-hourly or daily). Temoa models this behavior by forcing technologies in the
-:code:`tech_baseload` set to maintain a constant output across all times-of-day
-within the same season. Note that the output of a baseload process can vary
-between seasons.
+    Some electric generators cannot ramp output over a short period of time (e.g.,
+    hourly or daily). Temoa models this behavior by forcing technologies in the
+    :code:`tech_baseload` set to maintain a constant output across all times-of-day
+    within the same season. Note that the output of a baseload process can vary
+    between seasons.
 
-Ideally, this constraint would not be necessary, and baseload processes would
-simply not have a :math:`d` index.  However, implementing the more efficient
-functionality is currently on the Temoa TODO list.
+    Ideally, this constraint would not be necessary, and baseload processes would
+    simply not have a :math:`d` index.  However, implementing the more efficient
+    functionality is currently on the Temoa TODO list.
 
-.. math::
-   :label: BaseloadDaily
+    .. math::
+       :label: BaseloadDaily
 
-         SEG_{s, D_0}
-   \cdot \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-   =
-         SEG_{s, d}
-   \cdot \sum_{I, O} \textbf{FO}_{r, p, s, D_0,i, t, v, o}
+             SEG_{s, D_0}
+       \cdot \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
+       =
+             SEG_{s, d}
+       \cdot \sum_{I, O} \textbf{FO}_{r, p, s, D_0,i, t, v, o}
 
-   \\
-   \forall \{r, p, s, d, t, v\} \in \Theta_{\text{BaseloadDiurnal}}
-"""
+       \\
+       \forall \{r, p, s, d, t, v\} \in \Theta_{\text{BaseloadDiurnal}}
+    """
     # Question: How to set the different times of day equal to each other?
 
     # Step 1: Acquire a "canonical" representation of the times of day
@@ -1075,19 +1076,19 @@ functionality is currently on the Temoa TODO list.
 def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
     r"""
 
-This constraint ensures that the process (t,v) connecting regions
-r_e and r_i is handled by one capacity variables.
+    This constraint ensures that the process (t,v) connecting regions
+    r_e and r_i is handled by one capacity variables.
 
-.. math::
-   :label: RegionalExchangeCapacity
+    .. math::
+       :label: RegionalExchangeCapacity
 
-      \textbf{CAP}_{r_e,t,v}
-      =
-      \textbf{CAP}_{r_i,t,v}
+          \textbf{CAP}_{r_e,t,v}
+          =
+          \textbf{CAP}_{r_i,t,v}
 
-      \\
-      \forall \{r_e, r_i, t, v\} \in \Theta_{\text{RegionalExchangeCapacity}}
-"""
+          \\
+          \forall \{r_e, r_i, t, v\} \in \Theta_{\text{RegionalExchangeCapacity}}
+    """
 
     expr = M.V_Capacity[r_e + '-' + r_i, p, t, v] == M.V_Capacity[r_i + '-' + r_e, p, t, v]
 
@@ -1202,31 +1203,31 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-This constraint ensures that the amount of energy stored does not exceed
-the upper bound set by the energy capacity of the storage device, as calculated
-on the right-hand side.
+    This constraint ensures that the amount of energy stored does not exceed
+    the upper bound set by the energy capacity of the storage device, as calculated
+    on the right-hand side.
 
-Because the number and duration of time slices are user-defined, we need to adjust
-the storage duration, which is specified in hours. First, the hourly duration is divided
-by the number of hours in a year to obtain the duration as a fraction of the year.
-Since the :math:`C2A` parameter assumes the conversion of capacity to annual activity,
-we need to express the storage duration as fraction of a year. Then, :math:`SEG_{s,d}`
-summed over the time-of-day slices (:math:`d`) multiplied by 365 days / yr yields the
-number of days per season. This step is necessary because conventional time sliced models
-use a single day to represent many days within a given season. Thus, it is necessary to
-scale the storage duration to account for the number of days in each season.
+    Because the number and duration of time slices are user-defined, we need to adjust
+    the storage duration, which is specified in hours. First, the hourly duration is divided
+    by the number of hours in a year to obtain the duration as a fraction of the year.
+    Since the :math:`C2A` parameter assumes the conversion of capacity to annual activity,
+    we need to express the storage duration as fraction of a year. Then, :math:`SEG_{s,d}`
+    summed over the time-of-day slices (:math:`d`) multiplied by 365 days / yr yields the
+    number of days per season. This step is necessary because conventional time sliced models
+    use a single day to represent many days within a given season. Thus, it is necessary to
+    scale the storage duration to account for the number of days in each season.
 
-.. math::
-   :label: StorageEnergyUpperBound
+    .. math::
+       :label: StorageEnergyUpperBound
 
-      \textbf{SL}_{r, p, s, d, t, v} \le
-      \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
-      \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr
+          \textbf{SL}_{r, p, s, d, t, v} \le
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
+          \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr
 
-      \\
-      \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
+          \\
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
 
-"""
+    """
 
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
@@ -1244,20 +1245,20 @@ scale the storage duration to account for the number of days in each season.
 def StorageChargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-This constraint ensures that the charge rate of the storage unit is
-limited by the power capacity (typically GW) of the storage unit.
+    This constraint ensures that the charge rate of the storage unit is
+    limited by the power capacity (typically GW) of the storage unit.
 
-.. math::
-   :label: StorageChargeRate
+    .. math::
+       :label: StorageChargeRate
 
-      \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
-      \le
-      \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
+          \le
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
-      \\
-      \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageChargeRate}}
+          \\
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageChargeRate}}
 
-"""
+    """
     # Calculate energy charge in each time slice
     slice_charge = sum(
         M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * M.Efficiency[r, S_i, t, v, S_o]
@@ -1282,19 +1283,19 @@ limited by the power capacity (typically GW) of the storage unit.
 def StorageDischargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-This constraint ensures that the discharge rate of the storage unit
-is limited by the power capacity (typically GW) of the storage unit.
+    This constraint ensures that the discharge rate of the storage unit
+    is limited by the power capacity (typically GW) of the storage unit.
 
-.. math::
-   :label: StorageDischargeRate
+    .. math::
+       :label: StorageDischargeRate
 
-      \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-      \le
-      \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+          \le
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
-      \\
-      \forall \{r,p, s, d, t, v\} \in \Theta_{\text{StorageDischargeRate}}
-"""
+          \\
+          \forall \{r,p, s, d, t, v\} \in \Theta_{\text{StorageDischargeRate}}
+    """
     # Calculate energy discharge in each time slice
     slice_discharge = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
@@ -1319,22 +1320,22 @@ is limited by the power capacity (typically GW) of the storage unit.
 def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-It is not enough to only limit the charge and discharge rate separately. We also
-need to ensure that the maximum throughput (charge + discharge) does not exceed
-the capacity (typically GW) of the storage unit.
+    It is not enough to only limit the charge and discharge rate separately. We also
+    need to ensure that the maximum throughput (charge + discharge) does not exceed
+    the capacity (typically GW) of the storage unit.
 
-.. math::
-   :label: StorageThroughput
+    .. math::
+       :label: StorageThroughput
 
-      \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-      +
-      \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
-      \le
-      \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+          +
+          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
+          \le
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
-      \\
-      \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
-"""
+          \\
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
+    """
     discharge = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
         for S_o in M.processOutputs[r, p, t, v]
@@ -1361,28 +1362,28 @@ the capacity (typically GW) of the storage unit.
 def StorageInit_Constraint(M: 'TemoaModel', r, t, v):
     r"""
 
-This constraint is used if the users wishes to force a specific initial storage charge level
-for certain storage technologies and vintages. In this case, the value of the decision variable
-:math:`\textbf{SI}_{r,t,v}` is set by this constraint rather than being optimized.
-User-specified initial storage charge levels that are sufficiently different from the optimal
-:math:`\textbf{SI}_{r,t,v}` could impact the cost-effectiveness of storage. For example, if the
-optimal initial charge level happens to be 50% of the full energy capacity, forced initial
-charge levels (specified by parameter :math:`SIF_{r,t,v}`) equal to 10% or 90% of the full energy
-capacity could lead to more expensive solutions.
+    This constraint is used if the users wishes to force a specific initial storage charge level
+    for certain storage technologies and vintages. In this case, the value of the decision variable
+    :math:`\textbf{SI}_{r,t,v}` is set by this constraint rather than being optimized.
+    User-specified initial storage charge levels that are sufficiently different from the optimal
+    :math:`\textbf{SI}_{r,t,v}` could impact the cost-effectiveness of storage. For example, if the
+    optimal initial charge level happens to be 50% of the full energy capacity, forced initial
+    charge levels (specified by parameter :math:`SIF_{r,t,v}`) equal to 10% or 90% of the full energy
+    capacity could lead to more expensive solutions.
 
 
-.. math::
-   :label: StorageInit
+    .. math::
+       :label: StorageInit
 
-      \textbf{SI}_{r,t, v} \le
-      \ SIF_{r,t,v}
-      \cdot
-      \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
-      \cdot \sum_{d} SEG_{s_{first},d} \cdot 365 days/yr
+          \textbf{SI}_{r,t, v} \le
+          \ SIF_{r,t,v}
+          \cdot
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
+          \cdot \sum_{d} SEG_{s_{first},d} \cdot 365 days/yr
 
-      \\
-      \forall \{r, t, v\} \in \Theta_{\text{StorageInit}}
-"""
+          \\
+          \forall \{r, t, v\} \in \Theta_{\text{StorageInit}}
+    """
     # dev note:  This constraint is not currently accessible and needs close review.
     #            the hybrid loader currently screens out inputs for this to keep
     #            it idle.
@@ -1414,45 +1415,45 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     r"""
 
-The ramp rate constraint is utilized to limit the rate of electricity generation
-increase and decrease between two adjacent time slices in order to account for
-physical limits associated with thermal power plants. Note that this constraint
-only applies to technologies with ramp capability, which is defined in the set
-:math:`T^{m}`. We assume for simplicity the rate limits for both
-ramp up and down are equal and they do not vary with technology vintage. The
-ramp rate limits (:math:`r_t`) for technology :math:`t` should be expressed in
-percentage of its rated capacity.
+    The ramp rate constraint is utilized to limit the rate of electricity generation
+    increase and decrease between two adjacent time slices in order to account for
+    physical limits associated with thermal power plants. Note that this constraint
+    only applies to technologies with ramp capability, which is defined in the set
+    :math:`T^{m}`. We assume for simplicity the rate limits for both
+    ramp up and down are equal and they do not vary with technology vintage. The
+    ramp rate limits (:math:`r_t`) for technology :math:`t` should be expressed in
+    percentage of its rated capacity.
 
-Note that when :math:`d_{nd}` is the last time-of-day, :math:`d_{nd + 1} \not \in
-\textbf{D}`, i.e., if one time slice is the last time-of-day in a season and the
-other time slice is the first time-of-day in the next season, the ramp rate
-limits between these two time slices can not be expressed by :code:`RampUpDay`.
-Therefore, the ramp rate constraints between two adjacent seasons are
-represented in :code:`RampUpSeason`.
+    Note that when :math:`d_{nd}` is the last time-of-day, :math:`d_{nd + 1} \not \in
+    \textbf{D}`, i.e., if one time slice is the last time-of-day in a season and the
+    other time slice is the first time-of-day in the next season, the ramp rate
+    limits between these two time slices can not be expressed by :code:`RampUpDay`.
+    Therefore, the ramp rate constraints between two adjacent seasons are
+    represented in :code:`RampUpSeason`.
 
-In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
-:math:`\textbf{S} = \{s_i, i = 1, 2, \cdots, ns\}` and
-:math:`\textbf{D} = \{d_i, i = 1, 2, \cdots, nd\}`.
+    In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
+    :math:`\textbf{S} = \{s_i, i = 1, 2, \cdots, ns\}` and
+    :math:`\textbf{D} = \{d_i, i = 1, 2, \cdots, nd\}`.
 
-.. math::
-   :label: RampUpDay
+    .. math::
+       :label: RampUpDay
 
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s, d_{i + 1}, i, t, v, o}
-          }{
-          SEG_{s, d_{i + 1}} \cdot C2A_{r,t}
-          }
-      -
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s, d_i, i, t, v, o}
-          }{
-          SEG_{s, d_i} \cdot C2A_{r,t}
-          }
-      \leq
-      r_t \cdot \textbf{CAPAVL}_{r,p,t}
-      \\
-      \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
-"""
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s, d_{i + 1}, i, t, v, o}
+              }{
+              SEG_{s, d_{i + 1}} \cdot C2A_{r,t}
+              }
+          -
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s, d_i, i, t, v, o}
+              }{
+              SEG_{s, d_i} \cdot C2A_{r,t}
+              }
+          \leq
+          r_t \cdot \textbf{CAPAVL}_{r,p,t}
+          \\
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
+    """
     if d != M.time_of_day.first():
         d_prev = M.time_of_day.prev(d)
         activity_sd_prev = sum(
@@ -1481,28 +1482,28 @@ In the :code:`RampUpDay` and :code:`RampUpSeason` constraints, we assume
 def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
-Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
-constraint to limit ramp down rates between any two adjacent time slices.
+    Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
+    constraint to limit ramp down rates between any two adjacent time slices.
 
-.. math::
-   :label: RampDownDay
+    .. math::
+       :label: RampDownDay
 
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s, d_{i + 1}, i, t, v, o}
-          }{
-          SEG_{s, d_{i + 1}} \cdot C2A_{r,t}
-          }
-      -
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s, d_i, i, t, v, o}
-          }{
-          SEG_{s, d_i} \cdot C2A_{r,t}
-          }
-      \geq
-      -r_t \cdot \textbf{CAPAVL}_{r,p,t}
-      \\
-      \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampDownDay}}
-"""
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s, d_{i + 1}, i, t, v, o}
+              }{
+              SEG_{s, d_{i + 1}} \cdot C2A_{r,t}
+              }
+          -
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s, d_i, i, t, v, o}
+              }{
+              SEG_{s, d_i} \cdot C2A_{r,t}
+              }
+          \geq
+          -r_t \cdot \textbf{CAPAVL}_{r,p,t}
+          \\
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampDownDay}}
+    """
     if d != M.time_of_day.first():
         d_prev = M.time_of_day.prev(d)
         activity_sd_prev = sum(
@@ -1531,28 +1532,28 @@ constraint to limit ramp down rates between any two adjacent time slices.
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, t, v):
     r"""
 
-Note that :math:`d_1` and :math:`d_{nd}` represent the first and last time-of-day,
-respectively.
+    Note that :math:`d_1` and :math:`d_{nd}` represent the first and last time-of-day,
+    respectively.
 
-.. math::
-   :label:
+    .. math::
+       :label:
 
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s_{i + 1}, d_1, i, t, v, o}
-          }{
-          SEG_{s_{i + 1}, d_1} \cdot C2A_{r,t}
-          }
-      -
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s_i, d_{nd}, i, t, v, o}
-          }{
-          SEG_{s_i, d_{nd}} \cdot C2A_{r,t}
-          }
-      \leq
-      r_t \cdot \textbf{CAPAVL}_{r,p,t}
-      \\
-      \forall \{r, p, s, t, v\} \in \Theta_{\text{RampUpSeason}}
-"""
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s_{i + 1}, d_1, i, t, v, o}
+              }{
+              SEG_{s_{i + 1}, d_1} \cdot C2A_{r,t}
+              }
+          -
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s_i, d_{nd}, i, t, v, o}
+              }{
+              SEG_{s_i, d_{nd}} \cdot C2A_{r,t}
+              }
+          \leq
+          r_t \cdot \textbf{CAPAVL}_{r,p,t}
+          \\
+          \forall \{r, p, s, t, v\} \in \Theta_{\text{RampUpSeason}}
+    """
     if s != M.time_season.first():
         s_prev = M.time_season.prev(s)
         d_first = M.time_of_day.first()
@@ -1585,29 +1586,29 @@ respectively.
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, t, v):
     r"""
 
-Similar to the :code:`RampUpSeason` constraint, we use the
-:code:`RampDownSeason` constraint to limit ramp down rates
-between any two adjacent seasons.
+    Similar to the :code:`RampUpSeason` constraint, we use the
+    :code:`RampDownSeason` constraint to limit ramp down rates
+    between any two adjacent seasons.
 
-.. math::
-   :label: RampDownSeason
+    .. math::
+       :label: RampDownSeason
 
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s_{i + 1}, d_1, i, t, v, o}
-          }{
-          SEG_{s_{i + 1}, d_1} \cdot C2A_{r,t}
-          }
-      -
-      \frac{
-          \sum_{I, O} \textbf{FO}_{r, p, s_i, d_{nd}, i, t, v, o}
-          }{
-          SEG_{s_i, d_{nd}} \cdot C2A_{r,t}
-          }
-      \geq
-      -r_t \cdot \textbf{CAPAVL}_{r,p,t}
-      \\
-      \forall \{r, p, s, t, v\} \in \Theta_{\text{RampDownSeason}}
-"""
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s_{i + 1}, d_1, i, t, v, o}
+              }{
+              SEG_{s_{i + 1}, d_1} \cdot C2A_{r,t}
+              }
+          -
+          \frac{
+              \sum_{I, O} \textbf{FO}_{r, p, s_i, d_{nd}, i, t, v, o}
+              }{
+              SEG_{s_i, d_{nd}} \cdot C2A_{r,t}
+              }
+          \geq
+          -r_t \cdot \textbf{CAPAVL}_{r,p,t}
+          \\
+          \forall \{r, p, s, t, v\} \in \Theta_{\text{RampDownSeason}}
+    """
     if s != M.time_season.first():
         s_prev = M.time_season.prev(s)
         d_first = M.time_of_day.first()
@@ -1693,46 +1694,46 @@ def RampDownPeriod_Constraint(M: 'TemoaModel', r, p, t, v):
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     r"""
 
-During each period :math:`p`, the sum of the available capacity of all reserve
-technologies :math:`\sum_{t \in T^{e}} \textbf{CAPAVL}_{r,p,t}`, which are
-defined in the set :math:`\textbf{T}^{r,e}`, should exceed the peak load by
-:math:`PRM`, the regional reserve margin. Note that the reserve
-margin is expressed in percentage of the peak load. Generally speaking, in
-a database we may not know the peak demand before running the model, therefore,
-we write this equation for all the time-slices defined in the database in each region.
+    During each period :math:`p`, the sum of the available capacity of all reserve
+    technologies :math:`\sum_{t \in T^{e}} \textbf{CAPAVL}_{r,p,t}`, which are
+    defined in the set :math:`\textbf{T}^{r,e}`, should exceed the peak load by
+    :math:`PRM`, the regional reserve margin. Note that the reserve
+    margin is expressed in percentage of the peak load. Generally speaking, in
+    a database we may not know the peak demand before running the model, therefore,
+    we write this equation for all the time-slices defined in the database in each region.
 
-.. math::
-    :label: reserve_margin
+    .. math::
+        :label: reserve_margin
 
-       \sum_{t \in T^{res} \setminus T^{e}} {
-       CC_{t,r} \cdot
-       \textbf{CAPAVL}_{p,t} \cdot
-       SEG_{s^*,d^*} \cdot C2A_{r,t} } +
-       \sum_{t \in T^{res} \cap T^{e}} {
-       CC_{t,r_i-r} \cdot
-       \textbf{CAPAVL}_{p,t} \cdot
-       SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\ -
-       \sum_{t \in T^{res} \cap T^{e}} {
-       CC_{t,r-r_i} \cdot
-       \textbf{CAPAVL}_{p,t} \cdot
-       SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }
-       \geq
-       \begin{multline}\left [ {
-       \sum_{ t \in T^{res} \setminus T^{e},V,I,O }
-           \textbf{FO}_{r, p, s, d, i, t, v, o} } \\ {+
-       \sum_{ t \in T^{res} \cap T^{e},V,I,O }
-           \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}  -
-        \sum_{ t \in T^{res} \cap T^{e},V,I,O }
-            \textbf{FI}_{r-r_i, p, s, d, i, t, v, o} -
-        \sum_{ t \in T^{res} \cap T^{s},V,I,O }
-            \textbf{FI}_{r, p, s, d, i, t, v, o}
-        } \right ] \end{multline}
-           \cdot (1 + PRM_r)
-       \\
-       \forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}}
-       \text{and} \forall r_i \in R
+           \sum_{t \in T^{res} \setminus T^{e}} {
+           CC_{t,r} \cdot
+           \textbf{CAPAVL}_{p,t} \cdot
+           SEG_{s^*,d^*} \cdot C2A_{r,t} } +
+           \sum_{t \in T^{res} \cap T^{e}} {
+           CC_{t,r_i-r} \cdot
+           \textbf{CAPAVL}_{p,t} \cdot
+           SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\ -
+           \sum_{t \in T^{res} \cap T^{e}} {
+           CC_{t,r-r_i} \cdot
+           \textbf{CAPAVL}_{p,t} \cdot
+           SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }
+           \geq
+           \begin{multline}\left [ {
+           \sum_{ t \in T^{res} \setminus T^{e},V,I,O }
+               \textbf{FO}_{r, p, s, d, i, t, v, o} } \\ {+
+           \sum_{ t \in T^{res} \cap T^{e},V,I,O }
+               \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}  -
+            \sum_{ t \in T^{res} \cap T^{e},V,I,O }
+                \textbf{FI}_{r-r_i, p, s, d, i, t, v, o} -
+            \sum_{ t \in T^{res} \cap T^{s},V,I,O }
+                \textbf{FI}_{r, p, s, d, i, t, v, o}
+            } \right ] \end{multline}
+               \cdot (1 + PRM_r)
+           \\
+           \forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}}
+           \text{and} \forall r_i \in R
 
-"""
+    """
     if (not M.tech_reserve) or (
         (r, p) not in M.processReservePeriods.keys()
     ):  # If reserve set empty or if r,p not in M.processReservePeriod.keys(), skip the constraint
@@ -1839,31 +1840,31 @@ we write this equation for all the time-slices defined in the database in each r
 def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     r"""
 
-A modeler can track emissions through use of the :code:`commodity_emissions`
-set and :code:`EmissionActivity` parameter.  The :math:`EAC` parameter is
-analogous to the efficiency table, tying emissions to a unit of activity.  The
-EmissionLimit constraint allows the modeler to assign an upper bound per period
-to each emission commodity. Note that this constraint sums emissions from
-technologies with output varying at the time slice and those with constant annual
-output in separate terms.
+    A modeler can track emissions through use of the :code:`commodity_emissions`
+    set and :code:`EmissionActivity` parameter.  The :math:`EAC` parameter is
+    analogous to the efficiency table, tying emissions to a unit of activity.  The
+    EmissionLimit constraint allows the modeler to assign an upper bound per period
+    to each emission commodity. Note that this constraint sums emissions from
+    technologies with output varying at the time slice and those with constant annual
+    output in separate terms.
 
-.. math::
-   :label: EmissionLimit
+    .. math::
+       :label: EmissionLimit
 
-       \sum_{S,D,I,T,V,O|{r,e,i,t,v,o} \in EAC} \left (
-       EAC_{r, e, i, t, v, o} \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
-       \right ) & \\
-       +
-       \sum_{I,T,V,O|{r,e,i,t \in T^{a},v,o} \in EAC} (
-       EAC_{r, e, i, t, v, o} \cdot & \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
-        )
-       \le
-       ELM_{r, p, e}
+           \sum_{S,D,I,T,V,O|{r,e,i,t,v,o} \in EAC} \left (
+           EAC_{r, e, i, t, v, o} \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
+           \right ) & \\
+           +
+           \sum_{I,T,V,O|{r,e,i,t \in T^{a},v,o} \in EAC} (
+           EAC_{r, e, i, t, v, o} \cdot & \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+            )
+           \le
+           ELM_{r, p, e}
 
-       \\
-       & \forall \{r, p, e\} \in \Theta_{\text{EmissionLimit}}
+           \\
+           & \forall \{r, p, e\} \in \Theta_{\text{EmissionLimit}}
 
-"""
+    """
     emission_limit = M.EmissionLimit[r, p, e]
 
     # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'),
@@ -1916,22 +1917,22 @@ output in separate terms.
 def GrowthRateConstraint_rule(M: 'TemoaModel', p, r, t):
     r"""
 
-This constraint sets an upper bound growth rate on technology-specific capacity.
+    This constraint sets an upper bound growth rate on technology-specific capacity.
 
-.. math::
-   :label: GrowthRate
+    .. math::
+       :label: GrowthRate
 
-   CAPAVL_{r, p_{i},t} \le GRM \cdot CAPAVL_{r,p_{i-1},t} + GRS
+       CAPAVL_{r, p_{i},t} \le GRM \cdot CAPAVL_{r,p_{i-1},t} + GRS
 
-   \\
-   \forall \{r, p, t\} \in \Theta_{\text{GrowthRate}}
+       \\
+       \forall \{r, p, t\} \in \Theta_{\text{GrowthRate}}
 
-where :math:`GRM` is the maximum growth rate, and should be specified as
-:math:`(1+r)` and :math:`GRS` is the growth rate seed, which has units of
-capacity. Without the seed, any technology with zero capacity in the first time
-period would be restricted to zero capacity for the remainder of the time
-horizon.
-"""
+    where :math:`GRM` is the maximum growth rate, and should be specified as
+    :math:`(1+r)` and :math:`GRS` is the growth rate seed, which has units of
+    capacity. Without the seed, any technology with zero capacity in the first time
+    period would be restricted to zero capacity for the remainder of the time
+    horizon.
+    """
     GRS = value(M.GrowthRateSeed[r, t])
     GRM = value(M.GrowthRateMax[r, t])
     CapPT = M.V_CapacityAvailableByPeriodAndTech
@@ -2930,15 +2931,15 @@ def ParamPeriodLength(M: 'TemoaModel', p):
 
 
 def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
-    """\
+    r"""
 
-Calculate the fraction of period p that process :math:`<t, v>` operates.
+    Calculate the fraction of period p that process :math:`<t, v>` operates.
 
-For most processes and periods, this will likely be one, but for any process
-that will cease operation (rust out, be decommissioned, etc.) between periods,
-calculate the fraction of the period that the technology is able to
-create useful output.
-"""
+    For most processes and periods, this will likely be one, but for any process
+    that will cease operation (rust out, be decommissioned, etc.) between periods,
+    calculate the fraction of the period that the technology is able to
+    create useful output.
+    """
     eol_year = v + value(M.LifetimeProcess[r, t, v])
     frac = eol_year - p
     period_length = value(M.PeriodLength[p])
@@ -2999,7 +3000,8 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     in the :code:`LinkedTechs` table. Note that the primary and linked
     technologies cannot be part of the :code:`tech_annual` set. It is implicit that
     the primary region corresponds to the linked technology as well. The lifetimes
-    of the primary and linked technologies should be specified and identical."""
+    of the primary and linked technologies should be specified and identical.
+    """
     linked_t = M.LinkedTechs[r, t, e]
 
     primary_flow = sum(

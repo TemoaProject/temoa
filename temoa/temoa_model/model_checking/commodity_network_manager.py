@@ -24,6 +24,10 @@ jeff@westernspark.us
 https://westernspark.us
 Created on:  3/11/24
 
+This module is responsible for running the network analysis and generating the filters
+that can be used to filter down the data to valid data.  It uses the NetworkModelData
+and subdivides this into regions and periods and analyzes each one.
+
 """
 
 from collections import defaultdict

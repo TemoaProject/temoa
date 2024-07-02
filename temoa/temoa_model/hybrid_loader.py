@@ -1,26 +1,4 @@
 """
-A module to build/load a Data Portal for myopic run using both SQL to pull data
-and python to filter results
-"""
-import sys
-import time
-from collections import defaultdict
-from logging import getLogger
-from sqlite3 import Connection, OperationalError
-from typing import Sequence
-
-from pyomo.core import Param, Set
-from pyomo.dataportal import DataPortal
-
-from temoa.extensions.myopic.myopic_index import MyopicIndex
-from temoa.temoa_model.model_checking import network_model_data, element_checker
-from temoa.temoa_model.model_checking.commodity_network_manager import CommodityNetworkManager
-from temoa.temoa_model.model_checking.element_checker import ViableSet
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_model import TemoaModel
-
-"""
 Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
@@ -46,7 +24,29 @@ jeff@westernspark.us
 https://westernspark.us
 Created on:  1/21/24
 
+A module to build/load a Data Portal for myopic run using both SQL to pull data
+and python to filter results
+
 """
+
+
+import sys
+import time
+from collections import defaultdict
+from logging import getLogger
+from sqlite3 import Connection, OperationalError
+from typing import Sequence
+
+from pyomo.core import Param, Set
+from pyomo.dataportal import DataPortal
+
+from temoa.extensions.myopic.myopic_index import MyopicIndex
+from temoa.temoa_model.model_checking import network_model_data, element_checker
+from temoa.temoa_model.model_checking.commodity_network_manager import CommodityNetworkManager
+from temoa.temoa_model.model_checking.element_checker import ViableSet
+from temoa.temoa_model.temoa_config import TemoaConfig
+from temoa.temoa_model.temoa_mode import TemoaMode
+from temoa.temoa_model.temoa_model import TemoaModel
 
 logger = getLogger(__name__)
 

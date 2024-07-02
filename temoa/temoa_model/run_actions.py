@@ -34,7 +34,6 @@ from sys import stderr as SE, version_info
 from time import time
 from typing import Tuple
 
-import deprecated
 from pyomo.environ import (
     DataPortal,
     Suffix,
@@ -53,27 +52,6 @@ from temoa.temoa_model.temoa_config import TemoaConfig
 from temoa.temoa_model.temoa_model import TemoaModel
 
 logger = getLogger(__name__)
-
-
-@deprecated.deprecated('dat files are no longer supported...for removal')
-def load_portal_from_dat(dat_file: Path, silent: bool = False) -> DataPortal:
-    loaded_portal = DataPortal(model=TemoaModel())
-
-    if dat_file.suffix != '.dat':
-        logger.error('Attempted to load data from file %s which is not a .dat file', dat_file)
-        raise TypeError('file loading error occurred, see log')
-    hack = time()
-    if not silent:
-        SE.write('[        ] Reading data files.')
-        SE.flush()
-
-    logger.debug('Started loading the DataPortal from the .dat file: %s', dat_file)
-    loaded_portal.load(filename=str(dat_file))
-
-    if not silent:
-        SE.write('\r[%8.2f] Data read.\n' % (time() - hack))
-    logger.debug('Finished creating the DataPortal from the .dat')
-    return loaded_portal
 
 
 def check_python_version(min_major, min_minor) -> bool:
@@ -156,6 +134,8 @@ def build_instance(
 ) -> TemoaModel:
     """
     Build a Temoa Instance from data
+    :param lp_path: the path to save the LP file to
+    :param keep_lp_file: True to keep the LP file
     :param loaded_portal: a DataPortal instance
     :param silent: Run silently
     :param model_name: Optional name for this instance
