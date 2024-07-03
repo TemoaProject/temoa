@@ -151,6 +151,8 @@ class CommodityNetworkManager:
         valid_ritvo = set()
         valid_rtv = set()
         valid_rt = set()
+        valid_rpit = set()
+        valid_rpto = set()
         valid_t = set()
         valid_input_commodities = set()
         valid_output_commodities = set()
@@ -160,6 +162,8 @@ class CommodityNetworkManager:
                 valid_ritvo.add((tech.region, tech.ic, tech.name, tech.vintage, tech.oc))
                 valid_rtv.add((tech.region, tech.name, tech.vintage))
                 valid_rt.add((tech.region, tech.name))
+                valid_rpit.add((tech.region, p, tech.ic, tech.name))
+                valid_rpto.add((tech.region, p, tech.name, tech.oc))
                 valid_t.add(tech.name)
                 valid_input_commodities.add(tech.ic)
                 valid_output_commodities.add(tech.oc)
@@ -175,6 +179,8 @@ class CommodityNetworkManager:
             'rt': ViableSet(
                 elements=valid_rt, exception_loc=0, exception_vals=ViableSet.REGION_REGEXES
             ),
+            'rpit': ViableSet(valid_rpit, exception_loc=0, exception_vals=ViableSet.REGION_REGEXES),
+            'rpto': ViableSet(valid_rpto, exception_loc=0, exception_vals=ViableSet.REGION_REGEXES),
             't': ViableSet(elements=valid_t),
             'v': ViableSet(elements=valid_vintages),
             'ic': ViableSet(elements=valid_input_commodities),
