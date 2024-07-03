@@ -8,7 +8,7 @@ pyomo
 ipython
 matplotlib
 pandas
-numpy
+numpy < 2.0
 joblib
 salib
 pydoe
@@ -41,3 +41,4 @@ networkx
 gravis
 highspy
 scipy
+gurobipy

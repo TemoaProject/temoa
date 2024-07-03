@@ -105,6 +105,8 @@ graphviz==0.20.3
     # via -r requirements.in
 gravis==0.1.0
     # via -r requirements.in
+gurobipy==11.0.2
+    # via -r requirements.in
 h11==0.14.0
     # via
     #   httpcore
