@@ -89,8 +89,10 @@ class HybridLoader:
         self.viable_output_comms: ViableSet | None = None
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
+        self.viable_rpto: ViableSet | None = None
         self.viable_rtv: ViableSet | None = None
         self.viable_rt: ViableSet | None = None
+        self.viable_rpit: ViableSet | None = None
         self.viable_rtt: ViableSet | None = None  # to support scanning LinkedTech
         self.efficiency_values: list[tuple] = []
 
@@ -164,6 +166,8 @@ class HybridLoader:
             self.viable_ritvo = filts['ritvo']
             self.viable_rtv = filts['rtv']
             self.viable_rt = filts['rt']
+            self.viable_rpit = filts['rpit']
+            self.viable_rpto = filts['rpto']
             self.viable_techs = filts['t']
             self.viable_input_comms = filts['ic']
             self.viable_vintages = filts['v']
@@ -492,14 +496,7 @@ class HybridLoader:
         #  === PARAMS ===
 
         # Efficiency
-        # if mi:
-        #     # use what we have already computed
-        #     raw = self.efficiency_values
-        # else:
-        #     raw = cur.execute(
-        #         'SELECT region, input_comm, tech, vintage, output_comm, efficiency '
-        #         'FROM main.Efficiency',
-        #     ).fetchall()
+
         # we have already computed/filtered this... no need for another data pull
         raw = self.efficiency_values
         load_element(M.Efficiency, raw)
@@ -605,7 +602,24 @@ class HybridLoader:
             raw = cur.execute(
                 'SELECT region, period, input_comm, tech, min_proportion FROM main.TechInputSplit '
             ).fetchall()
-        load_element(M.TechInputSplit, raw, self.viable_rt, (0, 3))
+        loaded = load_element(M.TechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
+        # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+        # a blending process and any missing items should be reviewed
+        if len(loaded) < len(raw):
+            missing = set(raw) - set(loaded)
+            for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                region, period, ic, tech, _ = item
+                logger.warning(
+                    'Technology Input Split requirement in region %s, period %d for tech %s with input'
+                    'commodity %s has '
+                    'been removed because the tech path with that input is '
+                    'invalid/not available/orphan.  See the other warnings for this TECH in '
+                    'this region-period, and check for availability of all components in data.',
+                    region,
+                    period,
+                    tech,
+                    ic,
+                )
 
         # TechInputSplitAverage
         if self.table_exists('TechInputSplitAverage'):
@@ -621,8 +635,24 @@ class HybridLoader:
                     'SELECT region, period, input_comm, tech, min_proportion '
                     'FROM main.TechInputSplitAverage '
                 ).fetchall()
-            load_element(M.TechInputSplitAverage, raw, self.viable_rt, (0, 3))
-
+            loaded = load_element(M.TechInputSplitAverage, raw, self.viable_rpit, (0, 1, 2, 3))
+            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+            # a blending process and any missing items should be reviewed
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                    region, period, ic, tech, _ = item
+                    logger.warning(
+                        'Technology Input Split requirement in region %s, period %d for tech %s with input'
+                        'commodity %s has '
+                        'been removed because the tech path with that input is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        ic,
+                    )
         # TechOutputSplit
         if self.table_exists('TechOutputSplit'):
             if mi:
@@ -635,7 +665,23 @@ class HybridLoader:
                 raw = cur.execute(
                     'SELECT region, period, tech, output_comm, min_proportion FROM main.TechOutputSplit '
                 ).fetchall()
-            load_element(M.TechOutputSplit, raw, self.viable_rt, (0, 2))
+            loaded = load_element(M.TechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
+            # raise warning regarding any deletions here...  similar to input split above
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing):
+                    region, period, tech, oc, _ = item
+                    logger.warning(
+                        'Technology Output Split requirement in region %s, period %d for tech %s with output'
+                        'commodity %s has '
+                        'been removed because the tech path with that input is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        oc,
+                    )
 
         # RenewablePortfolioStandard
         if self.table_exists('RPSRequirement'):
