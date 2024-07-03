@@ -103,8 +103,6 @@ class SvMgaSequencer:
             good_prices = price_checker(instance)
             if not good_prices and not self.config.silent:
                 print('Warning:  Cost anomalies discovered.  Check log file for details.')
-        # # tag the instance by name, so we can sort out the multiple results...
-        # instance.name = '-'.join((self.config.scenario, '0'))
 
         # 2. Base solve
         #   ============ First Solve ============
