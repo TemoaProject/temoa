@@ -31,7 +31,7 @@ import pytest
 from temoa.extensions.modeling_to_generate_alternatives.hull import Hull
 
 pts = np.array([[2, 2], [2, 4], [4, 2]])
-"""
+r"""
        |\
    <-- | \  --> (to be viewed at a slightly upward angle. :/ )
        |  \
