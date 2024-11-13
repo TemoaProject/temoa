@@ -80,7 +80,7 @@ def temoa_create_model(name="Temoa"):
     M.tech_flex = Set(within=M.tech_all)
     M.tech_exchange = Set(within=M.tech_all)
     M.groups = Set(dimen=1) # Define groups for technologies
-    M.tech_groups = Set(within=M.tech_all) # Define techs used in groups
+    M.tech_groups =Set(within=M.RegionalIndices * M.groups * M.tech_all) # Define techs used in groups
     M.tech_annual = Set(within=M.tech_all) # Define techs with constant output
     M.tech_variable = Set(within=M.tech_all) # Define techs for use with TechInputSplitAverage constraint, where techs have variable annual output but the user wishes to constrain them annually
     M.tech_retirement = Set(within=M.tech_all) # Define techs for which economic retirement is an option
@@ -236,8 +236,10 @@ def temoa_create_model(name="Temoa"):
     M.EmissionLimit = Param(M.RegionalGlobalIndices, M.time_optimize, M.commodity_emissions)
     M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
     M.EmissionActivity = Param(M.EmissionActivity_reitvo)
-    M.MinGenGroupWeight = Param(M.RegionalIndices, M.tech_groups, M.groups, default = 0)
-    M.MinGenGroupTarget = Param(M.time_optimize, M.groups)
+    M.MinActivityGroup = Param(M.RegionalGlobalIndices, M.time_optimize, M.groups)
+    M.MaxActivityGroup = Param(M.RegionalGlobalIndices, M.time_optimize, M.groups)
+    M.MinCapacityGroup = Param(M.RegionalGlobalIndices, M.time_optimize, M.groups)
+    M.MaxCapacityGroup = Param(M.RegionalGlobalIndices, M.time_optimize, M.groups)
     M.MinAnnualCapacityFactor = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all)
     M.MaxAnnualCapacityFactor = Param(M.RegionalGlobalIndices, M.time_optimize, M.tech_all)
     M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions)
@@ -478,11 +480,32 @@ def temoa_create_model(name="Temoa"):
         M.MinActivityConstraint_rpt, rule=MinActivity_Constraint
     )
 
-    M.MinActivityGroup_pg = Set(
-        dimen=2, initialize=lambda M: M.MinGenGroupTarget.sparse_iterkeys()
+    M.MinActivityGroup_rpg = Set(
+        dimen=3, initialize=lambda M: M.MinActivityGroup.sparse_iterkeys()
     )
-    M.MinActivityGroup = Constraint(
-        M.MinActivityGroup_pg, rule=MinActivityGroup_Constraint
+    M.MinActivityGroupConstraint = Constraint(
+        M.MinActivityGroup_rpg, rule=MinActivityGroup_Constraint
+    )
+
+    M.MaxActivityGroup_rpg = Set(
+        dimen=3, initialize=lambda M: M.MaxActivityGroup.sparse_iterkeys()
+    )
+    M.MaxActivityGroupConstraint = Constraint(
+        M.MaxActivityGroup_rpg, rule=MaxActivityGroup_Constraint
+    )
+
+    M.MaxCapacityGroupConstraint_rpg = Set(
+        dimen=3, initialize=lambda M: M.MaxCapacityGroup.sparse_iterkeys()
+    )
+    M.MaxCapacityGroupConstraint = Constraint(
+        M.MaxCapacityGroupConstraint_rpg, rule=MaxCapacityGroup_Constraint
+    )
+
+    M.MinCapacityGroupConstraint_rpg = Set(
+        dimen=3, initialize=lambda M: M.MinCapacityGroup.sparse_iterkeys()
+    )
+    M.MinCapacityGroupConstraint = Constraint(
+        M.MinCapacityGroupConstraint_rpg, rule=MinCapacityGroup_Constraint
     )
 
     M.MaxCapacityConstraint_rpt = Set(
@@ -506,13 +529,6 @@ def temoa_create_model(name="Temoa"):
         M.MaxResourceConstraint_rt, rule=MaxResource_Constraint
     )
 
-    M.MaxCapacitySetConstraint_rp = Set(
-        dimen=2, initialize=lambda M: M.MaxCapacitySum.sparse_iterkeys()
-    )
-    M.MaxCapacitySetConstraint = Constraint(
-        M.MaxCapacitySetConstraint_rp, rule=MaxCapacitySet_Constraint
-    )
-
     M.MinCapacityConstraint_rpt = Set(
         dimen=3, initialize=lambda M: M.MinCapacity.sparse_iterkeys()
     )
@@ -525,13 +541,6 @@ def temoa_create_model(name="Temoa"):
     )
     M.MinNewCapacityConstraint = Constraint(
         M.MinNewCapacityConstraint_rpt, rule=MinNewCapacity_Constraint
-    )
-
-    M.MinCapacitySetConstraint_rp = Set(
-        dimen=2, initialize=lambda M: M.MinCapacitySum.sparse_iterkeys()
-    )
-    M.MinCapacitySetConstraint = Constraint(
-        M.MinCapacitySetConstraint_rp, rule=MinCapacitySet_Constraint
     )
 
     M.MinAnnualCapacityFactorConstraint_rpt = Set(

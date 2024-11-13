@@ -8,11 +8,13 @@
 # Input File (Mandatory)
 # Input can be a .sqlite or .dat file
 # Both relative path and absolute path are accepted
---input=data_files/temoa_test_system_rps.sqlite
+#--input=data_files/temoa_test_system_RM.sqlite
+--input=C:\Users\camer\Documents\CMU\Modelling\PowerGenome\Example-Settings\3z-debug-systems-v3\settings_conus_3z\Solved_SQLite_Files\FNAME.sqlite
 
 # Output File (Mandatory)
 # The output file must be a existing .sqlite file
---output=data_files/temoa_test_system_rps.sqlite
+#--output=data_files/temoa_test_system_RM.sqlite
+--output=C:\Users\camer\Documents\CMU\Modelling\PowerGenome\Example-Settings\3z-debug-systems-v3\settings_conus_3z\Solved_SQLite_Files\FNAME.sqlite
 
 # Scenario Name (Mandatory)
 # This scenario name is used to store results within the output .sqlite file
@@ -44,7 +46,7 @@
 
 # Solver-related arguments (Optional)
 #--neos                            # Optional, specify if you want to use NEOS server to solve
---solver=cbc                    # Optional, indicate the solver
+--solver=cplex                    # Optional, indicate the solver
 #--keep_pyomo_lp_file             # Optional, generate Pyomo-compatible LP file
 
 # Modeling-to-Generate Alternatives (Optional)

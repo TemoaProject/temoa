@@ -290,7 +290,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 			if not GDR:
 				svars[	'Costs'	][ 'V_DiscountedInvestmentByProcess', r, t, v] += icost
 			else:
-				icost = value( m.V_Capacity[r, t, v] )
+				icost = value( m.V_NewCapacity[r, t, v] )
 				if abs(icost) < epsilon: continue
 				icost *= value( m.CostInvest[r, t, v] ) * value(m.LoanAnnualize[r, t, v]) \
 				* (
