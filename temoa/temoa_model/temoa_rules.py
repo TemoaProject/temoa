@@ -492,7 +492,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o],
             M.CostVariable[r, p, S_t, S_v],
-            MPL[r, p, S_t, S_v],
+            M.PeriodLength[p],
             GDR,
             P_0,
             p,
@@ -509,7 +509,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o],
             M.CostVariable[r, p, S_t, S_v],
-            MPL[r, p, S_t, S_v],
+            M.PeriodLength[p],
             GDR,
             P_0,
             p,
@@ -555,7 +555,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             cap_or_flow=M.V_FlowOut[r, p, s, d, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
-            process_lifetime=MPL[r, p, t, v],
+            process_lifetime=M.PeriodLength[p],
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -572,7 +572,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             cap_or_flow=M.V_FlowOutAnnual[r, p, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
-            process_lifetime=MPL[r, p, t, v],
+            process_lifetime=M.PeriodLength[p],
             GDR=GDR,
             P_0=P_0,
             p=p,

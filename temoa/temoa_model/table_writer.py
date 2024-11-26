@@ -699,10 +699,10 @@ class TableWriter:
                 continue
 
             var_cost = value(M.CostVariable[r, p, t, v])
-            undiscounted_var_cost = activity * var_cost * value(MPL[r, p, t, v])
+            undiscounted_var_cost = activity * var_cost * value(M.PeriodLength[p])
 
             model_var_cost = temoa_rules.fixed_or_variable_cost(
-                activity, var_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
+                activity, var_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
             )
             if '-' in r:
                 exchange_costs.add_cost_record(
@@ -740,7 +740,6 @@ class TableWriter:
         #          see the note on emissions in the Cost function in temoa_rules
 
         GDR = value(M.GlobalDiscountRate)
-        MPL = M.ModelProcessLife
         if self.config.scenario_mode == TemoaMode.MYOPIC:
             p_0 = M.MyopicBaseyear
         else:
@@ -788,12 +787,12 @@ class TableWriter:
                 flows[ei] = 0.0
                 continue
             undiscounted_emiss_cost = (
-                flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * MPL[ei.r, ei.p, ei.t, ei.v]
+                flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * M.PeriodLength[ei.p]
             )
             discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
                 cap_or_flow=flows[ei],
                 cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
-                process_lifetime=MPL[ei.r, ei.p, ei.t, ei.v],
+                process_lifetime=M.PeriodLength[ei.p],
                 GDR=GDR,
                 P_0=p_0,
                 p=ei.p,
