@@ -31,6 +31,8 @@ from itertools import product
 from logging import getLogger
 from pathlib import Path
 
+from pyomo.dataportal import DataPortal
+
 from definitions import PROJECT_ROOT
 from temoa.temoa_model.hybrid_loader import HybridLoader
 from temoa.temoa_model.temoa_config import TemoaConfig
@@ -168,7 +170,7 @@ class TweakFactory:
 
 class MCRun:
     """
-    The data (and more?) to support a model build + run
+    A Container class to hold the data (and more?) to support a model build + run
     """
 
     def __init__(
@@ -191,8 +193,15 @@ class MCRun:
         return res
 
     @property
-    def model(self) -> TemoaModel:
+    def model_dp(self) -> tuple[str, DataPortal]:
+        """tuple of the indexed name for the scenario, and the DP"""
+        name = f'{self.scenario_name}-{self.run_index}'
         dp = HybridLoader.data_portal_from_data(self.data_store)
+        return name, dp
+
+    @property
+    def model(self) -> TemoaModel:
+        dp = self.model_dp
         model = TemoaModel()
         instance = model.create_instance(data=dp)
         # update the name to indexed...
@@ -329,7 +338,8 @@ class MCRunFactory:
         """
         ts_gen = self.tweak_set_generator()
         for run, tweaks in ts_gen:
-            logger.info('Making run %d from %d tweaks: %s', run, len(tweaks), tweaks)
+            logger.info('Making run %d from %d tweaks', run, len(tweaks))
+            logger.debug('Run %d tweaks: %s', run, tweaks)
 
             # need to make a DEEP copy of the orig, which holds other dictionaries...
             data_store = {k: v.copy() for k, v in self.data_store.items()}

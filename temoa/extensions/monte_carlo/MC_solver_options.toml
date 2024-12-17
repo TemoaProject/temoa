@@ -1,14 +1,14 @@
 # A container for solver options
 # the top level solver name in brackets should align with the solver name in the config.toml
 
-num_workers = 6
+num_workers = 11
 
 [gurobi]
 
 Method= 2  # Barrier ONLY
 Threads= 20  # per solver instance
-BarConvTol = 0.01  # Relative Barrier Tolerance primal-dual
-FeasibilityTol= 1e-2  # pretty loose
+BarConvTol = 1.0e-2  # Relative Barrier Tolerance primal-dual
+FeasibilityTol= 1.0e-2  # pretty loose
 Crossover= 0  # Disabled
 TimeLimit= 18000  # 5 hrs
 
@@ -20,7 +20,11 @@ TimeLimit= 18000  # 5 hrs
 # 'LPWarmStart': 2,  # pass basis
 
 [cbc]
+primalT = 1e-3
+dualT = 1e-3
 # tbd
 
 [appsi_highs]
-# tbd
+threads = 2
+primal_feasibility_tolerance = 1e-3
+dual_feasibility_tolerance = 1e-3

@@ -28,7 +28,7 @@ Created on:  3/1/24
 
 import pytest
 
-from temoa.temoa_model import table_writer
+from temoa.temoa_model.table_data_puller import loan_costs
 
 params = [
     {
@@ -84,7 +84,7 @@ def test_loan_costs(param):
     Test the loan cost calculations
     """
     # we will test with a 1% error to accommodate the approximation of GDR=0
-    model_cost, undiscounted_cost = table_writer.TableWriter.loan_costs(**param)
+    model_cost, undiscounted_cost = loan_costs(**param)
     assert model_cost == pytest.approx(param['model_cost'], rel=0.01)
     assert undiscounted_cost == pytest.approx(param['undiscounted_cost'], rel=0.01)
 
@@ -97,6 +97,6 @@ def test_loan_costs_with_zero_GDR(param):
     Test the formula with zero for GDR to make sure it is handled correctly.  The formula
     risks division by zero if this is not correct.
     """
-    model_cost, undiscounted_cost = table_writer.TableWriter.loan_costs(**param)
+    model_cost, undiscounted_cost = loan_costs(**param)
     assert model_cost == pytest.approx(param['model_cost'], abs=0.01)
     assert undiscounted_cost == pytest.approx(param['undiscounted_cost'], abs=0.01)
