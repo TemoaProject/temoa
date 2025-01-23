@@ -257,12 +257,14 @@ class TableWriter:
             else self.config.scenario
         )
 
+        data = []
         for sli, storage_level in storage_levels.items():
             sector = self.tech_sectors[sli.t]
-            qry = 'INSERT INTO OutputStorageLevel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-            data = (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
-            self.con.execute(qry, data)
-            self.con.commit()
+            data.append((scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level))
+        
+        qry = f'INSERT INTO OutputStorageLevel VALUES {_marks(9)}'
+        self.con.executemany(qry, data)
+        self.con.commit()
 
     def write_objective(self, M: TemoaModel, iteration=None) -> None:
         """Write the value of all ACTIVE objectives to the DB"""
