@@ -2174,7 +2174,12 @@ def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
 
     expr = cap <= max_capgroup
     # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
+    if isinstance(expr, bool): # an empty list was generated
+        logger.error(
+            'No elements available to support max-capacity group: %s.'
+            ' Check data/log for available/suppressed techs. Constraint ignored.',
+            (r, p, g)
+        )
         return Constraint.Skip
     return expr
 
@@ -2239,11 +2244,9 @@ def MinCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         logger.error(
-            'No elements available to support min-capacity group: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
+            'No elements available to support min-capacity group: %s.'
+            ' Check data/log for available/suppressed techs. Constraint ignored.',
+            (r, p, g)
         )
         return Constraint.Skip
     return expr
@@ -2261,7 +2264,7 @@ def MinNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     expr = agg_new_cap >= min_new_cap
     if isinstance(expr, bool):
         logger.error(
-            'No elements available to support min-activity group: (%s, %d, %s).'
+            'No elements available to support min-capacity group: (%s, %d, %s).'
             '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
             r,
             p,
@@ -2516,6 +2519,64 @@ def MaxNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     expr = capacity_t <= max_cap_share * capacity_group
     if isinstance(expr, bool):
         return Constraint.Skip
+    return expr
+
+
+def MinNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
+    r"""
+    Sets the minimum aggregate capacity of one group of technologies as a share of 
+    another group of technologies.
+    """
+    min_share = value(M.MinNewCapacityGroupShare[r, p, g1, g2])
+    agg_new_cap_g1 = sum(
+        M.V_NewCapacity[r, t, p]
+        for t in M.tech_group_members[g1]
+        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+    )
+    agg_new_cap_g2 = sum(
+        M.V_NewCapacity[r, t, p]
+        for t in M.tech_group_members[g2]
+        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+    )
+    expr = agg_new_cap_g1 >= agg_new_cap_g2 * min_share
+
+    if isinstance(expr, bool): # one side of expression was empty
+        logger.error(
+            'Missing group techs to support min new capacity group share constraint: {}.'
+            '  Check data/log for available/suppressed techs. Constraint ignored.',
+            (r, p, g1, g2)
+        )
+        return Constraint.Skip
+    
+    return expr
+
+
+def MaxNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
+    r"""
+    Sets the maximum aggregate capacity of one group of technologies as a share of 
+    another group of technologies.
+    """
+    max_share = value(M.MaxNewCapacityGroupShare[r, p, g1, g2])
+    agg_new_cap_g1 = sum(
+        M.V_NewCapacity[r, t, p]
+        for t in M.tech_group_members[g1]
+        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+    )
+    agg_new_cap_g2 = sum(
+        M.V_NewCapacity[r, t, p]
+        for t in M.tech_group_members[g2]
+        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+    )
+    expr = agg_new_cap_g1 <= agg_new_cap_g2 * max_share
+
+    if isinstance(expr, bool): # one side of expression was empty
+        logger.error(
+            'Missing group techs to support max new capacity group share constraint: {}.'
+            '  Check data/log for available/suppressed techs. Constraint ignored.',
+            (r, p, g1, g2)
+        )
+        return Constraint.Skip
+
     return expr
 
 
@@ -2949,8 +3010,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     return -primary_flow == linked_flow
 
 
-# Doing it this way allows us to avoid building a big period-indexed parameter for every demand
-# when only a few demands will likely utilise that option
+# To avoid building big many-indexed parameters when they aren't needed
 def get_demand_distribution(M: 'TemoaModel', r, p, s, d, dem):
     if M.demandPeriodDistributions[(r, p, dem)]:
         return M.DemandPeriodDistribution[r, p, s, d, dem]

@@ -639,8 +639,8 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampDown VALUES('A','EH',0.2000000000000000111);
-INSERT INTO RampDown VALUES('B','EH',0.2000000000000000111);
+INSERT INTO RampDown VALUES('A','EH',0.05);
+INSERT INTO RampDown VALUES('B','EH',0.05);
 CREATE TABLE RampUp
 (
     region TEXT,
@@ -649,8 +649,8 @@ CREATE TABLE RampUp
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampUp VALUES('B','EH',100.0);
-INSERT INTO RampUp VALUES('A','EH',100.0);
+INSERT INTO RampUp VALUES('B','EH',0.05);
+INSERT INTO RampUp VALUES('A','EH',0.05);
 CREATE TABLE Region
 (
     region TEXT
@@ -855,6 +855,20 @@ CREATE TABLE MaxNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
+CREATE TABLE MaxNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+INSERT INTO MaxNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 1, '');
 CREATE TABLE MinActivityShare
 (
     region         TEXT,
@@ -933,6 +947,20 @@ CREATE TABLE MinNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
+CREATE TABLE MinNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    min_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+INSERT INTO MinNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 0, '');
 CREATE TABLE OutputEmission
 (
     scenario  TEXT,

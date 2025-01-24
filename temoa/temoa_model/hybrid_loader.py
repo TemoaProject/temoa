@@ -818,6 +818,16 @@ class HybridLoader:
             raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare', mi=mi)
             load_element(M.MaxNewCapacityShare, raw, self.viable_rt, (0, 2))
 
+        # MinNewCapacityGroupShare
+        if self.table_exists('MinNewCapacityGroupShare'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, min_proportion FROM main.MinNewCapacityGroupShare', mi=mi)
+            load_element(M.MinNewCapacityGroupShare, raw)
+
+        # MaxNewCapacityGroupShare
+        if self.table_exists('MaxNewCapacityGroupShare'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, max_proportion FROM main.MaxNewCapacityGroupShare', mi=mi)
+            load_element(M.MaxNewCapacityGroupShare, raw)
+
         # MinActivityGroup
         if self.table_exists('MinActivityGroup'):
             raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, min_act FROM main.MinActivityGroup', mi=mi)
@@ -1016,6 +1026,7 @@ class HybridLoader:
             M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,
             M.MaxNewCapacityGroup.name: M.MaxNewCapacityGroupConstraint_rpg.name,
             M.MaxNewCapacityShare.name: M.MaxNewCapacityShareConstraint_rptg.name,
+            M.MaxNewCapacityGroupShare.name: M.MaxNewCapacityGroupShareConstraint_rpgg.name,
             M.MaxResource.name: M.MaxResourceConstraint_rt.name,
             M.MinActivity.name: M.MinActivityConstraint_rpt.name,
             M.MinSeasonalActivity.name: M.MinSeasonalActivityConstraint_rpst.name,
@@ -1028,6 +1039,7 @@ class HybridLoader:
             M.MinNewCapacity.name: M.MinNewCapacityConstraint_rpt.name,
             M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
             M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
+            M.MinNewCapacityGroupShare.name: M.MinNewCapacityGroupShareConstraint_rpgg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             M.ResourceBound.name: M.ResourceConstraint_rpr.name,
             M.StorageFraction.name: M.StorageFractionConstraint_rpsdtv.name
