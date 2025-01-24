@@ -2689,11 +2689,11 @@ def MaxAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
     return expr
 
 
-def TechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
+def MinTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
     r"""
     Allows users to specify fixed or minimum shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    TechOutputSplit_Constraint for an analogous explanation. Under this constraint,
+    MinTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = sum(
@@ -2707,15 +2707,15 @@ def TechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = inp >= M.TechInputSplit[r, p, i, t] * total_inp
+    expr = inp >= M.MinTechInputSplit[r, p, i, t] * total_inp
     return expr
 
 
-def TechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
+def MinTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
     r"""
     Allows users to specify fixed or minimum shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    TechOutputSplitAnnual_Constraint for an analogous explanation. Under this
+    MinTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
     function, only the technologies with constant annual output (i.e., members
     of the :math:`tech_annual` set) are considered."""
     inp = sum(
@@ -2729,16 +2729,16 @@ def TechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = inp >= M.TechInputSplitAnnual[r, p, i, t] * total_inp
+    expr = inp >= M.MinTechInputSplitAnnual[r, p, i, t] * total_inp
     return expr
 
 
-def TechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
+def MinTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
     r"""
     Allows users to specify fixed or minimum shares of commodity inputs to a process
     producing a single output. Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from TechInputSplit as it specifies shares on an annual basis,
+    This constraint differs from MinTechInputSplit as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the input shares over the course of a year."""
 
@@ -2757,11 +2757,11 @@ def TechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
     )
 
-    expr = inp >= M.TechInputSplitAnnual[r, p, i, t] * total_inp
+    expr = inp >= M.MinTechInputSplitAnnual[r, p, i, t] * total_inp
     return expr
 
 
-def TechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
+def MinTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
     r"""
 
     Some processes take a single input and make multiple outputs, and the user would like to
@@ -2789,13 +2789,13 @@ def TechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
     The constraint is formulated as follows:
 
     .. math::
-       :label: TechOutputSplit
+       :label: MinTechOutputSplit
 
          \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
        \geq
          TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{TechOutputSplit}}"""
+       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{MinTechOutputSplit}}"""
     out = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, o] for S_i in M.ProcessInputsByOutput[r, p, t, v, o]
     )
@@ -2806,18 +2806,18 @@ def TechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = out >= M.TechOutputSplit[r, p, t, o] * total_out
+    expr = out >= M.MinTechOutputSplit[r, p, t, o] * total_out
     return expr
 
 
-def TechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
+def MinTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
     r"""
-    This constraint operates similarly to TechOutputSplit_Constraint.
+    This constraint operates similarly to MinTechOutputSplit_Constraint.
     However, under this function, only the technologies with constant annual
     output (i.e., members of the :math:`tech_annual` set) are considered.
 
     .. math::
-       :label: TechOutputSplitAnnual
+       :label: MinTechOutputSplitAnnual
 
          \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
@@ -2825,7 +2825,7 @@ def TechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
 
          TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{TechOutputSplitAnnual}}"""
+       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{MinTechOutputSplitAnnual}}"""
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o] for S_i in M.ProcessInputsByOutput[r, p, t, v, o]
     )
@@ -2836,16 +2836,16 @@ def TechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = out >= M.TechOutputSplitAnnual[r, p, t, o] * total_out
+    expr = out >= M.MinTechOutputSplitAnnual[r, p, t, o] * total_out
     return expr
 
 
-def TechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
+def MinTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
     r"""
     Allows users to specify fixed or minimum shares of commodity outputs from a process.
     Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from TechOutputSplit as it specifies shares on an annual basis,
+    This constraint differs from MinTechOutputSplit as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the output shares over the course of a year."""
 
@@ -2864,7 +2864,186 @@ def TechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_d in M.time_of_day
     )
 
-    expr = out >= M.TechOutputSplitAnnual[r, p, t, o] * total_out
+    expr = out >= M.MinTechOutputSplitAnnual[r, p, t, o] * total_out
+    return expr
+
+
+def MaxTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
+    r"""
+    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    producing a single output. These shares can vary by model time period. See
+    MaxTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
+    only the technologies with variable output at the timeslice level (i.e.,
+    NOT in the :code:`tech_annual` set) are considered."""
+    inp = sum(
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    expr = inp <= M.MaxTechInputSplit[r, p, i, t] * total_inp
+    return expr
+
+
+def MaxTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
+    r"""
+    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    producing a single output. These shares can vary by model time period. See
+    MaxTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
+    function, only the technologies with constant annual output (i.e., members
+    of the :math:`tech_annual` set) are considered."""
+    inp = sum(
+        M.V_FlowOutAnnual[r, p, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    expr = inp <= M.MaxTechInputSplitAnnual[r, p, i, t] * total_inp
+    return expr
+
+
+def MaxTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
+    r"""
+    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    producing a single output. Under this constraint, only the technologies with variable
+    output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
+    This constraint differs from MaxTechInputSplit as it specifies shares on an annual basis,
+    so even though it applies to technologies with variable output at the timeslice level,
+    the constraint only fixes the input shares over the course of a year."""
+
+    inp = sum(
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    total_inp = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        for s in M.time_season
+        for d in M.time_of_day
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
+    )
+
+    expr = inp <= M.MaxTechInputSplitAnnual[r, p, i, t] * total_inp
+    return expr
+
+
+def MaxTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
+    r"""
+
+    Some processes take a single input and make multiple outputs, and the user would like to
+    specify either a constant or time-varying ratio of outputs per unit input.  The most
+    canonical example is an oil refinery.  Crude oil is used to produce many different refined
+    products. In many cases, the modeler would like to specify a minimum share of each refined
+    product produced by the refinery.
+
+    For example, a hypothetical (and highly simplified) refinery might have a crude oil input
+    that produces 4 parts diesel, 3 parts gasoline, and 2 parts kerosene.  The relative
+    ratios to the output then are:
+
+    .. math::
+
+       d = \tfrac{4}{9} \cdot \text{total output}, \qquad
+       g = \tfrac{3}{9} \cdot \text{total output}, \qquad
+       k = \tfrac{2}{9} \cdot \text{total output}
+
+    Note that it is possible to specify output shares that sum to less than unity. In such
+    cases, the model optimizes the remaining share. In addition, it is possible to change the
+    specified shares by model time period. Under this constraint, only the
+    technologies with variable output at the timeslice level (i.e., NOT in the
+    :code:`tech_annual` set) are considered.
+
+    The constraint is formulated as follows:
+
+    .. math::
+       :label: MaxTechOutputSplit
+
+         \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
+       \geq
+         TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
+
+       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{MaxTechOutputSplit}}"""
+    out = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, o] for S_i in M.ProcessInputsByOutput[r, p, t, v, o]
+    )
+
+    total_out = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    expr = out <= M.MaxTechOutputSplit[r, p, t, o] * total_out
+    return expr
+
+
+def MaxTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
+    r"""
+    This constraint operates similarly to MaxTechOutputSplit_Constraint.
+    However, under this function, only the technologies with constant annual
+    output (i.e., members of the :math:`tech_annual` set) are considered.
+
+    .. math::
+       :label: MaxTechOutputSplitAnnual
+
+         \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+
+       \geq
+
+         TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
+
+       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{MaxTechOutputSplitAnnual}}"""
+    out = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, o] for S_i in M.ProcessInputsByOutput[r, p, t, v, o]
+    )
+
+    total_out = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+
+    expr = out <= M.MaxTechOutputSplitAnnual[r, p, t, o] * total_out
+    return expr
+
+
+def MaxTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
+    r"""
+    Allows users to specify fixed or minimum shares of commodity outputs from a process.
+    Under this constraint, only the technologies with variable
+    output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
+    This constraint differs from MaxTechOutputSplit as it specifies shares on an annual basis,
+    so even though it applies to technologies with variable output at the timeslice level,
+    the constraint only fixes the output shares over the course of a year."""
+
+    out = sum(
+        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, o]
+        for S_i in M.ProcessInputsByOutput[r, p, t, v, o]
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+    )
+
+    total_out = sum(
+        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+    )
+
+    expr = out <= M.MaxTechOutputSplitAnnual[r, p, t, o] * total_out
     return expr
 
 

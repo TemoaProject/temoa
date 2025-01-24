@@ -700,7 +700,7 @@ INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
-CREATE TABLE TechInputSplit
+CREATE TABLE MinTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -713,8 +713,8 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
-CREATE TABLE TechInputSplitAnnual
+INSERT INTO MinTechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
+CREATE TABLE MinTechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -727,8 +727,8 @@ CREATE TABLE TechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
-CREATE TABLE TechOutputSplit
+INSERT INTO MinTechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
+CREATE TABLE MinTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -741,7 +741,7 @@ CREATE TABLE TechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm)
 );
-INSERT INTO TechOutputSplit VALUES('B',2025,'EH','ELC',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
+INSERT INTO MinTechOutputSplit VALUES('B',2025,'EH','ELC',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
 CREATE TABLE TimeOfDay
 (
     sequence INTEGER UNIQUE,

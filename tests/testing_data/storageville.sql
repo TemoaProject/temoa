@@ -624,7 +624,7 @@ INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
-CREATE TABLE TechInputSplit
+CREATE TABLE MinTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -637,7 +637,7 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechInputSplitAnnual
+CREATE TABLE MinTechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -650,7 +650,7 @@ CREATE TABLE TechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechOutputSplit
+CREATE TABLE MinTechOutputSplit
 (
     region         TEXT,
     period         INTEGER

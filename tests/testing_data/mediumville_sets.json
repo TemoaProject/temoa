@@ -4221,7 +4221,7 @@
       "GeoHeater"
     ]
   ],
-  "TechInputSplitConstraint_rpsditv": [
+  "MinTechInputSplitConstraint_rpsditv": [
     [
       "A",
       2025,
@@ -4259,8 +4259,8 @@
       2025
     ]
   ],
-  "TechInputSplitAnnualConstraint_rpitv": [],
-  "TechInputSplitAverageConstraint_rpitv": [
+  "MinTechInputSplitAnnualConstraint_rpitv": [],
+  "MinTechInputSplitAverageConstraint_rpitv": [
     [
       "A",
       2025,
@@ -4269,7 +4269,7 @@
       2025
     ]
   ],
-  "TechOutputSplitConstraint_rpsdtvo": [
+  "MinTechOutputSplitConstraint_rpsdtvo": [
     [
       "B",
       2025,
@@ -4307,8 +4307,14 @@
       "ELC"
     ]
   ],
-  "TechOutputSplitAnnualConstraint_rptvo": [],
-  "TechOutputSplitAverageConstraint_rptvo": [],
+  "MinTechOutputSplitAnnualConstraint_rptvo": [],
+  "MinTechOutputSplitAverageConstraint_rptvo": [],
+  "MaxTechInputSplitConstraint_rpsditv": [],
+  "MaxTechInputSplitAnnualConstraint_rpitv": [],
+  "MaxTechInputSplitAverageConstraint_rpitv": [],
+  "MaxTechOutputSplitConstraint_rpsdtvo": [],
+  "MaxTechOutputSplitAnnualConstraint_rptvo": [],
+  "MaxTechOutputSplitAverageConstraint_rptvo": [],
   "MaxSeasonalActivityConstraint_rpst": [],
   "MinSeasonalActivityConstraint_rpst": [],
   "LinkedEmissionsTechConstraint_rpsdtve": [

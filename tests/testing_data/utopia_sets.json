@@ -24647,10 +24647,10 @@
     ]
   ],
   "GrowthRateMaxConstraint_rtv": [],
-  "TechInputSplitConstraint_rpsditv": [],
-  "TechInputSplitAnnualConstraint_rpitv": [],
-  "TechInputSplitAverageConstraint_rpitv": [],
-  "TechOutputSplitConstraint_rpsdtvo": [
+  "MinTechInputSplitConstraint_rpsditv": [],
+  "MinTechInputSplitAnnualConstraint_rpitv": [],
+  "MinTechInputSplitAverageConstraint_rpitv": [],
+  "MinTechOutputSplitConstraint_rpsdtvo": [
     [
       "utopia",
       2010,
@@ -25300,8 +25300,14 @@
       "GSL"
     ]
   ],
-  "TechOutputSplitAnnualConstraint_rptvo": [],
-  "TechOutputSplitAverageConstraint_rptvo": [],
+  "MinTechOutputSplitAnnualConstraint_rptvo": [],
+  "MinTechOutputSplitAverageConstraint_rptvo": [],
+  "MaxTechInputSplitConstraint_rpsditv": [],
+  "MaxTechInputSplitAnnualConstraint_rpitv": [],
+  "MaxTechInputSplitAverageConstraint_rpitv": [],
+  "MaxTechOutputSplitConstraint_rpsdtvo": [],
+  "MaxTechOutputSplitAnnualConstraint_rptvo": [],
+  "MaxTechOutputSplitAverageConstraint_rptvo": [],
   "MaxSeasonalActivityConstraint_rpst": [],
   "MinSeasonalActivityConstraint_rpst": [],
   "LinkedEmissionsTechConstraint_rpsdtve": []

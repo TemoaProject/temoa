@@ -43278,7 +43278,7 @@
     ]
   ],
   "GrowthRateMaxConstraint_rtv": [],
-  "TechInputSplitConstraint_rpsditv": [
+  "MinTechInputSplitConstraint_rpsditv": [
     [
       "R2",
       2030,
@@ -44144,9 +44144,9 @@
       2020
     ]
   ],
-  "TechInputSplitAnnualConstraint_rpitv": [],
-  "TechInputSplitAverageConstraint_rpitv": [],
-  "TechOutputSplitConstraint_rpsdtvo": [
+  "MinTechInputSplitAnnualConstraint_rpitv": [],
+  "MinTechInputSplitAverageConstraint_rpitv": [],
+  "MinTechOutputSplitConstraint_rpsdtvo": [
     [
       "R1",
       2030,
@@ -45012,8 +45012,14 @@
       "GSL"
     ]
   ],
-  "TechOutputSplitAnnualConstraint_rptvo": [],
-  "TechOutputSplitAverageConstraint_rptvo": [],
+  "MinTechOutputSplitAnnualConstraint_rptvo": [],
+  "MinTechOutputSplitAverageConstraint_rptvo": [],
+  "MaxTechInputSplitConstraint_rpsditv": [],
+  "MaxTechInputSplitAnnualConstraint_rpitv": [],
+  "MaxTechInputSplitAverageConstraint_rpitv": [],
+  "MaxTechOutputSplitConstraint_rpsdtvo": [],
+  "MaxTechOutputSplitAnnualConstraint_rptvo": [],
+  "MaxTechOutputSplitAverageConstraint_rptvo": [],
   "MaxSeasonalActivityConstraint_rpst": [],
   "MinSeasonalActivityConstraint_rpst": [],
   "LinkedEmissionsTechConstraint_rpsdtve": []
