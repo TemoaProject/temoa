@@ -707,10 +707,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.commodityDStreamProcess[r, p, i] = set()
             if (r, p, o) not in M.commodityUStreamProcess:
                 M.commodityUStreamProcess[r, p, o] = set()
-            if (r, p, t, v, i) not in M.ProcessOutputsByInput:
-                M.ProcessOutputsByInput[r, p, t, v, i] = set()
-            if (r, p, t, v, o) not in M.ProcessInputsByOutput:
-                M.ProcessInputsByOutput[r, p, t, v, o] = set()
+            if (r, p, t, v, i) not in M.processOutputsByInput:
+                M.processOutputsByInput[r, p, t, v, i] = set()
+            if (r, p, t, v, o) not in M.processInputsByOutput:
+                M.processInputsByOutput[r, p, t, v, o] = set()
             if (r, t) not in M.processTechs:
                 M.processTechs[r, t] = set()
             # While the dictionary just above identifies the vintage (v)
@@ -789,8 +789,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             ) not in M.maxOutputSplitAnnualVintages:
                 M.maxOutputSplitAnnualVintages[r, p, t, o] = set()
 
-            if t in M.tech_resource and (r, p, o) not in M.ProcessByPeriodAndOutput:
-                M.ProcessByPeriodAndOutput[r, p, o] = set()
+            if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput:
+                M.processByPeriodAndOutput[r, p, o] = set()
             if t in M.tech_reserve and (r, p) not in M.processReservePeriods:
                 M.processReservePeriods[r, p] = set()
 
@@ -808,8 +808,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             M.processOutputs[pindex].add(o)
             M.commodityDStreamProcess[r, p, i].add((t, v))
             M.commodityUStreamProcess[r, p, o].add((t, v))
-            M.ProcessOutputsByInput[r, p, t, v, i].add(o)
-            M.ProcessInputsByOutput[r, p, t, v, o].add(i)
+            M.processOutputsByInput[r, p, t, v, i].add(o)
+            M.processInputsByOutput[r, p, t, v, o].add(i)
             M.processTechs[r, t].add((p, v))
             M.processVintages[r, p, t].add(v)
             if t in M.tech_curtailment:
@@ -844,7 +844,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.maxInputSplitAnnualVintages[r, p, t, o].add(v)
 
             if t in M.tech_resource:
-                M.ProcessByPeriodAndOutput[r, p, o].add((i, t, v))
+                M.processByPeriodAndOutput[r, p, o].add((i, t, v))
             if t in M.tech_reserve:
                 M.processReservePeriods[r, p].add((t, v))
             if t in M.tech_exchange:
@@ -901,7 +901,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t not in M.tech_annual
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -912,7 +912,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t in M.tech_annual
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     M.activeFlex_rpsditvo = set(
@@ -921,7 +921,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if (t not in M.tech_annual) and (t in M.tech_flex)
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -932,7 +932,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if (t in M.tech_annual) and (t in M.tech_flex)
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     M.activeFlowInStorage_rpsditvo = set(
@@ -941,7 +941,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t in M.tech_storage
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -951,7 +951,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for r, p, t in M.curtailmentVintages.keys()
         for v in M.curtailmentVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -1254,7 +1254,7 @@ ensure demand activity remains consistent across time slices.
     viable_tech_vintage = defaultdict(list)
 
     # start the loop over possible combos
-    for r, p, t, v, dem in M.ProcessInputsByOutput:
+    for r, p, t, v, dem in M.processInputsByOutput:
         # we aren't concerned with non-demand commodities or annual techs
         if dem not in M.commodity_demand or t in M.tech_annual:
             continue

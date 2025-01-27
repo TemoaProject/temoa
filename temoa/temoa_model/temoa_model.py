@@ -97,8 +97,8 @@ class TemoaModel(AbstractModel):
         M.commodityBalance_rpc = None # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess = dict()  # The downstream process of a commodity during a period
         M.commodityUStreamProcess = dict()  # The upstream process of a commodity during a period
-        M.ProcessInputsByOutput = dict()
-        M.ProcessOutputsByInput = dict()
+        M.processInputsByOutput = dict()
+        M.processOutputsByInput = dict()
         M.processTechs = dict()
         M.processReservePeriods = dict()
         M.processVintages = dict()
@@ -117,7 +117,7 @@ class TemoaModel(AbstractModel):
         M.minOutputSplitAnnualVintages = dict()
         M.maxOutputSplitVintages = dict()
         M.maxOutputSplitAnnualVintages = dict()
-        M.ProcessByPeriodAndOutput = dict()
+        M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
         M.time_next = dict()
