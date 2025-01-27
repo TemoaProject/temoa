@@ -53,18 +53,34 @@ logger = getLogger(__name__)
 # the tables below are ones in which we might find regional groups which should be captured
 # to make the members of the RegionalGlobalIndices Set in the model.  They need to aggregated
 tables_with_regional_groups = {
-    'MaxActivity': 'region',
-    'MinActivity': 'region',
     'MinAnnualCapacityFactor': 'region',
     'MaxAnnualCapacityFactor': 'region',
     'EmissionLimit': 'region',
     'MinActivityGroup': 'region',
     'MaxActivityGroup': 'region',
-    'MinActivityShare': 'region',
-    'MaxActivityShare': 'region',
+    'MinSeasonalActivity': 'region',
+    'MaxSeasonalActivity': 'region',
+    'MinCapacity': 'region',
+    'MaxCapacity': 'region',
+    'MinActivity': 'region',
+    'MaxActivity': 'region',
+    'MinNewCapacity': 'region',
+    'MaxNewCapacity': 'region',
+    'MinNewCapacityGroup': 'region',
+    'MaxNewCapacityGroup': 'region',
     'MinCapacityGroup': 'region',
     'MaxCapacityGroup': 'region',
+    'MinActivityShare': 'region',
+    'MaxActivityShare': 'region',
+    'MinCapacityShare': 'region',
+    'MaxCapacityShare': 'region',
+    'MinNewCapacityShare': 'region',
+    'MaxNewCapacityShare': 'region',
+    'MinNewCapacityGroupShare': 'region',
+    'MaxNewCapacityGroupShare': 'region',
     'MaxResource': 'region',
+    'GrowthRateMax': 'region',
+    'GrowthRateSeed': 'region',
 }
 
 
@@ -419,7 +435,7 @@ class HybridLoader:
                     raise ValueError('Table %s appears to have an empty entry for region.' % table)
         # sort (for deterministic pyomo behavior)
         list_of_groups = sorted((t,) for t in regions_and_groups)
-        load_element(M.RegionalGlobalIndices, list_of_groups)
+        load_element(M.regionalGlobalIndices, list_of_groups)
 
         # region-exchanges
         # auto-generated

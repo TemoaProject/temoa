@@ -41,13 +41,13 @@
     "R1",
     "R2"
   ],
-  "RegionalIndices": [
+  "regionalIndices": [
     "R1",
     "R1-R2",
     "R2",
     "R2-R1"
   ],
-  "RegionalGlobalIndices": [
+  "regionalGlobalIndices": [
     "R1",
     "R2",
     "global"
@@ -182,7 +182,6 @@
     "RH",
     "CO2"
   ],
-  "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
       "R1",

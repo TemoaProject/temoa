@@ -21,7 +21,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 
 from logging import getLogger
 from sys import stderr as SE
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from pyomo.core import Var, Expression
 from pyomo.environ import Constraint, value
@@ -30,6 +30,7 @@ from temoa.temoa_model.temoa_initialize import (
     DemandConstraintErrorCheck,
     CommodityBalanceConstraintErrorCheck,
     AnnualCommodityBalanceConstraintErrorCheck,
+    gather_group_regions,
 )
 
 if TYPE_CHECKING:
@@ -1418,7 +1419,7 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[s_next, d_next])
 
-    hours_elapsed = 8760 * (value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next])) / 2
+    hours_elapsed = 8760 * ( value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next]) ) / 2
     hours_elapsed /= M.SegFracPerSeason[s] * 365 # adjust for how many days this season represents
     ramp_fraction = hours_elapsed * value(M.RampUp[r, t])
 
@@ -1476,7 +1477,7 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[s_next, d_next])
 
-    hours_elapsed = 8760 * (value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next])) / 2
+    hours_elapsed = 8760 * ( value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next]) ) / 2
     hours_elapsed /= M.SegFracPerSeason[s] * 365 # adjust for how many days this season represents
     ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
 
@@ -1543,7 +1544,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
 
     # First, determine the amount of firm capacity each exchange tech
     # contributes.
-    for r1r2 in M.RegionalIndices:
+    for r1r2 in M.regionalIndices:
         if '-' not in r1r2:
             continue
         r1, r2 = r1r2.split('-')
@@ -1589,7 +1590,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
 
     # Electricity imports and exports via exchange techs are accounted
     # for below:
-    for r1r2 in M.RegionalIndices:  # ensure the region is of the form r1-r2
+    for r1r2 in M.regionalIndices:  # ensure the region is of the form r1-r2
         if '-' not in r1r2:
             continue
         if (r1r2, p) not in M.processReservePeriods:  # ensure the technology in question exists
@@ -1656,7 +1657,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
 
     # if r == 'global', the constraint is system-wide
 
-    regions = gather_group_regions(M=M, region=r)
+    regions = gather_group_regions(M, r)
 
     # ================= Emissions and Flex and Curtailment =================
     # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
@@ -1685,10 +1686,11 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     )
 
     embodied_emissions = sum(
-        M.V_NewCapacity[r, t, v]
-        * value(M.EmissionEmbodied[r, e, t, v])
+        M.V_NewCapacity[reg, t, v]
+        * value(M.EmissionEmbodied[reg, e, t, v])
+        for reg in regions
         for (S_r, S_e, t, v) in M.EmissionEmbodied.sparse_iterkeys()
-        if v == p and S_r == r and S_e == e
+        if v == p and S_r == reg and S_e == e
     )
 
     expr = (
@@ -1730,27 +1732,33 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     period would be restricted to zero capacity for the remainder of the time
     horizon.
     """
+
+    regions = gather_group_regions(M, r)
+
     GRS = value(M.GrowthRateSeed[r, t])
     GRM = value(M.GrowthRateMax[r, t])
     CapPT = M.V_CapacityAvailableByPeriodAndTech
 
     # periods the technology can have capacity in this region (sorted)
-    periods = sorted(set(S_p for S_r, S_p, S_t in CapPT if S_t == t and S_r == r))
+    periods = sorted(set(_p for _r, _p, _t in CapPT if _t == t and _r in regions))
 
     if p not in periods:
         # cant have capacity in this period
         return Constraint.Skip
     
+    capacity = sum(CapPT[_r, p, t] for _r in regions)
+
     if p == periods[0]:
         # first period it can have capacity
         # plant a seed and grow it
-        expr = CapPT[r, p, t] <= GRS * GRM
+        expr = capacity <= GRS * GRM
     else:
         # can have capacity in previous period
         # plant a seed and grow last period's capacity
         # note: we plant a seed every period to survive zero-outs
         p_prev = periods[periods.index(p) - 1] # previous period
-        expr = CapPT[r, p, t] <= GRS + GRM * CapPT[r, p_prev, t]
+        capacity_prev = sum(CapPT[_r, p_prev, t] for _r in regions)
+        expr = capacity <= GRS + GRM * capacity_prev
         
     return expr
 
@@ -1779,27 +1787,27 @@ def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):
     # r can be an individual region (r='US'), or a combination of regions separated by
     # a + (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
-    reg = gather_group_regions(M=M, region=r)
+    regions = gather_group_regions(M=M, region=r)
 
     if t not in M.tech_annual:
         activity_rpt = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-            for r in reg
-            for S_v in M.processVintages.get((r, p, t), [])
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
+            for _r in regions
+            for S_v in M.processVintages.get((_r, p, t), [])
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
             for s in M.time_season
             for d in M.time_of_day
-            if (r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
+            if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
         )
     else:
         activity_rpt = sum(
-            M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-            for r in reg
-            for S_v in M.processVintages.get((r, p, t), [])
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
-            if (r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
+            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
+            for _r in regions
+            for S_v in M.processVintages.get((_r, p, t), [])
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+            if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
     max_act = value(M.MaxActivity[r, p, t])
@@ -1837,12 +1845,15 @@ def MaxSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
     # must be converted back to its un-scaled value. We do this by dividing the
     # V_FlowOut value by M.SegFrac[s, d]*365*24.
 
+    regions = gather_group_regions(M, r)
+
     try:
         activity_rpst = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[s, d])*365*24)
-            for S_v in M.processVintages[r, p, t]
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[s, d])*365*24)
+            for _r in regions
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
             for d in M.time_of_day
         )
     except:
@@ -1953,12 +1964,15 @@ def MinSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
     # must be converted back to its un-scaled value. We do this using the
     # weighting_factor below:
 
+    regions = gather_group_regions(M, r)
+
     try:
         activity_rpst = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[s, d])*365*24)
-            for S_v in M.processVintages[r, p, t]
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[s, d])*365*24)
+            for _r in regions
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
             for d in M.time_of_day
         )
     except:
@@ -2001,27 +2015,27 @@ def MinActivityGroup_Constraint(M: 'TemoaModel', r, p, g):
 
     activity_p = 0
     activity_p_annual = 0
-    for r_i in regions:
+    for _r in regions:
         activity_p += sum(
-            M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+            M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
             for S_t in M.tech_group_members[g]
-            if (r_i, p, S_t) in M.processVintages and S_t not in M.tech_annual
-            for S_v in M.processVintages[r_i, p, S_t]
-            for S_i in M.processInputs[r_i, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[r_i, p, S_t, S_v, S_i]
+            if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
+            for S_v in M.processVintages[_r, p, S_t]
+            for S_i in M.processInputs[_r, p, S_t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
             for s in M.time_season
             for d in M.time_of_day
-            if (r_i, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
+            if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
         )
 
         activity_p_annual += sum(
-            M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+            M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
             for S_t in M.tech_group_members[g]
-            if (r_i, p, S_t) in M.processVintages and S_t in M.tech_annual
-            for S_v in M.processVintages[r_i, p, S_t]
-            for S_i in M.processInputs[r_i, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[r_i, p, S_t, S_v, S_i]
-            if (r_i, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
+            if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
+            for S_v in M.processVintages[_r, p, S_t]
+            for S_i in M.processInputs[_r, p, S_t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
+            if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
         )
     min_act = value(M.MinActivityGroup[r, p, g])
     expr = activity_p + activity_p_annual >= min_act
@@ -2055,26 +2069,26 @@ def MaxActivityGroup_Constraint(M: 'TemoaModel', r, p, g):
 
     activity_p = 0
     activity_p_annual = 0
-    for r_i in regions:
+    for _r in regions:
         activity_p += sum(
-            M.V_FlowOut[r_i, p, s, d, S_i, S_t, S_v, S_o]
+            M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
             for S_t in M.tech_group_members[g]
-            if (r_i, p, S_t) in M.processVintages and S_t not in M.tech_annual
-            for S_v in M.processVintages[r_i, p, S_t]
-            for S_i in M.processInputs[r_i, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[r_i, p, S_t, S_v, S_i]
+            if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
+            for S_v in M.processVintages[_r, p, S_t]
+            for S_i in M.processInputs[_r, p, S_t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
             for s in M.time_season
             for d in M.time_of_day
-            if (r_i, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
+            if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
         )
         activity_p_annual += sum(
-            M.V_FlowOutAnnual[r_i, p, S_i, S_t, S_v, S_o]
+            M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
             for S_t in M.tech_group_members[g]
-            if (r_i, p, S_t) in M.processVintages and S_t in M.tech_annual
-            for S_v in M.processVintages[r_i, p, S_t]
-            for S_i in M.processInputs[r_i, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[r_i, p, S_t, S_v, S_i]
-            if (r_i, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
+            if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
+            for S_v in M.processVintages[_r, p, S_t]
+            for S_i in M.processInputs[_r, p, S_t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
+            if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
     max_act = value(M.MaxActivityGroup[r, p, g])
@@ -2093,8 +2107,13 @@ def MaxNewCapacity_Constraint(M: 'TemoaModel', r, p, t):
     .. math::
        :label: MaxNewCapacity
        \textbf{CAP}_{r, t, p} \le MAX_{r, p, t}"""
+    regions = gather_group_regions(M, r)
     max_cap = value(M.MaxNewCapacity[r, p, t])
-    expr = M.V_NewCapacity[r, t, p] <= max_cap
+    new_cap = sum(
+        M.V_NewCapacity[_r, t, p]
+        for _r in regions
+    )
+    expr = new_cap <= max_cap
     return expr
 
 
@@ -2111,8 +2130,13 @@ def MaxCapacity_Constraint(M: 'TemoaModel', r, p, t):
        \textbf{CAPAVL}_{r, p, t} \le MAC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{MaxCapacity}}"""
+    regions = gather_group_regions(M, r)
     max_cap = value(M.MaxCapacity[r, p, t])
-    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] <= max_cap
+    capacity = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
+        for _r in regions
+    )
+    expr = capacity <= max_cap
     return expr
 
 
@@ -2177,10 +2201,10 @@ def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     max_capgroup = value(M.MaxCapacityGroup[r, p, g])
 
     cap = sum(
-        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
         for t in M.tech_group_members[g]
-        for r_i in regions
-        if (r_i, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
 
     expr = cap <= max_capgroup
@@ -2203,8 +2227,13 @@ def MinNewCapacity_Constraint(M: 'TemoaModel', r, p, t):
     .. math::
        :label: MaxMinCapacity
        \textbf{CAP}_{r, t, p} \ge MIN_{r, p, t}"""
+    regions = gather_group_regions(M, r)
     min_cap = value(M.MinNewCapacity[r, p, t])
-    expr = M.V_NewCapacity[r, t, p] >= min_cap
+    new_cap = sum(
+        M.V_NewCapacity[_r, t, p]
+        for _r in regions
+    )
+    expr = new_cap >= min_cap
     return expr
 
 
@@ -2221,19 +2250,14 @@ def MinCapacity_Constraint(M: 'TemoaModel', r, p, t):
        \textbf{CAPAVL}_{r, p, t} \ge MIC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{MinCapacity}}"""
+    regions = gather_group_regions(M, r)
     min_cap = value(M.MinCapacity[r, p, t])
-    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] >= min_cap
+    capacity = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
+        for _r in regions
+    )
+    expr = capacity >= min_cap
     return expr
-
-
-def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
-    if region == 'global':
-        regions = M.regions
-    elif '+' in region:
-        regions = region.split('+')
-    else:
-        regions = (region,)
-    return regions
 
 
 def MinCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
@@ -2266,16 +2290,20 @@ def MinCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
 def MinNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     r"""
     Similar to the :code:`MinNewCapacity` constraint, but works on a group of technologies."""
+
+    regions = gather_group_regions(M, r)
+
     min_new_cap = value(M.MinNewCapacityGroup[r, p, g])
     agg_new_cap = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     expr = agg_new_cap >= min_new_cap
     if isinstance(expr, bool):
         logger.error(
-            'No elements available to support min-capacity group: (%s, %d, %s).'
+            'No elements available to support min new capacity group: (%s, %d, %s).'
             '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
             r,
             p,
@@ -2288,14 +2316,25 @@ def MinNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
 def MaxNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     r"""
     Similar to the :code:`MinNewCapacity` constraint, but works on a group of technologies."""
+
+    regions = gather_group_regions(M, r)
+
     max_new_cap = value(M.MaxNewCapacityGroup[r, p, g])
     agg_new_cap = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     expr = max_new_cap >= agg_new_cap
     if isinstance(expr, bool):
+        logger.error(
+            'No elements available to support max new capacity group: (%s, %d, %s).'
+            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
+            r,
+            p,
+            g,
+        )
         return Constraint.Skip
     return expr
 
@@ -2311,7 +2350,7 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     regions = gather_group_regions(M, r)
 
     if t not in M.tech_annual:
-        activity_rpt = sum(
+        activity_tech = sum(
             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
@@ -2322,7 +2361,7 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
             if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
         )
     else:
-        activity_rpt = sum(
+        activity_tech = sum(
             M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
@@ -2331,8 +2370,7 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
             if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
-    activity_t = activity_rpt
-    activity_p = sum(
+    activity_group = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
         for _r in regions
@@ -2344,8 +2382,7 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         for d in M.time_of_day
         if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
-
-    activity_p_annual = sum(
+    activity_group_annual = sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
         for _r in regions
@@ -2355,10 +2392,10 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
         if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
     )
-    activity_group = activity_p + activity_p_annual
-    min_activity_share = value(M.MinActivityShare[r, p, t, g])
+    activity_group = activity_group + activity_group_annual
 
-    expr = activity_t >= min_activity_share * activity_group
+    min_activity_share = value(M.MinActivityShare[r, p, t, g])
+    expr = activity_tech >= min_activity_share * activity_group
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         logger.error(
@@ -2383,7 +2420,7 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     regions = gather_group_regions(M, r)
 
     if t not in M.tech_annual:
-        activity_rpt = sum(
+        activity_tech = sum(
             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
@@ -2394,7 +2431,7 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
             if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
         )
     else:
-        activity_rpt = sum(
+        activity_tech = sum(
             M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
@@ -2403,8 +2440,7 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
             if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
-    activity_t = activity_rpt
-    activity_p = sum(
+    activity_group = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
         for _r in regions
@@ -2416,8 +2452,7 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         for d in M.time_of_day
         if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
-
-    activity_p_annual = sum(
+    activity_group_annual = sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
         for _r in regions
@@ -2427,10 +2462,10 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
         if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
     )
-    activity_group = activity_p + activity_p_annual
-    max_activity_share = value(M.MaxActivityShare[r, p, t, g])
+    activity_group = activity_group + activity_group_annual
 
-    expr = activity_t <= max_activity_share * activity_group
+    max_activity_share = value(M.MaxActivityShare[r, p, t, g])
+    expr = activity_tech <= max_activity_share * activity_group
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -2449,11 +2484,17 @@ def MinCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     members are different types for LDVs. This constraint could be used to enforce
     that no less than 10% of LDVs must be of a certain type."""
 
-    capacity_t = M.V_CapacityAvailableByPeriodAndTech[r, p, t]
+    regions = gather_group_regions(M, r)
+
+    capacity_t = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
+        for _r in regions
+    )
     capacity_group = sum(
-        M.V_CapacityAvailableByPeriodAndTech[r, p, S_t]
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, S_t]
         for S_t in M.tech_group_members[g]
-        if (r, p, S_t) in M.processVintages.keys()
+        for _r in regions
+        if (_r, p, S_t) in M.processVintages.keys()
     )
     min_cap_share = value(M.MinCapacityShare[r, p, t, g])
 
@@ -2478,11 +2519,17 @@ def MaxCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     members are different types for LDVs. This constraint could be used to enforce
     that no more than 10% of LDVs must be of a certain type."""
 
-    capacity_t = M.V_CapacityAvailableByPeriodAndTech[r, p, t]
+    regions = gather_group_regions(M, r)
+
+    capacity_t = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
+        for _r in regions
+    )
     capacity_group = sum(
-        M.V_CapacityAvailableByPeriodAndTech[r, p, S_t]
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, S_t]
         for S_t in M.tech_group_members[g]
-        if (r, p, S_t) in M.processVintages.keys()
+        for _r in regions
+        if (_r, p, S_t) in M.processVintages.keys()
     )
     max_cap_share = value(M.MaxCapacityShare[r, p, t, g])
 
@@ -2500,11 +2547,17 @@ def MinNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     members are different types for LDVs. This constraint could be used to enforce
     that no less than 10% of new LDV purchases in a given year must be of a certain type."""
 
-    capacity_t = M.V_NewCapacity[r, t, p]
+    regions = gather_group_regions(M, r)
+
+    capacity_t = sum(
+        M.V_NewCapacity[_r, t, p]
+        for _r in regions
+    )
     capacity_group = sum(
-        M.V_NewCapacity[r, S_t, p]
+        M.V_NewCapacity[_r, S_t, p]
         for S_t in M.tech_group_members[g]
-        if (r, S_t, p) in M.V_NewCapacity.keys()
+        for _r in regions
+        if (_r, S_t, p) in M.V_NewCapacity.keys()
     )
     min_cap_share = value(M.MinNewCapacityShare[r, p, t, g])
 
@@ -2529,11 +2582,17 @@ def MaxNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     members are different types for LDVs. This constraint could be used to enforce
     that no more than 10% of LDV purchases in a given year must be of a certain type."""
 
-    capacity_t = M.V_NewCapacity[r, t, p]
+    regions = gather_group_regions(M, r)
+
+    capacity_t = sum(
+        M.V_NewCapacity[_r, t, p]
+        for _r in regions
+    )
     capacity_group = sum(
-        M.V_NewCapacity[r, S_t, p]
+        M.V_NewCapacity[_r, S_t, p]
         for S_t in M.tech_group_members[g]
-        if (r, S_t, p) in M.V_NewCapacity.keys()
+        for _r in regions
+        if (_r, S_t, p) in M.V_NewCapacity.keys()
     )
     max_cap_share = value(M.MaxNewCapacityShare[r, p, t, g])
 
@@ -2548,22 +2607,27 @@ def MinNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
     Sets the minimum aggregate capacity of one group of technologies as a share of 
     another group of technologies.
     """
+
+    regions = gather_group_regions(M, r)
+
     min_share = value(M.MinNewCapacityGroupShare[r, p, g1, g2])
     agg_new_cap_g1 = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g1]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     agg_new_cap_g2 = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g2]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     expr = agg_new_cap_g1 >= agg_new_cap_g2 * min_share
 
     if isinstance(expr, bool): # one side of expression was empty
         logger.error(
-            'Missing group techs to support min new capacity group share constraint: {}.'
+            'Missing group techs to support min new capacity group share constraint: %s.'
             '  Check data/log for available/suppressed techs. Constraint ignored.',
             (r, p, g1, g2)
         )
@@ -2577,22 +2641,27 @@ def MaxNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
     Sets the maximum aggregate capacity of one group of technologies as a share of 
     another group of technologies.
     """
+
+    regions = gather_group_regions(M, r)
+
     max_share = value(M.MaxNewCapacityGroupShare[r, p, g1, g2])
     agg_new_cap_g1 = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g1]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     agg_new_cap_g2 = sum(
-        M.V_NewCapacity[r, t, p]
+        M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g2]
-        if (r, p, t) in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
     expr = agg_new_cap_g1 <= agg_new_cap_g2 * max_share
 
     if isinstance(expr, bool): # one side of expression was empty
         logger.error(
-            'Missing group techs to support max new capacity group share constraint: {}.'
+            'Missing group techs to support max new capacity group share constraint: %s.'
             '  Check data/log for available/suppressed techs. Constraint ignored.',
             (r, p, g1, g2)
         )
@@ -2619,7 +2688,10 @@ def MinAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if (r, p, t) not in M.V_CapacityAvailableByPeriodAndTech:
+    if all(
+        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+    ):
         return Constraint.Skip
 
     if t not in M.tech_annual:
@@ -2641,8 +2713,9 @@ def MinAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
             if (_r, p, S_i, t, S_v, o) in M.V_FlowOutAnnual
         )
 
-    max_possible_activity_rpt = (
-        M.V_CapacityAvailableByPeriodAndTech[r, p, t] * value(M.CapacityToActivity[r, t])
+    max_possible_activity_rpt = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t] * value(M.CapacityToActivity[_r, t])
+        for _r in regions
     )
     min_annual_cf = value(M.MinAnnualCapacityFactor[r, p, t, o])
     expr = activity_rpt >= min_annual_cf * max_possible_activity_rpt
@@ -2677,7 +2750,10 @@ def MaxAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if (r, p, t) not in M.V_CapacityAvailableByPeriodAndTech:
+    if all(
+        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+    ):
         return Constraint.Skip
 
     if t not in M.tech_annual:
@@ -2699,8 +2775,9 @@ def MaxAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
             if (_r, p, S_i, t, S_v, o) in M.V_FlowOutAnnual
         )
 
-    max_possible_activity_rpt = (
-        M.V_CapacityAvailableByPeriodAndTech[r, p, t] * value(M.CapacityToActivity[r, t])
+    max_possible_activity_rpt = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t] * value(M.CapacityToActivity[_r, t])
+        for _r in regions
     )
     max_annual_cf = value(M.MaxAnnualCapacityFactor[r, p, t, o])
     expr = activity_rpt <= max_annual_cf * max_possible_activity_rpt

@@ -284,7 +284,7 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
         (
             isinstance(val, float),
             val > 0,
-            r in M.RegionalIndices,
+            r in M.regionalIndices,
             si in M.commodity_physical,
             t in M.tech_all,
             so in M.commodity_carrier,
@@ -293,7 +293,7 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     ):
         return True
     print('Element Validations:')
-    print('region', r in M.RegionalIndices)
+    print('region', r in M.regionalIndices)
     print('input_commodity', si in M.commodity_physical)
     print('tech', t in M.tech_all)
     print('vintage', v in M.vintage_all)

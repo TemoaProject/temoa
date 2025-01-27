@@ -94,6 +94,7 @@ class TemoaModel(AbstractModel):
         M.activeCapacity_rtv = None
         M.activeCapacityAvailable_rpt = None
         M.activeCapacityAvailable_rptv = None
+        M.groupRegionActiveFlow_rpt = None # Set of valid group-region, period, tech indices
         M.commodityBalance_rpc = None # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess = dict()  # The downstream process of a commodity during a period
         M.commodityUStreamProcess = dict()  # The upstream process of a commodity during a period
@@ -150,8 +151,8 @@ class TemoaModel(AbstractModel):
         M.regions = Set(validate=region_check)
         # RegionalIndices is the set of all the possible combinations of interregional exchanges
         # plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
-        M.RegionalIndices = Set(initialize=CreateRegionalIndices)
-        M.RegionalGlobalIndices = Set(validate=region_group_check)
+        M.regionalIndices = Set(initialize=CreateRegionalIndices)
+        M.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
         M.tech_resource = Set()
@@ -243,9 +244,9 @@ class TemoaModel(AbstractModel):
         # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
         # Define technology performance parameters
-        M.CapacityToActivity = Param(M.RegionalIndices, M.tech_all, default=1)
+        M.CapacityToActivity = Param(M.regionalIndices, M.tech_all, default=1)
 
-        M.ExistingCapacity = Param(M.RegionalIndices, M.tech_with_capacity, M.vintage_exist)
+        M.ExistingCapacity = Param(M.regionalIndices, M.tech_with_capacity, M.vintage_exist)
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
         #            Uncomment this assignment, and comment out the orig below it...
@@ -254,7 +255,7 @@ class TemoaModel(AbstractModel):
         #     within=NonNegativeReals, validate=validate_Efficiency
         # )
         M.Efficiency = Param(
-            M.RegionalIndices,
+            M.regionalIndices,
             M.commodity_physical,
             M.tech_all,
             M.vintage_all,
@@ -283,13 +284,13 @@ class TemoaModel(AbstractModel):
         # M.initialize_CapacityFactors = BuildAction(rule=CreateCapacityFactors)
 
         M.LifetimeTech = Param(
-            M.RegionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
+            M.regionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
         )
 
         M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
-        M.LoanLifetimeTech = Param(M.RegionalIndices, M.tech_all, default=10)
+        M.LoanLifetimeTech = Param(M.regionalIndices, M.tech_all, default=10)
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
 
         # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a supporting
@@ -327,7 +328,7 @@ class TemoaModel(AbstractModel):
         M.CostFixed_rptv = Set(dimen=4, initialize=CostFixedIndices)
         M.CostFixed = Param(M.CostFixed_rptv)
 
-        M.CostInvest_rtv = Set(within=M.RegionalIndices * M.tech_all * M.time_optimize)
+        M.CostInvest_rtv = Set(within=M.regionalIndices * M.tech_all * M.time_optimize)
         M.CostInvest = Param(M.CostInvest_rtv)
 
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
@@ -349,96 +350,96 @@ class TemoaModel(AbstractModel):
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
 
         M.MinCapacityConstraint_rpt = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
         )
 
         M.MinCapacity = Param(M.MinCapacityConstraint_rpt)
 
         M.MaxCapacityConstraint_rpt = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
         )
         M.MaxCapacity = Param(M.MaxCapacityConstraint_rpt)
 
         M.MinNewCapacityConstraint_rpt = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
         )
         M.MinNewCapacity = Param(M.MinNewCapacityConstraint_rpt)
 
         M.MaxNewCapacityConstraint_rpt = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
         )
         M.MaxNewCapacity = Param(M.MaxNewCapacityConstraint_rpt)
 
-        M.MaxResourceConstraint_rt = Set(within=M.RegionalGlobalIndices * M.tech_all)
+        M.MaxResourceConstraint_rt = Set(within=M.regionalGlobalIndices * M.tech_all)
         M.MaxResource = Param(M.MaxResourceConstraint_rt)
 
         M.MaxActivityConstraint_rpt = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all
         )
         M.MaxActivity = Param(M.MaxActivityConstraint_rpt)
 
         M.MinActivityConstraint_rpt = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all
         )
         M.MinActivity = Param(M.MinActivityConstraint_rpt)
 
         M.MaxSeasonalActivityConstraint_rpst = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
         )
         M.MaxSeasonalActivity = Param(M.MaxSeasonalActivityConstraint_rpst)
 
         M.MinSeasonalActivityConstraint_rpst = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
         )
         M.MinSeasonalActivity = Param(M.MinSeasonalActivityConstraint_rpst)
 
         M.MinAnnualCapacityFactorConstraint_rpto = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
         )
         M.MinAnnualCapacityFactor = Param(M.MinAnnualCapacityFactorConstraint_rpto)
 
         M.MaxAnnualCapacityFactorConstraint_rpto = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
         )
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
         
-        M.GrowthRateMax = Param(M.RegionalIndices, M.tech_all)
-        M.GrowthRateSeed = Param(M.RegionalIndices, M.tech_all)
+        M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all)
+        M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all)
 
         M.EmissionLimitConstraint_rpe = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.commodity_emissions
+            within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
         )
         M.EmissionLimit = Param(M.EmissionLimitConstraint_rpe)
         M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
         M.EmissionActivity = Param(M.EmissionActivity_reitvo)
 
         M.MinActivityGroup_rpg = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MinActivityGroup = Param(M.MinActivityGroup_rpg)
 
         M.MaxActivityGroup_rpg = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MaxActivityGroup = Param(M.MaxActivityGroup_rpg)
 
         M.MinCapacityGroupConstraint_rpg = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MinCapacityGroup = Param(M.MinCapacityGroupConstraint_rpg)
 
         M.MaxCapacityGroupConstraint_rpg = Set(
-            within=M.RegionalGlobalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MaxCapacityGroup = Param(M.MaxCapacityGroupConstraint_rpg)
 
         M.MinNewCapacityGroupConstraint_rpg = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MinNewCapacityGroup = Param(M.MinNewCapacityGroupConstraint_rpg)
 
         M.MaxNewCapacityGroupConstraint_rpg = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_group_names
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
         M.MaxNewCapacityGroup = Param(M.MaxNewCapacityGroupConstraint_rpg)
         M.GroupShareIndices = Set(dimen=4, initialize=GroupShareIndices)
@@ -477,14 +478,14 @@ class TemoaModel(AbstractModel):
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
 
-        M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions, within=Any)
+        M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions, within=Any)
 
         # Define parameters associated with electric sector operation
         M.RampUp = Param(M.regions, M.tech_upramping)
         M.RampDown = Param(M.regions, M.tech_downramping)
 
         M.CapacityCredit = Param(
-            M.RegionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0
+            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0
         )
         M.PlanningReserveMargin = Param(M.regions, default=0.2)
         
