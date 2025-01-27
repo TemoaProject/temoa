@@ -60,8 +60,11 @@ tables_with_regional_groups = {
     'EmissionLimit': 'region',
     'MinActivityGroup': 'region',
     'MaxActivityGroup': 'region',
+    'MinActivityShare': 'region',
+    'MaxActivityShare': 'region',
     'MinCapacityGroup': 'region',
     'MaxCapacityGroup': 'region',
+    'MaxResource': 'region',
 }
 
 
@@ -1128,7 +1131,7 @@ class HybridLoader:
             M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
             M.MinNewCapacityGroupShare.name: M.MinNewCapacityGroupShareConstraint_rpgg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
-            M.ResourceBound.name: M.ResourceConstraint_rpr.name,
+            # M.ResourceBound.name: M.ResourceConstraint_rpr.name,
             M.StorageFraction.name: M.StorageFractionConstraint_rpsdtv.name
         }
 

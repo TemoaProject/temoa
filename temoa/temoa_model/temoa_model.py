@@ -237,10 +237,10 @@ class TemoaModel(AbstractModel):
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
-        M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
+        # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        M.ResourceBound = Param(M.ResourceConstraint_rpr)
+        # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
         # Define technology performance parameters
         M.CapacityToActivity = Param(M.RegionalIndices, M.tech_all, default=1)
@@ -369,7 +369,7 @@ class TemoaModel(AbstractModel):
         )
         M.MaxNewCapacity = Param(M.MaxNewCapacityConstraint_rpt)
 
-        M.MaxResourceConstraint_rt = Set(within=M.RegionalIndices * M.tech_all)
+        M.MaxResourceConstraint_rt = Set(within=M.RegionalGlobalIndices * M.tech_all)
         M.MaxResource = Param(M.MaxResourceConstraint_rt)
 
         M.MaxActivityConstraint_rpt = Set(
@@ -616,9 +616,9 @@ class TemoaModel(AbstractModel):
             M.AnnualCommodityBalanceConstraint_rpc, rule=AnnualCommodityBalance_Constraint
         )
 
-        M.ResourceExtractionConstraint = Constraint(
-            M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
-        )
+        # M.ResourceExtractionConstraint = Constraint(
+        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
+        # )
 
         M.BaseloadDiurnalConstraint_rpsdtv = Set(
             dimen=6, initialize=BaseloadDiurnalConstraintIndices

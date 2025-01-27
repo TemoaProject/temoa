@@ -1016,6 +1016,7 @@ def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
     # dev note:  This constraint does not have a table in the current schema
     #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
     #            by BOTH a non-annual and annual tech.  It should be re-written to add these
+    # dev note:  Cant think of a case where this would be needed but cant use MaxActivityGroup
     try:
         collected = sum(
             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
@@ -2128,37 +2129,43 @@ def MaxResource_Constraint(M: 'TemoaModel', r, t):
        \sum_{P} \textbf{CAPAVL}_{r, p, t} \le MAR_{r, t}
 
        \forall \{r, t\} \in \Theta_{\text{MaxCapacity}}"""
-    logger.warning(
-        'The MaxResource constraint is not currently supported in the model, pending review.  Recommend '
-        'removing data from the MaxResource Table'
-    )
+    # logger.warning(
+    #     'The MaxResource constraint is not currently supported in the model, pending review.  Recommend '
+    #     'removing data from the MaxResource Table'
+    # )
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
     #            regardless of whatever "resources" are consumed.
+    # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
+    #            oil/mineral extraction across all model periods. Looks fine to me.
+
+    regions = gather_group_regions(M, r)
+
+    if t in M.tech_annual:
+        activity_rt = sum(
+            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
+            for p in M.time_optimize
+            for _r in regions
+            if (_r, p, t) in M.processVintages.keys()
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+        )
+    else:
+        activity_rt = sum(
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
+            for p in M.time_optimize
+            for _r in regions
+            if (_r, p, t) in M.processVintages.keys()
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+            for s in M.time_season
+            for d in M.time_of_day
+        )
+    
     max_resource = value(M.MaxResource[r, t])
-    return Constraint.Skip
-    # try:
-    #     activity_rt = sum(
-    #         M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-    #         for p in M.time_optimize
-    #         if (r, p, t) in M.processVintages.keys()
-    #         for S_v in M.processVintages[r, p, t]
-    #         for S_i in M.processInputs[r, p, t, S_v]
-    #         for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
-    #         for s in M.time_season
-    #         for d in M.time_of_day
-    #     )
-    # except KeyError:
-    #     activity_rt = sum(
-    #         M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-    #         for p in M.time_optimize
-    #         if (r, p, t) in M.processVintages.keys()
-    #         for S_v in M.processVintages[r, p, t]
-    #         for S_i in M.processInputs[r, p, t, S_v]
-    #         for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i]
-    #     )
-    #
-    # expr = activity_rt <= max_resource
-    # return expr
+    expr = activity_rt <= max_resource
+    return expr
 
 
 def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
@@ -2301,42 +2308,52 @@ def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     members are different types for LDVs. This constraint could be used to enforce
     that no less than 10% of LDVs must be of a certain type."""
 
+    regions = gather_group_regions(M, r)
+
     if t not in M.tech_annual:
         activity_rpt = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-            for S_v in M.processVintages.get((r, p, t), [])
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
+            for _r in regions
+            for S_v in M.processVintages.get((_r, p, t), [])
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
             for s in M.time_season
             for d in M.time_of_day
+            if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
         )
     else:
         activity_rpt = sum(
-            M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-            for S_v in M.processVintages.get((r, p, t), [])
-            for S_i in M.processInputs[r, p, t, S_v]
-            for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
+            for _r in regions
+            for S_v in M.processVintages.get((_r, p, t), [])
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+            if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
     activity_t = activity_rpt
     activity_p = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o]
+        M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
-        if (r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-        for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, S_i]
+        for _r in regions
+        if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
+        for S_v in M.processVintages[_r, p, S_t]
+        for S_i in M.processInputs[_r, p, S_t, S_v]
+        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
         for s in M.time_season
         for d in M.time_of_day
+        if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
 
     activity_p_annual = sum(
-        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o]
+        M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
         for S_t in M.tech_group_members[g]
-        if (r, p, S_t) in M.processVintages and S_t in M.tech_annual
-        for S_v in M.processVintages[r, p, S_t]
-        for S_i in M.processInputs[r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, S_i]
+        for _r in regions
+        if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
+        for S_v in M.processVintages[_r, p, S_t]
+        for S_i in M.processInputs[_r, p, S_t, S_v]
+        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
+        if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
     )
     activity_group = activity_p + activity_p_annual
     min_activity_share = value(M.MinActivityShare[r, p, t, g])
