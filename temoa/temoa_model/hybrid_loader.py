@@ -401,11 +401,12 @@ class HybridLoader:
         raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
         load_element(M.time_season, raw)
 
-        # LinkSeasons
-        raw = cur.execute("SELECT value from MetaData WHERE element == 'link_seasons'").fetchall()
-        if not raw:
-            raise ValueError('link_seasons boolean parameter missing from MetaData table. Seasons will loop by default.')
-        data[M.LinkSeasons.name] = {None: bool(raw[0][0])}
+        # StateSequencing
+        raw = cur.execute("SELECT value from MetaData WHERE element == 'state_sequencing'").fetchall()
+        if raw:
+            data[M.StateSequencing.name] = {None: bool(raw[0][0])}
+        else:
+            logger.warning("state_sequencing parameter missing from MetaData table. By default, states will loop each period.")
 
         # myopic_base_year
         if mi:
