@@ -394,12 +394,18 @@ class HybridLoader:
         load_element(M.time_future, raw)
 
         # time_of_day
-        raw = cur.execute('SELECT tod FROM main.TimeOfDay ORDER BY sequence').fetchall()
-        load_element(M.time_of_day, raw)
+        if self.table_exists("TimeOfDay"):
+            raw = cur.execute('SELECT tod FROM main.TimeOfDay ORDER BY sequence').fetchall()
+            load_element(M.time_of_day, raw)
+        else:
+            load_element(M.time_of_day, [('D',)])
 
         # time_season
-        raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
-        load_element(M.time_season, raw)
+        if self.table_exists("TimeSeason"):
+            raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
+            load_element(M.time_season, raw)
+        else:
+            load_element(M.time_season, [('S',)])
 
         # StateSequencing
         raw = cur.execute("SELECT value from MetaData WHERE element == 'state_sequencing'").fetchall()
@@ -556,48 +562,54 @@ class HybridLoader:
         load_element(M.Efficiency, raw)
 
         # ExistingCapacity
-        if mi:
-            # In order to get accurate capacity at start of this interval, we want to
-            # 1.  Only look at the previous period in the net capacity table (things that had some capacity)
-            # 2.  Omit any techs that are "unlimited capacity" to keep them out of capacity variables
-            # 3.  add in everything from the original ExistingCapacity table
+        if self.table_exists("ExistingCapacity"):
+            if mi:
+                # In order to get accurate capacity at start of this interval, we want to
+                # 1.  Only look at the previous period in the net capacity table (things that had some capacity)
+                # 2.  Omit any techs that are "unlimited capacity" to keep them out of capacity variables
+                # 3.  add in everything from the original ExistingCapacity table
 
-            # get previous period
-            raw = cur.execute(
-                'SELECT MAX(period) FROM main.TimePeriod WHERE period < ?', (mi.base_year,)
-            ).fetchone()
-            previous_period = raw[0]
-            # noinspection SqlUnused
-            raw = cur.execute(
-                'SELECT region, tech, vintage, capacity FROM main.OutputNetCapacity '
-                ' WHERE period = ? '
-                ' AND scenario = ? '
-                'UNION '
-                '  SELECT region, tech, vintage, capacity FROM main.ExistingCapacity ',
-                (previous_period, self.config.scenario),
-            ).fetchall()
-        else:
-            raw = cur.execute(
-                'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
-            ).fetchall()
-        load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
+                # get previous period
+                raw = cur.execute(
+                    'SELECT MAX(period) FROM main.TimePeriod WHERE period < ?', (mi.base_year,)
+                ).fetchone()
+                previous_period = raw[0]
+                # noinspection SqlUnused
+                raw = cur.execute(
+                    'SELECT region, tech, vintage, capacity FROM main.OutputNetCapacity '
+                    ' WHERE period = ? '
+                    ' AND scenario = ? '
+                    'UNION '
+                    '  SELECT region, tech, vintage, capacity FROM main.ExistingCapacity ',
+                    (previous_period, self.config.scenario),
+                ).fetchall()
+            else:
+                raw = cur.execute(
+                    'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
+                ).fetchall()
+            load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
 
         # GlobalDiscountRate
-        raw = cur.execute(
-            "SELECT value FROM main.MetaDataReal WHERE element = 'global_discount_rate'"
-        ).fetchall()
-        # do this separately as it is non-indexed, so we need to make a mapping with None
-        data[M.GlobalDiscountRate.name] = {None: raw[0][0]}
+        if self.table_exists("MetaDataReal"):
+            raw = cur.execute(
+                "SELECT value FROM main.MetaDataReal WHERE element = 'global_discount_rate'"
+            ).fetchall()
+            # do this separately as it is non-indexed, so we need to make a mapping with None
+            data[M.GlobalDiscountRate.name] = {None: raw[0][0]}
 
         # SegFrac
-        raw = cur.execute('SELECT season, tod, segfrac FROM main.TimeSegmentFraction').fetchall()
-        load_element(M.SegFrac, raw)
+        if self.table_exists("TimeSegmentFraction"):
+            raw = cur.execute('SELECT season, tod, segfrac FROM main.TimeSegmentFraction').fetchall()
+            load_element(M.SegFrac, raw)
+        else:
+            load_element(M.SegFrac, [("S","D",1)])
 
         # DemandSpecificDistribution
-        raw = cur.execute(
-            'SELECT region, season, tod, demand_name, dsd FROM main.DemandSpecificDistribution'
-        ).fetchall()
-        load_element(M.DemandSpecificDistribution, raw)
+        if self.table_exists('DemandSpecificDistribution'):
+            raw = cur.execute(
+                'SELECT region, season, tod, demand_name, dsd FROM main.DemandSpecificDistribution'
+            ).fetchall()
+            load_element(M.DemandSpecificDistribution, raw)
 
         # DemandPeriodDistribution
         if self.table_exists('DemandPeriodDistribution'):
@@ -612,34 +624,34 @@ class HybridLoader:
         # Not currently implemented
 
         # CapacityToActivity
-        raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity ').fetchall()
-        load_element(M.CapacityToActivity, raw, self.viable_rt, (0, 1))
+        if self.table_exists("CapacityToActivity"):
+            raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity ').fetchall()
+            load_element(M.CapacityToActivity, raw, self.viable_rt, (0, 1))
 
         # CapacityFactorTech
-        raw = cur.execute(
-            'SELECT region, season, tod, tech, factor ' 'FROM main.CapacityFactorTech'
-        ).fetchall()
-        load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 3))
+        if self.table_exists("CapacityFactorTech"):
+            raw = cur.execute('SELECT region, season, tod, tech, factor ' 'FROM main.CapacityFactorTech').fetchall()
+            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 3))
 
         # CapacityFactorProcess
-        raw = cur.execute(
-            'SELECT region, season, tod, tech, vintage, factor ' ' FROM main.CapacityFactorProcess'
-        ).fetchall()
-        load_element(M.CapacityFactorProcess, raw, self.viable_rtv, (0, 3, 4))
+        if self.table_exists("CapacityFactorProcess"):
+            raw = cur.execute('SELECT region, season, tod, tech, vintage, factor ' ' FROM main.CapacityFactorProcess').fetchall()
+            load_element(M.CapacityFactorProcess, raw, self.viable_rtv, (0, 3, 4))
 
         # LifetimeTech
-        raw = cur.execute('SELECT region, tech, lifetime FROM main.LifetimeTech').fetchall()
-        load_element(M.LifetimeTech, raw, self.viable_rt, val_loc=(0, 1))
+        if self.table_exists("LifetimeTech"):
+            raw = cur.execute('SELECT region, tech, lifetime FROM main.LifetimeTech').fetchall()
+            load_element(M.LifetimeTech, raw, self.viable_rt, val_loc=(0, 1))
 
         # LifetimeProcess
-        raw = cur.execute(
-            'SELECT region, tech, vintage, lifetime FROM main.LifetimeProcess'
-        ).fetchall()
-        load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
+        if self.table_exists("LifetimeProcess"):
+            raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LifetimeProcess').fetchall()
+            load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
         # LoanLifetimeTech
-        raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
-        load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
+        if self.table_exists("LoanLifetimeTech"):
+            raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
+            load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
 
         # MinTechInputSplit
         if self.table_exists('MinTechInputSplit'):
@@ -848,22 +860,24 @@ class HybridLoader:
             load_element(M.CostEmission, raw)
 
         # DefaultLoanRate
-        raw = cur.execute(
-            "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
-        ).fetchall()
-        # do this separately as it is non-indexed, so we need to make a mapping with None
-        data[M.DefaultLoanRate.name] = {None: raw[0][0]}
+        if self.table_exists("MetaDataReal"):
+            raw = cur.execute(
+                "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
+            ).fetchall()
+            # do this separately as it is non-indexed, so we need to make a mapping with None
+            data[M.DefaultLoanRate.name] = {None: raw[0][0]}
 
         # LoanRate
-        if mi:
-            raw = cur.execute(
-                'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
-                (mi.base_year,),
-            ).fetchall()
-        else:
-            raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
+        if self.table_exists("LoanRate"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
+                    (mi.base_year,),
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
 
-        load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
+            load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
 
         # MinCapacity
         if self.table_exists('MinCapacity'):

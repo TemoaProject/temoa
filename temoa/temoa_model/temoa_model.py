@@ -220,7 +220,7 @@ class TemoaModel(AbstractModel):
         # these "progress markers" report build progress in the log, if the level == debug
         M.progress_marker_2 = BuildAction(['Starting to build Params'], rule=progress_check)
 
-        M.GlobalDiscountRate = Param()
+        M.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)

@@ -161,18 +161,19 @@ def validate_time(M: 'TemoaModel'):
         raise RuntimeError(msg)
 
     # Ensure that the time_exist < time_future
-    max_exist = max(M.time_exist)
-    min_horizon = min(M.time_future)
+    if len(M.time_exist) > 0:
+        max_exist = max(M.time_exist)
+        min_horizon = min(M.time_future)
 
-    if not (max_exist < min_horizon):
-        msg = (
-            'All items in time_future must be larger than in time_exist.'
-            '\ntime_exist max:   {}'
-            '\ntime_future min: {}'
-        )
-        logger.error(msg.format(max_exist, min_horizon))
-        raise Exception(msg.format(max_exist, min_horizon))
-    logger.debug('Finished validating time')
+        if not (max_exist < min_horizon):
+            msg = (
+                'All items in time_future must be larger than in time_exist.'
+                '\ntime_exist max:   {}'
+                '\ntime_future min: {}'
+            )
+            logger.error(msg.format(max_exist, min_horizon))
+            raise Exception(msg.format(max_exist, min_horizon))
+        logger.debug('Finished validating time')
 
 
 def validate_SegFrac(M: 'TemoaModel'):
