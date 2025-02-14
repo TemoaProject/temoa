@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS CapacityToActivity
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE CapacityFactorTech
+CREATE TABLE IF NOT EXISTS CapacityFactorTech
 (
     region TEXT,
     season TEXT
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE GrowthRateMax
+CREATE TABLE IF NOT EXISTS GrowthRateMax
 (
     region TEXT,
     tech   TEXT
@@ -231,7 +231,7 @@ CREATE TABLE GrowthRateMax
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE GrowthRateSeed
+CREATE TABLE IF NOT EXISTS GrowthRateSeed
 (
     region TEXT,
     tech   TEXT
@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LoanLifetimeTech
+CREATE TABLE IF NOT EXISTS LoanLifetimeTech
 (
     region   TEXT,
     tech     TEXT
@@ -259,7 +259,7 @@ CREATE TABLE LoanLifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LoanRate
+CREATE TABLE IF NOT EXISTS LoanRate
 (
     region  TEXT,
     tech    TEXT
@@ -270,7 +270,7 @@ CREATE TABLE LoanRate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE MaxResource
+CREATE TABLE IF NOT EXISTS MaxResource
 (
     region  TEXT,
     tech    TEXT
@@ -328,7 +328,7 @@ CREATE TABLE IF NOT EXISTS MaxCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech)
 );
-CREATE TABLE MinCapacityGroup
+CREATE TABLE IF NOT EXISTS MinCapacityGroup
 (
     region     TEXT,
     period     INTEGER
@@ -340,7 +340,7 @@ CREATE TABLE MinCapacityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-CREATE TABLE MaxCapacityGroup
+CREATE TABLE IF NOT EXISTS MaxCapacityGroup
 (
     region     TEXT,
     period     INTEGER
@@ -376,7 +376,7 @@ CREATE TABLE IF NOT EXISTS MaxNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech)
 );
-CREATE TABLE MinTechInputSplit
+CREATE TABLE IF NOT EXISTS MinTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -389,7 +389,7 @@ CREATE TABLE MinTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE MaxTechInputSplit
+CREATE TABLE IF NOT EXISTS MaxTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -402,7 +402,7 @@ CREATE TABLE MaxTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE MinTechOutputSplit
+CREATE TABLE IF NOT EXISTS MinTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -415,7 +415,7 @@ CREATE TABLE MinTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm)
 );
-CREATE TABLE MaxTechOutputSplit
+CREATE TABLE IF NOT EXISTS MaxTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -554,7 +554,7 @@ CREATE TABLE IF NOT EXISTS Region
 );
 REPLACE INTO Region
 VALUES ('region', NULL);
-CREATE TABLE SectorLabel
+CREATE TABLE IF NOT EXISTS SectorLabel
 (
     sector TEXT,
     PRIMARY KEY (sector)
@@ -586,13 +586,13 @@ REPLACE INTO TimeSegmentFraction
 VALUES ('S2', 'D1', 0.25, NULL);
 REPLACE INTO TimeSegmentFraction
 VALUES ('S2', 'D2', 0.25, NULL);
-CREATE TABLE TechGroup
+CREATE TABLE IF NOT EXISTS TechGroup
 (
     group_name TEXT
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE TechGroupMember
+CREATE TABLE IF NOT EXISTS TechGroupMember
 (
     group_name TEXT
         REFERENCES TechGroup (group_name),

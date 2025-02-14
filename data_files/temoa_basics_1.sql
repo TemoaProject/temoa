@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS CapacityToActivity
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE CapacityFactorTech
+CREATE TABLE IF NOT EXISTS CapacityFactorTech
 (
     region TEXT,
     season TEXT
@@ -345,7 +345,7 @@ CREATE TABLE IF NOT EXISTS Region
 );
 REPLACE INTO Region
 VALUES ('region', NULL);
-CREATE TABLE SectorLabel
+CREATE TABLE IF NOT EXISTS SectorLabel
 (
     sector TEXT,
     PRIMARY KEY (sector)
