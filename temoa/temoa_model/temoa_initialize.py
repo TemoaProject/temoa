@@ -520,6 +520,57 @@ def CreateDemands(M: 'TemoaModel'):
     logger.debug('Finished creating demand distributions')
 
 
+def CreateVariableEfficiencies(M: 'TemoaModel'):
+
+    indices = set(
+        (r, p, s, d, i, t, v, o)
+
+        for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
+        for p in M.time_optimize
+        for s in M.time_season
+        for d in M.time_of_day
+    )
+
+    for rpsditvo in indices:
+        M.variableEfficiencies[rpsditvo] = False # pull non-variable efficiency by default
+    
+    count_ritvo = dict()
+    for r, p, s, d, i, t, v, o in M.EfficiencyVariable.sparse_iterkeys():
+        try:
+            M.Efficiency[r, i, t, v, o]
+        except ValueError:
+            msg = f"Set in EfficiencyVariable table missing from Efficiency table (EfficiencyVariable is a multiplier on Efficiency): {(r, i, t, v, o)}"
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        l = value(M.LifetimeProcess[r, t, v])
+        if p < v:
+            msg = f"Invalid period-vintage set (period cannot come before vintage) in EfficiencyVariable table: {(t, p, v)}"
+            logger.error(msg)
+            raise ValueError(msg)
+        elif v + l <= p:
+            msg = f"Invalid period-vintage-lifetime set (v + l must be greater than p) in EfficiencyVariable table: {(t, v, l, p)}"
+            logger.error(msg)
+            raise ValueError(msg)
+        else:
+            M.variableEfficiencies[(r, p, s, d, i, t, v, o)] = True # pull from efficiencyvariable if available
+            if (r, i, t, v, o) not in count_ritvo.keys():
+                count_ritvo[(r, i, t, v, o)] = 1
+            else:
+                count_ritvo[(r, i, t, v, o)] += 1
+
+    num_seg = len(M.time_season) * len(M.time_of_day)
+    for (r, i, t, v, o), count in count_ritvo.items():
+        num_p = len(set(
+            p
+            for p in M.time_optimize
+            if v <= p and v + value(M.LifetimeProcess[r, t, v]) > p
+        ))
+        target_count = num_seg * num_p
+        if count > 0 and count < target_count:
+            logger.warning("Only some variable efficiencies were set (%i out of a possible %i) for: %s", count, target_count, (r, i, t, v, o))
+
+
 @deprecated(reason='vintage defaults are no longer available, so this should not be needed')
 def CreateCosts(M: 'TemoaModel'):
     """

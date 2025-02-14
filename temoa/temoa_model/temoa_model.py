@@ -123,6 +123,7 @@ class TemoaModel(AbstractModel):
         M.importRegions = dict()
         M.time_next = dict()
         M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
+        M.variableEfficiencies: dict[tuple, bool] = dict() # which efficiencies have variable indexing
         M.flex_commodities = set()
 
         ################################################
@@ -263,7 +264,6 @@ class TemoaModel(AbstractModel):
             within=NonNegativeReals,
             validate=validate_Efficiency,
         )
-
         M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
 
         M.CapacityFactor_rsdt = Set(dimen=4, initialize=CapacityFactorTechIndices)
@@ -289,6 +289,19 @@ class TemoaModel(AbstractModel):
 
         M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
+
+        M.EfficiencyVariable = Param(
+            M.regionalIndices,
+            M.time_optimize,
+            M.time_season,
+            M.time_of_day,
+            M.commodity_physical,
+            M.tech_all,
+            M.vintage_all,
+            M.commodity_carrier,
+            within=NonNegativeReals,
+        )
+        M.initialize_variableEfficiencies = BuildAction(rule=CreateVariableEfficiencies)
 
         M.LoanLifetimeTech = Param(M.regionalIndices, M.tech_all, default=10)
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)

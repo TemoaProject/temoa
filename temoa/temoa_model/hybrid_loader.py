@@ -556,10 +556,14 @@ class HybridLoader:
         #  === PARAMS ===
 
         # Efficiency
-
         # we have already computed/filtered this... no need for another data pull
         raw = self.efficiency_values
         load_element(M.Efficiency, raw)
+
+        # EfficiencyVariable
+        if self.table_exists("EfficiencyVariable"):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, input_comm, tech, vintage, output_comm, efficiency FROM main.EfficiencyVariable')
+            load_element(M.EfficiencyVariable, raw, self.viable_ritvo, (0, 4, 5, 6, 7))
 
         # ExistingCapacity
         if self.table_exists("ExistingCapacity"):

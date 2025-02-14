@@ -803,14 +803,14 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     )
 
     consumed = sum(
-        M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+        M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
         if S_t not in M.tech_storage and S_t not in M.tech_annual
         for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
     )
 
     consumed_annual = value(M.SegFrac[s, d]) * sum(
-        M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+        M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
         if S_t not in M.tech_storage and S_t in M.tech_annual
         for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
@@ -836,7 +836,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     if (r, p, c) in M.exportRegions:
         exported = sum(
             M.V_FlowOut[r + '-' + reg, p, s, d, c, S_t, S_v, S_o]
-            / value(M.Efficiency[r + '-' + reg, c, S_t, S_v, S_o])
+            / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
             for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
         )
 
@@ -904,7 +904,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     )
 
     consumed = sum(
-        M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+        M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
         for S_s in M.time_season
         for S_d in M.time_of_day
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
@@ -941,7 +941,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     if (r, p, c) in M.exportRegions:
         exported = sum(
             M.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
-            / value(M.Efficiency[r + '-' + S_r, c, S_t, S_v, S_o])
+            / get_variable_efficiency(M, r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o)
             for S_s in M.time_season
             for S_d in M.time_of_day
             for S_r, S_t, S_v, S_o in M.exportRegions[r, p, c]
@@ -1131,7 +1131,7 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
     charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * value(M.Efficiency[r, S_i, t, v, S_o])
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -1218,7 +1218,7 @@ def StorageChargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
     # Calculate energy charge in each time slice
     slice_charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * value(M.Efficiency[r, S_i, t, v, S_o])
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -1300,7 +1300,7 @@ def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     )
 
     charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * value(M.Efficiency[r, S_i, t, v, S_o])
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -1601,7 +1601,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
         if r1 == r:
             total_generation -= sum(
                 M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
-                / value(M.Efficiency[r1r2, S_i, t, S_v, S_o])
+                / get_variable_efficiency(M, r1r2, p, s, d, S_i, t, S_v, S_o)
                 for (t, S_v) in M.processReservePeriods[r1r2, p]
                 for S_i in M.processInputs[r1r2, p, t, S_v]
                 for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
@@ -2795,12 +2795,12 @@ def MinTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, i, t, v, S_o)
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -2841,16 +2841,16 @@ def MinTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
     the constraint only fixes the input shares over the course of a year."""
 
     inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
+        M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        for S_s in M.time_season
+        for S_d in M.time_of_day
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
+        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        for S_s in M.time_season
+        for S_d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
@@ -2976,12 +2976,12 @@ def MaxTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
+        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, i, t, v, S_o)
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -3022,16 +3022,16 @@ def MaxTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
     the constraint only fixes the input shares over the course of a year."""
 
     inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
+        M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        for S_s in M.time_season
+        for S_d in M.time_of_day
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
-        for s in M.time_season
-        for d in M.time_of_day
+        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        for S_s in M.time_season
+        for S_d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
@@ -3291,9 +3291,17 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     return -primary_flow == linked_flow
 
 
-# To avoid building big many-indexed parameters when they aren't needed
+# To avoid building big many-indexed parameters when they aren't needed - saves memory
+# Much faster to build a dictionary and check that than check the parameter
+# indices directly every time - saves build time
 def get_demand_distribution(M: 'TemoaModel', r, p, s, d, dem):
     if M.demandPeriodDistributions[(r, p, dem)]:
         return value(M.DemandPeriodDistribution[r, p, s, d, dem])
     else:
         return value(M.DemandSpecificDistribution[r, s, d, dem])
+
+def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
+    if M.variableEfficiencies[(r, p, s, d, i, t, v, o)]:
+        return value(M.Efficiency[r, i, t, v, o]) * value(M.EfficiencyVariable[r, p, s, d, i, t, v, o])
+    else:
+        return value(M.Efficiency[r, i, t, v, o])
