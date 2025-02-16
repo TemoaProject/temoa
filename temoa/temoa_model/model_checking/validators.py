@@ -265,12 +265,14 @@ def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, s, d, t, v) -> bool:
     :param v: vintage
     :return:
     """
+    # devnote: CapacityFactorProcess can be a BIG table and most of these seem redundant
+    # when they're already enforced by the domain of the parameter
     return all(
         (
             r in M.regions,
             s in M.time_season,
             d in M.time_of_day,
-            t in M.tech_all,
+            t in M.tech_with_capacity,
             v in M.vintage_all,
             0 <= val <= 1.0,
         )
@@ -311,8 +313,8 @@ def check_flex_curtail(M: 'TemoaModel'):
         return False
     return True
 
-
-def validate_tech_input_split(M: 'TemoaModel', val, r, p, c, t):
+# Seems unused
+def validate_tech_split(M: 'TemoaModel', val, r, p, c, t):
     if all(
         (
             r in M.regions,
@@ -327,3 +329,6 @@ def validate_tech_input_split(M: 'TemoaModel', val, r, p, c, t):
     print('c', c in M.commodity_physical)
     print('t', t in M.tech_all)
     return False
+
+def validate_0to1(M: 'TemoaModel', val, *args):
+    return 0.0 <= val <= 1.0

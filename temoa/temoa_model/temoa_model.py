@@ -37,6 +37,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_linked_tech,
     region_check,
     validate_CapacityFactorProcess,
+    validate_0to1,
     region_group_check,
     validate_Efficiency,
     check_flex_curtail,
@@ -102,6 +103,7 @@ class TemoaModel(AbstractModel):
         M.processOutputsByInput = dict()
         M.processTechs = dict()
         M.processReservePeriods = dict()
+        M.processPeriods = dict() # {(r, t, v): set(p)}
         M.processVintages = dict()
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
@@ -122,9 +124,16 @@ class TemoaModel(AbstractModel):
         M.exportRegions = dict()
         M.importRegions = dict()
         M.time_next = dict()
-        M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
-        M.variableEfficiencies: dict[tuple, bool] = dict() # which efficiencies have variable indexing
         M.flex_commodities = set()
+
+        ################################################
+        #             Switching Sets                   #
+        #     (used to optimize big tables/params)     #
+        ################################################
+
+        M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
+        M.efficiencyVariables: dict[tuple, bool] = dict() # which efficiencies have variable indexing
+        M.capacityFactorProcesses: dict[tuple, bool] = dict() # which capacity factors have have period-vintage indexing
 
         ################################################
         #                 Model Sets                   #
@@ -266,30 +275,6 @@ class TemoaModel(AbstractModel):
         )
         M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
 
-        M.CapacityFactor_rsdt = Set(dimen=4, initialize=CapacityFactorTechIndices)
-        M.CapacityFactorTech = Param(M.CapacityFactor_rsdt, default=1)
-
-        # Dev note:  using a default function below alleviates need to make this set.
-        # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
-        M.CapacityFactorProcess = Param(
-            M.regions,
-            M.time_season,
-            M.time_of_day,
-            M.tech_with_capacity,
-            M.vintage_all,
-            validate=validate_CapacityFactorProcess,
-            default=get_default_capacity_factor,
-        )
-
-        # M.initialize_CapacityFactors = BuildAction(rule=CreateCapacityFactors)
-
-        M.LifetimeTech = Param(
-            M.regionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
-        )
-
-        M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
-        M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
-
         M.EfficiencyVariable = Param(
             M.regionalIndices,
             M.time_optimize,
@@ -300,8 +285,32 @@ class TemoaModel(AbstractModel):
             M.vintage_all,
             M.commodity_carrier,
             within=NonNegativeReals,
+            default=1,
         )
-        M.initialize_variableEfficiencies = BuildAction(rule=CreateVariableEfficiencies)
+
+        M.CapacityFactor_rsdt = Set(dimen=4, initialize=CapacityFactorTechIndices)
+        M.CapacityFactorTech = Param(M.CapacityFactor_rsdt, default=1, validate=validate_0to1)
+
+        # Dev note:  using a default function below alleviates need to make this set.
+        # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
+        M.CapacityFactorProcess = Param(
+            M.regionalIndices,
+            M.time_optimize,
+            M.time_season,
+            M.time_of_day,
+            M.tech_with_capacity,
+            M.vintage_all,
+            # validate=validate_CapacityFactorProcess,
+            validate=validate_0to1,
+            default=get_default_capacity_factor, # surprisingly slow but only called if value is missing
+        )
+
+        M.LifetimeTech = Param(
+            M.regionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
+        )
+
+        M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
+        M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
         M.LoanLifetimeTech = Param(M.regionalIndices, M.tech_all, default=10)
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
@@ -313,27 +322,31 @@ class TemoaModel(AbstractModel):
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
         # Min tech input split
-        M.MinTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.MinTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        M.MinTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
+        M.MinTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
         # Min tech output split
-        M.MinTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
-        M.MinTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.MinTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
+        M.MinTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
         # Max tech input split
-        M.MaxTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.MaxTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        M.MaxTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
+        M.MaxTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
         # Max tech output split
-        M.MaxTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
-        M.MaxTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.MaxTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
+        M.MaxTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
 
         M.RenewablePortfolioStandardConstraint_rpg = Set(
             within=M.regions * M.time_optimize * M.tech_group_names
         )
-        M.RenewablePortfolioStandard = Param(M.RenewablePortfolioStandardConstraint_rpg)
+        M.RenewablePortfolioStandard = Param(M.RenewablePortfolioStandardConstraint_rpg, validate=validate_0to1)
 
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
+        M.Create_StateSequence = BuildAction(rule=CreateStateSequence)
+        M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
+        M.initialize_CapacityFactors = BuildAction(rule=CheckCapacityFactorProcess)
+        M.initialize_EfficiencyVariable = BuildAction(rule=CheckEfficiencyVariable)
 
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so
@@ -486,7 +499,7 @@ class TemoaModel(AbstractModel):
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
         M.StorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv)
-        M.StorageFraction = Param(M.StorageConstraints_rpsdtv)
+        M.StorageFraction = Param(M.StorageConstraints_rpsdtv, validate=validate_0to1)
 
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
@@ -494,11 +507,11 @@ class TemoaModel(AbstractModel):
         M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions, within=Any)
 
         # Define parameters associated with electric sector operation
-        M.RampUp = Param(M.regions, M.tech_upramping)
-        M.RampDown = Param(M.regions, M.tech_downramping)
+        M.RampUp = Param(M.regions, M.tech_upramping, validate=validate_0to1)
+        M.RampDown = Param(M.regions, M.tech_downramping, validate=validate_0to1)
 
         M.CapacityCredit = Param(
-            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0
+            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0, validate=validate_0to1
         )
         M.PlanningReserveMargin = Param(M.regions, default=0.2)
         
@@ -583,7 +596,6 @@ class TemoaModel(AbstractModel):
         M.progress_marker_4 = BuildAction(['Starting to build Constraints'], rule=progress_check)
 
         # Declare constraints to calculate derived decision variables
-        M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
         M.CapacityConstraint = Constraint(M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
 
         M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)

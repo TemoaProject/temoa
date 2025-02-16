@@ -247,6 +247,75 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
         f_msg = msg.format(', '.join(diff))
         logger.error(f_msg)
         raise ValueError(f_msg)
+    
+
+def CheckEfficiencyVariable(M: 'TemoaModel'):
+
+    count_rpitvo = dict()
+    # Pull non-variable efficiency by default
+    for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+        for p in M.processPeriods[r, t, v]:
+            M.efficiencyVariables[r, p, i, t, v, o] = False 
+            count_rpitvo[r, p, i, t, v, o] = 0
+    
+    # Check for bad values and count up the good ones
+    for r, p, s, d, i, t, v, o in M.EfficiencyVariable.sparse_iterkeys():
+        
+        if p not in M.processPeriods[r, t, v]:
+            msg = f"Invalid period {p} for process {r, t, v} in EfficiencyVariable table"
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        # Good value, pull from EfficiencyVariable table
+        count_rpitvo[r, p, i, t, v, o] += 1
+
+    # Check if all possible values have been set as variable
+    # log a warning if some are missing (allowed but maybe accidental)
+    num_seg = len(M.time_season) * len(M.time_of_day)
+    for (r, p, i, t, v, o), count in count_rpitvo.items():
+
+        if count > 0:
+            M.efficiencyVariables[r, p, i, t, v, o] = True
+            if count < num_seg:
+                logger.warning(
+                    'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
+                    ' Missing values will default to value set in Efficiency table.'
+                    , count, num_seg, (r, p, i, t, v, o)
+                )
+
+
+def CheckCapacityFactorProcess(M: 'TemoaModel'):
+
+    count_rptv = dict()
+    # Pull CapacityFactorTech by default
+    for r, s, d, t in M.CapacityFactor_rsdt:
+        for p, v in M.processTechs[r, t]:
+            M.capacityFactorProcesses[r, p, t, v] = False
+            count_rptv[r, p, t, v] = 0
+    
+    # Check for bad values and count up the good ones
+    for r, p, s, d, t, v in M.CapacityFactorProcess.sparse_iterkeys():
+
+        if (p, v) not in M.processTechs[r, t]:
+            msg = f"Invalid process {p, v} for {r, t} in CapacityFactorProcess table"
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        # Good value, pull from CapacityFactorProcess table
+        count_rptv[r, p, t, v] += 1
+
+    # Check if all possible values have been set by process
+    # log a warning if some are missing (allowed but maybe accidental)
+    num_seg = len(M.time_season) * len(M.time_of_day)
+    for (r, p, t, v), count in count_rptv.items():
+        if count > 0:
+            M.capacityFactorProcesses[r, p, t, v] = True
+            if count < num_seg:
+                logger.warning(
+                    'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
+                    ' Missing values will default to CapacityFactorTech value or 1 if that is not set either.'
+                    , count, num_seg, (r, p, t, v)
+                )
 
 
 @deprecated('should not be needed.  We are pulling the default on-the-fly where used')
@@ -306,7 +375,7 @@ def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     return M.LifetimeTech[r, t]
 
 
-def get_default_capacity_factor(M: 'TemoaModel', r, s, d, t, v):
+def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     """
     This initializer is used to fill the CapacityFactorProcess from the CapacityFactorTech where needed.
 
@@ -429,6 +498,7 @@ def CreateDemands(M: 'TemoaModel'):
     #         and we need to ensure even the zeros are passed in
     expected_key_length = len(M.time_season) * len(M.time_of_day)
     used_reg_dems = set((r, dem) for r, p, dem in M.Demand.sparse_iterkeys())
+    count_rp_dem = dict()
     for r, dem in used_reg_dems:
         keys = [
             k
@@ -440,7 +510,7 @@ def CreateDemands(M: 'TemoaModel'):
                 (s, d)
                 for s in M.time_season
                 for d in M.time_of_day
-                if (r, s, d, dem) not in keys
+                if (r, s, d, dem) not in keys # this could be very slow but only calls when there's a problem
             )
             logger.warning(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
@@ -478,97 +548,41 @@ def CreateDemands(M: 'TemoaModel'):
         
         # No DPD by default
         for p in M.time_optimize:
-            M.demandPeriodDistributions[(r, p, dem)] = False
+            M.demandPeriodDistributions[r, p, dem] = False
+            count_rp_dem[r, p, dem] = 0
         
     # Step 6: Validate DPD
     DPD = M.DemandPeriodDistribution
 
-    # Get the rp_dem combos that have period indexing, so we know later on which demands use it
-    rp_dem = set(
-        (r, p, dem)
-        for r, p, s, d, dem in DPD.sparse_iterkeys()
-    )
-    for r, p, dem in rp_dem:
+    # This is a fast way to check if we're missing indices
+    for r, p, s, d, dem in DPD.sparse_iterkeys():
+        count_rp_dem[r, p, dem] += 1
 
-        # Check that each DPD demand actually has all the timeslices defined
-        missing = set(
-            (s, d)
-            for s in M.time_season
-            for d in M.time_of_day
-            if (r, p, s, d, dem) not in DPD.sparse_iterkeys()
-        )
-        if len(missing) > 0:
-            msg = ('Missing some time slices for Demand Period Distribution {}: {}')
-            logger.warning(msg.format((r, p, dem), missing))
+    for (r, p, dem), count in count_rp_dem.items():
+
+        if count == 0: continue
+        elif count < expected_key_length:
+            logger.warning(
+                "Some but not all DemandPeriodDistribution values were set (%i out of a possible %i) for: %s"
+                , count, expected_key_length, (r, p, dem)
+            )
 
         total = sum(
             M.DemandPeriodDistribution[r, p, s, d, dem]
             for s in M.time_season
             for d in M.time_of_day
         )
-        if abs(value(total) - 1.0) > 0.001:
+        if abs(value(total) - 1.0) < 0.001:
+            # This is a good DPD, override DSD/DDD
+            M.demandPeriodDistributions[r, p, dem] = True
+        else:
             msg = (
                 'The values of the DemandPeriodDistribution parameter do not '
                 'sum to 1 for {}. Current sum = {}. Defaulting to DSD/DDD.'
             )
             logger.warning(msg.format((r, p, dem), total))
-            continue
-        
-        # This is a good DPD, override DSD/DDD
-        M.demandPeriodDistributions[(r, p, dem)] = True
     
     logger.debug('Finished creating demand distributions')
-
-
-def CreateVariableEfficiencies(M: 'TemoaModel'):
-
-    indices = set(
-        (r, p, s, d, i, t, v, o)
-
-        for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
-        for p in M.time_optimize
-        for s in M.time_season
-        for d in M.time_of_day
-    )
-
-    for rpsditvo in indices:
-        M.variableEfficiencies[rpsditvo] = False # pull non-variable efficiency by default
-    
-    count_ritvo = dict()
-    for r, p, s, d, i, t, v, o in M.EfficiencyVariable.sparse_iterkeys():
-        try:
-            M.Efficiency[r, i, t, v, o]
-        except ValueError:
-            msg = f"Set in EfficiencyVariable table missing from Efficiency table (EfficiencyVariable is a multiplier on Efficiency): {(r, i, t, v, o)}"
-            logger.error(msg)
-            raise ValueError(msg)
-        
-        l = value(M.LifetimeProcess[r, t, v])
-        if p < v:
-            msg = f"Invalid period-vintage set (period cannot come before vintage) in EfficiencyVariable table: {(t, p, v)}"
-            logger.error(msg)
-            raise ValueError(msg)
-        elif v + l <= p:
-            msg = f"Invalid period-vintage-lifetime set (v + l must be greater than p) in EfficiencyVariable table: {(t, v, l, p)}"
-            logger.error(msg)
-            raise ValueError(msg)
-        else:
-            M.variableEfficiencies[(r, p, s, d, i, t, v, o)] = True # pull from efficiencyvariable if available
-            if (r, i, t, v, o) not in count_ritvo.keys():
-                count_ritvo[(r, i, t, v, o)] = 1
-            else:
-                count_ritvo[(r, i, t, v, o)] += 1
-
-    num_seg = len(M.time_season) * len(M.time_of_day)
-    for (r, i, t, v, o), count in count_ritvo.items():
-        num_p = len(set(
-            p
-            for p in M.time_optimize
-            if v <= p and v + value(M.LifetimeProcess[r, t, v]) > p
-        ))
-        target_count = num_seg * num_p
-        if count > 0 and count < target_count:
-            logger.warning("Only some variable efficiencies were set (%i out of a possible %i) for: %s", count, target_count, (r, i, t, v, o))
 
 
 @deprecated(reason='vintage defaults are no longer available, so this should not be needed')
@@ -770,6 +784,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             # technology subsets.
             if (r, p, t) not in M.processVintages:
                 M.processVintages[r, p, t] = set()
+            if (r, t, v) not in M.processPeriods:
+                M.processPeriods[r, t, v] = set()
             if t in M.tech_curtailment and (r, p, t) not in M.curtailmentVintages:
                 M.curtailmentVintages[r, p, t] = set()
             if t in M.tech_baseload and (r, p, t) not in M.baseloadVintages:
@@ -864,6 +880,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             M.processInputsByOutput[r, p, t, v, o].add(i)
             M.processTechs[r, t].add((p, v))
             M.processVintages[r, p, t].add(v)
+            M.processPeriods[r, t, v].add(p)
             if t in M.tech_curtailment:
                 M.curtailmentVintages[r, p, t].add(v)
             if t in M.tech_baseload:
@@ -935,13 +952,6 @@ def CreateSparseDicts(M: 'TemoaModel'):
         )
         for i in sorted(l_unused_techs):
             SE.write(msg.format(i))
-
-    # Establishing sequence of states
-    for s, d in M.time_season * M.time_of_day:
-        match M.StateSequencing:
-            case 0: s_next, d_next = loop_period_next_timeslice(M, s, d)
-            case 1: s_next, d_next = loop_season_next_timeslice(M, s, d)
-        M.time_next[s, d] = (s_next, d_next)
 
     # valid region-period-commodity sets for commodity balance constraints
     commodityUpstream_rpi = set(M.commodityUStreamProcess.keys())
@@ -1054,6 +1064,17 @@ def CreateSparseDicts(M: 'TemoaModel'):
     )
 
     logger.debug('Completed creation of SparseDicts')
+
+
+def CreateStateSequence(M: 'TemoaModel'):
+    # Establishing sequence of states
+    for s, d in M.time_season * M.time_of_day:
+        match M.StateSequencing:
+            case 0: s_next, d_next = loop_period_next_timeslice(M, s, d)
+            case 1: s_next, d_next = loop_season_next_timeslice(M, s, d)
+        M.time_next[s, d] = (s_next, d_next)
+
+    logger.debug('Created sequence of states')
 
 
 # ---------------------------------------------------------------
@@ -1335,7 +1356,7 @@ ensure demand activity remains consistent across time slices.
         s0, d0 = None, None
         for s0, d0 in ((ss, dd) for ss in M.time_season for dd in M.time_of_day):
             if (r, s0, d0, dem) in M.DemandSpecificDistribution.sparse_iterkeys():
-                if value(M.DemandSpecificDistribution[(r, s0, d0, dem)]) >= appreciable_size:
+                if value(M.DemandSpecificDistribution[r, s0, d0, dem]) >= appreciable_size:
                     found_flag = True
                     break  # we have one with some value associated
         found = 'found' if found_flag else 'not found'

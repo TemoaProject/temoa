@@ -59,6 +59,8 @@ CREATE TABLE CapacityCredit
 CREATE TABLE CapacityFactorProcess
 (
     region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
     season  TEXT
         REFERENCES TimeSeason (season),
     tod     TEXT
@@ -68,21 +70,27 @@ CREATE TABLE CapacityFactorProcess
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, season, tod, tech, vintage),
+    PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorProcess VALUES('utopia','inter','day','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','inter','night','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','winter','day','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','winter','night','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','summer','day','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','summer','night','E31',2000,0.2752999999999999892,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','inter','day','E31',2010,0.2756000000000000116,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','inter','night','E31',2010,0.2756000000000000116,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','winter','day','E31',2010,0.2756000000000000116,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','winter','night','E31',2010,0.2756000000000000116,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','summer','day','E31',2010,0.2756000000000000116,'');
-INSERT INTO CapacityFactorProcess VALUES('utopia','summer','night','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'inter','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'inter','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'winter','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'winter','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'summer','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2000,'summer','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'inter','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'inter','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'winter','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'winter','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'summer','day','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'summer','night','E31',2000,0.2752999999999999892,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'inter','day','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'inter','night','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'winter','day','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'winter','night','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'summer','day','E31',2010,0.2756000000000000116,'');
+INSERT INTO CapacityFactorProcess VALUES('utopia',2010,'summer','night','E31',2010,0.2756000000000000116,'');
 CREATE TABLE CapacityFactorTech
 (
     region TEXT,

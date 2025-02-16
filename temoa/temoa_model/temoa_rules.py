@@ -106,11 +106,7 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
-    if (r, s, d, t, v) in M.CapacityFactorProcess:
-        # use the data provided
-        capacity = value(M.CapacityFactorProcess[r, s, d, t, v])
-    else:  # use the capacity factor for the tech
-        capacity = value(M.CapacityFactorTech[r, s, d, t])
+    capacity = get_capacity_factor(M, r, p, s, d, t, v)
     
     if t in M.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
@@ -3295,13 +3291,19 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
 # Much faster to build a dictionary and check that than check the parameter
 # indices directly every time - saves build time
 def get_demand_distribution(M: 'TemoaModel', r, p, s, d, dem):
-    if M.demandPeriodDistributions[(r, p, dem)]:
+    if M.demandPeriodDistributions[r, p, dem]:
         return value(M.DemandPeriodDistribution[r, p, s, d, dem])
     else:
         return value(M.DemandSpecificDistribution[r, s, d, dem])
 
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
-    if M.variableEfficiencies[(r, p, s, d, i, t, v, o)]:
+    if M.efficiencyVariables[r, p, i, t, v, o]:
         return value(M.Efficiency[r, i, t, v, o]) * value(M.EfficiencyVariable[r, p, s, d, i, t, v, o])
     else:
         return value(M.Efficiency[r, i, t, v, o])
+    
+def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
+    if M.capacityFactorProcesses[r, p, t, v]:
+        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
+    else:
+        return value(M.CapacityFactorTech[r, s, d, t])
