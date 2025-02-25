@@ -889,7 +889,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.storageVintages[r, p, t].add(v)
             if t in M.tech_upramping:
                 M.rampUpVintages[r, p, t].add(v)
-            if t in M.tech_upramping:
+            if t in M.tech_downramping:
                 M.rampDownVintages[r, p, t].add(v)
 
             # min tech split
