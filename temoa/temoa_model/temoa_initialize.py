@@ -1068,15 +1068,22 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
 def CreateStateSequence(M: 'TemoaModel'):
     # Establishing sequence of states
-    for s, d in M.time_season * M.time_of_day:
-        match M.StateSequencing:
-            case 0: s_next, d_next = loop_period_next_timeslice(M, s, d)
-            case 1: s_next, d_next = loop_season_next_timeslice(M, s, d)
-        M.time_next[s, d] = (s_next, d_next)
+    match M.StateSequencing:
+        case 0:
+            msg = 'Looping state each period, chaining between seasons.'
+            for s, d in M.time_season * M.time_of_day:
+                M.time_next[s, d] = loop_period_next_timeslice(M, s, d)
+        case 1:
+            msg = 'Looping state each season.'
+            for s, d in M.time_season * M.time_of_day:
+                M.time_next[s, d] = loop_season_next_timeslice(M, s, d)
 
-    logger.debug('Created sequence of states')
+    msg += (' This behaviour can be changed using the'
+            ' state_sequencing parameter in the MetaData table')
+    logger.info(msg)
+    logger.debug('Created sequence of states.')
 
-
+    
 # ---------------------------------------------------------------
 # Create sparse parameter indices.
 # These functions are called from temoa_model.py and use the sparse keys
