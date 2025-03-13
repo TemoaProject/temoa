@@ -1079,7 +1079,9 @@ def CreateStateSequence(M: 'TemoaModel'):
                 M.time_next[s, d] = loop_season_next_timeslice(M, s, d)
 
     msg += (' This behaviour can be changed using the'
-            ' state_sequencing parameter in the MetaData table')
+            ' state_sequencing parameter in the MetaData table. '
+            '0 = loop periods, '
+            '1 = loop seasons.')
     logger.info(msg)
     logger.debug('Created sequence of states.')
 
