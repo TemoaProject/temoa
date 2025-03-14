@@ -131,7 +131,6 @@ class TemoaModel(AbstractModel):
         #     (used to optimize big tables/params)     #
         ################################################
 
-        M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
         M.efficiencyVariables: dict[tuple, bool] = dict() # which efficiencies have variable indexing
         M.capacityFactorProcesses: dict[tuple, bool] = dict() # which capacity factors have have period-vintage indexing
 
@@ -233,17 +232,17 @@ class TemoaModel(AbstractModel):
         M.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
+        M.TimeSeason = Param(M.time_optimize)
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
-        M.SegFrac = Param(M.time_season, M.time_of_day)
+        M.SegFrac = Param(M.time_optimize, M.time_season, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
         M.StateSequencing = Param(default=0) # How do states carry between time segments?
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
         #            cause any problems, so let it be for now.
-        M.DemandDefaultDistribution = Param(M.time_season, M.time_of_day, mutable=True)
-        M.DemandSpecificDistribution = Param(M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0)
-        M.DemandPeriodDistribution = Param(M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand, default=0)
+        # M.DemandDefaultDistribution = Param(M.time_optimize, M.time_season, M.time_of_day, mutable=True)
+        M.DemandSpecificDistribution = Param(M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0)
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
@@ -664,7 +663,7 @@ class TemoaModel(AbstractModel):
 
         # We make use of this following set in some of the storage constraints.
         # Pre-computing it is considerably faster.
-        M.SegFracPerSeason = Param(M.time_season, initialize=SegFracPerSeason_rule)
+        M.SegFracPerSeason = Param(M.time_optimize, M.time_season, initialize=SegFracPerSeason_rule)
 
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
