@@ -253,7 +253,7 @@ def emission_limit_param_check(M: 'TemoaModel', val, rg, p, e) -> bool:
     return all((region_group_check(M, rg), p in M.time_optimize, e in M.commodity_emissions))
 
 
-def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, s, d, t, v) -> bool:
+def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, p, s, d, t, v) -> bool:
     """
     validate the rsdtv index
     :param val: the parameter value
@@ -267,10 +267,12 @@ def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, s, d, t, v) -> bool:
     """
     # devnote: CapacityFactorProcess can be a BIG table and most of these seem redundant
     # when they're already enforced by the domain of the parameter
+    # Doesn't seem worth the compute time
     return all(
         (
             r in M.regions,
-            s in M.time_season,
+            p in M.time_optimize,
+            s in M.time_season[p],
             d in M.time_of_day,
             t in M.tech_with_capacity,
             v in M.vintage_all,

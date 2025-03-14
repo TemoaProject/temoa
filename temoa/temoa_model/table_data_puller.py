@@ -180,7 +180,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
 
     # basic annual flows
     for r, p, i, t, v, o in M.V_FlowOutAnnual:
-        for s in M.TimeSeason[p]:
+        for s in M.time_season[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
                 flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * value(M.SegFrac[s, d])
@@ -192,7 +192,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
 
     # flex annual
     for r, p, i, t, v, o in M.V_FlexAnnual:
-        for s in M.TimeSeason[p]:
+        for s in M.time_season[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
                 flow = value(M.V_FlexAnnual[r, p, i, t, v, o]) * value(M.SegFrac[s, d])
@@ -340,7 +340,7 @@ def poll_cost_results(
                 value(M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o])
                 for S_i in M.processInputs[r, p, t, v]
                 for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-                for S_s in M.TimeSeason[p]
+                for S_s in M.time_season[p]
                 for S_d in M.time_of_day
             )
         else:
@@ -462,7 +462,7 @@ def poll_emissions(
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in M.TimeSeason[p]
+        for s in M.time_season[p]
         for d in M.time_of_day
         if t not in M.tech_annual
     ]

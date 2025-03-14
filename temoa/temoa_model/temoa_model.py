@@ -153,7 +153,8 @@ class TemoaModel(AbstractModel):
         M.validate_time = BuildAction(rule=validate_time)
 
         # Define the model time slices
-        M.time_season = Set(ordered=True, validate=no_slash_or_pipe)
+        M.time_season_all = Set(ordered=True, validate=no_slash_or_pipe)
+        M.time_season = Set(M.time_optimize, within=M.time_season_all, ordered=True)
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
         # Define regions
@@ -232,17 +233,17 @@ class TemoaModel(AbstractModel):
         M.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
-        M.TimeSeason = Param(M.time_optimize)
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
-        M.SegFrac = Param(M.time_optimize, M.time_season, M.time_of_day)
+        M.SegFrac = Param(M.time_optimize, M.time_season_all, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
         M.StateSequencing = Param(default=0) # How do states carry between time segments?
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
         #            cause any problems, so let it be for now.
+        #            Doesn't seem to be much point in the table. Just clones SegFrac
         # M.DemandDefaultDistribution = Param(M.time_optimize, M.time_season, M.time_of_day, mutable=True)
-        M.DemandSpecificDistribution = Param(M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0)
+        M.DemandSpecificDistribution = Param(M.regions, M.time_optimize, M.time_season_all, M.time_of_day, M.commodity_demand, mutable=True, default=0)
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
@@ -277,7 +278,7 @@ class TemoaModel(AbstractModel):
         M.EfficiencyVariable = Param(
             M.regionalIndices,
             M.time_optimize,
-            M.time_season,
+            M.time_season_all,
             M.time_of_day,
             M.commodity_physical,
             M.tech_all,
@@ -295,13 +296,13 @@ class TemoaModel(AbstractModel):
         M.CapacityFactorProcess = Param(
             M.regionalIndices,
             M.time_optimize,
-            M.time_season,
+            M.time_season_all,
             M.time_of_day,
             M.tech_with_capacity,
             M.vintage_all,
-            # validate=validate_CapacityFactorProcess,
+            # validate=validate_CapacityFactorProcess, # opting for a quicker validation, just 0->1
             validate=validate_0to1,
-            default=get_default_capacity_factor, # surprisingly slow but only called if value is missing
+            default=get_default_capacity_factor, # surprisingly slow but only called if a value is missing
         )
 
         M.LifetimeTech = Param(
@@ -409,12 +410,12 @@ class TemoaModel(AbstractModel):
         M.MinActivity = Param(M.MinActivityConstraint_rpt)
 
         M.MaxSeasonalActivityConstraint_rpst = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all
         )
         M.MaxSeasonalActivity = Param(M.MaxSeasonalActivityConstraint_rpst)
 
         M.MinSeasonalActivityConstraint_rpst = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all
         )
         M.MinSeasonalActivity = Param(M.MinSeasonalActivityConstraint_rpst)
 
@@ -663,7 +664,7 @@ class TemoaModel(AbstractModel):
 
         # We make use of this following set in some of the storage constraints.
         # Pre-computing it is considerably faster.
-        M.SegFracPerSeason = Param(M.time_optimize, M.time_season, initialize=SegFracPerSeason_rule)
+        M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
 
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint

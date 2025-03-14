@@ -414,20 +414,20 @@ class HybridLoader:
                 raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
             for row in raw:
                 load_indexed_set(
-                    M.TimeSeason,
+                    M.time_season,
                     index_value=row[0],
                     element=row[1]
                 )
-            load_element(M.time_season, [(row[1],) for row in raw])
+            load_element(M.time_season_all, [(row[1],) for row in raw])
         else:
             for period in time_optimize:
                 load_indexed_set(
-                    M.TimeSeason,
+                    M.time_season,
                     index_value=period,
                     element='S'
                 )
             logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
-            load_element(M.time_season, [('S',)])
+            load_element(M.time_season_all, [('S',)])
 
         # StateSequencing
         raw = cur.execute("SELECT value from MetaData WHERE element == 'state_sequencing'").fetchall()
