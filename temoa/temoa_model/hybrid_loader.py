@@ -402,16 +402,16 @@ class HybridLoader:
             logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
-        # TimeSeason
-        if self.table_exists("TimeSeason"):
+        # PeriodSeasons
+        if self.table_exists("PeriodSeasons"):
             if mi:
                 raw = cur.execute(
-                    'SELECT period, season FROM main.TimeSeason WHERE'
+                    'SELECT period, season FROM main.PeriodSeasons WHERE'
                     ' period >= ? AND period <= ? ORDER BY period, sequence',
                     (mi.base_year, mi.last_demand_year)
                 ).fetchall()
             else:
-                raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
+                raw = cur.execute('SELECT period, season FROM main.PeriodSeasons ORDER BY period, sequence').fetchall()
             for row in raw:
                 load_indexed_set(
                     M.time_season,
@@ -426,7 +426,7 @@ class HybridLoader:
                     index_value=period,
                     element='S'
                 )
-            logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
+            logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
             load_element(M.time_season_all, [('S',)])
 
         # StateSequencing
@@ -1110,8 +1110,8 @@ class HybridLoader:
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
         # StorageFraction
-        if self.table_exists('StorageFraction'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, frac FROM main.StorageFraction')
+        if self.table_exists('StorageLevelFraction'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, fraction FROM main.StorageLevelFraction')
             load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log

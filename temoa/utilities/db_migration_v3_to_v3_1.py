@@ -1,0 +1,288 @@
+"""
+Tools for Energy Model Optimization and Analysis (Temoa):
+An open source framework for energy systems optimization modeling
+
+Copyright (C) 2015,  NC State University
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
+received this license file.  If not, see <http://www.gnu.org/licenses/>.
+
+Written by:  I. D. Elder
+iandavidelder@gmail.com
+Created on:  2025/03/14
+
+Transition a v3.0 database to a v3.1 database.
+"""
+
+import argparse
+import sqlite3
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--source',
+    help='Path to original database',
+    required=True,
+    action='store',
+    dest='source_db',
+)
+parser.add_argument(
+    '--schema',
+    help='Path to schema file (default=../../data_files/temoa_schema_v3_1.sql)',
+    required=False,
+    dest='schema',
+    default='../../data_files/temoa_schema_v3_1.sql',
+)
+options = parser.parse_args()
+legacy_db: Path = Path(options.source_db)
+schema_file = Path(options.schema)
+
+new_db_name = legacy_db.stem + '_v3_1.sqlite'
+new_db_path = Path(legacy_db.parent, new_db_name)
+
+con_old = sqlite3.connect(legacy_db)
+con_new = sqlite3.connect(new_db_path)
+cur = con_new.cursor()
+
+# bring in the new schema and execute
+with open(schema_file, 'r') as src:
+    sql_script = src.read()
+con_new.executescript(sql_script)
+
+# turn off FK verification while process executes
+con_new.execute('PRAGMA foreign_keys = 0;')
+
+# table mapping for DIRECT transfers
+# fmt: off
+direct_transfer_tables = [
+    ('',                      'CapacityCredit'),
+    ('',                      'CapacityToActivity'),
+    ('',                      'Commodity'),
+    ('',                      'CommodityType'),
+    ('',                      'CostEmission'),
+    ('',                      'CostFixed'),
+    ('',                      'CostInvest'),
+    ('',                      'CostVariable'),
+    ('',                      'Demand'),
+    ('',                      'Efficiency'),
+    ('',                      'EmissionActivity'),
+    ('',                      'EmissionLimit'),
+    ('',                      'ExistingCapacity'),
+    ('',                      'GrowthRateMax'),
+    ('',                      'GrowthRateSeed'),
+    ('',                      'LifetimeProcess'),
+    ('',                      'LifetimeTech'),
+    ('',                      'LinkedTech'),
+    ('',                      'LoanLifetimeTech'),
+    ('',                      'LoanRate'),
+    ('',                      'MaxActivity'),
+    ('',                      'MaxActivityGroup'),
+    ('',                      'MaxActivityShare'),
+    ('',                      'MaxAnnualCapacityFactor'),
+    ('',                      'MaxCapacity'),
+    ('',                      'MaxCapacityGroup'),
+    ('',                      'MaxCapacityShare'),
+    ('',                      'MaxNewCapacity'),
+    ('',                      'MaxNewCapacityGroup'),
+    ('',                      'MaxNewCapacityShare'),
+    ('',                      'MaxResource'),
+    ('',                      'MaxSeasonalActivity'),
+    ('',                      'MetaData'),
+    ('',                      'MetaDataReal'),
+    ('',                      'MinActivity'),
+    ('',                      'MinActivityGroup'),
+    ('',                      'MinActivityShare'),
+    ('',                      'MinAnnualCapacityFactor'),
+    ('',                      'MinCapacity'),
+    ('',                      'MinCapacityGroup'),
+    ('',                      'MinCapacityShare'),
+    ('',                      'MinNewCapacity'),
+    ('',                      'MinNewCapacityGroup'),
+    ('',                      'MinNewCapacityShare'),
+    ('',                      'MinSeasonalActivity'),
+    ('',                      'PlanningReserveMargin'),
+    ('',                      'RampDown'),
+    ('',                      'RampUp'),
+    ('',                      'Region'),
+    ('',                      'RPSRequirement'),
+    ('',                      'SectorLabel'),
+    ('',                      'StorageDuration'),
+    ('',                      'TechGroup'),
+    ('',                      'TechGroupMember'),
+    ('TechInputSplit',        'MinTechInputSplit'),
+    ('TechInputSplitAnnual',  'MinTechInputSplitAnnual'),
+    ('TechInputSplitAverage', 'MinTechInputSplitAnnual'),
+    ('',                      'Technology'),
+    ('',                      'TechnologyType'),
+    ('TechOutputSplit',       'MinTechOutputSplit'),
+    ('',                      'TimeOfDay'),
+    ('',                      'TimePeriod'),
+    ('',                      'TimePeriodType'),
+]
+
+period_added_tables =[
+    ('',                      'CapacityFactorProcess'),
+    ('',                      'CapacityFactorTech'),
+    ('',                      'DemandSpecificDistribution'),
+    ('TimeSeason',            'PeriodSeasons'),
+    ('',                      'TimeSegmentFraction'),
+]
+
+# It wasn't active anyway... can't be bothered
+# StorageInit -> StorageFraction
+
+# TimeSeason
+data = con_old.execute('SELECT season FROM TimeSeason ORDER BY sequence').fetchall()
+query = 'INSERT OR REPLACE INTO TimeSeason(season) VALUES(?)'
+con_new.executemany(query, data)
+
+# execute the direct transfers
+print('\n --- Executing direct transfers ---')
+for old_name, new_name in direct_transfer_tables:
+    if old_name == '':
+        old_name = new_name
+
+    try:
+        con_old.execute(f'SELECT * FROM {old_name}').fetchone()
+    except sqlite3.OperationalError:
+        print('TABLE NOT FOUND: ' + old_name)
+        continue
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+
+    missing = [c for c in new_columns if c not in old_columns]
+    if len(missing) > 0:
+        msg = (
+            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
+            f'\n{missing}\n'
+            )
+        raise ValueError(msg)
+
+    print(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}')
+    data = con_old.execute(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
+
+    if not data:
+        print('No data for: ' + old_name)
+        continue
+
+    # construct the query with correct number of placeholders
+    num_placeholders = len(data[0])
+    placeholders = ','.join(['?' for _ in range(num_placeholders)])
+    query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
+    con_new.executemany(query, data)
+    print(f'inserted {len(data)} rows into {new_name}')
+
+# get lifetimes. Major headache but needs to be done
+data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
+lifetime_tech = dict()
+for rtl in data: lifetime_tech[rtl[0:2]] = rtl[2]
+data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
+lifetime_process = dict()
+for rtvl in data: lifetime_tech[rtvl[0:3]] = rtvl[3]
+
+# add period indexing to seasonal tables
+print('\n --- Adding period index to some tables ---')
+time_future = cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
+time_optimize = [p[0] for p in time_future[0:-1]]
+for old_name, new_name in period_added_tables:
+    if old_name == '':
+        old_name = new_name
+
+    try:
+        con_old.execute(f'SELECT * FROM {old_name}').fetchone()
+    except sqlite3.OperationalError:
+        print('TABLE NOT FOUND: ' + old_name)
+        continue
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+
+    missing = [c for c in new_columns if c not in old_columns and c != 'period']
+    if len(missing) > 0:
+        msg = (
+            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
+            f'\n{missing}\n'
+            )
+        raise ValueError(msg)
+    
+    columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall() if c[1] != 'period']
+
+    print(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}')
+    data = con_old.execute(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
+
+    if not data:
+        print('No data for: ' + old_name)
+        continue
+    
+    if 'vintage' in columns:
+        r = columns.index('region')
+        t = columns.index('tech')
+        v = columns.index('vintage')
+
+    data_new = []
+    for p in time_optimize:
+        for row in data:
+            # Remove infeasible rows
+            if 'vintage' in columns:
+                if row[v] > p: continue # v <= p
+                if (row[r], row[t], row[v]) in lifetime_process: life = lifetime_process[row[r], row[t], row[v]]
+                elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
+                else: life = 40 # TODO replace by calling default lifetime from TemoaModel
+                if row[v] + life <= p: continue # v+l > p
+
+            if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
+                data_new.append((p, *row))
+            else:
+                data_new.append((row[0], p, *row[1::]))
+
+    # construct the query with correct number of placeholders
+    num_placeholders = len(data_new[0])
+    placeholders = ','.join(['?' for _ in range(num_placeholders)])
+    query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
+    con_new.executemany(query, data_new)
+    print(f'Added period index to {new_name} and inserted {len(data_new)} rows')
+    
+
+# state_sequencing parameter
+print('\n --- Updating MetaData ---')
+cur.execute(
+    """REPLACE INTO
+    MetaData(element, value, notes)
+    VALUES('state_sequencing', 0, '0 = loop periods, 1 = loop seasons')"""
+)
+print("Added state_sequencing parameter")
+# new database version
+cur.execute("UPDATE MetaData SET value = 1 WHERE element == 'DB_MINOR'")
+print("Updated database version to 3.1")
+
+print('\n --- Validating foreign keys ---')
+con_new.commit()
+con_new.execute('VACUUM;')
+con_new.execute('PRAGMA FOREIGN_KEYS=1;')
+try:
+    data = con_new.execute('PRAGMA FOREIGN_KEY_CHECK;').fetchall()
+    if not data:
+        print('No Foreign Key Failures.  (Good news!)')
+    else:
+        print('\nFK check fails (MUST BE FIXED):')
+        print('(Table, Row ID, Reference Table, (fkid) )')
+        for row in data:
+            print(row)
+except sqlite3.OperationalError as e:
+    print('Foreign Key Check FAILED on new DB.  Something may be wrong with schema.')
+    print(e)
+
+con_new.close()
+con_old.close()

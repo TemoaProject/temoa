@@ -243,7 +243,15 @@ class TemoaModel(AbstractModel):
         #            cause any problems, so let it be for now.
         #            Doesn't seem to be much point in the table. Just clones SegFrac
         # M.DemandDefaultDistribution = Param(M.time_optimize, M.time_season, M.time_of_day, mutable=True)
-        M.DemandSpecificDistribution = Param(M.regions, M.time_optimize, M.time_season_all, M.time_of_day, M.commodity_demand, mutable=True, default=0)
+        M.DemandSpecificDistribution = Param(
+            M.regions,
+            M.time_optimize,
+            M.time_season_all,
+            M.time_of_day,
+            M.commodity_demand,
+            mutable=True,
+            default=0
+        )
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)

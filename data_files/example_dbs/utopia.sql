@@ -429,7 +429,7 @@ CREATE TABLE DemandSpecificDistribution
     demand_name TEXT
         REFERENCES Commodity (name),
     dsd         REAL,
-    dsd_notes   TEXT,
+    notes   TEXT,
     PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
