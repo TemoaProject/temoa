@@ -181,11 +181,27 @@ def validate_SegFrac(M: 'TemoaModel'):
 
     for p in M.time_optimize:
 
-        keys = [
+        expected_keys = set(
+            (p, s, d)
+            for s in M.TimeSeason[p]
+            for d in M.time_of_day
+        )
+        keys = set(
             (_p, s, d)
             for _p, s, d in M.SegFrac.sparse_iterkeys()
             if _p == p
-        ]
+        )
+
+        if expected_keys != keys:
+            extra = keys.difference(expected_keys)
+            missing = expected_keys.difference(keys)
+            msg = (
+                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
+                '\n\nIndices missing from TimeSegmentFraction:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
+            ).format(p, missing, extra)
+            logger.error(msg)
+            raise Exception(msg)
 
         total = sum(
             M.SegFrac[k]
@@ -206,12 +222,12 @@ def validate_SegFrac(M: 'TemoaModel'):
             items = '\n   '.join(fmt % (str(k), v) for k, v in items)
 
             msg = (
-                'The values of the SegFrac parameter do not sum to 1 for period {}. '
+                'The values of TimeSegmentFraction do not sum to 1 for period {}. '
                 'Each item in SegFrac represents a fraction of a year, so they must '
                 'total to 1.  Current values:\n   {}\n\tsum = {}'
-            )
-            logger.error(msg.format(p, items, total))
-            raise Exception(msg.format(p, items, total))
+            ).format(p, items, total)
+            logger.error(msg)
+            raise Exception(msg)
 
 
 def CheckEfficiencyIndices(M: 'TemoaModel'):
