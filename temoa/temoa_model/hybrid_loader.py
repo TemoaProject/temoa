@@ -418,7 +418,7 @@ class HybridLoader:
                     index_value=row[0],
                     element=row[1]
                 )
-            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into TimeSeason table
+            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into time_season_all set
         else:
             for period in time_optimize:
                 load_indexed_set(
