@@ -418,7 +418,7 @@ class HybridLoader:
                     index_value=row[0],
                     element=row[1]
                 )
-            load_element(M.time_season_all, list(set((row[1],) for row in raw)))
+            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into TimeSeason table
         else:
             for period in time_optimize:
                 load_indexed_set(
@@ -649,8 +649,8 @@ class HybridLoader:
 
         # CapacityFactorTech
         if self.table_exists("CapacityFactorTech"):
-            raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT region, season, tod, tech, factor FROM main.CapacityFactorTech')
-            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 3))
+            raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT region, period, season, tod, tech, factor FROM main.CapacityFactorTech')
+            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 4))
 
         # CapacityFactorProcess
         if self.table_exists("CapacityFactorProcess"):
@@ -873,8 +873,6 @@ class HybridLoader:
 
         # CostEmissions (and supporting index set)
         if self.table_exists('CostEmission'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm from main.CostEmission')
-            load_element(M.CostEmission_rpe, raw)
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, cost from main.CostEmission')
             load_element(M.CostEmission, raw)
 
@@ -1154,6 +1152,7 @@ class HybridLoader:
         M: TemoaModel = TemoaModel()  # for typing
         param_idx_sets = {
             M.CostInvest.name: M.CostInvest_rtv.name,
+            M.CostEmission.name: M.CostEmission_rpe.name,
             M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
             M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
             M.MaxSeasonalActivity.name: M.MaxSeasonalActivityConstraint_rpst.name,

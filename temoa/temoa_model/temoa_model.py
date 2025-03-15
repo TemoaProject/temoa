@@ -256,9 +256,9 @@ class TemoaModel(AbstractModel):
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
-        # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
-
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
+        # MaxResource IS implemented but sums cumulatively for a technology rather than resource commodity
+        # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
         # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
         # Define technology performance parameters
@@ -296,8 +296,8 @@ class TemoaModel(AbstractModel):
             default=1,
         )
 
-        M.CapacityFactor_rsdt = Set(dimen=4, initialize=CapacityFactorTechIndices)
-        M.CapacityFactorTech = Param(M.CapacityFactor_rsdt, default=1, validate=validate_0to1)
+        M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
+        M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
 
         # Dev note:  using a default function below alleviates need to make this set.
         # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
@@ -373,9 +373,9 @@ class TemoaModel(AbstractModel):
         M.CostVariable = Param(M.CostVariable_rptv)
 
         M.CostEmission_rpe = Set(
-            dimen=3, domain=M.regions * M.time_optimize * M.commodity_emissions
-        )  # read from data
-        M.CostEmission = Param(M.CostEmission_rpe, domain=NonNegativeReals)
+            within=M.regions * M.time_optimize * M.commodity_emissions
+        )
+        M.CostEmission = Param(M.CostEmission_rpe)
 
         M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)

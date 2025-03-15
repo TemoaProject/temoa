@@ -316,15 +316,15 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
     count_rptv = dict()
     # Pull CapacityFactorTech by default
-    for r, s, d, t in M.CapacityFactor_rsdt:
-        for p, v in M.processTechs[r, t]:
+    for r, p, s, d, t in M.CapacityFactor_rpsdt:
+        for v in M.processVintages[r, p, t]:
             M.capacityFactorProcesses[r, p, t, v] = False
             count_rptv[r, p, t, v] = 0
     
     # Check for bad values and count up the good ones
     for r, p, s, d, t, v in M.CapacityFactorProcess.sparse_iterkeys():
 
-        if (p, v) not in M.processTechs[r, t]:
+        if v not in M.processVintages[r, p, t]:
             msg = f"Invalid process {p, v} for {r, t} in CapacityFactorProcess table"
             logger.error(msg)
             raise ValueError(msg)
@@ -1094,7 +1094,7 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
 def CapacityFactorTechIndices(M: 'TemoaModel'):
     processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
     all_cfs = set(
-        (r, s, d, t)
+        (r, p, s, d, t)
         for p in M.time_optimize
         for (r, t, v), s, d in cross_product(processes, M.time_season[p], M.time_of_day)
     )

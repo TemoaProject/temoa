@@ -3304,4 +3304,4 @@ def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     if M.capacityFactorProcesses[r, p, t, v]:
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
-        return value(M.CapacityFactorTech[r, s, d, t])
+        return value(M.CapacityFactorTech[r, p, s, d, t])
