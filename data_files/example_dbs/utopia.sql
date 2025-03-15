@@ -1222,7 +1222,7 @@ CREATE TABLE MinNewCapacityShare
         REFERENCES Technology (tech),
     group_name     TEXT
         REFERENCES TechGroup (group_name),
-    max_proportion REAL,
+    min_proportion REAL,
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );

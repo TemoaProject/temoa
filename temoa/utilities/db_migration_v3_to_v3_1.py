@@ -39,7 +39,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--schema',
-    help='Path to schema file (default=../../data_files/temoa_schema_v3_1.sql)',
+    help='Path to schema file (default=../../data_files/temoa_schema_v3_1)',
     required=False,
     dest='schema',
     default='../../data_files/temoa_schema_v3_1.sql',
@@ -110,6 +110,8 @@ direct_transfer_tables = [
     ('',                      'MinNewCapacity'),
     ('',                      'MinNewCapacityGroup'),
     ('',                      'MinNewCapacityShare'),
+    ('',                      'MinNewCapacityGroupShare'),
+    ('',                      'MaxNewCapacityGroupShare'),
     ('',                      'MinSeasonalActivity'),
     ('',                      'PlanningReserveMargin'),
     ('',                      'RampDown'),

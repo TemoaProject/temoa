@@ -934,9 +934,35 @@ CREATE TABLE IF NOT EXISTS MinNewCapacityShare
         REFERENCES Technology (tech),
     group_name     TEXT
         REFERENCES TechGroup (group_name),
-    max_proportion REAL,
+    min_proportion REAL,
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
+);
+CREATE TABLE IF NOT EXISTS MinNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    min_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+CREATE TABLE IF NOT EXISTS MaxNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
 );
 CREATE TABLE IF NOT EXISTS OutputEmission
 (

@@ -418,7 +418,7 @@ class HybridLoader:
                     index_value=row[0],
                     element=row[1]
                 )
-            load_element(M.time_season_all, [(row[1],) for row in raw])
+            load_element(M.time_season_all, list(set((row[1],) for row in raw)))
         else:
             for period in time_optimize:
                 load_indexed_set(
@@ -950,7 +950,7 @@ class HybridLoader:
 
         # MinNewCapacityShare
         if self.table_exists('MinNewCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinNewCapacityShare')
             load_element(M.MinNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MaxNewCapacityShare
