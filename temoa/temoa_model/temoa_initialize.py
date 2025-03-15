@@ -419,7 +419,7 @@ def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     :param v: vintage
     :return: the capacity factor
     """
-    return M.CapacityFactorTech[r, s, d, t]
+    return M.CapacityFactorTech[r, p, s, d, t]
 
 
 def get_default_loan_rate(M, *_):
