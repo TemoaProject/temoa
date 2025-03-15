@@ -558,6 +558,25 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
+CREATE TABLE IF NOT EXISTS OutputStorageLevel
+(
+    scenario TEXT,
+    region TEXT,
+    sector TEXT
+        REFERENCES SectorLabel (sector),
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT
+        REFERENCES TimePeriod (period),
+    tod TEXT
+        REFERENCES TimeOfDay (tod),
+    tech TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER
+        REFERENCES TimePeriod (period),
+    level REAL,
+    PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
+);
 CREATE TABLE IF NOT EXISTS PlanningReserveMargin
 (
     region TEXT
@@ -770,6 +789,7 @@ CREATE TABLE IF NOT EXISTS PeriodSeasons
     sequence INTEGER,
     season TEXT
         REFERENCES TimeSeason (season),
+    notes TEXT,
     PRIMARY KEY (period, sequence)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType
@@ -1079,7 +1099,6 @@ CREATE TABLE IF NOT EXISTS Technology
     curtail      INTEGER NOT NULL DEFAULT 0,
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
-    variable     INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
@@ -1105,5 +1124,3 @@ CREATE TABLE IF NOT EXISTS OutputCost
 );
 COMMIT;
 PRAGMA FOREIGN_KEYS = 1;
-
-

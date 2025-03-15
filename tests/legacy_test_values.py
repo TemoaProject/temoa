@@ -48,10 +48,10 @@ test_vals = {
         ExpectedVals.VAR_COUNT: 1898, # reduced by 6 when reworking storageinit
     },
     'utopia': {
-        ExpectedVals.OBJ_VALUE: 36468.56, # reduced after reworking storageinit
+        ExpectedVals.OBJ_VALUE: 36468.56, # reduced after reworking storageinit -> storage was less constrained
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
-        ExpectedVals.CONSTR_COUNT: 1452,  # reduced 3/27:  unlim_cap techs now employed
+        ExpectedVals.CONSTR_COUNT: 1452, # reduced 3/27:  unlim_cap techs now employed
         ExpectedVals.VAR_COUNT: 1051,  # reduced 3/27:  unlim_cap techs now employed. Reduced by 4 storageinit
     },
 }

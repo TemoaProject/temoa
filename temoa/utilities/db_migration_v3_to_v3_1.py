@@ -42,7 +42,7 @@ parser.add_argument(
     help='Path to schema file (default=../../data_files/temoa_schema_v3_1)',
     required=False,
     dest='schema',
-    default='../../data_files/temoa_schema_v3_1.sql',
+    default='data_files/temoa_schema_v3_1.sql',
 )
 options = parser.parse_args()
 legacy_db: Path = Path(options.source_db)
@@ -145,9 +145,12 @@ period_added_tables =[
 # StorageInit -> StorageFraction
 
 # TimeSeason
-data = con_old.execute('SELECT season FROM TimeSeason ORDER BY sequence').fetchall()
-query = 'INSERT OR REPLACE INTO TimeSeason(season) VALUES(?)'
-con_new.executemany(query, data)
+try:
+    data = con_old.execute('SELECT DISTINCT season FROM TimeSeason ORDER BY sequence').fetchall()
+    query = 'INSERT OR REPLACE INTO TimeSeason(season) VALUES(?)'
+    con_new.executemany(query, data)
+except sqlite3.OperationalError:
+    print('TABLE NOT FOUND: TimeSeason')
 
 # execute the direct transfers
 print('\n --- Executing direct transfers ---')
@@ -172,7 +175,6 @@ for old_name, new_name in direct_transfer_tables:
             )
         raise ValueError(msg)
 
-    print(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}')
     data = con_old.execute(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
 
     if not data:
@@ -220,8 +222,6 @@ for old_name, new_name in period_added_tables:
         raise ValueError(msg)
     
     columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall() if c[1] != 'period']
-
-    print(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}')
     data = con_old.execute(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
 
     if not data:
@@ -285,6 +285,9 @@ try:
 except sqlite3.OperationalError as e:
     print('Foreign Key Check FAILED on new DB.  Something may be wrong with schema.')
     print(e)
+
+print('\nFinished! Check your database for any missing data.'
+      ' If there was a mismatch of table names, something may have been lost.')
 
 con_new.close()
 con_old.close()

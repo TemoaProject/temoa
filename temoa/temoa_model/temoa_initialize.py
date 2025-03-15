@@ -520,9 +520,9 @@ def CreateDemands(M: 'TemoaModel'):
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    expected_key_length = len(M.time_season[p]) * len(M.time_of_day)
     used_rp_dems = set((r, p, dem) for r, p, dem in M.Demand.sparse_iterkeys())
     for r, p, dem in used_rp_dems:
+        expected_key_length = len(M.time_season[p]) * len(M.time_of_day)
         keys = [
             k
             for k in DSD.sparse_iterkeys()

@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS CapacityToActivity
 CREATE TABLE IF NOT EXISTS CapacityFactorTech
 (
     region TEXT,
+    period INTEGER
+        REFERENCES TimePeriod (period),
     season TEXT
         REFERENCES TimeSeason (season),
     tod    TEXT
@@ -139,6 +141,8 @@ VALUES ('region', 2000, 'demand', 1, NULL, NULL);
 CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
 (
     region      TEXT,
+    period      INTEGER
+        REFERENCES TimePeriod (period),
     season      TEXT
         REFERENCES TimeSeason (season),
     tod         TEXT
@@ -147,17 +151,17 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
         REFERENCES Commodity (name),
     dsd         REAL,
     dsd_notes   TEXT,
-    PRIMARY KEY (region, season, tod, demand_name),
+    PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
 REPLACE INTO DemandSpecificDistribution
-VALUES ('region','S1', 'D1', 'demand', 0.25, NULL);
+VALUES ('region', 2000, 'S1', 'D1', 'demand', 0.25, NULL);
 REPLACE INTO DemandSpecificDistribution
-VALUES ('region','S1', 'D2', 'demand',  0.25, NULL);
+VALUES ('region', 2000, 'S1', 'D2', 'demand', 0.25, NULL);
 REPLACE INTO DemandSpecificDistribution
-VALUES ('region','S2', 'D1', 'demand',  0.25, NULL);
+VALUES ('region', 2000, 'S2', 'D1', 'demand', 0.25, NULL);
 REPLACE INTO DemandSpecificDistribution
-VALUES ('region','S2', 'D2', 'demand',  0.25, NULL);
+VALUES ('region', 2000, 'S2', 'D2', 'demand', 0.25, NULL);
 CREATE TABLE IF NOT EXISTS Efficiency
 (
     region      TEXT,
@@ -337,6 +341,20 @@ CREATE TABLE IF NOT EXISTS OutputDualVariable
     dual            REAL,
     PRIMARY KEY (constraint_name, scenario)
 );
+CREATE TABLE IF NOT EXISTS PeriodSeasons
+(   
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence)
+);
+REPLACE INTO PeriodSeasons
+VALUES (2000, 1, 'S1', NULL);
+REPLACE INTO PeriodSeasons
+VALUES (2000, 2, 'S2', NULL);
 CREATE TABLE IF NOT EXISTS Region
 (
     region TEXT
@@ -359,24 +377,26 @@ CREATE TABLE IF NOT EXISTS StorageDuration
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE IF NOT EXISTS TimeSegmentFraction
-(
+(   
+    period  INTEGER
+        REFERENCES TimePeriod (period),
     season  TEXT
         REFERENCES TimeSeason (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
     notes   TEXT,
-    PRIMARY KEY (season, tod),
+    PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
 REPLACE INTO TimeSegmentFraction
-VALUES ('S1', 'D1', 0.25, NULL);
+VALUES (2000, 'S1', 'D1', 0.25, NULL);
 REPLACE INTO TimeSegmentFraction
-VALUES ('S1', 'D2', 0.25, NULL);
+VALUES (2000, 'S1', 'D2', 0.25, NULL);
 REPLACE INTO TimeSegmentFraction
-VALUES ('S2', 'D1', 0.25, NULL);
+VALUES (2000, 'S2', 'D1', 0.25, NULL);
 REPLACE INTO TimeSegmentFraction
-VALUES ('S2', 'D2', 0.25, NULL);
+VALUES (2000, 'S2', 'D2', 0.25, NULL);
 CREATE TABLE IF NOT EXISTS TechnologyType
 (
     label       TEXT
@@ -461,7 +481,6 @@ CREATE TABLE IF NOT EXISTS Technology
     curtail      INTEGER NOT NULL DEFAULT 0,
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
-    variable     INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)

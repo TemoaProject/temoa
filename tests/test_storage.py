@@ -49,7 +49,7 @@ def test_storage_fraction(system_test_run):
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
-            * model.SegFracPerSeason[s]
+            * model.SegFracPerSeason[p, s]
             * 365
             * model.ProcessLifeFrac[r, p, t, v]
         )
@@ -89,7 +89,7 @@ def test_state_sequencing(system_test_run):
             for S_i in model.processInputsByOutput[r, p, t, v, S_o]
         )
 
-        s_next, d_next = model.time_next[s, d]
+        s_next, d_next = model.time_next[p, s, d]
 
         state = model.V_StorageLevel[r, p, s, d, t, v].value
         next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value

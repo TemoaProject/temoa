@@ -183,7 +183,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         for s in M.time_season[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * value(M.SegFrac[s, d])
+                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * value(M.SegFrac[p, s, d])
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.OUT] = flow
@@ -195,7 +195,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         for s in M.time_season[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlexAnnual[r, p, i, t, v, o]) * value(M.SegFrac[s, d])
+                flow = value(M.V_FlexAnnual[r, p, i, t, v, o]) * value(M.SegFrac[p, s, d])
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.FLEX] = flow
