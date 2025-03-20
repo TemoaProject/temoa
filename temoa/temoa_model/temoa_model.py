@@ -562,12 +562,10 @@ class TemoaModel(AbstractModel):
         M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=FlowInStorageVariableIndices)
         M.V_FlowIn = Var(M.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        # Storage state at the BEGINNING of each time slice
         M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageLevelVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
         # Derived decision variables
-
         M.CapacityVar_rptv = Set(dimen=4, initialize=CostFixedIndices)
         M.V_Capacity = Var(M.CapacityVar_rptv, domain=NonNegativeReals)
 
