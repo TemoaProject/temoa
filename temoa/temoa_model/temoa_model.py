@@ -296,23 +296,6 @@ class TemoaModel(AbstractModel):
             default=1,
         )
 
-        M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
-        M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
-
-        # Dev note:  using a default function below alleviates need to make this set.
-        # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
-        M.CapacityFactorProcess = Param(
-            M.regionalIndices,
-            M.time_optimize,
-            M.time_season_all,
-            M.time_of_day,
-            M.tech_with_capacity,
-            M.vintage_all,
-            # validate=validate_CapacityFactorProcess, # opting for a quicker validation, just 0->1
-            validate=validate_0to1,
-            default=get_default_capacity_factor, # surprisingly slow but only called if a value is missing
-        )
-
         M.LifetimeTech = Param(
             M.regionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
         )
@@ -352,6 +335,24 @@ class TemoaModel(AbstractModel):
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
         M.Create_StateSequence = BuildAction(rule=CreateStateSequence)
+
+        M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
+        M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
+
+        # Dev note:  using a default function below alleviates need to make this set.
+        # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
+        M.CapacityFactorProcess = Param(
+            M.regionalIndices,
+            M.time_optimize,
+            M.time_season_all,
+            M.time_of_day,
+            M.tech_with_capacity,
+            M.vintage_all,
+            # validate=validate_CapacityFactorProcess, # opting for a quicker validation, just 0->1
+            validate=validate_0to1,
+            default=get_default_capacity_factor, # surprisingly slow but only called if a value is missing
+        )
+
         M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
         M.initialize_CapacityFactors = BuildAction(rule=CheckCapacityFactorProcess)
         M.initialize_EfficiencyVariable = BuildAction(rule=CheckEfficiencyVariable)

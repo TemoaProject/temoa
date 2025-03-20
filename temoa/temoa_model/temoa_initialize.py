@@ -1092,11 +1092,11 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
 
 
 def CapacityFactorTechIndices(M: 'TemoaModel'):
-    processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
     all_cfs = set(
         (r, p, s, d, t)
-        for p in M.time_optimize
-        for (r, t, v), s, d in cross_product(processes, M.time_season[p], M.time_of_day)
+        for r, p, t in M.activeCapacityAvailable_rpt
+        for s in M.time_season[p]
+        for d in M.time_of_day
     )
     return all_cfs
 
