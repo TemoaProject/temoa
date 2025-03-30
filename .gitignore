@@ -1,16 +1,25 @@
-*.pyc
-data_files/debug_logs/*.log
-data_files/debug_logs/lp_files/*
-data_files/untracked_data/*
-.DS_Store
-*.ipynb_checkpoints
+# ignore all root items
+/*
 
-# ignore the .idea folder from pycharm -- a pycharm specific config folder
-.idea/*
+# unignore folders
+!temoa/
+!tests/
+!docs/
+!data_files/
+!notebooks/
+!output_files/
+!.github/
 
-# ignore goings-on in the venv
-/venv/*
+# unignore files
+!.gitignore
+!README.md
+!pyproject.toml
+!uv.lock
+!LICENSE.txt
+!CHANGELOG.md
+!CONTRIBUTING.md
+!.pre-commit-config.yaml
 
-# ignore (for now) associated jupyter notebooks
-other_notebooks/
-/temoa/temoa_model/config_sample_9R
+
+# recursively re-ignore
+__pycache__
