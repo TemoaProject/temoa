@@ -37,9 +37,16 @@ from typing import Any
 import pytest
 from pyomo.opt import SolverResults
 
-from definitions import PROJECT_ROOT
 from temoa.temoa_model.temoa_model import TemoaModel
 from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+
+PROJECT_ROOT = Path(__file__).parent.parent
+TEST_DIR = Path(__file__).parent
+
+@pytest.fixture(autouse=True)
+def change_test_dir(monkeypatch):
+    """Change to the tests directory for all tests"""
+    os.chdir(TEST_DIR)
 
 logger = logging.getLogger(__name__)
 
