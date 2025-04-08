@@ -1,0 +1,34 @@
+name: CI
+
+on:
+    push:
+      branches: [ "main" ]
+    pull_request:
+      branches: [ "main" ]
+
+jobs:
+  test:
+    name: setup and test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+            enable-cache: true
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Install CBC solver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y coinor-cbc
+
+      - name: Run tests
+        run: uv run pytest tests
