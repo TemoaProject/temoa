@@ -1,10 +1,92 @@
-[tool.ruff]
+[project]
+name = "temoa"
+version = "3.0.0"
+description = "Tools for Energy Model Optimization and Analysis"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE.txt" }
+authors = [
+    { name = "TemoaProject Team", email = "info@temoaproject.org" }
+]
 
+dependencies = [
+    "pyomo>=6.8.0",
+    "ipython",
+    "matplotlib==3.9.2",
+    "pandas>=2.2.2",
+    "numpy>=2.1.0",
+    "joblib",
+    "salib>=1.5.1",
+    "pydoe>=0.3.8",
+    "pyutilib>=6.0.0",
+    "graphviz>=0.20.3",
+    "ipykernel",
+    "jupyter",
+    "jupyter_contrib_nbextensions",
+    "seaborn>=0.13.2",
+    "tabulate>=0.9.0",
+    "xlsxwriter>=3.2.0",
+    "plotly>=5.24.0",
+    "pyam-iamc>=2.2.4",
+    "pytest>=8.3.2",
+    "deprecated>=1.2.14",
+    "openpyxl>=3.1.5",
+    "networkx>=3.3",
+    "gravis>=0.1.0",
+    "highspy>=1.7.2",
+    "scipy>=1.14.1",
+    "gurobipy>=11.0.3",
+    "pytest-cov>=6.0.0",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7.4.7",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinxcontrib-htmlhelp>=2.1.0",
+    "sphinxcontrib-serializinghtml>=2.0.0",
+    "sphinxcontrib-bibtex>=2.6.2",
+]
+
+dev = [
+    "ruff>=0.2.0",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+]
+plotting = [
+    "matplotlib>=3.9.2",
+    "seaborn>=0.13.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
 line-length = 100
 indent-width = 4
 
 [tool.ruff.format]
-# Single quote strings
 quote-style = "single"
 
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+]
 
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[project.urls]
+Homepage = "https://temoaproject.org"
+Documentation = "https://temoaproject.github.io/temoa"
+Repository = "https://github.com/TemoaProject/temoa"
