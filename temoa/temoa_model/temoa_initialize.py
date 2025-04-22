@@ -882,7 +882,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys():
                 M.minOutputSplitVintages[r, p, t, o].add(v)
             if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys():
-                M.minInputSplitAnnualVintages[r, p, t, o].add(v)
+                M.minOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             # max tech split
             if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys():
@@ -892,7 +892,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys():
                 M.maxOutputSplitVintages[r, p, t, o].add(v)
             if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys():
-                M.maxInputSplitAnnualVintages[r, p, t, o].add(v)
+                M.maxOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             if t in M.tech_resource:
                 M.processByPeriodAndOutput[r, p, o].add((i, t, v))
