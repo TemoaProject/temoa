@@ -121,6 +121,23 @@ def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
         )
         logger.error(msg)
         raise Exception(msg.format(dem, r, p, s, d))
+    
+
+def validate_tech_sets(M: 'TemoaModel'):
+    """
+    Check sets for any errors
+    """
+
+    # Baseload technologies cannot also be annual technologies
+    baseload_annual = M.tech_annual & M.tech_baseload
+    if baseload_annual:
+        msg = (
+            'The following technologies were added to both baseload and annual sets. '
+            'Annual technologies have no output variability by time slice so '
+            f'there is no need to tag them as baseload:\n{list(baseload_annual)}'
+        )
+        logger.error(msg)
+        raise ValueError(msg)
 
 
 def validate_time(M: 'TemoaModel'):

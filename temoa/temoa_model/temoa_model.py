@@ -180,6 +180,7 @@ class TemoaModel(AbstractModel):
         # ensure there is no overlap flex <=> curtailable technologies
         M.check_flex_and_curtailment = BuildAction(rule=check_flex_curtail)
         M.tech_exchange = Set(within=M.tech_all)
+        M.validate_techs = BuildAction(rule=validate_tech_sets)
 
         # Define groups for technologies
         M.tech_group_names = Set()
