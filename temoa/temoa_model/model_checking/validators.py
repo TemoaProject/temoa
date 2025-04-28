@@ -304,14 +304,27 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     print('output_commodity', so in M.commodity_carrier)
     return False
 
-
-def check_flex_curtail(M: 'TemoaModel'):
-    violations = M.tech_flex & M.tech_curtailment
-    if violations:
-        logger.error(
-            'The following technologies are in both flex and curtail, which is not permitted:',
-            violations,
+def validate_tech_sets(M: 'TemoaModel'):
+    """
+    Check tech sets for any forbidden intersections
+    """
+    if not all(
+        (
+            check_no_intersection(M.tech_annual, M.tech_baseload),
+            check_no_intersection(M.tech_annual, M.tech_storage),
+            check_no_intersection(M.tech_annual, M.tech_upramping),
+            check_no_intersection(M.tech_annual, M.tech_downramping),
+            check_no_intersection(M.tech_annual, M.tech_curtailment),
+            check_no_intersection(M.tech_curtailment, M.tech_flex),
         )
+    ):
+        raise ValueError("Technology sets failed to validate. Check log file for details.")
+
+def check_no_intersection(set_one, set_two):
+    violations = set_one & set_two
+    if violations:
+        msg = f'The following are in both {set_one} and {set_two}, which is not permitted:\n{list(violations)}'
+        logger.error(msg)
         return False
     return True
 

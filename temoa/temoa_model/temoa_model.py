@@ -40,7 +40,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_0to1,
     region_group_check,
     validate_Efficiency,
-    check_flex_curtail,
+    validate_tech_sets,
     no_slash_or_pipe,
 )
 from temoa.temoa_model.temoa_initialize import *
@@ -171,14 +171,13 @@ class TemoaModel(AbstractModel):
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
-        M.tech_storage = Set(within=M.tech_all - M.tech_annual)
+        M.tech_storage = Set(within=M.tech_all)
         M.tech_reserve = Set(within=M.tech_all)
         M.tech_upramping = Set(within=M.tech_all)
         M.tech_downramping = Set(within=M.tech_all)
         M.tech_curtailment = Set(within=M.tech_all)
         M.tech_flex = Set(within=M.tech_all)
         # ensure there is no overlap flex <=> curtailable technologies
-        M.check_flex_and_curtailment = BuildAction(rule=check_flex_curtail)
         M.tech_exchange = Set(within=M.tech_all)
         M.validate_techs = BuildAction(rule=validate_tech_sets)
 
