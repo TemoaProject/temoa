@@ -232,7 +232,9 @@ class TableWriter:
     def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
         """Write the storage level table to the DB"""
 
-        # For backwards compatibility, make the output table if it doesn't exist
+        # -----
+        # TODO for backwards compatibility, make the output table if it doesn't exist
+        # remove this one day when it is no longer needed
         self.con.execute(
             f"""CREATE TABLE IF NOT EXISTS 
             OutputStorageLevel(
@@ -248,6 +250,7 @@ class TableWriter:
             PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
             );"""
         )
+        # -----
 
         storage_levels = poll_storage_level_results(M=M)
 
@@ -526,6 +529,12 @@ class TableWriter:
 
     def _write_cost_rows(self, entries, iteration=None):
         """Write the entries to the OutputCost table"""
+        cur = self.con.cursor()
+        # -----
+        # TODO remove one day (see below)
+        cols = [c[1] for c in cur.execute('PRAGMA table_info(OutputCost);').fetchall()]
+        include_sector = cols[2] == 'sector'
+        # -----
         scenario_name = (
             self.config.scenario + f'-{iteration}'
             if iteration is not None
@@ -549,10 +558,24 @@ class TableWriter:
             )
             for (r, p, t, v) in entries
         ]
-        # let's be kind and sort by something reasonable (r, v, t, p)
-        rows.sort(key=lambda r: (r[1], r[4], r[3], r[2]))
-        cur = self.con.cursor()
-        qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        # -----
+        # TODO This was done for backwards-compatibility. Make this the only behaviour one day when
+        # this is no longer needed
+        if include_sector:
+            rows = [
+                (
+                    *r[0:2],
+                    self.tech_sectors[r[3]],
+                    *r[2::],
+                )
+                for r in rows
+            ]
+            rows.sort(key=lambda r: (r[0], r[1], r[2], r[3], r[4], r[5]))
+            qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        # -----
+        else:
+            rows.sort(key=lambda r: (r[0], r[1], r[2], r[3], r[4]))
+            qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         cur.executemany(qry, rows)
         self.con.commit()
 
