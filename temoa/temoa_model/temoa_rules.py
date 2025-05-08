@@ -846,7 +846,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
 
     flex_waste = 0
     flex_waste_annual = 0
-    if c in M.flex_commodities:
+    if c in M.commodity_flex:
         flex_waste = sum(
             M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
             for S_t, S_v in M.commodityUStreamProcess[r, p, c]
@@ -955,7 +955,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
     flex_waste = 0
     flex_waste_annual = 0
-    if c in M.flex_commodities:
+    if c in M.commodity_flex:
         flex_waste = sum(
             M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
             for S_s in M.time_season[p]

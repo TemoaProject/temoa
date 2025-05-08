@@ -124,7 +124,6 @@ class TemoaModel(AbstractModel):
         M.exportRegions = dict()
         M.importRegions = dict()
         M.time_next = dict()
-        M.flex_commodities = set()
 
         ################################################
         #             Switching Sets                   #
@@ -200,6 +199,7 @@ class TemoaModel(AbstractModel):
         M.commodity_demand = Set()
         M.commodity_emissions = Set()
         M.commodity_physical = Set()
+        M.commodity_flex = Set(within=M.commodity_physical)
         M.commodity_source = Set(within=M.commodity_physical)
         M.commodity_annual = Set(within=M.commodity_physical)
         M.commodity_carrier = Set(initialize=M.commodity_physical | M.commodity_demand)
@@ -237,6 +237,8 @@ class TemoaModel(AbstractModel):
         M.SegFrac = Param(M.time_optimize, M.time_season_all, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
         M.StateSequencing = Param(default=0) # How do states carry between time segments?
+        M.TimeNext = Set() # This is just to get data from the table. Hidden feature and usually not used
+        M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
