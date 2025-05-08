@@ -775,6 +775,7 @@ CREATE TABLE IF NOT EXISTS MaxTechOutputSplitAnnual
 --         REFERENCES TimeSeason (season),
 --     tod_next     TEXT
 --         REFERENCES TimeOfDay (tod),
+--     notes        TEXT,
 --     PRIMARY KEY (period, season, tod)
 -- );
 CREATE TABLE IF NOT EXISTS TimeOfDay
