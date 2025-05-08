@@ -449,7 +449,8 @@ class HybridLoader:
                         'This is an advanced feature and not recommended for most users. If you do NOT want to '
                         'manually define the sequence of states, change the state_sequencing parameter. Otherwise '
                         'add the TimeNext table to the database with the following columns then fill it out: '
-                        '(period, season, tod, season_next, tod_next).'
+                        '(period, season, tod, season_next, tod_next). This structure can also be found commented '
+                        'out in the schema.'
                     )
                     logger.error(msg)
                     raise ValueError(msg)

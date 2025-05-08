@@ -763,6 +763,20 @@ CREATE TABLE IF NOT EXISTS MaxTechOutputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm)
 );
+-- CREATE TABLE IF NOT EXISTS TimeNext
+-- (
+--     period       INTEGER
+--         REFERENCES TimePeriod (period),
+--     season       TEXT
+--         REFERENCES TimeSeason (season),
+--     tod          TEXT
+--         REFERENCES TimeOfDay (tod),
+--     season_next  TEXT
+--         REFERENCES TimeSeason (season),
+--     tod_next     TEXT
+--         REFERENCES TimeOfDay (tod),
+--     PRIMARY KEY (period, season, tod)
+-- );
 CREATE TABLE IF NOT EXISTS TimeOfDay
 (
     sequence INTEGER UNIQUE,
