@@ -336,6 +336,9 @@ class HybridLoader:
                         'Failed to validate members of %s.  Coding error likely.'
                         '\n%s' % (c.name, e)
                     )
+            if len(screened) < len(values):
+                msg = ('Some rows in {} failed to validate and were ignored:\n{}')
+                logger.warning(msg.format(c.name, [val for val in values if val not in screened]))
             match c:
                 case Set():
                     if not screened:  # no available values
