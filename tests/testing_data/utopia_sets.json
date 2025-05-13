@@ -43,6 +43,7 @@
     2000,
     2010
   ],
+  "TimeNext": [],
   "time_of_day": [
     "day",
     "night"
@@ -150,6 +151,7 @@
     "co2",
     "nox"
   ],
+  "commodity_flex": [],
   "commodity_physical": [
     "ethos",
     "DSL",

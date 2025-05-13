@@ -38,6 +38,7 @@
     2025,
     2030
   ],
+  "TimeNext": [],
   "time_of_day": [
     "day",
     "night"
@@ -142,6 +143,7 @@
   "commodity_emissions": [
     "CO2"
   ],
+  "commodity_flex": [],
   "commodity_physical": [
     "ethos",
     "OIL",

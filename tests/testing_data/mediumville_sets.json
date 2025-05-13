@@ -26,6 +26,7 @@
   "time_season": [
     2025
   ],
+  "TimeNext": [],
   "time_of_day": [
     "d1",
     "d2"
@@ -131,6 +132,9 @@
   "commodity_emissions": [
     "co2",
     "FusionGas"
+  ],
+  "commodity_flex" : [
+    "FusionGasFuel"
   ],
   "commodity_physical": [
     "ELC",
