@@ -449,7 +449,7 @@ class TemoaModel(AbstractModel):
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
         
         M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all)
-        M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all)
+        M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all, default=0)
 
         M.EmissionLimitConstraint_rpe = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
