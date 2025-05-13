@@ -834,28 +834,28 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.rampDownVintages[r, p, t] = set()
 
             # min tech split
-            if (r, p, i, t) in M.MinTechInputSplit.sparse_iterkeys() and (
+            if (r, p, i, t) in M.MinTechInputSplit and (
                 r,
                 p,
                 i,
                 t,
             ) not in M.minInputSplitVintages:
                 M.minInputSplitVintages[r, p, i, t] = set()
-            if (r, p, i, t) in M.MinTechInputSplitAnnual.sparse_iterkeys() and (
+            if (r, p, i, t) in M.MinTechInputSplitAnnual and (
                 r,
                 p,
                 i,
                 t,
             ) not in M.minInputSplitAnnualVintages:
                 M.minInputSplitAnnualVintages[r, p, i, t] = set()
-            if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys() and (
+            if (r, p, t, o) in M.MinTechOutputSplit and (
                 r,
                 p,
                 t,
                 o,
             ) not in M.minOutputSplitVintages:
                 M.minOutputSplitVintages[r, p, t, o] = set()
-            if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys() and (
+            if (r, p, t, o) in M.MinTechOutputSplitAnnual and (
                 r,
                 p,
                 t,
@@ -864,28 +864,28 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.minOutputSplitAnnualVintages[r, p, t, o] = set()
 
             # max tech split
-            if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys() and (
+            if (r, p, i, t) in M.MaxTechInputSplit and (
                 r,
                 p,
                 i,
                 t,
             ) not in M.maxInputSplitVintages:
                 M.maxInputSplitVintages[r, p, i, t] = set()
-            if (r, p, i, t) in M.MaxTechInputSplitAnnual.sparse_iterkeys() and (
+            if (r, p, i, t) in M.MaxTechInputSplitAnnual and (
                 r,
                 p,
                 i,
                 t,
             ) not in M.maxInputSplitAnnualVintages:
                 M.maxInputSplitAnnualVintages[r, p, i, t] = set()
-            if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys() and (
+            if (r, p, t, o) in M.MaxTechOutputSplit and (
                 r,
                 p,
                 t,
                 o,
             ) not in M.maxOutputSplitVintages:
                 M.maxOutputSplitVintages[r, p, t, o] = set()
-            if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys() and (
+            if (r, p, t, o) in M.MaxTechOutputSplitAnnual and (
                 r,
                 p,
                 t,
@@ -929,23 +929,23 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.rampDownVintages[r, p, t].add(v)
 
             # min tech split
-            if (r, p, i, t) in M.MinTechInputSplit.sparse_iterkeys():
+            if (r, p, i, t) in M.MinTechInputSplit:
                 M.minInputSplitVintages[r, p, i, t].add(v)
-            if (r, p, i, t) in M.MinTechInputSplitAnnual.sparse_iterkeys():
+            if (r, p, i, t) in M.MinTechInputSplitAnnual:
                 M.minInputSplitAnnualVintages[r, p, i, t].add(v)
-            if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys():
+            if (r, p, t, o) in M.MinTechOutputSplit:
                 M.minOutputSplitVintages[r, p, t, o].add(v)
-            if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys():
+            if (r, p, t, o) in M.MinTechOutputSplitAnnual:
                 M.minOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             # max tech split
-            if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys():
+            if (r, p, i, t) in M.MaxTechInputSplit:
                 M.maxInputSplitVintages[r, p, i, t].add(v)
-            if (r, p, i, t) in M.MaxTechInputSplitAnnual.sparse_iterkeys():
+            if (r, p, i, t) in M.MaxTechInputSplitAnnual:
                 M.maxInputSplitAnnualVintages[r, p, i, t].add(v)
-            if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys():
+            if (r, p, t, o) in M.MaxTechOutputSplit:
                 M.maxOutputSplitVintages[r, p, t, o].add(v)
-            if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys():
+            if (r, p, t, o) in M.MaxTechOutputSplitAnnual:
                 M.maxOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             if t in M.tech_resource:
@@ -1079,7 +1079,9 @@ def CreateSparseDicts(M: 'TemoaModel'):
     )
 
     M.activeActivity_rptv = set(
-        (r, p, t, v) for r, p, t in M.processVintages.keys() for v in M.processVintages[r, p, t]
+        (r, p, t, v)
+        for r, p, t in M.processVintages.keys()
+        for v in M.processVintages[r, p, t]
     )
 
     M.activeRegionsForTech = defaultdict(set)
@@ -1378,7 +1380,7 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
         (r, p, s, d, t, v, e)
         for r, t, e in M.LinkedTechs.sparse_iterkeys()
         for p in M.time_optimize
-        if (r, p, t) in M.processVintages.keys()
+        if (r, p, t) in M.processVintages
         for v in M.processVintages[r, p, t]
         if (r, p, t, v) in M.activeActivity_rptv
         for s in M.time_season[p]
@@ -1443,7 +1445,7 @@ ensure demand activity remains consistent across time slices.
         found_flag = False
         s0, d0 = None, None
         for s0, d0 in ((ss, dd) for ss in M.time_season[p] for dd in M.time_of_day):
-            if (r, p, s0, d0, dem) in M.DemandSpecificDistribution.sparse_iterkeys():
+            if (r, p, s0, d0, dem) in M.DemandSpecificDistribution:
                 if value(M.DemandSpecificDistribution[r, p, s0, d0, dem]) >= appreciable_size:
                     found_flag = True
                     break  # we have one with some value associated
