@@ -51,6 +51,11 @@ params = [
     {
         'name': 'basic',
         'data': [
+            [], # retirement techs
+            [
+                (2020,),
+                (2025,),
+            ],  # periods
             [(t,) for t in ['s1', 'p1', 'p2', 'p3', 'd1', 'd2']],  # all commodities
             [
                 (t,)
@@ -93,6 +98,11 @@ params = [
     {
         'name': 'bad linked tech',
         'data': [
+            [], # retirement techs
+            [
+                (2020,),
+                (2025,),
+            ],  # periods
             [(t,) for t in ['s1', 'p3', 'd1', 'd2']],  # all commodities
             [
                 (t,)
@@ -134,6 +144,11 @@ params = [
         #
         'name': 'good linked tech',
         'data': [
+            [], # retirement techs
+            [
+                (2020,),
+                (2025,),
+            ],  # periods
             [(t,) for t in ['s1', 'd1', 'd2', 's2']],  # all commodities
             [(t,) for t in ['s1', 's2']],  # sources
             [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],  # demands

@@ -215,7 +215,7 @@ class CommodityNetwork:
             # it is consumed by the function.  (easier than managing it in the recursion)
             discovered_sources, demand_side_connections = _visited_dfs(
                 self.model_data.demand_commodities[self.region, self.period],
-                self.model_data.source_commodities,
+                self.model_data.source_commodities[self.region, self.period],
                 self.connections.copy(),
             )
             self.good_connections = _mark_good_connections(

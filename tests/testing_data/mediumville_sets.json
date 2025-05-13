@@ -2977,6 +2977,7 @@
     ]
   ],
   "RetiredCapacityVar_rptv": [],
+  "AnnualRetirementVar_rptv": [],
   "CapacityAvailableVar_rpt": [
     [
       "B",
@@ -3846,6 +3847,34 @@
     ]
   ],
   "CommodityBalanceConstraint_rpsdc": [
+    [
+      "B",
+      2025,
+      "s1",
+      "d2",
+      "FusionGasFuel"
+    ],
+    [
+      "B",
+      2025,
+      "s1",
+      "d1",
+      "FusionGasFuel"
+    ],
+    [
+      "B",
+      2025,
+      "s2",
+      "d2",
+      "FusionGasFuel"
+    ],
+    [
+      "B",
+      2025,
+      "s2",
+      "d1",
+      "FusionGasFuel"
+    ],
     [
       "A",
       2025,

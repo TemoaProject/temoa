@@ -70,9 +70,11 @@ emissions_tests = [
     {'name': 'annual flex archetype', 'tech': 'TechAnnualFlex', 'target': 1.0},
     {'name': 'total', 'tech': '%', 'target': 3.6},
 ]
-
 embodied_tests = [
     {'name': 'embodied archetype', 'tech': 'TechEmbodied', 'target': 0.3},
+]
+eol_tests = [
+    {'name': 'end of life archetype', 'tech': 'TechEndOfLife', 'target': 0.3},
 ]
 
 
@@ -90,7 +92,7 @@ def test_emissions(solved_connection):
     con, name, tech, emis_target = solved_connection
     emis = (
         con.cursor()
-        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
+        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000")
         .fetchone()[0]
     )
     assert emis == pytest.approx(
@@ -112,7 +114,7 @@ def test_emissions_costs_undiscounted(solved_connection):
     con, name, tech, emis_target = solved_connection
     ec = (
         con.cursor()
-        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
+        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000")
         .fetchone()[0]
     )
     cost_target = 0.7 * emis_target * 5  # emission cost x emissions x 5y
@@ -135,7 +137,7 @@ def test_emissions_costs_discounted(solved_connection):
     con, name, tech, emis_target = solved_connection
     ec = (
         con.cursor()
-        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
+        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000")
         .fetchone()[0]
     )
     cost_target = (
@@ -160,11 +162,11 @@ def test_embodied_emissions(solved_connection):
     con, name, tech, emis_target = solved_connection
     emis = (
         con.cursor()
-        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND period == 2000")
         .fetchone()[0]
     )
     assert emis == pytest.approx(
-        emis_target
+        emis_target/5 # embodied emissions are distributed over vintage period
     ), f'{name} embodied emissions were incorrect. Should be {emis_target}, got {emis}'
 
 
@@ -182,7 +184,7 @@ def test_embodied_emissions_costs_undiscounted(solved_connection):
     con, name, tech, emis_target = solved_connection
     ec = (
         con.cursor()
-        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2000")
         .fetchone()[0]
     )
     cost_target = 0.7 * emis_target  # emission cost x embodied emissions
@@ -205,12 +207,82 @@ def test_embodied_emissions_costs_discounted(solved_connection):
     con, name, tech, emis_target = solved_connection
     ec = (
         con.cursor()
-        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2000")
         .fetchone()[0]
     )
     cost_target = (
-        0.7 * emis_target / 1.05 * 1.05
-    )  # emission cost x embodied emissions x P/A(5%, 1y, 1) [x F/P(5%, 1y) legacy bug?]
+        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5) * 1.05
+    )  # emission cost x embodied emissions x annual distribution x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
+    assert ec == pytest.approx(
+        cost_target
+    ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+
+
+# End of life emissions
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=eol_tests,
+    indirect=True,
+    ids=[t['name'] for t in eol_tests],
+)
+def test_endoflife_emissions(solved_connection):
+    """
+    Test that the end of life emissions from each technology archetype are correct, and check total emissions
+    """
+    con, name, tech, emis_target = solved_connection
+    emis = (
+        con.cursor()
+        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND period == 2005")
+        .fetchone()[0]
+    )
+    assert emis == pytest.approx(
+        emis_target/5 # end of life emissions are distributed over vintage period
+    ), f'{name} end of life emissions were incorrect. Should be {emis_target}, got {emis}'
+
+
+# End of life emission costs undiscounted
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=eol_tests,
+    indirect=True,
+    ids=[t['name'] for t in eol_tests],
+)
+def test_endoflife_emissions_costs_undiscounted(solved_connection):
+    """
+    Test that the undiscounted end of life emission costs from each technology archetype are correct
+    """
+    con, name, tech, emis_target = solved_connection
+    ec = (
+        con.cursor()
+        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2005")
+        .fetchone()[0]
+    )
+    cost_target = 0.7 * emis_target  # emission cost x end of life emissions
+    assert ec == pytest.approx(
+        cost_target
+    ), f'{name} undiscounted end of life emission costs were incorrect. Should be {cost_target}, got {ec}'
+
+
+# End of life emission costs discounted
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=eol_tests,
+    indirect=True,
+    ids=[t['name'] for t in eol_tests],
+)
+def test_endoflife_emissions_costs_discounted(solved_connection):
+    """
+    Test that discounted end of life emission costs from each technology archetype are correct
+    """
+    con, name, tech, emis_target = solved_connection
+    ec = (
+        con.cursor()
+        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2005")
+        .fetchone()[0]
+    )
+    cost_target = (
+        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5) / 1.05**5 * 1.05
+    )  # emission cost x end of life emissions x annual distribution x P/A(5%, 5y, 1) x P/F(5%, 1y) [x F/P(5%, 1y) legacy bug?]
     assert ec == pytest.approx(
         cost_target
     ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
@@ -237,7 +309,7 @@ def test_curtailment(solved_connection):
     print(name, tech, curt_target)
     curt = (
         con.cursor()
-        .execute(f"SELECT SUM(curtailment) FROM main.OutputCurtailment WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(curtailment) FROM main.OutputCurtailment WHERE tech LIKE '{tech}' AND period == 2000")
         .fetchone()[0]
     )
     assert curt == pytest.approx(

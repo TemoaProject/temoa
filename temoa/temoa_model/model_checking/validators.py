@@ -304,6 +304,7 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     print('output_commodity', so in M.commodity_carrier)
     return False
 
+
 def validate_tech_sets(M: 'TemoaModel'):
     """
     Check tech sets for any forbidden intersections
@@ -320,6 +321,7 @@ def validate_tech_sets(M: 'TemoaModel'):
     ):
         raise ValueError("Technology sets failed to validate. Check log file for details.")
 
+
 def check_no_intersection(set_one, set_two):
     violations = set_one & set_two
     if violations:
@@ -327,6 +329,7 @@ def check_no_intersection(set_one, set_two):
         logger.error(msg)
         return False
     return True
+
 
 # Seems unused
 def validate_tech_split(M: 'TemoaModel', val, r, p, c, t):
@@ -344,6 +347,7 @@ def validate_tech_split(M: 'TemoaModel', val, r, p, c, t):
     print('c', c in M.commodity_physical)
     print('t', t in M.tech_all)
     return False
+
 
 def validate_0to1(M: 'TemoaModel', val, *args):
     return 0.0 <= val <= 1.0

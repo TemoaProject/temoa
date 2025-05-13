@@ -44,14 +44,14 @@ test_vals = {
         ExpectedVals.OBJ_VALUE: 491977.7000753,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
-        ExpectedVals.CONSTR_COUNT: 2828, # increased by 2 when reworking storageinit
-        ExpectedVals.VAR_COUNT: 1898, # reduced by 6 when reworking storageinit
+        ExpectedVals.CONSTR_COUNT: 2834, # increased by 2 when reworking storageinit. Increased after making annualretirement derived var
+        ExpectedVals.VAR_COUNT: 1904, # reduced by 6 when reworking storageinit. Increased after making annualretirement derived var
     },
     'utopia': {
         ExpectedVals.OBJ_VALUE: 36468.56, # reduced after reworking storageinit -> storage was less constrained
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
-        ExpectedVals.CONSTR_COUNT: 1452, # reduced 3/27:  unlim_cap techs now employed
-        ExpectedVals.VAR_COUNT: 1051,  # reduced 3/27:  unlim_cap techs now employed. Reduced by 4 storageinit
+        ExpectedVals.CONSTR_COUNT: 1471, # reduced 3/27:  unlim_cap techs now employed. Increased after making annualretirement derived var
+        ExpectedVals.VAR_COUNT: 1070,  # reduced 3/27:  unlim_cap techs now employed. Reduced by 4 storageinit. Increased after making annualretirement derived var
     },
 }
