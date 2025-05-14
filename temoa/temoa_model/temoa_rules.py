@@ -1872,13 +1872,13 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
         # grow from existing capacity in last existing period, adjusting in-line for PLF
         # or, otherwise, capped at the constant (seed) parameter
         p_last = M.time_exist.last()
-        exist_cap = sum(
+        capacity_prev = sum(
             value(M.ExistingCapacity[_r, _t, _v]) \
                 * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_last)/(p - p_last) )
             for _r, _t, _v in M.ExistingCapacity
             if _r in regions and _t == t and _v + value(M.LifetimeProcess[_r, _t, _v]) > p_last
         )
-        if exist_cap == 0 and GRS == 0:
+        if capacity_prev == 0 and GRS == 0:
             msg = (
                 'No constant term (GrowthRateSeed) provided for GrowthRateMax constraint {} '
                 'and no existing capacity was found in the last existing period so there is '
@@ -1887,7 +1887,6 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
             ).format((r, t))
             logger.error(msg)
             raise ValueError(msg)
-        expr = capacity <= GRS + GRM * exist_cap
     else:
         # can have capacity in previous period
         # plant a seed and grow last period's capacity
@@ -1905,12 +1904,21 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
             for _r, _p, _t in cap_rpt
             if _p == p_prev
         )
-        expr = capacity <= GRS + GRM * capacity_prev
-        
-    return expr
 
+    return capacity <= GRS + GRM * capacity_prev
+
+def GrowthRateChangeMinConstraint_rule(M: 'TemoaModel', r, p, t):
+    r"""Constrain ramp down rate of new capacity deployment"""
+    new_cap, new_cap_prev, GRS, GRM = GrowthRateChange_rule(M, r, p, t)
+    return new_cap_prev <= GRS + GRM * new_cap
 
 def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
+    r"""Constrain ramp up rate of new capacity deployment"""
+    new_cap, new_cap_prev, GRS, GRM = GrowthRateChange_rule(M, r, p, t)
+    return new_cap <= GRS + GRM * new_cap_prev
+
+
+def GrowthRateChange_rule(M: 'TemoaModel', r, p, t):
     r"""
     Constrain the change of new capacity deployed between periods. 
     Forces the model to ramp up and down the deployment of new technologies 
@@ -1927,9 +1935,10 @@ def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     NewCapRTV = M.V_NewCapacity
 
     # relevant r, p, t indices
-    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions)
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions
+    )
     # periods the technology can have capacity in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
+    periods = sorted(set(_v for _r, _t, _v  in cap_rtv if _v in M.time_optimize))
 
     if p not in periods:
         # cant build capacity in this period
@@ -1942,15 +1951,21 @@ def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
         # first period it can build new capacity
         # Capped at the constant (seed) parameter
         p_last = M.time_exist.last()
-        if GRS == 0:
+        new_cap_prev = sum(
+            value(M.ExistingCapacity[_r, _t, _v]) \
+                * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_last)/(p - p_last) )
+            for _r, _t, _v in M.ExistingCapacity
+            if _r in regions and _t == t and _v == p_last
+        )
+        if new_cap_prev == 0 and GRS == 0:
             msg = (
                 'No constant term (GrowthRateChangeSeed) provided for GrowthRateChangeMax constraint {} '
-                'so there is nothing to grow from. No capacity would be built for this technology in '
-                'this region.'
+                'and no existing capacity was deployed in the last existing period so there is '
+                'nothing to grow from. No capacity would be built for this technology in this '
+                'region.'
             ).format((r, t))
             logger.error(msg)
             raise ValueError(msg)
-        expr = new_cap <= GRS
     else:
         # can have capacity in previous period
         # plant a seed and grow last period's capacity
@@ -1967,9 +1982,8 @@ def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
             for _r, _t, _v in cap_rtv
             if _v == p_prev
         )
-        expr = new_cap <= GRS + GRM * new_cap_prev
-        
-    return expr
+    
+    return new_cap, new_cap_prev, GRS, GRM
 
 
 def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):

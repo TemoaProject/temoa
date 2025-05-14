@@ -14,6 +14,8 @@ REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
 VALUES ('DB_MINOR', 0, 'DB minor version number');
+REPLACE INTO MetaData
+VALUES ('state_sequencing', 0, '0 = loop periods, 1 = loop seasons');
 
 CREATE TABLE IF NOT EXISTS MetaDataReal
 (
@@ -140,8 +142,7 @@ CREATE TABLE IF NOT EXISTS ConstructionInput
 );
 CREATE TABLE IF NOT EXISTS CostEmission
 (
-    region    TEXT
-        REFERENCES Region (region),
+    region    TEXT,
     period    INTEGER
         REFERENCES TimePeriod (period),
     emis_comm TEXT NOT NULL
@@ -345,6 +346,25 @@ CREATE TABLE IF NOT EXISTS GrowthRateMax
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE IF NOT EXISTS GrowthRateSeed
+(
+    region TEXT,
+    tech   TEXT
+        REFERENCES Technology (tech),
+    seed   REAL,
+    units  TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech)
+);
+CREATE TABLE GrowthRateChangeMax
+(
+    region TEXT,
+    tech   TEXT
+        REFERENCES Technology (tech),
+    rate   REAL,
+    notes  TEXT,
+    PRIMARY KEY (region, tech)
+);
+CREATE TABLE GrowthRateChangeSeed
 (
     region TEXT,
     tech   TEXT
@@ -1095,8 +1115,7 @@ CREATE TABLE IF NOT EXISTS MaxActivityGroup
 );
 CREATE TABLE IF NOT EXISTS MinSeasonalActivity
 (
-	region  TEXT
-        REFERENCES Region (region),
+	region  TEXT,
 	period	INTEGER
         REFERENCES TimePeriod (period),
 	season	TEXT
@@ -1110,8 +1129,7 @@ CREATE TABLE IF NOT EXISTS MinSeasonalActivity
 );
 CREATE TABLE IF NOT EXISTS MaxSeasonalActivity
 (
-	region  TEXT
-        REFERENCES Region (region),
+	region  TEXT,
 	period	INTEGER
         REFERENCES TimePeriod (period),
 	season	TEXT
@@ -1162,7 +1180,7 @@ CREATE TABLE IF NOT EXISTS Technology
 CREATE TABLE OutputCost
 (
     scenario TEXT,
-    region   TEXT REFERENCES Region (region),
+    region   TEXT,
     sector   TEXT REFERENCES SectorLabel (sector),
     period   INTEGER REFERENCES TimePeriod (period),
     tech     TEXT REFERENCES Technology (tech),

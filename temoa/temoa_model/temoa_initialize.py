@@ -729,7 +729,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                     'Warning: %s has a specified Efficiency, but does not '
                     'have any existing install base (ExistingCapacity).\n'
                 )
-                SE.write(msg % str(l_process))
+                logger.warning(msg, str(l_process))
+                # SE.write(msg % str(l_process))
                 continue
             if t not in M.tech_uncap and M.ExistingCapacity[l_process] == 0:
                 msg = (
@@ -737,8 +738,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                     '%s.  If specifying a capacity of zero, you may simply '
                     'omit the declaration.\n'
                 )
-                logger.info(msg, str(l_process))
-                SE.write(msg % str(l_process))
+                logger.warning(msg, str(l_process))
+                # SE.write(msg % str(l_process))
                 continue
             if v + l_lifetime <= l_first_period:
                 msg = (
@@ -1755,7 +1756,16 @@ def MaxTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
 def GrowthRateMaxIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t)
-        for r, t in M.GrowthRateMax.sparse_iterkeys()
+        for r, t in M.GrowthRateMax.sparse_iterkeys() | M.GrowthRateSeed.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+
+def GrowthRateChangeIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t)
+        for r, t in M.GrowthRateChangeMax.sparse_iterkeys() | M.GrowthRateChangeSeed.sparse_iterkeys()
         for p in M.time_optimize
     )
     return indices

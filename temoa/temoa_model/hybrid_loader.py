@@ -81,6 +81,8 @@ tables_with_regional_groups = {
     'MaxResource': 'region',
     'GrowthRateMax': 'region',
     'GrowthRateSeed': 'region',
+    'GrowthRateChangeMax': 'region',
+    'GrowthRateChangeSeed': 'region',
 }
 
 
@@ -1054,6 +1056,16 @@ class HybridLoader:
         if self.table_exists('GrowthRateSeed'):
             raw = cur.execute('SELECT region, tech, seed FROM main.GrowthRateSeed').fetchall()
             load_element(M.GrowthRateSeed, raw, self.viable_rt, (0, 1))
+
+        # GrowthRateChangeMax
+        if self.table_exists('GrowthRateChangeMax'):
+            raw = cur.execute('SELECT region, tech, rate FROM main.GrowthRateChangeMax').fetchall()
+            load_element(M.GrowthRateChangeMax, raw, self.viable_rt, (0, 1))
+
+        # GrowthRateChangeSeed
+        if self.table_exists('GrowthRateChangeSeed'):
+            raw = cur.execute('SELECT region, tech, seed FROM main.GrowthRateChangeSeed').fetchall()
+            load_element(M.GrowthRateChangeSeed, raw, self.viable_rt, (0, 1))
 
         # EmissionLimit
         if self.table_exists('EmissionLimit'):

@@ -448,8 +448,10 @@ class TemoaModel(AbstractModel):
         )
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
         
-        M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all)
+        M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all, default=0)
         M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all, default=0)
+        M.GrowthRateChangeMax = Param(M.regionalGlobalIndices, M.tech_all, default=0)
+        M.GrowthRateChangeSeed = Param(M.regionalGlobalIndices, M.tech_all, default=0)
 
         M.EmissionLimitConstraint_rpe = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
@@ -732,6 +734,14 @@ class TemoaModel(AbstractModel):
         M.GrowthRateMaxConstraint_rtv = Set(dimen=3, initialize=GrowthRateMaxIndices)
         M.GrowthRateMaxConstraint = Constraint(
             M.GrowthRateMaxConstraint_rtv, rule=GrowthRateMaxConstraint_rule
+        )
+
+        M.GrowthRateChangeConstraint_rtv = Set(dimen=3, initialize=GrowthRateChangeIndices)
+        M.GrowthRateChangeMinConstraint = Constraint(
+            M.GrowthRateChangeConstraint_rtv, rule=GrowthRateChangeMinConstraint_rule
+        )
+        M.GrowthRateChangeMaxConstraint = Constraint(
+            M.GrowthRateChangeConstraint_rtv, rule=GrowthRateChangeMaxConstraint_rule
         )
 
         M.MaxActivityConstraint = Constraint(
