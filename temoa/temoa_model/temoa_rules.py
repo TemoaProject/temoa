@@ -1868,9 +1868,9 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     capacity = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p)
 
     if p == periods[0]:
-        # first period it can have capacity
-        # plant a seed and grow it
+        # first period it can have new capacity
         # grow from existing capacity in last existing period, adjusting in-line for PLF
+        # or, otherwise, capped at the constant (seed) parameter
         p_last = M.time_exist.last()
         exist_cap = sum(
             value(M.ExistingCapacity[_r, _t, _v]) \
@@ -1881,10 +1881,12 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
         if exist_cap == 0 and GRS == 0:
             msg = (
                 'No constant term (GrowthRateSeed) provided for GrowthRateMax constraint {} '
-                'and no existing capacity was found so there is nothing to grow from. No capacity '
-                'will be built for this technology in this region.'
+                'and no existing capacity was found in the last existing period so there is '
+                'nothing to grow from. No capacity would be built for this technology in this '
+                'region.'
             ).format((r, t))
-            logger.warning(msg)
+            logger.error(msg)
+            raise ValueError(msg)
         expr = capacity <= GRS + GRM * exist_cap
     else:
         # can have capacity in previous period
@@ -1893,11 +1895,16 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
         if GRS == 0:
             msg = (
                 'No constant term (GrowthRateSeed) provided for GrowthRateMax constraint {}. '
-                'No capacity can be built in any period following one with zero capacity.'
+                'No capacity will be built in any period following one with zero capacity.'
             ).format((r, t))
             logger.warning(msg)
         p_prev = periods[periods.index(p) - 1] # previous period
         capacity_prev = sum(CapRPT[_r, p_prev, t] for _r in regions)
+        capacity_prev = sum(
+            CapRPT[_r, _p, _t]
+            for _r, _p, _t in cap_rpt
+            if _p == p_prev
+        )
         expr = capacity <= GRS + GRM * capacity_prev
         
     return expr
@@ -1907,35 +1914,60 @@ def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     r"""
     Constrain the change of new capacity deployed between periods. 
     Forces the model to ramp up and down the deployment of new technologies 
-    more smoothly.
+    more smoothly. Has constant (GrowthRateChangeSeed) and proportional 
+    (GrowthRateChangeMax) terms.
+    
+    NewCapacity_(p+1) <= GRCS + GRCM * NewCapacity_(p)
     """
 
     regions = gather_group_regions(M, r)
 
     GRS = value(M.GrowthRateChangeSeed[r, t])
-    GRM = value(M.GrowthRateChangeMax[r, t])
+    GRM = 1 + value(M.GrowthRateChangeMax[r, t])
     NewCapRTV = M.V_NewCapacity
 
+    # relevant r, p, t indices
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions)
     # periods the technology can have capacity in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v in NewCapRTV if _t == t and _r in regions))
+    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
 
     if p not in periods:
-        # cant have capacity in this period
+        # cant build capacity in this period
         return Constraint.Skip
     
-    capacity = sum(NewCapRTV[_r, t, p] for _r in regions)
+    # sum new capacity in this period
+    new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
 
     if p == periods[0]:
-        # first period it can have capacity
-        # plant a seed and grow it
-        expr = capacity <= GRS * GRM
+        # first period it can build new capacity
+        # Capped at the constant (seed) parameter
+        p_last = M.time_exist.last()
+        if GRS == 0:
+            msg = (
+                'No constant term (GrowthRateChangeSeed) provided for GrowthRateChangeMax constraint {} '
+                'so there is nothing to grow from. No capacity would be built for this technology in '
+                'this region.'
+            ).format((r, t))
+            logger.error(msg)
+            raise ValueError(msg)
+        expr = new_cap <= GRS
     else:
         # can have capacity in previous period
         # plant a seed and grow last period's capacity
         # note: we plant a seed every period to survive zero-outs
+        if GRS == 0:
+            msg = (
+                'No constant term (GrowthRateChangeSeed) provided for GrowthRateChangeMax constraint {}. '
+                'No new capacity will be built in any period following one with zero new capacity.'
+            ).format((r, t))
+            logger.warning(msg)
         p_prev = periods[periods.index(p) - 1] # previous period
-        capacity_prev = sum(CapPT[_r, p_prev, t] for _r in regions)
-        expr = capacity <= GRS + GRM * capacity_prev
+        new_cap_prev = sum(
+            NewCapRTV[_r, _t, _v]
+            for _r, _t, _v in cap_rtv
+            if _v == p_prev
+        )
+        expr = new_cap <= GRS + GRM * new_cap_prev
         
     return expr
 

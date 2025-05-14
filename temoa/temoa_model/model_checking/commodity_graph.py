@@ -131,17 +131,17 @@ def generate_graph(
             cycle = list(cycle)
             if len(cycle) < 2:  # a storage item--not reportable
                 continue
-            logger.warning(
-                'Found cycle in region %s, period %d.  No action needed if this is correct:',
-                region,
-                period,
-            )
-            res = '  '
+            res = ''
             first = cycle[0]
             for node in cycle:
                 res += f'{node} --> '
             res += first
-            logger.info(res)
+            logger.info(
+                'Found cycle in region %s, period %d. No action needed if this is correct: %s',
+                region,
+                period,
+                res,
+            )
     except nx.NetworkXError as e:
         logger.warning('NetworkX exception encountered: %s.  Loop evaluation NOT performed.', e)
     if config.plot_commodity_network:

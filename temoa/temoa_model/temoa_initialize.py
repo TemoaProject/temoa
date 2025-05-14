@@ -742,14 +742,15 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 continue
             if v + l_lifetime <= l_first_period:
                 msg = (
-                    '\nWarning: %s specified as ExistingCapacity, but its '
-                    'LifetimeProcess parameter does not extend past the beginning '
-                    'of time_future.'
-                    '\n\tLifetime:     %s'
-                    '\n\tFirst period: %s\n'
-                )
-                logger.warning(msg, l_process, l_lifetime, l_first_period)
-                # Devnote: these are now useful due to end of life outputs
+                    '{} specified as ExistingCapacity, but its '
+                    'lifetime ({} years) does not extend past the '
+                    'beginning of time_future ({}) so it is never active. This '
+                    'may be intentional for use in GrowthRate constraints '
+                    'or end of life flows.'
+                ).format(l_process, l_lifetime, l_first_period)
+                logger.info(msg)
+                # Devnote: these are now useful due to end of life flows and
+                # GrowthRate constraints growing from existing cap so do not skip
                 #SE.write(msg % (l_process, l_lifetime, l_first_period))
                 #continue
 
@@ -766,7 +767,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
         l_used_techs.add(t)
 
-        if t in M.tech_flex:
+        if t in M.tech_flex and o not in M.commodity_flex:
             M.commodity_flex.add(o)
 
         # Add in the period (p) index, since it's not included in the efficiency
@@ -784,7 +785,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             #     l_loan_life = value(M.LoanLifetimeProcess[l_process])
             #     if v + l_loan_life >= p:
             #         M.processLoans[pindex] = True
-
+            
+            # Get all periods where the process can retire
             if t not in M.tech_uncap and any((
                 p==v and l_lifetime<value(M.PeriodLength[p]), # eol the period it is constructed
                 p==v+l_lifetime, # natural eol at start of this period
