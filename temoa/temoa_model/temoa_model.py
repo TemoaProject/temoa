@@ -190,6 +190,7 @@ class TemoaModel(AbstractModel):
         M.tech_group_members = Set(M.tech_group_names, within=M.tech_all)
 
         M.tech_uncap = Set(within=M.tech_all - M.tech_reserve)
+        M.tech_exist = Set()
         """techs with unlimited capacity, ALWAYS available within lifespan"""
 
         # the below is a convenience for domain checking in params below that should not accept uncap techs...
@@ -271,7 +272,7 @@ class TemoaModel(AbstractModel):
         # Define technology performance parameters
         M.CapacityToActivity = Param(M.regionalIndices, M.tech_all, default=1)
 
-        M.ExistingCapacity = Param(M.regionalIndices, M.tech_with_capacity, M.vintage_exist)
+        M.ExistingCapacity = Param(M.regionalIndices, M.tech_exist, M.vintage_exist)
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
         #            Uncomment this assignment, and comment out the orig below it...

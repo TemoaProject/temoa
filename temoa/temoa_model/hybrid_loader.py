@@ -574,6 +574,14 @@ class HybridLoader:
         raw = cur.execute('SELECT tech FROM Technology WHERE retire > 0').fetchall()
         load_element(M.tech_retirement, raw, self.viable_techs)
 
+        # tech_exist
+        # this is to allow features doing accounting on old existing capacities
+        raw = cur.execute(
+            'SELECT DISTINCT tech FROM ExistingCapacity ' 
+            'WHERE tech NOT IN (SELECT tech FROM Technology WHERE unlim_cap > 0)'
+        ).fetchall()
+        load_element(M.tech_exist, raw)
+
         #  === COMMODITIES ===
 
         # commodity_demand
