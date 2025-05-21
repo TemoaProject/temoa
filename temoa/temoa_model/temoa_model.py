@@ -126,7 +126,7 @@ class TemoaModel(AbstractModel):
         M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
-        M.time_next = dict()
+        M.time_next = dict() # {(s, d): (s_next, d_next)} sequence of following time slices
 
         ################################################
         #             Switching Sets                   #
@@ -142,6 +142,8 @@ class TemoaModel(AbstractModel):
         ################################################
 
         M.progress_marker_1 = BuildAction(['Starting to build Sets'], rule=progress_check)
+
+        M.operator = Set()
 
         # Define time periods
         M.time_exist = Set(ordered=True)
@@ -448,10 +450,12 @@ class TemoaModel(AbstractModel):
         )
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
         
-        M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all, default=0)
-        M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all, default=0)
-        M.GrowthRateChangeMax = Param(M.regionalGlobalIndices, M.tech_all, default=0)
-        M.GrowthRateChangeSeed = Param(M.regionalGlobalIndices, M.tech_all, default=0)
+        M.GrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.GrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.GrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
 
         M.EmissionLimitConstraint_rpe = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
@@ -731,17 +735,31 @@ class TemoaModel(AbstractModel):
             ['Starting Growth and Activity Constraints'], rule=progress_check
         )
 
-        M.GrowthRateMaxConstraint_rtv = Set(dimen=3, initialize=GrowthRateMaxIndices)
-        M.GrowthRateMaxConstraint = Constraint(
-            M.GrowthRateMaxConstraint_rtv, rule=GrowthRateMaxConstraint_rule
+        M.GrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthCapacityIndices)
+        M.GrowthCapacityConstraint = Constraint(
+            M.GrowthCapacityConstraint_rtpop, rule=GrowthCapacityConstraint_rule
+        )
+        M.DegrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthCapacityIndices)
+        M.DegrowthCapacityConstraint = Constraint(
+            M.DegrowthCapacityConstraint_rtpop, rule=DegrowthCapacityConstraint_rule
         )
 
-        M.GrowthRateChangeConstraint_rtv = Set(dimen=3, initialize=GrowthRateChangeIndices)
-        M.GrowthRateChangeMinConstraint = Constraint(
-            M.GrowthRateChangeConstraint_rtv, rule=GrowthRateChangeMinConstraint_rule
+        M.GrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityIndices)
+        M.GrowthNewCapacityConstraint = Constraint(
+            M.GrowthNewCapacityConstraint_rtpop, rule=GrowthNewCapacityConstraint_rule
         )
-        M.GrowthRateChangeMaxConstraint = Constraint(
-            M.GrowthRateChangeConstraint_rtv, rule=GrowthRateChangeMaxConstraint_rule
+        M.DegrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityIndices)
+        M.DegrowthNewCapacityConstraint = Constraint(
+            M.DegrowthNewCapacityConstraint_rtpop, rule=DegrowthNewCapacityConstraint_rule
+        )
+
+        M.GrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityDeltaIndices)
+        M.GrowthNewCapacityDeltaConstraint = Constraint(
+            M.GrowthNewCapacityDeltaConstraint_rtpop, rule=GrowthNewCapacityDeltaConstraint_rule
+        )
+        M.DegrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityDeltaIndices)
+        M.DegrowthNewCapacityDeltaConstraint = Constraint(
+            M.DegrowthNewCapacityDeltaConstraint_rtpop, rule=DegrowthNewCapacityDeltaConstraint_rule
         )
 
         M.MaxActivityConstraint = Constraint(

@@ -746,12 +746,12 @@ def CreateSparseDicts(M: 'TemoaModel'):
                     '{} specified as ExistingCapacity, but its '
                     'lifetime ({} years) does not extend past the '
                     'beginning of time_future ({}) so it is never active. This '
-                    'may be intentional for use in GrowthRate constraints '
+                    'may be intentional for use in Growth constraints '
                     'or end of life flows.'
                 ).format(l_process, l_lifetime, l_first_period)
                 logger.info(msg)
                 # Devnote: these are now useful due to end of life flows and
-                # GrowthRate constraints growing from existing cap so do not skip
+                # Growth constraints growing from existing cap so do not skip
                 #SE.write(msg % (l_process, l_lifetime, l_first_period))
                 #continue
 
@@ -1739,7 +1739,6 @@ def MaxTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
         if t in M.tech_annual
         for v in M.maxOutputSplitAnnualVintages[r, p, t, o]
     )
-
     return indices
 
 
@@ -1753,19 +1752,52 @@ def MaxTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def GrowthRateMaxIndices(M: 'TemoaModel'):
+def GrowthCapacityIndices(M: 'TemoaModel'):
     indices = set(
-        (r, p, t)
-        for r, t in M.GrowthRateMax.sparse_iterkeys() | M.GrowthRateSeed.sparse_iterkeys()
+        (r, p, t, op)
+        for r, t, op in M.GrowthCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthCapacityIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthCapacity.sparse_iterkeys()
         for p in M.time_optimize
     )
     return indices
 
 
-def GrowthRateChangeIndices(M: 'TemoaModel'):
+def GrowthNewCapacityIndices(M: 'TemoaModel'):
     indices = set(
-        (r, p, t)
-        for r, t in M.GrowthRateChangeMax.sparse_iterkeys() | M.GrowthRateChangeSeed.sparse_iterkeys()
+        (r, p, t, op)
+        for r, t, op in M.GrowthNewCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthNewCapacityIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthNewCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+
+def GrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.GrowthNewCapacityDelta.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthNewCapacityDelta.sparse_iterkeys()
         for p in M.time_optimize
     )
     return indices

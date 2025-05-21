@@ -1829,30 +1829,27 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     return expr
 
 
-def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
+def GrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+    r"""Constrain ramp down rate of available capacity"""
+    return GrowthCapacity(M, r, p, t, op, False)
+
+def DegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+    r"""Constrain ramp up rate of available capacity"""
+    return GrowthCapacity(M, r, p, t, op, True)
+
+def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
-
-    This constraint sets an upper bound growth rate on technology-specific capacity.
-
-    .. math::
-       :label: GrowthRate
-
-       CAPAVL_{r, p_{i},t} \le GRM \cdot CAPAVL_{r,p_{i-1},t} + GRS
-
-       \\
-       \forall \{r, p, t\} \in \Theta_{\text{GrowthRate}}
-
-    where :math:`GRM` is the maximum growth rate, and should be specified as
-    :math:`(1+r)` and :math:`GRS` is the growth rate seed, which has units of
-    capacity. Without the seed, any technology with zero capacity in the first time
-    period would be restricted to zero capacity for the remainder of the time
-    horizon.
+    Constrain the change of capacity available between periods. 
+    Forces the model to ramp up and down the availability of new technologies 
+    more smoothly. Has constant (seed) and proportional (rate) terms.
+    
+    CapacityAvailable_(p) <= SEED + RATE * CapacityAvailable_(p-1)
     """
 
     regions = gather_group_regions(M, r)
 
-    GRS = value(M.GrowthRateSeed[r, t])
-    GRM = 1 + value(M.GrowthRateMax[r, t])
+    RATE = 1 + value(M.GrowthCapacity[r, t, op][0])
+    SEED = value(M.GrowthCapacity[r, t, op][1])
     CapRPT = M.V_CapacityAvailableByPeriodAndTech
 
     # relevant r, p, t indices
@@ -1860,130 +1857,256 @@ def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     # periods the technology can have capacity in this region (sorted)
     periods = sorted(set(_p for _r, _p, _t in cap_rpt))
 
-    if p not in periods:
-        # cant have capacity in this period
+    if len(periods) == 0 and p == M.time_optimize.first():
+        msg = (
+            'Tried to set {}rowthCapacity constraint {} but there are no periods where this '
+            'technology is available in this region. Constraint skipped.'
+        ).format("Deg" if degrowth else "G", (r, t))
+        logger.warning(msg)
         return Constraint.Skip
+    
+    # Only warn in p0 so we dont dump multiple warnings
+    if p == periods[0]:
+        if SEED == 0:
+            msg = (
+                'No constant term (seed) provided for {}rowthCapacity constraint {}. '
+                'No capacity will be built in any period following one with zero capacity.'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.info(msg)
+        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        if gaps:
+            msg = (
+                'Constructing {}rowthCapacity constraint {} and there are period gaps in which'
+                'capacity cannot exist in this region ({}). Capacity in these periods '
+                'will be treated as zero which may cause infeasibility or other problems.'
+            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            logger.warning(msg)
     
     # sum available capacity in this period
     capacity = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p)
 
-    if p == periods[0]:
-        # first period it can have new capacity
-        # grow from existing capacity in last existing period, adjusting in-line for PLF
-        # or, otherwise, capped at the constant (seed) parameter
-        p_last = M.time_exist.last()
+    if p == M.time_optimize.first():
+        # First future period. Grab available capacity in last existing period
+        # Adjust in-line for past PLF because we are constraining available capacity
+        p_prev = M.time_exist.last()
         capacity_prev = sum(
             value(M.ExistingCapacity[_r, _t, _v]) \
-                * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_last)/(p - p_last) )
+                * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_prev)/(p - p_prev) )
             for _r, _t, _v in M.ExistingCapacity
-            if _r in regions and _t == t and _v + value(M.LifetimeProcess[_r, _t, _v]) > p_last
+            if _r in regions and _t == t and _v + value(M.LifetimeProcess[_r, _t, _v]) > p_prev
         )
-        if capacity_prev == 0 and GRS == 0:
-            msg = (
-                'No constant term (GrowthRateSeed) provided for GrowthRateMax constraint {} '
-                'and no existing capacity was found in the last existing period so there is '
-                'nothing to grow from. No capacity would be built for this technology in this '
-                'region.'
-            ).format((r, t))
-            logger.error(msg)
-            raise ValueError(msg)
     else:
-        # can have capacity in previous period
-        # plant a seed and grow last period's capacity
-        # note: we plant a seed every period to survive zero-outs
-        if GRS == 0:
-            msg = (
-                'No constant term (GrowthRateSeed) provided for GrowthRateMax constraint {}. '
-                'No capacity will be built in any period following one with zero capacity.'
-            ).format((r, t))
-            logger.warning(msg)
-        p_prev = periods[periods.index(p) - 1] # previous period
-        capacity_prev = sum(CapRPT[_r, p_prev, t] for _r in regions)
+        # Otherwise, grab previous future period
+        p_prev = M.time_optimize.prev(p)
         capacity_prev = sum(
             CapRPT[_r, _p, _t]
             for _r, _p, _t in cap_rpt
             if _p == p_prev
         )
 
-    return capacity <= GRS + GRM * capacity_prev
+    if degrowth:
+        expr = operator_expression(capacity_prev, op, SEED + capacity * RATE)
+    else:
+        expr = operator_expression(capacity, op, SEED + capacity_prev * RATE)
+    
+    # Check if any variables are actually included before returning
+    if isinstance(expr, bool):
+        return Constraint.Skip
+    return expr
 
-def GrowthRateChangeMinConstraint_rule(M: 'TemoaModel', r, p, t):
+
+def GrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of new capacity deployment"""
-    new_cap, new_cap_prev, GRS, GRM = GrowthRateChange_rule(M, r, p, t)
-    return new_cap_prev <= GRS + GRM * new_cap
+    return GrowthNewCapacity(M, r, p, t, op, False)
 
-def GrowthRateChangeMaxConstraint_rule(M: 'TemoaModel', r, p, t):
+def DegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of new capacity deployment"""
-    new_cap, new_cap_prev, GRS, GRM = GrowthRateChange_rule(M, r, p, t)
-    return new_cap <= GRS + GRM * new_cap_prev
+    return GrowthNewCapacity(M, r, p, t, op, True)
 
-
-def GrowthRateChange_rule(M: 'TemoaModel', r, p, t):
+def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the change of new capacity deployed between periods. 
     Forces the model to ramp up and down the deployment of new technologies 
-    more smoothly. Has constant (GrowthRateChangeSeed) and proportional 
-    (GrowthRateChangeMax) terms.
+    more smoothly. Has constant (seed) and proportional (rate) terms.
     
-    NewCapacity_(p+1) <= GRCS + GRCM * NewCapacity_(p)
+    NewCapacity_(p) <= SEED + RATE * NewCapacity_(p-1)
     """
 
     regions = gather_group_regions(M, r)
 
-    GRS = value(M.GrowthRateChangeSeed[r, t])
-    GRM = 1 + value(M.GrowthRateChangeMax[r, t])
+    RATE = 1 + value(M.GrowthNewCapacity[r, t, op][0])
+    SEED = value(M.GrowthNewCapacity[r, t, op][1])
     NewCapRTV = M.V_NewCapacity
 
-    # relevant r, p, t indices
-    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions
-    )
-    # periods the technology can have capacity in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in cap_rtv if _v in M.time_optimize))
+    # relevant r, t, v indices
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions)
+    # periods the technology can be built in this region (sorted)
+    periods = sorted(set(_v for _r, _t, _v  in NewCapRTV if _v in M.time_optimize))
 
-    if p not in periods:
-        # cant build capacity in this period
+    if len(periods) == 0 and p == M.time_optimize.first():
+        msg = (
+            'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
+            'technology can be built in this region. Constraint skipped.'
+        ).format("Deg" if degrowth else "G", (r, t))
+        logger.warning(msg)
         return Constraint.Skip
+    
+    # Only warn in p0 so we dont dump multiple warnings
+    if p == periods[0]:
+        if SEED == 0:
+            msg = (
+                'No constant term (seed) provided for {}rowthNewCapacity constraint {}. '
+                'No capacity will be built in any period following one with zero new capacity.'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.info(msg)
+        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        if gaps:
+            msg = (
+                'Constructing {}rowthNewCapacity constraint {} and there are period gaps in which'
+                'new capacity cannot be built in this region ({}). New capacity in these periods '
+                'will be treated as zero which may cause infeasibility or other problems.'
+            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            logger.warning(msg)
     
     # sum new capacity in this period
     new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
 
-    if p == periods[0]:
-        # first period it can build new capacity
-        # Capped at the constant (seed) parameter
-        p_last = M.time_exist.last()
+    if p == M.time_optimize.first():
+        # First future period. Grab last existing vintage
+        p_prev = M.time_exist.last()
         new_cap_prev = sum(
-            value(M.ExistingCapacity[_r, _t, _v]) \
-                * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_last)/(p - p_last) )
+            value(M.ExistingCapacity[_r, _t, _v])
             for _r, _t, _v in M.ExistingCapacity
-            if _r in regions and _t == t and _v == p_last
+            if _r in regions and _t == t and _v == p_prev
         )
-        if new_cap_prev == 0 and GRS == 0:
-            msg = (
-                'No constant term (GrowthRateChangeSeed) provided for GrowthRateChangeMax constraint {} '
-                'and no existing capacity was deployed in the last existing period so there is '
-                'nothing to grow from. No capacity would be built for this technology in this '
-                'region.'
-            ).format((r, t))
-            logger.error(msg)
-            raise ValueError(msg)
     else:
-        # can have capacity in previous period
-        # plant a seed and grow last period's capacity
-        # note: we plant a seed every period to survive zero-outs
-        if GRS == 0:
-            msg = (
-                'No constant term (GrowthRateChangeSeed) provided for GrowthRateChangeMax constraint {}. '
-                'No new capacity will be built in any period following one with zero new capacity.'
-            ).format((r, t))
-            logger.warning(msg)
-        p_prev = periods[periods.index(p) - 1] # previous period
+        # Otherwise, grab previous future vintage
+        p_prev = M.time_optimize.prev(p)
         new_cap_prev = sum(
             NewCapRTV[_r, _t, _v]
             for _r, _t, _v in cap_rtv
             if _v == p_prev
         )
+
+    if degrowth:
+        expr = operator_expression(new_cap_prev, op, SEED + new_cap * RATE)
+    else:
+        expr = operator_expression(new_cap, op, SEED + new_cap_prev * RATE)
+
+    # Check if any variables are actually included before returning
+    if isinstance(expr, bool):
+        return Constraint.Skip
+    return expr
     
-    return new_cap, new_cap_prev, GRS, GRM
+
+def GrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+    r"""Constrain ramp down rate of change in new capacity deployment"""
+    return GrowthNewCapacityDelta(M, r, p, t, op, False)
+
+def DegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+    r"""Constrain ramp up rate of change in new capacity deployment"""
+    return GrowthNewCapacityDelta(M, r, p, t, op, True)
+
+def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+    r"""
+    Constrain the acceleration of new capacity deployed between periods. 
+    Forces the model to ramp up and down the change in deployment of new technologies 
+    more smoothly. Has constant (seed) and proportional (rate) terms.
+    
+    (NewCapacity_(p) - NewCapacity_(p-1)) <= SEED + RATE * (NewCapacity_(p-1) - NewCapacity_(p-2))
+    """
+
+    regions = gather_group_regions(M, r)
+
+    RATE = 1 + value(M.GrowthNewCapacityDelta[r, t, op][0])
+    SEED = value(M.GrowthNewCapacityDelta[r, t, op][1])
+    NewCapRTV = M.V_NewCapacity
+
+    # relevant r, t, v indices
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t == t and _r in regions)
+    # periods the technology can be built in this region (sorted)
+    periods = sorted(set(_v for _r, _t, _v  in cap_rtv if _v in M.time_optimize))
+
+    if len(periods) == 0 and p == M.time_optimize.first():
+        msg = (
+            'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
+            'technology can be built in this region. Constraint skipped.'
+        ).format("Deg" if degrowth else "G", (r, t))
+        logger.warning(msg)
+        return Constraint.Skip
+
+    # Only warn in p0 so we dont dump multiple warnings
+    if p == periods[0]:
+        if SEED == 0:
+            msg = (
+                'No constant term (seed) provided for {}rowthNewCapacityDelta constraint {}. '
+                'This is not recommended as deployment rates cannot inflect (change from '
+                'accelerating to decelerating or vice-versa).'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.warning(msg)
+        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        if gaps:
+            msg = (
+                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in which'
+                'new capacity cannot be built in this region ({}). New capacity in these periods '
+                'will be treated as zero which may cause infeasibility or other problems.'
+            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            logger.warning(msg)
+
+    # sum new capacity in this period
+    new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+
+    if p == M.time_optimize.first():
+        # First planning period, pull last two existing vintages
+        p_prev = M.time_exist.last()
+        new_cap_prev = sum(
+            value(M.ExistingCapacity[_r, _t, _v])
+            for _r, _t, _v in M.ExistingCapacity
+            if _r in regions and _t == t and _v == p_prev
+        )
+        p_prev2 = M.time_exist.prev(p_prev)
+        new_cap_prev2 = sum(
+            value(M.ExistingCapacity[_r, _t, _v])
+            for _r, _t, _v in M.ExistingCapacity
+            if _r in regions and _t == t and _v == p_prev2
+        )
+    else:
+        # Not the first future period. Grab previous future period
+        p_prev = M.time_optimize.prev(p)
+        new_cap_prev = sum(
+            NewCapRTV[_r, _t, _v]
+            for _r, _t, _v in cap_rtv
+            if _v == p_prev
+        )
+        if p == M.time_optimize.at(2): # apparently pyomo sets are indexed 1-based
+            # Second future period, grab last existing vintage
+            p_prev2 = M.time_exist.last()
+            new_cap_prev2 = sum(
+                value(M.ExistingCapacity[_r, _t, _v])
+                for _r, _t, _v in M.ExistingCapacity
+                if _r in regions and _t == t and _v == p_prev2
+            )
+        else:
+            # At least the third future period. Grab last two future vintages
+            p_prev2 = M.time_optimize.prev(p_prev)
+            new_cap_prev2 = sum(
+                NewCapRTV[_r, _t, _v]
+                for _r, _t, _v in cap_rtv
+                if _v == p_prev2
+            )
+
+    nc_delta_prev = new_cap_prev - new_cap_prev2
+    nc_delta = new_cap - new_cap_prev
+
+    if degrowth:
+        expr = operator_expression(nc_delta_prev, op, SEED + nc_delta * RATE)
+    else:
+        expr = operator_expression(nc_delta, op, SEED + nc_delta_prev * RATE)
+    
+    # Check if any variables are actually included before returning
+    if isinstance(expr, bool):
+        return Constraint.Skip
+    return expr
 
 
 def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):
@@ -3516,6 +3639,35 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     )
 
     return -primary_flow == linked_flow
+
+def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expression | None):
+    """Returns an expression, applying a configured operator"""
+    if any((lhs is None, operator is None, rhs is None)):
+        msg = (
+            'Tried to build a constraint using a bad expression or operator. Constraint skipped: '
+            '{} {} {}'
+        ).format(lhs, operator, rhs)
+        logger.error(msg)
+        raise ValueError(msg)
+    match operator:
+        case "e":
+            expr = lhs == rhs
+        case "l":
+            expr = lhs < rhs
+        case "g":
+            expr = lhs > rhs
+        case "le":
+            expr = lhs <= rhs
+        case "ge":
+            expr = lhs >= rhs
+        case _:
+            msg = (
+                'Tried to build a constraint using a bad operator. Constraint skipped: {} {} {}'
+            ).format(lhs, operator, rhs)
+            logger.error(msg)
+            raise ValueError(msg)
+        
+    return expr
 
 
 # To avoid building big many-indexed parameters when they aren't needed - saves memory
