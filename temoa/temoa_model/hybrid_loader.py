@@ -645,7 +645,9 @@ class HybridLoader:
                 raw = cur.execute(
                     'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
                 ).fetchall()
-            load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
+            # devnote: We want full existing capacity history for end of life flows and growth constraints
+            # load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
+            load_element(M.ExistingCapacity, raw)
 
         # GlobalDiscountRate
         if self.table_exists("MetaDataReal"):

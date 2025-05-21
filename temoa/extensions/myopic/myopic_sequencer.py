@@ -385,40 +385,38 @@ class MyopicSequencer:
         )
         self.output_con.commit()
 
-        # devnote: There is a bug here somewhere where we lose existing capacities when
-        # rolling back. Better just to leave it out.
         # 1.  Clean up stuff not implemented or retired by the last time period in previous step,
         #     exempting unlim_cap techs (of course...who would forget that?)
-        # last_interval_end, flag = self.cursor.execute(
-        #     'SELECT MAX(period), flag FROM main.TimePeriod WHERE period < ?',
-        #     (myopic_index.base_year,),
-        # ).fetchone()
-        # if flag == 'f':  # the prior period should have an OutputNetCapacity entry
-        #     # Delete anything that doesn't have capacity remaining at the end of last interval
-        #     delete_qry = (
-        #         'DELETE FROM MyopicEfficiency '
-        #         'WHERE (SELECT region, tech, vintage) '
-        #         '  NOT IN (SELECT region, tech, vintage FROM OutputNetCapacity '
-        #         '    WHERE period = ? AND scenario = ?) '
-        #         'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
-        #     )
+        last_interval_end, flag = self.cursor.execute(
+            'SELECT MAX(period), flag FROM main.TimePeriod WHERE period < ?',
+            (myopic_index.base_year,),
+        ).fetchone()
+        if flag == 'f':  # the prior period should have an OutputNetCapacity entry
+            # Delete anything that doesn't have capacity remaining at the end of last interval
+            delete_qry = (
+                'DELETE FROM MyopicEfficiency '
+                'WHERE (SELECT region, tech, vintage) '
+                '  NOT IN (SELECT region, tech, vintage FROM OutputNetCapacity '
+                '    WHERE period = ? AND scenario = ?) '
+                'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
+            )
 
-        #     if self.debugging:
-        #         debug_query = (
-        #             'SELECT * FROM MyopicEfficiency '
-        #             'WHERE (SELECT region, tech, vintage) '
-        #             '  NOT IN (SELECT region, tech, vintage FROM OutputNetCapacity '
-        #             '    WHERE period = ? AND scenario = ?) '
-        #             'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
-        #         )
-        #         print('\n\n **** Removing these unused region-tech-vintage combos ****')
-        #         removals = self.cursor.execute(
-        #             debug_query, (last_interval_end, self.config.scenario)
-        #         ).fetchall()
-        #         for i, removal in enumerate(removals):
-        #             print(f'{i}. Removing:  {removal}')
-        #     self.cursor.execute(delete_qry, (last_interval_end, self.config.scenario))
-        #     self.output_con.commit()
+            if self.debugging:
+                debug_query = (
+                    'SELECT * FROM MyopicEfficiency '
+                    'WHERE (SELECT region, tech, vintage) '
+                    '  NOT IN (SELECT region, tech, vintage FROM OutputNetCapacity '
+                    '    WHERE period = ? AND scenario = ?) '
+                    'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
+                )
+                print('\n\n **** Removing these unused region-tech-vintage combos ****')
+                removals = self.cursor.execute(
+                    debug_query, (last_interval_end, self.config.scenario)
+                ).fetchall()
+                for i, removal in enumerate(removals):
+                    print(f'{i}. Removing:  {removal}')
+            self.cursor.execute(delete_qry, (last_interval_end, self.config.scenario))
+            self.output_con.commit()
 
         # 2.  Add the new stuff now visible
         # dev note:  the `coalesce()` command is a nested if-else.  The first hit wins, so it is priority:

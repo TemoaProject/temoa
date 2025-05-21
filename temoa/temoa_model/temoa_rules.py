@@ -648,7 +648,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         )
         for (r, e, t, v) in M.EmissionEndOfLife.sparse_iterkeys()
         if (r, p, e) in M.CostEmission
-        if p in M.retirementPeriods[r, t, v]
+        if (r, t, v) in M.retirementPeriods and p in M.retirementPeriods[r, t, v]
     )
 
     period_emission_cost = var_emissions + var_annual_emissions + embodied_emissions + endoflife_emissions
@@ -1806,7 +1806,8 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         * value(M.EmissionEndOfLife[reg, e, t, v])
         for reg in regions
         for (S_r, S_e, t, v) in M.EmissionEndOfLife.sparse_iterkeys()
-        if p in M.retirementPeriods[r, t, v] and S_r == reg and S_e == e
+        if (r, t, v) in M.retirementPeriods and p in M.retirementPeriods[r, t, v]
+        if S_r == reg and S_e == e
     )
 
     expr = (

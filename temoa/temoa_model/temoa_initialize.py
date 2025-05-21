@@ -992,14 +992,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         M.capacityConsumptionTechs[r, v, i].add(t)
     for r, t, v, o in M.EndOfLifeOutput:
         if (r, t, v) not in M.retirementPeriods:
-            msg = (
-                f'Process {(r, t, v)} in EndOfLifeOutput does not retire within the planning horizon. '
-                'All processes in EndOfLifeOutput must naturally reach end of life at the start of '
-                'or during the planning horizon (p0 <= v+lifetime < pE) or be a retirement tech '
-                '(allowing early retirement).'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
+            continue # might be running myopic
         for p in M.retirementPeriods[r, t, v]:
             # What periods can this process retire in, either naturally or economically?
             if (r, p, o) not in M.retirementProductionProcesses:
@@ -1175,7 +1168,6 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
         for s in M.time_season[p]
         for d in M.time_of_day
     )
-
     return indices
 
 
