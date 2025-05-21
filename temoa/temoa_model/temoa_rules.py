@@ -1848,8 +1848,9 @@ def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
     regions = gather_group_regions(M, r)
 
-    RATE = 1 + value(M.GrowthCapacity[r, t, op][0])
-    SEED = value(M.GrowthCapacity[r, t, op][1])
+    growth = M.DegrowthCapacity if degrowth else M.GrowthCapacity
+    RATE = 1 + value(growth[r, t, op][0])
+    SEED = value(growth[r, t, op][1])
     CapRPT = M.V_CapacityAvailableByPeriodAndTech
 
     # relevant r, p, t indices
@@ -1934,8 +1935,9 @@ def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
     regions = gather_group_regions(M, r)
 
-    RATE = 1 + value(M.GrowthNewCapacity[r, t, op][0])
-    SEED = value(M.GrowthNewCapacity[r, t, op][1])
+    growth = M.DegrowthNewCapacity if degrowth else M.GrowthNewCapacity
+    RATE = 1 + value(growth[r, t, op][0])
+    SEED = value(growth[r, t, op][1])
     NewCapRTV = M.V_NewCapacity
 
     # relevant r, t, v indices
@@ -2018,8 +2020,9 @@ def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
 
     regions = gather_group_regions(M, r)
 
-    RATE = 1 + value(M.GrowthNewCapacityDelta[r, t, op][0])
-    SEED = value(M.GrowthNewCapacityDelta[r, t, op][1])
+    growth = M.DegrowthNewCapacityDelta if degrowth else M.GrowthNewCapacityDelta
+    RATE = 1 + value(growth[r, t, op][0])
+    SEED = value(growth[r, t, op][1])
     NewCapRTV = M.V_NewCapacity
 
     # relevant r, t, v indices
