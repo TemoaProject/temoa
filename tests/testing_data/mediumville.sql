@@ -424,27 +424,6 @@ CREATE TABLE TechGroup
 INSERT INTO TechGroup VALUES('RPS_global','');
 INSERT INTO TechGroup VALUES('RPS_common','');
 INSERT INTO TechGroup VALUES('A_tech_grp_1','converted from old db');
-CREATE TABLE GrowthRateMax
-(
-    region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
-    rate   REAL,
-    notes  TEXT,
-    PRIMARY KEY (region, tech)
-);
-INSERT INTO GrowthRateMax VALUES('global','GeoHeater',0.2,NULL);
-CREATE TABLE GrowthRateSeed
-(
-    region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
-    seed   REAL,
-    units  TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech)
-);
-INSERT INTO GrowthRateSeed VALUES('global','GeoHeater',1000.0,'jobs','unk');
 CREATE TABLE LoanLifetimeTech
 (
     region   TEXT,

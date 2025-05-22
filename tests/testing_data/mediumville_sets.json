@@ -3602,6 +3602,17 @@
       2025
     ]
   ],
+  "commodity_waste": [],
+  "tech_exist": [
+    "EH"
+  ],
+  "operator": [],
+  "DegrowthCapacityConstraint_rtpop": [],
+  "DegrowthNewCapacityConstraint_rtpop": [],
+  "DegrowthNewCapacityDeltaConstraint_rtpop": [],
+  "GrowthCapacityConstraint_rtpop": [],
+  "GrowthNewCapacityConstraint_rtpop": [],
+  "GrowthNewCapacityDeltaConstraint_rtpop": [],
   "DemandConstraint_rpsdc": [
     [
       "B",
@@ -4374,13 +4385,6 @@
       2025,
       "s2",
       "d1"
-    ]
-  ],
-  "GrowthRateMaxConstraint_rtv": [
-    [
-      "global",
-      2025,
-      "GeoHeater"
     ]
   ],
   "MinTechInputSplitConstraint_rpsditv": [
