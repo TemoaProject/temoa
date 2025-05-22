@@ -1859,12 +1859,13 @@ def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     # periods the technology can have capacity in this region (sorted)
     periods = sorted(set(_p for _r, _p, _t in cap_rpt))
 
-    if len(periods) == 0 and p == M.time_optimize.first():
-        msg = (
-            'Tried to set {}rowthCapacity constraint {} but there are no periods where this '
-            'technology is available in this region. Constraint skipped.'
-        ).format("Deg" if degrowth else "G", (r, t))
-        logger.warning(msg)
+    if len(periods) == 0:
+        if p == M.time_optimize.first():
+            msg = (
+                'Tried to set {}rowthCapacity constraint {} but there are no periods where this '
+                'technology is available in this region. Constraint skipped.'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.warning(msg)
         return Constraint.Skip
     
     # Only warn in p0 so we dont dump multiple warnings
@@ -1946,12 +1947,13 @@ def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     # periods the technology can be built in this region (sorted)
     periods = sorted(set(_v for _r, _t, _v  in NewCapRTV if _v in M.time_optimize))
 
-    if len(periods) == 0 and p == M.time_optimize.first():
-        msg = (
-            'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
-            'technology can be built in this region. Constraint skipped.'
-        ).format("Deg" if degrowth else "G", (r, t))
-        logger.warning(msg)
+    if len(periods) == 0:
+        if p == M.time_optimize.first():
+            msg = (
+                'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
+                'technology can be built in this region. Constraint skipped.'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.warning(msg)
         return Constraint.Skip
     
     # Only warn in p0 so we dont dump multiple warnings
@@ -2031,12 +2033,13 @@ def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     # periods the technology can be built in this region (sorted)
     periods = sorted(set(_v for _r, _t, _v  in cap_rtv if _v in M.time_optimize))
 
-    if len(periods) == 0 and p == M.time_optimize.first():
-        msg = (
-            'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
-            'technology can be built in this region. Constraint skipped.'
-        ).format("Deg" if degrowth else "G", (r, t))
-        logger.warning(msg)
+    if len(periods) == 0:
+        if p == M.time_optimize.first():
+            msg = (
+                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
+                'technology can be built in this region. Constraint skipped.'
+            ).format("Deg" if degrowth else "G", (r, t))
+            logger.warning(msg)
         return Constraint.Skip
 
     # Only warn in p0 so we dont dump multiple warnings

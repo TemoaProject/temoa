@@ -574,14 +574,6 @@ class HybridLoader:
         raw = cur.execute('SELECT tech FROM Technology WHERE retire > 0').fetchall()
         load_element(M.tech_retirement, raw, self.viable_techs)
 
-        # tech_exist
-        # this is to allow features doing accounting on old existing capacities
-        raw = cur.execute(
-            'SELECT DISTINCT tech FROM ExistingCapacity ' 
-            'WHERE tech NOT IN (SELECT tech FROM Technology WHERE unlim_cap > 0)'
-        ).fetchall()
-        load_element(M.tech_exist, raw)
-
         #  === COMMODITIES ===
 
         # commodity_demand
@@ -612,8 +604,9 @@ class HybridLoader:
         #  === OPERATORS ===
 
         # operator
-        raw = cur.execute("SELECT operator FROM main.Operator").fetchall()
-        load_element(M.operator, raw)
+        if self.table_exists("Operator"):
+            raw = cur.execute("SELECT operator FROM main.Operator").fetchall()
+            load_element(M.operator, raw)
 
         #  === PARAMS ===
 
@@ -656,6 +649,7 @@ class HybridLoader:
             # devnote: We want full existing capacity history for end of life flows and growth constraints
             # load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
             load_element(M.ExistingCapacity, raw)
+            load_element(M.tech_exist, [(row[1],) for row in raw]) # need to keep these for accounting purposes
 
         # GlobalDiscountRate
         if self.table_exists("MetaDataReal"):
