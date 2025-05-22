@@ -649,7 +649,7 @@ class HybridLoader:
             # devnote: We want full existing capacity history for end of life flows and growth constraints
             # load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
             load_element(M.ExistingCapacity, raw)
-            load_element(M.tech_exist, [(row[1],) for row in raw]) # need to keep these for accounting purposes
+            load_element(M.tech_exist, list({(row[1],) for row in raw})) # need to keep these for accounting purposes
 
         # GlobalDiscountRate
         if self.table_exists("MetaDataReal"):
