@@ -96,8 +96,6 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
        \\
        \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
     """
-    if t in M.tech_storage:
-        return Constraint.Skip
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
 

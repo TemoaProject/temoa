@@ -1363,6 +1363,7 @@ def CapacityConstraintIndices(M: 'TemoaModel'):
         for r, p, t, v in M.activeActivity_rptv
         if t not in M.tech_annual
         if t not in M.tech_uncap
+        if t not in M.tech_storage
         for s in M.time_season[p]
         for d in M.time_of_day
     )
