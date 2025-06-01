@@ -2,6 +2,7 @@
 
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![CI](https://github.com/ParticularlyPythonicBS/temoa/actions/workflows/ci.yml/badge.svg)](https://github.com/ParticularlyPythonicBS/temoa/actions/workflows/ci.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ParticularlyPythonicBS/temoa/main.svg)](https://results.pre-commit.ci/latest/github/ParticularlyPythonicBS/temoa/main)
 
 ## Overview
 
