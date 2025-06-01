@@ -26,6 +26,7 @@ Created on:  4/15/24
 
 The purpose of this module is to perform top-level control over an MGA model run
 """
+
 import logging
 import queue
 import sqlite3
@@ -38,11 +39,11 @@ from pathlib import Path
 from queue import Empty
 
 import pyomo.environ as pyo
-from pyomo.contrib.solver.results import Results
+from pyomo.contrib.solver.common.results import Results
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
-from definitions import get_OUTPUT_PATH, PROJECT_ROOT
+from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
 from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
@@ -226,7 +227,7 @@ class MgaSequencer:
         s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
         if not s_path.exists():
             s_path.mkdir()
-        for i in range(num_workers):
+        for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
                 results_queue=result_queue,
@@ -357,7 +358,8 @@ class MgaSequencer:
         # get the instance number from the model name, if provided
         if '-' not in instance.name:
             raise ValueError(
-                'Instance name does not appear to contain a -idx value.  The manager should be tagging/updating this'
+                'Instance name does not appear to contain a -idx value.'
+                'The manager should be tagging/updating this'
             )
         idx = int(instance.name.split('-')[-1])
         if idx in self.seen_instance_indices:
