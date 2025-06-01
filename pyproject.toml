@@ -32,7 +32,6 @@ dependencies = [
     "deprecated>=1.2.14",
     "openpyxl>=3.1.5",
     "networkx>=3.3",
-    "gravis>=0.1.0",
     "highspy>=1.7.2",
     "scipy>=1.14.1",
     "gurobipy>=11.0.3",

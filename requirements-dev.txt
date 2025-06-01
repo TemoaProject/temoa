@@ -94,8 +94,6 @@ fqdn==1.5.1
     # via jsonschema
 graphviz==0.20.3
     # via temoa (pyproject.toml)
-gravis==0.1.0
-    # via temoa (pyproject.toml)
 greenlet==3.2.2
     # via sqlalchemy
 gurobipy==12.0.2
@@ -506,7 +504,6 @@ send2trash==1.8.3
     # via jupyter-server
 setuptools==80.9.0
     # via
-    #   gravis
     #   jupyter-contrib-core
     #   jupyterlab
     #   sphinxcontrib-bibtex
