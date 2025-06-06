@@ -115,14 +115,10 @@ class TemoaModel(AbstractModel):
         M.storageVintages = dict()
         M.rampUpVintages = dict()
         M.rampDownVintages = dict()
-        M.minInputSplitVintages = dict()
-        M.minInputSplitAnnualVintages = dict()
-        M.maxInputSplitVintages = dict()
-        M.maxInputSplitAnnualVintages = dict()
-        M.minOutputSplitVintages = dict()
-        M.minOutputSplitAnnualVintages = dict()
-        M.maxOutputSplitVintages = dict()
-        M.maxOutputSplitAnnualVintages = dict()
+        M.inputSplitVintages = dict()
+        M.inputSplitAnnualVintages = dict()
+        M.outputSplitVintages = dict()
+        M.outputSplitAnnualVintages = dict()
         M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
@@ -268,7 +264,7 @@ class TemoaModel(AbstractModel):
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        # MaxResource IS implemented but sums cumulatively for a technology rather than resource commodity
+        # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
         # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
         # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
@@ -328,18 +324,11 @@ class TemoaModel(AbstractModel):
 
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
-        # Min tech input split
-        M.MinTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
-        M.MinTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
-        # Min tech output split
-        M.MinTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
-        M.MinTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
-        # Max tech input split
-        M.MaxTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
-        M.MaxTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, validate=validate_0to1)
-        # Max tech output split
-        M.MaxTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
-        M.MaxTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, validate=validate_0to1)
+        M.LimitTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, M.operator, validate=validate_0to1)
+        M.LimitTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all, M.operator, validate=validate_0to1)
+        
+        M.LimitTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, M.operator, validate=validate_0to1)
+        M.LimitTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier, M.operator, validate=validate_0to1)
 
         M.RenewablePortfolioStandardConstraint_rpg = Set(
             within=M.regions * M.time_optimize * M.tech_group_names
@@ -400,135 +389,82 @@ class TemoaModel(AbstractModel):
         M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
 
-        M.MinCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
+        M.LimitCapacityConstraint_rpt = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity * M.operator
         )
+        M.LimitCapacity = Param(M.LimitCapacityConstraint_rpt)
 
-        M.MinCapacity = Param(M.MinCapacityConstraint_rpt)
-
-        M.MaxCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
+        M.LimitNewCapacityConstraint_rpt = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity * M.operator
         )
-        M.MaxCapacity = Param(M.MaxCapacityConstraint_rpt)
+        M.LimitNewCapacity = Param(M.LimitNewCapacityConstraint_rpt)
 
-        M.MinNewCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
+        M.LimitResourceConstraint_rt = Set(within=M.regionalGlobalIndices * M.tech_all * M.operator)
+        M.LimitResource = Param(M.LimitResourceConstraint_rt)
+
+        M.LimitActivityConstraint_rpt = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.operator
         )
-        M.MinNewCapacity = Param(M.MinNewCapacityConstraint_rpt)
+        M.LimitActivity = Param(M.LimitActivityConstraint_rpt)
 
-        M.MaxNewCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity
+        M.LimitSeasonalActivityConstraint_rpst = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all * M.operator
         )
-        M.MaxNewCapacity = Param(M.MaxNewCapacityConstraint_rpt)
+        M.LimitSeasonalActivity = Param(M.LimitSeasonalActivityConstraint_rpst)
 
-        M.MaxResourceConstraint_rt = Set(within=M.regionalGlobalIndices * M.tech_all)
-        M.MaxResource = Param(M.MaxResourceConstraint_rt)
-
-        M.MaxActivityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all
+        M.LimitAnnualCapacityFactorConstraint_rpto = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier * M.operator
         )
-        M.MaxActivity = Param(M.MaxActivityConstraint_rpt)
-
-        M.MinActivityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all
-        )
-        M.MinActivity = Param(M.MinActivityConstraint_rpt)
-
-        M.MaxSeasonalActivityConstraint_rpst = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all
-        )
-        M.MaxSeasonalActivity = Param(M.MaxSeasonalActivityConstraint_rpst)
-
-        M.MinSeasonalActivityConstraint_rpst = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all
-        )
-        M.MinSeasonalActivity = Param(M.MinSeasonalActivityConstraint_rpst)
-
-        M.MinAnnualCapacityFactorConstraint_rpto = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
-        )
-        M.MinAnnualCapacityFactor = Param(M.MinAnnualCapacityFactorConstraint_rpto)
-
-        M.MaxAnnualCapacityFactorConstraint_rpto = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
-        )
-        M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
+        M.LimitAnnualCapacityFactor = Param(M.LimitAnnualCapacityFactorConstraint_rpto)
         
-        M.GrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.DegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.GrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.DegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.GrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.DegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitGrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitDegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitGrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitDegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitGrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitDegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
 
-        M.EmissionLimitConstraint_rpe = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
+        M.LimitEmissionConstraint_rpe = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions * M.operator
         )
-        M.EmissionLimit = Param(M.EmissionLimitConstraint_rpe)
+        M.LimitEmission = Param(M.LimitEmissionConstraint_rpe)
         M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
         M.EmissionActivity = Param(M.EmissionActivity_reitvo)
 
-        M.MinActivityGroup_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
+        M.LimitActivityGroup_rpg = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
         )
-        M.MinActivityGroup = Param(M.MinActivityGroup_rpg)
+        M.LimitActivityGroup = Param(M.LimitActivityGroup_rpg)
 
-        M.MaxActivityGroup_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
+        M.LimitCapacityGroupConstraint_rpg = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
         )
-        M.MaxActivityGroup = Param(M.MaxActivityGroup_rpg)
+        M.LimitCapacityGroup = Param(M.LimitCapacityGroupConstraint_rpg)
 
-        M.MinCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
+        M.LimitNewCapacityGroupConstraint_rpg = Set(
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
         )
-        M.MinCapacityGroup = Param(M.MinCapacityGroupConstraint_rpg)
+        M.LimitNewCapacityGroup = Param(M.LimitNewCapacityGroupConstraint_rpg)
+        M.GroupShareIndices = Set(dimen=5, initialize=GroupShareIndices)
 
-        M.MaxCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
-        )
-        M.MaxCapacityGroup = Param(M.MaxCapacityGroupConstraint_rpg)
+        M.LimitCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
+        M.LimitCapacityShare = Param(M.GroupShareIndices)
 
-        M.MinNewCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
-        )
-        M.MinNewCapacityGroup = Param(M.MinNewCapacityGroupConstraint_rpg)
+        M.LimitActivityShareConstraint_rptg = Set(within=M.GroupShareIndices)
+        M.LimitActivityShare = Param(M.GroupShareIndices)
 
-        M.MaxNewCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names
-        )
-        M.MaxNewCapacityGroup = Param(M.MaxNewCapacityGroupConstraint_rpg)
-        M.GroupShareIndices = Set(dimen=4, initialize=GroupShareIndices)
+        M.LimitNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
+        M.LimitNewCapacityShare = Param(M.GroupShareIndices)
 
-        M.MinCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MinCapacityShare = Param(M.GroupShareIndices)
-
-        M.MaxCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MaxCapacityShare = Param(M.GroupShareIndices)
-
-        M.MinActivityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MinActivityShare = Param(M.GroupShareIndices)
-
-        M.MaxActivityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MaxActivityShare = Param(M.GroupShareIndices)
-
-        M.MinNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MinNewCapacityShare = Param(M.GroupShareIndices)
-
-        M.MaxNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.MaxNewCapacityShare = Param(M.GroupShareIndices)
-
-        M.TwoGroupShareIndices = Set(dimen=4, initialize=TwoGroupShareIndices)
-
-        M.MinNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
-        M.MinNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
+        M.TwoGroupShareIndices = Set(dimen=5, initialize=TwoGroupShareIndices)
         
-        M.MaxNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
-        M.MaxNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
+        M.LimitNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        M.LimitNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
 
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
-        M.StorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv)
-        M.StorageFraction = Param(M.StorageConstraints_rpsdtv, validate=validate_0to1)
+        M.LimitStorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv * M.operator)
+        M.LimitStorageFraction = Param(M.LimitStorageFractionConstraint_rpsdtv, validate=validate_0to1)
 
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
@@ -720,8 +656,8 @@ class TemoaModel(AbstractModel):
             M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
         )
 
-        M.StorageFractionConstraint = Constraint(
-            M.StorageFractionConstraint_rpsdtv, rule=StorageFraction_Constraint
+        M.LimitStorageFractionConstraint = Constraint(
+            M.LimitStorageFractionConstraint_rpsdtv, rule=LimitStorageFraction_Constraint
         )
 
         M.RampUpConstraint_rpsdtv = Set(dimen=6, initialize=RampUpConstraintIndices)
@@ -732,229 +668,138 @@ class TemoaModel(AbstractModel):
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)
 
-        M.EmissionLimitConstraint = Constraint(
-            M.EmissionLimitConstraint_rpe, rule=EmissionLimit_Constraint
+        M.LimitEmissionConstraint = Constraint(
+            M.LimitEmissionConstraint_rpe, rule=LimitEmission_Constraint
         )
         M.progress_marker_7 = BuildAction(
-            ['Starting Growth and Activity Constraints'], rule=progress_check
+            ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
         )
 
-        M.GrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthCapacityIndices)
-        M.GrowthCapacityConstraint = Constraint(
-            M.GrowthCapacityConstraint_rtpop, rule=GrowthCapacityConstraint_rule
+        M.LimitGrowthCapacityConstraint_rpt = Set(dimen=4, initialize=LimitGrowthCapacityIndices)
+        M.LimitGrowthCapacityConstraint = Constraint(
+            M.LimitGrowthCapacityConstraint_rpt, rule=LimitGrowthCapacityConstraint_rule
         )
-        M.DegrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthCapacityIndices)
-        M.DegrowthCapacityConstraint = Constraint(
-            M.DegrowthCapacityConstraint_rtpop, rule=DegrowthCapacityConstraint_rule
-        )
-
-        M.GrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityIndices)
-        M.GrowthNewCapacityConstraint = Constraint(
-            M.GrowthNewCapacityConstraint_rtpop, rule=GrowthNewCapacityConstraint_rule
-        )
-        M.DegrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityIndices)
-        M.DegrowthNewCapacityConstraint = Constraint(
-            M.DegrowthNewCapacityConstraint_rtpop, rule=DegrowthNewCapacityConstraint_rule
+        M.LimitDegrowthCapacityConstraint_rpt = Set(dimen=4, initialize=LimitDegrowthCapacityIndices)
+        M.LimitDegrowthCapacityConstraint = Constraint(
+            M.LimitDegrowthCapacityConstraint_rpt, rule=LimitDegrowthCapacityConstraint_rule
         )
 
-        M.GrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityDeltaIndices)
-        M.GrowthNewCapacityDeltaConstraint = Constraint(
-            M.GrowthNewCapacityDeltaConstraint_rtpop, rule=GrowthNewCapacityDeltaConstraint_rule
+        M.LimitGrowthNewCapacityConstraint_rpt = Set(dimen=4, initialize=LimitGrowthNewCapacityIndices)
+        M.LimitGrowthNewCapacityConstraint = Constraint(
+            M.LimitGrowthNewCapacityConstraint_rpt, rule=LimitGrowthNewCapacityConstraint_rule
         )
-        M.DegrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityDeltaIndices)
-        M.DegrowthNewCapacityDeltaConstraint = Constraint(
-            M.DegrowthNewCapacityDeltaConstraint_rtpop, rule=DegrowthNewCapacityDeltaConstraint_rule
-        )
-
-        M.MaxActivityConstraint = Constraint(
-            M.MaxActivityConstraint_rpt, rule=MaxActivity_Constraint
+        M.LimitDegrowthNewCapacityConstraint_rpt = Set(dimen=4, initialize=LimitDegrowthNewCapacityIndices)
+        M.LimitDegrowthNewCapacityConstraint = Constraint(
+            M.LimitDegrowthNewCapacityConstraint_rpt, rule=LimitDegrowthNewCapacityConstraint_rule
         )
 
-        M.MinActivityConstraint = Constraint(
-            M.MinActivityConstraint_rpt, rule=MinActivity_Constraint
+        M.LimitGrowthNewCapacityDeltaConstraint_rpt = Set(dimen=4, initialize=LimitGrowthNewCapacityDeltaIndices)
+        M.LimitGrowthNewCapacityDeltaConstraint = Constraint(
+            M.LimitGrowthNewCapacityDeltaConstraint_rpt, rule=LimitGrowthNewCapacityDeltaConstraint_rule
+        )
+        M.LimitDegrowthNewCapacityDeltaConstraint_rpt = Set(dimen=4, initialize=LimitDegrowthNewCapacityDeltaIndices)
+        M.LimitDegrowthNewCapacityDeltaConstraint = Constraint(
+            M.LimitDegrowthNewCapacityDeltaConstraint_rpt, rule=LimitDegrowthNewCapacityDeltaConstraint_rule
         )
 
-        M.MaxSeasonalActivityConstraint = Constraint(
-            M.MaxSeasonalActivityConstraint_rpst, rule=MaxSeasonalActivity_Constraint
+        M.LimitActivityConstraint = Constraint(
+            M.LimitActivityConstraint_rpt, rule=LimitActivity_Constraint
         )
 
-        M.MinSeasonalActivityConstraint = Constraint(
-            M.MinSeasonalActivityConstraint_rpst, rule=MinSeasonalActivity_Constraint
+        M.LimitSeasonalActivityConstraint = Constraint(
+            M.LimitSeasonalActivityConstraint_rpst, rule=LimitSeasonalActivity_Constraint
         )
 
-        M.MinActivityGroupConstraint = Constraint(
-            M.MinActivityGroup_rpg, rule=MinActivityGroup_Constraint
+        M.LimitActivityGroupConstraint = Constraint(
+            M.LimitActivityGroup_rpg, rule=LimitActivityGroup_Constraint
         )
 
-        M.MaxActivityGroupConstraint = Constraint(
-            M.MaxActivityGroup_rpg, rule=MaxActivityGroup_Constraint
+        M.LimitCapacityConstraint = Constraint(
+            M.LimitCapacityConstraint_rpt, rule=LimitCapacity_Constraint
         )
 
-        M.MaxCapacityConstraint = Constraint(
-            M.MaxCapacityConstraint_rpt, rule=MaxCapacity_Constraint
+        M.LimitNewCapacityConstraint = Constraint(
+            M.LimitNewCapacityConstraint_rpt, rule=LimitNewCapacity_Constraint
         )
 
-        M.MaxNewCapacityConstraint = Constraint(
-            M.MaxNewCapacityConstraint_rpt, rule=MaxNewCapacity_Constraint
+        M.LimitCapacityGroupConstraint = Constraint(
+            M.LimitCapacityGroupConstraint_rpg, rule=LimitCapacityGroup_Constraint
         )
 
-        M.MaxCapacityGroupConstraint = Constraint(
-            M.MaxCapacityGroupConstraint_rpg, rule=MaxCapacityGroup_Constraint
+        M.LimitNewCapacityGroupConstraint = Constraint(
+            M.LimitNewCapacityGroupConstraint_rpg, rule=LimitNewCapacityGroup_Constraint
         )
 
-        M.MinCapacityGroupConstraint = Constraint(
-            M.MinCapacityGroupConstraint_rpg, rule=MinCapacityGroup_Constraint
+        M.LimitCapacityShareConstraint = Constraint(
+            M.LimitCapacityShareConstraint_rptg, rule=LimitCapacityShare_Constraint
         )
 
-        M.MinNewCapacityGroupConstraint = Constraint(
-            M.MinNewCapacityGroupConstraint_rpg, rule=MinNewCapacityGroup_Constraint
+        M.LimitActivityShareConstraint = Constraint(
+            M.LimitActivityShareConstraint_rptg, rule=LimitActivityShare_Constraint
         )
 
-        M.MaxNewCapacityGroupConstraint = Constraint(
-            M.MinNewCapacityGroupConstraint_rpg, rule=MaxNewCapacityGroup_Constraint
+        M.LimitNewCapacityShareConstraint = Constraint(
+            M.LimitNewCapacityShareConstraint_rptg, rule=LimitNewCapacityShare_Constraint
         )
-
-        M.MinCapacityShareConstraint = Constraint(
-            M.MinCapacityShareConstraint_rptg, rule=MinCapacityShare_Constraint
-        )
-
-        M.MaxCapacityShareConstraint = Constraint(
-            M.MaxCapacityShareConstraint_rptg, rule=MaxCapacityShare_Constraint
-        )
-
-        M.MinActivityShareConstraint = Constraint(
-            M.MinActivityShareConstraint_rptg, rule=MinActivityShare_Constraint
-        )
-
-        M.MaxActivityShareConstraint = Constraint(
-            M.MaxActivityShareConstraint_rptg, rule=MaxActivityShare_Constraint
-        )
-
-        M.MinNewCapacityShareConstraint = Constraint(
-            M.MinNewCapacityShareConstraint_rptg, rule=MinNewCapacityShare_Constraint
-        )
-
-        M.MaxNewCapacityShareConstraint = Constraint(
-            M.MaxNewCapacityShareConstraint_rptg, rule=MaxNewCapacityShare_Constraint
-        )
-
-        M.MinNewCapacityGroupShareConstraint = Constraint(
-            M.MinNewCapacityGroupShareConstraint_rpgg, rule=MinNewCapacityGroupShare_Constraint
-        )
-        M.MaxNewCapacityGroupShareConstraint = Constraint(
-            M.MaxNewCapacityGroupShareConstraint_rpgg, rule=MaxNewCapacityGroupShare_Constraint
+        
+        M.LimitNewCapacityGroupShareConstraint = Constraint(
+            M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
         )
 
         M.progress_marker_8 = BuildAction(
-            ['Starting Max/Min Capacity and Tech Split ' 'Constraints'], rule=progress_check
+            ['Starting Limit Capacity and Tech Split ' 'Constraints'], rule=progress_check
         )
 
-        M.MaxResourceConstraint = Constraint(
-            M.MaxResourceConstraint_rt, rule=MaxResource_Constraint
+        M.LimitResourceConstraint = Constraint(
+            M.LimitResourceConstraint_rt, rule=LimitResource_Constraint
         )
 
-        M.MinCapacityConstraint = Constraint(
-            M.MinCapacityConstraint_rpt, rule=MinCapacity_Constraint
+        M.LimitAnnualCapacityFactorConstraint = Constraint(
+            M.LimitAnnualCapacityFactorConstraint_rpto, rule=LimitAnnualCapacityFactor_Constraint
         )
 
-        M.MinNewCapacityConstraint = Constraint(
-            M.MinNewCapacityConstraint_rpt, rule=MinNewCapacity_Constraint
+        ## Tech input splits
+        M.LimitTechInputSplitConstraint_rpsditv = Set(
+            dimen=7, initialize=LimitTechInputSplitConstraintIndices
+        )
+        M.LimitTechInputSplitConstraint = Constraint(
+            M.LimitTechInputSplitConstraint_rpsditv, rule=LimitTechInputSplit_Constraint
         )
 
-        M.MinAnnualCapacityFactorConstraint = Constraint(
-            M.MinAnnualCapacityFactorConstraint_rpto, rule=MinAnnualCapacityFactor_Constraint
+        M.LimitTechInputSplitAnnualConstraint_rpitv = Set(
+            dimen=5, initialize=LimitTechInputSplitAnnualConstraintIndices
+        )
+        M.LimitTechInputSplitAnnualConstraint = Constraint(
+            M.LimitTechInputSplitAnnualConstraint_rpitv, rule=LimitTechInputSplitAnnual_Constraint
         )
 
-        M.MaxAnnualCapacityFactorConstraint = Constraint(
-            M.MaxAnnualCapacityFactorConstraint_rpto, rule=MaxAnnualCapacityFactor_Constraint
+        M.LimitTechInputSplitAverageConstraint_rpitv = Set(
+            dimen=5, initialize=LimitTechInputSplitAverageConstraintIndices
         )
-        
-        ## Min tech input splits
-        M.MinTechInputSplitConstraint_rpsditv = Set(
-            dimen=7, initialize=MinTechInputSplitConstraintIndices
-        )
-        M.MinTechInputSplitConstraint = Constraint(
-            M.MinTechInputSplitConstraint_rpsditv, rule=MinTechInputSplit_Constraint
+        M.LimitTechInputSplitAverageConstraint = Constraint(
+            M.LimitTechInputSplitAverageConstraint_rpitv, rule=LimitTechInputSplitAverage_Constraint
         )
 
-        M.MinTechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=5, initialize=MinTechInputSplitAnnualConstraintIndices
+        ## Tech output splits
+        M.LimitTechOutputSplitConstraint_rpsdtvo = Set(
+            dimen=7, initialize=LimitTechOutputSplitConstraintIndices
         )
-        M.MinTechInputSplitAnnualConstraint = Constraint(
-            M.MinTechInputSplitAnnualConstraint_rpitv, rule=MinTechInputSplitAnnual_Constraint
-        )
-
-        M.MinTechInputSplitAverageConstraint_rpitv = Set(
-            dimen=5, initialize=MinTechInputSplitAverageConstraintIndices
-        )
-        M.MinTechInputSplitAverageConstraint = Constraint(
-            M.MinTechInputSplitAverageConstraint_rpitv, rule=MinTechInputSplitAverage_Constraint
+        M.LimitTechOutputSplitConstraint = Constraint(
+            M.LimitTechOutputSplitConstraint_rpsdtvo, rule=LimitTechOutputSplit_Constraint
         )
 
-        ## Min tech output splits
-        M.MinTechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=7, initialize=MinTechOutputSplitConstraintIndices
+        M.LimitTechOutputSplitAnnualConstraint_rptvo = Set(
+            dimen=5, initialize=LimitTechOutputSplitAnnualConstraintIndices
         )
-        M.MinTechOutputSplitConstraint = Constraint(
-            M.MinTechOutputSplitConstraint_rpsdtvo, rule=MinTechOutputSplit_Constraint
-        )
-
-        M.MinTechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=5, initialize=MinTechOutputSplitAnnualConstraintIndices
-        )
-        M.MinTechOutputSplitAnnualConstraint = Constraint(
-            M.MinTechOutputSplitAnnualConstraint_rptvo, rule=MinTechOutputSplitAnnual_Constraint
+        M.LimitTechOutputSplitAnnualConstraint = Constraint(
+            M.LimitTechOutputSplitAnnualConstraint_rptvo, rule=LimitTechOutputSplitAnnual_Constraint
         )
 
-        M.MinTechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=5, initialize=MinTechOutputSplitAverageConstraintIndices
+        M.LimitTechOutputSplitAverageConstraint_rptvo = Set(
+            dimen=5, initialize=LimitTechOutputSplitAverageConstraintIndices
         )
-        M.MinTechOutputSplitAverageConstraint = Constraint(
-            M.MinTechOutputSplitAverageConstraint_rptvo, rule=MinTechOutputSplitAverage_Constraint
-        )
-
-        ## Max tech input splits
-        M.MaxTechInputSplitConstraint_rpsditv = Set(
-            dimen=7, initialize=MaxTechInputSplitConstraintIndices
-        )
-        M.MaxTechInputSplitConstraint = Constraint(
-            M.MaxTechInputSplitConstraint_rpsditv, rule=MaxTechInputSplit_Constraint
-        )
-
-        M.MaxTechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=5, initialize=MaxTechInputSplitAnnualConstraintIndices
-        )
-        M.MaxTechInputSplitAnnualConstraint = Constraint(
-            M.MaxTechInputSplitAnnualConstraint_rpitv, rule=MaxTechInputSplitAnnual_Constraint
-        )
-
-        M.MaxTechInputSplitAverageConstraint_rpitv = Set(
-            dimen=5, initialize=MaxTechInputSplitAverageConstraintIndices
-        )
-        M.MaxTechInputSplitAverageConstraint = Constraint(
-            M.MaxTechInputSplitAverageConstraint_rpitv, rule=MaxTechInputSplitAverage_Constraint
-        )
-
-        ## Max tech output splits
-        M.MaxTechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=7, initialize=MaxTechOutputSplitConstraintIndices
-        )
-        M.MaxTechOutputSplitConstraint = Constraint(
-            M.MaxTechOutputSplitConstraint_rpsdtvo, rule=MaxTechOutputSplit_Constraint
-        )
-
-        M.MaxTechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=5, initialize=MaxTechOutputSplitAnnualConstraintIndices
-        )
-        M.MaxTechOutputSplitAnnualConstraint = Constraint(
-            M.MaxTechOutputSplitAnnualConstraint_rptvo, rule=MaxTechOutputSplitAnnual_Constraint
-        )
-
-        M.MaxTechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=5, initialize=MaxTechOutputSplitAverageConstraintIndices
-        )
-        M.MaxTechOutputSplitAverageConstraint = Constraint(
-            M.MaxTechOutputSplitAverageConstraint_rptvo, rule=MaxTechOutputSplitAverage_Constraint
+        M.LimitTechOutputSplitAverageConstraint = Constraint(
+            M.LimitTechOutputSplitAverageConstraint_rptvo, rule=LimitTechOutputSplitAverage_Constraint
         )
 
         M.RenewablePortfolioStandardConstraint = Constraint(
