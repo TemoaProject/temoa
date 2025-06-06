@@ -760,21 +760,21 @@ class TemoaModel(AbstractModel):
 
         ## Tech input splits
         M.LimitTechInputSplitConstraint_rpsditv = Set(
-            dimen=7, initialize=LimitTechInputSplitConstraintIndices
+            dimen=8, initialize=LimitTechInputSplitConstraintIndices
         )
         M.LimitTechInputSplitConstraint = Constraint(
             M.LimitTechInputSplitConstraint_rpsditv, rule=LimitTechInputSplit_Constraint
         )
 
         M.LimitTechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=5, initialize=LimitTechInputSplitAnnualConstraintIndices
+            dimen=6, initialize=LimitTechInputSplitAnnualConstraintIndices
         )
         M.LimitTechInputSplitAnnualConstraint = Constraint(
             M.LimitTechInputSplitAnnualConstraint_rpitv, rule=LimitTechInputSplitAnnual_Constraint
         )
 
         M.LimitTechInputSplitAverageConstraint_rpitv = Set(
-            dimen=5, initialize=LimitTechInputSplitAverageConstraintIndices
+            dimen=6, initialize=LimitTechInputSplitAverageConstraintIndices
         )
         M.LimitTechInputSplitAverageConstraint = Constraint(
             M.LimitTechInputSplitAverageConstraint_rpitv, rule=LimitTechInputSplitAverage_Constraint
@@ -782,21 +782,21 @@ class TemoaModel(AbstractModel):
 
         ## Tech output splits
         M.LimitTechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=7, initialize=LimitTechOutputSplitConstraintIndices
+            dimen=8, initialize=LimitTechOutputSplitConstraintIndices
         )
         M.LimitTechOutputSplitConstraint = Constraint(
             M.LimitTechOutputSplitConstraint_rpsdtvo, rule=LimitTechOutputSplit_Constraint
         )
 
         M.LimitTechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=5, initialize=LimitTechOutputSplitAnnualConstraintIndices
+            dimen=6, initialize=LimitTechOutputSplitAnnualConstraintIndices
         )
         M.LimitTechOutputSplitAnnualConstraint = Constraint(
             M.LimitTechOutputSplitAnnualConstraint_rptvo, rule=LimitTechOutputSplitAnnual_Constraint
         )
 
         M.LimitTechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=5, initialize=LimitTechOutputSplitAverageConstraintIndices
+            dimen=6, initialize=LimitTechOutputSplitAverageConstraintIndices
         )
         M.LimitTechOutputSplitAverageConstraint = Constraint(
             M.LimitTechOutputSplitAverageConstraint_rptvo, rule=LimitTechOutputSplitAverage_Constraint
