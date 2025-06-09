@@ -22130,7 +22130,7 @@
     "LimitNewCapacityGroupShareConstraint_rpgg": [],
     "LimitNewCapacityShareConstraint_rptg": [],
     "LimitResourceConstraint_rt": [],
-    "LimitSeasonalActivityConstraint_rpst": [],
+    "LimitSeasonalCapacityFactorConstraint_rpst": [],
     "LimitStorageFractionConstraint_rpsdtv": [],
     "LimitTechInputSplitAnnualConstraint_rpitv": [],
     "LimitTechInputSplitAverageConstraint_rpitv": [],
