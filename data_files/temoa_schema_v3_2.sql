@@ -388,8 +388,6 @@ CREATE TABLE IF NOT EXISTS Operator
 	notes TEXT
 );
 REPLACE INTO Operator VALUES('e','equal to');
-REPLACE INTO Operator VALUES('l','less than');
-REPLACE INTO Operator VALUES('g','greater than');
 REPLACE INTO Operator VALUES('le','less than or equal to');
 REPLACE INTO Operator VALUES('ge','greater than or equal to');
 CREATE TABLE IF NOT EXISTS LimitGrowthCapacity

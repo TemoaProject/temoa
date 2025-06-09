@@ -2975,18 +2975,14 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
         match operator:
             case "e":
                 expr = lhs == rhs
-            case "l":
-                expr = lhs < rhs
-            case "g":
-                expr = lhs > rhs
             case "le":
                 expr = lhs <= rhs
             case "ge":
                 expr = lhs >= rhs
             case _:
                 msg = (
-                    'Tried to build a constraint using a bad operator: {} {} {}'
-                ).format(lhs, operator, rhs)
+                    'Tried to build a constraint using a bad operator. Allowed operators are "e","le", or "ge". Got "{}": {} {} {}'
+                ).format(operator, lhs, operator, rhs)
                 logger.error(msg)
                 raise ValueError(msg)
     except Exception as e:
