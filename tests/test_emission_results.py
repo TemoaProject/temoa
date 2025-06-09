@@ -141,8 +141,8 @@ def test_emissions_costs_discounted(solved_connection):
         .fetchone()[0]
     )
     cost_target = (
-        0.7 * emis_target * 4.32947667063082 * 1.05
-    )  # emission cost x emissions x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
+        0.7 * emis_target * 4.32947667063082
+    )  # emission cost x emissions x P/A(5%, 5y, 1)
     assert ec == pytest.approx(
         cost_target
     ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
@@ -211,8 +211,8 @@ def test_embodied_emissions_costs_discounted(solved_connection):
         .fetchone()[0]
     )
     cost_target = (
-        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5) * 1.05
-    )  # emission cost x embodied emissions x annual distribution x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
+        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5)
+    )  # emission cost x embodied emissions x annual distribution x P/A(5%, 5y, 1)
     assert ec == pytest.approx(
         cost_target
     ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
@@ -281,8 +281,8 @@ def test_endoflife_emissions_costs_discounted(solved_connection):
         .fetchone()[0]
     )
     cost_target = (
-        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5) / 1.05**5 * 1.05
-    )  # emission cost x end of life emissions x annual distribution x P/A(5%, 5y, 1) x P/F(5%, 1y) [x F/P(5%, 1y) legacy bug?]
+        0.7 * emis_target * 1/5 * (1.05**5-1)/(0.05*1.05**5) / 1.05**5
+    )  # emission cost x end of life emissions x annual distribution x P/A(5%, 5y, 1) x P/F(5%, 1y)
     assert ec == pytest.approx(
         cost_target
     ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'

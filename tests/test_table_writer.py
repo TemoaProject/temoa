@@ -56,7 +56,7 @@ params = [
         'p_0': 2020,
         'vintage': 2030,
         'p_e': 2035,
-        'model_cost': 21997.72,
+        'model_cost': 20950.20952, # reduced after fixing 1 year shift obj function bug
         'undiscounted_cost': 33544.06,
     },
 ]

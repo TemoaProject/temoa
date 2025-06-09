@@ -109,5 +109,6 @@ def test_myopic_utopia(system_test_run):
     res = cur.execute('SELECT SUM(d_invest) FROM main.OutputCost').fetchone()
     invest_sum = res[0]
     # reduced this target after storageinit rework
-    assert invest_sum == pytest.approx(11525.19), 'sum of investment costs did not match expected'
+    # reduced after removing ancient 1-year shift bug from objective function
+    assert invest_sum == pytest.approx(10976.37143), 'sum of investment costs did not match expected'
     con.close()

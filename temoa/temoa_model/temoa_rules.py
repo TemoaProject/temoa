@@ -407,6 +407,19 @@ def TotalCost_rule(M):
     return sum(PeriodCost_rule(M, p) for p in M.time_optimize)
 
 
+def annuity_to_pv(rate: float, periods: int) -> float | Expression:
+    """Multiplication factor to convert an annuity to present value"""
+    return ((1 + rate)**periods - 1) / (rate * (1 + rate)**periods)
+
+def pv_to_annuity(rate: float, periods: int) -> float | Expression:
+    """Multiplication factor to convert present value to an annuity"""
+    return (rate * (1 + rate)**periods) / ((1 + rate)**periods - 1)
+    
+def fv_to_pv(rate: float, periods: int) -> float | Expression:
+    """Multiplication factor to convert a future value to present value"""
+    return 1 / (1 + rate)**periods
+
+
 def loan_cost(
     capacity: float | Var,
     invest_cost: float,
@@ -431,27 +444,30 @@ def loan_cost(
     :param vintage: the base year of the loan
     :return: fixed number or pyomo expression based on input types
     """
-    if GDR == 0:  # return the non-discounted result
-        annuity = capacity * invest_cost * loan_annualize * lifetime_loan_process / lifetime_process
-        payments_made = min(lifetime_process, P_e - vintage)
-        return annuity * payments_made
-    x = 1 + GDR  # a convenience
-    res = (
-        capacity
-        * (
-            invest_cost
-            * loan_annualize
-            * (
-                lifetime_loan_process
-                if not GDR
-                else (x ** (P_0 - vintage + 1) * (1 - x ** (-lifetime_loan_process)) / GDR)
-            )
-        )
-        * (
-            (1 - x ** (-min(lifetime_process, P_e - vintage)))
-            / (1 - x ** (-lifetime_process))
-        )
+
+    # calculate the annualised loan repayment (annuity)
+    annuity = (
+        capacity * invest_cost  # lump investment cost is capacity times CostInvest
+        * loan_annualize        # calculate loan annuities for investment cost, if used
     )
+    
+    if not GDR:
+        # Undiscounted result
+        res = (
+            annuity
+            * lifetime_loan_process                 # sum of loan payments over loan period
+            / lifetime_process                      # redistributed over lifetime of process
+            * min(lifetime_process, P_e - vintage)  # sum of distributed costs within planning horizon
+        )
+    else:
+        # Discounted result
+        res = (
+            annuity
+            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments in vintage year using GDR
+            * pv_to_annuity(GDR, lifetime_process)          # reannualise costs over lifetime of process using GDR
+            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # sum reannualised costs within planning horizon
+            * fv_to_pv(GDR, vintage - P_0)                  # finally, discount from vintage year to P_0
+        )
     return res
 
 
@@ -474,16 +490,19 @@ def fixed_or_variable_cost(
     :param p: the period under evaluation
     :return:
     """
-    x = 1 + GDR
-    res = cap_or_flow * (
-        cost_factor
-        * (
-            cost_years
-            if not GDR
-            else (x ** (P_0 - p + 1) * (1 - x ** (-cost_years)) / GDR)
+
+    annual_cost = cap_or_flow * cost_factor     # annual fixed, variable, or emission cost
+    
+    if not GDR:
+        # Undiscounted result
+        return annual_cost * cost_years         # annual cost times years paying this cost
+    else:
+        # Discounted result
+        return (
+            annual_cost
+            * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, in period p
+            * fv_to_pv(GDR, p - P_0)            # discount to p_0
         )
-    )
-    return res
 
 
 def PeriodCost_rule(M: 'TemoaModel', p):
