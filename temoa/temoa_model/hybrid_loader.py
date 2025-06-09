@@ -1039,7 +1039,7 @@ class HybridLoader:
 
         # StorageFraction
         if self.table_exists('LimitStorageLevelFraction'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, fraction FROM main.LimitStorageLevelFraction')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, operator, fraction FROM main.LimitStorageLevelFraction')
             load_element(M.LimitStorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
