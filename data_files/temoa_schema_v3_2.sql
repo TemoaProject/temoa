@@ -542,7 +542,6 @@ CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     factor      REAL,
-    source      TEXT,
     notes       TEXT,
     PRIMARY KEY (region, period, tech, operator),
     CHECK (factor >= 0 AND factor <= 1)
@@ -660,7 +659,7 @@ CREATE TABLE IF NOT EXISTS LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitSeasonalActivity
+CREATE TABLE IF NOT EXISTS LimitSeasonalCapacityFactor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -672,10 +671,9 @@ CREATE TABLE IF NOT EXISTS LimitSeasonalActivity
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
-	activity	REAL,
-	units	TEXT,
+	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region,period,season,tech, operator)
+	PRIMARY KEY(region, period, season, tech, operator)
 );
 CREATE TABLE IF NOT EXISTS LimitTechInputSplit
 (

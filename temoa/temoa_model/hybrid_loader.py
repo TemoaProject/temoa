@@ -56,7 +56,7 @@ tables_with_regional_groups = {
     'LimitAnnualCapacityFactor': 'region',
     'LimitEmission': 'region',
     'LimitActivityGroup': 'region',
-    'LimitSeasonalActivity': 'region',
+    'LimitSeasonalCapacityFactor': 'region',
     'LimitCapacity': 'region',
     'LimitActivity': 'region',
     'LimitNewCapacity': 'region',
@@ -894,10 +894,10 @@ class HybridLoader:
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, activity FROM main.LimitActivity')
             load_element(M.LimitActivity, raw, self.viable_rt, (0, 2))
 
-        # LimitSeasonalActivity
-        if self.table_exists('LimitSeasonalActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, operator, activity FROM main.LimitSeasonalActivity')
-            load_element(M.LimitSeasonalActivity, raw, self.viable_rt, (0, 3))
+        # LimitSeasonalCapacityFactor
+        if self.table_exists('LimitSeasonalCapacityFactor'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, operator, factor FROM main.LimitSeasonalCapacityFactor')
+            load_element(M.LimitSeasonalCapacityFactor, raw, self.viable_rt, (0, 3))
 
         # LimitAnnualCapacityFactor
         if self.table_exists('LimitAnnualCapacityFactor'):
@@ -1091,7 +1091,7 @@ class HybridLoader:
             M.CostEmission.name: M.CostEmission_rpe.name,
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
-            M.LimitSeasonalActivity.name: M.LimitSeasonalActivityConstraint_rpst.name,
+            M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,
             M.LimitActivityGroup.name: M.LimitActivityGroup_rpg.name,
             M.LimitActivityShare.name: M.LimitActivityShareConstraint_rptg.name,
             M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
