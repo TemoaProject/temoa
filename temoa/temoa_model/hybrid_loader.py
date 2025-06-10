@@ -1105,7 +1105,7 @@ class HybridLoader:
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
             M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,
-            M.LimitActivityGroup.name: M.LimitActivityGroup_rpg.name,
+            M.LimitActivityGroup.name: M.LimitActivityGroupConstraint_rpg.name,
             M.LimitActivityShare.name: M.LimitActivityShareConstraint_rptg.name,
             M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
             M.LimitCapacity.name: M.LimitCapacityConstraint_rpt.name,

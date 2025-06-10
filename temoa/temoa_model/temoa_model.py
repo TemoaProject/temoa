@@ -431,10 +431,10 @@ class TemoaModel(AbstractModel):
         M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
         M.EmissionActivity = Param(M.EmissionActivity_reitvo)
 
-        M.LimitActivityGroup_rpg = Set(
+        M.LimitActivityGroupConstraint_rpg = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
         )
-        M.LimitActivityGroup = Param(M.LimitActivityGroup_rpg)
+        M.LimitActivityGroup = Param(M.LimitActivityGroupConstraint_rpg)
 
         M.LimitCapacityGroupConstraint_rpg = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
@@ -714,7 +714,7 @@ class TemoaModel(AbstractModel):
         )
 
         M.LimitActivityGroupConstraint = Constraint(
-            M.LimitActivityGroup_rpg, rule=LimitActivityGroup_Constraint
+            M.LimitActivityGroupConstraint_rpg, rule=LimitActivityGroup_Constraint
         )
 
         M.LimitCapacityConstraint = Constraint(

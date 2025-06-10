@@ -3432,7 +3432,7 @@
             "ge"
         ]
     ],
-    "LimitActivityGroup_rpg": [
+    "LimitActivityGroupConstraint_rpg": [
         [
             "A",
             2025,
@@ -3446,6 +3446,7 @@
             "ge"
         ]
     ],
+    "LimitActivityGroupShareConstraint_rpgg": [],
     "LimitActivityShareConstraint_rptg": [],
     "LimitAnnualCapacityFactorConstraint_rpto": [],
     "LimitCapacityConstraint_rpt": [
