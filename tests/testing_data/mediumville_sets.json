@@ -3129,197 +3129,6 @@
             "ELC"
         ]
     ],
-    "GroupShareIndices": [
-        [
-            "global",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "EF",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "EF",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "EH",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "EF",
-            "A_tech_grp_1",
-            "ge"
-        ]
-    ],
     "LifetimeProcess_rtv": [
         [
             "A",
@@ -3430,9 +3239,7 @@
             2025,
             "EF",
             "ge"
-        ]
-    ],
-    "LimitActivityGroupConstraint_rpg": [
+        ],
         [
             "A",
             2025,
@@ -3446,8 +3253,7 @@
             "ge"
         ]
     ],
-    "LimitActivityGroupShareConstraint_rpgg": [],
-    "LimitActivityShareConstraint_rptg": [],
+    "LimitActivityShareConstraint_rpgg": [],
     "LimitAnnualCapacityFactorConstraint_rpto": [],
     "LimitCapacityConstraint_rpt": [
         [
@@ -3473,9 +3279,7 @@
             2025,
             "EH",
             "le"
-        ]
-    ],
-    "LimitCapacityGroupConstraint_rpg": [
+        ],
         [
             "A",
             2025,
@@ -3489,7 +3293,7 @@
             "ge"
         ]
     ],
-    "LimitCapacityShareConstraint_rptg": [],
+    "LimitCapacityShareConstraint_rpgg": [],
     "LimitDegrowthCapacityConstraint_rpt": [],
     "LimitDegrowthNewCapacityConstraint_rpt": [],
     "LimitDegrowthNewCapacityDeltaConstraint_rpt": [],
@@ -3505,8 +3309,7 @@
     "LimitGrowthNewCapacityConstraint_rpt": [],
     "LimitGrowthNewCapacityDeltaConstraint_rpt": [],
     "LimitNewCapacityConstraint_rpt": [],
-    "LimitNewCapacityGroupConstraint_rpg": [],
-    "LimitNewCapacityGroupShareConstraint_rpgg": [
+    "LimitNewCapacityShareConstraint_rpgg": [
         [
             "A",
             2025,
@@ -3522,7 +3325,6 @@
             "le"
         ]
     ],
-    "LimitNewCapacityShareConstraint_rptg": [],
     "LimitResourceConstraint_rt": [
         [
             "B",
@@ -4346,386 +4148,6 @@
         ]
     ],
     "TimeNext": [],
-    "TwoGroupShareIndices": [
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "RPS_common",
-            "RPS_common",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_common",
-            "A_tech_grp_1",
-            "ge"
-        ],
-        [
-            "A",
-            2025,
-            "A_tech_grp_1",
-            "RPS_common",
-            "e"
-        ],
-        [
-            "global",
-            2025,
-            "A_tech_grp_1",
-            "A_tech_grp_1",
-            "le"
-        ],
-        [
-            "global",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "e"
-        ],
-        [
-            "B",
-            2025,
-            "RPS_global",
-            "A_tech_grp_1",
-            "e"
-        ]
-    ],
     "commodity_all": [
         "FusionGas",
         "RH",
@@ -4822,13 +4244,27 @@
     ],
     "tech_group_members": [
         "A_tech_grp_1",
-        "RPS_common",
-        "RPS_global"
+        "RPS_common"
     ],
     "tech_group_names": [
         "A_tech_grp_1",
         "RPS_common",
         "RPS_global"
+    ],
+    "tech_or_group": [
+        "A_tech_grp_1",
+        "RPS_common",
+        "EH",
+        "RPS_global",
+        "EF",
+        "GeoThermal",
+        "well",
+        "heater",
+        "EFL",
+        "GeoHeater",
+        "bulbs",
+        "FGF_pipe",
+        "batt"
     ],
     "tech_production": [
         "GeoHeater",

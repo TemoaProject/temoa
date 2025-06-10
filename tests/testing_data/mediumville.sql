@@ -20,8 +20,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.42000000000000001776,'');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.42000000000000004,'');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -485,80 +485,74 @@ INSERT INTO Operator VALUES('ge','greater than or equal to');
 CREATE TABLE LimitGrowthCapacity
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitDegrowthCapacity
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitGrowthNewCapacity
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitDegrowthNewCapacity
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitGrowthNewCapacityDelta
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitDegrowthNewCapacityDelta
 (
     region TEXT,
-    tech   TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator TEXT NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     rate   REAL NOT NULL DEFAULT 0,
     seed   REAL NOT NULL DEFAULT 0,
     seed_units TEXT,
     notes  TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 CREATE TABLE LimitStorageLevelFraction
 (
@@ -584,48 +578,31 @@ CREATE TABLE LimitActivity
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    tech    TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     activity REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech, operator)
+    PRIMARY KEY (region, period, tech_or_group, operator)
 );
 INSERT INTO LimitActivity VALUES('A',2025,'EF','ge',0.00100000000000000002,'PJ/CY','goofy units');
 INSERT INTO LimitActivity VALUES('B',2025,'EH','le',10000.0,'stuff',NULL);
 INSERT INTO LimitActivity VALUES('A',2025,'EF','le',10000.0,'stuff',NULL);
-CREATE TABLE LimitActivityGroup
-(
-    region     TEXT,
-    period     INTEGER
-        REFERENCES TimePeriod (period),
-    group_name TEXT
-        REFERENCES TechGroup (group_name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    activity    REAL,
-    units      TEXT,
-    notes      TEXT,
-    PRIMARY KEY (region, period, group_name, operator)
-);
-INSERT INTO LimitActivityGroup VALUES('A',2025,'A_tech_grp_1','ge',0.05000000000000000277,'',NULL);
-INSERT INTO LimitActivityGroup VALUES('A',2025,'A_tech_grp_1','le',10000.0,'',NULL);
+INSERT INTO LimitActivity VALUES('A',2025,'A_tech_grp_1','ge',0.05000000000000000277,'',NULL);
+INSERT INTO LimitActivity VALUES('A',2025,'A_tech_grp_1','le',10000.0,'',NULL);
 CREATE TABLE LimitActivityShare
 (
     region         TEXT,
     period         INTEGER
         REFERENCES TimePeriod (period),
-    tech           TEXT
-        REFERENCES Technology (tech),
-    group_name     TEXT
-        REFERENCES TechGroup (group_name),
+    sub_group      TEXT,
+    super_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, tech, group_name, operator)
+    PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
 CREATE TABLE LimitAnnualCapacityFactor
 (
@@ -648,121 +625,71 @@ CREATE TABLE LimitCapacity
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    tech    TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     capacity REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech, operator)
+    PRIMARY KEY (region, period, tech_or_group, operator)
 );
 INSERT INTO LimitCapacity VALUES('A',2025,'EH','ge',0.1000000000000000055,'','');
 INSERT INTO LimitCapacity VALUES('B',2025,'batt','ge',0.1000000000000000055,'','');
 INSERT INTO LimitCapacity VALUES('A',2025,'EH','le',20000.0,'','');
 INSERT INTO LimitCapacity VALUES('B',2025,'EH','le',20000.0,'','');
-CREATE TABLE LimitCapacityGroup
-(
-    region     TEXT,
-    period     INTEGER
-        REFERENCES TimePeriod (period),
-    group_name TEXT
-        REFERENCES TechGroup (group_name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    capacity    REAL,
-    units      TEXT,
-    notes      TEXT,
-    PRIMARY KEY (region, period, group_name, operator)
-);
-INSERT INTO LimitCapacityGroup VALUES('A',2025,'A_tech_grp_1','ge',0.2000000000000000111,'',NULL);
-INSERT INTO LimitCapacityGroup VALUES('A',2025,'A_tech_grp_1','le',6000.0,'',NULL);
+INSERT INTO LimitCapacity VALUES('A',2025,'A_tech_grp_1','ge',0.2000000000000000111,'',NULL);
+INSERT INTO LimitCapacity VALUES('A',2025,'A_tech_grp_1','le',6000.0,'',NULL);
 CREATE TABLE LimitCapacityShare
 (
     region         TEXT,
     period         INTEGER
         REFERENCES TimePeriod (period),
-    tech           TEXT
-        REFERENCES Technology (tech),
-    group_name     TEXT
-        REFERENCES TechGroup (group_name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    share REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, tech, group_name, operator)
-);
-CREATE TABLE LimitNewCapacity
-(
-    region  TEXT,
-    period  INTEGER
-        REFERENCES TimePeriod (period),
-    tech    TEXT
-        REFERENCES Technology (tech),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    new_cap REAL,
-    units   TEXT,
-    notes   TEXT,
-    PRIMARY KEY (region, period, tech, operator)
-);
-CREATE TABLE LimitNewCapacityGroup
-(
-    region      TEXT,
-    period      INTEGER
-        REFERENCES TimePeriod (period),
-    group_name  TEXT
-        REFERENCES TechGroup (group_name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    new_cap REAL,
-    units       TEXT,
-    notes       TEXT,
-    PRIMARY KEY (region, period, group_name, operator)
-);
-CREATE TABLE LimitNewCapacityGroupShare
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES TimePeriod (period),
-    sub_group      TEXT
-        REFERENCES TechGroup (group_name),
-    super_group    TEXT
-        REFERENCES TechGroup (group_name),
+    sub_group      TEXT,
+    super_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     share REAL,
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-INSERT INTO LimitNewCapacityGroupShare VALUES('A',2025,'RPS_common','A_tech_grp_1','ge',0.0,'');
-INSERT INTO LimitNewCapacityGroupShare VALUES('global',2025,'RPS_common','A_tech_grp_1','le',1.0,'');
+CREATE TABLE LimitNewCapacity
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES Operator (operator),
+    new_cap REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech_or_group, operator)
+);
 CREATE TABLE LimitNewCapacityShare
 (
     region         TEXT,
     period         INTEGER
         REFERENCES TimePeriod (period),
-    tech           TEXT
-        REFERENCES Technology (tech),
-    group_name     TEXT
-        REFERENCES TechGroup (group_name),
+    sub_group      TEXT,
+    super_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, tech, group_name, operator)
+    PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
+INSERT INTO LimitNewCapacityShare VALUES('A',2025,'RPS_common','A_tech_grp_1','ge',0.0,'');
+INSERT INTO LimitNewCapacityShare VALUES('global',2025,'RPS_common','A_tech_grp_1','le',1.0,'');
 CREATE TABLE LimitResource
 (
     region  TEXT,
-    tech    TEXT
-        REFERENCES Technology (tech),
+    tech_or_group   TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     cum_act REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, tech, operator)
+    PRIMARY KEY (region, tech_or_group, operator)
 );
 INSERT INTO LimitResource VALUES('B','EF','le',9000.0,'clumps',NULL);
 CREATE TABLE LimitSeasonalCapacityFactor
