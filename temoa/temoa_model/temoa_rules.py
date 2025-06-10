@@ -457,16 +457,16 @@ def loan_cost(
             annuity
             * lifetime_loan_process                 # sum of loan payments over loan period
             / lifetime_process                      # redistributed over lifetime of process
-            * min(lifetime_process, P_e - vintage)  # sum of distributed costs within planning horizon
+            * min(lifetime_process, P_e - vintage)  # sum of redistributed costs for life of process (within planning horizon)
         )
     else:
         # Discounted result
         res = (
             annuity
-            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments in vintage year using GDR
-            * pv_to_annuity(GDR, lifetime_process)          # reannualise costs over lifetime of process using GDR
-            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # sum reannualised costs within planning horizon
-            * fv_to_pv(GDR, vintage - P_0)                  # finally, discount from vintage year to P_0
+            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
+            * pv_to_annuity(GDR, lifetime_process)          # reannualised over lifetime of process using GDR
+            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # PV of all reannualised costs (within planning horizon)
+            * fv_to_pv(GDR, vintage - P_0)                  # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -495,13 +495,13 @@ def fixed_or_variable_cost(
     
     if not GDR:
         # Undiscounted result
-        return annual_cost * cost_years         # annual cost times years paying this cost
+        return annual_cost * cost_years         # annual cost times years paying that cost
     else:
         # Discounted result
         return (
             annual_cost
-            * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, in period p
-            * fv_to_pv(GDR, p - P_0)            # discount to p_0
+            * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, discounted to period p
+            * fv_to_pv(GDR, p - P_0)            # discounted from p to p_0
         )
 
 
