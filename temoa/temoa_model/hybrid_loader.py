@@ -66,6 +66,7 @@ tables_with_regional_groups = {
     'LimitCapacityShare': 'region',
     'LimitNewCapacityShare': 'region',
     'LimitNewCapacityGroupShare': 'region',
+    'LimitActivityGroupShare': 'region',
     'LimitResource': 'region',
     'LimitGrowthCapacity': 'region',
     'LimitDegrowthCapacity': 'region',
@@ -793,6 +794,13 @@ class HybridLoader:
         if self.table_exists('RPSRequirement'):
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech_group, requirement FROM main.RPSRequirement')
             load_element(M.RenewablePortfolioStandard, raw)
+            if len(raw) > 0:
+                logger.warning(
+                    'The RenewablePortfolioStandard constraint has been deprecated. Use the '
+                    'LimitActivityGroupShare constraint instead, using the same sub group and '
+                    'constructing a new super group for all relevant generators. The constraint '
+                    'has been applied but this feature will be removed in the future.'
+                )
 
         # CostFixed
         raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostFixed')
@@ -873,6 +881,11 @@ class HybridLoader:
         if self.table_exists('LimitNewCapacityGroupShare'):
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityGroupShare')
             load_element(M.LimitNewCapacityGroupShare, raw)
+
+        # LimitActivityGroupShare
+        if self.table_exists('LimitActivityGroupShare'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitActivityGroupShare')
+            load_element(M.LimitActivityGroupShare, raw)
 
         # LimitActivityGroup
         if self.table_exists('LimitActivityGroup'):
@@ -1102,6 +1115,7 @@ class HybridLoader:
             M.LimitNewCapacityGroup.name: M.LimitNewCapacityGroupConstraint_rpg.name,
             M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rptg.name,
             M.LimitNewCapacityGroupShare.name: M.LimitNewCapacityGroupShareConstraint_rpgg.name,
+            M.LimitActivityGroupShare.name: M.LimitActivityGroupShareConstraint_rpgg.name,
             M.LimitResource.name: M.LimitResourceConstraint_rt.name,
             M.LimitStorageFraction.name: M.LimitStorageFractionConstraint_rpsdtv.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,

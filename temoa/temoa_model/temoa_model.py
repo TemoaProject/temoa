@@ -461,6 +461,9 @@ class TemoaModel(AbstractModel):
         M.LimitNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
         M.LimitNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
 
+        M.LimitActivityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        M.LimitActivityGroupShare = Param(M.TwoGroupShareIndices)
+
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
         M.LimitStorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv * M.operator)
@@ -744,6 +747,10 @@ class TemoaModel(AbstractModel):
         
         M.LimitNewCapacityGroupShareConstraint = Constraint(
             M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
+        )
+
+        M.LimitActivityGroupShareConstraint = Constraint(
+            M.LimitActivityGroupShareConstraint_rpgg, rule=LimitActivityGroupShare_Constraint
         )
 
         M.progress_marker_8 = BuildAction(
