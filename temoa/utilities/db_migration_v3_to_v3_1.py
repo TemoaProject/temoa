@@ -100,42 +100,14 @@ direct_transfer_tables = [
     ('',                      'Demand'),
     ('',                      'Efficiency'),
     ('',                      'EmissionActivity'),
-    ('',                      'EmissionLimit'),
     ('',                      'ExistingCapacity'),
-    ('',                      'GrowthRateMax'),
-    ('',                      'GrowthRateSeed'),
     ('',                      'LifetimeProcess'),
     ('',                      'LifetimeTech'),
     ('',                      'LinkedTech'),
     ('',                      'LoanLifetimeTech'),
     ('',                      'LoanRate'),
-    ('',                      'MaxActivity'),
-    ('',                      'MaxActivityGroup'),
-    ('',                      'MaxActivityShare'),
-    ('',                      'MaxAnnualCapacityFactor'),
-    ('',                      'MaxCapacity'),
-    ('',                      'MaxCapacityGroup'),
-    ('',                      'MaxCapacityShare'),
-    ('',                      'MaxNewCapacity'),
-    ('',                      'MaxNewCapacityGroup'),
-    ('',                      'MaxNewCapacityShare'),
-    ('',                      'MaxResource'),
-    ('',                      'MaxSeasonalActivity'),
     ('',                      'MetaData'),
     ('',                      'MetaDataReal'),
-    ('',                      'MinActivity'),
-    ('',                      'MinActivityGroup'),
-    ('',                      'MinActivityShare'),
-    ('',                      'MinAnnualCapacityFactor'),
-    ('',                      'MinCapacity'),
-    ('',                      'MinCapacityGroup'),
-    ('',                      'MinCapacityShare'),
-    ('',                      'MinNewCapacity'),
-    ('',                      'MinNewCapacityGroup'),
-    ('',                      'MinNewCapacityShare'),
-    ('',                      'MinNewCapacityGroupShare'),
-    ('',                      'MaxNewCapacityGroupShare'),
-    ('',                      'MinSeasonalActivity'),
     ('',                      'PlanningReserveMargin'),
     ('',                      'RampDown'),
     ('',                      'RampUp'),
@@ -145,12 +117,8 @@ direct_transfer_tables = [
     ('',                      'StorageDuration'),
     ('',                      'TechGroup'),
     ('',                      'TechGroupMember'),
-    ('TechInputSplit',        'MinTechInputSplit'),
-    ('TechInputSplitAnnual',  'MinTechInputSplitAnnual'),
-    ('TechInputSplitAverage', 'MinTechInputSplitAnnual'),
     ('',                      'Technology'),
     ('',                      'TechnologyType'),
-    ('TechOutputSplit',       'MinTechOutputSplit'),
     ('',                      'TimeOfDay'),
     ('',                      'TimePeriod'),
     ('',                      'TimePeriodType'),
@@ -164,6 +132,44 @@ period_added_tables =[
     ('',                      'TimeSegmentFraction'),
 ]
 
+operator_added_tables = {
+    'EmissionLimit': ('LimitEmission', 'le'),
+    'TechOutputSplit': ('LimitTechOutputSplit', 'ge'),
+    'TechInputSplitAnnual': ('LimitTechInputSplitAnnual', 'le'),
+    'TechInputSplitAverage': ('LimitTechInputSplitAnnual', 'le'),
+    'TechInputSplit': ('LimitTechInputSplit', 'ge'),
+    'MinNewCapacityShare': ('LimitNewCapacityShare', 'ge'),
+    'MinNewCapacityGroupShare': ('LimitNewCapacityShare', 'ge'),
+    'MinNewCapacityGroup': ('LimitNewCapacity', 'ge'),
+    'MinNewCapacity': ('LimitNewCapacity', 'ge'),
+    'MinCapacityShare': ('LimitCapacityShare', 'ge'),
+    'MinCapacityGroup': ('LimitCapacity', 'ge'),
+    'MinCapacity': ('LimitCapacity', 'ge'),
+    'MinAnnualCapacityFactor': ('LimitAnnualCapacityFactor', 'ge'),
+    'MinActivityShare': ('LimitActivityShare', 'ge'),
+    'MinActivityGroup': ('LimitActivity', 'ge'),
+    'MinActivity': ('LimitActivity', 'ge'),
+    'MaxNewCapacityShare': ('LimitNewCapacityShare', 'le'),
+    'MaxNewCapacityGroupShare': ('LimitNewCapacityShare', 'le'),
+    'MaxNewCapacityGroup': ('LimitNewCapacity', 'le'),
+    'MaxNewCapacity': ('LimitNewCapacity', 'le'),
+    'MaxCapacityShare': ('LimitCapacityShare', 'le'),
+    'MaxCapacityGroup': ('LimitCapacity', 'le'),
+    'MaxCapacity': ('LimitCapacity', 'le'),
+    'MaxAnnualCapacityFactor': ('LimitAnnualCapacityFactor', 'le'),
+    'MaxActivityShare': ('LimitActivityShare', 'le'),
+    'MaxActivityGroup': ('LimitActivity', 'le'),
+    'MaxActivity': ('LimitActivity', 'le'),
+    'MaxResource': ('LimitResource', 'le'),
+}
+
+no_transfer = {
+    'MinSeasonalActivity': 'LimitSeasonalCapacityFactor',
+    'MaxSeasonalActivity': 'LimitSeasonalCapacityFactor',
+    'StorageInit': 'LimitStorageLevelFraction',
+}
+
+
 all_good = True
 for old_name, new_name in direct_transfer_tables:
     good = column_check(old_name, new_name)
@@ -173,8 +179,34 @@ for old_name, new_name in period_added_tables:
     all_good = all_good and good
 if not all_good: sys.exit(-1)
 
+
+# Collapse Max/Min constraint tables
+print('\n --- Collapsing Max/Min tables and adding operators ---')
+for old_name, (new_name, operator) in operator_added_tables.items():
+
+    try:
+        data = con_old.execute(f'SELECT * FROM {old_name}').fetchall()
+    except sqlite3.OperationalError:
+        print('TABLE NOT FOUND: ' + old_name)
+        continue
+
+    if not data:
+        print('No data for: ' + old_name)
+        continue
+
+    new_cols: tuple = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    op_index = new_cols.index('operator')
+    data = [(*row[0:op_index], operator, *row[op_index:len(new_cols)-1]) for row in data]
+
+    # construct the query with correct number of placeholders
+    num_placeholders = len(data[0])
+    placeholders = ','.join(['?' for _ in range(num_placeholders)])
+    query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
+    con_new.executemany(query, data)
+    print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
+
 # It wasn't active anyway... can't be bothered
-# StorageInit -> StorageFraction
+# StorageInit -> LimitStorageLevelFraction
 
 # TimeSeason
 try:
@@ -208,7 +240,7 @@ for old_name, new_name in direct_transfer_tables:
     placeholders = ','.join(['?' for _ in range(num_placeholders)])
     query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
     con_new.executemany(query, data)
-    print(f'inserted {len(data)} rows into {new_name}')
+    print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
 # get lifetimes. Major headache but needs to be done
 data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
@@ -265,7 +297,13 @@ for old_name, new_name in period_added_tables:
     placeholders = ','.join(['?' for _ in range(num_placeholders)])
     query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
     con_new.executemany(query, data_new)
-    print(f'Added period index to {new_name} and inserted {len(data_new)} rows')
+    print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
+
+
+# Warn about incompatible changes
+print('\n --- The following transfers were impossible due to incompatible changes. Transfer manually. ---')
+for old_name, new_name in no_transfer.items():
+    print(f'{old_name} to {new_name}')
     
 
 # state_sequencing parameter
@@ -279,6 +317,7 @@ print("Added state_sequencing parameter")
 # new database version
 cur.execute("UPDATE MetaData SET value = 1 WHERE element == 'DB_MINOR'")
 print("Updated database version to 3.1")
+
 
 print('\n --- Validating foreign keys ---')
 con_new.commit()
