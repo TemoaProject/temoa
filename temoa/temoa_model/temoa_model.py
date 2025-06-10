@@ -179,11 +179,11 @@ class TemoaModel(AbstractModel):
         M.tech_flex = Set(within=M.tech_all)
         # ensure there is no overlap flex <=> curtailable technologies
         M.tech_exchange = Set(within=M.tech_all)
-        M.validate_techs = BuildAction(rule=validate_tech_sets)
 
         # Define groups for technologies
         M.tech_group_names = Set()
         M.tech_group_members = Set(M.tech_group_names, within=M.tech_all)
+        M.tech_or_group = Set(initialize=M.tech_group_names | M.tech_all)
 
         M.tech_uncap = Set(within=M.tech_all - M.tech_reserve)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
@@ -198,6 +198,8 @@ class TemoaModel(AbstractModel):
         # Note:  Storage techs cannot (currently) be retired due to linkage to initialization
         #        process, which is currently incapable of reducing initializations on retirements.
         M.tech_retirement = Set(within=M.tech_all - M.tech_storage)
+
+        M.validate_techs = BuildAction(rule=validate_tech_sets)
 
         # Define commodity-related sets
         M.commodity_demand = Set()
@@ -390,20 +392,20 @@ class TemoaModel(AbstractModel):
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
 
         M.LimitCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity * M.operator
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.operator
         )
         M.LimitCapacity = Param(M.LimitCapacityConstraint_rpt)
 
         M.LimitNewCapacityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_with_capacity * M.operator
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.operator
         )
         M.LimitNewCapacity = Param(M.LimitNewCapacityConstraint_rpt)
 
-        M.LimitResourceConstraint_rt = Set(within=M.regionalGlobalIndices * M.tech_all * M.operator)
+        M.LimitResourceConstraint_rt = Set(within=M.regionalGlobalIndices * M.tech_or_group * M.operator)
         M.LimitResource = Param(M.LimitResourceConstraint_rt)
 
         M.LimitActivityConstraint_rpt = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.operator
+            within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.operator
         )
         M.LimitActivity = Param(M.LimitActivityConstraint_rpt)
 
@@ -417,12 +419,12 @@ class TemoaModel(AbstractModel):
         )
         M.LimitAnnualCapacityFactor = Param(M.LimitAnnualCapacityFactorConstraint_rpto, validate=validate_0to1)
         
-        M.LimitGrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.LimitDegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.LimitGrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.LimitDegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.LimitGrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
-        M.LimitDegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.LimitGrowthCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
+        M.LimitDegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
+        M.LimitGrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
+        M.LimitDegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
+        M.LimitGrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
+        M.LimitDegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any)
 
         M.LimitEmissionConstraint_rpe = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions * M.operator
@@ -431,38 +433,40 @@ class TemoaModel(AbstractModel):
         M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
         M.EmissionActivity = Param(M.EmissionActivity_reitvo)
 
-        M.LimitActivityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
-        )
-        M.LimitActivityGroup = Param(M.LimitActivityGroupConstraint_rpg)
+        # devnote: deprecated when generalising tech/group columns in Limit tables
+        # M.LimitActivityGroupConstraint_rpg = Set(
+        #     within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
+        # )
+        # M.LimitActivityGroup = Param(M.LimitActivityGroupConstraint_rpg)
 
-        M.LimitCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
-        )
-        M.LimitCapacityGroup = Param(M.LimitCapacityGroupConstraint_rpg)
+        # M.LimitCapacityGroupConstraint_rpg = Set(
+        #     within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
+        # )
+        # M.LimitCapacityGroup = Param(M.LimitCapacityGroupConstraint_rpg)
 
-        M.LimitNewCapacityGroupConstraint_rpg = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
-        )
-        M.LimitNewCapacityGroup = Param(M.LimitNewCapacityGroupConstraint_rpg)
-        M.GroupShareIndices = Set(dimen=5, initialize=GroupShareIndices)
+        # M.LimitNewCapacityGroupConstraint_rpg = Set(
+        #     within=M.regionalGlobalIndices * M.time_optimize * M.tech_group_names * M.operator
+        # )
+        # M.LimitNewCapacityGroup = Param(M.LimitNewCapacityGroupConstraint_rpg)
+        # M.GroupShareIndices = Set(dimen=5, initialize=GroupShareIndices) # doesn't feel worth it
 
-        M.LimitCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.LimitCapacityShare = Param(M.GroupShareIndices)
+        M.LimitCapacityShareConstraint_rpgg = Set(within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.tech_or_group * M.operator)
+        M.LimitCapacityShare = Param(M.LimitCapacityShareConstraint_rpgg)
 
-        M.LimitActivityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.LimitActivityShare = Param(M.GroupShareIndices)
+        M.LimitActivityShareConstraint_rpgg = Set(within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.tech_or_group * M.operator)
+        M.LimitActivityShare = Param(M.LimitActivityShareConstraint_rpgg)
 
-        M.LimitNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
-        M.LimitNewCapacityShare = Param(M.GroupShareIndices)
+        M.LimitNewCapacityShareConstraint_rpgg = Set(within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.tech_or_group * M.operator)
+        M.LimitNewCapacityShare = Param(M.LimitNewCapacityShareConstraint_rpgg)
 
-        M.TwoGroupShareIndices = Set(dimen=5, initialize=TwoGroupShareIndices)
+        # devnote: deprecated when generalising tech/group columns in Limit tables
+        # M.TwoGroupShareIndices = Set(dimen=5, initialize=TwoGroupShareIndices)
         
-        M.LimitNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
-        M.LimitNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
+        # M.LimitNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        # M.LimitNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
 
-        M.LimitActivityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
-        M.LimitActivityGroupShare = Param(M.TwoGroupShareIndices)
+        # M.LimitActivityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        # M.LimitActivityGroupShare = Param(M.TwoGroupShareIndices)
 
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
@@ -614,7 +618,7 @@ class TemoaModel(AbstractModel):
         M.AnnualCommodityBalanceConstraint = Constraint(
             M.AnnualCommodityBalanceConstraint_rpc, rule=AnnualCommodityBalance_Constraint
         )
-
+        
         # M.ResourceExtractionConstraint = Constraint(
         #     M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
         # )
@@ -713,9 +717,10 @@ class TemoaModel(AbstractModel):
             M.LimitSeasonalCapacityFactorConstraint_rpst, rule=LimitSeasonalCapacityFactor_Constraint
         )
 
-        M.LimitActivityGroupConstraint = Constraint(
-            M.LimitActivityGroupConstraint_rpg, rule=LimitActivityGroup_Constraint
-        )
+        # devnote: deprecated when generalising tech/group columns in Limit tables
+        # M.LimitActivityGroupConstraint = Constraint(
+        #     M.LimitActivityGroupConstraint_rpg, rule=LimitActivityGroup_Constraint
+        # )
 
         M.LimitCapacityConstraint = Constraint(
             M.LimitCapacityConstraint_rpt, rule=LimitCapacity_Constraint
@@ -725,33 +730,35 @@ class TemoaModel(AbstractModel):
             M.LimitNewCapacityConstraint_rpt, rule=LimitNewCapacity_Constraint
         )
 
-        M.LimitCapacityGroupConstraint = Constraint(
-            M.LimitCapacityGroupConstraint_rpg, rule=LimitCapacityGroup_Constraint
-        )
+        # devnote: deprecated when generalising tech/group columns in Limit tables
+        # M.LimitCapacityGroupConstraint = Constraint(
+        #     M.LimitCapacityGroupConstraint_rpg, rule=LimitCapacityGroup_Constraint
+        # )
 
-        M.LimitNewCapacityGroupConstraint = Constraint(
-            M.LimitNewCapacityGroupConstraint_rpg, rule=LimitNewCapacityGroup_Constraint
-        )
+        # M.LimitNewCapacityGroupConstraint = Constraint(
+        #     M.LimitNewCapacityGroupConstraint_rpg, rule=LimitNewCapacityGroup_Constraint
+        # )
 
         M.LimitCapacityShareConstraint = Constraint(
-            M.LimitCapacityShareConstraint_rptg, rule=LimitCapacityShare_Constraint
+            M.LimitCapacityShareConstraint_rpgg, rule=LimitCapacityShare_Constraint
         )
 
         M.LimitActivityShareConstraint = Constraint(
-            M.LimitActivityShareConstraint_rptg, rule=LimitActivityShare_Constraint
+            M.LimitActivityShareConstraint_rpgg, rule=LimitActivityShare_Constraint
         )
 
         M.LimitNewCapacityShareConstraint = Constraint(
-            M.LimitNewCapacityShareConstraint_rptg, rule=LimitNewCapacityShare_Constraint
+            M.LimitNewCapacityShareConstraint_rpgg, rule=LimitNewCapacityShare_Constraint
         )
         
-        M.LimitNewCapacityGroupShareConstraint = Constraint(
-            M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
-        )
+        # devnote: deprecated when generalising tech/group columns in Limit tables
+        # M.LimitNewCapacityGroupShareConstraint = Constraint(
+        #     M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
+        # )
 
-        M.LimitActivityGroupShareConstraint = Constraint(
-            M.LimitActivityGroupShareConstraint_rpgg, rule=LimitActivityGroupShare_Constraint
-        )
+        # M.LimitActivityGroupShareConstraint = Constraint(
+        #     M.LimitActivityGroupShareConstraint_rpgg, rule=LimitActivityGroupShare_Constraint
+        # )
 
         M.progress_marker_8 = BuildAction(
             ['Starting Limit Capacity and Tech Split ' 'Constraints'], rule=progress_check

@@ -797,9 +797,9 @@ class HybridLoader:
             if len(raw) > 0:
                 logger.warning(
                     'The RenewablePortfolioStandard constraint has been deprecated. Use the '
-                    'LimitActivityGroupShare constraint instead, using the same sub group and '
+                    'LimitActivityShare constraint instead, using the same sub group and '
                     'constructing a new super group for all relevant generators. The constraint '
-                    'has been applied but this feature will be removed in the future.'
+                    'has been applied for now but this feature will be removed in the future.'
                 )
 
         # CostFixed
@@ -849,63 +849,63 @@ class HybridLoader:
 
         # LimitCapacity
         if self.table_exists('LimitCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, capacity FROM main.LimitCapacity')
-            load_element(M.LimitCapacity, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech_or_group, operator, capacity FROM main.LimitCapacity')
+            load_element(M.LimitCapacity, raw)#, self.viable_rt, (0, 2))
 
-        # LimitNewCap
+        # LimitNewCapacity
         if self.table_exists('LimitNewCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, new_cap FROM main.LimitNewCapacity')
-            load_element(M.LimitNewCapacity, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech_or_group, operator, new_cap FROM main.LimitNewCapacity')
+            load_element(M.LimitNewCapacity, raw)#, self.viable_rt, (0, 2))
 
-        # LimitCapacityGroup
-        if self.table_exists('LimitCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, capacity FROM main.LimitCapacityGroup')
-            load_element(M.LimitCapacityGroup, raw)
+        # # LimitCapacityGroup
+        # if self.table_exists('LimitCapacityGroup'):
+        #     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, capacity FROM main.LimitCapacityGroup')
+        #     load_element(M.LimitCapacityGroup, raw)
 
-        # LimitNewCapacityGroup
-        if self.table_exists('LimitNewCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, new_cap FROM main.LimitNewCapacityGroup')
-            load_element(M.LimitNewCapacityGroup, raw)
+        # # LimitNewCapacityGroup
+        # if self.table_exists('LimitNewCapacityGroup'):
+        #     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, new_cap FROM main.LimitNewCapacityGroup')
+        #     load_element(M.LimitNewCapacityGroup, raw)
 
         # LimitCapacityShare
         if self.table_exists('LimitCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitCapacityShare')
-            load_element(M.LimitCapacityShare, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitCapacityShare')
+            load_element(M.LimitCapacityShare, raw)#, self.viable_rt, (0, 2))
 
         # LimitNewCapacityShare
         if self.table_exists('LimitNewCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitNewCapacityShare')
-            load_element(M.LimitNewCapacityShare, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityShare')
+            load_element(M.LimitNewCapacityShare, raw)#, self.viable_rt, (0, 2))
 
-        # LimitNewCapacityGroupShare
-        if self.table_exists('LimitNewCapacityGroupShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityGroupShare')
-            load_element(M.LimitNewCapacityGroupShare, raw)
+        # # LimitNewCapacityGroupShare
+        # if self.table_exists('LimitNewCapacityGroupShare'):
+        #     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityGroupShare')
+        #     load_element(M.LimitNewCapacityGroupShare, raw)
 
-        # LimitActivityGroupShare
-        if self.table_exists('LimitActivityGroupShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitActivityGroupShare')
-            load_element(M.LimitActivityGroupShare, raw)
+        # # LimitActivityGroupShare
+        # if self.table_exists('LimitActivityGroupShare'):
+        #     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitActivityGroupShare')
+        #     load_element(M.LimitActivityGroupShare, raw)
 
-        # LimitActivityGroup
-        if self.table_exists('LimitActivityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, activity FROM main.LimitActivityGroup')
-            load_element(M.LimitActivityGroup, raw)
+        # # LimitActivityGroup
+        # if self.table_exists('LimitActivityGroup'):
+        #     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, activity FROM main.LimitActivityGroup')
+        #     load_element(M.LimitActivityGroup, raw)
 
         # LimitActivityShare
         if self.table_exists('LimitActivityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitActivityShare')
-            load_element(M.LimitActivityShare, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitActivityShare')
+            load_element(M.LimitActivityShare, raw)#, self.viable_rt, (0, 2))
 
         # LimitResource
         if self.table_exists('LimitResource'):
-            raw = cur.execute('SELECT region, tech, operator, cum_act FROM main.LimitResource').fetchall()
-            load_element(M.LimitResource, raw, self.viable_rt, (0, 1))
+            raw = cur.execute('SELECT region, tech_or_group, operator, cum_act FROM main.LimitResource').fetchall()
+            load_element(M.LimitResource, raw)#, self.viable_rt, (0, 1))
 
         # LimitActivity
         if self.table_exists('LimitActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, activity FROM main.LimitActivity')
-            load_element(M.LimitActivity, raw, self.viable_rt, (0, 2))
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech_or_group, operator, activity FROM main.LimitActivity')
+            load_element(M.LimitActivity, raw)#, self.viable_rt, (0, 2))
 
         # LimitSeasonalCapacityFactor
         if self.table_exists('LimitSeasonalCapacityFactor'):
@@ -919,39 +919,39 @@ class HybridLoader:
 
         # LimitGrowthCapacity
         if self.table_exists('LimitGrowthCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthCapacity').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthCapacity, raw)#, self.viable_rt, (0, 1))
 
         # LimitDegrowthCapacity
         if self.table_exists('LimitDegrowthCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthCapacity').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthCapacity, raw)#, self.viable_rt, (0, 1))
 
         # LimitGrowthNewCapacity
         if self.table_exists('LimitGrowthNewCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthNewCapacity').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthNewCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthNewCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthNewCapacity, raw)#, self.viable_rt, (0, 1))
 
         # LimitDegrowthNewCapacity
         if self.table_exists('LimitDegrowthNewCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthNewCapacity').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthNewCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthNewCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthNewCapacity, raw)#, self.viable_rt, (0, 1))
 
         # LimitGrowthNewCapacityDelta
         if self.table_exists('LimitGrowthNewCapacityDelta'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthNewCapacityDelta').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthNewCapacityDelta').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthNewCapacityDelta, raw)#, self.viable_rt, (0, 1))
 
         # LimitDegrowthNewCapacityDelta
         if self.table_exists('LimitDegrowthNewCapacityDelta'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthNewCapacityDelta').fetchall()
+            raw = cur.execute('SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthNewCapacityDelta').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthNewCapacityDelta, raw)#, self.viable_rt, (0, 1))
 
         # LimitEmission
         if self.table_exists('LimitEmission'):
@@ -1105,17 +1105,17 @@ class HybridLoader:
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
             M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,
-            M.LimitActivityGroup.name: M.LimitActivityGroupConstraint_rpg.name,
-            M.LimitActivityShare.name: M.LimitActivityShareConstraint_rptg.name,
+            # M.LimitActivityGroup.name: M.LimitActivityGroupConstraint_rpg.name,
+            M.LimitActivityShare.name: M.LimitActivityShareConstraint_rpgg.name,
             M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
             M.LimitCapacity.name: M.LimitCapacityConstraint_rpt.name,
-            M.LimitCapacityGroup.name: M.LimitCapacityGroupConstraint_rpg.name,
-            M.LimitCapacityShare.name: M.LimitCapacityShareConstraint_rptg.name,
+            # M.LimitCapacityGroup.name: M.LimitCapacityGroupConstraint_rpg.name,
+            M.LimitCapacityShare.name: M.LimitCapacityShareConstraint_rpgg.name,
             M.LimitNewCapacity.name: M.LimitNewCapacityConstraint_rpt.name,
-            M.LimitNewCapacityGroup.name: M.LimitNewCapacityGroupConstraint_rpg.name,
-            M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rptg.name,
-            M.LimitNewCapacityGroupShare.name: M.LimitNewCapacityGroupShareConstraint_rpgg.name,
-            M.LimitActivityGroupShare.name: M.LimitActivityGroupShareConstraint_rpgg.name,
+            # M.LimitNewCapacityGroup.name: M.LimitNewCapacityGroupConstraint_rpg.name,
+            M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rpgg.name,
+            # M.LimitNewCapacityGroupShare.name: M.LimitNewCapacityGroupShareConstraint_rpgg.name,
+            # M.LimitActivityGroupShare.name: M.LimitActivityGroupShareConstraint_rpgg.name,
             M.LimitResource.name: M.LimitResourceConstraint_rt.name,
             M.LimitStorageFraction.name: M.LimitStorageFractionConstraint_rpsdtv.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
