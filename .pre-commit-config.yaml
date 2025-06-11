@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.7.6
+    hooks:
+    # Dependency management
+      - id: uv-lock
+        name: uv-lock (Update uv.lock if pyproject.toml changed)
+        files: ^pyproject\.toml$
+
+      # Compile requirements
+      - id: pip-compile
+        name: pip-compile requirements.txt (core dependencies)
+        args:
+          - pyproject.toml # Input file
+          - -o # Output flag
+          - requirements.txt # Output file name
+        files: ^pyproject\.toml$
+
+      - id: pip-compile
+        name: pip-compile requirements-dev.txt (core + all optional dependencies)
+        args:
+          - pyproject.toml
+          - --all-extras # Include all optional dependency groups (dev, docs, plotting)
+          - -o
+          - requirements-dev.txt # Output file name
+        files: ^pyproject\.toml$
