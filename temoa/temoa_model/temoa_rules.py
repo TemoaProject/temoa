@@ -1629,13 +1629,13 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     
     # Get available generation in this time slice depending on method specified in config file
-    match M.ReserveMargin[1]:
+    match M.ReserveMargin.first():
         case 'static':
             available = ReserveMarginStatic(M, r, p, s, d)
         case 'dynamic':
             available = ReserveMarginDynamic(M, r, p, s, d)
         case _:
-            msg = f"Invalid reserve margin parameter '{M.ReserveMargin[1]}'. Check the config file."
+            msg = f"Invalid reserve margin parameter '{M.ReserveMargin.first()}'. Check the config file."
             logger.error(msg)
             raise ValueError(msg)
 

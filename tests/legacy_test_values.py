@@ -66,4 +66,12 @@ test_vals = {
         # increased after making annualretirement derived var
         ExpectedVals.VAR_COUNT: 1070, 
     },
+    'mediumville': {
+        # added 2025/06/12 prior to addition of dynamic reserve margin
+        ExpectedVals.OBJ_VALUE: 8139.1913,
+        ExpectedVals.EFF_DOMAIN_SIZE: 2800,
+        ExpectedVals.EFF_INDEX_SIZE: 18,
+        ExpectedVals.CONSTR_COUNT: 232,
+        ExpectedVals.VAR_COUNT: 140, 
+    },
 }

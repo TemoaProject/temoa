@@ -3335,16 +3335,7 @@
     "LimitSeasonalCapacityFactorConstraint_rpst": [],
     "LimitStorageFractionConstraint_rpsdtv": [],
     "LimitTechInputSplitAnnualConstraint_rpitv": [],
-    "LimitTechInputSplitAverageConstraint_rpitv": [
-        [
-            "A",
-            2025,
-            "GeoHyd",
-            "GeoHeater",
-            2025,
-            "le"
-        ]
-    ],
+    "LimitTechInputSplitAverageConstraint_rpitv": [],
     "LimitTechInputSplitConstraint_rpsditv": [
         [
             "A",
@@ -4166,7 +4157,9 @@
         "FusionGasFuel",
         "earth"
     ],
-    "commodity_source": [],
+    "commodity_source": [
+        "earth"
+    ],
     "commodity_waste": [],
     "operator": [
         "ge",
@@ -4227,14 +4220,12 @@
     ],
     "tech_group_names": [
         "A_tech_grp_1",
-        "RPS_common",
-        "RPS_global"
+        "RPS_common"
     ],
     "tech_or_group": [
         "A_tech_grp_1",
         "RPS_common",
         "EH",
-        "RPS_global",
         "EF",
         "GeoThermal",
         "well",

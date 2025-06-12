@@ -236,7 +236,7 @@ def validate_TimeNext(M: 'TemoaModel'):
     TimeSegmentFraction is already compared to other tables so just compare to SegFrac.
     """
     # Only check TimeNext if it is actually being used
-    if M.TimeSequencing != 2:
+    if M.TimeSequencing.first() != 'manual':
         return
     
     segfrac_psd = set(M.SegFrac.sparse_iterkeys())
@@ -1067,7 +1067,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
 def CreateTimeSequence(M: 'TemoaModel'):
 
     # Establishing sequence of states
-    match M.TimeSequencing[1]:
+    match M.TimeSequencing.first():
         case 'seasonal_timeslicing':
             msg = 'Running a season time slicing database, looping state each period, chaining between seasons.'
             for p in M.time_optimize:
@@ -1085,7 +1085,7 @@ def CreateTimeSequence(M: 'TemoaModel'):
                 M.time_next[p, s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader
-            msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing[1]}'. Likely code error."
+            msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
             logger.error(msg)
             raise ValueError(msg)
 
