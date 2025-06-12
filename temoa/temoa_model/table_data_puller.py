@@ -247,6 +247,14 @@ def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
         if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
         res[sli] = state
 
+    for r, p, s_stor, t, v in M.SeasonalStorageLevel_rpstv:
+        s = M.time_storage_season[p, s_stor]
+        for d in M.time_of_day:
+            state = value(M.V_SeasonalStorageLevel[r, p, s_stor, t, v]) + value(M.V_StorageLevel[r, p, s, d, t, v])
+            sli = SLI(r, p, s_stor, d, t, v)
+            if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
+            res[sli] = state
+
     return res
 
 

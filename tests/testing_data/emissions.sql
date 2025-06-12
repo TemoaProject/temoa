@@ -942,12 +942,6 @@ INSERT INTO TimePeriod VALUES(3,2005,'f');
 INSERT INTO TimePeriod VALUES(4,2010,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('S1');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -956,8 +950,19 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'S1',NULL);
-INSERT INTO PeriodSeasons VALUES(2005,1,'S1',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'S1',NULL);
+INSERT INTO TimeSeason VALUES(2005,1,'S1',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1016,17 +1021,18 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,NULL);
-INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,NULL);
-INSERT INTO Technology VALUES('TechEmbodied','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechEndOfLife','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,0,NULL);
+INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,0,NULL);
+INSERT INTO Technology VALUES('TechEmbodied','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechEndOfLife','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,

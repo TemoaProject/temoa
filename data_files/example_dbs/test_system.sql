@@ -1409,15 +1409,6 @@ INSERT INTO TimePeriod VALUES(4,2030,'f');
 INSERT INTO TimePeriod VALUES(5,2035,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('spring');
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('fall');
-INSERT INTO TimeSeason VALUES('winter');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1426,18 +1417,29 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2020,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,4,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,4,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2020,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2020,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2020,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2020,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2025,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2025,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2025,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2025,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2030,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2030,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2030,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2030,4,'winter',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1496,6 +1498,7 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );

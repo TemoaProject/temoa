@@ -1419,15 +1419,6 @@ INSERT INTO TimePeriod VALUES(4,2020,'f');
 INSERT INTO TimePeriod VALUES(5,2030,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('autumn');
-INSERT INTO TimeSeason VALUES('winter');
-INSERT INTO TimeSeason VALUES('spring');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1436,18 +1427,29 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,2,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,4,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,5,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,6,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,7,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,8,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,9,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,10,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,11,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,12,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2000,2,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2000,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2000,4,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2010,5,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2010,6,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2010,7,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2010,8,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2020,9,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2020,10,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2020,11,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2020,12,'spring',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1506,28 +1508,29 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('IMPORT_LI','p','materials',NULL,NULL,1,1,0,0,0,0,0,'lithium importer');
-INSERT INTO Technology VALUES('IMPORT_CO','p','materials',NULL,NULL,1,1,0,0,0,0,0,'cobalt importer');
-INSERT INTO Technology VALUES('IMPORT_P','p','materials',NULL,NULL,1,1,0,0,0,0,0,'phosphorous importer');
-INSERT INTO Technology VALUES('CAR_BEV','p','transportation',NULL,NULL,0,0,0,0,0,0,0,'car - battery electric');
-INSERT INTO Technology VALUES('CAR_PHEV','p','transportation',NULL,NULL,0,0,0,0,0,0,0,'car - plug in hybrid');
-INSERT INTO Technology VALUES('CAR_ICE','p','transportation',NULL,NULL,0,0,0,0,0,0,0,'car - internal combustion');
-INSERT INTO Technology VALUES('RECYCLE_NMC','p','materials',NULL,NULL,0,1,0,0,0,0,0,'nmc battery recycler');
-INSERT INTO Technology VALUES('RECYCLE_LFP','p','materials',NULL,NULL,0,1,0,0,0,0,0,'lfp battery recycler');
-INSERT INTO Technology VALUES('MANUFAC_NMC','p','materials',NULL,NULL,0,1,0,0,0,0,0,'nmc battery manufacturing');
-INSERT INTO Technology VALUES('MANUFAC_LFP','p','materials',NULL,NULL,0,1,0,0,0,0,0,'lfp battery manufacturing');
-INSERT INTO Technology VALUES('IMPORT_NI','p','materials',NULL,NULL,1,1,0,0,0,0,0,'nickel importer');
-INSERT INTO Technology VALUES('DOMESTIC_NI','p','materials',NULL,NULL,1,1,0,0,0,0,0,'domestic nickel production');
-INSERT INTO Technology VALUES('GEN_DSL','p','electricity',NULL,NULL,0,0,0,0,0,0,0,'diesel generators');
-INSERT INTO Technology VALUES('SOL_PV','p','electricity',NULL,NULL,0,0,0,1,0,0,0,'solar panels');
-INSERT INTO Technology VALUES('BATT_GRID','ps','electricity',NULL,NULL,0,0,0,0,0,0,0,'grid battery storage');
-INSERT INTO Technology VALUES('FURNACE','p','residential',NULL,NULL,1,0,0,0,0,0,0,'diesel furnace heater');
-INSERT INTO Technology VALUES('HEATPUMP','p','residential',NULL,NULL,1,0,0,0,0,0,0,'heat pump');
-INSERT INTO Technology VALUES('IMPORT_DSL','p','fuels',NULL,NULL,1,1,0,0,0,0,0,'diesel importer');
-INSERT INTO Technology VALUES('ELEC_INTERTIE','p','electricity',NULL,NULL,0,0,0,0,0,0,1,'dummy tech to make landfill feasible');
+INSERT INTO Technology VALUES('IMPORT_LI','p','materials',NULL,NULL,1,1,0,0,0,0,0,0,'lithium importer');
+INSERT INTO Technology VALUES('IMPORT_CO','p','materials',NULL,NULL,1,1,0,0,0,0,0,0,'cobalt importer');
+INSERT INTO Technology VALUES('IMPORT_P','p','materials',NULL,NULL,1,1,0,0,0,0,0,0,'phosphorous importer');
+INSERT INTO Technology VALUES('CAR_BEV','p','transportation',NULL,NULL,0,0,0,0,0,0,0,0,'car - battery electric');
+INSERT INTO Technology VALUES('CAR_PHEV','p','transportation',NULL,NULL,0,0,0,0,0,0,0,0,'car - plug in hybrid');
+INSERT INTO Technology VALUES('CAR_ICE','p','transportation',NULL,NULL,0,0,0,0,0,0,0,0,'car - internal combustion');
+INSERT INTO Technology VALUES('RECYCLE_NMC','p','materials',NULL,NULL,0,1,0,0,0,0,0,0,'nmc battery recycler');
+INSERT INTO Technology VALUES('RECYCLE_LFP','p','materials',NULL,NULL,0,1,0,0,0,0,0,0,'lfp battery recycler');
+INSERT INTO Technology VALUES('MANUFAC_NMC','p','materials',NULL,NULL,0,1,0,0,0,0,0,0,'nmc battery manufacturing');
+INSERT INTO Technology VALUES('MANUFAC_LFP','p','materials',NULL,NULL,0,1,0,0,0,0,0,0,'lfp battery manufacturing');
+INSERT INTO Technology VALUES('IMPORT_NI','p','materials',NULL,NULL,1,1,0,0,0,0,0,0,'nickel importer');
+INSERT INTO Technology VALUES('DOMESTIC_NI','p','materials',NULL,NULL,1,1,0,0,0,0,0,0,'domestic nickel production');
+INSERT INTO Technology VALUES('GEN_DSL','p','electricity',NULL,NULL,0,0,0,0,0,0,0,0,'diesel generators');
+INSERT INTO Technology VALUES('SOL_PV','p','electricity',NULL,NULL,0,0,0,1,0,0,0,0,'solar panels');
+INSERT INTO Technology VALUES('BATT_GRID','ps','electricity',NULL,NULL,0,0,0,0,0,0,0,0,'grid battery storage');
+INSERT INTO Technology VALUES('FURNACE','p','residential',NULL,NULL,1,0,0,0,0,0,0,0,'diesel furnace heater');
+INSERT INTO Technology VALUES('HEATPUMP','p','residential',NULL,NULL,1,0,0,0,0,0,0,0,'heat pump');
+INSERT INTO Technology VALUES('IMPORT_DSL','p','fuels',NULL,NULL,1,1,0,0,0,0,0,0,'diesel importer');
+INSERT INTO Technology VALUES('ELEC_INTERTIE','p','electricity',NULL,NULL,0,0,0,0,0,0,1,0,'dummy tech to make landfill feasible');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

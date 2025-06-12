@@ -911,13 +911,6 @@ INSERT INTO TimePeriod VALUES(1,2000,'f');
 INSERT INTO TimePeriod VALUES(2,2005,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('winter');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -926,8 +919,19 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,2,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2000,2,'winter',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -986,13 +990,14 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('PLANT','p','supply',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('CCS','r','supply',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('MINE','r','supply',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('FAKE_SOURCE','r','supply',NULL,NULL,1,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('PLANT','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('CCS','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('MINE','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('FAKE_SOURCE','r','supply',NULL,NULL,1,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,

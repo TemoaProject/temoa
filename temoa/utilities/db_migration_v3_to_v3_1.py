@@ -124,11 +124,11 @@ direct_transfer_tables = [
     ('',                      'TimePeriodType'),
 ]
 
-period_added_tables =[
+period_added_tables = [
     ('',                      'CapacityFactorProcess'),
     ('',                      'CapacityFactorTech'),
     ('',                      'DemandSpecificDistribution'),
-    ('TimeSeason',            'PeriodSeasons'),
+    ('',                      'TimeSeason'),
     ('',                      'TimeSegmentFraction'),
 ]
 
@@ -207,14 +207,6 @@ for old_name, (new_name, operator) in operator_added_tables.items():
 
 # It wasn't active anyway... can't be bothered
 # StorageInit -> LimitStorageLevelFraction
-
-# TimeSeason
-try:
-    data = con_old.execute('SELECT DISTINCT season FROM TimeSeason ORDER BY sequence').fetchall()
-    query = 'INSERT OR REPLACE INTO TimeSeason(season) VALUES(?)'
-    con_new.executemany(query, data)
-except sqlite3.OperationalError:
-    print('TABLE NOT FOUND: TimeSeason')
 
 # execute the direct transfers
 print('\n --- Executing direct transfers ---')

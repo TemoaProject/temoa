@@ -398,16 +398,16 @@ class HybridLoader:
             logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
-        # PeriodSeasons
-        if self.table_exists("PeriodSeasons"):
+        # TimeSeason
+        if self.table_exists("TimeSeason"):
             if mi:
                 raw = cur.execute(
-                    'SELECT period, season FROM main.PeriodSeasons WHERE'
+                    'SELECT period, season FROM main.TimeSeason WHERE'
                     ' period >= ? AND period <= ? ORDER BY period, sequence',
                     (mi.base_year, mi.last_demand_year)
                 ).fetchall()
             else:
-                raw = cur.execute('SELECT period, season FROM main.PeriodSeasons ORDER BY period, sequence').fetchall()
+                raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
             for row in raw:
                 load_indexed_set(
                     M.time_season,
@@ -422,11 +422,18 @@ class HybridLoader:
                     index_value=period,
                     element='S'
                 )
-            logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
+            logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
             load_element(M.time_season_all, [('S',)])
 
         if self.table_exists("TimeStorageSeason"):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT period, storage_season, season FROM main.TimeStorageSeason ORDER BY period, sequence')
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, storage_season, season FROM main.TimeStorageSeason WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, storage_season, season FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
             load_element(M.TimeStorageSeason, raw)
 
         # TimeSequencing
@@ -521,8 +528,8 @@ class HybridLoader:
         raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps'").fetchall()
         load_element(M.tech_storage, raw, self.viable_techs)
 
-        # tech_storage_seatech_seasonal_storagesonal
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps' AND seasonal_storage > 0").fetchall()
+        # tech_seasonal_storage
+        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps' AND seas_stor > 0").fetchall()
         load_element(M.tech_seasonal_storage, raw, self.viable_techs)
 
         # tech_reserve

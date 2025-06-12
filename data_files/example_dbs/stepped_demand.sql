@@ -1139,14 +1139,6 @@ INSERT INTO TimePeriod VALUES(12,2050,'f');
 INSERT INTO TimePeriod VALUES(13,2055,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('inter');
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('winter');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1155,39 +1147,50 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2005,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2005,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2005,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2015,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2015,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2015,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2035,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2035,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2035,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2040,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2040,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2040,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2045,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2045,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2045,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2050,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2050,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2050,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2000,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2000,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2005,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2005,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2005,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2010,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2010,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2010,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2015,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2015,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2015,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2020,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2020,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2020,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2025,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2025,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2025,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2030,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2030,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2030,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2035,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2035,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2035,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2040,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2040,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2040,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2045,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2045,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2045,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2050,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2050,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2050,3,'winter',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1246,6 +1249,7 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );

@@ -1419,15 +1419,6 @@ INSERT INTO TimePeriod VALUES(4,2020,'f');
 INSERT INTO TimePeriod VALUES(5,2030,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('autumn');
-INSERT INTO TimeSeason VALUES('winter');
-INSERT INTO TimeSeason VALUES('spring');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1436,18 +1427,18 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,2,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,4,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,5,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,6,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,7,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,8,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,9,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,10,'autumn',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,11,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,12,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2000,2,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2000,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2000,4,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2010,5,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2010,6,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2010,7,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2010,8,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2020,9,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2020,10,'autumn',NULL);
+INSERT INTO TimeSeason VALUES(2020,11,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2020,12,'spring',NULL);
 CREATE TABLE TimePeriodType
 (
     label       TEXT

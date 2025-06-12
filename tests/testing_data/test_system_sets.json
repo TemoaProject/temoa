@@ -44966,6 +44966,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageUpperBoundConstraint_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "R1",
@@ -46507,6 +46509,7 @@
         ]
     ],
     "TimeNext": [],
+    "TimeStorageSeason": [],
     "commodity_all": [
         "ethos",
         "RH",
@@ -46657,6 +46660,7 @@
         "S_IMPOIL"
     ],
     "tech_retirement": [],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "E_BATT"
     ],

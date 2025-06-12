@@ -24722,6 +24722,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageUpperBoundConstraint_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "utopia",
@@ -25591,6 +25593,7 @@
         ]
     ],
     "TimeNext": [],
+    "TimeStorageSeason": [],
     "commodity_all": [
         "ethos",
         "RH",
@@ -25750,6 +25753,7 @@
         "IMPOIL1"
     ],
     "tech_retirement": [],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "E51"
     ],

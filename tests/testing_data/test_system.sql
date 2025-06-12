@@ -1409,15 +1409,6 @@ INSERT INTO TimePeriod VALUES(4,2030,'f');
 INSERT INTO TimePeriod VALUES(5,2035,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('spring');
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('fall');
-INSERT INTO TimeSeason VALUES('winter');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1426,18 +1417,29 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2020,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2020,4,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,4,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,1,'spring',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,3,'fall',NULL);
-INSERT INTO PeriodSeasons VALUES(2030,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2020,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2020,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2020,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2020,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2025,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2025,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2025,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2025,4,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2030,1,'spring',NULL);
+INSERT INTO TimeSeason VALUES(2030,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2030,3,'fall',NULL);
+INSERT INTO TimeSeason VALUES(2030,4,'winter',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1496,25 +1498,26 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('S_IMPETH','r','supply','','',1,0,0,0,0,0,0,' imported ethanol');
-INSERT INTO Technology VALUES('S_IMPOIL','r','supply','','',1,0,0,0,0,0,0,' imported crude oil');
-INSERT INTO Technology VALUES('S_IMPNG','r','supply','','',1,0,0,0,0,0,0,' imported natural gas');
-INSERT INTO Technology VALUES('S_IMPURN','r','supply','','',1,0,0,0,0,0,0,' imported uranium');
-INSERT INTO Technology VALUES('S_OILREF','p','supply','','',0,0,0,1,0,0,0,' crude oil refinery');
-INSERT INTO Technology VALUES('E_NGCC','p','electric','','',0,0,0,0,0,0,0,' natural gas combined-cycle');
-INSERT INTO Technology VALUES('E_SOLPV','p','electric','','',0,0,0,0,0,0,0,' solar photovoltaic');
-INSERT INTO Technology VALUES('E_BATT','ps','electric','','',0,0,0,0,0,0,0,' lithium-ion battery');
-INSERT INTO Technology VALUES('E_NUCLEAR','pb','electric','','',0,0,0,0,0,0,0,' nuclear power plant');
-INSERT INTO Technology VALUES('T_BLND','p','transport','','',0,0,0,0,0,0,0,'ethanol - gasoline blending process');
-INSERT INTO Technology VALUES('T_DSL','p','transport','','',0,0,0,0,0,0,0,'diesel vehicle');
-INSERT INTO Technology VALUES('T_GSL','p','transport','','',0,0,0,0,0,0,0,'gasoline vehicle');
-INSERT INTO Technology VALUES('T_EV','p','transport','','',0,0,0,0,0,0,0,'electric vehicle');
-INSERT INTO Technology VALUES('R_EH','p','residential','','',0,0,0,0,0,0,0,' electric residential heating');
-INSERT INTO Technology VALUES('R_NGH','p','residential','','',0,0,0,0,0,0,0,' natural gas residential heating');
-INSERT INTO Technology VALUES('E_TRANS','p','electric','','',0,0,0,0,0,0,1,'electric transmission');
+INSERT INTO Technology VALUES('S_IMPETH','r','supply','','',1,0,0,0,0,0,0,0,' imported ethanol');
+INSERT INTO Technology VALUES('S_IMPOIL','r','supply','','',1,0,0,0,0,0,0,0,' imported crude oil');
+INSERT INTO Technology VALUES('S_IMPNG','r','supply','','',1,0,0,0,0,0,0,0,' imported natural gas');
+INSERT INTO Technology VALUES('S_IMPURN','r','supply','','',1,0,0,0,0,0,0,0,' imported uranium');
+INSERT INTO Technology VALUES('S_OILREF','p','supply','','',0,0,0,1,0,0,0,0,' crude oil refinery');
+INSERT INTO Technology VALUES('E_NGCC','p','electric','','',0,0,0,0,0,0,0,0,' natural gas combined-cycle');
+INSERT INTO Technology VALUES('E_SOLPV','p','electric','','',0,0,0,0,0,0,0,0,' solar photovoltaic');
+INSERT INTO Technology VALUES('E_BATT','ps','electric','','',0,0,0,0,0,0,0,0,' lithium-ion battery');
+INSERT INTO Technology VALUES('E_NUCLEAR','pb','electric','','',0,0,0,0,0,0,0,0,' nuclear power plant');
+INSERT INTO Technology VALUES('T_BLND','p','transport','','',0,0,0,0,0,0,0,0,'ethanol - gasoline blending process');
+INSERT INTO Technology VALUES('T_DSL','p','transport','','',0,0,0,0,0,0,0,0,'diesel vehicle');
+INSERT INTO Technology VALUES('T_GSL','p','transport','','',0,0,0,0,0,0,0,0,'gasoline vehicle');
+INSERT INTO Technology VALUES('T_EV','p','transport','','',0,0,0,0,0,0,0,0,'electric vehicle');
+INSERT INTO Technology VALUES('R_EH','p','residential','','',0,0,0,0,0,0,0,0,' electric residential heating');
+INSERT INTO Technology VALUES('R_NGH','p','residential','','',0,0,0,0,0,0,0,0,' natural gas residential heating');
+INSERT INTO Technology VALUES('E_TRANS','p','electric','','',0,0,0,0,0,0,1,0,'electric transmission');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

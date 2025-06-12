@@ -936,13 +936,6 @@ INSERT INTO TimePeriod VALUES(2,2025,'f');
 INSERT INTO TimePeriod VALUES(3,2030,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('s1');
-INSERT INTO TimeSeason VALUES('s2');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -951,8 +944,19 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2025,1,'s1',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,2,'s2',NULL);
+INSERT INTO TimeSeason VALUES(2025,1,'s1',NULL);
+INSERT INTO TimeSeason VALUES(2025,2,'s2',NULL);
+CREATE TABLE IF NOT EXISTS TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1011,13 +1015,14 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,'plain old water');
-INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,' residential lighting');
-INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,0,0,0,0,'hydro power electric plant');
-INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,'big battery');
+INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
+INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,0,' residential lighting');
+INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,0,0,0,0,0,'hydro power electric plant');
+INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,0,'big battery');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

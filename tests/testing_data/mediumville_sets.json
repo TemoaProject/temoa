@@ -4049,6 +4049,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageUpperBoundConstraint_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "B",
@@ -4118,6 +4120,7 @@
         ]
     ],
     "TimeNext": [],
+    "TimeStorageSeason": [],
     "commodity_all": [
         "FusionGas",
         "RH",
@@ -4256,6 +4259,7 @@
     "tech_retirement": [
         "EH"
     ],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "batt"
     ],
