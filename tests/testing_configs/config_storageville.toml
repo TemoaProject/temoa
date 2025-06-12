@@ -58,16 +58,16 @@ save_lp_file = false
 # ------------------------------------
 
 # How to sequence time slices in the model. Options:
-# 'loop_periods'
+# 'seasonal_timeslicing'
 # Time slices sequence through seasons and between seasons, looping from the end of each
 # period back to its start. Compatible with seasonal time-slicing databases.
-# 'loop_seasons'
+# 'representative_periods'
 # Time slices sequence through seasons but loop from the end of each season back to its start.
 # Time slices do not connect between seasons. Compatible with representative periods databases.
 # 'manual'
 # The sequence of time slices is defined manually in the TimeNext table (which is commented out in
 # the schema). This is an advanced feature and not recommended for most users.
-time_sequencing = 'loop_periods'
+time_sequencing = 'seasonal_timeslicing'
 
 # ---------------------------------------------------
 #                   MODE OPTIONS

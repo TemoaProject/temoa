@@ -1068,13 +1068,13 @@ def CreateTimeSequence(M: 'TemoaModel'):
 
     # Establishing sequence of states
     match M.TimeSequencing[1]:
-        case 'loop_periods':
-            msg = 'Looping state each period, chaining between seasons.'
+        case 'seasonal_timeslicing':
+            msg = 'Running a season time slicing database, looping state each period, chaining between seasons.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
-        case 'loop_seasons':
-            msg = 'Looping state each season.'
+        case 'representative_periods':
+            msg = 'Running a representative periods database, looping state each season.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
