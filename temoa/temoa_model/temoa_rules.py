@@ -1287,6 +1287,41 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
+def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_stor, t, v):
+    """
+    This constraint enforces the continuity of state of charge between seasons for seasonal
+    storage. Virtual seasonal storage level increases by the matched real season's net charge
+    over that entire day.
+    """
+
+    s = M.time_storage_season[p, s_stor]
+
+    # This is the sum of all input=i sent TO storage tech t of vintage v with
+    # output=o in p,s,d
+    charge = sum(
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        for d in M.time_of_day
+    )
+
+    # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
+    # with input=i in p,s,d
+    discharge = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_o in M.processOutputs[r, p, t, v]
+        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
+        for d in M.time_of_day
+    )
+
+    stored_energy = charge - discharge
+
+    s_stor_next = M.time_next_storage_season[p, s_stor]
+
+    expr = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + stored_energy == M.V_SeasonalStorageLevel[r, p, s_stor_next, t, v]
+    return expr
+
+
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
@@ -1326,6 +1361,28 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     )
     
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
+
+    return expr
+
+
+def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d, t, v):
+    r"""
+    Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity of seasonal storage, 
+    summing the superimposed real storage level with the virtual seasonal storage level.
+    """
+
+    s = M.time_storage_season[p, s_stor]
+
+    energy_capacity = (
+        M.V_Capacity[r, p, t, v]
+        * value(M.CapacityToActivity[r, t])
+        * (value(M.StorageDuration[r, t]) / 8760)
+        * M.SegFracPerSeason[p, s]
+        * 365
+        * value(M.ProcessLifeFrac[r, p, t, v])
+    )
+    
+    expr = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
 
     return expr
 

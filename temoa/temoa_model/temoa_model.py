@@ -87,6 +87,7 @@ class TemoaModel(AbstractModel):
         M.activeCurtailment_rpsditvo = None
         M.activeActivity_rptv = None
         M.storageLevelIndices_rpsdtv = None
+        M.seasonalStorageLevelIndices_rpstv = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
         M.activeRegionsForTech = None
@@ -122,7 +123,9 @@ class TemoaModel(AbstractModel):
         M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
-        M.time_next = dict() # {(s, d): (s_next, d_next)} sequence of following time slices
+        M.time_next = dict() # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        M.time_next_storage_season = dict() # {(p, s_stor): (s_stor_next)}
+        M.time_storage_season = dict() # {(p, s_stor): (s)}
 
         ################################################
         #             Switching Sets                   #
@@ -185,6 +188,9 @@ class TemoaModel(AbstractModel):
         M.tech_group_members = Set(M.tech_group_names, within=M.tech_all)
         M.tech_or_group = Set(initialize=M.tech_group_names | M.tech_all)
 
+        M.tech_seasonal_storage = Set(within=M.tech_storage)
+        """storage technologies using the interseasonal storage feature"""
+
         M.tech_uncap = Set(within=M.tech_all - M.tech_reserve)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
 
@@ -244,8 +250,9 @@ class TemoaModel(AbstractModel):
         M.SegFrac = Param(M.time_optimize, M.time_season_all, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
         M.TimeSequencing = Set() # How do states carry between time segments?
-        M.TimeNext = Set() # This is just to get data from the table. Hidden feature and usually not used
+        M.TimeNext = Set(ordered=True) # This is just to get data from the table. Hidden feature and usually not used
         M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
+        M.TimeStorageSeason = Set(ordered=True) # Season sequence for seasonal storage
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
@@ -340,8 +347,8 @@ class TemoaModel(AbstractModel):
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
-        M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
         M.Create_StateSequence = BuildAction(rule=CreateTimeSequence)
+        M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
         M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
@@ -531,6 +538,9 @@ class TemoaModel(AbstractModel):
         M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageLevelVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
+        M.SeasonalStorageLevel_rpstv = Set(dimen=5, initialize=SeasonalStorageLevelVariableIndices)
+        M.V_SeasonalStorageLevel = Var(M.SeasonalStorageLevel_rpstv, domain=NonNegativeReals)
+
         # Derived decision variables
         M.CapacityVar_rptv = Set(dimen=4, initialize=CostFixedIndices)
         M.V_Capacity = Var(M.CapacityVar_rptv, domain=NonNegativeReals)
@@ -644,6 +654,17 @@ class TemoaModel(AbstractModel):
         # Pre-computing it is considerably faster.
         M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
 
+        M.SeasonalStorageEnergyConstraint = Constraint(
+            M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint
+        )
+
+        M.SeasonalStorageUpperBoundConstraint_rpsdtv = Set(
+            dimen=6, initialize=SeasonalStorageEnergyUpperBoundConstraintIndices
+        )
+        M.SeasonalStorageEnergyUpperBoundConstraint = Constraint(
+            M.SeasonalStorageUpperBoundConstraint_rpsdtv, rule=SeasonalStorageEnergyUpperBound_Constraint
+        )
+
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
         )
@@ -675,7 +696,7 @@ class TemoaModel(AbstractModel):
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)
-
+        
         M.LimitEmissionConstraint = Constraint(
             M.LimitEmissionConstraint_rpe, rule=LimitEmission_Constraint
         )

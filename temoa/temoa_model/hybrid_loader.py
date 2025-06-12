@@ -425,6 +425,10 @@ class HybridLoader:
             logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
             load_element(M.time_season_all, [('S',)])
 
+        if self.table_exists("TimeStorageSeason"):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT period, storage_season, season FROM main.TimeStorageSeason ORDER BY period, sequence')
+            load_element(M.TimeStorageSeason, raw)
+
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
@@ -516,6 +520,10 @@ class HybridLoader:
         # tech_storage
         raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps'").fetchall()
         load_element(M.tech_storage, raw, self.viable_techs)
+
+        # tech_storage_seatech_seasonal_storagesonal
+        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps' AND seasonal_storage > 0").fetchall()
+        load_element(M.tech_seasonal_storage, raw, self.viable_techs)
 
         # tech_reserve
         raw = cur.execute('SELECT tech FROM Technology WHERE reserve > 0').fetchall()

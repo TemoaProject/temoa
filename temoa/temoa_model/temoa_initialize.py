@@ -1061,6 +1061,15 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for d in M.time_of_day
     )
 
+    M.seasonalStorageLevelIndices_rpstv = set(
+        (r, p, s_stor, t, v)
+        for r, p, t in M.storageVintages.keys()
+        if t in M.tech_seasonal_storage
+        for v in M.storageVintages[r, p, t]
+        for _p, s_stor in M.time_storage_season
+        if _p == p
+    )
+
     logger.debug('Completed creation of SparseDicts')
 
 
@@ -1088,6 +1097,14 @@ def CreateTimeSequence(M: 'TemoaModel'):
             msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
             logger.error(msg)
             raise ValueError(msg)
+    
+    # Seasonal storage superimposed sequencing
+    for p, s_stor, s in M.TimeStorageSeason:
+        M.time_storage_season[p, s_stor] = s
+        if (p, s_stor, s) == M.TimeStorageSeason.last():
+            M.time_next_storage_season[p, s_stor] = M.TimeStorageSeason.first()[1]
+        else:
+            M.time_next_storage_season[p, s_stor] = M.TimeStorageSeason.next((p, s_stor, s))[1]
 
     msg += (' This behaviour can be changed using the '
             'time_sequencing parameter in the config file. ')
@@ -1311,6 +1328,19 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
 
 def StorageLevelVariableIndices(M: 'TemoaModel'):
     return M.storageLevelIndices_rpsdtv
+
+def SeasonalStorageLevelVariableIndices(M: 'TemoaModel'):
+    return M.seasonalStorageLevelIndices_rpstv
+
+
+def SeasonalStorageEnergyUpperBoundConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for r, p, s, t, v in M.seasonalStorageLevelIndices_rpstv
+        for d in M.time_of_day
+    )
+    
+    return indices
 
 
 def StorageConstraintIndices(M: 'TemoaModel'):
