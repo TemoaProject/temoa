@@ -4326,6 +4326,9 @@
         "s1",
         "s2"
     ],
+    "TimeSequencing": [
+        "loop_periods"
+    ],
     "vintage_all": [
         2025,
         2020

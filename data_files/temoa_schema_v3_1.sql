@@ -14,8 +14,6 @@ REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
 VALUES ('DB_MINOR', 0, 'DB minor version number');
-REPLACE INTO MetaData
-VALUES ('state_sequencing', 0, '0 = loop periods, 1 = loop seasons');
 
 CREATE TABLE IF NOT EXISTS MetaDataReal
 (

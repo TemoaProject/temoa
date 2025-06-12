@@ -426,32 +426,32 @@ class HybridLoader:
             load_element(M.time_season_all, [('S',)])
 
         # StateSequencing
-        raw = cur.execute("SELECT value from MetaData WHERE element == 'state_sequencing'").fetchall()
-        if raw:
-            seq = int(raw[0][0])
-            data[M.StateSequencing.name] = {None: seq}
-            if seq == 2:
-                # TimeNext
-                # This is a hidden feature allowing the user to manually specify the sequence of states.
+        time_sequencing = self.config.time_sequencing
+        match time_sequencing:
+            case 'loop_periods' | 'loop_seasons':
+                pass
+            case 'manual':
+                # This is a hidden feature allowing the user to manually specify the sequence of states using the TimeNext table
                 if self.table_exists("TimeNext"):
                     raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT period, season, tod, season_next, tod_next FROM main.TimeNext')
                     load_element(M.TimeNext, raw)
                 else:
-                    # Hidden feature unlocked! Give a nice long explanation
+                    # Hidden feature unlocked but not setup! Give a nice long explanation
                     msg = (
-                        'Tried to manually sequence states (time slices) using TimeNext but the table did not exist. '
-                        'With state_sequencing set to 2 in the MetaData table, the sequence of states will be pulled '
-                        'directly from the TimeNext table, where each row defines the next state in the order. '
+                        'Tried to manually sequence time slices using TimeNext but the table did not exist. '
+                        "With time_sequencing set to 'manual' in the config file, the sequence of time slices will be pulled "
+                        'directly from the TimeNext table, where each row defines the next time slice in the order. '
                         'This is an advanced feature and not recommended for most users. If you do NOT want to '
-                        'manually define the sequence of states, change the state_sequencing parameter. Otherwise '
-                        'add the TimeNext table to the database with the following columns then fill it out: '
-                        '(period, season, tod, season_next, tod_next). The sql code can also be found commented '
-                        'out in the v3.1 schema.'
+                        'manually define the sequence of time slices, change the time_sequencing parameter. Otherwise '
+                        'the TimeNext table can be found commented out in the v3.1 schema.'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
-        else:
-            logger.warning("state_sequencing parameter missing from MetaData table. By default, states will loop each period.")
+            case _:
+                msg = f"Invalid time sequencing parameter '{time_sequencing}'. Check the config file."
+                logger.error(msg)
+                raise ValueError(msg)
+        load_element(M.TimeSequencing, [(time_sequencing,)])
 
         # myopic_base_year
         if mi:

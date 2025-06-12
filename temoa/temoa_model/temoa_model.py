@@ -243,7 +243,7 @@ class TemoaModel(AbstractModel):
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
         M.SegFrac = Param(M.time_optimize, M.time_season_all, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
-        M.StateSequencing = Param(default=0) # How do states carry between time segments?
+        M.TimeSequencing = Set() # How do states carry between time segments?
         M.TimeNext = Set() # This is just to get data from the table. Hidden feature and usually not used
         M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
 
@@ -341,7 +341,7 @@ class TemoaModel(AbstractModel):
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
-        M.Create_StateSequence = BuildAction(rule=CreateStateSequence)
+        M.Create_StateSequence = BuildAction(rule=CreateTimeSequence)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
         M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)

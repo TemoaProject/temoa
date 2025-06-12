@@ -46996,6 +46996,9 @@
         "spring",
         "winter"
     ],
+    "TimeSequencing": [
+        "loop_periods"
+    ],
     "vintage_all": [
         2025,
         2020,

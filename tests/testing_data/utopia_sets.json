@@ -25913,6 +25913,9 @@
         "inter",
         "winter"
     ],
+    "TimeSequencing": [
+        "loop_periods"
+    ],
     "vintage_all": [
         1990,
         1960,

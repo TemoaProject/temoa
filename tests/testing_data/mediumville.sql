@@ -10,8 +10,6 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'');
-INSERT INTO MetaData VALUES('link_seasons',1,'Carry storage states between seasons');
-INSERT INTO MetaData VALUES('state_sequencing',0,'0 = loop periods, 1 = loop seasons');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
