@@ -425,7 +425,7 @@ class HybridLoader:
             logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
             load_element(M.time_season_all, [('S',)])
 
-        # StateSequencing
+        # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
             case 'seasonal_timeslicing' | 'representative_periods':
@@ -452,6 +452,10 @@ class HybridLoader:
                 logger.error(msg)
                 raise ValueError(msg)
         load_element(M.TimeSequencing, [(time_sequencing,)])
+
+        # ReserveMargin
+        # This is the method for calculating contributions
+        load_element(M.ReserveMargin, [(self.config.reserve_margin,)])
 
         # myopic_base_year
         if mi:

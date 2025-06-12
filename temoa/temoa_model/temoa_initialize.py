@@ -1518,11 +1518,12 @@ def RampDownConstraintIndices(M: 'TemoaModel'):
 def ReserveMarginIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d)
-        for r in M.regions
+        for r in M.PlanningReserveMargin
         for p in M.time_optimize
         for s in M.time_season[p]
         for d in M.time_of_day
     )
+    
     return indices
 
 

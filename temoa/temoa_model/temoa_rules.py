@@ -1627,6 +1627,71 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
 
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
+    
+    # Get available generation in this time slice depending on method specified in config file
+    match M.ReserveMargin[1]:
+        case 'static':
+            available = ReserveMarginStatic(M, r, p, s, d)
+        case 'dynamic':
+            available = ReserveMarginDynamic(M, r, p, s, d)
+        case _:
+            msg = f"Invalid reserve margin parameter '{M.ReserveMargin[1]}'. Check the config file."
+            logger.error(msg)
+            raise ValueError(msg)
+
+    # In most Temoa input databases, demand is endogenous, so we use electricity
+    # generation instead as a proxy for electricity demand.
+    total_generation = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in M.processReservePeriods[r, p]
+        for S_i in M.processInputs[r, p, t, S_v]
+        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+    )
+
+    # We must take into account flows into storage technologies.
+    # Flows into storage technologies need to be subtracted from the
+    # load calculation.
+    total_generation -= sum(
+        M.V_FlowIn[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in M.processReservePeriods[r, p]
+        if t in M.tech_storage
+        for S_i in M.processInputs[r, p, t, S_v]
+        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+    )
+
+    # Electricity imports and exports via exchange techs are accounted
+    # for below:
+    for r1r2 in M.regionalIndices:  # ensure the region is of the form r1-r2
+        if '-' not in r1r2:
+            continue
+        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
+            continue
+        r1, r2 = r1r2.split('-')
+        # First, determine the exports, and subtract this value from the
+        # total generation.
+        if r1 == r:
+            total_generation -= sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                / get_variable_efficiency(M, r1r2, p, s, d, S_i, t, S_v, S_o)
+                for (t, S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
+            )
+        # Second, determine the imports, and add this value from the
+        # total generation.
+        elif r2 == r:
+            total_generation += sum(
+                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                for (t, S_v) in M.processReservePeriods[r1r2, p]
+                for S_i in M.processInputs[r1r2, p, t, S_v]
+                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
+            )
+
+    requirement = total_generation * (1 + value(M.PlanningReserveMargin[r]))
+    return available >= requirement
+
+
+def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
     r"""
 
     During each period :math:`p`, the sum of the available capacity of all reserve
@@ -1654,17 +1719,14 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
         return Constraint.Skip
 
-    cap_avail = sum(
+    available = sum(
         value(M.CapacityCredit[r, p, t, v])
         * value(M.ProcessLifeFrac[r, p, t, v])
         * M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
-        for t in M.tech_reserve
-        if (r, p, t) in M.processVintages
-        for v in M.processVintages[r, p, t]
-        # Make sure (r,p,t,v) combinations are defined
-        if (r, p, t, v) in M.activeCapacityAvailable_rptv
+        for (t, v) in M.processReservePeriods[r, p]
+        if t not in M.tech_uncap
     )
 
     # The above code does not consider exchange techs, e.g. electricity
@@ -1678,6 +1740,8 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     for r1r2 in M.regionalIndices:
         if '-' not in r1r2:
             continue
+        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
+            continue
         r1, r2 = r1r2.split('-')
 
         # Only consider the capacity of technologies that import to
@@ -1686,70 +1750,87 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
             continue
 
         # add the available capacity of the exchange tech.
-        cap_avail += sum(
+        available += sum(
             value(M.CapacityCredit[r1r2, p, t, v])
             * value(M.ProcessLifeFrac[r1r2, p, t, v])
             * M.V_Capacity[r1r2, p, t, v]
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[p, s, d])
+            for (t, v) in M.processReservePeriods[r1r2, p]
             for t in M.tech_reserve
-            if (r1r2, p, t) in M.processVintages
-            for v in M.processVintages[r1r2, p, t]
-            # Make sure (r,p,t,v) combinations are defined
-            if (r1r2, p, t, v) in M.activeCapacityAvailable_rptv
         )
 
-    # In most Temoa input databases, demand is endogenous, so we use electricity
-    # generation instead as a proxy for electricity demand.
-    total_generation = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-        for (t, S_v) in M.processReservePeriods[r, p]
-        for S_i in M.processInputs[r, p, t, S_v]
-        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+    return available
+
+
+def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
+    r"""
+    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values 
+    are calculated from availability of generation in each hour, like an operating reserve margin, 
+    accounting for a capacity derate factor representing the forced outage rate.
+    """
+    if (not M.tech_reserve) or (
+        (r, p) not in M.processReservePeriods
+    ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
+        return Constraint.Skip
+
+    # Everything but storage and exchange techs
+    # Derated available generation
+    available = sum(
+        M.V_Capacity[r, p, t, v]
+        * value(M.CapacityCredit[r, p, t, v])
+        * value(M.ProcessLifeFrac[r, p, t, v])
+        * value(M.CapacityFactorProcess[r, p, s, d, t, v])
+        * value(M.CapacityToActivity[r, t])
+        * value(M.SegFrac[p, s, d])
+        for (t, v) in M.processReservePeriods[r, p]
+        if t not in M.tech_uncap and t not in M.tech_storage
     )
 
-    # We must take into account flows into storage technologies.
-    # Flows into storage technologies need to be subtracted from the
-    # load calculation.
-    total_generation -= sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, S_v, S_o]
-        for (t, S_v) in M.processReservePeriods[r, p]
+    # Storage (not exchange)
+    # Derated output flow (discharge)
+    available += sum(
+        M.V_FlowOut[r, p, s, d, i, t, v, o]
+        * value(M.CapacityCredit[r, p, t, v])
+        for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
-        for S_i in M.processInputs[r, p, t, S_v]
-        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+        for i in M.processInputs[r, p, t, v]
+        for o in M.processOutputsByInput[r, p, t, v, i]
     )
 
-    # Electricity imports and exports via exchange techs are accounted
-    # for below:
-    for r1r2 in M.regionalIndices:  # ensure the region is of the form r1-r2
+    # The above code does not consider exchange techs, e.g. electricity
+    # transmission between two distinct regions.
+    # We take exchange takes into account below.
+    # Note that a single exchange tech linking regions Ri and Rj is twice
+    # defined: once for region "Ri-Rj" and once for region "Rj-Ri".
+
+    # First, determine the amount of firm capacity each exchange tech
+    # contributes.
+    for r1r2 in M.regionalIndices:
         if '-' not in r1r2:
             continue
-        if (r1r2, p) not in M.processReservePeriods:  # ensure the technology in question exists
+        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
         r1, r2 = r1r2.split('-')
-        # First, determine the exports, and subtract this value from the
-        # total generation.
-        if r1 == r:
-            total_generation -= sum(
-                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
-                / get_variable_efficiency(M, r1r2, p, s, d, S_i, t, S_v, S_o)
-                for (t, S_v) in M.processReservePeriods[r1r2, p]
-                for S_i in M.processInputs[r1r2, p, t, S_v]
-                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
-            )
-        # Second, determine the imports, and add this value from the
-        # total generation.
-        elif r2 == r:
-            total_generation += sum(
-                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
-                for (t, S_v) in M.processReservePeriods[r1r2, p]
-                for S_i in M.processInputs[r1r2, p, t, S_v]
-                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
-                if (t, S_v) in M.processReservePeriods[r1r2, p]
-            )
 
-    cap_target = total_generation * (1 + value(M.PlanningReserveMargin[r]))
-    return cap_avail >= cap_target
+        # Only consider the capacity of technologies that import to
+        # the region in question -- i.e. for cases where r2 == r.
+        if r2 != r:
+            continue
+
+        # add the available output of the exchange tech.
+        available += sum(
+            M.V_Capacity[r1r2, p, t, v]
+            * value(M.CapacityCredit[r1r2, p, t, v])
+            * value(M.ProcessLifeFrac[r1r2, p, t, v])
+            * value(M.CapacityFactorProcess[r, p, s, d, t, v])
+            * value(M.CapacityToActivity[r1r2, t])
+            * value(M.SegFrac[p, s, d])
+            for (t, v) in M.processReservePeriods[r1r2, p]
+            for t in M.tech_reserve
+        )
+
+    return available
 
 
 def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):

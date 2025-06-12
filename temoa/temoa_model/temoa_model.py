@@ -482,10 +482,11 @@ class TemoaModel(AbstractModel):
         M.RampUp = Param(M.regions, M.tech_upramping, validate=validate_0to1)
         M.RampDown = Param(M.regions, M.tech_downramping, validate=validate_0to1)
 
+        M.ReserveMargin = Set() # How contributions to the reserve margin are calculated
         M.CapacityCredit = Param(
             M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0, validate=validate_0to1
         )
-        M.PlanningReserveMargin = Param(M.regions, default=0.2)
+        M.PlanningReserveMargin = Param(M.regions)
         
         M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
         M.EmissionEndOfLife = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_all)

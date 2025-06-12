@@ -88,6 +88,18 @@ save_lp_file = false
 # the schema). This is an advanced feature and not recommended for most users.
 time_sequencing = 'seasonal_timeslicing'
 
+# How contributions to the planning reserve margin are calculated. Options:
+# 'static'
+# Traditional planning reserve. Contributions are independent of hourly availability:
+#   capacity value = available capacity * capacity credit.
+# 'dynamic'
+# The capacity credit is treated as a capacity derate factor (forced outage rate).
+# For most generators, contributions are available (derated) output in each time slice: 
+#   capacity value = available capacity * capacity credit * capacity factor
+# For storage, contributions are (derated) actual output in each time slice:
+#   capacity value = flow out * capacity credit
+reserve_margin = 'static'
+
 # ---------------------------------------------------
 #                   MODE OPTIONS
 # options below are mode-specific and will be ignored
