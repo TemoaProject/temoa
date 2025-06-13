@@ -1317,8 +1317,12 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_stor, t, v):
     stored_energy = charge - discharge
 
     s_stor_next = M.time_next_storage_season[p, s_stor]
+    s_next = M.time_storage_season[p, s_stor_next]
 
-    expr = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + stored_energy == M.V_SeasonalStorageLevel[r, p, s_stor_next, t, v]
+    start = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.first(), t, v]
+    end = M.V_SeasonalStorageLevel[r, p, s_stor_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v]
+
+    expr = start + stored_energy == end
     return expr
 
 
@@ -1350,6 +1354,9 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
 
     """
+
+    if t in M.tech_seasonal_storage:
+        return Constraint.Skip # redundant on SeasonalStorageEnergyUpperBound
 
     energy_capacity = (
         M.V_Capacity[r, p, t, v]

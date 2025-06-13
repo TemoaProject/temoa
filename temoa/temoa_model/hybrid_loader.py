@@ -434,7 +434,12 @@ class HybridLoader:
                 ).fetchall()
             else:
                 raw = cur.execute('SELECT period, storage_season, season FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
-            load_element(M.TimeStorageSeason, raw)
+            for row in raw:
+                load_indexed_set(
+                    M.TimeStorageSeason,
+                    index_value=row[0],
+                    element=(row[1], row[2])
+                )
 
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
