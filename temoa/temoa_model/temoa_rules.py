@@ -1262,6 +1262,9 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     StorageLevel in the next time slice is equal to current StorageLevel plus net charge in the current time slice.
     """
 
+    if d == M.time_of_day.last() and t in M.tech_seasonal_storage:
+        return Constraint.Skip # handled by SeasonalStorageEnergy_Constraint
+
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
     charge = sum(
@@ -1362,8 +1365,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / 8760)
-        * M.SegFracPerSeason[p, s]
-        * 365
+        * value(M.SegFracPerSeason[p, s]) * 365
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
     
@@ -1384,10 +1386,17 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d,
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / 8760)
-        * M.SegFracPerSeason[p, s]
-        * 365
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
+
+    # this bit is tricky. A season can represent many days. Within each season, flows are multiplied
+    # by the number of days each season represents, and so the upper bound needs to be adjusted to
+    # allow day-scale flows. However, between seasons, whole-day charge deltas have built up, multiplied
+    # by the number of days that season represents. We carry multiple days' worth of deltas 
+    # between seasons, so we need to cap the storage level at the inter-season boundary to the actual, 
+    # unadjusted storage capacity, so we arent multiplying the charge carriable between seasons.
+    if d != M.time_of_day.first():
+        energy_capacity *= value(M.SegFracPerSeason[p, s]) * 365
     
     expr = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
 
