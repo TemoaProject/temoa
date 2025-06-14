@@ -926,8 +926,10 @@ CREATE TABLE IF NOT EXISTS TimeStorageSeason
     storage_season TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
+    count INT NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, storage_season, season)
+    CHECK (count > 0)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType
 (

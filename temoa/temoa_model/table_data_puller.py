@@ -241,9 +241,11 @@ def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
     res: dict[SLI, float] = defaultdict(float)
 
     # Storage level, the state variable for all but last time slice of each season
-    for sli in M.StorageLevel_rpsdtv:
-        state = value(M.V_StorageLevel[sli])
-        sli = SLI(*sli)
+    for r, p, s, d, t, v in M.StorageLevel_rpsdtv:
+        if t in M.tech_seasonal_storage:
+            continue
+        state = value(M.V_StorageLevel[r, p, s, d, t, v]) / (value(M.SegFracPerSeason[p, s]) * 365)
+        sli = SLI(r, p, s, d, t, v)
         if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
         res[sli] = state
 

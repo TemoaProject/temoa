@@ -252,7 +252,7 @@ class TemoaModel(AbstractModel):
         M.TimeSequencing = Set() # How do states carry between time segments?
         M.TimeNext = Set(ordered=True) # This is just to get data from the table. Hidden feature and usually not used
         M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
-        M.TimeStorageSeason = Set(M.time_optimize, ordered=True) # Season sequence for seasonal storage
+        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all) # Season sequence for seasonal storage
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not

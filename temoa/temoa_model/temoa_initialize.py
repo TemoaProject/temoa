@@ -1099,13 +1099,19 @@ def CreateTimeSequence(M: 'TemoaModel'):
             raise ValueError(msg)
     
     # Seasonal storage superimposed sequencing
-    for p, seasons in M.TimeStorageSeason.items():
-        for (s_stor, s) in seasons:
+    for p in M.time_optimize:
+        seasons = [
+            (s_stor, s)
+            for _p, s_stor, s in M.TimeStorageSeason
+            if _p == p
+        ]
+        for i, (s_stor, s) in enumerate(seasons):
+            s_stor, s = seasons[i]
             M.time_storage_season[p, s_stor] = s
-            if (s_stor, s) == seasons.last():
-                M.time_next_storage_season[p, s_stor] = seasons.first()[0]
+            if (s_stor, s) == seasons[-1]:
+                M.time_next_storage_season[p, s_stor] = seasons[0][0]
             else:
-                M.time_next_storage_season[p, s_stor] = seasons.next((s_stor, s))[0]
+                M.time_next_storage_season[p, s_stor] = seasons[i+1][0]
 
     msg += (' This behaviour can be changed using the '
             'time_sequencing parameter in the config file. ')

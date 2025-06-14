@@ -398,6 +398,19 @@ class HybridLoader:
             logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
+        all_seasons = set() # includes all regular and virtual seasonal storage seasons
+        if self.table_exists("TimeStorageSeason"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, storage_season, season, count FROM main.TimeStorageSeason WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, storage_season, season, count FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
+            all_seasons = all_seasons | set((row[1],) for row in raw)
+            load_element(M.TimeStorageSeason, raw)
+
         # TimeSeason
         if self.table_exists("TimeSeason"):
             if mi:
@@ -414,7 +427,7 @@ class HybridLoader:
                     index_value=row[0],
                     element=row[1]
                 )
-            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into time_season_all set
+            all_seasons = all_seasons | set((row[1],) for row in raw)
         else:
             for period in time_optimize:
                 load_indexed_set(
@@ -423,23 +436,8 @@ class HybridLoader:
                     element='S'
                 )
             logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
-            load_element(M.time_season_all, [('S',)])
-
-        if self.table_exists("TimeStorageSeason"):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, storage_season, season FROM main.TimeStorageSeason WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year)
-                ).fetchall()
-            else:
-                raw = cur.execute('SELECT period, storage_season, season FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
-            for row in raw:
-                load_indexed_set(
-                    M.TimeStorageSeason,
-                    index_value=row[0],
-                    element=(row[1], row[2])
-                )
+            all_seasons.add(('S',))
+        load_element(M.time_season_all, list(all_seasons))
 
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
