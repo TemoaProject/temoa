@@ -483,12 +483,12 @@ class HybridLoader:
 
         # days_per_season
         raw = cur.execute(
-                "SELECT value from MetaData WHERE element == 'days_per_season'"
+                "SELECT value from MetaData WHERE element == 'days_per_period'"
             ).fetchall()
         if not raw:
-            logger.warning(
+            logger.info(
                 'No value found for days_per_period in the MetaData table. '
-                'Assuming this is an annual database (365 day periods)'
+                'Assuming this is an annual database (365 days per period)'
             )
             raw = [(365,)]
         data[M.DaysPerPeriod.name] = {None: int(raw[0][0])}

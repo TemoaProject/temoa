@@ -31,7 +31,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import deprecated
-from pyomo.environ import NonNegativeReals
+from pyomo.environ import NonNegativeReals, value
 
 if TYPE_CHECKING:
     from temoa.temoa_model.temoa_model import TemoaModel
@@ -303,6 +303,45 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     print('vintage', v in M.vintage_all)
     print('output_commodity', so in M.commodity_carrier)
     return False
+
+
+def validate_StorageSeason(M: 'TemoaModel'):
+    storage = dict()
+    for p, s_stor, s in M.TimeStorageSeason:
+        if (p, s) not in storage:
+            storage[p, s] = 0
+        storage[p, s] += value(M.TimeStorageSeason[p, s_stor, s])
+    if abs(sum(storage.values()) - value(M.DaysPerPeriod)) >= 0.001:
+        logger.warning(
+            f'Sum of day count in TimeStorageSeason ({sum(storage.values())}) '
+            f'does not sum to days_per_season ({value(M.DaysPerPeriod)}) from the '
+            'MetaData table.'
+        )
+    for (p, s) in storage:
+        if (p, s) not in M.SegFracPerSeason:
+            msg = (
+                f'Period-season index {(p, s)} referenced in TimeStorageSeason that '
+                'does not exist in TimeSegmentFraction.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+    for (p, s) in M.SegFracPerSeason:
+        if s not in M.time_season[p]:
+            continue
+        if (p, s) not in storage:
+            msg = (f'Period-season index {(p, s)} absent from TimeStorageSeason')
+            logger.warning(msg)
+        segfrac = value(M.SegFracPerSeason[p, s])
+        segfracstorage = storage[p, s] / value(M.DaysPerPeriod)
+        if abs(segfrac - segfracstorage) >= 0.001:
+            msg = (
+                'Discrepancy of seasonal composition between ' 
+                'TimeSegmentFraction and TimeStorageSeason. Fraction of each '
+                'period assigned to each season should match: ' 
+                f'TimeSegmentFraction: {(p, s, value(M.SegFracPerSeason[p, s]))}'
+                f', TimeStorageSeason: {(p, s, segfracstorage)}'
+            )
+            logger.warning(msg)
 
 
 def validate_tech_sets(M: 'TemoaModel'):

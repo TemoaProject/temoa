@@ -42,6 +42,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_Efficiency,
     validate_tech_sets,
     no_slash_or_pipe,
+    validate_StorageSeason,
 )
 from temoa.temoa_model.temoa_initialize import *
 from temoa.temoa_model.temoa_initialize import get_loan_life
@@ -252,7 +253,6 @@ class TemoaModel(AbstractModel):
         M.TimeSequencing = Set() # How do states carry between time segments?
         M.TimeNext = Set(ordered=True) # This is just to get data from the table. Hidden feature and usually not used
         M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
-        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all) # Season sequence for seasonal storage
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
@@ -654,6 +654,8 @@ class TemoaModel(AbstractModel):
         # We make use of this following set in some of the storage constraints.
         # Pre-computing it is considerably faster.
         M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
+        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all)
+        M.validate_StorageSeason = BuildAction(rule=validate_StorageSeason)
 
         M.SeasonalStorageEnergyConstraint = Constraint(
             M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint
