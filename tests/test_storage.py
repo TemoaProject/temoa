@@ -49,8 +49,7 @@ def test_storage_fraction(system_test_run):
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
-            * model.SegFracPerSeason[p, s]
-            * 365
+            * model.SegFracPerSeason[p, s] * model.DaysPerPeriod
             * model.ProcessLifeFrac[r, p, t, v]
         )
 

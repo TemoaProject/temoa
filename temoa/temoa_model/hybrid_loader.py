@@ -481,6 +481,18 @@ class HybridLoader:
                 raise ValueError('No myopic_base_year found in MetaData table.')
             data[M.MyopicBaseyear.name] = {None: int(raw[0][0])}
 
+        # days_per_season
+        raw = cur.execute(
+                "SELECT value from MetaData WHERE element == 'days_per_season'"
+            ).fetchall()
+        if not raw:
+            logger.warning(
+                'No value found for days_per_period in the MetaData table. '
+                'Assuming this is an annual database (365 day periods)'
+            )
+            raw = [(365,)]
+        data[M.DaysPerPeriod.name] = {None: int(raw[0][0])}
+
         #  === REGION SETS ===
 
         # regions

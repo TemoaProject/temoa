@@ -499,6 +499,7 @@ class TemoaModel(AbstractModel):
         M.EmissionEndOfLife = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_all)
 
         M.MyopicBaseyear = Param(default=0)
+        M.DaysPerPeriod = Param()
 
         ################################################
         #                 Model Variables              #

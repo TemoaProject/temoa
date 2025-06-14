@@ -125,7 +125,7 @@ upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', 1, 'bat
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...
-mulitplier = storage_dur * M.SegFracPerSeason['winter'] * 365 * c2a * c
+mulitplier = storage_dur * M.SegFracPerSeason[2020, 'winter'] * M.DaysPerPeriod * c2a * c
 print(f'The multiplier for the storage should be: {mulitplier}')
 
 M.StorageEnergyUpperBoundConstraint.construct()
