@@ -398,47 +398,6 @@ class HybridLoader:
             logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
-        all_seasons = set() # includes all regular and virtual seasonal storage seasons
-        if self.table_exists("TimeStorageSeason"):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, storage_season, season, count FROM main.TimeStorageSeason WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year)
-                ).fetchall()
-            else:
-                raw = cur.execute('SELECT period, storage_season, season, count FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
-            all_seasons = all_seasons | set((row[1],) for row in raw)
-            load_element(M.TimeStorageSeason, raw)
-
-        # TimeSeason
-        if self.table_exists("TimeSeason"):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, season FROM main.TimeSeason WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year)
-                ).fetchall()
-            else:
-                raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
-            for row in raw:
-                load_indexed_set(
-                    M.time_season,
-                    index_value=row[0],
-                    element=row[1]
-                )
-            all_seasons = all_seasons | set((row[1],) for row in raw)
-        else:
-            for period in time_optimize:
-                load_indexed_set(
-                    M.time_season,
-                    index_value=period,
-                    element='S'
-                )
-            logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
-            all_seasons.add(('S',))
-        load_element(M.time_season_all, list(all_seasons))
-
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
@@ -689,14 +648,58 @@ class HybridLoader:
         # SegFrac
         if self.table_exists("TimeSegmentFraction"):
             raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT period, season, tod, segfrac FROM main.TimeSegmentFraction')
-            load_element(M.SegFrac, raw)
         else:
             logger.warning(
                 'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
-                ' (assume this is an annual model)'
+                ' (assume this is a periodic model)'
             )
-            filler_segfrac = [(p, "S", "D", 1) for p in time_optimize] # if no segfrac table, assume this is an annual model
-            load_element(M.SegFrac, filler_segfrac)
+            raw = [
+                (p, "S", "D", 1)
+                for p in time_optimize
+                if mi.base_year <= p <= mi.last_demand_year
+            ] # if no segfrac table, assume this is a periodic model
+        load_element(M.SegFrac, raw)
+
+        all_seasons = set() # includes all regular and virtual seasonal storage seasons
+        if self.table_exists("TimeStorageSeason"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, storage_season, season, count FROM main.TimeStorageSeason WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, storage_season, season, count FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
+            all_seasons = all_seasons | set((row[1],) for row in raw)
+            load_element(M.TimeStorageSeason, raw)
+
+        # TimeSeason
+        if self.table_exists("TimeSeason"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, season FROM main.TimeSeason WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
+            for row in raw:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=row[0],
+                    element=row[1]
+                )
+            all_seasons = all_seasons | set((row[1],) for row in raw)
+        else:
+            for period in time_optimize:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=period,
+                    element='S'
+                )
+            logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
+            all_seasons.add(('S',))
+        load_element(M.time_season_all, list(all_seasons))
 
         # DemandSpecificDistribution
         if self.table_exists('DemandSpecificDistribution'):

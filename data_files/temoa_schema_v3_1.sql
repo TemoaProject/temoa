@@ -14,6 +14,8 @@ REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
 VALUES ('DB_MINOR', 0, 'DB minor version number');
+REPLACE INTO MetaData
+VALUES ('days_per_period', 365, 'count of days in each period');
 
 CREATE TABLE IF NOT EXISTS MetaDataReal
 (
@@ -926,9 +928,9 @@ CREATE TABLE IF NOT EXISTS TimeStorageSeason
     storage_season TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count INT NOT NULL,
+    count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season)
+    PRIMARY KEY (period, sequence, storage_season, season),
     CHECK (count > 0)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType

@@ -10,6 +10,7 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -1229,19 +1230,19 @@ INSERT INTO OutputCost VALUES('zulu','region','electricity',2000,'demand',2000,0
 INSERT INTO OutputCost VALUES('zulu','region','electricity',2000,'dly_stor',2000,1.0795329311569543673,0.0,0.0,0.0,0.69261162238737030705,0.0,0.0,0.0);
 INSERT INTO OutputCost VALUES('zulu','region','electricity',2000,'generator',2000,773.45387307577189162,0.0,38075.357420893887194,0.0,496.23603542939909161,0.0,43972.239969763071698,0.0);
 INSERT INTO OutputCost VALUES('zulu','region','electricity',2000,'seas_stor',2000,36.314678114829974653,0.0,0.0,0.0,23.298935492992982609,0.0,0.0,0.0);
-CREATE TABLE TimeStorageSeason
-(
-    period INTEGER
-        REFERENCES TimePeriod (period),
-    sequence INTEGER,
-    storage_season TEXT,
-    season TEXT
-        REFERENCES TimeSeason (season),
-    count INT NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season)
-    CHECK (count > 0)
+CREATE TABLE TimeStorageSeason
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    storage_season TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, storage_season, season),
+    CHECK (count > 0)
 );
-INSERT INTO TimeStorageSeason VALUES(2000,1,'summer','charge',182,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,3,'winter','discharge',183,NULL);
+INSERT INTO TimeStorageSeason VALUES(2000,1,'summer','charge',182.5,NULL);
+INSERT INTO TimeStorageSeason VALUES(2000,3,'winter','discharge',182.5,NULL);
 COMMIT;

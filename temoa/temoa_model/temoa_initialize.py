@@ -1075,21 +1075,23 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
 def CreateTimeSequence(M: 'TemoaModel'):
 
+    logger.debug('Creating sequence of time slices.')
+
     # Establishing sequence of states
     match M.TimeSequencing.first():
         case 'seasonal_timeslicing':
-            msg = 'Running a season time slicing database, looping state each period, chaining between seasons.'
+            msg = 'Running a season time slicing database, looping time each period, chaining between seasons.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
         case 'representative_periods':
-            msg = 'Running a representative periods database, looping state each season.'
+            msg = 'Running a representative periods database, looping time each season.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the TimeNext table
-            msg = 'Pulling state sequence from TimeNext table.'
+            msg = 'Pulling time sequence from TimeNext table.'
             for p, s, d, s_next, d_next in M.TimeNext:
                 M.time_next[p, s, d] = s_next, d_next
         case _:
@@ -1097,6 +1099,12 @@ def CreateTimeSequence(M: 'TemoaModel'):
             msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
             logger.error(msg)
             raise ValueError(msg)
+        
+    msg += (' This behaviour can be changed using the '
+            'time_sequencing parameter in the config file. ')
+    logger.info(msg)
+
+    logger.debug('Creating sequence of virtual storage seasons.')
     
     # Seasonal storage superimposed sequencing
     for p in M.time_optimize:
@@ -1112,11 +1120,8 @@ def CreateTimeSequence(M: 'TemoaModel'):
                 M.time_next_storage_season[p, s_stor] = seasons[0][0]
             else:
                 M.time_next_storage_season[p, s_stor] = seasons[i+1][0]
-
-    msg += (' This behaviour can be changed using the '
-            'time_sequencing parameter in the config file. ')
-    logger.info(msg)
-    logger.debug('Created sequence of states.')
+    
+    logger.debug('Created time sequence.')
 
     
 # ---------------------------------------------------------------

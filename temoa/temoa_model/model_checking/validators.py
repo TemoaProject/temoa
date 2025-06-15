@@ -306,17 +306,31 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
 
 
 def validate_StorageSeason(M: 'TemoaModel'):
+
+    if not M.TimeStorageSeason:
+        logger.info(
+            'No data in TimeStorageSeason. By default, assume storage seasons '
+            'match TimeSeason and fill using TimeSegmentFraction.'
+        )
+        for p in M.time_season:
+            for s in M.time_season[p]:
+                M.TimeStorageSeason[p, s, s] = value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+    
     storage = dict()
     for p, s_stor, s in M.TimeStorageSeason:
         if (p, s) not in storage:
             storage[p, s] = 0
         storage[p, s] += value(M.TimeStorageSeason[p, s_stor, s])
+
+    # Check that TimeStorageSeason day counts total to number of days in each period
     if abs(sum(storage.values()) - value(M.DaysPerPeriod)) >= 0.001:
         logger.warning(
             f'Sum of day count in TimeStorageSeason ({sum(storage.values())}) '
             f'does not sum to days_per_season ({value(M.DaysPerPeriod)}) from the '
             'MetaData table.'
         )
+
+    # Check that seasons using in storage seasons are actual seasons
     for (p, s) in storage:
         if (p, s) not in M.SegFracPerSeason:
             msg = (
@@ -325,18 +339,23 @@ def validate_StorageSeason(M: 'TemoaModel'):
             )
             logger.error(msg)
             raise ValueError(msg)
+    
     for (p, s) in M.SegFracPerSeason:
         if s not in M.time_season[p]:
             continue
+
+        # Check that all seasons are using in storage seasons
         if (p, s) not in storage:
             msg = (f'Period-season index {(p, s)} absent from TimeStorageSeason')
             logger.warning(msg)
+
+        # Check that the two tables agree on the total seasonal composition of each period
         segfrac = value(M.SegFracPerSeason[p, s])
         segfracstorage = storage[p, s] / value(M.DaysPerPeriod)
         if abs(segfrac - segfracstorage) >= 0.001:
             msg = (
-                'Discrepancy of seasonal composition between ' 
-                'TimeSegmentFraction and TimeStorageSeason. Fraction of each '
+                'Discrepancy of total period-season composition between ' 
+                'TimeSegmentFraction and TimeStorageSeason. Total fraction of each '
                 'period assigned to each season should match: ' 
                 f'TimeSegmentFraction: {(p, s, value(M.SegFracPerSeason[p, s]))}'
                 f', TimeStorageSeason: {(p, s, segfracstorage)}'

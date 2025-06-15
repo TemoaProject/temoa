@@ -344,10 +344,16 @@ class TemoaModel(AbstractModel):
         )
         M.RenewablePortfolioStandard = Param(M.RenewablePortfolioStandardConstraint_rpg, validate=validate_0to1)
 
+        # Set up representation of time
+        M.DaysPerPeriod = Param()
+        M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
+        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all, mutable=True)
+        M.validate_StorageSeason = BuildAction(rule=validate_StorageSeason)
+        M.Create_TimeSequence = BuildAction(rule=CreateTimeSequence)
+
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
-        M.Create_StateSequence = BuildAction(rule=CreateTimeSequence)
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
@@ -499,7 +505,6 @@ class TemoaModel(AbstractModel):
         M.EmissionEndOfLife = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_all)
 
         M.MyopicBaseyear = Param(default=0)
-        M.DaysPerPeriod = Param()
 
         ################################################
         #                 Model Variables              #
@@ -650,12 +655,6 @@ class TemoaModel(AbstractModel):
         )
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
-
-        # We make use of this following set in some of the storage constraints.
-        # Pre-computing it is considerably faster.
-        M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
-        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all)
-        M.validate_StorageSeason = BuildAction(rule=validate_StorageSeason)
 
         M.SeasonalStorageEnergyConstraint = Constraint(
             M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint

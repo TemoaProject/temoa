@@ -10,6 +10,7 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
+INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -1429,7 +1430,7 @@ INSERT INTO TimeSeason VALUES(2030,1,'spring',NULL);
 INSERT INTO TimeSeason VALUES(2030,2,'summer',NULL);
 INSERT INTO TimeSeason VALUES(2030,3,'fall',NULL);
 INSERT INTO TimeSeason VALUES(2030,4,'winter',NULL);
-CREATE TABLE IF NOT EXISTS TimeStorageSeason
+CREATE TABLE TimeStorageSeason
 (
     period INTEGER
         REFERENCES TimePeriod (period),
@@ -1437,8 +1438,10 @@ CREATE TABLE IF NOT EXISTS TimeStorageSeason
     storage_season TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season)
+    PRIMARY KEY (period, sequence, storage_season, season),
+    CHECK (count > 0)
 );
 CREATE TABLE TimePeriodType
 (
