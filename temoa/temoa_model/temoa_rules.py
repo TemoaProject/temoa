@@ -1357,7 +1357,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
        :label: StorageEnergyUpperBound
 
           \textbf{SL}_{r, p, s, d, t, v} \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{24 * value(M.DaysPerPeriod) hrs/yr}
           \cdot \sum_{d} SEG_{s,d} \cdot M.DaysPerPeriod
 
           \\
@@ -1371,7 +1371,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
-        * (value(M.StorageDuration[r, t]) / 8760)
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
         * value(M.SegFracPerSeason[p, s]) * M.DaysPerPeriod # adjust for days in season
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
@@ -1403,7 +1403,7 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d,
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
-        * (value(M.StorageDuration[r, t]) / 8760)
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
 
@@ -1558,22 +1558,33 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
           \textbf{SF}_{r,p,s,d,t,v} \le
           \ SF_{r,p,s,d,t,v}
           \cdot
-          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{(24 \cdot DPP hrs/yr}
           \cdot \sum_{d} SEG_{s,d} \cdot M.DaysPerPeriod days/yr \cdot MPL_{r,p,t,v}
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{LimitStorageFraction}}
     """
 
-    energy_capacity = (
+    energy_limit = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
-        * (value(M.StorageDuration[r, t]) / 8760)
-        * M.SegFracPerSeason[p, s] * M.DaysPerPeriod
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
         * value(M.ProcessLifeFrac[r, p, t, v])
+        * value(M.LimitStorageFraction[r, p, s, d, t, v, op])
     )
 
-    expr = operator_expression(M.V_StorageLevel[r, p, s, d, t, v], op, energy_capacity * value(M.LimitStorageFraction[r, p, s, d, t, v, op]))
+    if M.is_seasonal_storage[t]:
+        s_stor = s # virtual storage season
+        s = M.storage_to_season[p, s_stor] # actual season
+
+    # adjust the storage level to the individual-day level
+    energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+
+    if M.is_seasonal_storage[t]:
+        # seasonal storage upper energy limit is absolute
+        energy_level = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + energy_level * value(M.TimeStorageSeason[p, s_stor, s])
+
+    expr = operator_expression(energy_level, op, energy_limit)
 
     return expr
 
@@ -1640,7 +1651,7 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[p, s_next, d_next])
 
-    hours_elapsed = 8760 * ( value(M.SegFrac[p, s, d]) + value(M.SegFrac[p, s_next, d_next]) ) / 2
+    hours_elapsed = 24 * value(M.DaysPerPeriod) * value(M.SegFrac[p, s, d]) / 2
     hours_elapsed /= M.SegFracPerSeason[p, s] * M.DaysPerPeriod # adjust for how many days this season represents
     ramp_fraction = hours_elapsed * value(M.RampUp[r, t])
 
@@ -1698,7 +1709,7 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[p, s_next, d_next])
 
-    hours_elapsed = 8760 * ( value(M.SegFrac[p, s, d]) + value(M.SegFrac[p, s_next, d_next]) ) / 2
+    hours_elapsed = 24 * value(M.DaysPerPeriod) * ( value(M.SegFrac[p, s, d]) + value(M.SegFrac[p, s_next, d_next]) ) / 2
     hours_elapsed /= M.SegFracPerSeason[p, s] * M.DaysPerPeriod # adjust for how many days this season represents
     ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
 

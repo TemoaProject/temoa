@@ -4050,7 +4050,7 @@
     ],
     "RetiredCapacityVar_rptv": [],
     "SeasonalStorageLevel_rpstv": [],
-    "SeasonalStorageUpperBoundConstraint_rpsdtv": [],
+    "SeasonalStorageConstraints_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "B",

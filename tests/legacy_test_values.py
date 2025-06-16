@@ -76,10 +76,10 @@ test_vals = {
     },
     'seasonal_storage': {
         # added 2025/06/16 after addition of seasonal storage
-        ExpectedVals.OBJ_VALUE: 76660.8720,
+        ExpectedVals.OBJ_VALUE: 76661.0231,
         ExpectedVals.EFF_DOMAIN_SIZE: 24,
         ExpectedVals.EFF_INDEX_SIZE: 4,
-        ExpectedVals.CONSTR_COUNT: 180,
+        ExpectedVals.CONSTR_COUNT: 182,
         ExpectedVals.VAR_COUNT: 90, 
     },
 }

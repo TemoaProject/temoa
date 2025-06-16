@@ -1350,7 +1350,7 @@ def SeasonalStorageLevelVariableIndices(M: 'TemoaModel'):
     return M.seasonalStorageLevelIndices_rpstv
 
 
-def SeasonalStorageEnergyUpperBoundConstraintIndices(M: 'TemoaModel'):
+def SeasonalStorageConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
         for r, p, s, t, v in M.seasonalStorageLevelIndices_rpstv

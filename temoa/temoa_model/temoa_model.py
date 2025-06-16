@@ -490,7 +490,8 @@ class TemoaModel(AbstractModel):
 
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
-        M.LimitStorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv * M.operator)
+        M.SeasonalStorageConstraints_rpsdtv = Set(dimen=6, initialize=SeasonalStorageConstraintIndices)
+        M.LimitStorageFractionConstraint_rpsdtv = Set(within=(M.StorageConstraints_rpsdtv | M.SeasonalStorageConstraints_rpsdtv) * M.operator)
         M.LimitStorageFraction = Param(M.LimitStorageFractionConstraint_rpsdtv, validate=validate_0to1)
 
         # Storage duration is expressed in hours
@@ -675,11 +676,8 @@ class TemoaModel(AbstractModel):
             M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint
         )
 
-        M.SeasonalStorageUpperBoundConstraint_rpsdtv = Set(
-            dimen=6, initialize=SeasonalStorageEnergyUpperBoundConstraintIndices
-        )
         M.SeasonalStorageEnergyUpperBoundConstraint = Constraint(
-            M.SeasonalStorageUpperBoundConstraint_rpsdtv, rule=SeasonalStorageEnergyUpperBound_Constraint
+            M.SeasonalStorageConstraints_rpsdtv, rule=SeasonalStorageEnergyUpperBound_Constraint
         )
 
         M.StorageChargeRateConstraint = Constraint(

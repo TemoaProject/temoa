@@ -498,6 +498,8 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
+INSERT INTO LimitStorageLevelFraction VALUES('region', 2000, 'winter', 'b', 'seas_stor', 2000, 'e', 0.5, NULL);
+INSERT INTO LimitStorageLevelFraction VALUES('region', 2000, 'charge', 'b', 'dly_stor', 2000, 'e', 0.5, NULL);
 CREATE TABLE LimitActivity
 (
     region  TEXT,
