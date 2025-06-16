@@ -954,6 +954,12 @@ def CreateSparseDicts(M: 'TemoaModel'):
     commodityDownstream_rpo = set(M.commodityDStreamProcess.keys() | M.capacityConsumptionTechs.keys() | M.exportRegions.keys())
     M.commodityBalance_rpc = commodityUpstream_rpi.intersection(commodityDownstream_rpo)
 
+    # A dictionary of whether a storage tech is seasonal, just to speed things up
+    for t in M.tech_storage:
+        M.is_seasonal_storage[t] = False
+    for t in M.tech_seasonal_storage:
+        M.is_seasonal_storage[t] = True
+
     M.activeFlow_rpsditvo = set(
         (r, p, s, d, i, t, v, o)
         for r, p, t in M.processVintages.keys()
@@ -1066,7 +1072,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for r, p, t in M.storageVintages.keys()
         if t in M.tech_seasonal_storage
         for v in M.storageVintages[r, p, t]
-        for _p, s_stor in M.time_storage_season
+        for _p, s_stor in M.storage_to_season
         if _p == p
     )
 
@@ -1110,16 +1116,15 @@ def CreateTimeSequence(M: 'TemoaModel'):
     for p in M.time_optimize:
         seasons = [
             (s_stor, s)
-            for _p, s_stor, s in M.TimeStorageSeason
+            for _p, s_stor, s in M.ordered_storage_season
             if _p == p
         ]
         for i, (s_stor, s) in enumerate(seasons):
-            s_stor, s = seasons[i]
-            M.time_storage_season[p, s_stor] = s
+            M.storage_to_season[p, s_stor] = s
             if (s_stor, s) == seasons[-1]:
-                M.time_next_storage_season[p, s_stor] = seasons[0][0]
+                M.time_next_storage[p, s_stor] = seasons[0][0]
             else:
-                M.time_next_storage_season[p, s_stor] = seasons[i+1][0]
+                M.time_next_storage[p, s_stor] = seasons[i+1][0]
     
     logger.debug('Created time sequence.')
 

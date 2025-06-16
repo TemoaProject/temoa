@@ -672,6 +672,7 @@ class HybridLoader:
                 raw = cur.execute('SELECT period, storage_season, season, count FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
             all_seasons = all_seasons | set((row[1],) for row in raw)
             load_element(M.TimeStorageSeason, raw)
+            load_element(M.ordered_storage_season, [(row[0:3]) for row in raw])
 
         # TimeSeason
         if self.table_exists("TimeSeason"):

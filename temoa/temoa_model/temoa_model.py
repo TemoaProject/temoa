@@ -124,9 +124,12 @@ class TemoaModel(AbstractModel):
         M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
+
+        # These establish time sequencing
         M.time_next = dict() # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_storage_season = dict() # {(p, s_stor): (s_stor_next)}
-        M.time_storage_season = dict() # {(p, s_stor): (s)}
+        M.time_next_storage = dict() # {(p, s_stor): (s_stor_next)} next virtual storage season
+        M.storage_to_season = dict() # {(p, s_stor): (s)} season matching this virtual storage season
+        M.is_seasonal_storage = dict() # to avoid slow O(n2) behaviour in storage constraints
 
         ################################################
         #             Switching Sets                   #
@@ -160,6 +163,9 @@ class TemoaModel(AbstractModel):
         M.time_season_all = Set(ordered=True, validate=no_slash_or_pipe)
         M.time_season = Set(M.time_optimize, within=M.time_season_all, ordered=True)
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
+
+        # This is just to get the TimeStorageSeason table sequentially. There must be a better way but this works for now
+        M.ordered_storage_season = Set(dimen=3, within=M.time_optimize * M.time_season_all * M.time_season_all, ordered=True)
 
         # Define regions
         M.regions = Set(validate=region_check)
@@ -656,6 +662,14 @@ class TemoaModel(AbstractModel):
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
 
+        M.StorageEnergyConstraint = Constraint(
+            M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
+        )
+
+        M.StorageEnergyUpperBoundConstraint = Constraint(
+            M.StorageConstraints_rpsdtv, rule=StorageEnergyUpperBound_Constraint
+        )
+
         M.SeasonalStorageEnergyConstraint = Constraint(
             M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint
         )
@@ -665,14 +679,6 @@ class TemoaModel(AbstractModel):
         )
         M.SeasonalStorageEnergyUpperBoundConstraint = Constraint(
             M.SeasonalStorageUpperBoundConstraint_rpsdtv, rule=SeasonalStorageEnergyUpperBound_Constraint
-        )
-
-        M.StorageEnergyConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
-        )
-
-        M.StorageEnergyUpperBoundConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageEnergyUpperBound_Constraint
         )
 
         M.StorageChargeRateConstraint = Constraint(
