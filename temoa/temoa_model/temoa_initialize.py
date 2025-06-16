@@ -581,7 +581,7 @@ def CreateDemands(M: 'TemoaModel'):
                 for d in M.time_of_day
                 if (r, p, s, d, dem) not in keys
             )
-            logger.warning(
+            logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
                 (r, p, dem), missing,
             )
@@ -1567,6 +1567,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
         (r, p, s, d)
         for r in M.PlanningReserveMargin
         for p in M.time_optimize
+        if (r, p) in M.processReservePeriods
         for s in M.time_season[p]
         for d in M.time_of_day
     )

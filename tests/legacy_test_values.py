@@ -68,7 +68,7 @@ test_vals = {
     },
     'mediumville': {
         # added 2025/06/12 prior to addition of dynamic reserve margin
-        ExpectedVals.OBJ_VALUE: 8139.1913,
+        ExpectedVals.OBJ_VALUE: 7035.7275, # reduced 2025/06/16 after fixing bug in db
         ExpectedVals.EFF_DOMAIN_SIZE: 2800,
         ExpectedVals.EFF_INDEX_SIZE: 18,
         ExpectedVals.CONSTR_COUNT: 232,

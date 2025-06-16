@@ -1877,10 +1877,18 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
         if t not in M.tech_uncap and t not in M.tech_storage
     )
 
-    # Storage (not exchange)
-    # Derated output flow (discharge)
+    # Storage
+    # Derated net output flow
     available += sum(
         M.V_FlowOut[r, p, s, d, i, t, v, o]
+        * value(M.CapacityCredit[r, p, t, v])
+        for (t, v) in M.processReservePeriods[r, p]
+        if t in M.tech_storage
+        for i in M.processInputs[r, p, t, v]
+        for o in M.processOutputsByInput[r, p, t, v, i]
+    )
+    available -= sum(
+        M.V_FlowIn[r, p, s, d, i, t, v, o]
         * value(M.CapacityCredit[r, p, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage

@@ -43,6 +43,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_tech_sets,
     no_slash_or_pipe,
     validate_StorageSeason,
+    validate_ReserveMargin,
 )
 from temoa.temoa_model.temoa_initialize import *
 from temoa.temoa_model.temoa_initialize import get_loan_life
@@ -503,7 +504,7 @@ class TemoaModel(AbstractModel):
 
         M.ReserveMargin = Set() # How contributions to the reserve margin are calculated
         M.CapacityCredit = Param(
-            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0, validate=validate_0to1
+            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=1, validate=validate_0to1
         )
         M.PlanningReserveMargin = Param(M.regions)
         
@@ -703,6 +704,7 @@ class TemoaModel(AbstractModel):
         M.RampDownConstraint = Constraint(M.RampDownConstraint_rpsdtv, rule=RampDown_Constraint)
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
+        M.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)
         M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)
         
         M.LimitEmissionConstraint = Constraint(

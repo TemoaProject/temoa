@@ -323,12 +323,18 @@ def validate_StorageSeason(M: 'TemoaModel'):
         storage[p, s] += value(M.TimeStorageSeason[p, s_stor, s])
 
     # Check that TimeStorageSeason day counts total to number of days in each period
-    if abs(sum(storage.values()) - value(M.DaysPerPeriod)) >= 0.001:
-        logger.warning(
-            f'Sum of day count in TimeStorageSeason ({sum(storage.values())}) '
-            f'does not sum to days_per_season ({value(M.DaysPerPeriod)}) from the '
-            'MetaData table.'
+    for p in M.time_optimize:
+        count_total = sum(
+            storage[p, s]
+            for _p, s in storage
+            if _p == p
         )
+        if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
+            logger.warning(
+                f'Sum of day count in TimeStorageSeason ({sum(storage.values())}) '
+                f'does not sum to days_per_season ({value(M.DaysPerPeriod)}) from the '
+                'MetaData table.'
+            )
 
     # Check that seasons using in storage seasons are actual seasons
     for (p, s) in storage:
@@ -361,6 +367,15 @@ def validate_StorageSeason(M: 'TemoaModel'):
                 f', TimeStorageSeason: {(p, s, segfracstorage)}'
             )
             logger.warning(msg)
+
+
+def validate_ReserveMargin(M: 'TemoaModel'):
+    for r in M.PlanningReserveMargin:
+        if all((r, p) not in M.processReservePeriods for p in M.time_optimize):
+            logger.warning(
+                'Planning reserve margin provided but there are no reserve '
+                f'technologies serving this region: {r, M.PlanningReserveMargin[r]}'
+            )
 
 
 def validate_tech_sets(M: 'TemoaModel'):

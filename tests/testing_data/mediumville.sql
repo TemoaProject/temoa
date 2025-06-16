@@ -1110,9 +1110,9 @@ CREATE TABLE Technology
 );
 INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
 INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,0,'residential lighting');
-INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,1,1,1,0,0,0,'hydro power electric plant');
+INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,1,1,0,0,0,'hydro power electric plant');
 INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,0,'big battery');
-INSERT INTO Technology VALUES('EF','p','electric','electric','',0,0,0,0,0,0,0,0,'fusion plant');
+INSERT INTO Technology VALUES('EF','p','electric','electric','',0,0,1,0,0,0,0,0,'fusion plant');
 INSERT INTO Technology VALUES('EFL','p','electric','electric','',0,0,0,0,0,1,0,0,'linked (to Fusion) producer');
 INSERT INTO Technology VALUES('heater','p','residential','electric','',0,0,0,0,0,0,0,0,'heater');
 INSERT INTO Technology VALUES('FGF_pipe','p','transport',NULL,'',0,0,0,0,0,0,1,0,'transportation line A->B');
