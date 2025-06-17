@@ -1291,14 +1291,14 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_stor, t, v):
+def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
     """
     This constraint enforces the continuity of state of charge between seasons for seasonal
     storage. Virtual seasonal storage level increases by the matched real season's net charge
     over that entire day.
     """
 
-    s = M.sequential_to_season[p, s_stor]
+    s = M.sequential_to_season[p, s_seq]
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
@@ -1318,19 +1318,19 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_stor, t, v):
         for d in M.time_of_day
     )
 
-    s_stor_next = M.time_next_sequential[p, s_stor]
-    s_next = M.sequential_to_season[p, s_stor_next]
+    s_seq_next = M.time_next_sequential[p, s_seq]
+    s_next = M.sequential_to_season[p, s_seq_next]
 
     # Ratio of days in virtual storage season to days in actual season
     # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
     # be adjusted to the number of days in the virtual storage season
-    days_adjust = value(M.TimeSeasonSequential[p, s_stor, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
-    days_adjust_next = value(M.TimeSeasonSequential[p, s_stor_next, s_next]) / (value(M.SegFracPerSeason[p, s_next]) * value(M.DaysPerPeriod))
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+    days_adjust_next = value(M.TimeSeasonSequential[p, s_seq_next, s_next]) / (value(M.SegFracPerSeason[p, s_next]) * value(M.DaysPerPeriod))
 
     stored_energy = (charge - discharge) * days_adjust
 
-    start = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.first(), t, v] * days_adjust
-    end = M.V_SeasonalStorageLevel[r, p, s_stor_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
+    start = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.first(), t, v] * days_adjust
+    end = M.V_SeasonalStorageLevel[r, p, s_seq_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
 
     expr = start + stored_energy == end
     return expr
@@ -1381,7 +1381,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d, t, v):
+def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity 
     of seasonal storage, summing the superimposed real storage level with the virtual 
@@ -1398,7 +1398,7 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d,
     seasons.
     """
 
-    s = M.sequential_to_season[p, s_stor]
+    s = M.sequential_to_season[p, s_seq]
 
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
@@ -1410,13 +1410,13 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_stor, d,
     # Ratio of days in virtual storage season to days in actual season
     # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
     # be adjusted to the number of days in the virtual storage season
-    days_adjust = value(M.TimeSeasonSequential[p, s_stor, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
 
     # V_StorageLevel tracks the running cumulative delta in the actual season, so must be adjusted
     # to the size of the virtual, storage season
     running_day_delta = M.V_StorageLevel[r, p, s, d, t, v] * days_adjust
     
-    expr = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + running_day_delta <= energy_capacity
+    expr = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + running_day_delta <= energy_capacity
 
     return expr
 
@@ -1574,15 +1574,15 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
     )
 
     if M.is_seasonal_storage[t]:
-        s_stor = s # virtual storage season
-        s = M.sequential_to_season[p, s_stor] # actual season
+        s_seq = s # virtual storage season
+        s = M.sequential_to_season[p, s_seq] # actual season
 
     # adjust the storage level to the individual-day level
     energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
 
     if M.is_seasonal_storage[t]:
         # seasonal storage upper energy limit is absolute
-        energy_level = M.V_SeasonalStorageLevel[r, p, s_stor, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_stor, s])
+        energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_seq, s])
 
     expr = operator_expression(energy_level, op, energy_limit)
 
