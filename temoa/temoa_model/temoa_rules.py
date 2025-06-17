@@ -278,27 +278,28 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     is evenly distributed over the model period, in the same way we assume
     capacity is deployed evenly over the model period.
     """
-
-    # Need to know what already (before period p) retired economically so we don't double count
-    already_retired = 0
-    if t in M.tech_retirement:
-        already_retired = sum(
-            M.V_RetiredCapacity[r, S_p, t, v] for S_p in M.time_optimize if v < S_p < p
-        )
-
-    # If it naturally retires at the beginning of or during this period, all capacity minus already retired
-    l = value(M.LifetimeProcess[r, t, v])
-    if v+l == p or value(M.ProcessLifeFrac[r, p, t, v]) < 1.0:
-        if v in M.time_optimize:
-            retired = M.V_NewCapacity[r, t, v] - already_retired
-        elif v in M.time_exist:
-            retired = M.ExistingCapacity[r, t, v] - already_retired
-    # Otherwise if not the vintage period then just early (economic) retirement in this period
-    elif t in M.tech_retirement and v < p:
-        retired = M.V_RetiredCapacity[r, p, t, v]
-    # Neither natural retirement nor early economic retirement possible
+    
+    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+        # EOL this period
+        if p == M.time_optimize.first() and v in M.time_exist:
+            # Existing capacity in first period. Remaining existing capacity
+            retired = value(M.ExistingCapacity[r, t, v]) * value(M.LifetimeSurvivalCurve[r, p, t, v])
+        elif p == v:
+            # New capacity in its vintage period. Remaining new capacity
+            retired = M.V_NewCapacity[r, t, v] * value(M.LifetimeSurvivalCurve[r, p, t, v])
+        else:
+            # Mid-horizon retirement
+            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
     else:
-        retired = 0.0
+        if p == M.time_optimize.first() and v in M.time_exist:
+            # Existing capacity in first period. Existing capacity minus remaining capacity
+            retired = value(M.ExistingCapacity[r, t, v]) - M.V_Capacity[r, p, t, v]
+        elif p == v:
+            # New capacity in its vintage period. New capacity minus remaining capacity
+            retired = M.V_NewCapacity[r, t, v] - M.V_Capacity[r, p, t, v]
+        else:
+            # Existing or new capacity in some mid-life period. Previous minus current remaining
+            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v] - M.V_Capacity[r, p, t, v]
 
     # Distribute retirement evenly over planning period
     retired /= value(M.PeriodLength[p])
