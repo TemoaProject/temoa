@@ -791,9 +791,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             
             # Get all periods where the process can retire
             if t not in M.tech_uncap and any((
-                p==v and l_lifetime < value(M.PeriodLength[p]), # eol the period it is constructed
-                p==v+l_lifetime, # natural eol at start of this period
-                (p < v+l_lifetime < p + value(M.PeriodLength[p])), # eol mid-period
+                (p <= v+l_lifetime < p + value(M.PeriodLength[p])), # natural eol this period
                 t in M.tech_retirement and v < p <= v+l_lifetime - value(M.PeriodLength[p]), # allowed early retirement
             )):
                 if (r, t, v) not in M.retirementPeriods:

@@ -1189,7 +1189,7 @@ CREATE TABLE TimeSeasonSequential
     seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count NUMERIC NOT NULL,
+    count REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)
