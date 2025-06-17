@@ -920,17 +920,17 @@ CREATE TABLE IF NOT EXISTS TimeSeason
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-CREATE TABLE IF NOT EXISTS TimeStorageSeason
+CREATE TABLE IF NOT EXISTS TimeSeasonSequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    storage_season TEXT,
+    seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
     count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season),
+    PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType

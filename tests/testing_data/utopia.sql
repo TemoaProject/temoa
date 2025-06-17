@@ -1412,17 +1412,17 @@ INSERT INTO TimeSeason VALUES(2000,3,'winter',NULL);
 INSERT INTO TimeSeason VALUES(2010,1,'inter',NULL);
 INSERT INTO TimeSeason VALUES(2010,2,'summer',NULL);
 INSERT INTO TimeSeason VALUES(2010,3,'winter',NULL);
-CREATE TABLE TimeStorageSeason
+CREATE TABLE TimeSeasonSequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    storage_season TEXT,
+    seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
     count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season),
+    PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)
 );
 CREATE TABLE TimePeriodType

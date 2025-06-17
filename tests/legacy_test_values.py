@@ -55,7 +55,8 @@ test_vals = {
     'utopia': {
         # reduced after reworking storageinit -> storage was less constrained
         # reduced after removing ancient 1-year-shift obj function bug
-        ExpectedVals.OBJ_VALUE: 34731.9619,
+        # increased after rework of inter-season sequencing
+        ExpectedVals.OBJ_VALUE: 34764.3349,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.

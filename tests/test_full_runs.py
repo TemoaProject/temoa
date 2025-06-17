@@ -112,5 +112,6 @@ def test_myopic_utopia(system_test_run):
     invest_sum = res[0]
     # reduced this target after storageinit rework
     # reduced after removing ancient 1-year shift bug from objective function
-    assert invest_sum == pytest.approx(10976.37143), 'sum of investment costs did not match expected'
+    # increased after rework of inter-season sequencing
+    assert invest_sum == pytest.approx(11004.8335), 'sum of investment costs did not match expected'
     con.close()

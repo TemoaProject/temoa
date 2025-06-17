@@ -1072,7 +1072,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for r, p, t in M.storageVintages.keys()
         if t in M.tech_seasonal_storage
         for v in M.storageVintages[r, p, t]
-        for _p, s_stor in M.storage_to_season
+        for _p, s_stor in M.sequential_to_season
         if _p == p
     )
 
@@ -1085,13 +1085,18 @@ def CreateTimeSequence(M: 'TemoaModel'):
 
     # Establishing sequence of states
     match M.TimeSequencing.first():
-        case 'seasonal_timeslicing':
-            msg = 'Running a season time slicing database, looping time each period, chaining between seasons.'
+        case 'sequential_days':
+            msg = 'Running a sequential days database.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
+        case 'seasonal_timeslices':
+            msg = 'Running a seasonal time slice database.'
+            for p in M.time_optimize:
+                for s, d in M.time_season[p] * M.time_of_day:
+                    M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'representative_periods':
-            msg = 'Running a representative periods database, looping time each season.'
+            msg = 'Running a representative periods database.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
@@ -1110,21 +1115,21 @@ def CreateTimeSequence(M: 'TemoaModel'):
             'time_sequencing parameter in the config file. ')
     logger.info(msg)
 
-    logger.debug('Creating sequence of virtual storage seasons.')
+    logger.debug('Creating superimposed sequential seasons.')
     
-    # Seasonal storage superimposed sequencing
+    # Superimposed sequential seasons
     for p in M.time_optimize:
         seasons = [
-            (s_stor, s)
-            for _p, s_stor, s in M.ordered_storage_season
+            (s_seq, s)
+            for _p, s_seq, s in M.ordered_season_sequential
             if _p == p
         ]
-        for i, (s_stor, s) in enumerate(seasons):
-            M.storage_to_season[p, s_stor] = s
-            if (s_stor, s) == seasons[-1]:
-                M.time_next_storage[p, s_stor] = seasons[0][0]
+        for i, (s_seq, s) in enumerate(seasons):
+            M.sequential_to_season[p, s_seq] = s
+            if (s_seq, s) == seasons[-1]:
+                M.time_next_sequential[p, s_seq] = seasons[0][0]
             else:
-                M.time_next_storage[p, s_stor] = seasons[i+1][0]
+                M.time_next_sequential[p, s_seq] = seasons[i+1][0]
     
     logger.debug('Created time sequence.')
 

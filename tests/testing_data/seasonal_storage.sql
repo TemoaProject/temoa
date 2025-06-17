@@ -1025,31 +1025,31 @@ CREATE TABLE OutputCost
     FOREIGN KEY (vintage) REFERENCES TimePeriod (period),
     FOREIGN KEY (tech) REFERENCES Technology (tech)
 );
-CREATE TABLE TimeStorageSeason
+CREATE TABLE TimeSeasonSequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    storage_season TEXT,
+    seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
     count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season),
+    PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)
 );
-INSERT INTO TimeStorageSeason VALUES(2000,1,'summer','charge',152.5,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,2,'sept_w1','discharge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,3,'sept_w2','charge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,4,'sept_w3','discharge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,5,'sept_w4','charge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,6,'sept_29th','discharge',1,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,7,'sept_30th','charge',1,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,8,'winter','discharge',152.5,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,9,'apr_w1','charge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,10,'apr_w2','discharge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,11,'apr_w3','charge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,12,'apr_w4','discharge',7,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,13,'apr_29th','charge',1,NULL);
-INSERT INTO TimeStorageSeason VALUES(2000,14,'apr_30th','discharge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,1,'summer','charge',152.5,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,2,'sept_w1','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,3,'sept_w2','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,4,'sept_w3','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,5,'sept_w4','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,6,'sept_29th','discharge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,7,'sept_30th','charge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,8,'winter','discharge',152.5,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,9,'apr_w1','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,10,'apr_w2','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,11,'apr_w3','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,12,'apr_w4','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,13,'apr_29th','charge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,14,'apr_30th','discharge',1,NULL);
 COMMIT;

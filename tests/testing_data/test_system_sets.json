@@ -46568,7 +46568,7 @@
         "e",
         "le"
     ],
-    "ordered_storage_season": [],
+    "ordered_season_sequential": [],
     "regionalGlobalIndices": [
         "R2",
         "R1",
@@ -46715,7 +46715,7 @@
         "winter"
     ],
     "TimeSequencing": [
-        "seasonal_timeslicing"
+        "seasonal_timeslices"
     ],
     "vintage_all": [
         2025,

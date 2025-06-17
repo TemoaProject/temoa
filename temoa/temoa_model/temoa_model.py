@@ -42,7 +42,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_Efficiency,
     validate_tech_sets,
     no_slash_or_pipe,
-    validate_StorageSeason,
+    validate_SeasonSequential,
     validate_ReserveMargin,
 )
 from temoa.temoa_model.temoa_initialize import *
@@ -128,8 +128,8 @@ class TemoaModel(AbstractModel):
 
         # These establish time sequencing
         M.time_next = dict() # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_storage = dict() # {(p, s_stor): (s_stor_next)} next virtual storage season
-        M.storage_to_season = dict() # {(p, s_stor): (s)} season matching this virtual storage season
+        M.time_next_sequential = dict() # {(p, s_stor): (s_stor_next)} next virtual storage season
+        M.sequential_to_season = dict() # {(p, s_stor): (s)} season matching this virtual storage season
         M.is_seasonal_storage = dict() # to avoid slow O(n2) behaviour in storage constraints
 
         ################################################
@@ -166,7 +166,7 @@ class TemoaModel(AbstractModel):
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
         # This is just to get the TimeStorageSeason table sequentially. There must be a better way but this works for now
-        M.ordered_storage_season = Set(dimen=3, within=M.time_optimize * M.time_season_all * M.time_season_all, ordered=True)
+        M.ordered_season_sequential = Set(dimen=3, within=M.time_optimize * M.time_season_all * M.time_season_all, ordered=True)
 
         # Define regions
         M.regions = Set(validate=region_check)
@@ -351,11 +351,15 @@ class TemoaModel(AbstractModel):
         )
         M.RenewablePortfolioStandard = Param(M.RenewablePortfolioStandardConstraint_rpg, validate=validate_0to1)
 
+        # These need to come before validate_SeasonSequential
+        M.RampUp = Param(M.regions, M.tech_upramping, validate=validate_0to1)
+        M.RampDown = Param(M.regions, M.tech_downramping, validate=validate_0to1)
+
         # Set up representation of time
         M.DaysPerPeriod = Param()
         M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
-        M.TimeStorageSeason = Param(M.time_optimize, M.time_season_all, M.time_season_all, mutable=True)
-        M.validate_StorageSeason = BuildAction(rule=validate_StorageSeason)
+        M.TimeSeasonSequential = Param(M.time_optimize, M.time_season_all, M.time_season_all, mutable=True)
+        M.validate_SeasonSequential = BuildAction(rule=validate_SeasonSequential)
         M.Create_TimeSequence = BuildAction(rule=CreateTimeSequence)
 
         # The method below creates a series of helper functions that are used to
@@ -500,9 +504,6 @@ class TemoaModel(AbstractModel):
         M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions, within=Any)
 
         # Define parameters associated with electric sector operation
-        M.RampUp = Param(M.regions, M.tech_upramping, validate=validate_0to1)
-        M.RampDown = Param(M.regions, M.tech_downramping, validate=validate_0to1)
-
         M.ReserveMargin = Set() # How contributions to the reserve margin are calculated
         M.CapacityCredit = Param(
             M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=1, validate=validate_0to1

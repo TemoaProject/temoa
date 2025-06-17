@@ -250,11 +250,11 @@ def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
         res[sli] = state
 
     for r, p, s_stor, t, v in M.SeasonalStorageLevel_rpstv:
-        s = M.storage_to_season[p, s_stor]
+        s = M.sequential_to_season[p, s_stor]
         # Ratio of days in virtual storage season to days in actual season
         # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
         # be adjusted to the number of days in the virtual storage season
-        days_adjust = value(M.TimeStorageSeason[p, s_stor, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+        days_adjust = value(M.TimeSeasonSequential[p, s_stor, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
         for d in M.time_of_day:
             state = value(M.V_SeasonalStorageLevel[r, p, s_stor, t, v]) + value(M.V_StorageLevel[r, p, s, d, t, v]) * days_adjust
             sli = SLI(r, p, s_stor, d, t, v)

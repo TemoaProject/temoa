@@ -401,7 +401,7 @@ class HybridLoader:
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
-            case 'seasonal_timeslicing' | 'representative_periods':
+            case 'seasonal_timeslices' | 'representative_periods' | 'sequential_days':
                 pass
             case 'manual':
                 # This is a hidden feature allowing the user to manually specify the sequence of states using the TimeNext table
@@ -661,18 +661,18 @@ class HybridLoader:
         load_element(M.SegFrac, raw)
 
         all_seasons = set() # includes all regular and virtual seasonal storage seasons
-        if self.table_exists("TimeStorageSeason"):
+        if self.table_exists("TimeSeasonSequential"):
             if mi:
                 raw = cur.execute(
-                    'SELECT period, storage_season, season, count FROM main.TimeStorageSeason WHERE'
+                    'SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential WHERE'
                     ' period >= ? AND period <= ? ORDER BY period, sequence',
                     (mi.base_year, mi.last_demand_year)
                 ).fetchall()
             else:
-                raw = cur.execute('SELECT period, storage_season, season, count FROM main.TimeStorageSeason ORDER BY period, sequence').fetchall()
+                raw = cur.execute('SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
             all_seasons = all_seasons | set((row[1],) for row in raw)
-            load_element(M.TimeStorageSeason, raw)
-            load_element(M.ordered_storage_season, [(row[0:3]) for row in raw])
+            load_element(M.TimeSeasonSequential, raw)
+            load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
 
         # TimeSeason
         if self.table_exists("TimeSeason"):

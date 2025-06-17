@@ -953,17 +953,17 @@ CREATE TABLE TimeSeason
 );
 INSERT INTO TimeSeason VALUES(2000,1,'S1',NULL);
 INSERT INTO TimeSeason VALUES(2005,1,'S1',NULL);
-CREATE TABLE TimeStorageSeason
+CREATE TABLE TimeSeasonSequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    storage_season TEXT,
+    seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
     count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, storage_season, season),
+    PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)
 );
 CREATE TABLE TimePeriodType
