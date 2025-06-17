@@ -272,10 +272,8 @@ def _build_from_db(
 
             # End of life output
             if any((
-                p==v and lifetime<period_length[p], # eol the period it is constructed
-                p==v+lifetime, # natural eol at start of this period
-                (p < v+lifetime < p+period_length[p]), # eol mid-period
-                tech in tech_retire and v < p < v+lifetime, # allowed early retirement
+                p <= v+lifetime < p + period_length[p], # natural eol this period
+                tech in tech_retire and v < p <= v+lifetime - period_length[p], # allowed early retirement
             )):
                 try:
                     raw_eol = cur.execute(

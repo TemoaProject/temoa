@@ -609,9 +609,10 @@ class TemoaModel(AbstractModel):
             M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
         )
 
-        M.RetiredCapacityConstraint = Constraint(
-            M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
-        )
+        # devnote: I think this constraint is redundant
+        # M.RetiredCapacityConstraint = Constraint(
+        #     M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
+        # )
         M.AnnualRetirementConstraint = Constraint(
             M.AnnualRetirementVar_rptv, rule=AnnualRetirement_Constraint
         )

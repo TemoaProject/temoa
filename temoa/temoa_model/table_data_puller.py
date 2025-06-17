@@ -350,7 +350,7 @@ def poll_cost_results(
             )
 
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
-        cap = value(M.V_Capacity[r, p, t, v])
+        cap = value(M.V_Capacity[r, p, t, v]) / value(M.ProcessLifeFrac[r, p, t, v])
         if abs(cap) < epsilon:
             continue
 

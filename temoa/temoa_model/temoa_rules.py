@@ -52,9 +52,9 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     that occurred up until the period in question, :code:`p`."""
     if t not in M.tech_retirement:
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v])
+            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * value(M.ProcessLifeFrac[r, p, t, v])
         else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v]
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * value(M.ProcessLifeFrac[r, p, t, v])
 
     else:
         retired_cap = sum(
@@ -63,9 +63,9 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
             if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) - retired_cap
+            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * value(M.ProcessLifeFrac[r, p, t, v]) - retired_cap
         else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] - retired_cap
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * value(M.ProcessLifeFrac[r, p, t, v]) - retired_cap
     
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -116,7 +116,6 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             capacity
             * value(M.CapacityToActivity[r, t])
             * value(M.SegFrac[p, s, d])
-            * value(M.ProcessLifeFrac[r, p, t, v])
             * M.V_Capacity[r, p, t, v] == useful_activity + sum(
                 M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
                 for S_i in M.processInputs[r, p, t, v]
@@ -128,7 +127,6 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             capacity
             * value(M.CapacityToActivity[r, t])
             * value(M.SegFrac[p, s, d])
-            * value(M.ProcessLifeFrac[r, p, t, v])
             * M.V_Capacity[r, p, t, v]
             >= useful_activity
         )
@@ -171,7 +169,6 @@ capacity.
     return (
         CF
         * value(M.CapacityToActivity[r, t])
-        * value(M.ProcessLifeFrac[r, p, t, v])
         * M.V_Capacity[r, p, t, v]
         >= activity_rptv
     )
@@ -240,7 +237,7 @@ throughout the period.
    \forall p \in \text{P}^o, r \in R, t \in T
 """
     cap_avail = sum(
-        value(M.ProcessLifeFrac[r, p, t, S_v]) * M.V_Capacity[r, p, t, S_v]
+        M.V_Capacity[r, p, t, S_v]
         for S_v in M.processVintages[r, p, t]
     )
 
@@ -248,6 +245,8 @@ throughout the period.
     return expr
 
 
+# devnote:  I don't think this constraint is necessary as if this were violated
+#           then V_Capacity would be negative, which isn't allowed anyway
 def RetiredCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
 
@@ -535,7 +534,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     fixed_costs = sum(
         fixed_or_variable_cost(
-            M.V_Capacity[r, p, S_t, S_v],
+            M.V_Capacity[r, p, S_t, S_v] / value(M.ProcessLifeFrac[r, p, S_t, S_v]),
             value(M.CostFixed[r, p, S_t, S_v]),
             value(MPL[r, p, S_t, S_v]),
             GDR,
@@ -1375,7 +1374,6 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
         * value(M.SegFracPerSeason[p, s]) * M.DaysPerPeriod # adjust for days in season
-        * value(M.ProcessLifeFrac[r, p, t, v])
     )
     
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
@@ -1406,7 +1404,6 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
-        * value(M.ProcessLifeFrac[r, p, t, v])
     )
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
@@ -1451,7 +1448,6 @@ def StorageChargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
-        * value(M.ProcessLifeFrac[r, p, t, v])
     )
 
     # Energy charge cannot exceed the power capacity of the storage unit
@@ -1488,7 +1484,6 @@ def StorageDischargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
-        * value(M.ProcessLifeFrac[r, p, t, v])
     )
 
     # Energy discharge cannot exceed the capacity of the storage unit
@@ -1533,7 +1528,6 @@ def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
-        * value(M.ProcessLifeFrac[r, p, t, v])
     )
     expr = throughput <= max_throughput
     return expr
@@ -1570,7 +1564,6 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
-        * value(M.ProcessLifeFrac[r, p, t, v])
         * value(M.LimitStorageFraction[r, p, s, d, t, v, op])
     )
 
@@ -1671,7 +1664,7 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         return Constraint.Skip
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_increase <= rampable_activity
 
     return expr
@@ -1736,7 +1729,7 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         return Constraint.Skip
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_decrease <= rampable_activity
 
     return expr
@@ -1784,7 +1777,7 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
         return Constraint.Skip
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_increase <= rampable_activity
     
     return expr
@@ -1832,7 +1825,7 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
         return Constraint.Skip
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_decrease <= rampable_activity
     
     return expr
@@ -1933,7 +1926,6 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
 
     available = sum(
         value(M.CapacityCredit[r, p, t, v])
-        * value(M.ProcessLifeFrac[r, p, t, v])
         * M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
@@ -1964,7 +1956,6 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
         # add the available capacity of the exchange tech.
         available += sum(
             value(M.CapacityCredit[r1r2, p, t, v])
-            * value(M.ProcessLifeFrac[r1r2, p, t, v])
             * M.V_Capacity[r1r2, p, t, v]
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[p, s, d])
@@ -1991,7 +1982,6 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     available = sum(
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityCredit[r, p, t, v])
-        * value(M.ProcessLifeFrac[r, p, t, v])
         * value(M.CapacityFactorProcess[r, p, s, d, t, v])
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
@@ -2042,7 +2032,6 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
         available += sum(
             M.V_Capacity[r1r2, p, t, v]
             * value(M.CapacityCredit[r1r2, p, t, v])
-            * value(M.ProcessLifeFrac[r1r2, p, t, v])
             * value(M.CapacityFactorProcess[r, p, s, d, t, v])
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[p, s, d])
