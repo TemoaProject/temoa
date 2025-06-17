@@ -287,7 +287,7 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
 
     # If it naturally retires at the beginning of or during this period, all capacity minus already retired
     l = value(M.LifetimeProcess[r, t, v])
-    if v+l == p or value(M.ModelProcessLife[r, p, t, v]) < value(M.PeriodLength[p]):
+    if v+l == p or value(M.ProcessLifeFrac[r, p, t, v]) < 1.0:
         if v in M.time_optimize:
             retired = M.V_NewCapacity[r, t, v] - already_retired
         elif v in M.time_exist:
@@ -2498,191 +2498,6 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     return expr
 
 
-# devnote: this constraint did not translate well between representative periods
-# and seasonal time slicing paradigms. It was replaced with the LimitSeasonalCapacityFactor
-# constraint, which works well in either paradigm and pairs with LimitAnnualCapacityFactor
-# def LimitSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t, op):
-
-#     r"""
-#     Sets a limit on the activity of a specific technology in a season.
-#     Note that the indices for these constraints are region, period, season, and tech.
-#     The first component of the constraint pertains to technologies with
-#     variable output at the time slice level, and the second component pertains to
-#     technologies with constant annual output belonging to the :code:`tech_annual`
-#     set.
-#     .. math::
-#         :label: LimitSeasonalActivity
-#         \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
-#         \forall \{r, p, s, t\} \in \Theta_{\text{LimitSeasonalActivity}}
-#         \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
-#         \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{LimitSeasonalActivity}}
-#     """
-
-#     # Notice that this constraint follows the implementation of the
-#     # LimitActivity_Constraint(). The difference is that this function is defined
-#     # over each "season" as opposed to the entire year, or "period"
-
-#     # The V_FlowOut variable is scaled by the weights of each season.
-#     # In order to determine the daily flow, the V_FlowOut variable
-#     # must be converted back to its un-scaled value. We do this by dividing the
-#     # V_FlowOut value by M.SegFracPerSeason[p, s, d] * M.DaysPerPeriod (how many days are in this season).
-
-#     regions = gather_group_regions(M, r)
-
-#     try:
-#         activity_rpst = sum(
-#             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFracPerSeason[p, s, d]) * M.DaysPerPeriod)
-#             for _r in regions
-#             for S_v in M.processVintages[_r, p, t]
-#             for S_i in M.processInputs[_r, p, t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-#             for d in M.time_of_day
-#         )
-#     except:
-#         msg = (
-#         "\nWarning: LimitSeasonalActivity constraint cannot be defined for "
-#         "technologies in \"tech_annual\". Continuing by ignoring the constraint "
-#         "for '%s'.\n "
-#         )
-#         SE.write(msg % (t))
-#         return Constraint.Skip
-    
-#     act_lim = value(M.LimitSeasonalActivity[r, p, s, t, op])
-#     expr = operator_expression(activity_rpst, op, act_lim)
-
-#     # in the case that there is nothing to sum, skip
-#     if isinstance(expr, bool):  # an empty list was generated
-#         return Constraint.Skip
-    
-#     return expr
-
-
-# devnote: deprecated when generalising tech/group columns in Limit tables
-# def LimitActivityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
-#     r"""
-#     The LimitActivityGroup constraint sets an activity limit for a user-defined
-#     technology group.
-#     .. math::
-#        :label: LimitActivityGroup
-#            \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
-#            \textbf{FOA}_{r, p, i, t, v, o}
-#            \le MxAG_{r, p, g}
-#            \forall \{r, p, g\} \in \Theta_{\text{LimitActivityGroup}}
-#     where :math:`g` represents the assigned technology group and :math:`MxAG`
-#     refers to the :code:`LimitActivityGroup` parameter."""
-
-#     regions = gather_group_regions(M, r)
-
-#     activity_p = 0
-#     activity_p_annual = 0
-#     for _r in regions:
-#         activity_p += sum(
-#             M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g]
-#             if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             for s in M.time_season[p]
-#             for d in M.time_of_day
-#             if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
-#         )
-#         activity_p_annual += sum(
-#             M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g]
-#             if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
-#         )
-
-#     act_lim = value(M.LimitActivityGroup[r, p, g, op])
-#     expr = operator_expression(activity_p + activity_p_annual, op, act_lim)
-#     # in the case that there is nothing to sum, skip
-#     if isinstance(expr, bool):  # an empty list was generated
-#         logger.warning(
-#             'Missing group techs to support LimitActivityGroup constraint: %s.'
-#             ' Check data/log for available/suppressed techs. Constraint ignored.',
-#             (r, p, g)
-#         )
-#         return Constraint.Skip
-#     return expr
-
-
-# devnote: deprecated when generalising tech/group columns in Limit tables
-# def LimitActivityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
-#     r"""
-#     The LimitActivityGroup constraint sets an activity limit for a user-defined
-#     technology group.
-#     .. math::
-#        :label: LimitActivityGroup
-#            \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
-#            \textbf{FOA}_{r, p, i, t, v, o}
-#            \le MxAG_{r, p, g}
-#            \forall \{r, p, g\} \in \Theta_{\text{LimitActivityGroup}}
-#     where :math:`g` represents the assigned technology group and :math:`MxAG`
-#     refers to the :code:`LimitActivityGroup` parameter."""
-
-#     regions = gather_group_regions(M, r)
-
-#     activity_g1 = 0
-#     activity_g2 = 0
-#     for _r in regions:
-#         activity_g1 += sum(
-#             M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g1]
-#             if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             for s in M.time_season[p]
-#             for d in M.time_of_day
-#             if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
-#         )
-#         activity_g1 += sum(
-#             M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g1]
-#             if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
-#         )
-#         activity_g2 += sum(
-#             M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g2]
-#             if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             for s in M.time_season[p]
-#             for d in M.time_of_day
-#             if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
-#         )
-#         activity_g2 += sum(
-#             M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-#             for S_t in M.tech_group_members[g2]
-#             if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
-#             for S_v in M.processVintages[_r, p, S_t]
-#             for S_i in M.processInputs[_r, p, S_t, S_v]
-#             for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-#             if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
-#         )
-
-#     share_lim = value(M.LimitActivityGroupShare[r, p, g1, g2, op])
-#     expr = operator_expression(activity_g1, op, share_lim * activity_g2)
-#     # in the case that there is nothing to sum, skip
-#     if isinstance(expr, bool):  # an empty list was generated
-#         logger.warning(
-#             'Missing group techs to support LimitActivityGroupShare constraint: %s.'
-#             ' Check data/log for available/suppressed techs. Constraint ignored.',
-#             (r, p, g1, g2)
-#         )
-#         return Constraint.Skip
-#     return expr
-
-
 def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
     The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
@@ -2741,10 +2556,6 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
        \sum_{P} \textbf{CAPAVL}_{r, p, t} \le MAR_{r, t}
 
        \forall \{r, t\} \in \Theta_{\text{LimitCapacity}}"""
-    # logger.warning(
-    #     'The LimitResource constraint is not currently supported in the model, pending review.  Recommend '
-    #     'removing data from the LimitResource Table'
-    # )
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
     #            regardless of whatever "resources" are consumed.
     # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
@@ -2779,61 +2590,6 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     resource_lim = value(M.LimitResource[r, t, op])
     expr = operator_expression(activity, op, resource_lim)
     return expr
-
-
-# devnote: deprecated when generalising tech/group columns in Limit tables
-# def LimitCapacityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
-#     r"""
-#     Similar to the :code:`LimitCapacity` constraint, but works on a group of technologies.
-#     """
-#     regions = gather_group_regions(M, r)
-
-#     cap_lim = value(M.LimitCapacityGroup[r, p, g, op])
-
-#     cap = sum(
-#         M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
-#         for t in M.tech_group_members[g]
-#         for _r in regions
-#         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-#     )
-
-#     expr = operator_expression(cap, op, cap_lim)
-#     # in the case that there is nothing to sum, skip
-#     if isinstance(expr, bool): # an empty list was generated
-#         logger.error(
-#             'No elements available to support LimitCapacityGroup: %s.'
-#             ' Check data/log for available/suppressed techs. Constraint ignored.',
-#             (r, p, g)
-#         )
-#         return Constraint.Skip
-#     return expr
-
-
-# devnote: deprecated when generalising tech/group columns in Limit tables
-# def LimitNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
-#     r"""
-#     Similar to the :code:`LimitNewCapacity` constraint, but works on a group of technologies."""
-
-#     regions = gather_group_regions(M, r)
-
-#     new_cap_lim = value(M.LimitNewCapacityGroup[r, p, g, op])
-#     agg_new_cap = sum(
-#         M.V_NewCapacity[_r, t, p]
-#         for t in M.tech_group_members[g]
-#         for _r in regions
-#         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-#     )
-#     expr = operator_expression(agg_new_cap, op, new_cap_lim)
-#     if isinstance(expr, bool):
-#         logger.error(
-#             'No elements available to support LimitNewCapacityGroup: (%s, %d, %s).'
-#             '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-#             r,
-#             p,
-#             g,
-#         )
-#         return Constraint.Skip
-#     return expr
 
 
 def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
@@ -2967,41 +2723,6 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
-
-
-# devnote: deprecated when generalising tech/group columns in Limit tables
-# def LimitNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
-#     r"""
-#     Limits the aggregate capacity of one group of technologies as a share of 
-#     another group of technologies.
-#     """
-
-#     regions = gather_group_regions(M, r)
-
-#     share_lim = value(M.LimitNewCapacityGroupShare[r, p, g1, g2, op])
-#     agg_new_cap_g1 = sum(
-#         M.V_NewCapacity[_r, t, p]
-#         for t in M.tech_group_members[g1]
-#         for _r in regions
-#         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-#     )
-#     agg_new_cap_g2 = sum(
-#         M.V_NewCapacity[_r, t, p]
-#         for t in M.tech_group_members[g2]
-#         for _r in regions
-#         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-#     )
-#     expr = operator_expression(agg_new_cap_g1, op, agg_new_cap_g2 * share_lim)
-
-#     if isinstance(expr, bool): # one side of expression was empty
-#         logger.error(
-#             'Missing group techs to support LimitNewCapacityGroupShare constraint: %s.'
-#             ' Check data/log for available/suppressed techs. Constraint ignored.',
-#             (r, p, g1, g2)
-#         )
-#         return Constraint.Skip
-
-#     return expr
 
 
 def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
