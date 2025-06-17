@@ -58,7 +58,9 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
 
     else:
         retired_cap = sum(
-            M.V_RetiredCapacity[r, S_p, t, v] for S_p in M.time_optimize if p >= S_p > v
+            M.V_RetiredCapacity[r, S_p, t, v]
+            for S_p in M.time_optimize
+            if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
         if v in M.time_exist:
             return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) - retired_cap
