@@ -3864,7 +3864,7 @@
             2025
         ]
     ],
-    "RampDownConstraint_rpsdtv": [
+    "RampDownDayConstraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3930,7 +3930,41 @@
             2025
         ]
     ],
-    "RampUpConstraint_rpsdtv": [
+    "RampDownSeasonConstraint_rpsdtv": [
+        [
+            "A",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "A",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ]
+    ],
+    "RampUpDayConstraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3992,6 +4026,40 @@
             2025,
             "s2",
             "d1",
+            "EH",
+            2025
+        ]
+    ],
+    "RampUpSeasonConstraint_rpsdtv": [
+        [
+            "A",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "A",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s2",
+            "d2",
             "EH",
             2025
         ]

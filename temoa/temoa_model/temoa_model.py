@@ -128,8 +128,8 @@ class TemoaModel(AbstractModel):
 
         # These establish time sequencing
         M.time_next = dict() # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_sequential = dict() # {(p, s_stor): (s_stor_next)} next virtual storage season
-        M.sequential_to_season = dict() # {(p, s_stor): (s)} season matching this virtual storage season
+        M.time_next_sequential = dict() # {(p, s_seq): (s_seq_next)} next virtual storage season
+        M.sequential_to_season = dict() # {(p, s_seq): (s)} season matching this virtual storage season
         M.is_seasonal_storage = dict() # to avoid slow O(n2) behaviour in storage constraints
 
         ################################################
@@ -697,10 +697,15 @@ class TemoaModel(AbstractModel):
             M.LimitStorageFractionConstraint_rpsdtv, rule=LimitStorageFraction_Constraint
         )
 
-        M.RampUpConstraint_rpsdtv = Set(dimen=6, initialize=RampUpConstraintIndices)
-        M.RampUpConstraint = Constraint(M.RampUpConstraint_rpsdtv, rule=RampUp_Constraint)
-        M.RampDownConstraint_rpsdtv = Set(dimen=6, initialize=RampDownConstraintIndices)
-        M.RampDownConstraint = Constraint(M.RampDownConstraint_rpsdtv, rule=RampDown_Constraint)
+        M.RampUpDayConstraint_rpsdtv = Set(dimen=6, initialize=RampUpDayConstraintIndices)
+        M.RampUpDayConstraint = Constraint(M.RampUpDayConstraint_rpsdtv, rule=RampUpDay_Constraint)
+        M.RampDownDayConstraint_rpsdtv = Set(dimen=6, initialize=RampDownDayConstraintIndices)
+        M.RampDownDayConstraint = Constraint(M.RampDownDayConstraint_rpsdtv, rule=RampDownDay_Constraint)
+        
+        M.RampUpSeasonConstraint_rpsdtv = Set(dimen=6, initialize=RampUpSeasonConstraintIndices)
+        M.RampUpSeasonConstraint = Constraint(M.RampUpSeasonConstraint_rpsdtv, rule=RampUpSeason_Constraint)
+        M.RampDownSeasonConstraint_rpsdtv = Set(dimen=6, initialize=RampDownSeasonConstraintIndices)
+        M.RampDownSeasonConstraint = Constraint(M.RampDownSeasonConstraint_rpsdtv, rule=RampDownSeason_Constraint)
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)

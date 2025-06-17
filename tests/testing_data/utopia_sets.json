@@ -24713,8 +24713,10 @@
             1990
         ]
     ],
-    "RampDownConstraint_rpsdtv": [],
-    "RampUpConstraint_rpsdtv": [],
+    "RampDownDayConstraint_rpsdtv": [],
+    "RampDownSeasonConstraint_rpsdtv": [],
+    "RampUpDayConstraint_rpsdtv": [],
+    "RampUpSeasonConstraint_rpsdtv": [],
     "RegionalExchangeCapacityConstraint_rrptv": [],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],

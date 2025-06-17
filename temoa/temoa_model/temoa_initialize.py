@@ -1543,25 +1543,55 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def RampUpConstraintIndices(M: 'TemoaModel'):
+def RampUpDayConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
-        for r, p, t in M.rampUpVintages.keys()
+        for r, p, t in M.rampUpVintages
+        for v in M.rampUpVintages[r, p, t]
         for s in M.time_season[p]
         for d in M.time_of_day
-        for v in M.rampUpVintages[r, p, t]
     )
 
     return indices
 
 
-def RampDownConstraintIndices(M: 'TemoaModel'):
+def RampDownDayConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
-        for r, p, t in M.rampDownVintages.keys()
+        for r, p, t in M.rampDownVintages
+        for v in M.rampDownVintages[r, p, t]
         for s in M.time_season[p]
         for d in M.time_of_day
+    )
+
+    return indices
+
+
+def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
+    if M.TimeSequencing.first() == 'sequential_days':
+        return {} # dont need this constraint
+    
+    indices = set(
+        (r, p, s_seq, M.time_of_day.last(), t, v)
+        for r, p, t in M.rampUpVintages
+        for v in M.rampUpVintages[r, p, t]
+        for _p, s_seq, _ in M.ordered_season_sequential
+        if _p == p
+    )
+
+    return indices
+
+
+def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
+    if M.TimeSequencing.first() == 'sequential_days':
+        return {} # dont need this constraint
+    
+    indices = set(
+        (r, p, s_seq, M.time_of_day.last(), t, v)
+        for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
+        for _p, s_seq, _ in M.ordered_season_sequential
+        if _p == p
     )
 
     return indices
