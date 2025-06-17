@@ -948,7 +948,8 @@ CREATE TABLE OutputRetiredCapacity
         REFERENCES Technology (tech),
     vintage  INTEGER
         REFERENCES TimePeriod (period),
-    capacity REAL,
+    cap_eol REAL,
+    cap_early REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
 CREATE TABLE OutputFlowIn
