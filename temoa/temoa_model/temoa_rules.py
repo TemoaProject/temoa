@@ -1652,7 +1652,7 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     ) / value(M.SegFrac[p, s_next, d_next])
 
     hours_elapsed = 24 * value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-    ramp_fraction = hours_elapsed * value(M.RampUp[r, t])
+    ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
@@ -1709,7 +1709,7 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     ) / value(M.SegFrac[p, s_next, d_next])
 
     hours_elapsed = 24 * value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-    ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
+    ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (

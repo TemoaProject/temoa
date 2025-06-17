@@ -309,8 +309,8 @@ def validate_SeasonSequential(M: 'TemoaModel'):
     
     if all((
         not M.tech_seasonal_storage,
-        not M.RampUp,
-        not M.RampDown,
+        not M.RampUpHourly,
+        not M.RampDownHourly,
     )):
         # Don't need it anyway
         return

@@ -352,8 +352,8 @@ class TemoaModel(AbstractModel):
         M.RenewablePortfolioStandard = Param(M.RenewablePortfolioStandardConstraint_rpg, validate=validate_0to1)
 
         # These need to come before validate_SeasonSequential
-        M.RampUp = Param(M.regions, M.tech_upramping, validate=validate_0to1)
-        M.RampDown = Param(M.regions, M.tech_downramping, validate=validate_0to1)
+        M.RampUpHourly = Param(M.regions, M.tech_upramping, validate=validate_0to1)
+        M.RampDownHourly = Param(M.regions, M.tech_downramping, validate=validate_0to1)
 
         # Set up representation of time
         M.DaysPerPeriod = Param()

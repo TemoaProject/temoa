@@ -511,12 +511,12 @@ class HybridLoader:
         load_element(M.tech_reserve, raw, self.viable_techs)
 
         # tech_ramping
-        if self.table_exists('RampUp'):
-            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUp').fetchall()
+        if self.table_exists('RampUpHourly'):
+            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUpHourly').fetchall()
             techs = {t[0] for t in ramp_up_techs}
             load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-        if self.table_exists('RampDown'):
-            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDown').fetchall()
+        if self.table_exists('RampDownHourly'):
+            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDownHourly').fetchall()
             techs = {t[0] for t in ramp_dn_techs}
             load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
 
@@ -1063,15 +1063,15 @@ class HybridLoader:
                         print('problem loading linked tech.  See log file')
                         sys.exit(-1)
 
-        # RampUp
-        if self.table_exists('RampUp'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampUp').fetchall()
-            load_element(M.RampUp, raw, self.viable_rt, (0, 1))
+        # RampUpHourly
+        if self.table_exists('RampUpHourly'):
+            raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
+            load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
 
-        # RampDown
-        if self.table_exists('RampDown'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampDown').fetchall()
-            load_element(M.RampDown, raw, self.viable_rt, (0, 1))
+        # RampDownHourly
+        if self.table_exists('RampDownHourly'):
+            raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
+            load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):
