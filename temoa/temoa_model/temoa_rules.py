@@ -52,7 +52,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     that occurred up until the period in question, :code:`p`."""
 
     PLF = value(M.ProcessLifeFrac[r, p, t, v])
-    LSC = value(M.SurvivalCurve[r, p, t, v])
+    LSC = value(M.LifetimeSurvivalCurve[r, p, t, v])
 
     if t not in M.tech_retirement:
         if v in M.time_exist:
@@ -287,10 +287,10 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
         # EOL this period
         if p == M.time_optimize.first() and v in M.time_exist:
             # Existing capacity in first period. Remaining existing capacity
-            retired = value(M.ExistingCapacity[r, t, v]) * value(M.SurvivalCurve[r, p, t, v])
+            retired = value(M.ExistingCapacity[r, t, v]) * value(M.LifetimeSurvivalCurve[r, p, t, v])
         elif p == v:
             # New capacity in its vintage period. Remaining new capacity
-            retired = M.V_NewCapacity[r, t, v] * value(M.SurvivalCurve[r, p, t, v])
+            retired = M.V_NewCapacity[r, t, v] * value(M.LifetimeSurvivalCurve[r, p, t, v])
         else:
             # Mid-horizon retirement
             retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
@@ -300,7 +300,7 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
             # existing period minus remaining capacity
             retired = (
                 value(M.ExistingCapacity[r, t, v])
-                * value(M.SurvivalCurve[r, M.time_exist.last(), t, v])
+                * value(M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v])
                 - M.V_Capacity[r, p, t, v]
             )
         elif p == v:
@@ -421,14 +421,20 @@ def TotalCost_rule(M):
 
 def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert an annuity to present value"""
+    if rate == 0:
+        return periods
     return ((1 + rate)**periods - 1) / (rate * (1 + rate)**periods)
 
 def pv_to_annuity(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert present value to an annuity"""
+    if rate == 0:
+        return 1 / periods
     return (rate * (1 + rate)**periods) / ((1 + rate)**periods - 1)
     
 def fv_to_pv(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert a future value to present value"""
+    if rate == 0:
+        return 1
     return 1 / (1 + rate)**periods
 
 
@@ -485,6 +491,9 @@ def loan_cost(
 
 def loan_cost_survival_curve(
     M: 'TemoaModel',
+    r: str,
+    t: str,
+    v: str,
     capacity: float | Var,
     invest_cost: float,
     loan_annualize: float,
@@ -520,8 +529,12 @@ def loan_cost_survival_curve(
             annuity
             * lifetime_loan_process                         # sum of loan payments over loan period
             / sum(                                          # redistributed over survival curve within horizon
-                M.SurvivalCurve[r, p, t, v]
-                for r, t, v in M.survivalCurvePeriods
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
+                for p in M.survivalCurvePeriods[r, t, v]
+                if v <= p
+            )
+            * sum(                                          # summed over survival curve within horizon
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
             )
@@ -532,16 +545,14 @@ def loan_cost_survival_curve(
             annuity
             * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
             / sum(                                          # redistributed over survival curve within horizon
-                M.SurvivalCurve[r, p, t, v]                 # reamortised over survival curve of process using GDR
-                * fv_to_pv(GDR, p - vintage)
-                for r, t, v in M.survivalCurvePeriods
+                value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
+                * fv_to_pv(GDR, p - vintage + 1)
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p
             )
             * sum(                                          # PV of all reamortised costs (within planning horizon)
-                M.SurvivalCurve[r, p, t, v]
-                * fv_to_pv(GDR, p - vintage)
-                for r, t, v in M.survivalCurvePeriods
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
+                * fv_to_pv(GDR, p - vintage + 1)
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
             )
@@ -611,6 +622,9 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     loan_costs += sum(
         loan_cost_survival_curve(
             M,
+            r,
+            S_t,
+            S_v,
             M.V_NewCapacity[r, S_t, S_v],
             value(M.CostInvest[r, S_t, S_v]),
             value(M.LoanAnnualize[r, S_t, S_v]),
@@ -3181,25 +3195,26 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     return frac
 
 
-def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
-    """
-    This calculation is broken out specifically so that it can be used for param creation
-    and separately to calculate loan costs rather than rely on fully-built model parameters
-    :param loan_rate:
-    :param loan_life:
+# devnote: made redundant by time-value equations for objective function
+# def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
+#     """
+#     This calculation is broken out specifically so that it can be used for param creation
+#     and separately to calculate loan costs rather than rely on fully-built model parameters
+#     :param loan_rate:
+#     :param loan_life:
 
-    """
-    if not loan_rate:
-        # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
-        return 1.0 / loan_life
-    annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
-    return annualized_rate
+#     """
+#     if not loan_rate:
+#         # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
+#         return 1.0 / loan_life
+#     annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
+#     return annualized_rate
 
 
 def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
     dr = value(M.LoanRate[r, t, v])
     lln = value(M.LoanLifetimeProcess[r, t, v])
-    annualized_rate = loan_annualization_rate(dr, lln)
+    annualized_rate = pv_to_annuity(dr, lln)
     return annualized_rate
 
 

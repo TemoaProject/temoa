@@ -317,6 +317,9 @@ def poll_cost_results(
         if (r, t, v) in M.tech_survival_curve:
                 model_loan_cost, undiscounted_cost = loan_costs_survival_curve(
                 M=M,
+                r=r,
+                t=t,
+                v=v,
                 loan_rate=loan_rate,
                 loan_life=loan_life,
                 capacity=cap,
@@ -462,7 +465,7 @@ def loan_costs(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = temoa_rules.loan_annualization_rate(loan_rate=loan_rate, loan_life=loan_life)
+    loan_ar = temoa_rules.pv_to_annuity(rate=loan_rate, periods=loan_life)
     model_ic = temoa_rules.loan_cost(
         capacity,
         invest_cost,
@@ -492,6 +495,9 @@ def loan_costs(
 
 def loan_costs_survival_curve(
     M,
+    r,
+    t,
+    v,
     loan_rate,  # this is referred to as LoanRate in parameters
     loan_life,
     capacity,
@@ -508,9 +514,12 @@ def loan_costs_survival_curve(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = temoa_rules.loan_annualization_rate(loan_rate=loan_rate, loan_life=loan_life)
+    loan_ar = temoa_rules.pv_to_annuity(rate=loan_rate, periods=loan_life)
     model_ic = temoa_rules.loan_cost_survival_curve(
         M,
+        r,
+        t,
+        v,
         capacity,
         invest_cost,
         loan_annualize=loan_ar,
@@ -524,6 +533,9 @@ def loan_costs_survival_curve(
     global_discount_rate = 0
     undiscounted_cost = temoa_rules.loan_cost_survival_curve(
         M,
+        r,
+        t,
+        v,
         capacity,
         invest_cost,
         loan_annualize=loan_ar,

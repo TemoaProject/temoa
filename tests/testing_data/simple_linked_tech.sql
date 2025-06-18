@@ -350,14 +350,16 @@ CREATE TABLE TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE LoanLifetimeTech
+CREATE TABLE LoanLifetimeProcess
 (
     region   TEXT,
     tech     TEXT
         REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     lifetime REAL,
     notes    TEXT,
-    PRIMARY KEY (region, tech)
+    PRIMARY KEY (region, tech, vintage)
 );
 CREATE TABLE LoanRate
 (
@@ -883,7 +885,7 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE SurvivalCurve
+CREATE TABLE LifetimeSurvivalCurve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -943,10 +945,10 @@ CREATE TABLE TimeSeasonSequential
     seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count REAL NOT NULL,
+    num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
+    CHECK (num_days > 0)
 );
 CREATE TABLE TimePeriodType
 (

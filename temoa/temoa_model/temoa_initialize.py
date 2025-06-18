@@ -445,8 +445,6 @@ def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     :param v: vintage
     :return: the final lifetime value
     """
-    if (r, t, v) in M.tech_survival_curve:
-        return M.time_future.last() - v # arbitrary
     return M.LifetimeTech[r, t]
 
 
@@ -1817,8 +1815,8 @@ def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
     return techs
 
 
-def get_loan_life(M, r, t, _):
-    return M.LoanLifetimeTech[r, t]
+def get_loan_life(M: 'TemoaModel', r, t, v):
+    return M.LifetimeProcess[r, t, v]
 
 
 def copy_from(other_set):

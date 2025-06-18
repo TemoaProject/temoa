@@ -336,7 +336,9 @@ class TemoaModel(AbstractModel):
         M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
-        M.LoanLifetimeTech = Param(M.regionalIndices, M.tech_all, default=10)
+        M.LifetimeSurvivalCurve = Param(M.regionalIndices, Integers, M.tech_all, M.vintage_all, default=1, validate=validate_0to1, mutable=True)
+        M.validate_SurvivalCurve = BuildAction(rule=validate_SurvivalCurve)
+
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
 
         # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a supporting
@@ -392,9 +394,6 @@ class TemoaModel(AbstractModel):
         M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
         M.initialize_CapacityFactors = BuildAction(rule=CheckCapacityFactorProcess)
         M.initialize_EfficiencyVariable = BuildAction(rule=CheckEfficiencyVariable)
-
-        M.SurvivalCurve = Param(M.regionalIndices, Integers, M.tech_all, M.vintage_all, default=1, validate=validate_0to1)
-        M.validate_SurvivalCurve = BuildAction(rule=validate_SurvivalCurve)
 
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so

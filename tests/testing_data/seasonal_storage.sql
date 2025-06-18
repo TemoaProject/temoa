@@ -899,7 +899,7 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('region','dly_stor',4.0,NULL);
 INSERT INTO StorageDuration VALUES('region','seas_stor',8760.0,NULL);
-CREATE TABLE SurvivalCurve
+CREATE TABLE LifetimeSurvivalCurve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -1046,10 +1046,10 @@ CREATE TABLE TimeSeasonSequential
     seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count REAL NOT NULL,
+    num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
+    CHECK (num_days > 0)
 );
 INSERT INTO TimeSeasonSequential VALUES(2000,1,'summer','charge',152.5,NULL);
 INSERT INTO TimeSeasonSequential VALUES(2000,2,'sept_w1','discharge',7,NULL);

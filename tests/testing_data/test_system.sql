@@ -723,45 +723,17 @@ CREATE TABLE TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE LoanLifetimeTech
+CREATE TABLE LoanLifetimeProcess
 (
     region   TEXT,
     tech     TEXT
         REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     lifetime REAL,
     notes    TEXT,
-    PRIMARY KEY (region, tech)
+    PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LoanLifetimeTech VALUES('R1','S_IMPETH',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','S_IMPOIL',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','S_IMPNG',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','S_IMPURN',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','S_OILREF',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','E_NGCC',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','E_SOLPV',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','E_BATT',20.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','E_NUCLEAR',50.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','T_BLND',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','T_DSL',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','T_GSL',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','T_EV',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','R_EH',20.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R1','R_NGH',20.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','S_IMPETH',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','S_IMPOIL',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','S_IMPNG',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','S_IMPURN',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','S_OILREF',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','E_NGCC',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','E_SOLPV',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','E_BATT',20.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','E_NUCLEAR',50.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','T_BLND',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','T_DSL',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','T_GSL',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','T_EV',12.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','R_EH',20.0,'');
-INSERT INTO LoanLifetimeTech VALUES('R2','R_NGH',20.0,'');
 CREATE TABLE LoanRate
 (
     region  TEXT,
@@ -1378,7 +1350,7 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
 INSERT INTO StorageDuration VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
-CREATE TABLE SurvivalCurve
+CREATE TABLE LifetimeSurvivalCurve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -1451,10 +1423,10 @@ CREATE TABLE TimeSeasonSequential
     seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count REAL NOT NULL,
+    num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
+    CHECK (num_days > 0)
 );
 CREATE TABLE TimePeriodType
 (

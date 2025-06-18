@@ -104,7 +104,7 @@ direct_transfer_tables = [
     ('',                      'LifetimeProcess'),
     ('',                      'LifetimeTech'),
     ('',                      'LinkedTech'),
-    ('',                      'LoanLifetimeTech'),
+    # ('',                      'LoanLifetimeTech'),
     ('',                      'LoanRate'),
     ('',                      'MetaData'),
     ('',                      'MetaDataReal'),
@@ -291,6 +291,25 @@ for old_name, new_name in period_added_tables:
     con_new.executemany(query, data_new)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
+
+# LoanLifetimeTech -> LoanLifetimeProcess
+try:
+    data = con_old.execute('SELECT * FROM LoanLifetimeTech').fetchall()
+
+    if not data:
+        print('No data for: ' + old_name)
+    else:
+        new_data = []
+        for r, t, l, note in data:
+            vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE region=="{r}" AND tech="{t}"').fetchall()]
+            for v in vints:
+                data.append((r, t, v, l, note))
+        query = f'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
+        con_new.executemany(query, new_data)
+        print(f'Transfered {len(new_data)} rows from LifetimeLoanTech to LifetimeLoanProcess')
+
+except sqlite3.OperationalError:
+    print('TABLE NOT FOUND: ' + old_name)
 
 # Warn about incompatible changes
 print('\n --- The following transfers were impossible due to incompatible changes. Transfer manually. ---')
