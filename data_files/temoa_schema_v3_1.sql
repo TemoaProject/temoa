@@ -65,8 +65,7 @@ CREATE TABLE IF NOT EXISTS CapacityFactorProcess
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     tech    TEXT
@@ -82,8 +81,7 @@ CREATE TABLE IF NOT EXISTS CapacityFactorTech
     region TEXT,
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod    TEXT
         REFERENCES TimeOfDay (tod),
     tech   TEXT
@@ -215,8 +213,7 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
@@ -261,8 +258,7 @@ CREATE TABLE IF NOT EXISTS EfficiencyVariable
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -469,8 +465,7 @@ CREATE TABLE IF NOT EXISTS LimitStorageLevelFraction
     region   TEXT,
     period   INTEGER
         REFERENCES TimePeriod (period),
-    season   TEXT
-        REFERENCES TimeSeason (season),
+    season   TEXT,
     tod      TEXT
         REFERENCES TimeOfDay (tod),
     tech     TEXT
@@ -594,8 +589,7 @@ CREATE TABLE IF NOT EXISTS LimitSeasonalCapacityFactor
         REFERENCES Region (region),
 	period	INTEGER
         REFERENCES TimePeriod (period),
-	season	TEXT
-        REFERENCES TimeSeason (season),
+	season	TEXT,
 	tech    TEXT
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -764,8 +758,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -787,8 +780,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -810,8 +802,7 @@ CREATE TABLE IF NOT EXISTS OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -854,8 +845,7 @@ CREATE TABLE IF NOT EXISTS TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
@@ -901,12 +891,10 @@ VALUES ('ps', 'storage production technology');
 -- (
 --     period       INTEGER
 --         REFERENCES TimePeriod (period),
---     season       TEXT
---         REFERENCES TimeSeason (season),
+--     season       TEXT,
 --     tod          TEXT
 --         REFERENCES TimeOfDay (tod),
---     season_next  TEXT
---         REFERENCES TimeSeason (season),
+--     season_next  TEXT,
 --     tod_next     TEXT
 --         REFERENCES TimeOfDay (tod),
 --     notes        TEXT,
@@ -941,8 +929,7 @@ CREATE TABLE IF NOT EXISTS TimeSeasonSequential
         REFERENCES TimePeriod (period),
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),

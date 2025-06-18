@@ -104,7 +104,6 @@ direct_transfer_tables = [
     ('',                      'LifetimeProcess'),
     ('',                      'LifetimeTech'),
     ('',                      'LinkedTech'),
-    # ('',                      'LoanLifetimeTech'),
     ('',                      'LoanRate'),
     ('',                      'MetaData'),
     ('',                      'MetaDataReal'),
@@ -294,22 +293,22 @@ for old_name, new_name in period_added_tables:
 
 # LoanLifetimeTech -> LoanLifetimeProcess
 try:
-    data = con_old.execute('SELECT * FROM LoanLifetimeTech').fetchall()
-
-    if not data:
-        print('No data for: ' + old_name)
-    else:
-        new_data = []
-        for r, t, l, note in data:
-            vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE region=="{r}" AND tech="{t}"').fetchall()]
-            for v in vints:
-                data.append((r, t, v, l, note))
-        query = f'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
-        con_new.executemany(query, new_data)
-        print(f'Transfered {len(new_data)} rows from LifetimeLoanTech to LifetimeLoanProcess')
-
+    data = con_old.execute('SELECT region, tech, lifetime, notes FROM LoanLifetimeTech').fetchall()
 except sqlite3.OperationalError:
-    print('TABLE NOT FOUND: ' + old_name)
+    print('TABLE NOT FOUND: LoanLifetimeTech')
+
+if not data:
+    print('No data for: LoanLifetimeTech')
+else:
+    new_data = []
+    for row in data:
+        vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE region=="{row[0]}" AND tech="{row[1]}"').fetchall()]
+        for v in vints:
+            new_data.append((row[0], row[1], v, row[2], row[3]))
+    query = f'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
+    con_new.executemany(query, new_data)
+    print(f'Transfered {len(new_data)} rows from LifetimeLoanTech to LifetimeLoanProcess')
+
 
 # Warn about incompatible changes
 print('\n --- The following transfers were impossible due to incompatible changes. Transfer manually. ---')
