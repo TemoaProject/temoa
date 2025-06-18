@@ -904,6 +904,18 @@ CREATE TABLE StorageDuration
     PRIMARY KEY (region, tech)
 );
 INSERT INTO StorageDuration VALUES('electricville','batt',10.0,NULL);
+CREATE TABLE SurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
+);
 CREATE TABLE TechnologyType
 (
     label       TEXT

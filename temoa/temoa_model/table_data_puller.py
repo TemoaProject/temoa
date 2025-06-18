@@ -313,18 +313,31 @@ def poll_cost_results(
             continue
         loan_life = value(LLN[r, t, v])
         loan_rate = value(M.LoanRate[r, t, v])
-
-        model_loan_cost, undiscounted_cost = loan_costs(
-            loan_rate=loan_rate,
-            loan_life=loan_life,
-            capacity=cap,
-            invest_cost=value(M.CostInvest[r, t, v]),
-            process_life=value(M.LifetimeProcess[r, t, v]),
-            p_0=p_0,
-            p_e=p_e,
-            global_discount_rate=GDR,
-            vintage=v,
-        )
+        
+        if (r, t, v) in M.tech_survival_curve:
+                model_loan_cost, undiscounted_cost = loan_costs_survival_curve(
+                M=M,
+                loan_rate=loan_rate,
+                loan_life=loan_life,
+                capacity=cap,
+                invest_cost=value(M.CostInvest[r, t, v]),
+                p_0=p_0,
+                p_e=p_e,
+                global_discount_rate=GDR,
+                vintage=v,
+            )
+        else:
+            model_loan_cost, undiscounted_cost = loan_costs(
+                loan_rate=loan_rate,
+                loan_life=loan_life,
+                capacity=cap,
+                invest_cost=value(M.CostInvest[r, t, v]),
+                process_life=value(M.LifetimeProcess[r, t, v]),
+                p_0=p_0,
+                p_e=p_e,
+                global_discount_rate=GDR,
+                vintage=v,
+            )
         # screen for linked region...
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -469,6 +482,52 @@ def loan_costs(
         loan_annualize=loan_ar,
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
+        P_0=p_0,
+        P_e=p_e,
+        GDR=global_discount_rate,
+        vintage=vintage,
+    )
+    return model_ic, undiscounted_cost
+
+
+def loan_costs_survival_curve(
+    M,
+    loan_rate,  # this is referred to as LoanRate in parameters
+    loan_life,
+    capacity,
+    invest_cost,
+    p_0,
+    p_e,
+    global_discount_rate,
+    vintage,
+    **kwargs,
+) -> tuple[float, float]:
+    """
+    Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
+    :return: tuple of [model-view discounted cost, un-discounted annuity]
+    """
+    # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
+    #            model uses for these costs
+    loan_ar = temoa_rules.loan_annualization_rate(loan_rate=loan_rate, loan_life=loan_life)
+    model_ic = temoa_rules.loan_cost_survival_curve(
+        M,
+        capacity,
+        invest_cost,
+        loan_annualize=loan_ar,
+        lifetime_loan_process=loan_life,
+        P_0=p_0,
+        P_e=p_e,
+        GDR=global_discount_rate,
+        vintage=vintage,
+    )
+    # Override the GDR to get the undiscounted value
+    global_discount_rate = 0
+    undiscounted_cost = temoa_rules.loan_cost_survival_curve(
+        M,
+        capacity,
+        invest_cost,
+        loan_annualize=loan_ar,
+        lifetime_loan_process=loan_life,
         P_0=p_0,
         P_e=p_e,
         GDR=global_discount_rate,

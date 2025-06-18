@@ -26,6 +26,7 @@ from pyomo.core import BuildCheck
 from pyomo.environ import (
     Any,
     NonNegativeReals,
+    Integers,
     AbstractModel,
     BuildAction,
     Param,
@@ -44,9 +45,9 @@ from temoa.temoa_model.model_checking.validators import (
     no_slash_or_pipe,
     validate_SeasonSequential,
     validate_ReserveMargin,
+    validate_SurvivalCurve,
 )
 from temoa.temoa_model.temoa_initialize import *
-from temoa.temoa_model.temoa_initialize import get_loan_life
 from temoa.temoa_model.temoa_rules import *
 
 logger = logging.getLogger(__name__)
@@ -111,6 +112,7 @@ class TemoaModel(AbstractModel):
         M.processPeriods = dict() # {(r, t, v): set(p)}
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         M.processVintages = dict()
+        M.survivalCurvePeriods = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
@@ -214,6 +216,7 @@ class TemoaModel(AbstractModel):
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
         #        it was the old StorageInit constraint
         M.tech_retirement = Set(within=M.tech_with_capacity)# - M.tech_storage)
+        M.tech_survival_curve = Set(within=M.regionalIndices * M.tech_with_capacity * M.vintage_all)
 
         M.validate_techs = BuildAction(rule=validate_tech_sets)
 
@@ -389,6 +392,9 @@ class TemoaModel(AbstractModel):
         M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
         M.initialize_CapacityFactors = BuildAction(rule=CheckCapacityFactorProcess)
         M.initialize_EfficiencyVariable = BuildAction(rule=CheckEfficiencyVariable)
+
+        M.SurvivalCurve = Param(M.regionalIndices, Integers, M.tech_all, M.vintage_all, default=1, validate=validate_0to1)
+        M.validate_SurvivalCurve = BuildAction(rule=validate_SurvivalCurve)
 
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so

@@ -899,6 +899,18 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('region','dly_stor',4.0,NULL);
 INSERT INTO StorageDuration VALUES('region','seas_stor',8760.0,NULL);
+CREATE TABLE SurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
+);
 CREATE TABLE TechnologyType
 (
     label       TEXT

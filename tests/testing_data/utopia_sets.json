@@ -25759,6 +25759,7 @@
     "tech_storage": [
         "E51"
     ],
+    "tech_survival_curve": [],
     "tech_uncap": [
         "IMPDSL1",
         "IMPHYD",

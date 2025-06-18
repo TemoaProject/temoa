@@ -1378,6 +1378,18 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
 INSERT INTO StorageDuration VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
+CREATE TABLE SurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
+);
 CREATE TABLE TechnologyType
 (
     label       TEXT

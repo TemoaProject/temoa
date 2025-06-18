@@ -407,6 +407,42 @@ def validate_ReserveMargin(M: 'TemoaModel'):
             )
 
 
+def validate_SurvivalCurve(M: 'TemoaModel'):
+    rptv = set(
+        (r, p, t, v)
+        for r, t, v in M.retirementPeriods
+        if (r, t, v) in M.tech_survival_curve
+        for p in M.retirementPeriods[r, t, v]
+    )
+    rptv = rptv | M.SurvivalCurve.sparse_iterkeys()
+    for r, p, t, v in rptv:
+        if (r, t, v) not in M.survivalCurvePeriods:
+            M.survivalCurvePeriods[r, t, v] = list()
+        M.survivalCurvePeriods[r, t, v].append(p)
+        if M.time_exist.first() < p < M.time_future.last() and p not in M.time_exist | M.time_future:
+            msg = (
+                'A row in the SurvivalCurve table used a period that was within the bounds of '
+                'defined periods but was not one of those periods. This value was ignored: '
+                f'({r}, >{p}<, {t}, {v})): {M.SurvivalCurve[r, p, t, v]}'
+            )
+            logger.warning(msg)
+    for r, t, v in M.survivalCurvePeriods:
+        M.survivalCurvePeriods[r, t, v] = sorted(M.survivalCurvePeriods[r, t, v])
+        for i, p in enumerate(M.survivalCurvePeriods[r, t, v]):
+            if i == 0:
+                continue
+            p_prev = M.survivalCurvePeriods[r, t, v][i-1]
+            lsc = M.SurvivalCurve[r, p, t, v]
+            lsc_prev = M.SurvivalCurve[r, p_prev, t, v]
+            if lsc > lsc_prev:
+                msg = (
+                    'SurvivalCurve fraction increases going forward in time from {} to {}. '
+                    'This is not allowed.'
+                ).format((r, p_prev, t, v), (r, p, t, v))
+                logger.error(msg)
+                raise ValueError(msg)
+        
+
 def validate_tech_sets(M: 'TemoaModel'):
     """
     Check tech sets for any forbidden intersections

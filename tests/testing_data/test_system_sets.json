@@ -46666,6 +46666,7 @@
     "tech_storage": [
         "E_BATT"
     ],
+    "tech_survival_curve": [],
     "tech_uncap": [
         "S_IMPETH",
         "S_IMPNG",

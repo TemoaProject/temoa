@@ -736,6 +736,13 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LifetimeProcess').fetchall()
             load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
+        # SurvivalCurve
+        if self.table_exists("SurvivalCurve"):
+            raw = cur.execute('SELECT region, period, tech, vintage, fraction FROM main.SurvivalCurve').fetchall()
+            load_element(M.SurvivalCurve, raw, self.viable_rtv, val_loc=(0, 2, 3))
+            raw = cur.execute('SELECT DISTINCT region, tech, vintage, fraction FROM main.SurvivalCurve').fetchall()
+            load_element(M.tech_survival_curve, set(raw))
+
         # LoanLifetimeTech
         if self.table_exists("LoanLifetimeTech"):
             raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()

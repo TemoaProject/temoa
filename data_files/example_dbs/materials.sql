@@ -1386,6 +1386,18 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('RegionA','BATT_GRID',2.0,'2 hours energy storage');
 INSERT INTO StorageDuration VALUES('RegionB','BATT_GRID',2.0,'2 hours energy storage');
+CREATE TABLE SurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
+);
 CREATE TABLE TechnologyType
 (
     label       TEXT

@@ -445,6 +445,8 @@ def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     :param v: vintage
     :return: the final lifetime value
     """
+    if (r, t, v) in M.tech_survival_curve:
+        return M.time_future.last() - v # arbitrary
     return M.LifetimeTech[r, t]
 
 
@@ -793,6 +795,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if t not in M.tech_uncap and any((
                 p <= v+l_lifetime < p + value(M.PeriodLength[p]), # natural eol this period
                 t in M.tech_retirement and v < p <= v+l_lifetime - value(M.PeriodLength[p]), # allowed early retirement
+                (r, t, v) in M.tech_survival_curve and v <= p <= v+l_lifetime
             )):
                 if (r, t, v) not in M.retirementPeriods:
                     M.retirementPeriods[r, t, v] = set()
