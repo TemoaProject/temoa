@@ -617,7 +617,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-        if S_v == p and (r, S_t, S_v) not in M.tech_survival_curve
+        if S_v == p and (r, S_t, S_v) not in M.survival_curve_processes
     )
     loan_costs += sum(
         loan_cost_survival_curve(
@@ -635,7 +635,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-        if S_v == p and (r, S_t, S_v) in M.tech_survival_curve
+        if S_v == p and (r, S_t, S_v) in M.survival_curve_processes
     )
 
     fixed_costs = sum(

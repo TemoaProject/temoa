@@ -216,7 +216,7 @@ class TemoaModel(AbstractModel):
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
         #        it was the old StorageInit constraint
         M.tech_retirement = Set(within=M.tech_with_capacity)# - M.tech_storage)
-        M.tech_survival_curve = Set(within=M.regionalIndices * M.tech_with_capacity * M.vintage_all)
+        M.survival_curve_processes = Set(within=M.regionalIndices * M.tech_with_capacity * M.vintage_all)
 
         M.validate_techs = BuildAction(rule=validate_tech_sets)
 

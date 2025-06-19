@@ -4342,7 +4342,7 @@
     "tech_storage": [
         "batt"
     ],
-    "tech_survival_curve": [],
+    "survival_curve_processes": [],
     "tech_uncap": [],
     "tech_upramping": [
         "EH"
