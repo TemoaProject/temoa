@@ -288,7 +288,9 @@ class MyopicSequencer:
             self.output_con.execute('VACUUM;')
 
         # Total system cost is, theoretically, sum of discounted costs from OutputCost table
-        total_cost = self.output_con.execute('SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM OutputCost').fetchone()[0]
+        total_cost = self.output_con.execute(
+            f'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM OutputCost WHERE scenario == "{self.config.scenario}"'
+        ).fetchone()[0]
         self.output_con.execute(
             f"""INSERT INTO
             OutputObjective(scenario, objective_name, total_system_cost)
