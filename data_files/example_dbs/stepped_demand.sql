@@ -9,7 +9,7 @@ CREATE TABLE MetaData
 );
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
+INSERT INTO MetaData VALUES('days_per_period', 365, 'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
