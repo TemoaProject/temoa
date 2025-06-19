@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS OutputBuiltCapacity
     capacity REAL,
     PRIMARY KEY (region, scenario, tech, vintage)
 );
-CREATE TABLE OutputCost
+CREATE TABLE IF NOT EXISTS OutputCost
 (
     scenario TEXT,
     region   TEXT,
