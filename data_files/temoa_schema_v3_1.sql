@@ -115,15 +115,15 @@ CREATE TABLE IF NOT EXISTS CommodityType
     description TEXT
 );
 REPLACE INTO CommodityType
-VALUES ('p', 'physical commodity');
+VALUES ('s', 'source commodity');
 REPLACE INTO CommodityType
 VALUES ('a', 'annual commodity');
 REPLACE INTO CommodityType
-VALUES ('e', 'emissions commodity');
+VALUES ('p', 'physical commodity');
 REPLACE INTO CommodityType
 VALUES ('d', 'demand commodity');
 REPLACE INTO CommodityType
-VALUES ('s', 'source commodity');
+VALUES ('e', 'emissions commodity');
 REPLACE INTO CommodityType
 VALUES ('w', 'waste commodity');
 REPLACE INTO CommodityType

@@ -40,11 +40,11 @@ CREATE TABLE IF NOT EXISTS CommodityType
     description TEXT
 );
 REPLACE INTO CommodityType
+VALUES ('s', 'source commodity');
+REPLACE INTO CommodityType
 VALUES ('p', 'physical commodity');
 REPLACE INTO CommodityType
 VALUES ('d', 'demand commodity');
-REPLACE INTO CommodityType
-VALUES ('s', 'source commodity');
 CREATE TABLE IF NOT EXISTS CostFixed
 (
     region  TEXT    NOT NULL,
