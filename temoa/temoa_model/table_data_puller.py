@@ -314,7 +314,7 @@ def poll_cost_results(
         loan_life = value(LLN[r, t, v])
         loan_rate = value(M.LoanRate[r, t, v])
         
-        if (r, t, v) in M.survival_curve_processes:
+        if M.isSurvivalCurveProcess[r, t, v]:
                 model_loan_cost, undiscounted_cost = loan_costs_survival_curve(
                 M=M,
                 r=r,

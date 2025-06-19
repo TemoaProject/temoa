@@ -45,7 +45,6 @@ from temoa.temoa_model.model_checking.validators import (
     no_slash_or_pipe,
     validate_SeasonSequential,
     validate_ReserveMargin,
-    validate_SurvivalCurve,
 )
 from temoa.temoa_model.temoa_initialize import *
 from temoa.temoa_model.temoa_rules import *
@@ -112,7 +111,7 @@ class TemoaModel(AbstractModel):
         M.processPeriods = dict() # {(r, t, v): set(p)}
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         M.processVintages = dict()
-        M.survivalCurvePeriods = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
+        M.survivalCurvePeriods: dict[tuple, set] = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
@@ -132,15 +131,16 @@ class TemoaModel(AbstractModel):
         M.time_next = dict() # {(p, s, d): (s_next, d_next)} sequence of following time slices
         M.time_next_sequential = dict() # {(p, s_seq): (s_seq_next)} next virtual storage season
         M.sequential_to_season = dict() # {(p, s_seq): (s)} season matching this virtual storage season
-        M.is_seasonal_storage = dict() # to avoid slow O(n2) behaviour in storage constraints
 
         ################################################
         #             Switching Sets                   #
-        #     (used to optimize big tables/params)     #
+        #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        M.efficiencyVariables: dict[tuple, bool] = dict() # which efficiencies have variable indexing
-        M.capacityFactorProcesses: dict[tuple, bool] = dict() # which capacity factors have have period-vintage indexing
+        M.isEfficiencyVariable: dict[tuple, bool] = dict() # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
+        M.isCapacityFactorProcess: dict[tuple, bool] = dict() # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
+        M.isSeasonalStorage: dict[tuple, bool] = dict() # {t: bool} whether a storage tech is seasonal storage
+        M.isSurvivalCurveProcess: dict[str, bool] = dict() # {(r, t, v): bool} whether a process uses survival curves.
 
         ################################################
         #                 Model Sets                   #
@@ -216,7 +216,6 @@ class TemoaModel(AbstractModel):
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
         #        it was the old StorageInit constraint
         M.tech_retirement = Set(within=M.tech_with_capacity)# - M.tech_storage)
-        M.survival_curve_processes = Set(within=M.regionalIndices * M.tech_with_capacity * M.vintage_all)
 
         M.validate_techs = BuildAction(rule=validate_tech_sets)
 
@@ -337,7 +336,7 @@ class TemoaModel(AbstractModel):
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
         M.LifetimeSurvivalCurve = Param(M.regionalIndices, Integers, M.tech_all, M.vintage_all, default=1, validate=validate_0to1, mutable=True)
-        M.validate_SurvivalCurve = BuildAction(rule=validate_SurvivalCurve)
+        M.Create_SurvivalCurve = BuildAction(rule=CreateSurvivalCurve)
 
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
 

@@ -617,7 +617,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-        if S_v == p and (r, S_t, S_v) not in M.survival_curve_processes
+        if S_v == p and not M.isSurvivalCurveProcess[r, S_t, S_v]
     )
     loan_costs += sum(
         loan_cost_survival_curve(
@@ -635,7 +635,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-        if S_v == p and (r, S_t, S_v) in M.survival_curve_processes
+        if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]
     )
 
     fixed_costs = sum(
@@ -1370,7 +1370,7 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
 
     # We allow a non-zero daily delta only in the case of seasonal storage
-    if M.is_seasonal_storage[t] and d == M.time_of_day.last():
+    if M.isSeasonalStorage[t] and d == M.time_of_day.last():
         return Constraint.Skip # handled by SeasonalStorageEnergy_Constraint
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
@@ -1472,7 +1472,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     """
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         return Constraint.Skip # redundant on SeasonalStorageEnergyUpperBound
 
     energy_capacity = (
@@ -1673,14 +1673,14 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
         * value(M.LimitStorageFraction[r, p, s, d, t, v, op])
     )
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         s_seq = s # sequential season
         s = M.sequential_to_season[p, s_seq] # non-sequential season
 
     # adjust the storage level to the individual-day level
     energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         # seasonal storage upper energy limit is absolute
         energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_seq, s])
 
@@ -3302,13 +3302,13 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
 # Much faster to build a dictionary and check that than check the parameter
 # indices directly every time - saves build time
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
-    if M.efficiencyVariables[r, p, i, t, v, o]:
+    if M.isEfficiencyVariable[r, p, i, t, v, o]:
         return value(M.Efficiency[r, i, t, v, o]) * value(M.EfficiencyVariable[r, p, s, d, i, t, v, o])
     else:
         return value(M.Efficiency[r, i, t, v, o])
     
 def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
-    if M.capacityFactorProcesses[r, p, t, v]:
+    if M.isCapacityFactorProcess[r, p, t, v]:
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
         return value(M.CapacityFactorTech[r, p, s, d, t])

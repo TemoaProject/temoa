@@ -740,7 +740,6 @@ class HybridLoader:
         if self.table_exists("LifetimeSurvivalCurve"):
             raw = cur.execute('SELECT region, period, tech, vintage, fraction FROM main.LifetimeSurvivalCurve').fetchall()
             load_element(M.LifetimeSurvivalCurve, raw, self.viable_rtv, val_loc=(0, 2, 3))
-            load_element(M.survival_curve_processes, list(set([(row[0], row[2], row[3]) for row in raw])))
 
         # LoanLifetimeProcess
         if self.table_exists("LoanLifetimeProcess"):
