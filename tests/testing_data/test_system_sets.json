@@ -44964,7 +44964,7 @@
     ],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],
-    "ReserveMargin": [
+    "ReserveMarginMethod": [
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
@@ -46705,17 +46705,18 @@
         2020,
         2030
     ],
-    "time_season": [
+    "TimeSeason": [
         2025,
         2020,
         2030
     ],
-    "time_season_all": [
+    "time_season": [
         "summer",
         "fall",
         "spring",
         "winter"
     ],
+    "time_season_sequential": [],
     "TimeSequencing": [
         "seasonal_timeslices"
     ],

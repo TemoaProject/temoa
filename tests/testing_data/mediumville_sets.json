@@ -4113,7 +4113,7 @@
             "d2"
         ]
     ],
-    "ReserveMargin": [
+    "ReserveMarginMethod": [
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
@@ -4372,10 +4372,14 @@
     "time_optimize": [
         2025
     ],
-    "time_season": [
+    "TimeSeason": [
         2025
     ],
-    "time_season_all": [
+    "time_season": [
+        "s1",
+        "s2"
+    ],
+    "time_season_sequential": [
         "s1",
         "s2"
     ],

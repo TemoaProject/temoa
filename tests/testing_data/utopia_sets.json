@@ -24720,7 +24720,7 @@
     "RegionalExchangeCapacityConstraint_rrptv": [],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],
-    "ReserveMargin": [
+    "ReserveMarginMethod": [
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
@@ -25803,16 +25803,17 @@
         2010,
         1990
     ],
-    "time_season": [
+    "TimeSeason": [
         2000,
         2010,
         1990
     ],
-    "time_season_all": [
+    "time_season": [
         "summer",
         "inter",
         "winter"
     ],
+    "time_season_sequential": [],
     "TimeSequencing": [
         "seasonal_timeslices"
     ],
