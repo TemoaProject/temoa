@@ -501,7 +501,6 @@ def loan_cost_survival_curve(
     P_0: int,
     P_e: int,
     GDR: float,
-    vintage: int,
 ) -> float | Expression:
     """
     function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
@@ -513,7 +512,6 @@ def loan_cost_survival_curve(
     :param P_0: the year to discount the costs back to
     :param P_e: the 'end year' or cutoff year for loan payments
     :param GDR: Global Discount Rate
-    :param vintage: the base year of the loan
     :return: fixed number or pyomo expression based on input types
     """
 
@@ -546,17 +544,17 @@ def loan_cost_survival_curve(
             * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
             / sum(                                          # redistributed over survival curve within horizon
                 value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
-                * fv_to_pv(GDR, p - vintage + 1)
+                * fv_to_pv(GDR, p - v + 1)
                 for p in M.survivalCurvePeriods[r, t, v]
-                if v <= p
+                if v <= p # this shouldnt be possible but play it safe
             )
             * sum(                                          # PV of all reamortised costs (within planning horizon)
                 value(M.LifetimeSurvivalCurve[r, p, t, v])
-                * fv_to_pv(GDR, p - vintage + 1)
+                * fv_to_pv(GDR, p - v + 1)
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
             )
-            * fv_to_pv(GDR, vintage - P_0)                  # finally, discounted from vintage year to P_0
+            * fv_to_pv(GDR, v - P_0)                  # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -632,7 +630,6 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             P_0,
             P_e,
             GDR,
-            vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]

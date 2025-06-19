@@ -1134,6 +1134,8 @@ def CreateTimeSequence(M: 'TemoaModel'):
 
 
 def CreateSurvivalCurve(M: 'TemoaModel'):
+    
+    rtv_interpolated = set() # so we only need one warning
 
     for (r, _, t, v, _) in M.Efficiency:
         M.isSurvivalCurveProcess[r, t, v] = False # by default
@@ -1161,14 +1163,8 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             raise ValueError(msg)
 
         # Let them know about the linear interpolation
-        if periods_rtv != list(range(p_first, p_last, 1)):
-            msg = (
-                'For the purposes of investment cost accounting, LifetimeSurvivalCurve must be defined '
-                f'for each individual year. For process ({r, t, v}), these yearly fractions will be linearly '
-                'interpolated between defined survival curve periods. Otherwise, these individual years '
-                'can be defined manually.'
-            )
-            logger.info(msg)
+        if periods_rtv != list(range(p_first, p_last+1, 1)):
+            rtv_interpolated.add((r, t, v))
 
         between_periods = []
         for i, p in enumerate(periods_rtv):
@@ -1221,6 +1217,14 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                     )
                     logger.error(msg)
                     raise ValueError(msg)
+                elif value(M.LifetimeProcess[r, t, v]) != p - v:
+                    msg = (
+                        f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
+                        f'does match the end of that survival curve in {p}. To agree with '
+                        f'the survival curve and suppress some warnings, set '
+                        f'LifetimeProcess[{r, t, v}] = {p-v}'
+                    )
+                    logger.info(msg)
                 
                 continue
             
@@ -1237,6 +1241,14 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                 
         M.survivalCurvePeriods[r, t, v].extend(between_periods)
         M.survivalCurvePeriods[r, t, v] = set(M.survivalCurvePeriods[r, t, v])
+
+    if rtv_interpolated:
+        msg = (
+            'For the purposes of investment cost accounting, LifetimeSurvivalCurve must be defined '
+            f'for each individual year. Gaps between defined years will be filled by linear interpolation. '
+            'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
+        ).format([rtv for rtv in rtv_interpolated])
+        logger.info(msg)
 
     
 # ---------------------------------------------------------------

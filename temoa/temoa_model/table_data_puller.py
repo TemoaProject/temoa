@@ -527,7 +527,6 @@ def loan_costs_survival_curve(
         P_0=p_0,
         P_e=p_e,
         GDR=global_discount_rate,
-        vintage=vintage,
     )
     # Override the GDR to get the undiscounted value
     global_discount_rate = 0
@@ -543,7 +542,6 @@ def loan_costs_survival_curve(
         P_0=p_0,
         P_e=p_e,
         GDR=global_discount_rate,
-        vintage=vintage,
     )
     return model_ic, undiscounted_cost
 
