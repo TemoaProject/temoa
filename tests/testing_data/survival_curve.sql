@@ -42,8 +42,10 @@ CREATE TABLE SectorLabel
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
-    period  INTEGER,
-    tech    TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    tech    TEXT
+        REFERENCES Technology (tech),
     vintage INTEGER,
     credit  REAL,
     notes   TEXT,
