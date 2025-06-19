@@ -861,7 +861,7 @@ CREATE TABLE IF NOT EXISTS StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LifetimeSurvivalCurve
+CREATE TABLE IF NOT EXISTS LifetimeSurvivalCurve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -997,7 +997,7 @@ CREATE TABLE IF NOT EXISTS Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-CREATE TABLE OutputCost
+CREATE TABLE IF NOT EXISTS OutputCost
 (
     scenario TEXT,
     region   TEXT,
