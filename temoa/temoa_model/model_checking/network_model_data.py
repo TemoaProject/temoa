@@ -318,9 +318,12 @@ def _build_from_db(
     res.waste_commodities = waste_dict
 
     # pick up the linked techs...
-    raw = cur.execute(
-        'SELECT primary_region, primary_tech, emis_comm, driven_tech FROM main.LinkedTech'
-    ).fetchall()
+    try:
+        raw = cur.execute(
+            'SELECT primary_region, primary_tech, emis_comm, driven_tech FROM main.LinkedTech'
+        ).fetchall()
+    except:
+        raw = []
     res.available_linked_techs = {
         LinkedTech(region=r, driver=driver, emission=emiss, driven=driven)
         for (r, driver, emiss, driven) in raw

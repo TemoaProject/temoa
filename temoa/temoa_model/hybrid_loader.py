@@ -652,11 +652,18 @@ class HybridLoader:
                 'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
                 ' (assume this is a periodic model)'
             )
-            raw = [
-                (p, "S", "D", 1)
-                for p in time_optimize
-                if mi.base_year <= p <= mi.last_demand_year
-            ] # if no segfrac table, assume this is a periodic model
+            # if no segfrac table, assume this is a periodic model
+            if mi:
+                raw = [
+                    (p, "S", "D", 1)
+                    for p in time_optimize
+                    if mi.base_year <= p <= mi.last_demand_year
+                ]
+            else:
+                raw = [
+                    (p, "S", "D", 1)
+                    for p in time_optimize
+                ]
         load_element(M.SegFrac, raw)
 
         # TimeSeason

@@ -11,13 +11,20 @@ CREATE TABLE IF NOT EXISTS MetaData
 REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
-VALUES ('DB_MINOR', 0, 'DB minor version number');
-CREATE TABLE IF NOT EXISTS OutputObjective
+VALUES ('DB_MINOR', 1, 'DB minor version number');
+CREATE TABLE IF NOT EXISTS MetaDataReal
 (
-    scenario          TEXT,
-    objective_name    TEXT,
-    total_system_cost REAL
+    element TEXT,
+    value   REAL,
+    notes   TEXT,
+
+    PRIMARY KEY (element)
 );
+REPLACE INTO MetaDataReal
+VALUES ('global_discount_rate', 0.05, 'Discount Rate for future costs');
+REPLACE INTO MetaDataReal
+VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in LoanRate table');
+
 CREATE TABLE IF NOT EXISTS Commodity
 (
     name        TEXT
@@ -26,14 +33,6 @@ CREATE TABLE IF NOT EXISTS Commodity
         REFERENCES CommodityType (label),
     description TEXT
 );
-REPLACE INTO Commodity
-VALUES ('ethos', 's', NULL);
-REPLACE INTO Commodity
-VALUES ('fuel', 'p', NULL);
-REPLACE INTO Commodity
-VALUES ('carrier', 'p', NULL);
-REPLACE INTO Commodity
-VALUES ('demand', 'd', NULL);
 CREATE TABLE IF NOT EXISTS CommodityType
 (
     label       TEXT
@@ -98,8 +97,6 @@ CREATE TABLE IF NOT EXISTS Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-REPLACE INTO Demand
-VALUES ('region', 2000, 'demand', 1, NULL, NULL);
 CREATE TABLE IF NOT EXISTS Efficiency
 (
     region      TEXT,
@@ -116,12 +113,59 @@ CREATE TABLE IF NOT EXISTS Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-REPLACE INTO Efficiency
-VALUES ('region', 'ethos', 'importer', 2000, 'fuel', 1, NULL);
-REPLACE INTO Efficiency
-VALUES ('region', 'fuel', 'producer', 2000, 'carrier', 1, NULL);
-REPLACE INTO Efficiency
-VALUES ('region', 'carrier', 'consumer', 2000, 'demand', 1, NULL);
+CREATE TABLE IF NOT EXISTS LifetimeProcess
+(
+    region   TEXT,
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    lifetime REAL,
+    notes    TEXT,
+    PRIMARY KEY (region, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS LifetimeTech
+(
+    region   TEXT,
+    tech     TEXT
+        REFERENCES Technology (tech),
+    lifetime REAL,
+    notes    TEXT,
+    PRIMARY KEY (region, tech)
+);
+CREATE TABLE IF NOT EXISTS OutputBuiltCapacity
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    capacity REAL,
+    PRIMARY KEY (region, scenario, tech, vintage)
+);
+CREATE TABLE OutputCost
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT REFERENCES SectorLabel (sector),
+    period   INTEGER REFERENCES TimePeriod (period),
+    tech     TEXT REFERENCES Technology (tech),
+    vintage  INTEGER REFERENCES TimePeriod (period),
+    d_invest REAL,
+    d_fixed  REAL,
+    d_var    REAL,
+    d_emiss  REAL,
+    invest   REAL,
+    fixed    REAL,
+    var      REAL,
+    emiss    REAL,
+    PRIMARY KEY (scenario, region, period, tech, vintage),
+    FOREIGN KEY (vintage) REFERENCES TimePeriod (period),
+    FOREIGN KEY (tech) REFERENCES Technology (tech)
+);
 CREATE TABLE IF NOT EXISTS OutputCurtailment
 (
     scenario    TEXT,
@@ -144,48 +188,29 @@ CREATE TABLE IF NOT EXISTS OutputCurtailment
     curtailment REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE IF NOT EXISTS OutputNetCapacity
+CREATE TABLE IF NOT EXISTS OutputDualVariable
 (
-    scenario TEXT,
-    region   TEXT,
-    sector   TEXT
-        REFERENCES SectorLabel (sector),
-    period   INTEGER
-        REFERENCES TimePeriod (period),
-    tech     TEXT
-        REFERENCES Technology (tech),
-    vintage  INTEGER
-        REFERENCES TimePeriod (period),
-    capacity REAL,
-    PRIMARY KEY (region, scenario, period, tech, vintage)
+    scenario        TEXT,
+    constraint_name TEXT,
+    dual            REAL,
+    PRIMARY KEY (constraint_name, scenario)
 );
-CREATE TABLE IF NOT EXISTS OutputBuiltCapacity
+CREATE TABLE IF NOT EXISTS OutputEmission
 (
-    scenario TEXT,
-    region   TEXT,
-    sector   TEXT
+    scenario  TEXT,
+    region    TEXT,
+    sector    TEXT
         REFERENCES SectorLabel (sector),
-    tech     TEXT
+    period    INTEGER
+        REFERENCES TimePeriod (period),
+    emis_comm TEXT
+        REFERENCES Commodity (name),
+    tech      TEXT
         REFERENCES Technology (tech),
-    vintage  INTEGER
+    vintage   INTEGER
         REFERENCES TimePeriod (period),
-    capacity REAL,
-    PRIMARY KEY (region, scenario, tech, vintage)
-);
-CREATE TABLE IF NOT EXISTS OutputRetiredCapacity
-(
-    scenario TEXT,
-    region   TEXT,
-    sector   TEXT
-        REFERENCES SectorLabel (sector),
-    period   INTEGER
-        REFERENCES TimePeriod (period),
-    tech     TEXT
-        REFERENCES Technology (tech),
-    vintage  INTEGER
-        REFERENCES TimePeriod (period),
-    capacity REAL,
-    PRIMARY KEY (region, scenario, period, tech, vintage)
+    emission  REAL,
+    PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS OutputFlowIn
 (
@@ -195,8 +220,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -218,8 +242,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -233,12 +256,60 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE IF NOT EXISTS OutputDualVariable
+CREATE TABLE IF NOT EXISTS OutputNetCapacity
 (
-    scenario        TEXT,
-    constraint_name TEXT,
-    dual            REAL,
-    PRIMARY KEY (constraint_name, scenario)
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    period   INTEGER
+        REFERENCES TimePeriod (period),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    capacity REAL,
+    PRIMARY KEY (region, scenario, period, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputObjective
+(
+    scenario          TEXT,
+    objective_name    TEXT,
+    total_system_cost REAL
+);
+CREATE TABLE IF NOT EXISTS OutputRetiredCapacity
+(
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT
+        REFERENCES SectorLabel (sector),
+    period   INTEGER
+        REFERENCES TimePeriod (period),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    cap_eol REAL,
+    cap_early REAL,
+    PRIMARY KEY (region, scenario, period, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS OutputStorageLevel
+(
+    scenario TEXT,
+    region TEXT,
+    sector TEXT
+        REFERENCES SectorLabel (sector),
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT,
+    tod TEXT
+        REFERENCES TimeOfDay (tod),
+    tech TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER
+        REFERENCES TimePeriod (period),
+    level REAL,
+    PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS Region
 (
@@ -246,62 +317,15 @@ CREATE TABLE IF NOT EXISTS Region
         PRIMARY KEY,
     notes  TEXT
 );
-REPLACE INTO Region
-VALUES ('region', NULL);
-CREATE TABLE IF NOT EXISTS TechnologyType
+CREATE TABLE IF NOT EXISTS SectorLabel
 (
-    label       TEXT
-        PRIMARY KEY,
-    description TEXT
-);
-REPLACE INTO TechnologyType
-VALUES ('r', 'resource technology');
-REPLACE INTO TechnologyType
-VALUES ('p', 'production technology');
-REPLACE INTO TechnologyType
-VALUES ('pb', 'baseload production technology');
-REPLACE INTO TechnologyType
-VALUES ('ps', 'storage production technology');
-CREATE TABLE IF NOT EXISTS TimePeriod
-(
-    sequence INTEGER UNIQUE,
-    period   INTEGER
-        PRIMARY KEY,
-    flag     TEXT
-        REFERENCES TimePeriodType (label)
-);
-REPLACE INTO TimePeriod
-VALUES (0, 2000, 'f');
-REPLACE INTO TimePeriod
-VALUES (1, 2001, 'f');
-CREATE TABLE IF NOT EXISTS TimePeriodType
-(
-    label       TEXT
-        PRIMARY KEY,
-    description TEXT
-);
-REPLACE INTO TimePeriodType VALUES ('f', 'future');
-CREATE TABLE IF NOT EXISTS OutputEmission
-(
-    scenario  TEXT,
-    region    TEXT,
-    sector    TEXT
-        REFERENCES SectorLabel (sector),
-    period    INTEGER
-        REFERENCES TimePeriod (period),
-    emis_comm TEXT
-        REFERENCES Commodity (name),
-    tech      TEXT
-        REFERENCES Technology (tech),
-    vintage   INTEGER
-        REFERENCES TimePeriod (period),
-    emission  REAL,
-    PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
+    sector TEXT,
+    PRIMARY KEY (sector)
 );
 CREATE TABLE IF NOT EXISTS Technology
 (
-    tech         TEXT NOT NULL PRIMARY KEY,
-    flag         TEXT NOT NULL,
+    tech         TEXT    NOT NULL PRIMARY KEY,
+    flag         TEXT    NOT NULL,
     sector       TEXT,
     category     TEXT,
     sub_category TEXT,
@@ -312,34 +336,36 @@ CREATE TABLE IF NOT EXISTS Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-REPLACE INTO Technology
-VALUES ('importer', 'r', 'sector', NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL);
-REPLACE INTO Technology
-VALUES ('producer', 'p', 'sector', NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL);
-REPLACE INTO Technology
-VALUES ('consumer', 'p', 'sector', NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL);
-CREATE TABLE OutputCost
+CREATE TABLE IF NOT EXISTS TechnologyType
 (
-    scenario TEXT,
-    region   TEXT REFERENCES Region (region),
-    sector   TEXT REFERENCES SectorLabel (sector),
-    period   INTEGER REFERENCES TimePeriod (period),
-    tech     TEXT REFERENCES Technology (tech),
-    vintage  INTEGER REFERENCES TimePeriod (period),
-    d_invest REAL,
-    d_fixed  REAL,
-    d_var    REAL,
-    d_emiss  REAL,
-    invest   REAL,
-    fixed    REAL,
-    var      REAL,
-    emiss    REAL,
-    PRIMARY KEY (scenario, region, period, tech, vintage),
-    FOREIGN KEY (vintage) REFERENCES TimePeriod (period),
-    FOREIGN KEY (tech) REFERENCES Technology (tech)
+    label       TEXT
+        PRIMARY KEY,
+    description TEXT
 );
+REPLACE INTO TechnologyType
+VALUES ('p', 'production technology');
+CREATE TABLE IF NOT EXISTS TimePeriod
+(
+    sequence INTEGER UNIQUE,
+    period   INTEGER
+        PRIMARY KEY,
+    flag     TEXT
+        REFERENCES TimePeriodType (label)
+);
+CREATE TABLE IF NOT EXISTS TimePeriodType
+(
+    label       TEXT
+        PRIMARY KEY,
+    description TEXT
+);
+REPLACE INTO TimePeriodType
+VALUES('e', 'existing vintages');
+REPLACE INTO TimePeriodType
+VALUES('f', 'future');
+
 COMMIT;
 PRAGMA FOREIGN_KEYS = 1;
