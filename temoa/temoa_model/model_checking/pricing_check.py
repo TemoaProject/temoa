@@ -223,8 +223,10 @@ def price_checker(M: 'TemoaModel') -> bool:
     logger.debug('  Starting price check #3')
     for region, tech, vintage in sorted_efficiency_rtv:
         # skip resources
-        if tech in M.tech_resource:
-            continue
+        # devnote: this feels like an OEO specific use case and not generally applicable.
+        # also, the tech_resource set isn't used ANYWHERE else
+        # if tech in M.tech_resource:
+        #     continue
 
         # get the lifetime of the tech, or default
         lifetime = value(M.LifetimeProcess[region, tech, vintage])

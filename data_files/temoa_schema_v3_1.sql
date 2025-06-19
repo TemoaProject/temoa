@@ -13,7 +13,7 @@ VALUES ('myopic_base_year', 2000, 'Base Year for Myopic Analysis');
 REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
-VALUES ('DB_MINOR', 0, 'DB minor version number');
+VALUES ('DB_MINOR', 1, 'DB minor version number');
 REPLACE INTO MetaData
 VALUES ('days_per_period', 365, 'count of days in each period');
 
@@ -881,8 +881,6 @@ CREATE TABLE IF NOT EXISTS TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-REPLACE INTO TechnologyType
-VALUES ('r', 'resource technology');
 REPLACE INTO TechnologyType
 VALUES ('p', 'production technology');
 REPLACE INTO TechnologyType

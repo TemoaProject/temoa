@@ -856,8 +856,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                         M.outputSplitAnnualVintages[r, p, t, o, op] = set()
                     M.outputSplitAnnualVintages[r, p, t, o, op].add(v)
 
-            if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput:
-                M.processByPeriodAndOutput[r, p, o] = set()
+            # if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput: # not currently used
+            #     M.processByPeriodAndOutput[r, p, o] = set()
             if t in M.tech_reserve and (r, p) not in M.processReservePeriods:
                 M.processReservePeriods[r, p] = set()
 
@@ -891,8 +891,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if t in M.tech_downramping:
                 M.rampDownVintages[r, p, t].add(v)
 
-            if t in M.tech_resource:
-                M.processByPeriodAndOutput[r, p, o].add((i, t, v))
+            # if t in M.tech_resource:
+            #     M.processByPeriodAndOutput[r, p, o].add((i, t, v)) # not currently used
             if t in M.tech_reserve:
                 M.processReservePeriods[r, p].add((t, v))
             if t in M.tech_exchange:

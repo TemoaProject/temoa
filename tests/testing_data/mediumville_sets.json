@@ -4327,13 +4327,11 @@
         "heater",
         "EF",
         "FGF_pipe",
-        "batt"
+        "batt",
+        "well"
     ],
     "tech_reserve": [
         "EF"
-    ],
-    "tech_resource": [
-        "well"
     ],
     "tech_retirement": [
         "EH"

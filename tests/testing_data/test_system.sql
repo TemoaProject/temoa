@@ -1360,7 +1360,6 @@ CREATE TABLE TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
@@ -1480,10 +1479,10 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('S_IMPETH','r','supply','','',1,0,0,0,0,0,0,0,' imported ethanol');
-INSERT INTO Technology VALUES('S_IMPOIL','r','supply','','',1,0,0,0,0,0,0,0,' imported crude oil');
-INSERT INTO Technology VALUES('S_IMPNG','r','supply','','',1,0,0,0,0,0,0,0,' imported natural gas');
-INSERT INTO Technology VALUES('S_IMPURN','r','supply','','',1,0,0,0,0,0,0,0,' imported uranium');
+INSERT INTO Technology VALUES('S_IMPETH','p','supply','','',1,0,0,0,0,0,0,0,' imported ethanol');
+INSERT INTO Technology VALUES('S_IMPOIL','p','supply','','',1,0,0,0,0,0,0,0,' imported crude oil');
+INSERT INTO Technology VALUES('S_IMPNG','p','supply','','',1,0,0,0,0,0,0,0,' imported natural gas');
+INSERT INTO Technology VALUES('S_IMPURN','p','supply','','',1,0,0,0,0,0,0,0,' imported uranium');
 INSERT INTO Technology VALUES('S_OILREF','p','supply','','',0,0,0,1,0,0,0,0,' crude oil refinery');
 INSERT INTO Technology VALUES('E_NGCC','p','electric','','',0,0,0,0,0,0,0,0,' natural gas combined-cycle');
 INSERT INTO Technology VALUES('E_SOLPV','p','electric','','',0,0,0,0,0,0,0,0,' solar photovoltaic');

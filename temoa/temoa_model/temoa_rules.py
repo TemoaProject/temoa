@@ -1225,48 +1225,49 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     return expr
 
 
-def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
-    r"""
-    The ResourceExtraction constraint allows a modeler to specify an annual limit on
-    the amount of a particular resource Temoa may use in a period. The first version
-    of the constraint pertains to technologies with variable output at the time slice
-    level, and the second version pertains to technologies with constant annual output
-    belonging to the :code:`tech_annual` set.
+# Devnote: Not currently active
+# def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
+#     r"""
+#     The ResourceExtraction constraint allows a modeler to specify an annual limit on
+#     the amount of a particular resource Temoa may use in a period. The first version
+#     of the constraint pertains to technologies with variable output at the time slice
+#     level, and the second version pertains to technologies with constant annual output
+#     belonging to the :code:`tech_annual` set.
 
-    .. math::
-       :label: ResourceExtraction
+#     .. math::
+#        :label: ResourceExtraction
 
-       \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
 
-       \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
-    """
-    logger.warning(
-        'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
-        'Recommend removing data from supporting table'
-    )
-    # dev note:  This constraint does not have a table in the current schema
-    #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
-    #            by BOTH a non-annual and annual tech.  It should be re-written to add these
-    # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
-    try:
-        collected = sum(
-            M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
-            for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
-            for S_s in M.TimeSeason[p]
-            for S_d in M.time_of_day
-        )
-    except KeyError:
-        collected = sum(
-            M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
-            for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
-        )
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#     """
+#     logger.warning(
+#         'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
+#         'Recommend removing data from supporting table'
+#     )
+#     # dev note:  This constraint does not have a table in the current schema
+#     #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
+#     #            by BOTH a non-annual and annual tech.  It should be re-written to add these
+#     # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
+#     try:
+#         collected = sum(
+#             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#             for S_s in M.TimeSeason[p]
+#             for S_d in M.time_of_day
+#         )
+#     except KeyError:
+#         collected = sum(
+#             M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#         )
 
-    expr = collected <= value(M.ResourceBound[reg, p, r])
-    return expr
+#     expr = collected <= value(M.ResourceBound[reg, p, r])
+#     return expr
 
 
 def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):

@@ -292,6 +292,11 @@ for old_name, new_name in period_added_tables:
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
 
+# Removal of tech_resource
+con_new.execute("UPDATE Technology SET flag='p' WHERE flag=='r';")
+print('Converted all resource techs to production techs.')
+
+
 # LoanLifetimeTech -> LoanLifetimeProcess
 try:
     data = con_old.execute('SELECT region, tech, lifetime, notes FROM LoanLifetimeTech').fetchall()

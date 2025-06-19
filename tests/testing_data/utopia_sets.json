@@ -25742,10 +25742,7 @@
         "RHE",
         "E31",
         "RL1",
-        "SRE"
-    ],
-    "tech_reserve": [],
-    "tech_resource": [
+        "SRE",
         "IMPDSL1",
         "IMPHYD",
         "IMPHCO1",
@@ -25754,6 +25751,7 @@
         "IMPURN1",
         "IMPOIL1"
     ],
+    "tech_reserve": [],
     "tech_retirement": [],
     "tech_seasonal_storage": [],
     "tech_storage": [

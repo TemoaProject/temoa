@@ -476,9 +476,9 @@ class HybridLoader:
 
         #  === TECH SETS ===
 
-        # tech_resource
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'r'").fetchall()
-        load_element(M.tech_resource, raw, self.viable_techs)
+        # tech_resource # devnote: not used anywhere
+        # raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'r'").fetchall()
+        # load_element(M.tech_resource, raw, self.viable_techs)
 
         # tech_production
         raw = cur.execute("SELECT tech FROM main.Technology WHERE flag LIKE 'p%'").fetchall()

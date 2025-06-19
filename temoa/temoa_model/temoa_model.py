@@ -122,7 +122,7 @@ class TemoaModel(AbstractModel):
         M.inputSplitAnnualVintages = dict()
         M.outputSplitVintages = dict()
         M.outputSplitAnnualVintages = dict()
-        M.processByPeriodAndOutput = dict()
+        # M.processByPeriodAndOutput = dict() # not currently used
         M.exportRegions = dict()
         M.importRegions = dict()
 
@@ -178,9 +178,9 @@ class TemoaModel(AbstractModel):
         M.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
-        M.tech_resource = Set()
+        # M.tech_resource = Set() # not actually used by anything
         M.tech_production = Set()
-        M.tech_all = Set(initialize=M.tech_resource | M.tech_production, validate=no_slash_or_pipe)
+        M.tech_all = Set(initialize=M.tech_production, validate=no_slash_or_pipe) # was M.tech_resource | M.tech_production
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain

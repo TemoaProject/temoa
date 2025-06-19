@@ -895,7 +895,6 @@ CREATE TABLE TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
@@ -1003,9 +1002,9 @@ CREATE TABLE Technology
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
 INSERT INTO Technology VALUES('PLANT','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('CCS','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('MINE','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('FAKE_SOURCE','r','supply',NULL,NULL,1,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('CCS','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('MINE','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('FAKE_SOURCE','p','supply',NULL,NULL,1,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,
