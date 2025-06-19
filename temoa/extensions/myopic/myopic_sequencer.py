@@ -281,7 +281,7 @@ class MyopicSequencer:
             last_base_year = idx.base_year  # update
 
             # delete anything in the OutputObjective table, it is nonsensical...
-            self.output_con.execute('DELETE FROM OutputObjective WHERE 1')
+            self.output_con.execute(f'DELETE FROM OutputObjective WHERE scenario == "{self.config.scenario}"')
             self.output_con.commit()
 
             # 11.  Compact the db...  lots of writes/deletes leads to bloat

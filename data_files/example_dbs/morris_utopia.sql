@@ -7,7 +7,6 @@ CREATE TABLE MetaData
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');

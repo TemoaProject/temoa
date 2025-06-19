@@ -367,7 +367,7 @@ class HybridLoader:
         # time_exist
         if mi:
             raw = cur.execute(
-                'SELECT period FROM main.TimePeriod  WHERE period < ? ORDER BY sequence',
+                'SELECT period FROM main.TimePeriod WHERE period < ? ORDER BY sequence',
                 (mi.base_year,),
             ).fetchall()
         else:
@@ -380,7 +380,7 @@ class HybridLoader:
         if mi:
             raw = cur.execute(
                 'SELECT period FROM main.TimePeriod WHERE '
-                'period >= ? AND period <= ? ORDER BY sequence',
+                'flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
                 (mi.base_year, mi.last_year),
             ).fetchall()
         else:
@@ -431,13 +431,12 @@ class HybridLoader:
 
         # myopic_base_year
         if mi:
-            raw = cur.execute(
-                "SELECT value from MetaData WHERE element == 'myopic_base_year'"
-            ).fetchall()
+            # assume first future period by default
+            p0 = cur.execute(
+                "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
+            ).fetchone()
             # load as a singleton...
-            if not raw:
-                raise ValueError('No myopic_base_year found in MetaData table.')
-            data[M.MyopicBaseyear.name] = {None: int(raw[0][0])}
+            data[M.MyopicDiscountingP0.name] = {None: int(p0[0])}
 
         # days_per_season
         raw = cur.execute(

@@ -127,7 +127,7 @@ class TableWriter:
         self.write_capacity_tables(M, iteration=iteration)
         # analyze the emissions to get the costs and flows
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = M.MyopicBaseyear
+            p_0 = M.MyopicDiscountingP0
         else:
             p_0 = None  # min year will be used in poll
         e_costs, e_flows = poll_emissions(M=M, p_0=p_0)
@@ -498,7 +498,7 @@ class TableWriter:
         # P_0 is usually the first optimization year, but if running myopic, we could assign it via
         # table entry.  Perhaps in future it is just always the first optimization year of the 1st iter.
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = M.MyopicBaseyear
+            p_0 = M.MyopicDiscountingP0
         else:
             p_0 = min(M.time_optimize)
 

@@ -38,7 +38,7 @@ M.Loan_rtv.construct(data=rtv)
 M.LoanRate_rtv.construct(data=rtv)
 M.LifetimeProcess_rtv.construct(data=rtv)
 M.regionalIndices.construct(data=['A'])
-M.MyopicBaseyear.construct(data={None: 0})
+M.MyopicDiscountingP0.construct(data={None: 0})
 M.ModelProcessLife_rptv.construct(data=rptv)
 
 
