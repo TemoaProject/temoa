@@ -1,19 +1,38 @@
 import getopt
 import itertools
+import os
 import re
 import sqlite3
 import sys
+import warnings
 from pathlib import Path
 
 import pandas as pd
-from pyam import IamDataFrame
+
+# pyam imports Pandera in a way that causes a warning to be raised
+os.environ['DISABLE_PANDERA_IMPORT_WARNING'] = 'True'
+
+# pyam expects a deprecated default currency configuration
+warnings.filterwarnings(
+    'ignore',
+    category=DeprecationWarning,
+    message=r'configure_currency\(\"EXC\", \"2005\"\) will no longer be the default.*',
+    module='iam_units.*',
+)
+
+from pyam import IamDataFrame  # noqa: E402, I001
 
 
 def make_excel(ifile, ofile: Path, scenario):
     if ifile is None:
-        raise "You did not specify the input file, remember to use '-i' option"
+        raise Exception("You did not specify the input file, remember to use '-i' option")
         print(
-            'Use as :\n	python DB_to_Excel.py -i <input_file> (Optional -o <output_excel_file_name_only>)\n	Use -h for help.'
+            (
+                'Use as :\n'
+                '\tpython DB_to_Excel.py -i <input_file> '
+                '(Optional -o <output_excel_file_name_only>)\n'
+                '\tUse -h for help.'
+            )
         )
         sys.exit(2)
     else:
@@ -26,7 +45,8 @@ def make_excel(ifile, ofile: Path, scenario):
         print('Look for output in %s_*.xls' % ofile)
 
     con = sqlite3.connect(ifile)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+    # a database cursor is a control structure that enables traversal over the records in a database
+    cur = con.cursor()
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
     scenario = scenario.pop()
     ofile = ofile.with_suffix('.xlsx')
@@ -45,10 +65,14 @@ def make_excel(ifile, ofile: Path, scenario):
     )
 
     query = 'SELECT DISTINCT Efficiency.region, Efficiency.tech, Technology.sector FROM Efficiency \
-	INNER JOIN Technology ON Efficiency.tech=Technology.tech'
+    INNER JOIN Technology ON Efficiency.tech=Technology.tech'
     all_techs = pd.read_sql_query(query, con)
 
-    query = f"SELECT region, tech, sector, period, sum(capacity) as capacity FROM OutputNetCapacity WHERE scenario= '{scenario}' GROUP BY region, tech, sector, period"
+    query = (
+        f'SELECT region, tech, sector, period, sum(capacity) as capacity '
+        f"FROM OutputNetCapacity WHERE scenario= '{scenario}' "
+        f'GROUP BY region, tech, sector, period'
+    )
     df_capacity = pd.read_sql_query(query, con)
     for sector in sorted(df_capacity['sector'].unique()):
         df_capacity_sector = df_capacity[df_capacity['sector'] == sector]
@@ -71,10 +95,8 @@ def make_excel(ifile, ofile: Path, scenario):
             worksheet.write(0, col, val, header_format)
 
     query = (
-        "SELECT region, tech, sector, period, sum(flow) as vflow_out FROM OutputFlowOut WHERE scenario='"
-        + scenario
-        + "' GROUP BY \
-	region, tech, sector, period"
+        'SELECT region, tech, sector, period, sum(flow) as vflow_out '
+        "FROM OutputFlowOut WHERE scenario='" + scenario + "' GROUP BY region, tech, sector, period"
     )
     df_activity = pd.read_sql_query(query, con)
     for sector in sorted(df_activity['sector'].unique()):
@@ -98,16 +120,18 @@ def make_excel(ifile, ofile: Path, scenario):
             worksheet.write(0, col, val, header_format)
 
     query = (
-        'SELECT DISTINCT EmissionActivity.region, EmissionActivity.tech, EmissionActivity.emis_comm, Technology.sector FROM EmissionActivity \
-	INNER JOIN Technology ON EmissionActivity.tech=Technology.tech'
+        'SELECT DISTINCT EmissionActivity.region, EmissionActivity.tech, '
+        'EmissionActivity.emis_comm, Technology.sector '
+        'FROM EmissionActivity '
+        'INNER JOIN Technology ON EmissionActivity.tech=Technology.tech'
     )
     all_emis_techs = pd.read_sql_query(query, con)
 
     query = (
-        "SELECT region, tech, sector, period, emis_comm, sum(emission) as emissions FROM OutputEmission WHERE scenario='"
-        + scenario
-        + "' GROUP BY \
-	region, tech, sector, period, emis_comm"
+        'SELECT region, tech, sector, period, emis_comm, '
+        'sum(emission) as emissions FROM OutputEmission '
+        "WHERE scenario='" + scenario + "' GROUP BY "
+        'region, tech, sector, period, emis_comm'
     )
     df_emissions_raw = pd.read_sql_query(query, con)
     if not df_emissions_raw.empty:
@@ -137,9 +161,11 @@ def make_excel(ifile, ofile: Path, scenario):
             worksheet.write(0, col, val, header_format)
 
     query = (
-        'SELECT region, OutputCost.tech, Technology.sector, vintage, d_invest + d_var + d_fixed + d_emiss FROM OutputCost '
-        ' JOIN main.Technology ON OutputCost.tech = main.Technology.tech '
-        f" WHERE scenario = '{scenario}'"
+        'SELECT region, OutputCost.tech, Technology.sector, vintage, '
+        'd_invest + d_var + d_fixed + d_emiss '
+        'FROM OutputCost '
+        'JOIN main.Technology ON OutputCost.tech = main.Technology.tech '
+        f"WHERE scenario = '{scenario}'"
     )
     df_costs = pd.read_sql_query(query, con)
     df_costs.columns = ['Region', 'Technology', 'Sector', 'Vintage', 'Cost']
@@ -202,7 +228,7 @@ def get_data(inputs):
     scenario = set()
 
     if inputs is None:
-        raise 'no arguments found'
+        raise Exception('no arguments found')
 
     for opt, arg in inputs.items():
         if opt in ('-i', '--input'):
@@ -213,7 +239,12 @@ def get_data(inputs):
             scenario.add(arg)
         elif opt in ('-h', '--help'):
             print(
-                'Use as :\n	python DB_to_Excel.py -i <input_file> (Optional -o <output_excel_file_name_only>)\n	Use -h for help.'
+                (
+                    'Use as :\n'
+                    '\tpython DB_to_Excel.py -i <input_file> '
+                    '(Optional -o <output_excel_file_name_only>)\n'
+                    '\tUse -h for help.'
+                )
             )
             sys.exit()
 
@@ -226,7 +257,10 @@ if __name__ == '__main__':
         opts, args = getopt.getopt(argv, 'hi:o:s:', ['help', 'input=', 'output=', 'scenario='])
     except getopt.GetoptError:
         print(
-            "Something's Wrong. Use as :\n	python DB_to_Excel.py -i <input_file> (Optional -o <output_excel_file_name_only>)\n	Use -h for help."
+            "Something's Wrong. Use as :\n"
+            '\tpython DB_to_Excel.py -i <input_file> '
+            '(Optional -o <output_excel_file_name_only>)\n'
+            '\tUse -h for help.'
         )
         sys.exit(2)
 
