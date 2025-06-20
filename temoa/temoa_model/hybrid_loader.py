@@ -508,16 +508,6 @@ class HybridLoader:
         raw = cur.execute('SELECT tech FROM Technology WHERE reserve > 0').fetchall()
         load_element(M.tech_reserve, raw, self.viable_techs)
 
-        # tech_ramping
-        if self.table_exists('RampUpHourly'):
-            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUpHourly').fetchall()
-            techs = {t[0] for t in ramp_up_techs}
-            load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-        if self.table_exists('RampDownHourly'):
-            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDownHourly').fetchall()
-            techs = {t[0] for t in ramp_dn_techs}
-            load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-
         # tech_curtailment
         raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
         load_element(M.tech_curtailment, raw, self.viable_techs)
@@ -1051,11 +1041,13 @@ class HybridLoader:
         if self.table_exists('RampUpHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
             load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
+            load_element(M.tech_upramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
 
         # RampDownHourly
         if self.table_exists('RampDownHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
             load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
+            load_element(M.tech_downramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):

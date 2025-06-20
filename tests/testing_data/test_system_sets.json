@@ -44915,9 +44915,9 @@
         ]
     ],
     "RampDownDayConstraint_rpsdtv": [],
-    "RampDownSeasonConstraint_rpsdtv": [],
+    "RampDownSeasonConstraint_rpsstv": [],
     "RampUpDayConstraint_rpsdtv": [],
-    "RampUpSeasonConstraint_rpsdtv": [],
+    "RampUpSeasonConstraint_rpsstv": [],
     "RegionalExchangeCapacityConstraint_rrptv": [
         [
             "R2",

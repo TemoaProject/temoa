@@ -1839,16 +1839,14 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
+def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary 
     of sequential seasons.
     """
 
-    s = M.sequential_to_season[p, s_seq]
-    s_seq_next = M.time_next_sequential[p, s_seq]
-    s_next = M.sequential_to_season[p, s_seq_next]
-    _, d_next = M.time_next[p, s, d]
+    d = M.time_of_day.last()
+    d_next = M.time_of_day.first()
 
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
@@ -1887,16 +1885,14 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
     return expr
 
 
-def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
+def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary 
     of sequential seasons.
     """
 
-    s = M.sequential_to_season[p, s_seq]
-    s_seq_next = M.time_next_sequential[p, s_seq]
-    s_next = M.sequential_to_season[p, s_seq_next]
-    _, d_next = M.time_next[p, s, d]
+    d = M.time_of_day.last()
+    d_next = M.time_of_day.first()
 
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
