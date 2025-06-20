@@ -748,7 +748,7 @@ class HybridLoader:
         # LoanLifetimeProcess
         if self.table_exists("LoanLifetimeProcess"):
             raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LoanLifetimeProcess').fetchall()
-            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1))
+            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1, 2))
 
         # LimitTechInputSplit
         if self.table_exists('LimitTechInputSplit'):
