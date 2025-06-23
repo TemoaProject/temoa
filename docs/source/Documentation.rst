@@ -313,6 +313,7 @@ recommend that you populate input tables in the following order:
     and sub-categorizing can be done in the Technology table itself.
   * TimePeriodType: Used to distinguish which time periods are simply used to specify pre-existing
     vintages and which represent future optimization periods.
+  * SeasonLabel: Unordered unique labels defining seasons in the model.
 
 
 **Group 2: sets used within Temoa**
@@ -324,33 +325,32 @@ recommend that you populate input tables in the following order:
 
 
 **Group 3: parameters used to define processes within Temoa**
-  * GlobalDiscountRate
+  * MetaDataReal (global_discount_rate)
+  * MetaData (days_per_period)
   * Demand
   * DemandSpecificDistribution
   * Efficiency
   * ExistingCapacity
   * CapacityFactor
   * CapacityFactorProcess (only if CF varies by vintage; overwrites CapacityFactor)
-  * Capacity2Activity
+  * CapacityToActivity
   * CostFixed
   * CostInvest
   * CostVariable
-  * EmissionsActivity
-  * LoanLifetimeTech
-  * LifetimeProcess
+  * EmissionActivity
   * LifetimeTech
+  * LifetimeProcess (only if LT varies by vintage; overwrites LifetimeTech)
+  * TimeSegmentFraction: proportion of each period represented by each time slice
 
 **Group 4: parameters used to define constraints within Temoa**
-  * GrowthRateSeed
-  * GrowthRateMax
-  * MinCapacity
-  * MaxCapacity
-  * MinActivity
-  * MaxActivity
-  * RampUp
-  * RampDown
-  * TechOutputSplit
-  * TechInputSplit
+  * LimitActivity
+  * LimitCapacity
+  * LimitEmission
+  * LimitGrowthCapacity
+  * LimitNewCapacity
+  * LimitResource
+  * LimitTechInputSplit
+  * LimitTechOutputSplit
 
 For help getting started, take a look at how :code:`data_files/temoa_utopia.sql` is
 constructed. Use :code:`data_files/temoa_schema.sql` (a database file with the requisite
@@ -645,10 +645,10 @@ Conventions
    Take, for example, this excerpt from the Temoa default objective function:
 
    .. math::
-      C_{variable} = \sum_{p, s, d, i, t, v, o \in \Theta_{VC}} \left (
-              {VC}_{p, t, v}
+      C_{variable} = \sum_{r, p, s, d, i, t, v, o \in \Theta_{VC}} \left (
+              {VC}_{r, p, t, v}
         \cdot R_p
-        \cdot \textbf{FO}_{p, s, d, i, t, v, o}
+        \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
         \right )
 
    Note that :math:`C_{variable}` is not bold, as it is a temporary variable
@@ -678,7 +678,6 @@ Conventions
                \text{CFP}_{r, t, v}
          \cdot \text{C2A}_{r, t}
          \cdot \text{SEG}_{s, d}
-         \cdot \text{TLF}_{r, p, t, v}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
        =
@@ -729,6 +728,8 @@ Sets
    ":math:`\text{C}^d`",":code:`commodity_demand`","string","end-use demand commodities"
    ":math:`\text{C}^e`",":code:`commodity_emissions`","string","emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`)"
    ":math:`\text{C}^p`",":code:`commodity_physical`","string","general energy forms (e.g. electricity, coal, uranium, oil)"
+   ":math:`\text{C}^a`",":code:`commodity_annual`","string","same as commodity physical but flows are only balanced over each period"
+   ":math:`\text{C}^w`",":code:`commodity_waste`","string","physical or annual commodity for which production can be greater than consumption"
    ":math:`{}^*\text{C}^c`",":code:`commodity_carrier`","string","physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`)"
    ":math:`\text{I}`",,"string","alias of :math:`\text{C}^p`; used in documentation only to mean ""input"""
    ":math:`\text{O}`",,"string","alias of :math:`\text{C}^c`; used in documentation only to mean ""output"""
@@ -740,20 +741,22 @@ Sets
    ":math:`\text{S}`",":code:`time_season`","string","seasonal divisions (e.g. winter, summer)"
    ":math:`\text{D}`",":code:`time_of_day`","string","time-of-day divisions (e.g. morning)"
    ":math:`{}^*\text{T}`",":code:`tech_all`","string","all technologies to be modeled; (:math:`{T}^r \cup {T}^p`)"
-   ":math:`\text{T}^u`",":code:`tech_unlim_cap`","string","technologies that have no bound on capacity, and can have variable costs only (imports, taxes, etc.); (:math:`{T}^a \subset (T - T^{res}`)"
+   ":math:`\text{T}^u`",":code:`tech_unlim_cap`","string","technologies that have no bound on capacity, and can have variable costs only (imports, taxes, etc.); (:math:`{T}^u \subset (T - T^{res})`)"
    ":math:`\text{T}^a`",":code:`tech_annual`","string","technologies that produce constant annual output; (:math:`{T}^a \subset T`)"
    ":math:`\text{T}^b`",":code:`tech_baseload`","string","baseload electric generators; (:math:`{T}^b \subset T`)"
    ":math:`\text{T}^c`",":code:`tech_curtailment`","string","technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset (T - T^{res})`)"
-   ":math:`\text{T}^e`",":code:`tech_exchange`","string","technologies used for interregional commodity flow; (:math:`{T}^e \subset T`).  See Note 1 below on capacity and cost application for `tech_exchange`"
+   ":math:`\text{T}^x`",":code:`tech_exchange`","string","technologies used for interregional commodity flow; (:math:`{T}^x \subset T`).  See Note 1 below on capacity and cost application for `tech_exchange`"
+   ":math:`\text{T}^e`",":code:`tech_existing`","string","technologies constructed in an existing (past) vintage; (:math:`{T}^e \subset T`)."
    ":math:`\text{T}^f`",":code:`tech_flex`","string","technologies producing excess commodity flows; (:math:`{T}^f \subset T`)"
-   "",":code:`TechGroupName`","string","named groups for use in group parameters or RegionalPortfolioStandard"
-   "",":code:`TechGroupMember`","(TechGroupName, tech)","technologies belonging to each group defined above"
+   "",":code:`TechGroupName`","string","named groups for use in group constraints"
+   "",":code:`TechGroupMember`","(TechGroupName, tech)","Each technology belonging to each group defined above"
    ":math:`\text{T}^p`",":code:`tech_production`","string","techs producing intermediate commodities"
-   ":math:`\text{T}^r`",":code:`tech_resource`","string","resource extraction technologies"
-   ":math:`\text{T}^m`",":code:`tech_ramping`","string","electric generators with a ramp rate limit; (:math:`{T}^m \subset T`)"
-   ":math:`\text{T}^{res}`",":code:`tech_reserve`","string","electric generators contributing to the reserve margin requirement; (:math:`{T}^e \subset T`)"
-   ":math:`\text{T}^s`",":code:`tech_storage`","string","storage technologies; (:math:`{T}^s \subset T`)"
-   ":math:`\text{T}^v`",":code:`tech_variable`","string","technologies used in TechInputSplitAverage constraint; (:math:`{T}^v \subset T`)"
+   ":math:`\text{T}^{ur}`",":code:`tech_upramping`","string","electric generators with a ramp up hourly rate limit; (:math:`{T}^{ur} \subset T`)"
+   ":math:`\text{T}^{dr}`",":code:`tech_downramping`","string","electric generators with a ramp down hourly rate limit; (:math:`{T}^{dr} \subset T`)"
+   ":math:`\text{T}^{res}`",":code:`tech_reserve`","string","electric generators contributing to the reserve margin requirement; (:math:`{T}^res \subset T`)"
+   ":math:`\text{T}^{ret}`",":code:`tech_retirement`","string","technologies allowed to retire before end of life; (:math:`{T}^{ret} \subset (T - T^{u})`)"
+   ":math:`\text{T}^s`",":code:`tech_storage`","string","all storage technologies; (:math:`{T}^s \subset T`)"
+   ":math:`\text{T}^{ss}`",":code:`tech_seasonal_storage`","string","seasonal storage technologies; (:math:`{T}^{ss} \subset T^s`)"
 
 Note 1:  Temoa sets Capacity for Exchange Technologies to be equal in both directions on the link automatically.
 Costs are apportioned as follows:  If both directions of the link have a cost parameter, costs are accrued to
@@ -783,16 +786,17 @@ and demand is balanced at each of these levels:
 
  * **Periods** - consecutive blocks of years, marked by the first year in the
    period.  For example, a two-period model might consist of :math:`\text{P}^f =
-   \{2010, 2015, 2025\}`, representing the two periods of years from 2010
-   through 2014, and from 2015 through 2024. Note the that last period element
-   \(2025\) does not represent a new time period, but rather defines the upper bound
-   for the second time period.
+   \{2010, 2015, 2025\}`, representing the two periods of years from beginning 2010
+   through 2014 end, and from beginning 2015 through 2024 end. Note the that last period element
+   \(2025\) does not represent a new time period, but rather defines the end of the second time 
+   period and therefore the planning horizon.
 
  * **Seasonal** - Each year may have multiple seasons. In a conventional time-sliced
    model, the seasons may typically represent the four seasons: winter, spring summer,
    and fall. However, the seasonal slices can represent any amount of time at the
    sub-period scale. For example, in a database with representative days, the seasonal
-   slices can be used as generic containers to represent blocks of days.
+   slices can be used as generic containers to represent blocks of days. The type of 
+   seasonal representation in use should be defined in the config file.
 
  * **Daily** - Within a season, a given day can be further subdivided into different
    time segments. Less detailed databases may include larger blocks of time, such as morning,
@@ -905,7 +909,6 @@ the :code:`Capacity` :eq:`Capacity` Constraint:
                \text{CFP}_{r, s, d, t, v}
          \cdot \text{C2A}_{r, t}
          \cdot \text{SEG}_{s, d}
-         \cdot \text{TLF}_{r, p, t, v}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
    =
@@ -950,13 +953,15 @@ Parameters
    ":math:`\text{EAC}_{r,i,t,v,o,e}`","EmissionActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
    ":math:`\text{ELM}_{r,p,e}`","EmissionLimit",":math:`\mathbb{R}^+_0`","Emissions limit by region and period"
    ":math:`\text{ECAP}_{r,t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
+   ":math:`\text{RCAP}_{r,p,t,v}`","RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
    ":math:`\text{GDR}`","GlobalDiscountRate",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{GRM}_{r,t}`","GrowthRateMax",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{GRS}_{r,t}`","GrowthRateSeed",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{LTP}_{r,t,v}`","LifetimeProcess",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime (default=LifetimeTech)"
-   ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime (default=40 periods)"
+   ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime (default=40 years)"
+   ":math:`\text{LTS}_{r,p,t,v}`","LifetimeSurvivalCurve",":math:`\mathbb{R}^+_0`","Surviving fraction of original capacity"
    ":math:`\text{LIT}_{r,t,e,t}`","LinkedTechs","text","Dummy techs used to convert CO2 emissions to physical commodity"
-   ":math:`\text{LLT}_{r,t}`","LoanLifetimeTech",":math:`\mathbb{N}`","Tech-specific loan term (default=10 periods)"
+   ":math:`\text{LLT}_{r,t}`","LoanLifetimeTech",":math:`\mathbb{N}`","Tech-specific loan term (default=10 years)"
    ":math:`\text{LR}_{r,t,v}`","LoanRate",":math:`\mathbb{R}`","Tech-specific interest rate on investment cost"
    ":math:`\text{MAA}_{r,p,t}`","MaxActivity",":math:`\mathbb{R}^+_0`","Maximum tech-specific activity by region and period"
    ":math:`\text{MAC}_{r,p,t}`","MaxCapacity",":math:`\mathbb{R}^+_0`","Maximum tech-specific capacity by period"
@@ -1872,13 +1877,11 @@ capacity and allowable commodity flow.
 
 .. autofunction:: temoa_rules.Capacity_Constraint
 
-.. autofunction:: temoa_rules.AdjustedCapacity_Constraint
-
 .. autofunction:: temoa_rules.CapacityAnnual_Constraint
 
-.. autofunction:: temoa_rules.CapacityAvailableByPeriodAndTech_Constraint
+.. autofunction:: temoa_rules.AdjustedCapacity_Constraint
 
-.. autofunction:: temoa_rules.ActivityByTech_Constraint
+.. autofunction:: temoa_rules.CapacityAvailableByPeriodAndTech_Constraint
 
 
 .. _NetworkConstraints:
@@ -1893,7 +1896,7 @@ define the algebraic energy system network.
 
 .. autofunction:: temoa_rules.CommodityBalance_Constraint
 
-.. autofunction:: temoa_rules.CommodityBalanceAnnual_Constraint
+.. autofunction:: temoa_rules.AnnualCommodityBalance_Constraint
 
 
 Physical and Operational Constraints
@@ -1908,7 +1911,11 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa_rules.StorageEnergy_Constraint
 
+.. autofunction:: temoa_rules.SeasonalStorageEnergy_Constraint
+
 .. autofunction:: temoa_rules.StorageEnergyUpperBound_Constraint
+
+.. autofunction:: temoa_rules.SeasonalStorageEnergyUpperBound_Constraint
 
 .. autofunction:: temoa_rules.StorageChargeRate_Constraint
 
@@ -1926,7 +1933,9 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa_rules.RampDownSeason_Constraint
 
-.. autofunction:: temoa_rules.ReserveMargin_Constraint
+.. autofunction:: temoa_rules.ReserveMarginStatic
+
+.. autofunction:: temoa_rules.ReserveMarginDynamic
 
 
 Objective Function
@@ -1944,35 +1953,23 @@ operation, but allow the modeler some further degree of system specification.
 ..  commented out... not used?
     .. autofunction:: temoa_rules.ExistingCapacity_Constraint
 
-.. autofunction:: temoa_rules.EmissionLimit_Constraint
+.. autofunction:: temoa_rules.LimitEmission_Constraint
 
-.. autofunction:: temoa_rules.GrowthRateConstraint_rule
+.. autofunction:: temoa_rules.LimitGrowthCapacity
 
-.. autofunction:: temoa_rules.MaxActivity_Constraint
-
-.. autofunction:: temoa_rules.MinActivity_Constraint
-
-.. autofunction:: temoa_rules.MinActivityGroup_Constraint
+.. autofunction:: temoa_rules.LimitActivity_Constraint
 
 .. _MaxCapacity_Constraint:
 
-.. autofunction:: temoa_rules.MaxCapacity_Constraint
+.. autofunction:: temoa_rules.LimitCapacity_Constraint
 
-..  commented out... not used?
-    .. autofunction:: temoa_rules.MaxCapacitySet_Constraint
-
-.. autofunction:: temoa_rules.MinCapacity_Constraint
-
-..  commented out... not used?
-    .. autofunction:: temoa_rules.MinCapacitySet_Constraint
-
-.. autofunction:: temoa_rules.ResourceExtraction_Constraint
+.. autofunction:: temoa_rules.LimitResource_Constraint
 
 .. _TechOutputSplit_Constraint:
 
-.. autofunction:: temoa_rules.TechInputSplit_Constraint
+.. autofunction:: temoa_rules.LimitTechInputSplit_Constraint
 
-.. autofunction:: temoa_rules.TechOutputSplit_Constraint
+.. autofunction:: temoa_rules.LimitTechOutputSplit_Constraint
 
 
 

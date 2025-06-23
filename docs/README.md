@@ -25,7 +25,11 @@ Sometimes this automatic PDF generation fails. If that is the case, navigate to 
 
 ```$ pdflatex toolsforenergymodeloptimizationandanalysistemoa.pdf```
 
+## In Windows
+With the Temoa virtual environment active (see README in root folder), navigate to this directory:
 
+```cd C:/<full path>/temoa3/```
 
+Then build the documentation with Sphinx:
 
-
+```python -m sphinx source _build/html``
