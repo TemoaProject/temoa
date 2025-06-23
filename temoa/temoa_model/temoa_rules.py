@@ -307,11 +307,14 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
         # EOL this period
         if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Remaining existing capacity
-            retired = value(M.ExistingCapacity[r, t, v]) * value(M.LifetimeSurvivalCurve[r, p, t, v])
+            # Existing capacity in first period. Remaining existing capacity in last existing period
+            retired = (
+                value(M.ExistingCapacity[r, t, v])
+                * M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v]
+            )
         elif p == v:
-            # New capacity in its vintage period. Remaining new capacity
-            retired = M.V_NewCapacity[r, t, v] * value(M.LifetimeSurvivalCurve[r, p, t, v])
+            # New capacity in its vintage period. All new capacity
+            retired = M.V_NewCapacity[r, t, v]
         else:
             # Mid-horizon retirement
             retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
