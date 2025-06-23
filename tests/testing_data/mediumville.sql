@@ -987,6 +987,21 @@ CREATE TABLE Region
 );
 INSERT INTO Region VALUES('A','main region');
 INSERT INTO Region VALUES('B','just a 2nd region');
+CREATE TABLE ReserveCapacityDerate
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    season  TEXT
+    	REFERENCES SeasonLabel (season),
+    tech    TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER,
+    factor  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, season, tech, vintage),
+    CHECK (factor >= 0 AND factor <= 1)
+);
 CREATE TABLE TimeSegmentFraction
 (   
     period INTEGER
