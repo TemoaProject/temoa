@@ -1168,20 +1168,20 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             
     sequential = dict()
     for p, s_seq, s in M.TimeSeasonSequential:
-        count = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'sequential_days' and abs(count - 1.0) >= 0.01:
+        num_days = value(M.TimeSeasonSequential[p, s_seq, s])
+        if M.TimeSequencing.first() == 'sequential_days' and abs(num_days - 1.0) >= 0.01:
             msg = (
                 'TimeSequencing set to sequential_days but a season in the TimeSegmentFraction table does not '
-                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {count}. '
+                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {num_days}. '
                 'Check the config file.'
             )
             logger.error(msg)
             raise ValueError(msg)
         if (p, s) not in sequential:
             sequential[p, s] = 0
-        sequential[p, s] += count
+        sequential[p, s] += num_days
 
-    # Check that TimeSeasonSequential day counts total to number of days in each period
+    # Check that TimeSeasonSequential num_days total to number of days in each period
     for p in M.time_optimize:
         count_total = sum(
             sequential[p, s]
@@ -1190,7 +1190,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         )
         if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
             logger.warning(
-                f'Sum of day count in TimeSeasonSequential ({sum(sequential.values())}) '
+                f'Sum of num_days in TimeSeasonSequential ({sum(sequential.values())}) '
                 f'does not sum to days_per_period ({value(M.DaysPerPeriod)}) from the '
                 'MetaData table.'
             )
