@@ -44,12 +44,12 @@ CREATE TABLE SectorLabel
     sector TEXT PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO SectorLabel VALUES('supply');
-INSERT INTO SectorLabel VALUES('electric');
-INSERT INTO SectorLabel VALUES('transport');
-INSERT INTO SectorLabel VALUES('commercial');
-INSERT INTO SectorLabel VALUES('residential');
-INSERT INTO SectorLabel VALUES('industrial');
+INSERT INTO SectorLabel VALUES('supply',NULL);
+INSERT INTO SectorLabel VALUES('electric',NULL);
+INSERT INTO SectorLabel VALUES('transport',NULL);
+INSERT INTO SectorLabel VALUES('commercial',NULL);
+INSERT INTO SectorLabel VALUES('residential',NULL);
+INSERT INTO SectorLabel VALUES('industrial',NULL);
 CREATE TABLE CapacityCredit
 (
     region  TEXT,

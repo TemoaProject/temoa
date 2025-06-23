@@ -43,7 +43,7 @@ CREATE TABLE SectorLabel
     sector TEXT PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO SectorLabel VALUES('electricity');
+INSERT INTO SectorLabel VALUES('electricity',NULL);
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
