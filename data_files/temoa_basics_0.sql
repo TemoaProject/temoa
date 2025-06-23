@@ -220,7 +220,8 @@ CREATE TABLE IF NOT EXISTS OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -242,7 +243,8 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -301,7 +303,8 @@ CREATE TABLE IF NOT EXISTS OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -319,8 +322,8 @@ CREATE TABLE IF NOT EXISTS Region
 );
 CREATE TABLE IF NOT EXISTS SectorLabel
 (
-    sector TEXT,
-    PRIMARY KEY (sector)
+    sector TEXT PRIMARY KEY,
+    notes  TEXT
 );
 CREATE TABLE IF NOT EXISTS Technology
 (
