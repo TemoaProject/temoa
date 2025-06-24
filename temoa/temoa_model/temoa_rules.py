@@ -46,41 +46,42 @@ logger = getLogger(__name__)
 
 def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
-    This constraint updates the capacity of a process by taking into account retirements.
-    For a given :code:`(r,p,t,v)` index, this constraint sets the capacity equal to
-    the amount installed in period :code:`v` and subtracts from it any and all retirements
+    This constraint updates the capacity of a process by taking into account retirements
+    and end of life. For a given :code:`(r,p,t,v)` index, this constraint sets the capacity
+    equal to the amount installed in period :code:`v` and subtracts from it any and all retirements
     that occurred up until the period in question, :code:`p`, and end of life from the
     survival curve if defined. It finally adjusts for the process life fraction, which
-    accounts for a possible mid-period end of life.
+    accounts for a possible mid-period end of life where, for example, EOL 3 years into a 5-year
+    period would be treated as :math:`\frac{3}{5}` capacity for all 5 years.
     
     .. math::
         :label: Adjusted Capacity
 
-            \text{CAP}_{r,p,t,v} =
+            \textbf{CAP}_{r,p,t,v} =
             \begin{cases}
-                \text{ECAP}_{r,t,v} \cdot \text{LTS}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
+                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
                 & \text{if } t \notin T^\text{ret},\ v \in T^\text{e} \\
-                \text{NCAP}_{r,t,v} \cdot \text{LTS}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
+                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
                 & \text{if } t \notin T^\text{ret},\ v \notin T^\text{e} \\
-                \left( \text{ECAP}_{r,t,v} \cdot \text{LTS}_{r,p,t,v}
+                \left( \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
                 - \sum\limits_{p^* = v}^{p}
-                \text{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
+                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
                 & \text{if } t \in T^\text{ret},\ v \in T^\text{e} \\
-                \left( \text{NCAP}_{r,t,v} \cdot \text{LTS}_{r,p,t,v}
+                \left( \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
                 - \sum\limits_{p^* = v}^{p}
-                \text{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
+                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
                 & \text{if } t \in T^\text{ret},\ v \notin T^\text{e}
             \end{cases}
    """
 
     PLF = value(M.ProcessLifeFrac[r, p, t, v])
-    LTS = value(M.LifetimeSurvivalCurve[r, p, t, v])
+    LSC = value(M.LifetimeSurvivalCurve[r, p, t, v])
 
     if t not in M.tech_retirement:
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * LTS * PLF
+            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * LSC * PLF
         else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * LTS * PLF
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * LSC * PLF
 
     else:
         retired_cap = sum(
@@ -89,9 +90,9 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
             if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == (value(M.ExistingCapacity[r, t, v]) * LTS - retired_cap) * PLF
+            return M.V_Capacity[r, p, t, v] == (value(M.ExistingCapacity[r, t, v]) * LSC - retired_cap) * PLF
         else:
-            return M.V_Capacity[r, p, t, v] == (M.V_NewCapacity[r, t, v] * LTS - retired_cap) * PLF
+            return M.V_Capacity[r, p, t, v] == (M.V_NewCapacity[r, t, v] * LSC - retired_cap) * PLF
     
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -158,32 +159,26 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
 def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
-Similar to Capacity_Constraint, but for technologies belonging to the
-:code:`tech_annual`  set. Technologies in the tech_annual set have constant output
-across different timeslices within a year, so we do not need to ensure
-that installed capacity is sufficient across all timeslices, thus saving
-some computational effort. Instead, annual output is sufficient to calculate
-capacity.
+    Similar to Capacity_Constraint, but for technologies belonging to the
+    :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
+    across different timeslices within a year, so we do not need to ensure
+    that installed capacity is sufficient across all timeslices, thus saving
+    some computational effort. Instead, annual output is sufficient to calculate
+    capacity. Hourly capacity factors cannot be defined to annual technologies
+    but annual capacity factors can be set using LimitAnnualCapacityFactor, 
+    which will be implicitly accounted for here.
 
-.. math::
-   :label: CapacityAnnual
+    .. math::
+        :label: CapacityAnnual
 
-       \left (
-               \text{CFP}_{r, t, v}
-         \cdot \text{C2A}_{r, t}
-         \cdot \text{PLF}_{r, p, t, v}
-       \right )
-       \cdot \textbf{CAP}_{r, t, v}
-   =
-       \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+            \text{C2A}_{r, t}
+            \cdot \textbf{CAP}_{r, t, v}
+        =
+            \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
-   \\
-   \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
-
-
-"""
-    CF = 1  # placeholder CF
-
+        \\
+        \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
+    """
     activity_rptv = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
@@ -191,8 +186,7 @@ capacity.
     )
 
     return (
-        CF
-        * value(M.CapacityToActivity[r, t])
+        value(M.CapacityToActivity[r, t])
         * M.V_Capacity[r, p, t, v]
         >= activity_rptv
     )
@@ -241,26 +235,17 @@ capacity.
 def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
     r"""
 
-The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
-but is also used in the Limit constraint calculations.  For any process
-with an end-of-life (EOL) on a period boundary, all of its capacity is available
-for use in all periods in which it is active (the process' PLF is 1). However,
-for any process with an EOL that falls between periods, Temoa makes the
-simplifying assumption that the available capacity from the expiring technology
-is available through the whole period in proportion to its remaining lifetime.
-For example, if a process expires 3 years into an 8-year model time period,
-then only :math:`\frac{3}{8}` of the installed capacity is available for use
-throughout the period.
+    The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
+    but is also used in the Limit constraint calculations.
 
-.. math::
-   :label: CapacityAvailable
+    .. math::
+        :label: CapacityAvailable
 
-   \textbf{CAPAVL}_{r, p, t} = \sum_{v, p_i \leq p} {PLF}_{r, p, t, v} \cdot \left
-   ( \textbf{CAP}_{r, t, v} - \textbf{CAPRET}_{r, p_i, t, v} \right )
+        \textbf{CAPAVL}_{r, p, t} = \sum_{v, p_i \leq p} \textbf{CAP}_{r, p, t, v}
 
-   \\
-   \forall p \in \text{P}^o, r \in R, t \in T
-"""
+        \\
+        \forall p \in \text{P}^o, r \in R, t \in T
+    """
     cap_avail = sum(
         M.V_Capacity[r, p, t, S_v]
         for S_v in M.processVintages[r, p, t]
@@ -299,10 +284,26 @@ throughout the period.
 def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
     Get the annualised retirement rate for a process in a given period. 
-    Used to output retirement and model end of life flows and emissions. 
-    Assumes that retirement is evenly distributed over the model period, 
-    in the same way we assume capacity is deployed evenly over the model 
-    period.
+    Used to output retirement (including end of life, EOL) and model end of
+    life flows and emissions. Assumes that retirement is evenly distributed over
+    the model period in which that retirement occurs, in the same way we assume
+    capacity is deployed evenly over the model period. Note that
+    :math:`\textbf{CAP}_{r,p,t,v}` already accounts for retirement, survival
+    curves, and process life fraction via the AdjustedCapacity constraint.
+
+    .. math::
+        :label: Annual Retirement
+
+            ART_{r,p,t,v} =
+            \frac{1}{PL_{p}} \cdot
+            \begin{cases}
+                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}}, & \text{if } p = P_0,\ v \in T^{\text{exist}}, \text{ and EOL} \\
+                \textbf{NCAP}_{r,t,v}, & \text{if } p = v, \text{ and EOL} \\
+                \textbf{CAP}_{r,p{-}1,t,v}, & \text{if } v < p < v + LT_{r,t,v}, \text{ and EOL} \\
+                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = P_0,\ v \in T^{\text{exist}} \text{, and not EOL} \\
+                \textbf{NCAP}_{r,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = v \text{, and not EOL} \\
+                \textbf{CAP}_{r,p{-}1,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if not EOL otherwise}
+            \end{cases}
     """
     
     if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
@@ -1387,7 +1388,7 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
 
 
 def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
-    """
+    r"""
     This constraint enforces the continuity of storage level between time slices.
     storage level in the next time slice (:math:`s_{next}, d_{next}`) is equal to
     current storage level plus net charge in the current time slice.
@@ -2482,7 +2483,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     if any can be found.
     
     .. math::
-        :label: Limit (De)Growth Capacity
+        :label: Limit (De)Growth New Capacity
 
             \begin{aligned}\text{Growth:}\\
             &\mathbf{NCAP}_{r,t,v}
@@ -2592,7 +2593,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     if any can be found.
     
     .. math::
-        :label: Limit (De)Growth Capacity
+        :label: Limit (De)Growth New Capacity Delta
 
             \begin{aligned}\text{Growth:}\\
             &\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}}
@@ -2872,16 +2873,16 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
 
 def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     r"""
-    The LimitActivityShare constraint limits the activity of a given
-    technology or group as a fraction of another technology or group. This
-    can be used to set, for example, a renewable portfolio scheme constraint.
+    Limits the activity of a given technology or group as a fraction of another
+    technology or group, summed over a period. This can be used to set, for example,
+    a renewable portfolio scheme constraint.
 
     .. math::
         :label: Limit Activity Share
 
-        \sum_{R' \in R_g,\ T \in g_1,\ V,\ I,\ O,\ S,\ D} \mathbf{FO}_{r',p,s,d,i,t,v,o}
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_1} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
         \leq LAS_{r,p,g_1,g_2} \cdot
-        \sum_{R' \in R_g,\ T \in g_2,\ V,\ I,\ O,\ S,\ D} \mathbf{FO}_{r',p,s,d,i,t,v,o}
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
         
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """
@@ -3017,11 +3018,11 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     .. math::
         :label: LimitAnnualCapacityFactor
 
-            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
             
             \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
             
-            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
             
             \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
     """
@@ -3078,11 +3079,11 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     .. math::
         :label: Limit Seasonal Capacity Factor
 
-        \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+        \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
         
         \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
         
-        \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+        \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
         
         \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
     """

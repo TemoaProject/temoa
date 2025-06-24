@@ -951,28 +951,23 @@ Parameters
    ":math:`\text{DSD}_{r,p,s,d,c}`","DemandSpecificDistribution",":math:`\mathbb{I}`","Demand-specific distribution"
    ":math:`\text{EFF}_{r,i,t,v,o}`","Efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
    ":math:`\text{EAC}_{r,i,t,v,o,e}`","EmissionActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
-   ":math:`\text{ELM}_{r,p,e}`","EmissionLimit",":math:`\mathbb{R}^+_0`","Emissions limit by region and period"
    ":math:`\text{ECAP}_{r,t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
    ":math:`\text{RCAP}_{r,p,t,v}`","RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
+   ":math:`\text{ART}_{r,p,t,v}`","AnnualRetirement",":math:`\mathbb{R}^+_0`","Annualised capacity retiring or reaching end of life"
    ":math:`\text{GDR}`","GlobalDiscountRate",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{GRM}_{r,t}`","GrowthRateMax",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{GRS}_{r,t}`","GrowthRateSeed",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{LTP}_{r,t,v}`","LifetimeProcess",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime (default=LifetimeTech)"
    ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime (default=40 years)"
-   ":math:`\text{LTS}_{r,p,t,v}`","LifetimeSurvivalCurve",":math:`\mathbb{R}^+_0`","Surviving fraction of original capacity"
+   ":math:`\text{LSC}_{r,p,t,v}`","LifetimeSurvivalCurve",":math:`\mathbb{R}^+_0`","Surviving fraction of original capacity"
    ":math:`\text{LIT}_{r,t,e,t}`","LinkedTechs","text","Dummy techs used to convert CO2 emissions to physical commodity"
    ":math:`\text{LLT}_{r,t}`","LoanLifetimeTech",":math:`\mathbb{N}`","Tech-specific loan term (default=10 years)"
    ":math:`\text{LR}_{r,t,v}`","LoanRate",":math:`\mathbb{R}`","Tech-specific interest rate on investment cost"
-   ":math:`\text{MAA}_{r,p,t}`","MaxActivity",":math:`\mathbb{R}^+_0`","Maximum tech-specific activity by region and period"
-   ":math:`\text{MAC}_{r,p,t}`","MaxCapacity",":math:`\mathbb{R}^+_0`","Maximum tech-specific capacity by period"
-   ":math:`\text{MCS}_{t}`","MaxCapacitySum",":math:`\mathbb{R}^+_0`","Maximum capacity for a technology group"
-   ":math:`\text{MAR}_{r,t}`","MaxResource",":math:`\mathbb{R}^+_0`","Maximum resource production by tech across time periods (currently not supported)"
-   ":math:`\text{MIA}_{r,p,t}`","MinActivity",":math:`\mathbb{R}^+_0`","Minimum tech-specific activity by region and period"
-   ":math:`\text{MIC}_{r,p,t}`","MinCapacity",":math:`\mathbb{R}^+_0`","Minimum tech-specific capacity by period"
-   ":math:`\text{MCS}_{t}`","MinCapacitySum",":math:`\mathbb{R}^+_0`","Minimum capacity for a technology group"
-   ":math:`\text{MGT}_{r}`","MinGenGroupTarget",":math:`\mathbb{R}^+_0`","Target applied to techs in MinActivityGroup constraint"
-   ":math:`\text{MGW}_{r,t}`","MinGenGroupWeight",":math:`\mathbb{R}^+_0`","Weight applied to techs in MinActivityGroup constraint"
-   ":math:`\text{MBY}`","MyopicBaseYear",":math:`\mathbb{N}`","Objective function base year when running myopically"   
+   ":math:`\text{LE}_{r,p,e}`","LimitEmission",":math:`\mathbb{R}^+_0`","Emissions limit by region and period"
+   ":math:`\text{LA}_{r,p,t}`","LimitActivity",":math:`\mathbb{R}^+_0`","Limit tech-specific activity by region and period"
+   ":math:`\text{LC}_{r,p,t}`","LimitCapacity",":math:`\mathbb{R}^+_0`","Limit tech-specific capacity by period"
+   ":math:`\text{LR}_{r,t}`","LimitResource",":math:`\mathbb{R}^+_0`","Limit resource production by tech across time periods"
+   ":math:`\text{MDP}`","MyopicDiscountingPeriod",":math:`\mathbb{N}`","Objective function NPV year when running myopically"   
    ":math:`\text{PRM}_{r}`","PlanningReserveMargin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"   
    ":math:`\text{RMD}_{r,t}`","RampDown",":math:`\mathbb{R}`","Rate at which generation techs can ramp output down"
    ":math:`\text{RMU}_{r,t}`","RampUp",":math:`\mathbb{R}`","Rate at which generation techs can ramp output up"
@@ -1880,6 +1875,8 @@ capacity and allowable commodity flow.
 .. autofunction:: temoa_rules.CapacityAnnual_Constraint
 
 .. autofunction:: temoa_rules.AdjustedCapacity_Constraint
+
+.. autofunction:: temoa_rules.AnnualRetirement_Constraint
 
 .. autofunction:: temoa_rules.CapacityAvailableByPeriodAndTech_Constraint
 
