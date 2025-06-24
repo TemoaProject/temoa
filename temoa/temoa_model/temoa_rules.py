@@ -624,8 +624,8 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     GDR = value(M.GlobalDiscountRate)
     MPL = M.ModelProcessLife
 
-    if value(M.MyopicDiscountingP0) != 0:
-        P_0 = value(M.MyopicDiscountingP0)
+    if value(M.MyopicDiscountingYear) != 0:
+        P_0 = value(M.MyopicDiscountingYear)
 
     loan_costs = sum(
         loan_cost(

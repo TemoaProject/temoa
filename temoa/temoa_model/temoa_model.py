@@ -522,7 +522,7 @@ class TemoaModel(AbstractModel):
         M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
         M.EmissionEndOfLife = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_all)
 
-        M.MyopicDiscountingP0 = Param(default=0)
+        M.MyopicDiscountingYear = Param(default=0)
 
         ################################################
         #                 Model Variables              #

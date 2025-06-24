@@ -431,7 +431,7 @@ class HybridLoader:
                 "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
             ).fetchone()
             # load as a singleton...
-            data[M.MyopicDiscountingP0.name] = {None: int(p0[0])}
+            data[M.MyopicDiscountingYear.name] = {None: int(p0[0])}
 
         # days_per_season
         raw = cur.execute(
@@ -922,7 +922,7 @@ class HybridLoader:
         # LimitAnnualCapacityFactor
         if self.table_exists('LimitAnnualCapacityFactor'):
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, operator, factor FROM main.LimitAnnualCapacityFactor')
-            load_element(M.LimitAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
+            load_element(M.LimitAnnualCapacityFactor, raw, self.viable_rpto, (0, 1, 2, 3))
 
         # LimitGrowthCapacity
         if self.table_exists('LimitGrowthCapacity'):
