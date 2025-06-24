@@ -38,6 +38,10 @@ CREATE TABLE SeasonLabel
     season TEXT PRIMARY KEY,
     notes  TEXT
 );
+INSERT INTO SeasonLabel VALUES('summer',NULL);
+INSERT INTO SeasonLabel VALUES('fall',NULL);
+INSERT INTO SeasonLabel VALUES('winter',NULL);
+INSERT INTO SeasonLabel VALUES('spring',NULL);
 CREATE TABLE SectorLabel
 (
     sector TEXT PRIMARY KEY,
