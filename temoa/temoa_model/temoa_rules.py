@@ -299,9 +299,10 @@ throughout the period.
 def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
     Get the annualised retirement rate for a process in a given period. 
-    Used to model end of life flows and emissions. Assumes that retirement
-    is evenly distributed over the model period, in the same way we assume
-    capacity is deployed evenly over the model period.
+    Used to output retirement and model end of life flows and emissions. 
+    Assumes that retirement is evenly distributed over the model period, 
+    in the same way we assume capacity is deployed evenly over the model 
+    period.
     """
     
     if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
@@ -568,7 +569,7 @@ def loan_cost_survival_curve(
             * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
             / sum(                                          # redistributed over survival curve within horizon
                 value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
-                * fv_to_pv(GDR, p - v + 1)
+                * fv_to_pv(GDR, p - v + 1) # the +1 makes its return because LSC is indexed to start of p not end of p
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p # this shouldnt be possible but play it safe
             )
@@ -578,7 +579,7 @@ def loan_cost_survival_curve(
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
             )
-            * fv_to_pv(GDR, v - P_0)                  # finally, discounted from vintage year to P_0
+            * fv_to_pv(GDR, v - P_0)                        # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -2352,20 +2353,41 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
 
 
 def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp down rate of available capacity"""
+    r"""Constrain ramp up rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, False)
 
 def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp up rate of available capacity"""
+    r"""Constrain ramp down rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, True)
 
 def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the change of capacity available between periods. 
     Forces the model to ramp up and down the availability of new technologies 
-    more smoothly. Has constant (seed) and proportional (rate) terms.
+    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
+    (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
+    instead of one technology, in which case, capacity available is summed over
+    all technologies in the group. In the first period, previous available
+    capacity :math:`\mathbf{CAPAVL}_{r,p,t}` is replaced by previous existing 
+    capacity, if any can be found.
     
-    CapacityAvailable_(p) <= SEED + RATE * CapacityAvailable_(p-1)
+    .. math::
+        :label: Limit (De)Growth Capacity
+
+            \begin{aligned}\text{Growth:}\\
+            &\mathbf{CAPAVL}_{r,p,t}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p_{prev},t}
+            \end{aligned}
+
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
+            
+
+            \begin{aligned}\text{Degrowth:}\\
+            &\mathbf{CAPAVL}_{r,p_{prev},t}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p,t}
+            \end{aligned}
+
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
     regions = gather_group_regions(M, r)
@@ -2441,20 +2463,42 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
 
 def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp down rate of new capacity deployment"""
+    r"""Constrain ramp up rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, False)
 
 def LimitDegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp up rate of new capacity deployment"""
+    r"""Constrain ramp down rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, True)
 
 def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the change of new capacity deployed between periods. 
     Forces the model to ramp up and down the deployment of new technologies 
-    more smoothly. Has constant (seed) and proportional (rate) terms.
+    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
+    (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
+    instead of one technology, in which case, new capacity is summed over
+    all technologies in the group. In the first period, previous new capacity
+    :math:`\mathbf{NCAP}_{r,t,v_prev}` is replaced by previous existing capacity,
+    if any can be found.
     
-    NewCapacity_(p) <= SEED + RATE * NewCapacity_(p-1)
+    .. math::
+        :label: Limit (De)Growth Capacity
+
+            \begin{aligned}\text{Growth:}\\
+            &\mathbf{NCAP}_{r,t,v}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v_{prev}}
+            \text{ where } v=p
+            \end{aligned}
+            
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
+
+            \begin{aligned}\text{Degrowth:}\\
+            &\mathbf{NCAP}_{r,t,v_{prev}}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v}
+            \text{ where } v=p
+            \end{aligned}
+            
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
     regions = gather_group_regions(M, r)
@@ -2528,20 +2572,45 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     
 
 def LimitGrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp down rate of change in new capacity deployment"""
+    r"""Constrain ramp up rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, False)
 
 def LimitDegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
-    r"""Constrain ramp up rate of change in new capacity deployment"""
+    r"""Constrain ramp down rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, True)
 
 def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the acceleration of new capacity deployed between periods. 
     Forces the model to ramp up and down the change in deployment of new technologies 
-    more smoothly. Has constant (seed) and proportional (rate) terms.
+    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
+    (rate, :math:`R_{r,t}`) terms. It is recommended to leave the rate term empty 
+    as it would prevent the possibility of inflection in the rate of deployment. 
+    This constraint can be defined for a technology group instead of one technology,
+    in which case, new capacity is summed over all technologies in the group. In the
+    first period, previous new capacities are replaced by previous existing capacities,
+    if any can be found.
     
-    (NewCapacity_(p) - NewCapacity_(p-1)) <= SEED + RATE * (NewCapacity_(p-1) - NewCapacity_(p-2))
+    .. math::
+        :label: Limit (De)Growth Capacity
+
+            \begin{aligned}\text{Growth:}\\
+            &\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}})
+            \end{aligned}
+            
+            \text{ where } v_i=p
+            
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacityDelta}}
+
+            \begin{aligned}\text{Degrowth:}\\
+            &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
+            \leq S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}})
+            \end{aligned}
+            
+            \text{ where } v_i=p
+            
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
     """
 
     regions = gather_group_regions(M, r)
@@ -2653,13 +2722,15 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     .. math::
        :label: LimitActivity
 
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAA_{r, p, t}
+       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, t\} \in \Theta_{\text{LimitActivity}}
+       \forall \{r, p, t \notin T^{a}\} \in \Theta_{\text{LimitActivity}}
 
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}  \le MAA_{r, p, t}
+       +\sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
        \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{LimitActivity}}
+
+       \le LA_{r, p, t}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by
     # a + (r='Mexico+US+Canada'), or 'global'.
@@ -2699,11 +2770,16 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
 def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
     The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
-    given technology in a given year. Note that the indices for these constraints are region,
+    given technology or group in a given year. Note that the indices for these constraints are region,
     period and tech.
+
     .. math::
-       :label: LimitNewCapacity
-       \textbf{CAP}_{r, t, p} \le LIM_{r, p, t}"""
+        :label: LimitNewCapacity
+
+        \textbf{NCAP}_{r, t, v} \le LNC_{r, p, t}
+        
+        \text{where }v=p
+    """
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
@@ -2726,7 +2802,7 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     .. math::
        :label: LimitCapacity
 
-       \textbf{CAPAVL}_{r, p, t} \le MAC_{r, p, t}
+       \textbf{CAPAVL}_{r, p, t} \le LC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{LimitCapacity}}"""
     regions = gather_group_regions(M, r)
@@ -2751,9 +2827,13 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     .. math::
        :label: LimitResource
 
-       \sum_{P} \textbf{CAPAVL}_{r, p, t} \le MAR_{r, t}
+       \sum_{P,S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t \notin T^a, v, o}
 
-       \forall \{r, t\} \in \Theta_{\text{LimitCapacity}}"""
+       +\sum_{P,I,V,O} \textbf{FO}_{r, p, i, t \in T^a, v, o}
+       
+       \le LR_{r, t}
+
+       \forall \{r, t\} \in \Theta_{\text{LimitResource}}"""
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
     #            regardless of whatever "resources" are consumed.
     # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
@@ -2792,11 +2872,18 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
 
 def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     r"""
-    The LimitActivityShare constraint limits the activity share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no more than 10% of LDVs must be of a certain type.
+    The LimitActivityShare constraint limits the activity of a given
+    technology or group as a fraction of another technology or group. This
+    can be used to set, for example, a renewable portfolio scheme constraint.
+
+    .. math::
+        :label: Limit Activity Share
+
+        \sum_{R' \in R_g,\ T \in g_1,\ V,\ I,\ O,\ S,\ D} \mathbf{FO}_{r',p,s,d,i,t,v,o}
+        \leq LAS_{r,p,g_1,g_2} \cdot
+        \sum_{R' \in R_g,\ T \in g_2,\ V,\ I,\ O,\ S,\ D} \mathbf{FO}_{r',p,s,d,i,t,v,o}
+        
+        \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """
 
     regions = gather_group_regions(M, r)
@@ -2859,11 +2946,9 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
 
 def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     r"""
-    The LimitCapacityShare constraint limits the share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no more than 10% of LDVs must be of a certain type."""
+    The LimitCapacityShare constraint limits the available capacity of a given
+    technology or technology group as a fraction of another technology or group.
+    """
 
     regions = gather_group_regions(M, r)
 
@@ -2892,11 +2977,9 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
 
 def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     r"""
-    The LimitCapacityShare constraint limits the share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no more than 10% of LDV purchases in a given year must be of a certain type."""
+    The LimitNewCapacityShare constraint limits the share of new capacity
+    of a given technology or group as a fraction of another technology or
+    group."""
 
     regions = gather_group_regions(M, r)
 
@@ -2930,12 +3013,18 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
+
     .. math::
-       :label: LimitAnnualCapacityFactor
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{LimitAnnualCapacityFactor}}"""
+        :label: LimitAnnualCapacityFactor
+
+            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+            
+            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
+            
+            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+            
+            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
+    """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = gather_group_regions(M, r)
@@ -2985,12 +3074,18 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
+
     .. math::
-       :label: LimitSeasonalCapacityFactor
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}"""
+        :label: Limit Seasonal Capacity Factor
+
+        \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+        
+        \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+        
+        \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+        
+        \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+    """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = gather_group_regions(M, r)
@@ -3062,7 +3157,7 @@ def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     producing a single output. These shares can vary by model time period. See
     LimitTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
     function, only the technologies with constant annual output (i.e., members
-    of the :math:`tech_annual` set) are considered."""
+    of the :code:`tech_annual` set) are considered."""
     inp = sum(
         M.V_FlowOutAnnual[r, p, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
         for S_o in M.processOutputsByInput[r, p, t, v, i]
@@ -3160,18 +3255,16 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     r"""
     This constraint operates similarly to LimitTechOutputSplit_Constraint.
     However, under this function, only the technologies with constant annual
-    output (i.e., members of the :math:`tech_annual` set) are considered.
+    output (i.e., members of the :code:`tech_annual` set) are considered.
 
     .. math::
        :label: LimitTechOutputSplitAnnual
 
-         \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+            \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+            \geq
+            TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-       \geq
-
-         TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
-
-       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
+            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o]
         for S_i in M.processInputsByOutput[r, p, t, v, o]

@@ -28,7 +28,7 @@ Sometimes this automatic PDF generation fails. If that is the case, navigate to 
 ## In Windows
 With the Temoa virtual environment active (see README in root folder), navigate to this directory:
 
-```cd C:/<full path>/temoa3/```
+```cd C:/<full path>/temoa3/docs/```
 
 Then build the documentation with Sphinx:
 

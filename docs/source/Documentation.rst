@@ -1955,13 +1955,19 @@ operation, but allow the modeler some further degree of system specification.
 
 .. autofunction:: temoa_rules.LimitEmission_Constraint
 
-.. autofunction:: temoa_rules.LimitGrowthCapacity
-
 .. autofunction:: temoa_rules.LimitActivity_Constraint
+
+.. autofunction:: temoa_rules.LimitActivityShare_Constraint
 
 .. _MaxCapacity_Constraint:
 
 .. autofunction:: temoa_rules.LimitCapacity_Constraint
+
+.. autofunction:: temoa_rules.LimitNewCapacity_Constraint
+
+.. autofunction:: temoa_rules.LimitCapacityShare_Constraint
+
+.. autofunction:: temoa_rules.LimitNewCapacityShare_Constraint
 
 .. autofunction:: temoa_rules.LimitResource_Constraint
 
@@ -1970,6 +1976,26 @@ operation, but allow the modeler some further degree of system specification.
 .. autofunction:: temoa_rules.LimitTechInputSplit_Constraint
 
 .. autofunction:: temoa_rules.LimitTechOutputSplit_Constraint
+
+.. autofunction:: temoa_rules.LimitTechInputSplitAnnual_Constraint
+
+.. autofunction:: temoa_rules.LimitTechOutputSplitAnnual_Constraint
+
+.. autofunction:: temoa_rules.LimitTechInputSplitAverage_Constraint
+
+.. autofunction:: temoa_rules.LimitTechOutputSplitAverage_Constraint
+
+.. autofunction:: temoa_rules.LimitAnnualCapacityFactor_Constraint
+
+.. autofunction:: temoa_rules.LimitSeasonalCapacityFactor_Constraint
+
+.. autofunction:: temoa_rules.LimitStorageLevelFraction_Constraint
+
+.. autofunction:: temoa_rules.LimitGrowthCapacity
+
+.. autofunction:: temoa_rules.LimitGrowthNewCapacity
+
+.. autofunction:: temoa_rules.LimitGrowthNewCapacityDelta
 
 
 
