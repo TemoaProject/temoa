@@ -268,38 +268,64 @@ for old_name, new_name in period_added_tables:
         print('TABLE NOT FOUND: ' + old_name)
         continue
     
-    columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall() if c[1] != 'period']
-    data = con_old.execute(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    cols = [c for c in new_columns if c in old_columns]
+    data = con_old.execute(f'SELECT {str(cols)[1:-1].replace("'","")} FROM {old_name}').fetchall()
 
     if not data:
         print('No data for: ' + old_name)
         continue
     
-    if 'vintage' in columns:
-        r = columns.index('region')
-        t = columns.index('tech')
-        v = columns.index('vintage')
+    if 'vintage' in cols:
+        r = cols.index('region')
+        t = cols.index('tech')
+        v = cols.index('vintage')
+    elif 'tech' in cols:
+        r = cols.index('region')
+        t = cols.index('tech')
 
     data_new = []
     for p in time_optimize:
         for row in data:
             # Remove infeasible rows
-            if 'vintage' in columns:
+            if 'vintage' in cols:
                 if row[v] > p: continue # v <= p
                 if (row[r], row[t], row[v]) in lifetime_process: life = lifetime_process[row[r], row[t], row[v]]
                 elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
                 else: life = TemoaModel.default_lifetime_tech
                 if row[v] + life <= p: continue # v+l > p
+            elif 'tech' in cols:
+                vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE tech == "{row[t]}"').fetchall()]
+                good = False
+                for v in vints:
+                    # Can any of these vintages make p good?
+                    if v > p: continue # Nope, need v <= p
+                    if (row[r], row[t], v) in lifetime_process: life = lifetime_process[row[r], row[t], v]
+                    elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
+                    else: life = TemoaModel.default_lifetime_tech
+                    if v + life <= p: continue # Nope, need v+l > p
+                    good = True
+                if not good: continue
 
             if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
                 data_new.append((p, *row))
             else:
                 data_new.append((row[0], p, *row[1::]))
 
+    if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
+        cols = ['period',*cols]
+    else:
+        cols = [cols[0],'period',*cols[1::]]
+
     # construct the query with correct number of placeholders
     num_placeholders = len(data_new[0])
     placeholders = ','.join(['?' for _ in range(num_placeholders)])
-    query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
+    query = (
+        'INSERT OR REPLACE INTO '
+        f'{new_name}{tuple(c for c in cols) if len(cols)>1 else f'({cols[0]})'} '
+        f'VALUES ({placeholders})'
+    )
     con_new.executemany(query, data_new)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
