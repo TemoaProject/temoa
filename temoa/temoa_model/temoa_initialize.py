@@ -348,7 +348,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
         if count > 0:
             M.isEfficiencyVariable[r, p, i, t, v, o] = True
             if count < num_seg:
-                logger.warning(
+                logger.info(
                     'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
                     ' Missing values will default to value set in Efficiency table.'
                     , count, num_seg, (r, p, i, t, v, o)
@@ -382,7 +382,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
         if count > 0:
             M.isCapacityFactorProcess[r, p, t, v] = True
             if count < num_seg:
-                logger.warning(
+                logger.info(
                     'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
                     ' Missing values will default to CapacityFactorTech value or 1 if that is not set either.'
                     , count, num_seg, (r, p, t, v)
