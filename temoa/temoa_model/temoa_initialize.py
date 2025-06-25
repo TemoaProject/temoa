@@ -196,9 +196,9 @@ def validate_SegFrac(M: 'TemoaModel'):
             extra = keys.difference(expected_keys)
             missing = expected_keys.difference(keys)
             msg = (
-                'TimeSegmentFraction elements for period {} do not match PeriodSeasons and TimeOfDay.'
+                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
                 '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from PeriodSeasons/TimeOfDay:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
             ).format(p, missing, extra)
             logger.error(msg)
             raise ValueError(msg)
