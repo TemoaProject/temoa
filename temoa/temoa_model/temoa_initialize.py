@@ -559,7 +559,7 @@ def CreateDemands(M: 'TemoaModel'):
                 cross_product(M.regions, (p,), M.TimeSeason[p], M.time_of_day, unset_demand_distributions)
             )
             for r, p, s, d, dem in unset_distributions:
-                DSD[r, p, s, d, dem] = M.SegFrac[p, s, d]  # DSD._constructed = True
+                DSD[r, p, s, d, dem] = value(M.SegFrac[p, s, d])  # DSD._constructed = True
 
     # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
     #         Also check that all keys are made...  The demand distro should be supported
