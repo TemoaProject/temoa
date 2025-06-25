@@ -1910,6 +1910,16 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa_rules.SeasonalStorageEnergy_Constraint
 
+.. figure:: images/ldes_chain.*
+   :align: center
+   :width: 100%
+   :figclass: align-center
+   :figwidth: 60%
+
+   How sequential seasons chain together for seasonal storage. Hatched area 
+   is SeasonalStorageLevel and grey lines are non-sequential season states. 
+   Dashed line is SeasonalStorageEnergyUpperBound.
+
 .. autofunction:: temoa_rules.StorageEnergyUpperBound_Constraint
 
 .. autofunction:: temoa_rules.SeasonalStorageEnergyUpperBound_Constraint

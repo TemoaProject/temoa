@@ -419,6 +419,14 @@ def TotalCost_rule(M):
 
     Where :math:`Y` is the set of each integer year :math:`y` within the planning horizon.
 
+    .. figure:: images/survival_curve_discounting.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 60%
+
+        Steps 3 and 4 for processes with survival curves.
+
     Fixed, variable, and emissions annual cost factors are determined by:
 
     .. math::
