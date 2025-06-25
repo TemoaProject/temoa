@@ -663,9 +663,9 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     fixed_costs = sum(
         fixed_or_variable_cost(
-            M.V_Capacity[r, p, S_t, S_v] / value(M.ProcessLifeFrac[r, p, S_t, S_v]),
+            M.V_Capacity[r, p, S_t, S_v],
             value(M.CostFixed[r, p, S_t, S_v]),
-            value(MPL[r, p, S_t, S_v]),
+            value(M.PeriodLength[p]),
             GDR,
             P_0,
             p=p,
