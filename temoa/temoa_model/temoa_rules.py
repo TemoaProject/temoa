@@ -44,6 +44,30 @@ logger = getLogger(__name__)
 # ---------------------------------------------------------------
 
 
+def get_capacity(M: 'TemoaModel', r, p, t, v, sc_frac, pl_frac):
+    """
+    Utility function to get the remaining capacity at the beginning of a period 
+    or during a period, based on the survival curve and process life fractions supplied.
+    Used in the AdjustedCapacity_Constraint and AnnualRetirement_Constraint
+    """
+
+    if t not in M.tech_retirement:
+        if v in M.time_exist:
+            return value(M.ExistingCapacity[r, t, v]) * sc_frac * pl_frac
+        else:
+            return M.V_NewCapacity[r, t, v] * sc_frac * pl_frac
+    else:
+        previous_retirements = sum(
+            M.V_RetiredCapacity[r, S_p, t, v]
+            for S_p in M.time_optimize
+            if v < S_p < p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
+        )
+        if v in M.time_exist:
+            return (value(M.ExistingCapacity[r, t, v]) * sc_frac - previous_retirements) * pl_frac
+        else:
+            return (M.V_NewCapacity[r, t, v] * sc_frac - previous_retirements) * pl_frac
+
+
 def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
     This constraint updates the capacity of a process by taking into account retirements
@@ -73,26 +97,57 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
                 & \text{if } t \in T^\text{ret},\ v \notin T^\text{e}
             \end{cases}
    """
+    
+    sc_frac = value(M.PeriodSurvivalCurve[r, p, t, v])
+    pl_frac = value(M.ProcessLifeFrac[r, p, t, v])
+    return M.V_Capacity[r, p, t, v] == get_capacity(M, r, p, t, v, sc_frac, pl_frac)
+        
 
-    PLF = value(M.ProcessLifeFrac[r, p, t, v])
-    LSC = value(M.PeriodSurvivalCurve[r, p, t, v])
+def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Get the annualised retirement rate for a process in a given period. 
+    Used to output retirement (including end of life, EOL) and model end of
+    life flows and emissions. Assumes that retirement is evenly distributed over
+    the model period in which that retirement occurs, in the same way we assume
+    capacity is deployed evenly over the model period. Note that
+    :math:`\textbf{CAP}_{r,p,t,v}` already accounts for retirement, survival
+    curves, and process life fraction via the AdjustedCapacity constraint.
 
-    if t not in M.tech_retirement:
-        if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * LSC * PLF
-        else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * LSC * PLF
+    .. math::
+        :label: Annual Retirement
 
+            ART_{r,p,t,v} =
+            \frac{1}{LEN_{p}} \cdot
+            \begin{cases}
+                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}}, & \text{if } p = P_0,\ v \in T^{\text{exist}}, \text{ and EOL} \\
+                \textbf{NCAP}_{r,t,v}, & \text{if } p = v, \text{ and EOL} \\
+                \textbf{CAP}_{r,p{-}1,t,v}, & \text{if } v < p < v + LT_{r,t,v}, \text{ and EOL} \\
+                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = P_0,\ v \in T^{\text{exist}} \text{, and not EOL} \\
+                \textbf{NCAP}_{r,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = v \text{, and not EOL} \\
+                \textbf{CAP}_{r,p{-}1,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if not EOL otherwise}
+            \end{cases}
+    """
+
+    # First, get the remaining capacity at the beginning of this period
+    sc_frac_begin = value(M.LifetimeSurvivalCurve[r, p, t, v])
+    capacity_begin = get_capacity(M, r, p, t, v, sc_frac_begin, 1)
+    
+    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+        # If this is the end-of-life period, just return the beginning capacity. It all retires
+        retired = capacity_begin
     else:
-        retired_cap = sum(
-            M.V_RetiredCapacity[r, S_p, t, v]
-            for S_p in M.time_optimize
-            if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
-        )
-        if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == (value(M.ExistingCapacity[r, t, v]) * LSC - retired_cap) * PLF
-        else:
-            return M.V_Capacity[r, p, t, v] == (M.V_NewCapacity[r, t, v] * LSC - retired_cap) * PLF
+        # If not EOL period, need capacity at the end of this period too
+        # (i.e., at the beginning of the next period)
+        p_next = M.time_future.next(p)
+        sc_frac_end = value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+        capacity_end = get_capacity(M, r, p_next, t, v, sc_frac_end, 1)
+
+        retired = capacity_begin - capacity_end
+
+    # Distribute retirement evenly over planning period
+    retired /= value(M.PeriodLength[p])
+
+    return M.V_AnnualRetirement[r, p, t, v] == retired
     
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -279,67 +334,6 @@ def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
 #         cap_avail = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
 #     expr = M.V_RetiredCapacity[r, p, t, v] <= cap_avail
 #     return expr
-
-
-def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
-    r"""
-    Get the annualised retirement rate for a process in a given period. 
-    Used to output retirement (including end of life, EOL) and model end of
-    life flows and emissions. Assumes that retirement is evenly distributed over
-    the model period in which that retirement occurs, in the same way we assume
-    capacity is deployed evenly over the model period. Note that
-    :math:`\textbf{CAP}_{r,p,t,v}` already accounts for retirement, survival
-    curves, and process life fraction via the AdjustedCapacity constraint.
-
-    .. math::
-        :label: Annual Retirement
-
-            ART_{r,p,t,v} =
-            \frac{1}{LEN_{p}} \cdot
-            \begin{cases}
-                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}}, & \text{if } p = P_0,\ v \in T^{\text{exist}}, \text{ and EOL} \\
-                \textbf{NCAP}_{r,t,v}, & \text{if } p = v, \text{ and EOL} \\
-                \textbf{CAP}_{r,p{-}1,t,v}, & \text{if } v < p < v + LT_{r,t,v}, \text{ and EOL} \\
-                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = P_0,\ v \in T^{\text{exist}} \text{, and not EOL} \\
-                \textbf{NCAP}_{r,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = v \text{, and not EOL} \\
-                \textbf{CAP}_{r,p{-}1,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if not EOL otherwise}
-            \end{cases}
-    """
-    
-    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
-        # EOL this period
-        if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Remaining existing capacity in last existing period
-            retired = (
-                value(M.ExistingCapacity[r, t, v])
-                * M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v]
-            )
-        elif p == v:
-            # New capacity in its vintage period. All new capacity
-            retired = M.V_NewCapacity[r, t, v]
-        else:
-            # Mid-horizon retirement
-            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
-    else:
-        if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Remaining existing capacity in last
-            # existing period minus remaining capacity
-            retired = (
-                value(M.ExistingCapacity[r, t, v])
-                * value(M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v])
-                - M.V_Capacity[r, p, t, v]
-            )
-        elif p == v:
-            # New capacity in its vintage period. New capacity minus remaining capacity
-            retired = M.V_NewCapacity[r, t, v] - M.V_Capacity[r, p, t, v]
-        else:
-            # Existing or new capacity in some mid-life period. Previous minus current remaining
-            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v] - M.V_Capacity[r, p, t, v]
-
-    # Distribute retirement evenly over planning period
-    retired /= value(M.PeriodLength[p])
-
-    return M.V_AnnualRetirement[r, p, t, v] == retired
 
 
 # ---------------------------------------------------------------
