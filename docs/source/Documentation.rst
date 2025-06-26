@@ -725,11 +725,12 @@ Sets
    :widths: 8, 28, 14, 50
 
    ":math:`{}^*\text{C}`",":code:`commodity_all`","string","union of all commodity sets"
+   ":math:`\text{C}^s`",":code:`commodity_source`","string","input sources (not balanced by CommodityBalance_Constraint)"
    ":math:`\text{C}^d`",":code:`commodity_demand`","string","end-use demand commodities"
    ":math:`\text{C}^e`",":code:`commodity_emissions`","string","emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`)"
    ":math:`\text{C}^p`",":code:`commodity_physical`","string","general energy forms (e.g. electricity, coal, uranium, oil)"
-   ":math:`\text{C}^a`",":code:`commodity_annual`","string","same as commodity physical but flows are only balanced over each period"
-   ":math:`\text{C}^w`",":code:`commodity_waste`","string","physical or annual commodity for which production can be greater than consumption"
+   ":math:`\text{C}^a`",":code:`commodity_annual`","string","same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`)"
+   ":math:`\text{C}^w`",":code:`commodity_waste`","string","production can be greater than consumption. can be physical, annual, or neither (not balanced)"
    ":math:`{}^*\text{C}^c`",":code:`commodity_carrier`","string","physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`)"
    ":math:`\text{I}`",,"string","alias of :math:`\text{C}^p`; used in documentation only to mean ""input"""
    ":math:`\text{O}`",,"string","alias of :math:`\text{C}^c`; used in documentation only to mean ""output"""
@@ -946,16 +947,16 @@ Parameters
    ":math:`\text{CF}_{r,p,t,v}`","CostFixed",":math:`\mathbb{R}`","Fixed operations \& maintenance cost"
    ":math:`\text{CI}_{r,t,v}`","CostInvest",":math:`\mathbb{R}`","Tech-specific investment cost"
    ":math:`\text{CV}_{r,p,t,v}`","CostVariable",":math:`\mathbb{R}`","Variable operations \& maintenance cost"
+   ":math:`\text{CON}_{r,i,t,v}`","ConstructionInput",":math:`\mathbb{R}`","Commodities consumed by creation of process capacity"
    ":math:`\text{DEM}_{r,p,c}`","Demand",":math:`\mathbb{R}^+_0`","End-use demands, by period"
    ":math:`\text{DDD}_{p,s,d}`","DemandDefaultDistribution",":math:`\mathbb{I}`","Default demand distribution (currently not supported)"
    ":math:`\text{DSD}_{r,p,s,d,c}`","DemandSpecificDistribution",":math:`\mathbb{I}`","Demand-specific distribution"
    ":math:`\text{EFF}_{r,i,t,v,o}`","Efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
    ":math:`\text{EAC}_{r,i,t,v,o,e}`","EmissionActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
    ":math:`\text{EE}_{r,t,v,e}`","EmissionEmbodied",":math:`\mathbb{R}`","Emissions associated with the creation of capacity"
-   ":math:`\text{EE}_{r,t,v,e}`","EmissionEndOfLife",":math:`\mathbb{R}`","Emissions associated with the retirement/end of life of capacity"
+   ":math:`\text{EEOL}_{r,t,v,e}`","EmissionEndOfLife",":math:`\mathbb{R}`","Emissions associated with the retirement/end of life of capacity"
+   ":math:`\text{EOLO}_{r,t,v,o}`","EndOfLifeOutput",":math:`\mathbb{R}`","Commodities produced by retirement/end of life of capacity"
    ":math:`\text{ECAP}_{r,t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
-   ":math:`\text{RCAP}_{r,p,t,v}`","RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
-   ":math:`\text{ART}_{r,p,t,v}`","AnnualRetirement",":math:`\mathbb{R}^+_0`","Annualised capacity retiring or reaching end of life"
    ":math:`\text{GDR}`","GlobalDiscountRate",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{LTP}_{r,t,v}`","LifetimeProcess",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime (default=LifetimeTech)"
    ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime (default=40 years)"
@@ -1106,6 +1107,17 @@ of activity. Thus the incurred variable costs are proportional to the activity
 of the process.
 
 
+ConstructionInput
+^^^^^^^^^^^^^^^^^
+
+:math:`{CON}_{r \in R, i \in C^p,t \in T \setminus T^u,v \in V}`
+
+The :code:`ConstructionInput` parameter allows the modeller to attach commodity
+input flows to the production of new capacity, in units of activity per unit
+capacity. Assumes that capacity is produced evenly over years in its vintage
+period.
+
+
 .. _Demand:
 
 Demand
@@ -1185,17 +1197,57 @@ to account for emissions per unit activity, but it more accurately describes
 :math:`e \in C^e` set restriction).
 
 
-EmissionLimit
-^^^^^^^^^^^^^
+EmissionEmbodied
+^^^^^^^^^^^^^^^^
 
-:math:`{ELM}_{r \in R, p \in P, e \in C^e}`
+:math:`{EE}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
 
-The :code:`EmissionLimit` parameter ensures that Temoa finds a solution that
-fits within the modeler-specified limit of emission :math:`e` in time period
-:math:`p`.
+Like the EmissionActivity parameter, but attaches emission outputs to the creation
+of capacity instead of activity flows. Assumes that capacity is produced evenly
+over each year in the deployment vintage.
+
+
+EmissionEndOfLife
+^^^^^^^^^^^^^^^^^
+
+:math:`{EEOL}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
+
+Like EmissionEmbodied, but attaches emissions to the retirement/end of life of
+capacity rather than production of capacity. Assumes that retirement or end of
+life occur evenly over years in that period.
+
+
+EndOfLifeOutput
+^^^^^^^^^^^^^^^
+
+:math:`{EOLO}_{r \in R,t \in T \setminus T^u, v \in V,o \in C_p}`
+
+Like ConstructionInput, but attaches flows to the retirement/end of life of
+capacity rather than production of capacity. Assumes that retirement or end of
+life occur evenly over years in that period.
+
+
+.. LimitEmission
+.. ^^^^^^^^^^^^^
+
+.. :math:`{LE}_{r \in R, p \in P, e \in C^e}`
+
+.. The :code:`EmissionLimit` parameter ensures that Temoa finds a solution that
+.. fits within the modeler-specified limit of emission :math:`e` in time period
+.. :math:`p`.
 
 
 ExistingCapacity
+^^^^^^^^^^^^^^^^
+
+:math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
+
+The :code:`ExistingCapacity` parameter defines the capacity installed prior to the
+beginning of :code:`time_optimize`. Note that processes with existing capacity
+require all of the engineering-economic characteristics of a standard process,
+with the exception of an investment cost.
+
+RetiredCapacity
 ^^^^^^^^^^^^^^^^
 
 :math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
@@ -1692,6 +1744,10 @@ Variables
    ":math:`CAPAVL_{r,p,t}`","V_CapacityAvailable ByPeriodAndTech",":math:`\mathbb{R}^+_0`","Derived variable representing the capacity of technology :math:`t` available in period :math:`p`"
    ":math:`SI_{r,t,v}`","V_StorageInit",":math:`\mathbb{R}^+_0`","Initial charge level associated with storage techs"
    ":math:`SL_{r,p,s,d,t,v}`","V_StorageLevel",":math:`\mathbb{R}^+_0`","Charge level each time slice associated with storage techs"
+   ":math:`SSL_{r,p,s,t,v}`","V_SeasonalStorageLevel",":math:`\mathbb{R}^+_0`","Base charge level of sequential seasons for seasonal storage"
+   ":math:`RCAP_{r,p,t,v}`","V_RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
+   ":math:`ART_{r,p,t,v}`","V_AnnualRetirement",":math:`\mathbb{R}^+_0`","Annualised capacity retiring or reaching end of life"
+   ":math:`NCAP_{r,t,v}`","V_NewCapacity",":math:`\mathbb{R}^+_0`","New deployed capacity"
 
 V_FlowOut
 ^^^^^^^^^

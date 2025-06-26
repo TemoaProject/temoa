@@ -361,17 +361,17 @@ def TotalCost_rule(M):
 
         \begin{aligned}
             C_{loans} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot \textbf{NCAP}_{r, t, v}
-            && \text{overnight capital cost} \\
+            && \text{(overnight capital cost)} \\
             &\cdot \frac{A}{P}(i=\text{LR}_{r,t,v}, N=\text{LLP}_{r,t,v})
-            && \text{overnight cost amortised into annual loan payments} \\
+            && \text{(overnight cost amortised into annual loan payments)} \\
             &\cdot \frac{P}{A}(i=GDR, N=\text{LLP}_{r,t,v})
-            && \text{annual loan payments discounted to NPV in vintage year} \\
+            && \text{(annual loan payments discounted to NPV in vintage year)} \\
             &\cdot \frac{A}{P}(i=GDR, N=\text{LTP}_{r,t,v})
-            && \text{NPV reamortised over lifetime of process using GDR} \\
+            && \text{(NPV reamortised over lifetime of process using GDR)} \\
             &\cdot \frac{P}{A}(i=GDR, N=\min(\text{LTP}_{r,t,v}, P_e - v))
-            && \text{costs within planning horizon discounted to NPV in vintage year} \\
+            && \text{(costs within planning horizon discounted to NPV in vintage year)} \\
             &\cdot \frac{P}{F}(i=GDR, N=v - P_0)
-            && \text{NPV in vintage year discounted to base year } P_0 \\
+            && \text{(NPV in vintage year discounted to base year } P_0\text{)} \\
         \end{aligned}
 
     Note that capital costs (:math:`{CI}_{r,t,v}`) are handled in several steps.
@@ -402,19 +402,19 @@ def TotalCost_rule(M):
 
         \begin{aligned}
             C_{loans,LSC} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot \textbf{NCAP}_{r, t, v}
-            && \text{overnight capital cost} \\
+            && \text{(overnight capital cost)} \\
             &\cdot \frac{A}{P}(i=\text{LR}_{r,t,v}, N=\text{LLP}_{r,t,v})
-            && \text{overnight cost amortised into annual loan payments} \\
+            && \text{(overnight cost amortised into annual loan payments)} \\
             &\cdot \frac{P}{A}(i=GDR, N=\text{LLP}_{r,t,v})
-            && \text{annual loan payments discounted to NPV in vintage year} \\
+            && \text{(annual loan payments discounted to NPV in vintage year)} \\
             &\cdot \left(
                 \sum_{v < Y} LSC_{r,y,t,v} \cdot \frac{P}{F}(i=GDR, N=P - v + 1)
                 \right)^{-1}
-            && \text{reamortised over survival curve (normalized)} \\
+            && \text{(reamortised over survival curve (normalized)} \\
             &\cdot \sum_{v < Y < P_e} LSC_{r,y,t,v} \cdot \frac{P}{F}(i=GDR, N=P - v + 1)
-            && \text{costs within planning horizon discounted to NPV in vintage year} \\
+            && \text{(costs within planning horizon discounted to NPV in vintage year)} \\
             &\cdot \frac{P}{F}(i=GDR, N=v - P_0)
-            && \text{NPV in vintage year discounted to base year } P_0
+            && \text{(NPV in vintage year discounted to base year } P_0 \text{)}
         \end{aligned}
 
     Where :math:`Y` is the set of each integer year :math:`y` within the planning horizon.
@@ -434,35 +434,35 @@ def TotalCost_rule(M):
 
         \begin{aligned}
             C_{fixed} =& \sum_{r, p, t, v \in \Theta_{CF}} CF_{r, p, t, v} \cdot \textbf{CAP}_{r, p, t, v}
-            && \text{annual fixed cost} \\
+            && \text{(annual fixed cost)} \\
             \\
             C_{variable} =& \sum_{r, p, t \notin T^a, v \in \Theta_{CV}}
             CV_{r, p, t, v} \cdot \sum_{S, D, I, O} \mathbf{FO}_{r, p, s, d, i, t, v, o}
-            && \text{annual variable cost on flow} \\
+            && \text{(annual variable cost on flow)} \\
             & \text{where } t \notin T^a \\
             &+\\
             & \sum_{r, p, t \in T^a,\ v \in \Theta_{VC}} CV_{r, p, t, v}
             \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
-            && \text{annual variable cost on annual flows} \\
+            && \text{(annual variable cost on annual flows)} \\
             & \text{where } t \in T^a \\
             &+\\
             C_{emissions} =& \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
             \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{S, D, I, O} \mathbf{FO}_{r, p, s, d, i, t, v, o}
-            && \text{annual emission cost on flow} \\
+            && \text{(annual emission cost on flow)} \\
             & \text{where } t \notin T^a \\
             &+\\
             & \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
             \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
-            && \text{annual emission cost on annual flows} \\
+            && \text{(annual emission cost on annual flows)} \\
             & \text{where } t \in T^a \\
             &+\\
             & \sum_{r, p, e \in \Theta_{CE}} \frac{CE_{r, p, e}
             \cdot EE_{r, e, t, v} \cdot \mathbf{NCAP}_{r, t, v=p}}{{LEN}_p}
-            && \text{annual embodied emission cost} \\
+            && \text{(annual embodied emission cost)} \\
             &+\\
             & \sum_{r, p, e \in \Theta_{CE}, v} CE_{r, p, e}
             \cdot EEOL_{r, e, t, v} \cdot \mathbf{ART}_{r, p, t, v}
-            && \text{annual retirement/end of life emission cost} \\
+            && \text{(annual retirement/end of life emission cost)} \\
         \end{aligned}
 
     Each of these costs are then discounted within each period then to the base year:
@@ -473,9 +473,9 @@ def TotalCost_rule(M):
         \begin{aligned}
             C_{fix,var,emiss} =& C_{fixed} + C_{variable} + C_{emissions} \\
             &\cdot \frac{P}{A}(i=GDR,\ N=LEN_p)
-            && \text{for each year in period } p \text{ discounted to NPV in } p \\
+            && \text{(for each year in period } p \text{ discounted to NPV in } p \text{)}\\
             &\cdot \frac{P}{F}(i=GDR,\ N=p - P_0)
-            && \text{discounted from period } p \text{ to NPV in base year } P_0
+            && \text{(discounted from period } p \text{ to NPV in base year } P_0 \text{)}
         \end{aligned}
     """
 
@@ -1014,7 +1014,10 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     the latter is technology- rather than commodity-focused and is used in the
     :code:`Capacity_Constraint` to track output that is used to produce useful
     output and the amount curtailed, and to ensure that the installed capacity
-    covers both.
+    covers both. Alternatively, the commodity can be added to the
+    :code:`commodity_waste` set, for which this equality constraint becomes an
+    inequality constraint, allowing production to exceed consumption for a single
+    commodity.
 
     This constraint also accounts for imports and exports between regions
     when solving multi-regional systems. The import (:math:`\textbf{FIM}`) and export
@@ -1023,30 +1026,45 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     respectively, which are defined in :code:`temoa_initialize.py` by parsing the
     :code:`tech_exchange` processes.
 
+    Consumption of the commodity by construction inputs is annualised using the period
+    length. Production of the commodity by end-of-life outputs uses the AnnualRetirement
+    variable, which is already annualised.
+
     Finally, for annual commodities, AnnualCommodityBalance is used which balances
     the sum of flows over each year.
 
-    *production + imports = consumption + exports + flex waste*
+    *process outputs + imports + end of life outputs = process inputs + construction inputs + exports + flex waste*
 
     .. math::
        :label: CommodityBalance
 
-           \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, c}
-           +
-           &\sum_{reg} \textbf{FIM}_{r-reg, p, s, d, i, t, v, c} \; \forall reg \neq r
-           \\
-           = &\sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
-           \\ &\quad +
-           \sum_{T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-           \\
-           &\quad + \; SEG_{s,d} \cdot
-           \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o} \\
-           &\quad + \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \; \forall reg \neq r
-           \\ &\quad + \;
-           \textbf{FLX}_{r, p, s, d, i, t, v, c}
+            \begin{aligned}
+            &\sum_{I, t \notin T^a, V} \mathbf{FO}_{r, p, s, d, i, t, v, c}
+            && \text{(processes outputting commodity)} \\
+            &+ SEG_{s,d} \cdot \sum_{I, t \in T^a, V} \frac{\mathbf{FOA}_{r, p, i, t, v, c}}{EFF_{r, i, t, v, c}}
+            && \text{(annual processes outputting commodity)} \\
+            &+ \sum_{\text{reg} \neq r, I, t \in T^x, V} \mathbf{FIM}_{r - \text{reg}, p, s, d, i, t, v, c}
+            && \text{(inter-regional imports of commodity)} \\
+            &+ SEG_{s,d} \sum_{T, V} \left ( EOLO_{r, t, v, c} \cdot \textbf{ART}_{r, p, t, v} \right )
+            && \text{(end-of-life outputs of commodity)} \\
+            &\begin{cases}
+            &= \text{if } c \notin C^w \\
+            &>= \text{if } c \in C^w \end{cases} \\
+            &\sum_{t \in T^s, V, O} \mathbf{FIS}_{r, p, s, d, c, t, v, o}
+            && \text{(commodity stored)} \\
+            &+ \sum_{t \notin T^s, V, O} \frac{\mathbf{FO}_{r, p, s, d, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            && \text{(commodity consumed by processes)} \\
+            &+ SEG_{s,d} \cdot \sum_{t \in T^a, V, O} \frac{\mathbf{FOA}_{r, p, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            && \text{(commodity consumed by annual processes)} \\
+            &+ \sum_{\text{reg} \neq r, t \in T^x, V, O} \mathbf{FEX}_{r - \text{reg}, p, s, d, c, t, v, o}
+            && \text{(inter-regional exports of commodity)} \\
+            &+ \sum_{I, t \in T^f, V} \mathbf{FLX}_{r, p, s, d, i, t, v, c}
+            && \text{(flex wastes of commodity)} \\
+            &+ SEG_{s,d} \cdot \sum_{T, V} \left ( CON_{r, c, t, v} \cdot \frac{\textbf{NCAP}_{r, t, v}}{LEN_p} \right )
+            && \text{(consumed annually by construction inputs)}
+            \end{aligned}
 
-           \\
-           &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
+            \qquad \forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
     """
     if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
