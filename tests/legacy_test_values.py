@@ -89,7 +89,8 @@ test_vals = {
     'survival_curve': {
         # added 2025/06/19 after addition of survival curves
         # reduced after changing fixed costs from MLP to PL
-        ExpectedVals.OBJ_VALUE: 31.8004,
+        # increased after adding PeriodSurvivalCurve
+        ExpectedVals.OBJ_VALUE: 31.9452,
         ExpectedVals.EFF_DOMAIN_SIZE: 64,
         ExpectedVals.EFF_INDEX_SIZE: 8,
         ExpectedVals.CONSTR_COUNT: 101,

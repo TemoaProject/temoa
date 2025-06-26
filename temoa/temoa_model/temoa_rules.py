@@ -75,7 +75,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
    """
 
     PLF = value(M.ProcessLifeFrac[r, p, t, v])
-    LSC = value(M.LifetimeSurvivalCurve[r, p, t, v])
+    LSC = value(M.PeriodSurvivalCurve[r, p, t, v])
 
     if t not in M.tech_retirement:
         if v in M.time_exist:
@@ -295,7 +295,7 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
         :label: Annual Retirement
 
             ART_{r,p,t,v} =
-            \frac{1}{PL_{p}} \cdot
+            \frac{1}{LEN_{p}} \cdot
             \begin{cases}
                 \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}}, & \text{if } p = P_0,\ v \in T^{\text{exist}}, \text{ and EOL} \\
                 \textbf{NCAP}_{r,t,v}, & \text{if } p = v, \text{ and EOL} \\
@@ -1049,7 +1049,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             && \text{(end-of-life outputs of commodity)} \\
             &\begin{cases}
             &= \text{if } c \notin C^w \\
-            &>= \text{if } c \in C^w \end{cases} \\
+            &\geq \text{if } c \in C^w \end{cases} \\
             &\sum_{t \in T^s, V, O} \mathbf{FIS}_{r, p, s, d, c, t, v, o}
             && \text{(commodity stored)} \\
             &+ \sum_{t \notin T^s, V, O} \frac{\mathbf{FO}_{r, p, s, d, c, t, v, o}}{EFF_{r, c, t, v, o}}
@@ -3516,6 +3516,11 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     calculate the fraction of the period that the technology is able to
     create useful output.
     """
+    if M.isSurvivalCurveProcess[r, t, v]:
+        # survival curves handle this problem separately, by averaging survival
+        # over the period
+        return 1
+
     eol_year = v + value(M.LifetimeProcess[r, t, v])
     frac = eol_year - p
     period_length = value(M.PeriodLength[p])
@@ -3527,6 +3532,15 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
 
     frac /= float(period_length)
     return frac
+
+
+def PeriodSurvivalCurve_rule(M: 'TemoaModel', r, p, t, v):
+    """Get the average fraction of the survival curve in period p"""
+    if not M.isSurvivalCurveProcess[r, t, v]:
+        return 1
+    LSC = M.LifetimeSurvivalCurve
+    PL = value(M.PeriodLength[p])
+    return sum(value(LSC[r, _p, t, v]) for _p in range(p, p + PL, 1)) / PL
 
 
 # devnote: made redundant by time-value equations for objective function
