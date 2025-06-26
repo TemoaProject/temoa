@@ -351,7 +351,7 @@ def TotalCost_rule(M):
     Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
     function calculates the cost of energy supply, under the assumption that capital
     costs are paid through loans. This implementation sums up all the costs incurred,
-    and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable} + C_{emission}`.
+    and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable} + C_{emissions}`.
     Each term on the right-hand side represents the cost incurred over the model
     time horizon and discounted to the initial year in the horizon (:math:`{P}_0`).
     The calculation of each term is given below.
@@ -489,7 +489,7 @@ def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     .. math::
         :label: annuity_to_pv
 
-        \frac{P}{A}(i, N) = \frac{(1 + i)^N - 1}{i \cdot (1 + i)^N}
+        \frac{P}{A}(i, N) = \frac{(1 + i)^N - 1}{i (1 + i)^N}
 
     where:
 
@@ -1003,7 +1003,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     that the supply exceeds the endogenous demand. Refineries represent a
     common example, where the share of different refined products are governed
     by TechOutputSplit, but total production is driven by a particular commodity
-    like gasoline. Such a situtation can result in the overproduction of other
+    like gasoline. Such a situation can result in the overproduction of other
     refined products, such as diesel or kerosene. In such cases, we need to
     track the excess production of these commodities. To do so, the technology
     producing the excess commodity should be added to the :code:`tech_flex` set.
@@ -1464,6 +1464,10 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             + \sum\limits_{I,O} \mathbf{FIS}_{r,p,s,d,i,t,v,o} \cdot {EFF}_{r,i,t,v,o}
             - \sum\limits_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
             = {SL}_{r,p,s_{{next}},d_{{next}},t,v}
+
+    Note that for all seasonal representations except sequential days, the last time slice
+    of each season will loop back to the first time slice of the same season, preventing 
+    seasonal deltas for non-seasonal storage (see SeasonalStorageEnergyUpperBound).
     """
 
     # We allow a non-zero daily delta only in the case of seasonal storage
@@ -1502,22 +1506,37 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
     over that entire day, adjusted for number of days represented by sequential vs non-sequential
     seasons. Only applies to storage technologies in the :code:`tech_seasonal_storage` set.
     :math:`s^*` represents the matching non-sequential season for the sequential season
-    :math:`s_{seq}`.
+    :math:`s^{seq}`.
 
     .. math::
         :label: Storage Energy (Sequential Seasons)
 
-            \mathbf{SSL}_{r,p,s_{seq},t,v}
-            + DA_{r,p,s_{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{first},t,v} +
-                \sum_{I,O} \mathbf{FI}_{r,p,s^*,d_{first},i,t,v,o} \cdot EFF_{r,p,i,t,v,o}
-                - \sum_{I,O} \mathbf{FO}_{r,p,s^*,d_{first},i,t,v,o}
-                \right)
+        \mathbf{SSL}_{r,p,s^{seq},t,v}
+        + DA_{r,p,s^{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{first},t,v} +
+        \sum_{D,I,O} \mathbf{FI}_{r,p,s^*,d,i,t,v,o} \cdot EFF_{r,i,t,v,o}
+        - \sum_{D,I,O} \mathbf{FO}_{r,p,s^*,d,i,t,v,o}
+        \right)
 
-            = DA_{r,p,s_{seq,next}} \cdot \mathbf{SL}_{r,p,s^*_{next},d_{first},t,v}
-            + \mathbf{SSL}_{r,p,s_{seq}^{next},t,v}
+        = DA_{r,p,s^{seq}_{next}} \cdot \mathbf{SL}_{r,p,s_{next}^*,d_{first},t,v}
+        + \mathbf{SSL}_{r,p,s^{seq}_{next},t,v}
 
-            \\
-            \text{where } DA_{r,p,s_{seq}} = \frac{\#days_{s_{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+        \\
+        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+
+    .. figure:: images/ldes_chain.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 60%
+
+        How sequential seasons chain together for seasonal storage. Hatched area is 
+        SeasonalStorageLevel :math:`SSL_{r,p,s^{seq},t,v}`. Vertical lines are 
+        StorageLevel :math:`SL_{r,p,s^*,d,t,v}`. Green line is net seasonal storage 
+        level :math:`SSL_{r,p,s^{seq},t,v} + SL_{r,p,s^*,d,t,v}`. Background grey 
+        lines show how storage levels from non-sequential seasons are combined 
+        in sequential seasons. Dashed line is SeasonalStorageEnergyUpperBound. 
+        Sequential seasons two and four here are each two days while one and three 
+        are each one day.
     """
 
     s = M.sequential_to_season[p, s_seq]
@@ -1559,7 +1578,6 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
 
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
-
     This constraint ensures that the amount of energy stored does not exceed
     the upper bound set by the energy capacity of the storage device, as calculated
     on the right-hand side.
@@ -1584,6 +1602,17 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
 
+    A season can represent many days. Within each season, flows are multiplied by the
+    number of days each season represents and, so, the upper bound needs to be adjusted
+    to allow day-scale flows (e.g., charge in the morning, discharge in the afternoon).
+    
+    .. figure:: images/daily_storage_representation.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 40%
+
+        Representation of a 3-day season for non-seasonal (daily) storage.
     """
 
     if M.isSeasonalStorage[t]:
@@ -1605,29 +1634,53 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity 
     of seasonal storage, summing the real storage level with the superimposed sequential 
-    seasonal storage level. A season can represent many days. Within each season, flows 
-    are multiplied by the number of days each season represents, and so the upper bound 
-    needs to be adjusted to allow day-scale flows (e.g., charge in the morning, discharge 
-    in the afternoon). However, between seasons, whole-day charge deltas have built up, 
-    multiplied by the number of days the season represents. These deltas stack, 
-    possibly exceeding our upper bound by a factor of :math:`\frac{N-1}{N}` where :math:`N`
-    is the number of days the season represents. Additionally, if we allowed these stacked 
-    deltas to carry between seasons then we would be multiplying the effective energy
-    capacity of the storage. So, we do not adjust the bound for seasonal storage. This
-    limits the ability of seasonal storage to perform arbitrage within each season, but
-    allows it to carry energy between seasons. :math:`s^*` represents the matching 
-    non-sequential season for the sequential season :math:`s_{seq}`.
+    seasonal storage level. :math:`s^*` represents the matching non-sequential season for
+    the sequential season :math:`s^{seq}`.
 
     .. math::
         :label: Seasonal Storage Energy Capacity
 
-        \mathbf{SSL}_{r,p,s_{seq},t,v}
-        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot DA_{r,p,s_{seq}}
+        \mathbf{SSL}_{r,p,s^{seq},t,v}
+        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot DA_{r,p,s^{seq}}
         \leq \mathbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac{SD_{r,t}}{24 \cdot DPP}
 
         \\
 
-        \text{where } DA_{r,p,s_{seq}} = \frac{\#days_{s_{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}    
+
+    
+    
+    Unlike non-seasonal (daily) storage, seasonal storage is allowed to carry energy
+    between seasons. However, through seasons representing multiple days, many days' 
+    charge deltas have accumulated, multiplied by the number of days the season
+    represents. If we allowed these stacked deltas to carry between seasons then we would
+    be multiplying the effective energy capacity of the storage. We could just constrain
+    the seasonal delta to the unadjusted energy capacity, but then the final day in the
+    season would sit atop a season's worth of deltas, possibly exceeding our upper or
+    lower bound by a factor of :math:`\frac{N-1}{N}` where :math:`N` is the number of
+    days the sequential season represents.
+
+    .. figure:: images/ldes_delta_problem.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 100%
+
+        The energy upper bound or non-negative lower bound could be violated in a
+        season representing multiple days if we both adjusted the upper bound to
+        the number of days and allowed a seasonal delta.
+
+    So, we do not adjust the upper energy bound for seasonal storage. This limits the
+    ability of seasonal storage to perform arbitrage within each season, but allows it to
+    carry energy between seasons realistically.
+
+    .. figure:: images/ldes_delta_representation.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 40%
+
+        Unadjusted energy upper bound constraint for seasonal storage.
     """
 
     s = M.sequential_to_season[p, s_seq]
@@ -1853,6 +1906,10 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
+            \\
+            \text{where: } \Delta H_{r,p,s,d,s_{next},d_{next}} = \frac{24}{2}
+            \left ( \frac{SEG_{r,p,s,d}}{\sum_{D} SEG_{r,p,s,d'}} +
+            \frac{SEG_{r,p,s_{next},d_{next}}}{\sum_{D} SEG_{r,p,s_{next},d'}} \right )
 
     where:
 
@@ -1970,9 +2027,9 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampDay but only applies to the boundary 
-    between seasons, i.e., :math:`(s,d_{last})` to :math:`(s_{next},d_{first})`
-    and :math:`s_{next}` is based on the TimeSequential table rather than the 
+    of sequential seasons. Same as RampUpDay but only applies to the boundary 
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
     TimeSeason table.
     """
 
@@ -2019,9 +2076,9 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampDay but only applies to the boundary 
-    between seasons, i.e., :math:`(s,d_{last})` to :math:`(s_{next},d_{first})`
-    and :math:`s_{next}` is based on the TimeSequential table rather than the 
+    of sequential seasons. Same as RampDownDay but only applies to the boundary 
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
     TimeSeason table.
     """
 
