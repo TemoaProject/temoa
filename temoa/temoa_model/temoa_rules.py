@@ -49,29 +49,52 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     This constraint updates the capacity of a process by taking into account retirements
     and end of life. For a given :code:`(r,p,t,v)` index, this constraint sets the capacity
     equal to the amount installed in period :code:`v` and subtracts from it any and all retirements
-    that occurred up until the period in question, :code:`p`, and end of life from the
+    that occurred prior to the period in question, :code:`p`, and end of life from the
     survival curve if defined. It finally adjusts for the process life fraction, which
     accounts for a possible mid-period end of life where, for example, EOL 3 years into a 5-year
     period would be treated as :math:`\frac{3}{5}` capacity for all 5 years.
+
+    .. figure:: images/adjusted_capacity_plf.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 50%
+
+        For processes reaching end of life mid-period, the process life fraction adjustment is applied,
+        distributing the effective capacity over the whole period.
+
+    For processes using survival curves, the yearly survival curve is averaged over the period 
+    to get the effective remaining capacity for that period :math:`(\text{LSC}_{r,p,t,v} \to
+    \text{PSC}_{r,p,t,v})`. Because this implicitly handles mid-period end of life, the process
+    life fraction parameter :math:`\text{PLF}_{r,p,t,v} = 1` for survival curve processes.
+    For processes not using survival curves, :math:`\text{PSC}_{r,p,t,v} = 1`
+
+    .. figure:: images/adjusted_capacity_sc.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 50%
+
+        For processes with a defined survival curve, the surviving capacity is averaged over each
+        period to get the adjusted capacity. This implicitly handles mid-period end of life as a
+        survival curve will always be zero after the end of life of a process.
     
     .. math::
         :label: Adjusted Capacity
 
             \textbf{CAP}_{r,p,t,v} =
             \begin{cases}
-                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \in T^\text{e} \\
-                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \notin T^\text{e} \\
-                \left( \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \in T^\text{e} \\
-                \left( \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \notin T^\text{e}
+                \left( \text{ECAP}_{r,t,v} \cdot \text{PSC}_{r,p,t,v}
+                - \sum\limits_{v < p' < p}
+                \textbf{RCAP}_{r,p',t,v} \right) \cdot \text{PLF}_{r,p,t,v}
+                & \text{if } \ v \in T^\text{e} \\
+                \left( \textbf{NCAP}_{r,t,v} \cdot \text{PSC}_{r,p,t,v}
+                - \sum\limits_{v < p' < p}
+                \textbf{RCAP}_{r,p',t,v} \right) \cdot \text{PLF}_{r,p,t,v}
+                & \text{if } \ v \notin T^\text{e}
             \end{cases}
+
+    
    """
 
     if v in M.time_exist:
@@ -99,8 +122,8 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     life flows and emissions. Assumes that retirement is evenly distributed over
     the model period in which that retirement occurs, in the same way we assume
     capacity is deployed evenly over the model period. This formulation is
-    similar to the AdjustedCapacity constraint defining \textbf{CAP}_{r,p,t,v}
-    except that the AdjustedCapacity constraint uses PeriodSurvivalCurve, which
+    similar to the :code:`AdjustedCapacity_Constraint` defining \textbf{CAP}_{r,p,t,v}
+    except that the :code:`AdjustedCapacity_Constraint` uses PeriodSurvivalCurve, which
     is the LifetimeSurvivalCurve averaged over each planning period. This
     constraint uses LifetimeSurvivalCurve directly, which is the surviving
     fraction at the beginning of each period.
@@ -110,19 +133,21 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
 
             \textbf{ART}_{r,p,t,v} =
             \begin{cases}
-                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \in T^\text{e} \\
-                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \notin T^\text{e} \\
-                \left( \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \in T^\text{e} \\
-                \left( \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \notin T^\text{e}
+                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} 
+                - \sum\limits_{v < p' < p} \textbf{RCAP}_{r,p',t,v}
+                & \text{if } v \in T^\text{e} \text{ and EOL} \\
+                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} 
+                - \sum\limits_{v < p' < p} \textbf{RCAP}_{r,p',t,v}
+                & \text{if } v \notin T^\text{e} \text{ and EOL} \\
+                \text{ECAP}_{r,t,v} \cdot \left( \text{LSC}_{r,p,t,v}
+                - \text{LSC}_{r,p_{next},t,v} \right) + \textbf{RCAP}_{r,p,t,v}
+                & \text{if } v \in T^\text{e} \text{ and not EOL} \\
+                \text{NCAP}_{r,t,v} \cdot \left( \text{LSC}_{r,p,t,v}
+                - \text{LSC}_{r,p_{next},t,v} \right) + \textbf{RCAP}_{r,p,t,v}
+                & \text{if } v \notin T^\text{e} \text{ and not EOL} \\
             \end{cases}
+            
+            \\\text{where EOL when } p \leq v + LFP_{r,t,v} < p + LEN_p
     """
 
     lsc = value(M.LifetimeSurvivalCurve[r, p, t, v])
