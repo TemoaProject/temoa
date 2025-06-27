@@ -90,7 +90,7 @@ test_vals = {
         # added 2025/06/19 after addition of survival curves
         # reduced after changing fixed costs from MLP to PL
         # increased after adding PeriodSurvivalCurve
-        ExpectedVals.OBJ_VALUE: 31.9452,
+        ExpectedVals.OBJ_VALUE: 31.9423,
         ExpectedVals.EFF_DOMAIN_SIZE: 64,
         ExpectedVals.EFF_INDEX_SIZE: 8,
         ExpectedVals.CONSTR_COUNT: 101,

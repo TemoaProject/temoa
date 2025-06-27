@@ -431,6 +431,18 @@ def CreateCapacityFactors(M: 'TemoaModel'):
     # CFP._constructed = True
 
 
+def get_default_survival(M: 'TemoaModel', r, p, t, v):
+    """
+    Getting LifetimeSurvivalCurve where it is not defined
+    If this is a survival curve process, return 0 (likely beyond EOL)
+    Otherwise return 1 (no survival curve based EOL)
+    """
+    if M.isSurvivalCurveProcess[r, t, v]:
+        return 0
+    else:
+        return 1
+
+
 def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     """
     This initializer used to initialize the LifetimeProcess parameter from LifetimeTech where needed
@@ -1253,6 +1265,14 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             msg = (
                 'LifetimeSurvivalCurve must be defined starting in the vintage period. Must '
                 f'define ({r}, >{v}<, {t}, {v})'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        if value(M.LifetimeSurvivalCurve[r, v, t, v]) != 1:
+            msg = (
+                'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. ',
+                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
             )
             logger.error(msg)
             raise ValueError(msg)

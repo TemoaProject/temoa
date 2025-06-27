@@ -340,7 +340,7 @@ class TemoaModel(AbstractModel):
             Integers,
             M.tech_all,
             M.vintage_all,
-            default=1,
+            default=get_default_survival,
             validate=validate_0to1,
             mutable=True
         )
