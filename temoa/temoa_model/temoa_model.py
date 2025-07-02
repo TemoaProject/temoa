@@ -429,8 +429,6 @@ class TemoaModel(AbstractModel):
         M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
 
-        M.PeriodSurvivalCurve = Param(M.CostFixed_rptv, initialize=PeriodSurvivalCurve_rule)
-
         M.LimitCapacityConstraint_rpt = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.operator
         )

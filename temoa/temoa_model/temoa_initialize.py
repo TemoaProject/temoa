@@ -1438,20 +1438,6 @@ def EmissionActivityIndices(M: 'TemoaModel'):
 #     return indices
 
 
-def PeriodSurvivalCurveIndices(M: 'TemoaModel'):
-    """
-    (region, period, tech, vintage) tuples where a process with a survival curve is
-    active with non-zero surviving capacity
-    """
-    indices = set(
-        (r, p, t, v)
-        for r, t, v in M.survivalCurvePeriods
-        for p in M.survivalCurvePeriods[r, t, v]
-    )
-
-    return indices
-
-
 def ModelProcessLifeIndices(M: 'TemoaModel'):
     """\
 Returns the set of sensical (region, period, tech, vintage) tuples.  The tuple indicates

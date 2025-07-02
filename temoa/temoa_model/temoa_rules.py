@@ -63,11 +63,10 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
         For processes reaching end of life mid-period, the process life fraction adjustment is applied,
         distributing the effective capacity over the whole period.
 
-    For processes using survival curves, the yearly survival curve is averaged over the period 
-    to get the effective remaining capacity for that period :math:`(\text{LSC}_{r,p,t,v} \to
-    \text{PSC}_{r,p,t,v})`. Because this implicitly handles mid-period end of life, the process
-    life fraction parameter :math:`\text{PLF}_{r,p,t,v} = 1` for survival curve processes.
-    For processes not using survival curves, :math:`\text{PSC}_{r,p,t,v} = 1`
+    For processes using survival curves, the yearly survival curve :math:`\text{LSC}_{r,p,t,v}` is
+    averaged over the period to get the effective remaining capacity for that period  Because this
+    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both 
+    phenomena.
 
     .. figure:: images/adjusted_capacity_sc.*
         :align: center
@@ -84,105 +83,131 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
 
             \textbf{CAP}_{r,p,t,v} =
             \begin{cases}
-                \left( \text{ECAP}_{r,t,v} \cdot \text{PSC}_{r,p,t,v}
-                - \sum\limits_{v < p' < p}
-                \textbf{RCAP}_{r,p',t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } \ v \in T^\text{e} \\
-                \left( \textbf{NCAP}_{r,t,v} \cdot \text{PSC}_{r,p,t,v}
-                - \sum\limits_{v < p' < p}
-                \textbf{RCAP}_{r,p',t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } \ v \notin T^\text{e}
+                \text{PLF}_{r,p,t,v} \cdot
+                \left(
+                \text{ECAP}_{r,t,v} - \sum\limits_{v < p' <= p}
+                \frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}
+                \right)
+                & \text{if } \ v \in T^e \\
+                \text{PLF}_{r,p,t,v} \cdot
+                \left(
+                \textbf{NCAP}_{r,t,v} - \sum\limits_{v < p' <= p}
+                \frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}
+                \right)
+                & \text{if } \ v \notin T^e
             \end{cases}
 
-    
-   """
+            \\\text{where } 
+            \text{PLF}_{r,p,t,v} = 
+            \begin{cases}
+                \frac{1}{\text{LEN}_p} \cdot \left(
+                \sum\limits_{y = p}^{p+\text{LEN}_{p}-1}{\text{LSC}_{r,y,t,v}}
+                \right)
+                & \text{if } t \in T^{sc} \\
+                \frac{1}{\text{LEN}_p} \cdot \left( v + \text{LTP}_{r,t,v} - p \right)
+                & \text{if } t \notin T^{sc} \\
+            \end{cases}
+
+    We divide :math:`\frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}`
+    because the average survival factor in :math:`\text{PLF}_{r,p,t,v}` is indexed to the vintage
+    period (the beginning of the survival curve). So, we adjust for the relative survival from
+    the time when that retirement occurred (treated here as at the beginning of each period).
+    """
 
     if v in M.time_exist:
         built_capacity = value(M.ExistingCapacity[r, t, v])
     else:
         built_capacity = M.V_NewCapacity[r, t, v]
 
-    previous_retirements = 0
+    early_retirements = 0
     if t in M.tech_retirement:
-        previous_retirements = sum(
-            M.V_RetiredCapacity[r, S_p, t, v]
+        early_retirements = sum(
+            M.V_RetiredCapacity[r, S_p, t, v] / value(M.LifetimeSurvivalCurve[r, S_p, t, v])
             for S_p in M.time_optimize
-            if v < S_p < p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
+            if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
 
-    remaining_capacity = (built_capacity * value(M.PeriodSurvivalCurve[r, p, t, v]) - previous_retirements)
-    plf_adjusted = remaining_capacity * value(M.ProcessLifeFrac[r, p, t, v])
-    return M.V_Capacity[r, p, t, v] == plf_adjusted
+    remaining_capacity = (built_capacity - early_retirements) * value(M.ProcessLifeFrac[r, p, t, v])
+    return M.V_Capacity[r, p, t, v] == remaining_capacity
         
 
 def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
     Get the annualised retirement rate for a process in a given period. 
-    Used to output retirement (including end of life, EOL) and model end of
-    life flows and emissions. Assumes that retirement is evenly distributed over
-    the model period in which that retirement occurs, in the same way we assume
-    capacity is deployed evenly over the model period. This formulation is
-    similar to the :code:`AdjustedCapacity_Constraint` defining \textbf{CAP}_{r,p,t,v}
-    except that the :code:`AdjustedCapacity_Constraint` uses PeriodSurvivalCurve, which
-    is the LifetimeSurvivalCurve averaged over each planning period. This
-    constraint uses LifetimeSurvivalCurve directly, which is the surviving
-    fraction at the beginning of each period.
+    Used to output retirement (including end of life, EOL) and to model end of
+    life flows and emissions. Assumes that retirement from the beginning of each period
+    is evenly distributed over that model period :math:`\frac{1}{\text{LEN}_p}`
+    for the accounting of retirement flows (in the same way we assume capacity is
+    deployed evenly over the model period for construction inputs and embodied emissions).
+    The factor :math:`\frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}}`
+    adjusts the average survival during a period to the survival at the beginning
+    of that period.
 
     .. math::
         :label: Annual Retirement
 
             \textbf{ART}_{r,p,t,v} =
             \begin{cases}
-                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} 
-                - \sum\limits_{v < p' < p} \textbf{RCAP}_{r,p',t,v}
-                & \text{if } v \in T^\text{e} \text{ and EOL} \\
-                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} 
-                - \sum\limits_{v < p' < p} \textbf{RCAP}_{r,p',t,v}
-                & \text{if } v \notin T^\text{e} \text{ and EOL} \\
-                \text{ECAP}_{r,t,v} \cdot \left( \text{LSC}_{r,p,t,v}
-                - \text{LSC}_{r,p_{next},t,v} \right) + \textbf{RCAP}_{r,p,t,v}
-                & \text{if } v \in T^\text{e} \text{ and not EOL} \\
-                \text{NCAP}_{r,t,v} \cdot \left( \text{LSC}_{r,p,t,v}
-                - \text{LSC}_{r,p_{next},t,v} \right) + \textbf{RCAP}_{r,p,t,v}
-                & \text{if } v \notin T^\text{e} \text{ and not EOL} \\
+                \frac{1}{\text{LEN}_p} \cdot
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                & \text{if EOL} \\
+                \frac{1}{\text{LEN}_p} \cdot 
+                \left( 
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
+                \right)
+                & \text{otherwise} \\
             \end{cases}
             
-            \\\text{where EOL when } p \leq v + LFP_{r,t,v} < p + LEN_p
+            \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
     """
-
-    lsc = value(M.LifetimeSurvivalCurve[r, p, t, v])
-
-    if v in M.time_exist:
-        built_capacity = value(M.ExistingCapacity[r, t, v])
+    
+    ## Get the capacity at the start of this period
+    if p == v + value(M.LifetimeProcess[r, t, v]):
+        # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
+        if p == M.time_optimize.first():
+            # Must be existing capacity. Apply survival curve to existing cap
+            cap_begin = M.ExistingCapacity[r, t, v] * M.LifetimeSurvivalCurve[r, p, t, v]
+        else:
+            # Get previous capacity and continue survival curve
+            p_prev = M.time_optimize.prev(p)
+            cap_begin = (
+                M.V_Capacity[r, p_prev, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p, t, v])
+                / value(M.ProcessLifeFrac[r, p_prev, t, v])
+            )
     else:
-        built_capacity = M.V_NewCapacity[r, t, v]
+        # The capacity at the beginning of the period
+        cap_begin = (
+            M.V_Capacity[r, p, t, v]
+            * value(M.LifetimeSurvivalCurve[r, p, t, v])
+            / value(M.ProcessLifeFrac[r, p, t, v])
+        )
 
-    # Handle end of life period
+    ## Get the capacity at the end of this period
     if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+        # EOL so capacity ends on zero
+        cap_end = 0
+    else:
+        # Mid-life period, ending capacity is beginning capacity of next period
+        p_next = M.time_future.next(p)
 
-        previous_retirements = 0
-        if t in M.tech_retirement:
-            previous_retirements = sum(
-                M.V_RetiredCapacity[r, S_p, t, v]
-                for S_p in M.time_optimize
-                if v < S_p < p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
+        if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
+            # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
+            cap_end = (
+                cap_begin
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.LifetimeSurvivalCurve[r, p, t, v])
+            )
+        else:
+            # Get the next period's beginning capacity
+            cap_end = (
+                M.V_Capacity[r, p_next, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.ProcessLifeFrac[r, p_next, t, v])
             )
 
-        # Retire everything surviving to this point
-        retired = built_capacity * lsc - previous_retirements
-
-    # Handle mid-life periods
-    else:
-        lsc_next = value(M.LifetimeSurvivalCurve[r, M.time_future.next(p), t, v])
-
-        early_retirement = 0
-        if t in M.tech_retirement:
-            early_retirement = M.V_RetiredCapacity[r, p, t, v]
-
-        # Anything that does not survive this period plus early retirement in this period
-        retired = built_capacity * (lsc - lsc_next) + early_retirement
-
-    annualised_retirement = retired / M.PeriodLength[p]
+    annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
     return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
     
 
@@ -495,7 +520,7 @@ def TotalCost_rule(M):
             && \text{(annual retirement/end of life emission cost)} \\
         \end{aligned}
 
-    Each of these costs are then discounted within each period then to the base year:
+    Each of these costs are then discounted within each period and then to the base year:
 
     .. math::
         :label: obj_fixed_variable_emission
@@ -3538,39 +3563,29 @@ def ParamPeriodLength(M: 'TemoaModel', p):
 
 def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     r"""
+    Get the effective capacity of a process :math:`<r, t, v>` in a period :math:`p`.
 
-    Calculate the fraction of period p that process :math:`<t, v>` operates.
-
-    For most processes and periods, this will likely be one, but for any process
-    that will cease operation (rust out, be decommissioned, etc.) between periods,
-    calculate the fraction of the period that the technology is able to
-    create useful output.
+    Accounts for mid-period end of life or average survival over the period
+    for processes using survival curves.
     """
-    if M.isSurvivalCurveProcess[r, t, v]:
-        # survival curves handle this problem separately, by averaging survival
-        # over the period
-        return 1
 
-    eol_year = v + value(M.LifetimeProcess[r, t, v])
-    frac = eol_year - p
     period_length = value(M.PeriodLength[p])
-    if frac >= period_length:
+
+    if M.isSurvivalCurveProcess[r, t, v]:
+        # Sum survival fraction over the period
+        years_remaining = sum(
+            value(M.LifetimeSurvivalCurve[r, _p, t, v]) for _p in range(p, p + period_length, 1)
+        )
+    else:
+        # Remaining life years within the EOL period
+        years_remaining = v + value(M.LifetimeProcess[r, t, v]) - p
+    
+    if years_remaining >= period_length:
         # try to avoid floating point round-off errors for the common case.
         return 1
 
-        # number of years into final period loan is complete
-
-    frac /= float(period_length)
+    frac = years_remaining / float(period_length)
     return frac
-
-
-def PeriodSurvivalCurve_rule(M: 'TemoaModel', r, p, t, v):
-    """Get the average fraction of the survival curve in period p"""
-    if not M.isSurvivalCurveProcess[r, t, v]:
-        return 1
-    LSC = M.LifetimeSurvivalCurve
-    PL = value(M.PeriodLength[p])
-    return sum(value(LSC[r, _p, t, v]) for _p in range(p, p + PL, 1)) / PL
 
 
 # devnote: made redundant by time-value equations for objective function
