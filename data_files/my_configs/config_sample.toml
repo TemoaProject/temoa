@@ -84,7 +84,7 @@ save_lp_file = false
 
 # What seasons represent in the model
 # Options:
-#   'sequential_days'
+#   'consecutive_days'
 #       Seasons are a set of days in order, with each season representing only one day. Examples 
 #       might be a model of a representative week with 7 days or a whole-year model with 365 days.
 #       Seasonal storage need not be tagged and the TimeSeasonSequential table can be left empty.

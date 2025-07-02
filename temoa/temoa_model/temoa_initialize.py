@@ -1096,8 +1096,8 @@ def CreateTimeSequence(M: 'TemoaModel'):
 
     # Establishing sequence of states
     match M.TimeSequencing.first():
-        case 'sequential_days':
-            msg = 'Running a sequential days database.'
+        case 'consecutive_days':
+            msg = 'Running a consecutive days database.'
             for p in M.time_optimize:
                 for s, d in M.TimeSeason[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
@@ -1156,7 +1156,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         return
 
     if not M.TimeSeasonSequential:
-        if M.TimeSequencing.first() in ('sequential_days', 'seasonal_timeslices'):
+        if M.TimeSequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
             logger.info(
                 'No data in TimeSeasonSequential. By default, assuming sequential seasons '
                 'match TimeSeason and TimeSegmentFraction.'
@@ -1181,9 +1181,9 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
     sequential = dict()
     for p, s_seq, s in M.TimeSeasonSequential:
         num_days = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'sequential_days' and abs(num_days - 1.0) >= 0.01:
+        if M.TimeSequencing.first() == 'consecutive_days' and abs(num_days - 1.0) >= 0.01:
             msg = (
-                'TimeSequencing set to sequential_days but a season in the TimeSegmentFraction table does not '
+                'TimeSequencing set to consecutive_days but a season in the TimeSegmentFraction table does not '
                 f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {num_days}. '
                 'Check the config file.'
             )
@@ -1751,7 +1751,7 @@ def RampDownDayConstraintIndices(M: 'TemoaModel'):
 
 
 def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
-    if M.TimeSequencing.first() == 'sequential_days':
+    if M.TimeSequencing.first() == 'consecutive_days':
         return Set.Skip # dont need this constraint
     
     # s, s_next indexing ensures we dont build redundant constraints
@@ -1770,7 +1770,7 @@ def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
 
 
 def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
-    if M.TimeSequencing.first() == 'sequential_days':
+    if M.TimeSequencing.first() == 'consecutive_days':
         return Set.Skip # dont need this constraint
     
     # s, s_next indexing ensures we dont build redundant constraints
