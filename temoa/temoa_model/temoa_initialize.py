@@ -377,8 +377,8 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
     for (r, p, t, v), count in count_rptv.items():
+        num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
         if count > 0:
             M.isCapacityFactorProcess[r, p, t, v] = True
             if count < num_seg:
