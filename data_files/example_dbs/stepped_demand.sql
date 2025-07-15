@@ -1033,7 +1033,8 @@ CREATE TABLE PlanningReserveMargin
     region TEXT
         PRIMARY KEY
         REFERENCES Region (region),
-    margin REAL
+    margin REAL,
+    notes TEXT
 );
 CREATE TABLE RampDownHourly
 (
@@ -1041,6 +1042,7 @@ CREATE TABLE RampDownHourly
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE RampUpHourly
@@ -1049,6 +1051,7 @@ CREATE TABLE RampUpHourly
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE Region

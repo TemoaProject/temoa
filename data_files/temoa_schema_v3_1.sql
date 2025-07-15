@@ -830,7 +830,8 @@ CREATE TABLE IF NOT EXISTS PlanningReserveMargin
     region TEXT
         PRIMARY KEY
         REFERENCES Region (region),
-    margin REAL
+    margin REAL,
+    notes TEXT
 );
 CREATE TABLE IF NOT EXISTS RampDownHourly
 (
@@ -838,6 +839,7 @@ CREATE TABLE IF NOT EXISTS RampDownHourly
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE IF NOT EXISTS RampUpHourly
@@ -846,6 +848,7 @@ CREATE TABLE IF NOT EXISTS RampUpHourly
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE IF NOT EXISTS Region

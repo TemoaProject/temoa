@@ -958,29 +958,32 @@ CREATE TABLE PlanningReserveMargin
     region TEXT
         PRIMARY KEY
         REFERENCES Region (region),
-    margin REAL
+    margin REAL,
+    notes TEXT
 );
-INSERT INTO PlanningReserveMargin VALUES('A',0.05000000000000000277);
+INSERT INTO PlanningReserveMargin VALUES('A',0.05000000000000000277,NULL);
 CREATE TABLE RampDownHourly
 (
     region TEXT,
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampDownHourly VALUES('A','EH',0.05000000000000000277);
-INSERT INTO RampDownHourly VALUES('B','EH',0.05000000000000000277);
+INSERT INTO RampDownHourly VALUES('A','EH',0.05000000000000000277,NULL);
+INSERT INTO RampDownHourly VALUES('B','EH',0.05000000000000000277,NULL);
 CREATE TABLE RampUpHourly
 (
     region TEXT,
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampUpHourly VALUES('B','EH',0.05000000000000000277);
-INSERT INTO RampUpHourly VALUES('A','EH',0.05000000000000000277);
+INSERT INTO RampUpHourly VALUES('B','EH',0.05000000000000000277,NULL);
+INSERT INTO RampUpHourly VALUES('A','EH',0.05000000000000000277,NULL);
 CREATE TABLE Region
 (
     region TEXT
