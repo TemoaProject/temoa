@@ -25,9 +25,10 @@ https://westernspark.us
 Created on:  11/9/24
 
 """
+
 import pytest
 
-from temoa.extensions.monte_carlo.mc_run import TweakFactory, RowData
+from temoa.extensions.monte_carlo.mc_run import RowData, TweakFactory
 
 
 @pytest.fixture(scope='module')

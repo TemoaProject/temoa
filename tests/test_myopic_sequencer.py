@@ -70,7 +70,7 @@ def test_characterize_run(param):
 
     ms.characterize_run(future_periods=list(range(5)))
     assert len(ms.instance_queue) == param['expected_steps'], (
-        'number of myopic iterations does not match expected ' 'number of iterations'
+        'number of myopic iterations does not match expected number of iterations'
     )
 
     # pop the last myopic index from the queue and inspect it.  Should be same for both cases

@@ -27,6 +27,7 @@ Created on:  11/11/24
 Simple analyzer--example only
 
 """
+
 from math import sqrt
 from pathlib import Path
 from sqlite3 import Connection

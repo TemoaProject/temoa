@@ -180,12 +180,12 @@ def test_build_from_db(mock_db_connection):
     """test a couple values in the load"""
     conn, expected = mock_db_connection
     network_data = network_model_data._build_from_db(conn)
-    assert (
-        len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands']
-    ), 'demand count failed'
-    assert (
-        len(network_data.available_techs['R1', 2020]) == expected['techs']
-    ), '6 techs are available'
+    assert len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands'], (
+        'demand count failed'
+    )
+    assert len(network_data.available_techs['R1', 2020]) == expected['techs'], (
+        '6 techs are available'
+    )
 
 
 @pytest.mark.parametrize(

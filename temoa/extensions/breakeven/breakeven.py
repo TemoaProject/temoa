@@ -3,8 +3,8 @@ import sys
 from collections import defaultdict
 from time import time
 
-import CplexSolverError
 import cplex
+import CplexSolverError
 import pandas as pd
 from matplotlib import pyplot as plt
 from openpyxl import Workbook

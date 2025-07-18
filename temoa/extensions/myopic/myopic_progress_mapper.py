@@ -64,7 +64,7 @@ class MyopicProgressMapper:
         print(time_buffer, end='')
         print('*' * tot_length)
         print()
-        print(f"{'HH:MM:SS':10s}", end='')
+        print(f'{"HH:MM:SS":10s}', end='')
         print(' ', end='')
         for year in self.years:
             print(f'{self.leader}{year}{self.trailer}  ', end='')
@@ -72,7 +72,7 @@ class MyopicProgressMapper:
 
     def timestamp(self) -> str:
         delta = datetime.now() - self.hack
-        return f'{int(delta.total_seconds()//3600):02d}:{int(delta.total_seconds()%3600//60):02d}:{int(delta.total_seconds())%60:02d}   '
+        return f'{int(delta.total_seconds() // 3600):02d}:{int(delta.total_seconds() % 3600 // 60):02d}:{int(delta.total_seconds()) % 60:02d}   '
 
     def report(self, mi: MyopicIndex, status):
         if status not in {'load', 'solve', 'report', 'check'}:

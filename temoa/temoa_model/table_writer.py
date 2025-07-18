@@ -1,6 +1,7 @@
 """
 tool for writing outputs to database tables
 """
+
 import sqlite3
 import sys
 from collections import defaultdict
@@ -16,16 +17,16 @@ from temoa.extensions.monte_carlo.mc_run import ChangeRecord
 from temoa.temoa_model.data_brick import DataBrick
 from temoa.temoa_model.exchange_tech_cost_ledger import CostType
 from temoa.temoa_model.table_data_puller import (
-    poll_capacity_results,
-    poll_flow_results,
-    FI,
-    FlowType,
     EI,
-    _marks,
+    FI,
     CapData,
-    poll_objective,
+    FlowType,
+    _marks,
+    poll_capacity_results,
     poll_cost_results,
     poll_emissions,
+    poll_flow_results,
+    poll_objective,
 )
 from temoa.temoa_model.temoa_config import TemoaConfig
 from temoa.temoa_model.temoa_mode import TemoaMode

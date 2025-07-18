@@ -27,6 +27,7 @@ Created on:  6/2/24
 This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated (outside
 of class) to enable parallelization.
 """
+
 import logging
 import sqlite3
 import sys
@@ -128,6 +129,6 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
     morris_objectives = [float(Y_OF), float(Y_CumulativeCO2)]
     logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, Y_OF)
     if not config.silent:
-        sys.stdout.write(f'Completed MM run {i+1}\n')
+        sys.stdout.write(f'Completed MM run {i + 1}\n')
         sys.stdout.flush()
     return morris_objectives

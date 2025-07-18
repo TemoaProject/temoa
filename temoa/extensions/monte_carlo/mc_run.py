@@ -25,7 +25,8 @@ https://westernspark.us
 Created on:  11/9/24
 
 """
-from collections import namedtuple, defaultdict
+
+from collections import defaultdict, namedtuple
 from collections.abc import Generator
 from itertools import product
 from logging import getLogger
@@ -230,9 +231,9 @@ class MCRunFactory:
         """
         with open(self.settings_file, 'r') as f:
             header = f.readline().strip()
-            assert (
-                header == 'run,param,index,mod,value,notes'
-            ), 'header should be: run,param,index,mod,value,notes'
+            assert header == 'run,param,index,mod,value,notes', (
+                'header should be: run,param,index,mod,value,notes'
+            )
             current_run = -1
             for idx, row in enumerate(f.readlines(), start=2):
                 rd = self.tweak_factory.row_parser(idx, row)

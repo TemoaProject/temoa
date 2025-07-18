@@ -78,10 +78,10 @@ myopic_index                   BY        SY       LDY       LY
 The model generally expects one extra period after the last period
 to be optimized for the purpose of setting the last optimization
 interval length.  So, when parsing out the "middle years" in myopic mode
-we need to stop gathering demands in the 2nd year when we have a 3 year 
+we need to stop gathering demands in the 2nd year when we have a 3 year
 view depth.
 
-If the myopic view depth is 1 period, and therefore, the step can 
+If the myopic view depth is 1 period, and therefore, the step can
 only be 1 period, then:
 FY = LDY                (we just need data that FY period)
 SY = FY + 1 period      (we are going to step 1 period)

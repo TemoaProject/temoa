@@ -8,7 +8,6 @@ from pyomo.opt import SolverFactory
 from pyomo.pysp.ef import create_ef_instance
 from pyomo.pysp.scenariotree.manager import ScenarioTreeManagerClientSerial
 
-
 # To see detailed information about options
 # for name in options.keys():
 #    print(options.about(name))
@@ -63,9 +62,10 @@ def solve_pf(p_model, p_data):
         # obj_name, obj_value = objs[0], value(objs[1]())
         # return obj_value
 
-    import sys
     import os
-    from collections import deque, defaultdict
+    import sys
+    from collections import defaultdict, deque
+
     from pyomo.pysp.util.scenariomodels import scenario_tree_model
 
     (head, tail) = os.path.split(p_model)

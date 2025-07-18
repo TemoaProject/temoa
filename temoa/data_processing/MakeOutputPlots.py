@@ -4,10 +4,13 @@ import sys
 import matplotlib
 
 matplotlib.use('Agg')
-from matplotlib import pyplot as plt, cm as cmx, colors
-import random
-import os
 import argparse
+import os
+import random
+
+from matplotlib import cm as cmx
+from matplotlib import colors
+from matplotlib import pyplot as plt
 
 
 class OutputPlotGenerator:
@@ -234,7 +237,7 @@ class OutputPlotGenerator:
         ]
 
     def color_distance(self, c1, c2):
-        return sum([abs(x[0] - x[1]) for x in zip(c1, c2)])
+        return sum([abs(x[0] - x[1]) for x in zip(c1, c2, strict=False)])
 
     def get_cmap(self, N):
         """Returns a function that maps each index in 0, 1, ... N-1 to a distinct

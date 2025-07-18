@@ -13,7 +13,7 @@ https://groups.google.com/forum/#!topic/temoa-project/SEqlvJOpnb0
 
 1. Install SALib (pip install SALib). It's an open source python sensitivity analysis library.
 
-2. Download the attached file and put it in your "temoa-energysystem" directory. Basically what this script does, is reading the baseline values of the parameters you want to do the sensitivity analysis on (say price of a specific fuel or technology), perturbing them by -+10% and creating text files which include all the parameters and their corresponding ranges of change (0.9*baseline=lower bound, 1.1*baseline=upper bound), sending the text files to SALib to generate the sampling matrix (param_values parameter in the script), running the model with the sampling matrix as many times as needed (you can control the number of the runs changing the N in line 141), reading the objective function values and CO2 emissions from the database for each run and sending their corresponding values to SALib to do the analysis. 
+2. Download the attached file and put it in your "temoa-energysystem" directory. Basically what this script does, is reading the baseline values of the parameters you want to do the sensitivity analysis on (say price of a specific fuel or technology), perturbing them by -+10% and creating text files which include all the parameters and their corresponding ranges of change (0.9*baseline=lower bound, 1.1*baseline=upper bound), sending the text files to SALib to generate the sampling matrix (param_values parameter in the script), running the model with the sampling matrix as many times as needed (you can control the number of the runs changing the N in line 141), reading the objective function values and CO2 emissions from the database for each run and sending their corresponding values to SALib to do the analysis.
 
 3. Currently the sensitivity analysis can be done only on the parameters in the tables: CostInvest, CostVariable and Efficiency. You need to add a new column in your sqlite database for these tables. You do this by just executing these 3 lines:
 
@@ -21,9 +21,9 @@ ALTER TABLE 'CostInvest' ADD 'MMAnalysis'
 ALTER TABLE 'CostVariable' ADD 'MMAnalysis'
 ALTER TABLE 'Efficiency' ADD 'MMAnalysis'
 
-4. Once this additional column is added for the 3 tables, you need to add names to the cell under MMAnalysis column which corresponds to the parameters you want to do the sensitivity analysis for. For example in Utopia case study, suppose you want to do the sensitivity analysis on gasoline, diesel and coal prices. 
+4. Once this additional column is added for the 3 tables, you need to add names to the cell under MMAnalysis column which corresponds to the parameters you want to do the sensitivity analysis for. For example in Utopia case study, suppose you want to do the sensitivity analysis on gasoline, diesel and coal prices.
 
-Here, parameters with the same text in the MMAnalysis column are seen as "groups" of parameters and are changed simultaneously during the sampling process. If you don't want to use groups, you can put different names on each parameters and the MM only considers the sensitivity with respect to that specific variable. The former gives the sensitivity for a group of parameters. 
+Here, parameters with the same text in the MMAnalysis column are seen as "groups" of parameters and are changed simultaneously during the sampling process. If you don't want to use groups, you can put different names on each parameters and the MM only considers the sensitivity with respect to that specific variable. The former gives the sensitivity for a group of parameters.
 
 5. Change your database name to "Method_of_Morris.sqlite" and like other databases ran by Temoa, put it in db_io/dbs directory.
 

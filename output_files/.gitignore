@@ -11,6 +11,3 @@ debug_logs/lp_files/*
 
 # except the README.txt, which is needed to force creation of the folder itself
 !/debug_logs/lp_files/README.txt
-
-
-

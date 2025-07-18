@@ -1,7 +1,7 @@
 #!/usr/bin/env pyomo_python
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -16,8 +16,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -25,9 +25,10 @@ import os
 import sys
 from io import StringIO
 from pprint import pformat
-from shutil import copy as copyfile, rmtree
+from shutil import copy as copyfile
+from shutil import rmtree
 
-from pyomo.core.base.sets import _SetProduct, _SetContainer
+from pyomo.core.base.sets import _SetContainer, _SetProduct
 
 SE = sys.stderr
 instance = None
@@ -91,12 +92,12 @@ class Param(object):
 
         items = dict()
 
-        for actual, mine in zip(model_keys, my_keys):
+        for actual, mine in zip(model_keys, my_keys, strict=False):
             rate = 1
             for pattern, r in rates:
                 keys = pattern.split(',')
                 match = True
-                for p, t in zip(keys, mine):  # "pattern", "test"
+                for p, t in zip(keys, mine, strict=False):  # "pattern", "test"
                     if '*' == p:
                         continue
                     if t != p:
@@ -176,7 +177,7 @@ class Param(object):
 
         data = StringIO()
         data.write(comment + 'param  %s  :=' % self.name)
-        for actual_key, this_key in sorted(zip(self.model_keys, self.my_keys)):
+        for actual_key, this_key in sorted(zip(self.model_keys, self.my_keys, strict=False)):
             v = self[this_key].value
             int_part = str(int(abs(v)))
             if int_part != str(abs(v)):
@@ -541,7 +542,7 @@ def main():
         opts = sys.modules[module_name]
 
     except ImportError:
-        msg = 'Unable to import {}.\n\nRun this script with no arguments for ' 'more information.\n'
+        msg = 'Unable to import {}.\n\nRun this script with no arguments for more information.\n'
         SE.write(msg.format(sys.argv[1]))
         raise
 

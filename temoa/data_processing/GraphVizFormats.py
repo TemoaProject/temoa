@@ -97,7 +97,7 @@ strict digraph model {
 			%(eflowso)s
 		}
 	}
-	
+
 	{rank = same; %(xnodes)s}
 }
 """
@@ -282,7 +282,7 @@ strict digraph model {
 
 		%(oedges)s
 	}
-	
+
 	{rank = same; %(snodes)s}
 }
 """

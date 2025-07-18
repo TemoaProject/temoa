@@ -26,6 +26,7 @@ Created on:  6/26/24
 
 A tabular summation of the results from an SVMGA run
 """
+
 import sqlite3
 from sqlite3 import Connection
 

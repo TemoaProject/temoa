@@ -28,6 +28,7 @@ A quick test on Linked Tech.  The scenario is described in an image in the testi
 simple_linked_tech_description.jpg
 
 """
+
 import logging
 import sqlite3
 from pathlib import Path
@@ -61,9 +62,9 @@ def test_linked_tech(system_test_run):
     assert len(co2_emiss) == 1
     co2_emiss = co2_emiss[0][0]
     # check the total emission
-    assert co2_emiss == pytest.approx(
-        -30.0
-    ), 'the linked processes should remove have an aggregate -30 units of co2 emissions'
+    assert co2_emiss == pytest.approx(-30.0), (
+        'the linked processes should remove have an aggregate -30 units of co2 emissions'
+    )
 
     # check the flow out of captured carbon from the driven tech, which should output the captured carbon
     flow_out = conn.execute(

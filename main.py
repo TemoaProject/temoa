@@ -1,6 +1,7 @@
 """
 Entry point for running the model.
 """
+
 import argparse
 import logging
 import os
@@ -116,8 +117,7 @@ def parse_args(arg_list: list[str] | None) -> argparse.Namespace:
     if options.output_path:
         if not Path(options.output_path).is_dir():
             raise FileNotFoundError(
-                f'The selected output path directory {options.output_path} '
-                f'could not be located.'
+                f'The selected output path directory {options.output_path} could not be located.'
             )
         else:
             output_path = Path(options.output_path)
@@ -133,8 +133,7 @@ def parse_args(arg_list: list[str] | None) -> argparse.Namespace:
     # check for config file existence
     if not options.config_file:
         logger.error(
-            'No config file found in CLA.  '
-            'Temoa needs a config file to operate, see documentation.'
+            'No config file found in CLA.  Temoa needs a config file to operate, see documentation.'
         )
         raise AttributeError('no config file provided.')
     else:

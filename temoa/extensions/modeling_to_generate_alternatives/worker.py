@@ -27,6 +27,7 @@ Created on:  5/5/24
 Class to contain Workers that execute solves in separate processes
 
 """
+
 import logging.handlers
 from datetime import datetime
 from logging import getLogger

@@ -88,7 +88,3 @@ weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight 
 [myopic]
 view_depth = 2   # number of periods seen/analyzed per iteration
 step_size = 1    # number of periods to step by (must be <= view depth)
-
-
-
-

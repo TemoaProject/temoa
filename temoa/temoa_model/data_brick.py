@@ -34,11 +34,11 @@ for MC and MGA right now, and maybe others
 from temoa.temoa_model.table_data_puller import (
     EI,
     CapData,
-    poll_cost_results,
-    poll_flow_results,
-    poll_emissions,
-    poll_objective,
     poll_capacity_results,
+    poll_cost_results,
+    poll_emissions,
+    poll_flow_results,
+    poll_objective,
 )
 from temoa.temoa_model.temoa_model import TemoaModel
 

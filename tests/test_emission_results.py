@@ -89,9 +89,9 @@ def test_emissions(solved_connection):
         .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}'")
         .fetchone()[0]
     )
-    assert emis == pytest.approx(
-        emis_target
-    ), f'{name} emissions were incorrect. Should be {emis_target}, got {emis}'
+    assert emis == pytest.approx(emis_target), (
+        f'{name} emissions were incorrect. Should be {emis_target}, got {emis}'
+    )
 
 
 # Emission costs undiscounted
@@ -112,9 +112,9 @@ def test_emissions_costs_undiscounted(solved_connection):
         .fetchone()[0]
     )
     cost_target = 0.7 * emis_target * 5  # emission cost x emissions x 5y
-    assert ec == pytest.approx(
-        cost_target
-    ), f'{name} undiscounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+    assert ec == pytest.approx(cost_target), (
+        f'{name} undiscounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+    )
 
 
 # Emission costs discounted
@@ -137,9 +137,9 @@ def test_emissions_costs_discounted(solved_connection):
     cost_target = (
         0.7 * emis_target * 4.32947667063082 * 1.05
     )  # emission cost x emissions x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
-    assert ec == pytest.approx(
-        cost_target
-    ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+    assert ec == pytest.approx(cost_target), (
+        f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+    )
 
 
 # Curtailment
@@ -165,6 +165,6 @@ def test_curtailment(solved_connection):
         .execute(f"SELECT SUM(curtailment) FROM main.OutputCurtailment WHERE tech LIKE '{tech}'")
         .fetchone()[0]
     )
-    assert curt == pytest.approx(
-        curt_target
-    ), f'{name} curtailment was incorrect. Should be {curt_target}, got {curt}'
+    assert curt == pytest.approx(curt_target), (
+        f'{name} curtailment was incorrect. Should be {curt_target}, got {curt}'
+    )

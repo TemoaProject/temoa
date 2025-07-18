@@ -24,8 +24,3 @@ To generate the PDF documentation, from the same folder, execute the following:
 Sometimes this automatic PDF generation fails. If that is the case, navigate to `/tmp/TemoaDocumentationBuild/` and manually generate the pdf:
 
 ```$ pdflatex toolsforenergymodeloptimizationandanalysistemoa.pdf```
-
-
-
-
-

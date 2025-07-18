@@ -25,6 +25,7 @@ https://westernspark.us
 Created on:  4/16/24
 
 """
+
 import sqlite3
 
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting

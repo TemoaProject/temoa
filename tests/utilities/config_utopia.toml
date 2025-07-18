@@ -30,7 +30,3 @@ weight = "integer"   # currently supported: [integer, normalized]
 
 [myopic]
 myopic_view = 2  # number of periods seen at one iteration
-
-
-
-

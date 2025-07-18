@@ -43,10 +43,12 @@ from temoa.temoa_model.temoa_sequencer import TemoaSequencer
 PROJECT_ROOT = Path(__file__).parent.parent
 TEST_DIR = Path(__file__).parent
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(monkeypatch):
     """Change to the tests directory for all tests"""
     os.chdir(TEST_DIR)
+
 
 logger = logging.getLogger(__name__)
 

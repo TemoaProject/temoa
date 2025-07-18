@@ -23,13 +23,13 @@ from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING, Iterable
 
-from pyomo.core import Var, Expression
+from pyomo.core import Expression, Var
 from pyomo.environ import Constraint, value
 
 from temoa.temoa_model.temoa_initialize import (
-    DemandConstraintErrorCheck,
     CommodityBalanceConstraintErrorCheck,
     CommodityBalanceConstraintErrorCheckAnnual,
+    DemandConstraintErrorCheck,
 )
 
 if TYPE_CHECKING:
@@ -1885,9 +1885,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
-        msg = (
-            "Warning: No technology produces emission '%s', though limit was " 'specified as %s.\n'
-        )
+        msg = "Warning: No technology produces emission '%s', though limit was specified as %s.\n"
         logger.warning(msg, (e, emission_limit))
         SE.write(msg % (e, emission_limit))
         return Constraint.Skip

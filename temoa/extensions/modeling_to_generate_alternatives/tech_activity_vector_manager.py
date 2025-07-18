@@ -25,6 +25,7 @@ https://westernspark.us
 Created on:  4/16/24
 
 """
+
 import queue
 import sqlite3
 from collections import defaultdict
@@ -36,7 +37,7 @@ from typing import Iterable
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pyomo.core import Expression, Var, value, Objective, quicksum
+from pyomo.core import Expression, Objective, Var, quicksum, value
 
 from definitions import get_OUTPUT_PATH
 from temoa.extensions.modeling_to_generate_alternatives.hull import Hull
@@ -156,7 +157,7 @@ class TechActivityVectorManager(VectorManager):
         var_vec = self.var_vector(new_model)
         coeffs = np.random.random(len(var_vec))
         coeffs /= sum(coeffs)
-        obj_expr = quicksum(c * v for c, v in zip(coeffs, var_vec))
+        obj_expr = quicksum(c * v for c, v in zip(coeffs, var_vec, strict=False))
         new_model.obj = Objective(expr=obj_expr)
         return new_model
 
@@ -259,7 +260,7 @@ class TechActivityVectorManager(VectorManager):
         # verify a unit vector
         err = abs(abs(sum(coeffs)) - 1)
         assert err < 1e-6, 'unit vector size error'
-        expr = sum(c * v for v, c in zip(vars, coeffs) if c != 0)
+        expr = sum(c * v for v, c in zip(vars, coeffs, strict=False) if c != 0)
         return expr
 
     def _next_objective_vector(self, M: TemoaModel) -> Expression | None:
@@ -285,7 +286,7 @@ class TechActivityVectorManager(VectorManager):
         obj_vars = self.var_vector(M)
 
         assert len(obj_vars) == len(coeffs)
-        return quicksum(c * v for v, c in zip(obj_vars, coeffs))
+        return quicksum(c * v for v, c in zip(obj_vars, coeffs, strict=False))
 
     def var_vector(self, M: TemoaModel) -> list[Var]:
         """Produce a properly sequenced array of variables from the current model for use in obj vector"""

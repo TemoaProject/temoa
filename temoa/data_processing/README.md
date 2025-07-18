@@ -21,7 +21,7 @@ Create and activate the Temoa environment, as follows:
 
 	```$ source activate temoa-py3```
 
-	Once the Temoa environment is created and activated, enable the following extensions from from the command line. 
+	Once the Temoa environment is created and activated, enable the following extensions from from the command line.
 	This will need to be done only once, before using notebooks within the Temoa environment.
 
 	```(temoa-py3) $ jupyter nbextension enable init_cell/main```
@@ -32,12 +32,6 @@ Create and activate the Temoa environment, as follows:
 
 	```(temoa-py3) $ jupyter notebook```
 
-	Navigate to the `Network_diagrams.ipynb/` file and select technology/commodity options to interactively view their network diagrams. 
-	The notebook also includes an interactive technology/commodity lookup tool. 
-	The "Toggle selected cell input display" button (below and to the right of the Help menu) can be used to view hidden code cells. 
-
-
-
-
-
-
+	Navigate to the `Network_diagrams.ipynb/` file and select technology/commodity options to interactively view their network diagrams.
+	The notebook also includes an interactive technology/commodity lookup tool.
+	The "Toggle selected cell input display" button (below and to the right of the Help menu) can be used to view hidden code cells.

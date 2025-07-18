@@ -34,7 +34,7 @@ import logging
 import sqlite3
 from collections import defaultdict, namedtuple
 from itertools import chain
-from typing import Self, Any
+from typing import Any, Self
 
 import deprecated
 from pyomo.core import ConcreteModel

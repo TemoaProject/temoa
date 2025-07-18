@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # This is a simple job submission script that can be adapted for your needs.
-# At the very least, change the name of the program (line 10), 
-# number of nodes requested (line 16) and 
+# At the very least, change the name of the program (line 10),
+# number of nodes requested (line 16) and
 # wallclock time requested (line 19) and
 # your program arguments (line 48)
 
@@ -20,14 +20,14 @@
 
 # Available queues are short (5 min), low, medium and high priority.
 # medium is appropriate for most users
-#PBS -q long 
+#PBS -q long
 
 # If you wish to export environment variables, use both lines below
 #PBS -V
 # Just note that HYDRA_HOST_FILE shouldn't be set in this environment
 unset HYDRA_HOST_FILE
 
-# If you wish to receive email,  update email and 
+# If you wish to receive email,  update email and
 # remove first '#' from line below
 # #PBS -M username@ncsu.edu
    # a  mail is sent when the job is aborted by the batch system.
@@ -47,7 +47,7 @@ echo "Number of cores is ${PBS_NP}"
 # TODO: Replace cpi with your program and arguments
 #mpiexec -n $PBS_NP -machinefile $PBS_NODEFILE ./cpi
 export PYRO_NS_PORT=9096
-#mpiexec -n $PBS_NP -machinefile $PBS_NODEFILE \ 
+#mpiexec -n $PBS_NP -machinefile $PBS_NODEFILE \
 #-np 1 /home/arqueiroz/anaconda2/bin/pyomo_ns : \
 #-np 1 /home/arqueiroz/anaconda2/bin/dispatch_srvr : \
 #-np 3 /home/arqueiroz/anaconda2/bin/phsolverserver : \
@@ -58,4 +58,3 @@ mpiexec -np 1 /home/arqueiroz/anaconda2/bin/pyomo_ns -n localhost : -np 1 /home/
 # So above is equivalent to line below. But use the detailed version above, as that
 # explicitly identifies number of cores etc.
 # mpiexec ./cpi
-

@@ -32,7 +32,3 @@ weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight 
 
 [myopic]
 myopic_view = 2  # number of periods seen at one iteration
-
-
-
-

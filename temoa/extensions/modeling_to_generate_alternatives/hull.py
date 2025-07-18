@@ -26,6 +26,7 @@ Created on:  4/17/24
 
 A thin wrapper on Scipy's ConvexHull to make it more manageable
 """
+
 from logging import getLogger
 
 import numpy as np

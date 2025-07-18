@@ -3,10 +3,10 @@
 ### This document gives a _brief_ description of MM application and shows how to execute the provided example.
 
 ## Background
-- MM is a Sensitivity Analysis (SA) technique that uses a unique Design Of Experiments (DOE) application to 
+- MM is a Sensitivity Analysis (SA) technique that uses a unique Design Of Experiments (DOE) application to
 explore the input space.
-- The MM techniques in Temoa utilize `SALib` which has fairly 
-thorough [documentation](https://salib.readthedocs.io/en/latest/api.html#method-of-morris) online, 
+- The MM techniques in Temoa utilize `SALib` which has fairly
+thorough [documentation](https://salib.readthedocs.io/en/latest/api.html#method-of-morris) online,
 which also refers to relevant studies.
 
 ## Use
@@ -14,19 +14,19 @@ which also refers to relevant studies.
   - CostVariable
   - CostInvest
   - Efficiency
-- The MM application will analyze effects of marked parameters (or groups) on the cost function 
+- The MM application will analyze effects of marked parameters (or groups) on the cost function
 (objective) and on co2 emissions specifically.
-  - It should be noted that co2 is _not_ optimized in any way, it is just the co2 emission 
+  - It should be noted that co2 is _not_ optimized in any way, it is just the co2 emission
   for the optimal cost solution
-  - Further, the code is currently hard-coded to look for _exactly_ the string `co2` in the 
-  `OutputEmissions` table.  It is highly advisable to do a "regular" run on the data to ensure 
+  - Further, the code is currently hard-coded to look for _exactly_ the string `co2` in the
+  `OutputEmissions` table.  It is highly advisable to do a "regular" run on the data to ensure
   that `co2` is properly represented in the commodity and output tables.
 
-- The basic sequence is:  marking of input parameters (by user) and domains (through the `perturbation` 
+- The basic sequence is:  marking of input parameters (by user) and domains (through the `perturbation`
 value in the `config`) -> make a MM Sample set -> run Temoa on the samples -> conduct MM analysis.
-- In order to use MM in Temoa, the subject database needs to be augmented slightly to allow 
+- In order to use MM in Temoa, the subject database needs to be augmented slightly to allow
 relevant parameters to be marked for analysis.
-- After Parameters are marked with group labels, the `morris` options should be set in the 
+- After Parameters are marked with group labels, the `morris` options should be set in the
 relevant `config.toml` file which can then be run.
 - Outputs are stored in the standard time-stamped output folder.
 
@@ -48,9 +48,9 @@ that is `TEXT` data type, allowing NULL.
 2. Add labels within that column for analysis.  Note:
    - Labels that are repeated (in any table) are treated as a "Group" for MM purposes.
    - Labels that are used singly are a "group of 1".
-   - The number of runs will be:  `(GROUPS + 1) x N` where `N` is the number of trajectories in the `config`. 
+   - The number of runs will be:  `(GROUPS + 1) x N` where `N` is the number of trajectories in the `config`.
    - Note:  number runs is _independent_ of the total params marked (groups can be large and are varied together)
-   - The modeler need to consider how to group multiple vintages/periods for specific techs and/or group 
+   - The modeler need to consider how to group multiple vintages/periods for specific techs and/or group
    related techs.
 3. The modeler should consider the architecture used to run the model for cpu utilization.  The number of
 cores to use is selectable in the `config` for parallel use.  A `0` can be used to utilize all available cores

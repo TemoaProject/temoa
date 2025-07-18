@@ -7,8 +7,8 @@ from pyomo.pysp.ef_writer_script_old import *
 
 def organize_csv():
     # This function was imported from the EVPI script
-    from csv import reader, writer
     from collections import OrderedDict
+    from csv import reader, writer
 
     rows = list()
     tech = list()
@@ -47,8 +47,8 @@ def organize_csv():
 
 def my_ef_writer(scenario_tree):
     # This function was imported from the EVPI script
-    from csv import writer
     from collections import OrderedDict
+    from csv import writer
 
     rows = dict()  # Key is the variable's name
     for stage in scenario_tree._stages:
@@ -197,8 +197,8 @@ def solve_dm(p_model, p_data, opt_solver):
         # Assuming there is only one objective function
         return obj_values[0]
 
-    import sys
     import os
+    import sys
 
     (head, tail) = os.path.split(p_model)
     sys.path.insert(0, head)
@@ -253,8 +253,8 @@ def runVSS():
     # As input, this function requires the path of the stochastic folder and temoa_stochastic.py file
     # It assumes that an instance named ReferenceModel.dat is located inside the stochastic folder
 
-    from time import time
     import sys
+    from time import time
 
     sys.stderr.write('\nFinding the Value of the Stochastic Solution using Temoa\n')
 

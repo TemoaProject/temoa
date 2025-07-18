@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -16,10 +16,11 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import os
 import sys
 
@@ -40,7 +41,7 @@ def return_CP_and_path(p_data):
     # returns conditional two dictionaries, the first one is the conditional
     # probability of a scenario, the second one is the path to all files of a
     # scenario.
-    from collections import deque, defaultdict
+    from collections import defaultdict, deque
 
     # from pyomo.pysp.util.scenariomodels import scenario_tree_model
     from pyomo.pysp.scenariotree.tree_structure_model import CreateAbstractScenarioTreeModel

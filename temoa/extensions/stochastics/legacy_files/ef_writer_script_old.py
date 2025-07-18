@@ -11,21 +11,20 @@ import os
 import random
 import sys
 import time
-from optparse import OptionParser, OptionGroup
+from optparse import OptionGroup, OptionParser
 
 import pyutilib.misc
 from pyomo.core.base import maximize, minimize
-from pyomo.opt.base import SolverFactory, PersistentSolver, ProblemFormat
+from pyomo.opt.base import PersistentSolver, ProblemFormat, SolverFactory
 from pyomo.opt.base.solvers import UnknownSolver
 from pyomo.opt.parallel import SolverManagerFactory
-from pyomo.pysp.ef import write_ef, create_ef_instance
+from pyomo.pysp.ef import create_ef_instance, write_ef
 from pyomo.pysp.scenariotree.instance_factory import ScenarioTreeInstanceFactory
 from pyomo.pysp.solutionwriter import ISolutionWriterExtension
 from pyomo.pysp.util.misc import launch_command
 from pyomo.util import pyomo_command
 from pyomo.util.plugin import ExtensionPoint
 from pyutilib.pyro import shutdown_pyro_components
-
 
 #
 # utility method to construct an option parser for ef writer arguments
@@ -572,9 +571,7 @@ def EFAlgorithmBuilder(options, scenario_tree):
                     + ' already imported - skipping'
                 )
             else:
-                print(
-                    'Trying to import user-defined EF ' 'solution writer module=' + this_extension
-                )
+                print('Trying to import user-defined EF solution writer module=' + this_extension)
                 # make sure "." is in the PATH.
                 original_path = list(sys.path)
                 sys.path.insert(0, '.')

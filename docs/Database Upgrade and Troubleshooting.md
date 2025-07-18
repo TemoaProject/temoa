@@ -5,12 +5,12 @@
 The upgrades in Version 3 of the Temoa codebase include much tighter scrutiny of the commodity network
 via source tracing.  Source tracing is optional in some modes, but mandatory in Myopic mode.  The goal
 of source tracing is to ensure the network of commodities is performing properly and not allowing
-artificial sources of commodities to enter the network.  Additional details on this process are in 
+artificial sources of commodities to enter the network.  Additional details on this process are in
 the `commodity network notes.md` file.
 
 The complexity of some of the larger databases and networks and the actions of source tracing can
 pose challenges in troubleshooting models that are infeasible or unbounded.  This set of notes
-is intended to help modelers working with new large datasets or transitioned datasets in 
+is intended to help modelers working with new large datasets or transitioned datasets in
 working through infeasibilities and "getting the model breathing" so that refinements can be made.
 
 ## First steps
@@ -21,13 +21,13 @@ following **must** be done to get the model working.
 1. Mark Source Commodities.  In the `Commodity` table, source commodities must be marked with
 an "s" for the flag value.  This action identifies them as bedrock sources that serve as
 sources for network analysis.  Things like "Ethos" are typically sources.  A source commodity
-is interpreted as a freely available starting commodity that has no predecessors.  Multiple 
+is interpreted as a freely available starting commodity that has no predecessors.  Multiple
 sources are possible for bookkeeping or model clarity.
 2. Identify Unlimited Capacity Technologies.  The `Technology` table has a new field labeled
-`unlim_cap` to identify technologies that have no capacity limit.  This may represent things 
+`unlim_cap` to identify technologies that have no capacity limit.  This may represent things
 like imports or use taxes or other notions that don't logically support a capacity
 determination/assignment.  Assigning technologies to this category does several things.
-First, it makes the model smaller and more flexible because capacity variables are 
+First, it makes the model smaller and more flexible because capacity variables are
 excluded for the technology, although activity is still an active variable.  It also
 enables modes like Myopic to function more cleanly because the model does not make
 capacity decisions on things that may need to be revised with higher demands in later
@@ -42,14 +42,14 @@ the log file should be addressed.
 If the model does not solve after the steps above the following are possible actions to take.
 Note that several of these involve altering the model code and should be done carefully.
 A suggested approach for items that involve injecting or commenting out code is to try them,
-make corrections as needed to the data, and then use Git's `rollback` feature on the 
+make corrections as needed to the data, and then use Git's `rollback` feature on the
 core model code to undo any "hacks" or patches that were used.  In no particular order:
 
-- If the model is unbounded.  Look at negative cost items carefully.  A technique to 
+- If the model is unbounded.  Look at negative cost items carefully.  A technique to
 limit runaway activity is to limit all flows in the model.  The following code can
 be slipped in to the `temoa_model.py` code anywhere in the constraint section.  It
 will limit **all** flows to an upper bound.  If using this approach, the
-modeler should also limit any arbitrarily large demands in the 
+modeler should also limit any arbitrarily large demands in the
 demand table that may need to be revised downward in conjuction with this limit.
 The `OutputFlowOut` table can then be inspected for unusually high activity.
 

@@ -11,7 +11,6 @@ top-level folder to provide project-wide definitions & references
 import os
 from pathlib import Path
 
-
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 OUTPUT_PATH = None

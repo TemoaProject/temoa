@@ -1,13 +1,13 @@
 ### Using MGA
 
 It is likely helpful to read the `MGA Design.md` file in this directory that describes some of the terms/
-analytic approach to MGA.  MGA uses multi-processing to iteratively explore near-optimal solutions.  
+analytic approach to MGA.  MGA uses multi-processing to iteratively explore near-optimal solutions.
 
 #### Outputs
 
 - The processing of results is left to the modeler and the results from runs are tagged iteratively in the Output
 tables in the database.
-- Running MGA analysis also adds an additional `OutputFlowOutSummary` table which 
+- Running MGA analysis also adds an additional `OutputFlowOutSummary` table which
 summarizes flows at the period level (summarizing time of day and season) to manage the size of the output for
 larger models
 
@@ -24,7 +24,7 @@ larger models
 - The `MGA_solver_options.toml` file
   - Contains solver settings to optimize performance.  These settings are used *after* the first solve, which sets
   the optimized cost.  The "worker" solvers consume and use any options for the chosen solver from this file
-  - Contains the number of workers setting.  Some balance must be considered between hardware resources and 
+  - Contains the number of workers setting.  Some balance must be considered between hardware resources and
   concurrency.  Six (the current setting) seems an OK balance...
     - Large models consume fairly large memory footprint.  It is possible to have `num_workers` + 2 models floating
     around either in solve, or waiting.

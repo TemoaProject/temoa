@@ -6,13 +6,13 @@ Preface
 
 
 This manual, in both `PDF`_ and `HTML`_ form, is the official documentation of
-Tools for Energy Model Optimization and Analysis (Temoa).  It describes all 
-functionality of the Temoa model, and provides a mathematical description of 
+Tools for Energy Model Optimization and Analysis (Temoa).  It describes all
+functionality of the Temoa model, and provides a mathematical description of
 the implemented equations.
 
-Besides this documentation, there are a couple other sources for Temoa-oriented 
+Besides this documentation, there are a couple other sources for Temoa-oriented
 information.  The most interactive is the `mailing list`_, and we encourage any
-and all questions related to energy system modeling.  Publications are good 
+and all questions related to energy system modeling.  Publications are good
 introductory resources, but are not guaranteed to be the most up-to-date as
 information and implementations evolve quickly.  As with many software-oriented
 projects, even before this manual, `the code is the most definitive resource`.
@@ -22,12 +22,12 @@ discrepancies you find, and we will fix it as soon as possible.
 What is Temoa?
 --------------
 
-Temoa is an energy system optimization model (ESOM).  Briefly, ESOMs optimize the 
-installation and utilization of energy technology capacity over a user-defined 
-time horizon. Optimal decisions are driven by an objective function that minimizes 
-the cost of energy supply. Conceptually, one may think of an ESOM as a "left-to-right" 
-network graph, with a set of energy sources on the lefthand side of the graph that 
-are transformed into consumable energy commodities by a set of energy technologies, 
+Temoa is an energy system optimization model (ESOM).  Briefly, ESOMs optimize the
+installation and utilization of energy technology capacity over a user-defined
+time horizon. Optimal decisions are driven by an objective function that minimizes
+the cost of energy supply. Conceptually, one may think of an ESOM as a "left-to-right"
+network graph, with a set of energy sources on the lefthand side of the graph that
+are transformed into consumable energy commodities by a set of energy technologies,
 which are ultimately used to meet demands on the righthand side of the network graph.
 [#esom_definition]_
 
@@ -90,9 +90,9 @@ language, meaning "to seek something."
    :figclass: center
    :figwidth: 50%
 
-One pronounces the word 'Temoa' as "teh", "moe", "uh". Though TEMOA is an acronym 
-for 'Tools for Energy Model Optimization and Analysis', we generally use 'Temoa' 
-as a proper noun, and so forgo the need for all-caps. 
+One pronounces the word 'Temoa' as "teh", "moe", "uh". Though TEMOA is an acronym
+for 'Tools for Energy Model Optimization and Analysis', we generally use 'Temoa'
+as a proper noun, and so forgo the need for all-caps.
 
 
 Bug Reporting
@@ -358,13 +358,13 @@ structure but no data added) to begin building your own database file. We recomm
 leaving the database structure intact, and simply adding data to the schema file, or
 constructing an empty database from the schema file and then using a database editor
 to import data.
-Once the sql file is complete, you can convert it into a binary sqlite file by 
+Once the sql file is complete, you can convert it into a binary sqlite file by
 installing sqlite3 and executing the following command:
 
 .. parsed-literal::
   $ sqlite3 my_database.sqlite < my_database.sql
 
-Now you can specify this database as the source for both input and output data 
+Now you can specify this database as the source for both input and output data
 in the config file.
 
 ============
@@ -465,7 +465,7 @@ by the flow of energy commodities, a directed network graph represents an excell
 to visualize a given energy system representation in a Temoa-compatible input database.
 Temoa utilizes an open source graphics package called `Graphviz`_ to create a series of
 data-specific and interactive energy-system maps. Currently, the output graphs consist of
-a full energy system map as well as capacity and activity results per model time period. 
+a full energy system map as well as capacity and activity results per model time period.
 In addition, users can create subgraphs focused on a particular commodity or technology.
 
 There are a couple ways to utilize Graphviz. The first way is to use the version embedded
@@ -494,15 +494,15 @@ directory. The resultant system map will look like this:
    :figclass: center
    :figwidth: 60%
 
-   This is a map of the simple 'Utopia' system, which we often use for testing 
-   purposes. The map shows the possible commodity flows through the system, 
-   providing a comprehensive overview of the system. Creating the simple system 
-   map is useful for debugging purposes in order to make sure that technologies 
+   This is a map of the simple 'Utopia' system, which we often use for testing
+   purposes. The map shows the possible commodity flows through the system,
+   providing a comprehensive overview of the system. Creating the simple system
+   map is useful for debugging purposes in order to make sure that technologies
    are linked together properly via commodity flows.
 
-It is also possible to create a system map showing the optimal installed capacity 
-and technology flows in a particular model time period. These results are associated 
-with a specific model run stored in the model database. To view the results, include 
+It is also possible to create a system map showing the optimal installed capacity
+and technology flows in a particular model time period. These results are associated
+with a specific model run stored in the model database. To view the results, include
 the scenario flag (:code:`-s`) and a specific model year (:code:`-y`).
 
 Note that when Graphiz runs, it creates a folder within the :code:`data_processing`
@@ -522,10 +522,10 @@ purposes. In addition, we have taken care to make these intermediate files well-
    :figclass: center
    :figwidth: 60%
 
-   This graph shows the optimal installed capacity and commodity flows from the 
+   This graph shows the optimal installed capacity and commodity flows from the
    'utopia' test system in 2010.
 
-The output can also be fine-tuned to show results associated with a specific 
+The output can also be fine-tuned to show results associated with a specific
 commodity or technology. For example:
 
 .. parsed-literal::
@@ -536,8 +536,8 @@ commodity or technology. For example:
    :figclass: center
    :figwidth: 60%
 
-   In this case, the graph shows the commodity flow in and out of 
-   technology 'E31' in 2010, which is from the 'test_run' scenario drawn from the 
+   In this case, the graph shows the commodity flow in and out of
+   technology 'E31' in 2010, which is from the 'test_run' scenario drawn from the
    'temoa_utopia' database.
 
 Output Graphs
@@ -549,7 +549,7 @@ From the command line, navigate to the :code:`data_processing` folder and execut
 .. parsed-literal::
   $ python MakeOutputPlots.py --help
 
-The command above will specify all of the flags required to created a stacked bar 
+The command above will specify all of the flags required to created a stacked bar
 or line plot. For example, consider the following command:
 
 .. parsed-literal::
@@ -562,10 +562,10 @@ Here is the result:
    :figclass: center
    :figwidth: 60%
 
-   This stacked bar plot represents the activity (i.e., output commodity flow) 
-   associated with each technology in the electric sector from the 'test_run' 
-   scenario drawn from the 'temoa_utopia' database. Because the :code:`super` 
-   flag was specified, technologies are grouped together based on user-specified 
+   This stacked bar plot represents the activity (i.e., output commodity flow)
+   associated with each technology in the electric sector from the 'test_run'
+   scenario drawn from the 'temoa_utopia' database. Because the :code:`super`
+   flag was specified, technologies are grouped together based on user-specified
    categories in the :code:`tech_category`` column of the :code:`technologies`
    table of the database.
 
@@ -577,7 +577,7 @@ The Math Behind Temoa
    To understand this section, the reader will need at least a cursory
    understanding of mathematical optimization.  We omit here that introduction,
    and instead refer the reader to `various`_ `available`_ `online`_ `sources`_.
-   Temoa is formulated as an algebraic model that requires information organized 
+   Temoa is formulated as an algebraic model that requires information organized
    into sets, parameters, variables, and equation
    definitions.
 
@@ -846,7 +846,7 @@ delineation.
 As noted above, Temoa allows the modeler to subdivide each year into a set of time
 slices, comprised of a season and a time of day.  Unlike :code:`time_future`, there
 is no restriction on what labels the modeler may assign to the :code:`time_season`
-and :code:`time_of_day` set elements.  
+and :code:`time_of_day` set elements.
 
 
 A Word on Index Ordering
@@ -967,8 +967,8 @@ Parameters
    ":math:`\text{MCS}_{t}`","MinCapacitySum",":math:`\mathbb{R}^+_0`","Minimum capacity for a technology group"
    ":math:`\text{MGT}_{r}`","MinGenGroupTarget",":math:`\mathbb{R}^+_0`","Target applied to techs in MinActivityGroup constraint"
    ":math:`\text{MGW}_{r,t}`","MinGenGroupWeight",":math:`\mathbb{R}^+_0`","Weight applied to techs in MinActivityGroup constraint"
-   ":math:`\text{MBY}`","MyopicBaseYear",":math:`\mathbb{N}`","Objective function base year when running myopically"   
-   ":math:`\text{PRM}_{r}`","PlanningReserveMargin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"   
+   ":math:`\text{MBY}`","MyopicBaseYear",":math:`\mathbb{N}`","Objective function base year when running myopically"
+   ":math:`\text{PRM}_{r}`","PlanningReserveMargin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"
    ":math:`\text{RMD}_{r,t}`","RampDown",":math:`\mathbb{R}`","Rate at which generation techs can ramp output down"
    ":math:`\text{RMU}_{r,t}`","RampUp",":math:`\mathbb{R}`","Rate at which generation techs can ramp output up"
    ":math:`\text{RSC}_{r.p,c}`","ResourceBound",":math:`\mathbb{R}^+_0`","Maximum resource production by tech and period (currently not supported)"
@@ -976,7 +976,7 @@ Parameters
    ":math:`\text{SEG}_{s,d}`","SegFrac",":math:`\mathbb{I}`","Fraction of year represented by each (s, d) tuple"
    ":math:`\text{SIF}_{t}`","StorageInitFrac",":math:`\mathbb{I}`","Initial storage charge level expressed as fraction of full charge"
    ":math:`\text{TIS}_{r,i,t}`","TechInputSplit",":math:`\mathbb{I}`","Technology input fuel ratio at time slice level"
-   ":math:`\text{TISA}_{r,i,t}`","TechInputSplitAverage",":math:`\mathbb{I}`","Average annual technology input fuel ratio"   
+   ":math:`\text{TISA}_{r,i,t}`","TechInputSplitAverage",":math:`\mathbb{I}`","Average annual technology input fuel ratio"
    ":math:`\text{TOS}_{r,t,o}`","TechOutputSplit",":math:`\mathbb{I}`","Technology output fuel ratio at time slice level"
    ":math:`{}^*\text{LA}_{t,v}`","LoanAnnualize",":math:`\mathbb{R}^+_0`","Loan amortization by tech and vintage; based on :math:`DR_t`"
    ":math:`{}^*\text{MPL}_{p,t,v}`","ModelProcessLife",":math:`\mathbb{N}`","Smaller of remaining model horizon or process tech life"
@@ -993,7 +993,7 @@ Efficiency
 
 We present the efficiency (:math:`EFF`) parameter first as it is one of the most
 critical model parameters.  Beyond defining the conversion efficiency of each
-process, Temoa also utilizes the indices to understand the valid input 
+process, Temoa also utilizes the indices to understand the valid input
 :math:`\rightarrow` process :math:`\rightarrow` output paths for energy. For
 instance, if a modeler does not specify an efficiency for a 2020 vintage coal
 power plant, then Temoa will recognize any mention of a 2020 vintage coal power
@@ -1010,7 +1010,7 @@ CapacityCredit
 :math:`{CC}_{r \in R, p \in P, t \in T, v \in V}`
 
 The capacity credit represents the fraction of total installed capacity of
-a process that can be relied upon during the time slice in which peak 
+a process that can be relied upon during the time slice in which peak
 electricity demand occurs. This parameter is used in the :math:`ReserveMargin`
 constraint.
 
@@ -1029,7 +1029,7 @@ CapacityFactorProcess
 
 In addition to :ref:`CapacityFactorTech`, there may be cases where different
 vintages of the same technology have different capacity factors. For example,
-newer vintages of wind turbines may have higher capacity factors. So, 
+newer vintages of wind turbines may have higher capacity factors. So,
 :code:`CapacityFactorProcess` allows users to specify the capacity factor by
 season, time-of-day, technology, and vintage.
 
@@ -1091,7 +1091,7 @@ CostInvest
 The :code:`CostInvest` parameter specifies the process-specific investment cost.
 Unlike the :code:`CostFixed` and :code:`CostVariable` parameters,
 :code:`CostInvest` only applies to vintages of technologies within the model
-optimization horizon (:math:`\text{P}^o`).  Like :code:`CostFixed`, 
+optimization horizon (:math:`\text{P}^o`).  Like :code:`CostFixed`,
 :code:`CostInvest` is specified in units of cost per unit of capacity and is
 only used in the default objective function (:math:`\tfrac{Dollars}{Unit Cap}`).
 
@@ -1161,10 +1161,10 @@ DemandSpecificDistribution
 :math:`{DSD}_{r \in R, s \in S, d \in D, c \in C^d}`
 
 If there is an end-use demand that varies over the course of a day or across
-seasons -- for example, heating or cooling in the summer or winter -- the 
+seasons -- for example, heating or cooling in the summer or winter -- the
 modeler may specify the fraction of annual demand occurring in each time slice.
 Like :ref:`SegFrac` and :ref:`DDD`, the sum of DSD for each :math:`c` must be 1.
-If the modeler does not define DSD for a season, time of day, and demand 
+If the modeler does not define DSD for a season, time of day, and demand
 commodity, Temoa automatically populates this parameter according to DDD.
 It is this parameter that is actually multiplied by the :code:`Demand` parameter
 in the Demand constraint.
@@ -1685,8 +1685,8 @@ Variables
    ":math:`FO_{r,p,s,d,i,t,v,o}`","V_FlowOut",":math:`\mathbb{R}^+_0`","Commodity flow by time slice out of a tech based on a given input"
    ":math:`FOA_{r,p,s,d,i,t,v,o}`","V_FlowOutAnnual",":math:`\mathbb{R}^+_0`","Annual commodity flow out of a tech based on a given input"
    ":math:`FIS_{r,p,s,d,i,t,v,o}`","V_FlowIn",":math:`\mathbb{R}^+_0`","Commodity flow into a storage tech to produce a given output"
-   ":math:`FLX_{r,p,s,d,i,t,v,o}`","V_Flex",":math:`\mathbb{R}^+_0`","The portion of commodity production exceeding demand"   
-   ":math:`FLXA_{r,p,i,t,v,o}`","V_FlexAnnual",":math:`\mathbb{R}^+_0`","The portion of commodity production from constant production techs exceeding demand"   
+   ":math:`FLX_{r,p,s,d,i,t,v,o}`","V_Flex",":math:`\mathbb{R}^+_0`","The portion of commodity production exceeding demand"
+   ":math:`FLXA_{r,p,i,t,v,o}`","V_FlexAnnual",":math:`\mathbb{R}^+_0`","The portion of commodity production from constant production techs exceeding demand"
    ":math:`CUR_{r,p,s,d,i,t,v,o}`","V_Curtailment",":math:`\mathbb{R}^+_0`","Commodity flow out of a tech that is curtailed"
    ":math:`CAP_{r,t,v}`","V_Capacity",":math:`\mathbb{R}^+_0`","Required tech capacity to support associated activity"
    ":math:`CAPAVL_{r,p,t}`","V_CapacityAvailable ByPeriodAndTech",":math:`\mathbb{R}^+_0`","Derived variable representing the capacity of technology :math:`t` available in period :math:`p`"
@@ -1702,7 +1702,7 @@ The most fundamental variable in the Temoa formulation is the
 :code:`V_FlowOut` variable. It describes the commodity flow out of a
 process in a given time slice. To balance input and output flows in the
 :code:`CommodityBalance_Constraint`, the commodity flow into a given
-process can be calculated as 
+process can be calculated as
 :math:`\sum_{T, V, O} \textbf{FO}_{p, s, d, c, t, v, o}
 /EFF_{c,t,v,o}`.
 
@@ -1850,7 +1850,7 @@ While not required, doing so improves computational performance by eliminating t
 season and time of day :code:`(s,d)` indices associated with these technologies.
 In order to ensure the model functions correctly with these simplified technologies,
 slightly different formulations of the capacity and commodity balance constraints
-are required. See the :code:`CommodityBalanceAnnual_Constraint` :eq:`CommodityBalanceAnnual` 
+are required. See the :code:`CommodityBalanceAnnual_Constraint` :eq:`CommodityBalanceAnnual`
 and :code:`CapacityAnnual_Constraint` :eq:`CapacityAnnual` below for details.
 
 The rest of this section defines each model constraint, with a rationale for
@@ -2150,7 +2150,7 @@ necessary to ignore any tuple for which no Demand exists.
 Lines 5 through 11 represent two *source-lines* that we split over several lines for
 clarity.  These lines implement the summations of the demand commodity ``dem``
 produced by demand technologies with both variable and constant output across the
-year, summed over all relevant technologies, vintages, and the inputs. The 
+year, summed over all relevant technologies, vintages, and the inputs. The
 :code:`supply` and :code:`supply_annual` are local variables used in the expression
 (:code:`expr`) shown below. Note that the sum is performed with sparse indices, which
 are returned from dictionaries created in :code:`temoa_initialize.py`.
@@ -2353,8 +2353,8 @@ The Temoa model code is split into several packages:
    logic.  Where ``temoa_model`` provides the high-level overview, this file
    provides the actual equation implementations.
 
- * ``temoa_initialize.py`` - contains the code used to initialize the model, 
-   including sparse matrix indexing and checks on parameter and constraint 
+ * ``temoa_initialize.py`` - contains the code used to initialize the model,
+   including sparse matrix indexing and checks on parameter and constraint
    specifications.
 
  * ``temoa_sequencer.py`` - contains the code required to run the execution sequence
@@ -2946,9 +2946,9 @@ should meet a basic standard of quality:
 .. [#glpk_presolve] Circa 2013, GLPK uses more memory than commercial
    alternatives and has vastly weaker presolve capabilities.
 
-.. [#esom_definition] For a more in-depth description of energy system 
-   optimization models (ESOMs) and guidance on how to use them, please see: 
-   DeCarolis et al. (2017) "Formalizing best practice for energy system 
+.. [#esom_definition] For a more in-depth description of energy system
+   optimization models (ESOMs) and guidance on how to use them, please see:
+   DeCarolis et al. (2017) "Formalizing best practice for energy system
    optimization modelling", Applied Energy, 194: 184-198.
 
 .. [#web_browser_svg] SVG support in web browsers is currently hit or miss.  The

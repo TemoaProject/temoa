@@ -25,6 +25,7 @@ https://westernspark.us
 Created on:  4/25/24
 
 """
+
 import pytest
 
 from temoa.temoa_model.model_checking.element_checker import ViableSet, filter_elements

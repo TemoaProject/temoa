@@ -11,12 +11,13 @@ from temoa.temoa_model.table_writer import TableWriter
 from temoa.temoa_model.temoa_config import TemoaConfig
 
 start_time = time.time()
-from joblib import Parallel, delayed
 import sqlite3
+
+from joblib import Parallel, delayed
 from numpy import array
 from SALib.analyze import morris
 from SALib.sample.morris import sample
-from SALib.util import read_param_file, compute_groups_matrix
+from SALib.util import compute_groups_matrix, read_param_file
 
 seed = 42
 

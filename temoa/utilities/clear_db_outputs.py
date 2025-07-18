@@ -27,6 +27,7 @@ Created on:  6/22/24
 A quick utility to clear all of the data in all of the output tables in a
 Temoa V3 database
 """
+
 import sqlite3
 import sys
 from pathlib import Path

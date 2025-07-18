@@ -39,7 +39,7 @@ def test_initialization_in_last_period(system_test_run):
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
     assert len(model.V_StorageInit.index_set()) > 0, (
-        'This model does not appear to have' 'any available storage components'
+        'This model does not appear to haveany available storage components'
     )
     # get references to last timeslot for each prtv combo in things with storage
     last_slots = {
@@ -69,7 +69,7 @@ def test_initialization_in_first_period(system_test_run):
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
     assert len(model.V_StorageInit.index_set()) > 0, (
-        'This model does not appear to have' 'any available storage components'
+        'This model does not appear to haveany available storage components'
     )
     # test the first periods
     # get references to first timeslot for each prtv combo in things with storage
@@ -120,7 +120,7 @@ def test_storage_flow_balance(system_test_run):
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
     assert len(model.V_StorageInit.index_set()) > 0, (
-        'This model does not appear to have' 'any available storage components'
+        'This model does not appear to haveany available storage components'
     )
     for s_tech in model.tech_storage:
         inflow_indices = {
@@ -141,9 +141,9 @@ def test_storage_flow_balance(system_test_run):
             for (r, p, s, d, i, t, v, o) in inflow_indices
         )
         outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
-        assert inflow == pytest.approx(
-            outflow, rel=1e-3
-        ), f'the inflow and outflow of storage tech {s_tech} do not match'
+        assert inflow == pytest.approx(outflow, rel=1e-3), (
+            f'the inflow and outflow of storage tech {s_tech} do not match'
+        )
 
 
 @pytest.mark.skip('not ready for primetime')

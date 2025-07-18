@@ -29,7 +29,6 @@ and python to filter results
 
 """
 
-
 import sys
 import time
 from collections import defaultdict
@@ -41,7 +40,7 @@ from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
 
 from temoa.extensions.myopic.myopic_index import MyopicIndex
-from temoa.temoa_model.model_checking import network_model_data, element_checker
+from temoa.temoa_model.model_checking import element_checker, network_model_data
 from temoa.temoa_model.model_checking.commodity_network_manager import CommodityNetworkManager
 from temoa.temoa_model.model_checking.element_checker import ViableSet
 from temoa.temoa_model.temoa_config import TemoaConfig
@@ -314,8 +313,7 @@ class HybridLoader:
                     )
                 except ValueError as e:
                     raise ValueError(
-                        'Failed to validate members of %s.  Coding error likely.'
-                        '\n%s' % (c.name, e)
+                        'Failed to validate members of %s.  Coding error likely.\n%s' % (c.name, e)
                     )
             match c:
                 case Set():
@@ -594,13 +592,13 @@ class HybridLoader:
 
         # CapacityFactorTech
         raw = cur.execute(
-            'SELECT region, season, tod, tech, factor ' 'FROM main.CapacityFactorTech'
+            'SELECT region, season, tod, tech, factor FROM main.CapacityFactorTech'
         ).fetchall()
         load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 3))
 
         # CapacityFactorProcess
         raw = cur.execute(
-            'SELECT region, season, tod, tech, vintage, factor ' ' FROM main.CapacityFactorProcess'
+            'SELECT region, season, tod, tech, vintage, factor  FROM main.CapacityFactorProcess'
         ).fetchall()
         load_element(M.CapacityFactorProcess, raw, self.viable_rtv, (0, 3, 4))
 
@@ -742,7 +740,7 @@ class HybridLoader:
         # the "viable_rtv" will filter anything beyond view
         if mi:
             raw = cur.execute(
-                'SELECT region, tech, vintage, cost FROM main.CostInvest ' 'WHERE vintage >= ?',
+                'SELECT region, tech, vintage, cost FROM main.CostInvest WHERE vintage >= ?',
                 (mi.base_year,),
             ).fetchall()
         else:
@@ -799,7 +797,7 @@ class HybridLoader:
         # LoanRate
         if mi:
             raw = cur.execute(
-                'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
+                'SELECT region, tech, vintage, rate FROM main.LoanRate WHERE vintage >= ?',
                 (mi.base_year,),
             ).fetchall()
         else:

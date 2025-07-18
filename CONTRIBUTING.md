@@ -8,7 +8,7 @@ Here are some resources to help get you started:
 * Use [our forum](https://groups.google.com/forum/#!forum/temoa-project) to ask questions about the model.
 
 ## Bugs and feature requests ##
-If you would like to report a bug in the code or request a feature, please use our [Issue Tracker](https://github.com/TemoaProject/temoa/issues). If you're unsure or have questions, use [the forum](https://groups.google.com/forum/#!forum/). 
+If you would like to report a bug in the code or request a feature, please use our [Issue Tracker](https://github.com/TemoaProject/temoa/issues). If you're unsure or have questions, use [the forum](https://groups.google.com/forum/#!forum/).
 
 ## Submitting Changes ##
 
@@ -19,9 +19,9 @@ When making commits to the repository, please use verbose commit messages for al
 ```
 Add NEOS solve functionality to config file
 
-With this commit, users can now use the NEOS server: https://neos-server.org/neos/ 
-to solve their Temoa models. If users do not have a local install of cplex, this 
-is a potentially faster option. Note that when using NEOS, both --neos and --solver 
+With this commit, users can now use the NEOS server: https://neos-server.org/neos/
+to solve their Temoa models. If users do not have a local install of cplex, this
+is a potentially faster option. Note that when using NEOS, both --neos and --solver
 must be used in the config file.
 ```
 

@@ -45,11 +45,11 @@ from temoa.temoa_model.hybrid_loader import HybridLoader
 from temoa.temoa_model.model_checking.pricing_check import price_checker
 from temoa.temoa_model.run_actions import (
     build_instance,
-    solve_instance,
-    handle_results,
-    check_solve_status,
-    check_python_version,
     check_database_version,
+    check_python_version,
+    check_solve_status,
+    handle_results,
+    solve_instance,
 )
 from temoa.temoa_model.temoa_config import TemoaConfig
 from temoa.temoa_model.temoa_mode import TemoaMode

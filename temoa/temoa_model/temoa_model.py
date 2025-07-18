@@ -20,27 +20,28 @@ A complete copy of the GNU General Public License v2 (GPLv2) is available
 in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import logging
 
 from pyomo.core import BuildCheck
 from pyomo.environ import (
-    Any,
-    NonNegativeReals,
     AbstractModel,
+    Any,
     BuildAction,
-    Param,
+    NonNegativeReals,
     Objective,
+    Param,
     minimize,
 )
 
 from temoa.temoa_model.model_checking.validators import (
-    validate_linked_tech,
-    region_check,
-    validate_CapacityFactorProcess,
-    region_group_check,
-    validate_Efficiency,
     check_flex_curtail,
     no_slash_or_pipe,
+    region_check,
+    region_group_check,
+    validate_CapacityFactorProcess,
+    validate_Efficiency,
+    validate_linked_tech,
 )
 from temoa.temoa_model.temoa_initialize import *
 from temoa.temoa_model.temoa_initialize import get_loan_life
@@ -739,7 +740,7 @@ class TemoaModel(AbstractModel):
         )
 
         M.progress_marker_8 = BuildAction(
-            ['Starting Max/Min Capacity and Tech Split ' 'Constraints'], rule=progress_check
+            ['Starting Max/Min Capacity and Tech Split Constraints'], rule=progress_check
         )
 
         M.MaxResourceConstraint = Constraint(

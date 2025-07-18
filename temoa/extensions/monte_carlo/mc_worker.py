@@ -32,6 +32,7 @@ that it is a separate class.  In future, it may make sense to re-combine these. 
 ingest DataPortal objects to make new models.  The MGA will (in future) likely just take in new obj functions
 
 """
+
 import logging.handlers
 from datetime import datetime
 from logging import getLogger

@@ -29,6 +29,7 @@ read in to the DataPortal or other structure.  Motivation is to contain the valu
 any extra validation information in one instance.
 
 """
+
 import re
 from collections.abc import Iterable, Sequence
 from operator import itemgetter

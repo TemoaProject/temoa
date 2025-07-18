@@ -18,8 +18,10 @@ A complete copy of the GNU General Public License v2 (GPLv2) is available
 in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 from collections import defaultdict
-from itertools import product as cross_product, product
+from itertools import product
+from itertools import product as cross_product
 from operator import itemgetter as iget
 from sys import stderr as SE
 from typing import TYPE_CHECKING
@@ -31,10 +33,9 @@ if TYPE_CHECKING:
     from temoa.temoa_model.temoa_model import TemoaModel
 
 from io import StringIO
+from logging import getLogger
 
 from pyomo.environ import value
-
-from logging import getLogger
 
 logger = getLogger(__name__)
 
@@ -135,7 +136,7 @@ def validate_time(M: 'TemoaModel'):
         if isinstance(year, int):
             continue
 
-        msg = f'Set "time_exist" requires integer-only elements.\n\n  ' f'Invalid element: "{year}"'
+        msg = f'Set "time_exist" requires integer-only elements.\n\n  Invalid element: "{year}"'
         logger.error(msg)
         raise Exception(msg)
 
@@ -143,7 +144,7 @@ def validate_time(M: 'TemoaModel'):
         if isinstance(year, int):
             continue
 
-        msg = f'Set "time_future" requires integer-only elements.\n\n ' f'invalid element: "{year}"'
+        msg = f'Set "time_future" requires integer-only elements.\n\n invalid element: "{year}"'
         logger.error(msg)
         raise Exception(msg)
 

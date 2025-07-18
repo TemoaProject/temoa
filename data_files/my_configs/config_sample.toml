@@ -111,4 +111,3 @@ activity_labels = []
 [monte_carlo]
 # a path from the PROJECT ROOT to the settings file that contains the run data.
 run_settings = 'data_files/monte_carlo/run_settings_1.csv'
-
