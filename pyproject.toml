@@ -27,14 +27,12 @@ dependencies = [
     "tabulate>=0.9.0",
     "xlsxwriter>=3.2.0",
     "pyam-iamc>=2.2.4",
-    "pytest>=8.3.2",
     "deprecated>=1.2.14",
     "openpyxl>=3.1.5",
     "networkx>=3.3",
     "highspy>=1.7.2",
     "scipy>=1.14.1",
     "gurobipy>=11.0.3",
-    "pytest-cov>=6.0.0",
     "nx-vis-visualizer>=0.1.1",
 ]
 
@@ -84,6 +82,28 @@ addopts = "-ra -q"
 testpaths = [
     "tests",
 ]
+
+[dependency-groups]
+dev = [
+    "pyproject2conda>=0.22.1",
+]
+
+
+[tool.pyproject2conda]
+channels = ["conda-forge", "defaults"]    # search these first
+sort = true
+python_include = "python>=3.12"
+
+[tool.pyproject2conda.dependencies]
+nx-vis-visualizer = { pip = true }
+gurobipy = { skip = true, packages = ["gurobi::gurobi"] }
+pyam-iamc = { skip = true, packages = ["pyam"] }
+coincbc = { channel = "conda-forge" }
+
+[tool.pyproject2conda.envs.env-all]
+extras = ["dev", "docs", "plotting"]
+overwrite = "force"                        # always regenerate
+
 
 [project.urls]
 Homepage = "https://temoaproject.org"

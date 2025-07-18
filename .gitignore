@@ -16,6 +16,7 @@
 !pyproject.toml
 !uv.lock
 !requirements*.txt
+!env*.yaml
 !LICENSE.txt
 !CHANGELOG.md
 !CONTRIBUTING.md
