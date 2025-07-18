@@ -1,7 +1,7 @@
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.7.6
+    rev: 0.8.0
     hooks:
     # Dependency management
       - id: uv-lock
@@ -26,6 +26,14 @@ repos:
           - requirements-dev.txt # Output file name
         files: ^pyproject\.toml$
 
+  - repo: https://github.com/usnistgov/pyproject2conda
+    rev: v0.22.1
+    hooks:
+      - id: pyproject2conda-project
+        name: Generate conda env from pyproject.toml[:dev]
+        args:
+          - --file=pyproject.toml
+
         # Code quality and formatting
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -42,7 +50,7 @@ repos:
     # Python Linting & Formatting with Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.11.10"
+    rev: "v0.12.4"
     hooks:
       - id: ruff
         name: ruff (linter)
