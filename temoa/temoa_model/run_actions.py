@@ -156,15 +156,19 @@ def build_instance(
     logger.info('Started creating model instance from data')
     instance = model.create_instance(loaded_portal, name=model_name)
     if not silent:
-        # Check for warnings in log file to notify user. Ugly but it works
-        log_file = os.path.join(definitions.get_OUTPUT_PATH(), 'log.log')
-        with open(log_file, 'r') as f:
-            warnings_found = any("| WARNING |" in line or "| ERROR |" in line or "| CRITICAL |" in line for line in f)
-            if warnings_found:
-                SE.write('\r[%8.2f] Instance created with warnings. Check log file.\n' % (time() - hack))
-            else:
-                SE.write('\r[%8.2f] Instance created.       \n' % (time() - hack)) # needs spaces to clear previous line
-        SE.flush()
+        try:
+            # Check for warnings in log file to notify user. Ugly but it works
+            log_file = os.path.join(definitions.get_OUTPUT_PATH(), 'log.log')
+            with open(log_file, 'r') as f:
+                warnings_found = any("| WARNING |" in line or "| ERROR |" in line or "| CRITICAL |" in line for line in f)
+                if warnings_found:
+                    SE.write('\r[%8.2f] Instance created with warnings. Check log file.\n' % (time() - hack))
+                else:
+                    SE.write('\r[%8.2f] Instance created.       \n' % (time() - hack)) # needs spaces to clear previous line
+            SE.flush()
+        except:
+            SE.write('\r[%8.2f] Instance created.       \n' % (time() - hack)) # needs spaces to clear previous line
+            SE.flush()
     logger.info('Finished creating model instance from data')
 
     # save LP if requested
