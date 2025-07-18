@@ -177,6 +177,7 @@ def setup_logging(output_path: Path, debug_level=False):
         format='%(asctime)s | %(module)s | %(levelname)s | %(message)s',
         datefmt='%d-%b-%y %H:%M:%S',
         level=level,
+        force=True,
     )
     logger.info('*** STARTING TEMOA ***')
 
