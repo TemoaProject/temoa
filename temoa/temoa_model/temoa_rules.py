@@ -1122,8 +1122,6 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             \qquad \forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
     """
-    if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
-        return Constraint.Skip
 
     produced = 0
     consumed = 0
@@ -1255,9 +1253,6 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     at the period level, summing all flows over the period but allowing imbalances at the time slice
     or seasonal level. Applies only to commodities in the :code:`commodity_annual` set.
     """
-
-    if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
-        return Constraint.Skip
     
     produced = 0
     consumed = 0
