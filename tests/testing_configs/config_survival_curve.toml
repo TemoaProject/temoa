@@ -7,7 +7,7 @@ output_database = "tests/testing_outputs/survival_curve.sqlite"
 neos = false
 
 # solver
-solver_name = "gurobi"
+solver_name = "cbc"
 
 # generate an excel file in the output_files folder
 save_excel = false
