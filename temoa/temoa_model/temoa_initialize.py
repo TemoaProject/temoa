@@ -1202,9 +1202,9 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         )
         if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
             logger.warning(
-                f'Sum of num_days in TimeSeasonSequential ({sum(sequential.values())}) '
-                f'does not sum to days_per_period ({value(M.DaysPerPeriod)}) from the '
-                'MetaData table.'
+                f'Sum of num_days in TimeSeasonSequential ({count_total}) '
+                f'for period {p} does not sum to days_per_period ({value(M.DaysPerPeriod)}) '
+                'from the MetaData table.'
             )
 
     # Check that seasons using in storage seasons are actual seasons
