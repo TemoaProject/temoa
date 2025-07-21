@@ -96,7 +96,7 @@ def poll_capacity_results(M: TemoaModel, epsilon=1e-5) -> CapData:
     """
     # Built Capacity
     built = []
-    for r, t, v in M.V_NewCapacity:
+    for r, t, v in M.V_NewCapacity.keys():
         if v in M.time_optimize:
             val = value(M.V_NewCapacity[r, t, v])
             if abs(val) < epsilon:
@@ -106,7 +106,7 @@ def poll_capacity_results(M: TemoaModel, epsilon=1e-5) -> CapData:
 
     # NetCapacity
     net = []
-    for r, p, t, v in M.V_Capacity:
+    for r, p, t, v in M.V_Capacity.keys():
         val = value(M.V_Capacity[r, p, t, v])
         if abs(val) < epsilon:
             continue
@@ -147,7 +147,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
     # ---- NON-annual ----
 
     # Storage, which has a unique v_flow_in (non-storage techs do not have this variable)
-    for key in M.V_FlowIn:
+    for key in M.V_FlowIn.keys():
         fi = FI(*key)
         flow = value(M.V_FlowIn[fi])
         if abs(flow) < epsilon:
@@ -156,7 +156,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
 
     # regular flows
-    for key in M.V_FlowOut:
+    for key in M.V_FlowOut.keys():
         fi = FI(*key)
         flow = value(M.V_FlowOut[fi])
         if abs(flow) < epsilon:
@@ -169,7 +169,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
             res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
 
     # curtailment flows
-    for key in M.V_Curtailment:
+    for key in M.V_Curtailment.keys():
         fi = FI(*key)
         val = value(M.V_Curtailment[fi])
         if abs(val) < epsilon:
@@ -177,7 +177,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         res[fi][FlowType.CURTAIL] = val
 
     # flex techs.  This will subtract the flex from their output flow IOT make OUT the "net"
-    for key in M.V_Flex:
+    for key in M.V_Flex.keys():
         fi = FI(*key)
         flow = value(M.V_Flex[fi])
         if abs(flow) < epsilon:
@@ -188,7 +188,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
     # ---- annual ----
 
     # basic annual flows
-    for r, p, i, t, v, o in M.V_FlowOutAnnual:
+    for r, p, i, t, v, o in M.V_FlowOutAnnual.keys():
         for s in M.TimeSeason[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
@@ -200,7 +200,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
                 res[fi][FlowType.LOST] = (1 - value(M.Efficiency[ritvo(fi)])) * res[fi][FlowType.IN]
 
     # flex annual
-    for r, p, i, t, v, o in M.V_FlexAnnual:
+    for r, p, i, t, v, o in M.V_FlexAnnual.keys():
         for s in M.TimeSeason[p]:
             for d in M.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
@@ -570,7 +570,7 @@ def poll_emissions(
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in M.EmissionActivity
+        for (r, e, i, t, v, o) in M.EmissionActivity.sparse_iterkeys()
         for p in M.time_optimize
         if (r, p, t, v) in M.processInputs
     ]

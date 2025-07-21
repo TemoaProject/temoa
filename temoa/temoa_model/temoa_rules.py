@@ -830,7 +830,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     # of indices that are valid which is basically the filter of:
     #     EmissionActivty by CostEmission
     # and to ensure that the techology is active we need to filter that
-    # result with processInput.keys()
+    # result with processInput
 
     # ================= Emissions and Flex and Curtailment =================
     # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
@@ -839,7 +839,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in M.EmissionActivity
+        for (r, e, i, t, v, o) in M.EmissionActivity.sparse_iterkeys()
         if (r, p, e) in M.CostEmission  # tightest filter first
         and (r, p, t, v) in M.processInputs
     ]
@@ -1414,14 +1414,14 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 #     try:
 #         collected = sum(
 #             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
-#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput
 #             for S_s in M.TimeSeason[p]
 #             for S_d in M.time_of_day
 #         )
 #     except KeyError:
 #         collected = sum(
 #             M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
-#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput
 #         )
 
 #     expr = collected <= value(M.ResourceBound[reg, p, r])
@@ -2589,7 +2589,7 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     CapRPT = M.V_CapacityAvailableByPeriodAndTech
 
     # relevant r, p, t indices
-    cap_rpt = set((_r, _p, _t) for _r, _p, _t in CapRPT if _t in techs and _r in regions)
+    cap_rpt = set((_r, _p, _t) for _r, _p, _t in CapRPT.keys() if _t in techs and _r in regions)
     # periods the technology can have capacity in this region (sorted)
     periods = sorted(set(_p for _r, _p, _t in cap_rpt))
 
@@ -2629,7 +2629,7 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
         capacity_prev = sum(
             value(M.ExistingCapacity[_r, _t, _v]) \
                 * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_prev)/(p - p_prev) )
-            for _r, _t, _v in M.ExistingCapacity
+            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v + value(M.LifetimeProcess[_r, _t, _v]) > p_prev
         )
     else:
@@ -2700,9 +2700,9 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     NewCapRTV = M.V_NewCapacity
 
     # relevant r, t, v indices
-    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t in techs and _r in regions)
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV.keys() if _t in techs and _r in regions)
     # periods the technology can be built in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in NewCapRTV if _v in M.time_optimize))
+    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
 
     if len(periods) == 0:
         if p == M.time_optimize.first():
@@ -2738,7 +2738,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
         p_prev = M.time_exist.last()
         new_cap_prev = sum(
             value(M.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in M.ExistingCapacity
+            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev
         )
     else:
@@ -2812,9 +2812,9 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     NewCapRTV = M.V_NewCapacity
 
     # relevant r, t, v indices
-    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV if _t in techs and _r in regions)
+    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV.keys() if _t in techs and _r in regions)
     # periods the technology can be built in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in cap_rtv if _v in M.time_optimize))
+    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
 
     if len(periods) == 0:
         if p == M.time_optimize.first():
@@ -2851,13 +2851,13 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
         p_prev = M.time_exist.last()
         new_cap_prev = sum(
             value(M.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in M.ExistingCapacity
+            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev
         )
         p_prev2 = M.time_exist.prev(p_prev)
         new_cap_prev2 = sum(
             value(M.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in M.ExistingCapacity
+            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev2
         )
     else:
@@ -2873,7 +2873,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
             p_prev2 = M.time_exist.last()
             new_cap_prev2 = sum(
                 value(M.ExistingCapacity[_r, _t, _v])
-                for _r, _t, _v in M.ExistingCapacity
+                for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
                 if _r in regions and _t in techs and _v == p_prev2
             )
         else:

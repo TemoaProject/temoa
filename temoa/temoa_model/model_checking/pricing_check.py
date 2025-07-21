@@ -78,11 +78,11 @@ def price_checker(M: 'TemoaModel') -> bool:
     # var costs for the period = vintage year
     base_year_variable_cost_rtv = set()
 
-    for r, p, t, v in M.CostFixed:
+    for r, p, t, v in M.CostFixed.sparse_iterkeys():
         fixed_costs[r, t, v].add(p)
         if p == v:
             base_year_fixed_cost_rtv.add((r, t, v))
-    for r, p, t, v in M.CostVariable:
+    for r, p, t, v in M.CostVariable.sparse_iterkeys():
         var_costs[r, t, v].add(p)
         if p == v:
             base_year_variable_cost_rtv.add((r, t, v))
@@ -291,7 +291,7 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
         if tech in M.tech_uncap
     }
 
-    fixed_cost_periods = {(r, t, v): p for r, p, t, v in M.CostFixed}
+    fixed_cost_periods = {(r, t, v): p for r, p, t, v in M.CostFixed.sparse_iterkeys()}
     rtv_with_fixed_cost = efficiency_rtv & set(fixed_cost_periods.keys())
     if rtv_with_fixed_cost:
         logger.error(
@@ -300,7 +300,7 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
         for rtv in rtv_with_fixed_cost:
             logger.error('%s: %s', rtv, fixed_cost_periods[rtv])
 
-    rtv_with_invest_cost = efficiency_rtv & set(M.CostInvest.keys())
+    rtv_with_invest_cost = efficiency_rtv & set(M.CostInvest.sparse_iterkeys())
     if rtv_with_invest_cost:
         logger.error(
             'The following technologies are labeled as unlimited capacity, but have an INVEST cost'
@@ -341,7 +341,7 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
     capacity_params = (M.ExistingCapacity,)
     bad_cap_entries = False
     for param in capacity_params:
-        bad_entries = {(r, t, v) for r, t, v in param.keys() if t in M.tech_uncap}
+        bad_entries = {(r, t, v) for r, t, v in param.sparse_iterkeys() if t in M.tech_uncap}
         if bad_entries:
             for entry in bad_entries:
                 logger.error(

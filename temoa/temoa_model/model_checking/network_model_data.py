@@ -91,7 +91,7 @@ class NetworkModelData:
     @available_techs.setter
     def available_techs(self, available_techs: dict[tuple[str, int], set[Tech]]) -> None:
         # check for region violations
-        for r, p in available_techs.keys():
+        for r, p in available_techs:
             for tech in available_techs[r, p]:
                 if tech.region != r:
                     raise ValueError(
@@ -152,7 +152,7 @@ def _build_from_model(M: TemoaModel, myopic_index=None) -> NetworkModelData:
     res.physical_commodities = set(M.commodity_all)
     source_com = defaultdict(set)
     dem_com = defaultdict(set)
-    for r, p, d in M.Demand:
+    for r, p, d in M.Demand.sparse_iterkeys():
         dem_com[r, p].add(d)
     res.demand_commodities = dem_com
     techs = defaultdict(set)
@@ -164,7 +164,7 @@ def _build_from_model(M: TemoaModel, myopic_index=None) -> NetworkModelData:
         techs[r, p].add(Tech(r, ic, tech, v, oc))
     res.available_techs = techs
     linked_techs = set()
-    for r, driver, emission, driven in M.LinkedTechs:
+    for r, driver, emission, driven in M.LinkedTechs.sparse_iterkeys():
         linked_techs.add(LinkedTech(r, driver, emission, driven))
     res.available_linked_techs = linked_techs
     logger.debug('built network data: %s', res.__str__())
