@@ -183,6 +183,7 @@ class TemoaModel(AbstractModel):
         M.tech_all = Set(initialize=M.tech_production, validate=no_slash_or_pipe) # was M.tech_resource | M.tech_production
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
+        M.tech_demand = Set(within=M.tech_annual)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         M.tech_storage = Set(within=M.tech_all)
         M.tech_reserve = Set(within=M.tech_all)

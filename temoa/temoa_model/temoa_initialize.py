@@ -816,8 +816,9 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 continue
             
             # All demand technologies must be annual technologies
-            if o in M.commodity_demand and t not in M.tech_annual:
+            if o in M.commodity_demand and t not in M.tech_demand:
                 M.tech_annual.add(t)
+                M.tech_demand.add(t)
 
             # Here we utilize the indices in a given iteration of the loop to
             # create the dictionary keys, and initialize the associated values
@@ -1562,7 +1563,7 @@ def CapacityConstraintIndices(M: 'TemoaModel'):
     capacity_indices = set(
         (r, p, s, d, t, v)
         for r, p, t, v in M.activeActivity_rptv
-        if t not in M.tech_annual
+        if (t not in M.tech_annual or t in M.tech_demand)
         if t not in M.tech_uncap
         if t not in M.tech_storage
         for s in M.TimeSeason[p]
@@ -1591,7 +1592,7 @@ def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
     capacity_indices = set(
         (r, p, t, v)
         for r, p, t, v in M.activeActivity_rptv
-        if t in M.tech_annual
+        if t in M.tech_annual and t not in M.tech_demand
         if t not in M.tech_uncap
     )
 

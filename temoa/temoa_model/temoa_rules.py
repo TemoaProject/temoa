@@ -244,11 +244,19 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
 
-    useful_activity = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
+    if t in M.tech_demand:
+        useful_activity = sum(
+            M.DemandSpecificDistribution[r, p, s, d, S_o]
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        useful_activity = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
     
     if t in M.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
