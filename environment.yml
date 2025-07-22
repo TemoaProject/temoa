@@ -19,17 +19,17 @@ dependencies:
     - glpk
     - python-graphviz
     - ipykernel
-    - jupyter
+  #  - jupyter
     - seaborn
     - tabulate
     - xlsxwriter
     - plotly
     - pyam
     # Below required to update documentation
-    - sphinx
-    - sphinx_rtd_theme
-    - sphinxcontrib-htmlhelp
-    - sphinxcontrib-serializinghtml
-    - sphinxcontrib-bibtex
+  #  - sphinx
+  #  - sphinx_rtd_theme
+  #  - sphinxcontrib-htmlhelp
+  #  - sphinxcontrib-serializinghtml
+  #  - sphinxcontrib-bibtex
     # cbc solver below cannot be installed via Conda on Windows
-    - coincbc
+   # - coincbc
