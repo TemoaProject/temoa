@@ -129,8 +129,10 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	svars = defaultdict( lambda: defaultdict( float ))
 
 	con_info = list()
-	epsilon = 1e-3   # threshold for "so small it's zero"
-	capacity_epsilon = 0.01
+	# epsilon = 1e-3   # threshold for "so small it's zero"
+	# capacity_epsilon = 0.01
+	epsilon = 10   # threshold for "so small it's zero"
+	capacity_epsilon = 10
 	emission_keys = { (r, i, t, v, o) : set() for r, e, i, t, v, o in m.EmissionActivity }
 	for r, e, i, t, v, o in m.EmissionActivity:
 		emission_keys[(r, i, t, v, o)].add(e)
@@ -154,29 +156,36 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		con.commit()
 		con.close()
 
-	# Extract optimal decision variable values related to commodity flow:
-	for r, p, s, d, t, v in m.V_StorageLevel:
-		val = value( m.V_StorageLevel[r, p, s, d, t, v] )
-		if abs(val) < epsilon: continue
+	# Initialize a new data structure for aggregated values
+	svars_aggregated = defaultdict(float)
+	svars_annual_aggregated = defaultdict(float)
 
-		svars['V_StorageLevel'][r, p, s, d, t, v] = val
+	# # Extract optimal decision variable values related to commodity flow:
+	# for r, p, s, d, t, v in m.V_StorageLevel:
+	# 	val = value( m.V_StorageLevel[r, p, s, d, t, v] )
+	# 	if abs(val) < epsilon: continue
+	#
+	# 	svars['V_StorageLevel'][r, p, s, d, t, v] = val
 
-	# vflow_in is defined only for storage techs
-	for r, p, s, d, i, t, v, o in m.V_FlowIn:
-		val_in = value( m.V_FlowIn[r, p, s, d, i, t, v, o] )
-		if abs(val_in) < epsilon: continue
-
-		svars['V_FlowIn'][r, p, s, d, i, t, v, o] = val_in
+	# # vflow_in is defined only for storage techs
+	# for r, p, s, d, i, t, v, o in m.V_FlowIn:
+	# 	val_in = value( m.V_FlowIn[r, p, s, d, i, t, v, o] )
+	# 	if abs(val_in) < epsilon: continue
+	#
+	# 	svars['V_FlowIn'][r, p, s, d, i, t, v, o] = val_in
 
 	for r, p, s, d, i, t, v, o in m.V_FlowOut:
 		val_out = value( m.V_FlowOut[r, p, s, d, i, t, v, o] )
 		if abs(val_out) < epsilon: continue
 
 		svars['V_FlowOut'][r, p, s, d, i, t, v, o] = val_out
+		# Aggregate values by summing over the "v" index
+		svars_aggregated[(r, p, s, d, i, t, o)] += val_out
+		svars_annual_aggregated[(r, p, i, t, o)] += val_out
 
-		if t not in m.tech_storage:
-			val_in = value( m.V_FlowOut[r, p, s, d, i, t, v, o] ) / value(m.Efficiency[r, i, t, v, o])
-			svars['V_FlowIn'][r, p, s, d, i, t, v, o] = val_in
+		# if t not in m.tech_storage:
+		# 	val_in = value( m.V_FlowOut[r, p, s, d, i, t, v, o] ) / value(m.Efficiency[r, i, t, v, o])
+		# 	svars['V_FlowIn'][r, p, s, d, i, t, v, o] = val_in
 
 		if (r, i, t, v, o) not in emission_keys: continue
 
@@ -185,12 +194,16 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 			evalue = val_out * m.EmissionActivity[r, e, i, t, v, o]
 			svars[ 'V_EmissionActivityByPeriodAndProcess' ][r, p, e, t, v] += evalue
 
+
 	for r, p, i, t, v, o in m.V_FlowOutAnnual:
 		for s in m.time_seasons_per_period_dict[p]:
 			for d in m.time_of_day:
 				val_out = value( m.V_FlowOutAnnual[r, p, i, t, v, o] ) * value( m.SegFrac[s , d ])
 				if abs(val_out) < epsilon: continue
 				svars['V_FlowOut'][r, p, s, d, i, t, v, o] = val_out
+				# Aggregate values by summing over the "v" index
+				svars_aggregated[(r, p, s, d, i, t, o)] += val_out
+				svars_annual_aggregated[(r, p, i, t, o)] += val_out
 				svars['V_FlowIn'][r, p, s, d, i, t, v, o] = val_out / value(m.Efficiency[r, i, t, v, o])
 				if (r, i, t, v, o) not in emission_keys: continue
 				emissions = emission_keys[r, i, t, v, o]
@@ -202,7 +215,7 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		val = value( m.V_Curtailment[r, p, s, d, i, t, v, o] )
 		if abs(val) < epsilon: continue
 		svars['V_Curtailment'][r, p, s, d, i, t, v, o] = val
-		svars['V_FlowIn'][r, p, s, d, i, t, v, o] = (val + value( m.V_FlowOut[r, p, s, d, i, t, v, o] )) / value(m.Efficiency[r, i, t, v, o])
+	#	svars['V_FlowIn'][r, p, s, d, i, t, v, o] = (val + value( m.V_FlowOut[r, p, s, d, i, t, v, o] )) / value(m.Efficiency[r, i, t, v, o])
 
 		if (r, i, t, v, o) not in emission_keys: continue
 
@@ -218,6 +231,9 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 				if abs(val_out) < epsilon: continue
 				svars['V_Curtailment'][r, p, s, d, i, t, v, o] = val_out
 				svars['V_FlowOut'][r, p, s, d, i, t, v, o] -= val_out
+				# Aggregate values by summing over the "v" index
+				svars_aggregated[(r, p, s, d, i, t, o)] -= val_out
+				svars_annual_aggregated[(r, p, i, t, o)] -= val_out
 
 
 	for r, p, s, d, i, t, v, o in m.V_Flex:
@@ -225,6 +241,18 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 		if abs(val_out) < epsilon: continue
 		svars['V_Curtailment'][r, p, s, d, i, t, v, o] = val_out
 		svars['V_FlowOut'][r, p, s, d, i, t, v, o] -= val_out
+
+		# Aggregate values by summing over the "v" index
+		svars_aggregated[(r, p, s, d, i, t, o)] -= val_out
+		svars_annual_aggregated[(r, p, i, t, o)] -= val_out
+
+	# Save aggregated values directly into svars['V_FlowOut']
+	for (r, p, s, d, i, t, o), total_value in svars_aggregated.items():
+		if s == m.time_seasons_per_period_dict[p][0]:
+			if abs(total_value) < epsilon: continue
+			svars['V_FlowOut2'][r, p, s, d, i, t, o] = total_value
+	for (r, p, i, t, o), total_value in svars_annual_aggregated.items():
+		svars['V_FlowOutAnnual'][r, p, i, t, o] = total_value
 
 	# Extract optimal decision variable values related to capacity:
 	if hasattr(options, 'file_location') and os.path.join('temoa_model', 'config_sample_myopic') not in options.file_location:
@@ -455,8 +483,10 @@ def pformat_results ( pyomo_instance, pyomo_result, options ):
 	# -----------------------------------------------------------------
 
 	# Table dictionary below maps variable names to database table names
-	tables = { "V_FlowIn"   : "Output_VFlow_In",  \
-			   "V_FlowOut"  : "Output_VFlow_Out", \
+	tables = {# "V_FlowIn"   : "Output_VFlow_In",  \
+			  # "V_FlowOut"  : "Output_VFlow_Out", \
+			   "V_FlowOut2"  : "Output_VFlow_Out2", \
+			   "V_FlowOutAnnual"  : "Output_VFlow_Out_Annual", \
 			   "V_Curtailment"  : "Output_Curtailment", \
 			   "V_Capacity" : "Output_V_Capacity",       \
 			   "V_NewCapacity" : "Output_V_NewCapacity",       \
