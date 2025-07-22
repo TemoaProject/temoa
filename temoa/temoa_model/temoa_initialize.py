@@ -814,6 +814,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
             # if tech is no longer active, don't include it
             if v + l_lifetime <= p:
                 continue
+            
+            # All demand technologies must be annual technologies
+            if o in M.commodity_demand and t not in M.tech_annual:
+                M.tech_annual.add(t)
 
             # Here we utilize the indices in a given iteration of the loop to
             # create the dictionary keys, and initialize the associated values

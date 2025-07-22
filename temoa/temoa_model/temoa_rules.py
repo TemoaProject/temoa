@@ -957,24 +957,24 @@ def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
     could satisfy both an end-use and internal system demand, then the output from
     :math:`\textbf{FO}` and :math:`\textbf{FOA}` would be double counted."""
 
-    supply = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-        if S_t not in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
-    )
+    # All demand techs are annual now
+    # supply = sum(
+    #     M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
+    #     for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
+    #     if S_t not in M.tech_annual
+    #     for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
+    # )
 
     supply_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, dem]
         for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-        if S_t in M.tech_annual
         for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
-    ) * value(M.SegFrac[p, s, d])
+    )
 
-    DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
+    DemandConstraintErrorCheck(supply_annual, r, p, s, d, dem)
 
     expr = (
-        supply + supply_annual == value(M.Demand[r, p, dem]) * value(M.DemandSpecificDistribution[r, p, s, d, dem])
+        supply_annual == value(M.Demand[r, p, dem])
     )
 
     return expr
@@ -1150,6 +1150,17 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
             if S_t not in M.tech_storage and S_t in M.tech_annual
             for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+            if S_o not in M.commodity_demand
+        )
+
+        # Into demand technologies (always annual flows)
+        consumed += sum(
+            value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+            * M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t not in M.tech_storage and S_t in M.tech_annual
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+            if S_o in M.commodity_demand
         )
 
     if (r, p, c) in M.capacityConsumptionTechs:

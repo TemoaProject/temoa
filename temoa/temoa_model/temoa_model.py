@@ -281,7 +281,6 @@ class TemoaModel(AbstractModel):
         )
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
-        M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
         # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
@@ -380,6 +379,7 @@ class TemoaModel(AbstractModel):
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
+        M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
         M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
@@ -644,12 +644,13 @@ class TemoaModel(AbstractModel):
         M.DemandConstraint_rpsdc = Set(dimen=5, initialize=DemandConstraintIndices)
         M.DemandConstraint = Constraint(M.DemandConstraint_rpsdc, rule=Demand_Constraint)
 
-        M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
-            dimen=9, initialize=DemandActivityConstraintIndices
-        )
-        M.DemandActivityConstraint = Constraint(
-            M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
-        )
+        # devnote: testing a workaround
+        # M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
+        #     dimen=9, initialize=DemandActivityConstraintIndices
+        # )
+        # M.DemandActivityConstraint = Constraint(
+        #     M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
+        # )
 
         M.CommodityBalanceConstraint_rpsdc = Set(
             dimen=5, initialize=CommodityBalanceConstraintIndices
