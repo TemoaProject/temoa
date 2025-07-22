@@ -365,13 +365,8 @@ def PeriodCost_rule(M, p):
             )
         )
         * (
-            min(value(M.LifetimeLoanProcess[r, S_t, S_v]), P_e - S_v) /
-            value(M.LifetimeLoanProcess[r, S_t, S_v])
-            if not GDR
-            else (
-                (1 - x ** (-min(value(M.LifetimeLoanProcess[r, S_t, S_v]), P_e - S_v)))
-                / (1 - x ** (-value(M.LifetimeLoanProcess[r, S_t, S_v])))
-        )
+            (1 - x ** (-min(value(M.LifetimeLoanProcess[r, S_t, S_v]), P_e - S_v)))
+            / (1 - x ** (-value(M.LifetimeLoanProcess[r, S_t, S_v])))
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p
@@ -636,7 +631,7 @@ reduces computational burden.
       interregional_exports = 0
       if (r, p, c) in M.exportRegions:
         interregional_exports = sum(
-          M.V_FlowOut[r+"-"+reg, p, s, d, c, S_t, S_v, S_o]
+          M.V_FlowOut[r+"-"+reg, p, s, d, c, S_t, S_v, S_o] / value(M.Efficiency[reg+"-"+r, c , S_t, S_v, S_o])
           for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
           )
 

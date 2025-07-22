@@ -37,7 +37,7 @@ def temoa_create_model(name="Temoa"):
     instantiation.
   """
     M = TemoaModel(name)
-
+    
     # ---------------------------------------------------------------
     # Define sets.
     # Sets are collections of items used to index parameters and variables
@@ -346,12 +346,13 @@ def temoa_create_model(name="Temoa"):
     M.DemandConstraint_rpsdc = Set(dimen=5, initialize=DemandConstraintIndices)
     M.DemandConstraint = Constraint(M.DemandConstraint_rpsdc, rule=Demand_Constraint)
 
-    M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
-        dimen=9, initialize=DemandActivityConstraintIndices
-    )
-    M.DemandActivityConstraint = Constraint(
-        M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
-    )
+    
+    # M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
+    #    dimen=9, initialize=DemandActivityConstraintIndices
+    # )
+    # M.DemandActivityConstraint = Constraint(
+    #    M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
+    # )
 
     M.CommodityBalanceConstraint_rpsdc = Set(
         dimen=5, initialize=CommodityBalanceConstraintIndices
@@ -442,10 +443,10 @@ def temoa_create_model(name="Temoa"):
         M.RampConstraintPeriod_rptv, rule=RampDownPeriod_Constraint
     )
 
-    M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
-    M.ReserveMarginConstraint = Constraint(
-        M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint
-    )
+    # M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
+    # M.ReserveMarginConstraint = Constraint(
+    #    M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint
+    # )
 
     M.EmissionLimitConstraint_rpe = Set(
         dimen=3, initialize=lambda M: M.EmissionLimit.sparse_iterkeys()
