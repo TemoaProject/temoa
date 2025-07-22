@@ -402,23 +402,38 @@ class TemoaSolverInstance(object):
 						# Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
 						self.optimizer.options["lpmethod"] = 4 # barrier
 						self.optimizer.options["solutiontype"] = 2 # non basic solution, ie no crossover
-						self.optimizer.options["barrier convergetol"] = 1.e-5
-						self.optimizer.options["feasopt tolerance"] = 1.e-6
+						self.optimizer.options["barrier convergetol"] = 1.e-3
+						self.optimizer.options["feasopt tolerance"] = 1.e-4
 						sym_labels = self.options.keepPyomoLP
 					elif self.options.solver == 'gurobi':
 						# Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
 						self.optimizer.options["Method"] = 2 # barrier
 						self.optimizer.options["Crossover"] = 0 # non basic solution, ie no crossover
-						self.optimizer.options["BarConvTol"] = 1.e-5
-						self.optimizer.options["FeasibilityTol"] = 1.e-6
+						self.optimizer.options["BarConvTol"] = 1.e-3
+						self.optimizer.options["FeasibilityTol"] = 1.e-4
+						self.optimizer.options['OutputFlag'] = 1 # enable verbose output
+						#self.optimizer.options["BarHomogeneous"] = 1
+
 						sym_labels = self.options.keepPyomoLP
+						sym_labels = True
+
 					else:
 						# at this point, the model has not been tested with Gurobi or other solvers.
 						sym_labels = self.options.keepPyomoLP
+						sym_labels = True
+
 
 					self.result = self.optimizer.solve(self.instance, suffixes=['dual'],  tee=True,# 'rc', 'slack'],
-													   keepfiles=self.options.keepPyomoLP,
+													   keepfiles=False,#self.options.keepPyomoLP,
 													   symbolic_solver_labels=sym_labels)
+
+				if (self.result.solver.termination_condition == TerminationCondition.infeasible):
+					print("Model is infeasible. Computing IIS...")
+					self.instance.write('model.lp')
+					self.optimizer.options['IIS'] = 1
+					self.optimizer.solve(self.instance)
+					self.instance.solutions.load_from('model.ilp')
+					print("IIS written to model.ilp")
 				yield '\t\t\t\t\t\t[%8.2f]\n' % duration()
 				SE.write( '\r[%8.2f]\n' % duration() )
 				self.txt_file.write( '[%8.2f]\n' % duration() )
