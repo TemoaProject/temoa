@@ -327,9 +327,32 @@ def validate_tech_sets(M: 'TemoaModel'):
             check_no_intersection(M.tech_annual, M.tech_curtailment),
             check_no_intersection(M.tech_curtailment, M.tech_flex),
             check_no_intersection(M.tech_all, M.tech_group_names),
+            check_no_intersection(M.tech_uncap, M.tech_reserve)
         )
     ):
         raise ValueError("Technology sets failed to validate. Check log file for details.")
+    
+
+def validate_demand_tech_sets(M: 'TemoaModel'):
+    """
+    Check tech sets for any forbidden intersections
+    """
+    if not all(
+        (
+            check_no_intersection(M.tech_demand, M.tech_baseload),
+            check_no_intersection(M.tech_demand, M.tech_storage),
+            check_no_intersection(M.tech_demand, M.tech_upramping),
+            check_no_intersection(M.tech_demand, M.tech_downramping),
+            check_no_intersection(M.tech_demand, M.tech_flex)
+        )
+    ):
+        raise ValueError(
+            "Demand technologies were added to forbidden sets. Check log file for details. "
+            "If these technologies require these features, consider adding an intermediate "
+            "process between the technology's output commodity and the demand commodity. "
+            "Note this will break the enforcement that demand technologies meet "
+            "a consistent proportion of demands throughout the year."
+        )
 
 
 def check_no_intersection(set_one, set_two):

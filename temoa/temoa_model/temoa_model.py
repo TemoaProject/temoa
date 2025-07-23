@@ -42,6 +42,7 @@ from temoa.temoa_model.model_checking.validators import (
     region_group_check,
     validate_Efficiency,
     validate_tech_sets,
+    validate_demand_tech_sets,
     no_slash_or_pipe,
     validate_ReserveMargin,
 )
@@ -380,6 +381,7 @@ class TemoaModel(AbstractModel):
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
+        M.validate_demand_techs = BuildAction(rule=validate_demand_tech_sets)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
@@ -642,8 +644,8 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
-        M.DemandConstraint_rpsdc = Set(dimen=5, initialize=DemandConstraintIndices)
-        M.DemandConstraint = Constraint(M.DemandConstraint_rpsdc, rule=Demand_Constraint)
+        M.DemandConstraint_rpc = Set(dimen=3, initialize=DemandConstraintIndices)
+        M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=Demand_Constraint)
 
         # devnote: testing a workaround
         # M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(

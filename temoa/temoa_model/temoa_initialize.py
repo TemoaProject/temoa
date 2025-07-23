@@ -108,19 +108,19 @@ def AnnualCommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, c):
         raise Exception(msg.format(c, r, p, expr))
 
 
-def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
+def DemandConstraintErrorCheck(supply, r, p, dem):
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem
     if isinstance(supply, int):
         msg = (
-            "Error: Demand '{}' for ({}, {}, {}, {}) unable to be met by any "
+            "Error: Demand '{}' for ({}, {}) unable to be met by any "
             'technology.\n\tPossible reasons:\n'
             ' - Is the Efficiency parameter missing an entry for this demand?\n'
             ' - Does a tech that satisfies this demand need a longer '
             'Lifetime?\n'
         )
-        logger.error(msg.format(dem, r, p, s, d))
-        raise Exception(msg.format(dem, r, p, s, d))
+        logger.error(msg.format(dem, r, p))
+        raise Exception(msg.format(dem, r, p))
 
 
 def validate_time(M: 'TemoaModel'):
@@ -1606,76 +1606,74 @@ def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
 # ---------------------------------------------------------------
 
 
-def DemandActivityConstraintIndices(M: 'TemoaModel'):
-    """\
-This function returns a set of sparse indices that are used in the
-DemandActivity constraint. It returns a tuple of the form:
-(p,s,d,t,v,dem,first_s,first_d) where "dem" is a demand commodity, and "first_s"
-and "first_d" are the reference season and time-of-day, respectively used to
-ensure demand activity remains consistent across time slices.
-"""
+# def DemandActivityConstraintIndices(M: 'TemoaModel'):
+#     """\
+# This function returns a set of sparse indices that are used in the
+# DemandActivity constraint. It returns a tuple of the form:
+# (p,s,d,t,v,dem,first_s,first_d) where "dem" is a demand commodity, and "first_s"
+# and "first_d" are the reference season and time-of-day, respectively used to
+# ensure demand activity remains consistent across time slices.
+# """
 
-    # needed data structures...
-    # the count of techs that supply a commodity
-    suppliers = defaultdict(set)
-    # (region, demand): (season, tod)  # the goal of the exercise!
-    anchor_season_tod = {}
-    # (region, demand): (period, tech, vintage) # the viable tech and vintage per region, demand
-    viable_tech_vintage = defaultdict(list)
+#     # needed data structures...
+#     # the count of techs that supply a commodity
+#     suppliers = defaultdict(set)
+#     # (region, demand): (season, tod)  # the goal of the exercise!
+#     anchor_season_tod = {}
+#     # (region, demand): (period, tech, vintage) # the viable tech and vintage per region, demand
+#     viable_tech_vintage = defaultdict(list)
 
-    # start the loop over possible combos
-    for r, p, t, v, dem in M.processInputsByOutput:
-        # we aren't concerned with non-demand commodities or annual techs
-        if dem not in M.commodity_demand or t in M.tech_annual:
-            continue
-        # capture the (p, t, v) in case we need to act on it
-        viable_tech_vintage[r, p, dem].append((t, v))
-        suppliers[dem].add(t)  # one more recognized supplier
-        if len(suppliers[dem]) > 1:
-            # We need to act on (build) for this region-demand, put in a placeholder
-            anchor_season_tod[r, p, dem] = None
+#     # start the loop over possible combos
+#     for r, p, t, v, dem in M.processInputsByOutput:
+#         # we aren't concerned with non-demand commodities or annual techs
+#         if dem not in M.commodity_demand or t in M.tech_annual:
+#             continue
+#         # capture the (p, t, v) in case we need to act on it
+#         viable_tech_vintage[r, p, dem].append((t, v))
+#         suppliers[dem].add(t)  # one more recognized supplier
+#         if len(suppliers[dem]) > 1:
+#             # We need to act on (build) for this region-demand, put in a placeholder
+#             anchor_season_tod[r, p, dem] = None
 
-    # Find the first timestep of the year where the demand is appreciably sized:
-    #   appreciable = not so small that we get into numerical instability when applying small multipliers
-    appreciable_size = 0.0001
+#     # Find the first timestep of the year where the demand is appreciably sized:
+#     #   appreciable = not so small that we get into numerical instability when applying small multipliers
+#     appreciable_size = 0.0001
 
-    for r, p, dem in anchor_season_tod:
-        found_flag = False
-        s0, d0 = None, None
-        for s0, d0 in ((ss, dd) for ss in M.TimeSeason[p] for dd in M.time_of_day):
-            if (r, p, s0, d0, dem) in M.DemandSpecificDistribution:
-                if value(M.DemandSpecificDistribution[r, p, s0, d0, dem]) >= appreciable_size:
-                    found_flag = True
-                    break  # we have one with some value associated
-        found = 'found' if found_flag else 'not found'
-        # set it.  If nothing was found the first indices should work just fine...
-        anchor_season_tod[r, p, dem] = (s0, d0)
-        logger.debug(
-            'Using season/tod: %s, %s for commodity %s in region %s which was %s in DSD '
-            'to set DemandActivity baseline',
-            s0,
-            d0,
-            dem,
-            r,
-            found,
-        )
+#     for r, p, dem in anchor_season_tod:
+#         found_flag = False
+#         s0, d0 = None, None
+#         for s0, d0 in ((ss, dd) for ss in M.TimeSeason[p] for dd in M.time_of_day):
+#             if (r, p, s0, d0, dem) in M.DemandSpecificDistribution:
+#                 if value(M.DemandSpecificDistribution[r, p, s0, d0, dem]) >= appreciable_size:
+#                     found_flag = True
+#                     break  # we have one with some value associated
+#         found = 'found' if found_flag else 'not found'
+#         # set it.  If nothing was found the first indices should work just fine...
+#         anchor_season_tod[r, p, dem] = (s0, d0)
+#         logger.debug(
+#             'Using season/tod: %s, %s for commodity %s in region %s which was %s in DSD '
+#             'to set DemandActivity baseline',
+#             s0,
+#             d0,
+#             dem,
+#             r,
+#             found,
+#         )
 
-    # Start yielding the constraint indices
-    for r, p, dem in anchor_season_tod:
-        s0, d0 = anchor_season_tod[r, p, dem]
-        for t, v in viable_tech_vintage[r, p, dem]:
-            for s in M.TimeSeason[p]:
-                for d in M.time_of_day:
-                    if s != s0 or d != d0:
-                        yield r, p, s, d, t, v, dem, s0, d0
+#     # Start yielding the constraint indices
+#     for r, p, dem in anchor_season_tod:
+#         s0, d0 = anchor_season_tod[r, p, dem]
+#         for t, v in viable_tech_vintage[r, p, dem]:
+#             for s in M.TimeSeason[p]:
+#                 for d in M.time_of_day:
+#                     if s != s0 or d != d0:
+#                         yield r, p, s, d, t, v, dem, s0, d0
 
 
 def DemandConstraintIndices(M: 'TemoaModel'):
     indices = set(
-        (r, p, s, d, dem)
+        (r, p, dem)
         for r, p, dem in M.Demand.sparse_iterkeys()
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
     )
 
     return indices

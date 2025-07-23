@@ -263,6 +263,7 @@ def solve_instance(
             optimizer.options["Crossover"] = 0 # non basic solution, ie no crossover
             optimizer.options["BarConvTol"] = 1.e-5
             optimizer.options["FeasibilityTol"] = 1.e-6
+            # optimizer.options["BarOrder"] = 0 # if solve times seem unusually long, try 0 or 1
 
         elif solver_name == 'appsi_highs':
             pass

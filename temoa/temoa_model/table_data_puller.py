@@ -191,8 +191,12 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
     for r, p, i, t, v, o in M.V_FlowOutAnnual.keys():
         for s in M.TimeSeason[p]:
             for d in M.time_of_day:
+                if t in M.tech_demand:
+                    distribution = value(M.DemandSpecificDistribution[r, p, s, d, o])
+                else:
+                    distribution = value(M.SegFrac[p, s, d])
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * value(M.SegFrac[p, s, d])
+                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * distribution
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.OUT] = flow

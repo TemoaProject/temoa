@@ -47,11 +47,13 @@ test_vals = {
         ExpectedVals.EFF_INDEX_SIZE: 74,
         # increased by 2 when reworking storageinit.
         # increased after making annualretirement derived var
-        ExpectedVals.CONSTR_COUNT: 2834,
+        # reduced 2025/07/25 by 504 after annualising demands
+        ExpectedVals.CONSTR_COUNT: 2330,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
-        ExpectedVals.VAR_COUNT: 1900,
+        # reduced 2025/07/25 by 420 after annualising demands
+        ExpectedVals.VAR_COUNT: 1480,
     },
     'utopia': {
         # reduced after reworking storageinit -> storage was less constrained
@@ -63,12 +65,14 @@ test_vals = {
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.
         # increased after making annualretirement derived var
-        ExpectedVals.CONSTR_COUNT: 1471,
+        # reduced 2025/07/25 by 225 after annualising demands
+        ExpectedVals.CONSTR_COUNT: 1246,
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
-        ExpectedVals.VAR_COUNT: 1055, 
+        # reduced 2025/07/25 by 200 after annualising demands
+        ExpectedVals.VAR_COUNT: 855, 
     },
     'mediumville': {
         # added 2025/06/12 prior to addition of dynamic reserve margin
@@ -77,16 +81,20 @@ test_vals = {
         ExpectedVals.EFF_DOMAIN_SIZE: 2800,
         ExpectedVals.EFF_INDEX_SIZE: 18,
         # increased after reviving RampSeason constraints
-        ExpectedVals.CONSTR_COUNT: 240,
-        ExpectedVals.VAR_COUNT: 140, 
+        # reduced 2025/07/25 by 24 after annualising demands
+        ExpectedVals.CONSTR_COUNT: 216,
+        # reduced 2025/07/25 by 18 after annualising demands
+        ExpectedVals.VAR_COUNT: 122, 
     },
     'seasonal_storage': {
         # added 2025/06/16 after addition of seasonal storage
         ExpectedVals.OBJ_VALUE: 76661.0231,
         ExpectedVals.EFF_DOMAIN_SIZE: 24,
         ExpectedVals.EFF_INDEX_SIZE: 4,
-        ExpectedVals.CONSTR_COUNT: 182,
-        ExpectedVals.VAR_COUNT: 90, 
+        # reduced 2025/07/25 by 7 after annualising demands
+        ExpectedVals.CONSTR_COUNT: 175,
+        # reduced 2025/07/25 by 7 after annualising demands
+        ExpectedVals.VAR_COUNT: 83, 
     },
     'survival_curve': {
         # added 2025/06/19 after addition of survival curves
