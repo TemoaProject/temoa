@@ -2232,7 +2232,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     )
 
     # Generators might serve demands directly
-    total_generation = sum(
+    total_generation += sum(
         value(M.DemandSpecificDistribution[r, p, s, d, S_o])
         * M.V_FlowOutAnnual[r, p, s, d, S_i, t, S_v, S_o]
         for (t, S_v) in M.processReservePeriods[r, p]
