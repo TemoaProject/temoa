@@ -54,7 +54,7 @@ def test_storage_fraction(system_test_run):
         )
 
         assert model.V_StorageLevel[r, p, s, d, t, v].value == pytest.approx(
-            energy, rel=1e-3
+            energy, abs=1e-5
         ), f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
 
 
@@ -135,7 +135,7 @@ def test_storage_flow_balance(system_test_run):
         outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
         
         assert inflow == pytest.approx(
-            outflow, rel=1e-3
+            outflow, abs=1e-5
         ), (f'total inflow and outflow of storage tech {s_tech} do not match',
             ' - there is a discontinuity of storage states')
 
