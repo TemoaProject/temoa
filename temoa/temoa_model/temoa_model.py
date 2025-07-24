@@ -426,8 +426,9 @@ class TemoaModel(AbstractModel):
         )
         M.CostEmission = Param(M.CostEmission_rpe)
 
-        M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
-        M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
+        # devnote: no longer used
+        # M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
+        # M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
 
         M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)

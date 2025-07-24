@@ -750,7 +750,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     P_0 = min(M.time_optimize)
     P_e = M.time_future.last()  # End point of modeled horizon
     GDR = value(M.GlobalDiscountRate)
-    MPL = M.ModelProcessLife
+    # MPL = M.ModelProcessLife
 
     if value(M.MyopicDiscountingYear) != 0:
         P_0 = value(M.MyopicDiscountingYear)
@@ -3564,11 +3564,12 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
 # ---------------------------------------------------------------
 # Define rule-based parameters
 # ---------------------------------------------------------------
-def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
-    life_length = value(M.LifetimeProcess[r, t, v])
-    mpl = min(v + life_length - p, value(M.PeriodLength[p]))
+# devnote: MPL no longer used. Instead, use adjusted capacity * period length
+# def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
+#     life_length = value(M.LifetimeProcess[r, t, v])
+#     mpl = min(v + life_length - p, value(M.PeriodLength[p]))
 
-    return mpl
+#     return mpl
 
 
 def ParamPeriodLength(M: 'TemoaModel', p):
