@@ -1228,7 +1228,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             if S_t not in M.tech_annual
         )
         consumed += sum(
-            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[reg + '-' + r, p, c, S_t, S_v, S_o]
+            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[r + '-' + reg, p, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
             for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
             if S_t in M.tech_annual
@@ -1380,7 +1380,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
             if S_t not in M.tech_annual
         )
         produced += sum(
-            M.V_FlowOutAnnual[r + '-' + S_r, p, S_i, S_t, S_v, c]
+            M.V_FlowOutAnnual[S_r + '-' + r, p, S_i, S_t, S_v, c]
             for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
             if S_t in M.tech_annual
         )
