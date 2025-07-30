@@ -3700,14 +3700,14 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     #     for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
     # )
 
-    if t in M.tech_demand:
+    if linked_t in M.tech_demand:
         linked_flow = sum(
             M.DemandSpecificDistribution[r, p, s, d, S_o]
             * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
             for S_i in M.processInputs[r, p, linked_t, v]
             for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
         )
-    elif t in M.tech_annual:
+    elif linked_t in M.tech_annual:
         linked_flow = sum(
             M.SegFrac[p, s, d]
             * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
