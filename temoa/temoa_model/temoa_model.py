@@ -282,7 +282,10 @@ class TemoaModel(AbstractModel):
             default=0
         )
 
-        M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
+        M.DemandConstraint_rpc = Set(
+            within=M.regions * M.time_optimize * M.commodity_demand
+        )
+        M.Demand = Param(M.DemandConstraint_rpc)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
         # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
@@ -645,7 +648,6 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
-        M.DemandConstraint_rpc = Set(dimen=3, initialize=DemandConstraintIndices)
         M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=Demand_Constraint)
 
         # devnote: testing a workaround

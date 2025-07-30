@@ -1116,6 +1116,7 @@ class HybridLoader:
         param_idx_sets = {
             M.CostInvest.name: M.CostInvest_rtv.name,
             M.CostEmission.name: M.CostEmission_rpe.name,
+            M.Demand.name: M.DemandConstraint_rpc.name,
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
             M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,

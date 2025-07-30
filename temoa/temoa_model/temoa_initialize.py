@@ -1670,13 +1670,14 @@ def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
 #                         yield r, p, s, d, t, v, dem, s0, d0
 
 
-def DemandConstraintIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, dem)
-        for r, p, dem in M.Demand.sparse_iterkeys()
-    )
+# devnote: no longer needed
+# def DemandConstraintIndices(M: 'TemoaModel'):
+#     indices = set(
+#         (r, p, dem)
+#         for r, p, dem in M.Demand.sparse_iterkeys()
+#     )
 
-    return indices
+#     return indices
 
 
 def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
