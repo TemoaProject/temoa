@@ -18,13 +18,13 @@ scenario = "test_linked_tech"
 scenario_mode = "perfect_foresight"
 
 # Input database (Mandatory)
-input_database = "testing_outputs/simple_linked_tech.sqlite"
+input_database = "tests/testing_outputs/simple_linked_tech.sqlite"
 
 # Output file (Mandatory)
 # The output file must be an existing .sqlite file
 # For Pefrect Foresight, the user may target the same input file or a separate /
 # copied sqlite file in a different location.  Myopic requires that input_database = output_database
-output_database = "testing_outputs/simple_linked_tech.sqlite"
+output_database = "tests/testing_outputs/simple_linked_tech.sqlite"
 
 # ------------------------------------
 #        DATA / MODEL CHECKS

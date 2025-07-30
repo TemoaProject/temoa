@@ -2,8 +2,8 @@
 scenario = "test run"
 scenario_mode = "perfect_foresight"
 
-input_database = "testing_outputs/utopia.sqlite"
-output_database = "testing_outputs/utopia.sqlite"
+input_database = "tests/testing_outputs/utopia.sqlite"
+output_database = "tests/testing_outputs/utopia.sqlite"
 neos = false
 
 # solver

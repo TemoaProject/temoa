@@ -44,14 +44,14 @@ test_vals = {
         ExpectedVals.OBJ_VALUE: 491977.7000753,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
-        ExpectedVals.CONSTR_COUNT: 2826,
-        ExpectedVals.VAR_COUNT: 1904,
+        ExpectedVals.CONSTR_COUNT: 2322,
+        ExpectedVals.VAR_COUNT: 1484,
     },
     'utopia': {
         ExpectedVals.OBJ_VALUE: 36535.631200,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
-        ExpectedVals.CONSTR_COUNT: 1452,  # reduced 3/27:  unlim_cap techs now employed
-        ExpectedVals.VAR_COUNT: 1055,  # reduced 3/27:  unlim_cap techs now employed
+        ExpectedVals.CONSTR_COUNT: 1227,  # reduced 3/27:  unlim_cap techs now employed
+        ExpectedVals.VAR_COUNT: 855,  # reduced 3/27:  unlim_cap techs now employed
     },
 }

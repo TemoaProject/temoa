@@ -100,11 +100,20 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
 
-    useful_activity = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-    )
+    if t in M.tech_demand:
+        useful_activity = sum(
+            M.DemandSpecificDistribution[r, s, d, S_o]
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        useful_activity = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        )
+    
     if (r, s, d, t, v) in M.CapacityFactorProcess:
         # use the data provided
         capacity = value(M.CapacityFactorProcess[r, s, d, t, v])
@@ -597,7 +606,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 # ---------------------------------------------------------------
 
 
-def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
+def Demand_Constraint(M: 'TemoaModel', r, p, dem):
     r"""
 
     The Demand constraint drives the model.  This constraint ensures that supply at
@@ -621,24 +630,17 @@ def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
     could satisfy both an end-use and internal system demand, then the output from
     :math:`\textbf{FO}` and :math:`\textbf{FOA}` would be double counted."""
 
-    supply = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-        if S_t not in M.tech_annual
-        for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, dem]
-    )
-
     supply_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, dem]
         for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
         if S_t in M.tech_annual
         for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, dem]
-    ) * value(M.SegFrac[s, d])
+    )
 
-    DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
+    DemandConstraintErrorCheck(supply_annual, r, p, dem)
 
     expr = (
-        supply + supply_annual == M.Demand[r, p, dem] * M.DemandSpecificDistribution[r, s, d, dem]
+        supply_annual == M.Demand[r, p, dem]
     )
 
     return expr
@@ -789,7 +791,15 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     vflow_in_ToNonStorageAnnual = value(M.SegFrac[s, d]) * sum(
         M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_storage and S_t in M.tech_annual
+        if S_t in M.tech_annual and S_t not in M.tech_demand
+        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
+    )
+
+    vflow_in_ToDemand = sum(
+        value(M.DemandSpecificDistribution[r, s, d, S_o])
+        * M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+        if S_t in M.tech_demand
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
     )
 
@@ -841,6 +851,8 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         vflow_in_ToStorage
         + vflow_in_ToNonStorage
         + vflow_in_ToNonStorageAnnual
+        + vflow_in_ToDemand
+        + vflow_in_ToDemand
         + interregional_exports
         + v_out_excess,
         r,
@@ -855,6 +867,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         == vflow_in_ToStorage
         + vflow_in_ToNonStorage
         + vflow_in_ToNonStorageAnnual
+        + vflow_in_ToDemand
         + interregional_exports
         + v_out_excess
     )
@@ -2982,18 +2995,52 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     the primary region corresponds to the linked technology as well. The lifetimes
     of the primary and linked technologies should be specified and identical.
     """
+
+    if t in M.tech_demand:
+        primary_flow = sum(
+            M.DemandSpecificDistribution[r, s, d, S_o]
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        )
+    elif t in M.tech_annual:
+        primary_flow = sum(
+            M.SegFrac[s, d]
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        primary_flow = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+        )
+
     linked_t = M.LinkedTechs[r, t, e]
 
-    primary_flow = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] * M.EmissionActivity[r, e, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-    )
-
-    linked_flow = sum(
-        M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
-        for S_i in M.processInputs[r, p, linked_t, v]
-        for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
-    )
+    if linked_t in M.tech_demand:
+        linked_flow = sum(
+            M.DemandSpecificDistribution[r, s, d, S_o]
+            * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
+            for S_i in M.processInputs[r, p, linked_t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
+        )
+    elif linked_t in M.tech_annual:
+        linked_flow = sum(
+            M.SegFrac[p, s, d]
+            * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
+            for S_i in M.processInputs[r, p, linked_t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
+        )
+    else:
+        linked_flow = sum(
+            M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
+            for S_i in M.processInputs[r, p, linked_t, v]
+            for S_o in M.ProcessOutputsByInput[r, p, linked_t, v, S_i]
+        )
 
     return -primary_flow == linked_flow

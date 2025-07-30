@@ -4,8 +4,8 @@ scenario_mode = "myopic"
 
 # note that myopic currently only supports input = output.  Test code will be responsible
 # for making a fresh copy (if desired) and moving it to the output folder
-input_database = "testing_outputs/myo_utopia.sqlite"
-output_database = "testing_outputs/myo_utopia.sqlite"
+input_database = "tests/testing_outputs/myo_utopia.sqlite"
+output_database = "tests/testing_outputs/myo_utopia.sqlite"
 neos = false
 
 # solver

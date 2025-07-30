@@ -147,6 +147,7 @@ class TemoaModel(AbstractModel):
         M.tech_all = Set(initialize=M.tech_resource | M.tech_production, validate=no_slash_or_pipe)
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
+        M.tech_demand = Set(within=M.tech_annual)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         M.tech_storage = Set(within=M.tech_all - M.tech_annual)
         M.tech_reserve = Set(within=M.tech_all)
@@ -233,7 +234,10 @@ class TemoaModel(AbstractModel):
             M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0
         )
 
-        M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
+        M.DemandConstraint_rpc = Set(within=M.regions * M.time_optimize * M.commodity_demand)
+        M.Demand = Param(M.DemandConstraint_rpc)
+
+        # M.Demand = Param(M.regions * M.time_optimize * M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
@@ -560,15 +564,16 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
-        M.DemandConstraint_rpsdc = Set(dimen=5, initialize=DemandConstraintIndices)
-        M.DemandConstraint = Constraint(M.DemandConstraint_rpsdc, rule=Demand_Constraint)
+        M.DemandConstraint = Constraint(
+            M.DemandConstraint_rpc, rule=Demand_Constraint
+        )
 
-        M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
-            dimen=9, initialize=DemandActivityConstraintIndices
-        )
-        M.DemandActivityConstraint = Constraint(
-            M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
-        )
+        # M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
+        #     dimen=9, initialize=DemandActivityConstraintIndices
+        # )
+        # M.DemandActivityConstraint = Constraint(
+        #     M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
+        # )
 
         M.CommodityBalanceConstraint_rpsdc = Set(
             dimen=5, initialize=CommodityBalanceConstraintIndices

@@ -1180,6 +1180,7 @@ class HybridLoader:
         M: TemoaModel = TemoaModel()  # for typing
         param_idx_sets = {
             M.CostInvest.name: M.CostInvest_rtv.name,
+            M.Demand.name: M.DemandConstraint_rpc.name,
             M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
             M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
             M.MaxActivityGroup.name: M.MaxActivityGroup_rpg.name,
