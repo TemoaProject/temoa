@@ -107,6 +107,7 @@ class TemoaModel(AbstractModel):
         M.inputsplitVintages = dict()
         M.inputsplitaverageVintages = dict()
         M.outputsplitVintages = dict()
+        M.outputsplitaverageVintages = dict()
         M.ProcessByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
@@ -167,10 +168,6 @@ class TemoaModel(AbstractModel):
         # the below is a convenience for domain checking in params below that should not accept uncap techs...
         M.tech_with_capacity = Set(initialize=M.tech_all - M.tech_uncap)
         """techs eligible for capacitization"""
-
-        # Define techs for use with TechInputSplitAverage constraint,
-        # where techs have variable annual output but the user wishes to constrain them annually
-        M.tech_variable = Set(within=M.tech_all)
         # Define techs for which economic retirement is an option
         # Note:  Storage techs cannot (currently) be retired due to linkage to initialization
         #        process, which is currently incapable of reducing initializations on retirements.
@@ -298,10 +295,9 @@ class TemoaModel(AbstractModel):
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
         M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.TechInputSplitAverage = Param(
-            M.regions, M.time_optimize, M.commodity_physical, M.tech_variable
-        )
+        M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
         M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.TechOutputSplitAverage = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
 
         M.RenewablePortfolioStandardConstraint_rpg = Set(
             within=M.regions * M.time_optimize * M.tech_group_names
@@ -373,6 +369,16 @@ class TemoaModel(AbstractModel):
             within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all
         )
         M.MinActivity = Param(M.MinActivityConstraint_rpt)
+
+        M.MaxSeasonalActivityConstraint_rpst = Set(
+            within=M.RegionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+        )
+        M.MaxSeasonalActivity = Param(M.MaxSeasonalActivityConstraint_rpst)
+
+        M.MinSeasonalActivityConstraint_rpst = Set(
+            within=M.RegionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all
+        )
+        M.MinSeasonalActivity = Param(M.MinSeasonalActivityConstraint_rpst)
 
         M.MinAnnualCapacityFactorConstraint_rpto = Set(
             within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
@@ -682,6 +688,14 @@ class TemoaModel(AbstractModel):
             M.MinActivityConstraint_rpt, rule=MinActivity_Constraint
         )
 
+        M.MaxSeasonalActivityConstraint = Constraint(
+            M.MaxSeasonalActivityConstraint_rpst, rule=MaxSeasonalActivity_Constraint
+        )
+
+        M.MinSeasonalActivityConstraint = Constraint(
+            M.MinSeasonalActivityConstraint_rpst, rule=MinSeasonalActivity_Constraint
+        )
+
         M.MinActivityGroupConstraint = Constraint(
             M.MinActivityGroup_rpg, rule=MinActivityGroup_Constraint
         )
@@ -795,6 +809,13 @@ class TemoaModel(AbstractModel):
         )
         M.TechOutputSplitAnnualConstraint = Constraint(
             M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
+        )
+
+        M.TechOutputSplitAverageConstraint_rptvo = Set(
+            dimen=5, initialize=TechOutputSplitAverageConstraintIndices
+        )
+        M.TechOutputSplitAverageConstraint = Constraint(
+            M.TechOutputSplitAverageConstraint_rptvo, rule=TechOutputSplitAverage_Constraint
         )
 
         M.RenewablePortfolioStandardConstraint = Constraint(

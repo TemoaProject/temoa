@@ -128,7 +128,6 @@
     "R_NGH",
     "E_TRANS"
   ],
-  "tech_variable": [],
   "tech_retirement": [],
   "commodity_demand": [
     "VMT",
@@ -45031,5 +45030,8 @@
     ]
   ],
   "TechOutputSplitAnnualConstraint_rptvo": [],
+  "TechOutputSplitAverageConstraint_rptvo": [],
+  "MaxSeasonalActivityConstraint_rpst": [],
+  "MinSeasonalActivityConstraint_rpst": [],
   "LinkedEmissionsTechConstraint_rpsdtve": []
 }

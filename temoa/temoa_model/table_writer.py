@@ -401,7 +401,6 @@ class TableWriter:
             flost = flows[fi][FlowType.LOST]
             # some identifiers
             tech = fi.t
-            var_tech = fi.t in M.tech_variable
             flex_tech = fi.t in M.tech_flex
             annual_tech = fi.t in M.tech_annual
 
@@ -418,9 +417,8 @@ class TableWriter:
                     'Flow balance check failed for index: %s, delta: %0.2f', fi, deltas[fi]
                 )
                 logger.info(
-                    'Tech: %s, Var: %s, Flex: %s, Annual: %s',
+                    'Tech: %s, Flex: %s, Annual: %s',
                     tech,
-                    var_tech,
                     flex_tech,
                     annual_tech,
                 )

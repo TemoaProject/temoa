@@ -42,8 +42,8 @@ params = [
         'p_0': 2020,  # the "myopic base year" to which all prices are discounted
         'vintage': 2020,  # the vintage of the new 'tech'
         'p_e': 2100,  # last year in the myopic view
-        'model_cost': 409037.69,
-        'undiscounted_cost': 409037.69,
+        'model_cost': 409037.66,
+        'undiscounted_cost': 409037.66,
     },
     {
         'ID': 'shortened term',
@@ -56,8 +56,8 @@ params = [
         'p_0': 2020,
         'vintage': 2030,
         'p_e': 2035,
-        'model_cost': 23403.85,
-        'undiscounted_cost': 41930.08,
+        'model_cost': 21997.72,
+        'undiscounted_cost': 33544.06,
     },
 ]
 params_with_zero_GDR = [
