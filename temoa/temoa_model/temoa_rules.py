@@ -2856,7 +2856,7 @@ def TechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
+    expr = inp >= M.TechInputSplitAnnual[r, p, i, t] * total_inp
     return expr
 
 
@@ -2884,7 +2884,7 @@ def TechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, i]
     )
 
-    expr = inp >= M.TechInputSplitAverage[r, p, i, t] * total_inp
+    expr = inp >= M.TechInputSplitAnnual[r, p, i, t] * total_inp
     return expr
 
 
@@ -2963,7 +2963,7 @@ def TechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = out >= M.TechOutputSplitAverage[r, p, t, o] * total_out
+    expr = out >= M.TechOutputSplitAnnual[r, p, t, o] * total_out
     return expr
 
 
@@ -2991,7 +2991,7 @@ def TechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_d in M.time_of_day
     )
 
-    expr = out >= M.TechOutputSplitAverage[r, p, t, o] * total_out
+    expr = out >= M.TechOutputSplitAnnual[r, p, t, o] * total_out
     return expr
 
 

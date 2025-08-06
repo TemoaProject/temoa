@@ -105,9 +105,9 @@ class TemoaModel(AbstractModel):
         M.storageVintages = dict()
         M.rampVintages = dict()
         M.inputsplitVintages = dict()
-        M.inputsplitaverageVintages = dict()
+        M.inputsplitannualVintages = dict()
         M.outputsplitVintages = dict()
-        M.outputsplitaverageVintages = dict()
+        M.outputsplitannualVintages = dict()
         M.ProcessByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
@@ -295,9 +295,9 @@ class TemoaModel(AbstractModel):
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
         M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.TechInputSplitAverage = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        M.TechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
         M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
-        M.TechOutputSplitAverage = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.TechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
 
         M.RenewablePortfolioStandardConstraint_rpg = Set(
             within=M.regions * M.time_optimize * M.tech_group_names

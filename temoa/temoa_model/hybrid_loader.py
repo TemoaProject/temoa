@@ -644,21 +644,21 @@ class HybridLoader:
                     ic,
                 )
 
-        # TechInputSplitAverage
-        if self.table_exists('TechInputSplitAverage'):
+        # TechInputSplitAnnual
+        if self.table_exists('TechInputSplitAnnual'):
             if mi:
                 raw = cur.execute(
                     'SELECT region, period, input_comm, tech, min_proportion '
-                    'FROM main.TechInputSplitAverage '
+                    'FROM main.TechInputSplitAnnual '
                     'WHERE period >= ? AND period <= ?',
                     (mi.base_year, mi.last_demand_year),
                 ).fetchall()
             else:
                 raw = cur.execute(
                     'SELECT region, period, input_comm, tech, min_proportion '
-                    'FROM main.TechInputSplitAverage '
+                    'FROM main.TechInputSplitAnnual '
                 ).fetchall()
-            loaded = load_element(M.TechInputSplitAverage, raw, self.viable_rpit, (0, 1, 2, 3))
+            loaded = load_element(M.TechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
@@ -666,7 +666,7 @@ class HybridLoader:
                 for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
                     region, period, ic, tech, _ = item
                     logger.warning(
-                        'Technology Input Split requirement in region %s, period %d for tech %s with input'
+                        'Technology Input Split Annual requirement in region %s, period %d for tech %s with input'
                         'commodity %s has '
                         'been removed because the tech path with that input is '
                         'invalid/not available/orphan.  See the other warnings for this TECH in '
@@ -697,7 +697,7 @@ class HybridLoader:
                     logger.warning(
                         'Technology Output Split requirement in region %s, period %d for tech %s with output'
                         'commodity %s has '
-                        'been removed because the tech path with that input is '
+                        'been removed because the tech path with that output is '
                         'invalid/not available/orphan.  See the other warnings for this TECH in '
                         'this region-period, and check for availability of all components in data.',
                         region,
@@ -706,21 +706,38 @@ class HybridLoader:
                         oc,
                     )
 
-        # TechOutputSplitAverage
-        if self.table_exists('TechOutputSplitAverage'):
+        # TechOutputSplitAnnual
+        if self.table_exists('TechOutputSplitAnnual'):
             if mi:
                 raw = cur.execute(
                     'SELECT region, period, tech, output_comm, min_proportion '
-                    'FROM main.TechOutputSplitAverage '
+                    'FROM main.TechOutputSplitAnnual '
                     'WHERE period >= ? AND period <= ?',
                     (mi.base_year, mi.last_demand_year),
                 ).fetchall()
             else:
                 raw = cur.execute(
                     'SELECT region, period, tech, output_comm, min_proportion '
-                    'FROM main.TechOutputSplitAverage '
+                    'FROM main.TechOutputSplitAnnual '
                 ).fetchall()
-            load_element(M.TechOutputSplitAverage, raw, self.viable_rt, (0, 2))
+            loaded = load_element(M.TechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
+            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+            # a blending process and any missing items should be reviewed
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing):
+                    region, period, tech, oc, _ = item
+                    logger.warning(
+                        'Technology Output Split Annual requirement in region %s, period %d for tech %s with output'
+                        'commodity %s has '
+                        'been removed because the tech path with that output is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        oc,
+                    )
 
         # RenewablePortfolioStandard
         if self.table_exists('RPSRequirement'):

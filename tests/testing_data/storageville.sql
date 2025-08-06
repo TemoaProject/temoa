@@ -630,7 +630,7 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechInputSplitAverage
+CREATE TABLE TechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER

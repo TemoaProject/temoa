@@ -713,7 +713,7 @@ CREATE TABLE TechInputSplit
     PRIMARY KEY (region, period, input_comm, tech)
 );
 INSERT INTO TechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
-CREATE TABLE TechInputSplitAverage
+CREATE TABLE TechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -726,7 +726,7 @@ CREATE TABLE TechInputSplitAverage
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplitAverage VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
+INSERT INTO TechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
 CREATE TABLE TechOutputSplit
 (
     region         TEXT,
