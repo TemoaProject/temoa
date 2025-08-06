@@ -506,7 +506,7 @@ class HybridLoader:
 
         # commodity_physical
         raw = cur.execute(
-            "SELECT name FROM main.Commodity WHERE flag = 'p' OR flag = 's'"
+            "SELECT name FROM main.Commodity WHERE flag = 'p' OR flag = 's' OR flag = 'a'"
         ).fetchall()
         # The model enforces 0 symmetric difference between the physical commodities
         # and the input commodities, so we need to include only the viable INPUTS
@@ -515,6 +515,10 @@ class HybridLoader:
         # commodity_source
         raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 's'").fetchall()
         load_element(M.commodity_source, raw, self.viable_input_comms)
+
+        # commodity_annual
+        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 'a'").fetchall()
+        load_element(M.commodity_annual, raw, self.viable_input_comms)
 
         #  === PARAMS ===
 

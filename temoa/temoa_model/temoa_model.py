@@ -178,19 +178,11 @@ class TemoaModel(AbstractModel):
         M.commodity_emissions = Set()
         M.commodity_physical = Set()
         M.commodity_source = Set(within=M.commodity_physical)
+        M.commodity_annual = Set(within=M.commodity_physical)
         M.commodity_carrier = Set(initialize=M.commodity_physical | M.commodity_demand)
         M.commodity_all = Set(
             initialize=M.commodity_carrier | M.commodity_emissions, validate=no_slash_or_pipe
         )
-
-        # Define sets for MGA weighting
-        M.tech_mga = Set(within=M.tech_all)
-        M.tech_electric = Set(within=M.tech_all)
-        M.tech_transport = Set(within=M.tech_all)
-        M.tech_industrial = Set(within=M.tech_all)
-        M.tech_commercial = Set(within=M.tech_all)
-        M.tech_residential = Set(within=M.tech_all)
-        M.tech_PowerPlants = Set(within=M.tech_all)
 
         ################################################
         #              Model Parameters                #
@@ -583,11 +575,11 @@ class TemoaModel(AbstractModel):
             M.CommodityBalanceConstraint_rpsdc, rule=CommodityBalance_Constraint
         )
 
-        M.CommodityBalanceAnnualConstraint_rpc = Set(
-            dimen=3, initialize=CommodityBalanceAnnualConstraintIndices
+        M.AnnualCommodityBalanceConstraint_rpc = Set(
+            dimen=3, initialize=AnnualCommodityBalanceConstraintIndices
         )
-        M.CommodityBalanceAnnualConstraint = Constraint(
-            M.CommodityBalanceAnnualConstraint_rpc, rule=CommodityBalanceAnnual_Constraint
+        M.AnnualCommodityBalanceConstraint = Constraint(
+            M.AnnualCommodityBalanceConstraint_rpc, rule=AnnualCommodityBalance_Constraint
         )
 
         M.ResourceExtractionConstraint = Constraint(
