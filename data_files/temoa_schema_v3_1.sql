@@ -848,7 +848,7 @@ CREATE TABLE IF NOT EXISTS RampUpHourly
     tech   TEXT
         REFERENCES Technology (tech),
     rate   REAL,
-    notes TEXT
+    notes TEXT,
     PRIMARY KEY (region, tech)
 );
 CREATE TABLE IF NOT EXISTS Region
