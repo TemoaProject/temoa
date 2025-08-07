@@ -337,11 +337,9 @@ def handle_results(
 
     table_writer = TableWriter(config=config)
     if config.save_duals:
-        table_writer.write_results(
-            M=instance, results_with_duals=results, append=append, iteration=iteration
-        )
+        table_writer.write_results(M=instance, results_with_duals=results, save_storage_levels=config.save_storage_levels, append=append, iteration=iteration)
     else:
-        table_writer.write_results(M=instance, append=append, iteration=iteration)
+        table_writer.write_results(M=instance, append=append, save_storage_levels=config.save_storage_levels, iteration=iteration)
 
     if not config.silent:
         SE.write(

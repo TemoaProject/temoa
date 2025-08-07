@@ -45,6 +45,7 @@ class TemoaConfig:
         neos: bool = False,
         save_excel: bool = False,
         save_duals: bool = False,
+        save_storage_levels: bool = False,
         save_lp_file: bool = False,
         MGA: dict | None = None,
         SVMGA: dict | None = None,
@@ -117,6 +118,7 @@ class TemoaConfig:
         self.solver_name = solver_name
         self.save_excel = save_excel
         self.save_duals = save_duals
+        self.save_storage_levels = save_storage_levels
         self.save_lp_file = save_lp_file
 
         self.mga_inputs = MGA
@@ -190,6 +192,7 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Spreadsheet output', width, self.save_excel)
         msg += '{:>{}s}: {}\n'.format('Pyomo LP write status', width, self.save_lp_file)
         msg += '{:>{}s}: {}\n'.format('Save duals to output db', width, self.save_duals)
+        msg += '{:>{}s}: {}\n'.format('Save storage to output db', width, self.save_storage_levels)
 
         if self.scenario_mode == TemoaMode.MYOPIC:
             msg += spacer

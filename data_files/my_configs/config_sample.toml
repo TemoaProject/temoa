@@ -71,6 +71,9 @@ save_excel = true
 # save the duals in the output Database (may slow execution slightly?)
 save_duals = true
 
+# save storage levels by time slice (may be a large amount of data)
+save_storage_levels = true
+
 # save a copy of the pyomo-generated lp file(s) to the outputs folder (maybe a large file(s)!)
 save_lp_file = false
 

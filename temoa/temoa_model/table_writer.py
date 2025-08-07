@@ -24,6 +24,7 @@ from temoa.temoa_model.table_data_puller import (
     _marks,
     CapData,
     poll_objective,
+    poll_storage_level_results,
     poll_cost_results,
     poll_emissions,
 )
@@ -105,6 +106,7 @@ class TableWriter:
         self,
         M: TemoaModel,
         results_with_duals: SolverResults | None = None,
+        save_storage_levels: bool = True,
         append=False,
         iteration: int | None = None,
     ) -> None:
@@ -122,6 +124,8 @@ class TableWriter:
             self._set_tech_sectors()
         self.write_objective(M, iteration=iteration)
         self.write_capacity_tables(M, iteration=iteration)
+        if save_storage_levels:
+            self.write_storage_level(M, iteration=iteration)
         # analyze the emissions to get the costs and flows
         if self.config.scenario_mode == TemoaMode.MYOPIC:
             p_0 = M.MyopicBaseyear
@@ -218,6 +222,27 @@ class TableWriter:
             except sqlite3.OperationalError:
                 pass
         self.con.commit()
+
+    def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
+        """Write the storage level table to the DB"""
+
+        # For backwards compatibility
+        qry = self.con.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='OutputStorageLevel';").fetchone()
+        if qry is None: return
+
+        storage_levels = poll_storage_level_results(M=M)
+
+        scenario_name = (
+            self.config.scenario + f'-{iteration}'
+            if iteration is not None
+            else self.config.scenario
+        )
+
+        for sli, storage_level in storage_levels.items():
+            qry = 'INSERT INTO OutputStorageLevel VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            data = (scenario_name, *sli, storage_level)
+            self.con.execute(qry, data)
+            self.con.commit()
 
     def write_objective(self, M: TemoaModel, iteration=None) -> None:
         """Write the value of all ACTIVE objectives to the DB"""
