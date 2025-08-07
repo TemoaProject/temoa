@@ -1185,16 +1185,20 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             raise ValueError(msg)
             
     sequential = dict()
+    prev_n = 0
     for p, s_seq, s in M.TimeSeasonSequential.sparse_iterkeys():
         num_days = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'consecutive_days' and abs(num_days - 1.0) >= 0.01:
+        if M.TimeSequencing.first() == 'consecutive_days' and prev_n and abs(num_days - prev_n) >= 0.001:
             msg = (
-                'TimeSequencing set to consecutive_days but a season in the TimeSegmentFraction table does not '
-                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {num_days}. '
-                'Check the config file.'
+                'TimeSequencing set to consecutive_days but two consecutive seasons do not represent the same '
+                f'number of days. This discontinuity will lead to bad model behaviour: {p, s}, days: {num_days}. '
+                f'Previous number of days: {prev_n}. Check the config file for more information.'
             )
             logger.error(msg)
             raise ValueError(msg)
+        prev_n = num_days # for validating next in sequence
+
+        # Regardless of their order, make sure the total number of days adds up
         if (p, s) not in sequential:
             sequential[p, s] = 0
         sequential[p, s] += num_days
