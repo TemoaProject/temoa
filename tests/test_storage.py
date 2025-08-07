@@ -16,10 +16,6 @@ from definitions import PROJECT_ROOT
 from temoa.temoa_model.temoa_mode import TemoaMode
 from temoa.temoa_model.temoa_model import TemoaModel
 from temoa.temoa_model.temoa_sequencer import TemoaSequencer
-from temoa.temoa_model.temoa_rules import (
-    link_season_next_timeslice,
-    loop_season_next_timeslice
-)
 
 logger = logging.getLogger(__name__)
 # suitable scenarios for storage testing....singleton for now.
@@ -93,8 +89,7 @@ def test_state_sequencing(system_test_run):
             for S_i in model.ProcessInputsByOutput[r, p, t, v, S_o]
         )
 
-        if model.link_seasons: s_next, d_next = link_season_next_timeslice(model, s, d)
-        else: s_next, d_next = loop_season_next_timeslice(model, s, d)
+        s_next, d_next = model.time_next[s, d]
 
         state = model.V_StorageLevel[r, p, s, d, t, v].value
         next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value

@@ -1482,7 +1482,7 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         logger.warning(msg.format(r, t, s, d, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = activity_sd - activity_sd_next # opposite sign from rampdown
+    activity_decrease = activity_sd - activity_sd_next # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * M.ProcessLifeFrac[r, p, t, v]
     expr = activity_decrease <= rampable_activity
 

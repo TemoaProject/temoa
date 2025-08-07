@@ -610,7 +610,7 @@ CREATE TABLE StorageFraction
     tech TEXT REFERENCES Technology (tech),
     vintage INTEGER REFERENCES TimePeriod (period),
     frac REAL,
-    notes TEXT
+    notes TEXT,
     PRIMARY KEY (region, period, season, tod, tech, vintage)
 );
 INSERT INTO StorageFraction VALUES('electricville',2025,'s1','d1','batt',2025,0.5,'');

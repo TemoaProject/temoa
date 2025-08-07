@@ -107,7 +107,7 @@ class TableWriter:
         self,
         M: TemoaModel,
         results_with_duals: SolverResults | None = None,
-        save_storage_levels: bool = True,
+        save_storage_levels: bool = False,
         append=False,
         iteration: int | None = None,
     ) -> None:
@@ -125,8 +125,6 @@ class TableWriter:
             self._set_tech_sectors()
         self.write_objective(M, iteration=iteration)
         self.write_capacity_tables(M, iteration=iteration)
-        if save_storage_levels:
-            self.write_storage_level(M, iteration=iteration)
         # analyze the emissions to get the costs and flows
         if self.config.scenario_mode == TemoaMode.MYOPIC:
             p_0 = M.MyopicBaseyear
@@ -142,6 +140,8 @@ class TableWriter:
         self.write_flow_tables(iteration=iteration)
         if results_with_duals:  # write the duals
             self.write_dual_variables(results_with_duals, iteration=iteration)
+        if save_storage_levels:
+            self.write_storage_level(M, iteration=iteration)
         # catch-all
         self.con.commit()
         self.con.execute('VACUUM')
@@ -245,7 +245,7 @@ class TableWriter:
             tech TEXT REFERENCES Technology (tech),
             vintage INTEGER REFERENCES TimePeriod (period),
             level REAL,
-            PRIMARY KEY (region, scenario, period, season, tod, tech, vintage)
+            PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
             );"""
         )
 
@@ -358,6 +358,7 @@ class TableWriter:
             if iteration is not None
             else self.config.scenario
         )
+
         for fi in self.flow_register:
             sector = self.tech_sectors.get(fi.t)
             for flow_type in self.flow_register[fi]:
