@@ -900,6 +900,25 @@ CREATE TABLE OutputFlowOut
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
+CREATE TABLE OutputStorageLevel
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES SectorLabel (sector),
+    period      INTEGER
+        REFERENCES TimePeriod (period),
+    season      TEXT
+        REFERENCES TimePeriod (period),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    level        REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, tech, vintage)
+);
 CREATE TABLE PlanningReserveMargin
 (
     region TEXT

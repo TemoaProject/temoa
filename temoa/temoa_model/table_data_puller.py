@@ -217,8 +217,7 @@ def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
     for sli in M.StorageLevel_rpsdtv:
         state = value(M.V_StorageLevel[sli])
         sli = SLI(*sli)
-        if abs(state) < epsilon:
-            continue
+        if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
         res[sli] = state
 
     return res

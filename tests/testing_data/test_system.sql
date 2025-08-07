@@ -969,7 +969,7 @@ CREATE TABLE StorageFraction
     region TEXT,
     period INTEGER REFERENCES TimePeriod (period),
     season TEXT REFERENCES TimeSeason (season),
-    time_of_day TEXT REFERENCES TimeOfDay (time_of_day),
+    tod TEXT REFERENCES TimeOfDay (tod),
     tech TEXT REFERENCES Technology (tech),
     vintage INTEGER REFERENCES TimePeriod (period),
     frac REAL,

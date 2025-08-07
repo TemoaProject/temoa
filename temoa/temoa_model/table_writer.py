@@ -21,6 +21,7 @@ from temoa.temoa_model.table_data_puller import (
     FI,
     FlowType,
     EI,
+    SLI,
     _marks,
     CapData,
     poll_objective,
@@ -80,7 +81,7 @@ basic_output_tables = [
     'OutputObjective',
     'OutputRetiredCapacity',
 ]
-optional_output_tables = ['OutputFlowOutSummary', 'OutputMCDelta']
+optional_output_tables = ['OutputFlowOutSummary', 'OutputMCDelta', 'OutputStorageLevel']
 
 flow_summary_file_loc = Path(
     PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
@@ -201,7 +202,12 @@ class TableWriter:
     def clear_scenario(self):
         cur = self.con.cursor()
         for table in basic_output_tables:
-            cur.execute(f'DELETE FROM {table} WHERE scenario = ?', (self.config.scenario,))
+            cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
+        for table in optional_output_tables:
+            try:
+                cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
+            except sqlite3.OperationalError:
+                pass
         self.con.commit()
         self.clear_iterative_runs()
 
@@ -226,9 +232,22 @@ class TableWriter:
     def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
         """Write the storage level table to the DB"""
 
-        # For backwards compatibility, check if the output table actually exists
-        qry = self.con.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='OutputStorageLevel';").fetchone()
-        if qry is None: return # if not, skip
+        # For backwards compatibility, make the output table if it doesn't exist
+        qry = self.con.execute(
+            f"""CREATE TABLE IF NOT EXISTS 
+            OutputStorageLevel(
+            scenario TEXT,
+            region TEXT,
+            sector TEXT REFERENCES SectorLabel (sector),
+            period INTEGER REFERENCES TimePeriod (period),
+            season TEXT REFERENCES TimePeriod (period),
+            tod TEXT REFERENCES TimeOfDay (tod),
+            tech TEXT REFERENCES Technology (tech),
+            vintage INTEGER REFERENCES TimePeriod (period),
+            level REAL,
+            PRIMARY KEY (region, scenario, period, season, tod, tech, vintage)
+            );"""
+        )
 
         storage_levels = poll_storage_level_results(M=M)
 
@@ -239,8 +258,9 @@ class TableWriter:
         )
 
         for sli, storage_level in storage_levels.items():
-            qry = 'INSERT INTO OutputStorageLevel VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            data = (scenario_name, *sli, storage_level)
+            sector = self.tech_sectors[sli.t]
+            qry = 'INSERT INTO OutputStorageLevel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            data = (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
             self.con.execute(qry, data)
             self.con.commit()
 

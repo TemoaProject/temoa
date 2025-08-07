@@ -606,11 +606,12 @@ CREATE TABLE StorageFraction
     region TEXT,
     period INTEGER REFERENCES TimePeriod (period),
     season TEXT REFERENCES TimeSeason (season),
-    time_of_day TEXT REFERENCES TimeOfDay (time_of_day),
+    tod TEXT REFERENCES TimeOfDay (tod),
     tech TEXT REFERENCES Technology (tech),
     vintage INTEGER REFERENCES TimePeriod (period),
     frac REAL,
     notes TEXT
+    PRIMARY KEY (region, period, season, tod, tech, vintage)
 );
 INSERT INTO StorageFraction VALUES('electricville',2025,'s1','d1','batt',2025,0.5,'');
 CREATE TABLE TechnologyType

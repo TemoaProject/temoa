@@ -1223,7 +1223,7 @@ class HybridLoader:
 
         # StorageFraction
         if self.table_exists('StorageFraction'):
-            raw = cur.execute('SELECT region, period, season, time_of_day, tech, vintage, frac FROM main.StorageFraction').fetchall()
+            raw = cur.execute('SELECT region, period, season, tod, tech, vintage, frac FROM main.StorageFraction').fetchall()
             load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
