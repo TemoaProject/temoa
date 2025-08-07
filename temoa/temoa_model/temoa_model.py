@@ -85,7 +85,6 @@ class TemoaModel(AbstractModel):
         M.activeFlowInStorage_rpsditvo = None
         M.activeCurtailment_rpsditvo = None
         M.activeActivity_rptv = None
-        M.storageInitIndices_rpstv = None
         M.storageLevelIndices_rpsdtv = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
@@ -448,11 +447,10 @@ class TemoaModel(AbstractModel):
         M.MaxNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
         M.MaxNewCapacityShare = Param(M.GroupShareIndices)
 
-        # Initial storage charge level, expressed as fraction of full energy capacity.
-        # If the parameter is not defined, the model optimizes the initial storage charge level.
-        M.StorageInit_rpstv = Set(dimen=5, initialize=StorageInitVariableIndices)
-        M.StorageInitFracConstraint_rpstv = Set(within=M.StorageInit_rpstv)
-        M.StorageInitFrac = Param(M.StorageInit_rpstv)
+        # This set works for all storage-related constraints
+        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
+        M.StorageFractionConstraint_rpsdtv = Set(within=M.StorageConstraints_rpsdtv)
+        M.StorageFraction = Param(M.StorageConstraints_rpsdtv)
 
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
@@ -508,8 +506,7 @@ class TemoaModel(AbstractModel):
         M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=FlowInStorageVariableIndices)
         M.V_FlowIn = Var(M.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        M.V_StorageInit = Var(M.StorageInit_rpstv, domain=NonNegativeReals)
-
+        # Storage state at the BEGINNING of each time slice
         M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageLevelVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
@@ -618,18 +615,13 @@ class TemoaModel(AbstractModel):
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
 
-        # This set works for most storage-related constraints
-        M.StorageConstraints_rpsdtv = Set(
-            dimen=6, initialize=StorageConstraintIndices
-        )
+        # We make use of this following set in some of the storage constraints.
+        # Pre-computing it is considerably faster.
+        M.SegFracPerSeason = Param(M.time_season, initialize=SegFracPerSeason_rule)
 
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
         )
-
-        # We make use of this following set in some of the storage constraints.
-        # Pre-computing it is considerably faster.
-        M.SegFracPerSeason = Param(M.time_season, initialize=SegFracPerSeason_rule)
 
         M.StorageEnergyUpperBoundConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergyUpperBound_Constraint
@@ -647,8 +639,8 @@ class TemoaModel(AbstractModel):
             M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
         )
 
-        M.StorageInitFracConstraint = Constraint(
-            M.StorageInitFracConstraint_rpstv, rule=StorageInitFrac_Constraint
+        M.StorageFractionConstraint = Constraint(
+            M.StorageFractionConstraint_rpsdtv, rule=StorageFraction_Constraint
         )
 
         M.RampUpConstraint_rpsdtv = Set(dimen=6, initialize=RampUpConstraintIndices)

@@ -70,6 +70,9 @@ class FlowType(Enum):
 FI = namedtuple('FI', ['r', 'p', 's', 'd', 'i', 't', 'v', 'o'])
 """Flow Index"""
 
+SSI = namedtuple('SSI', ['r', 'p', 's', 'd', 't', 'v'])
+"""Storage State Index"""
+
 CapData = namedtuple('CapData', ['built', 'net', 'retired'])
 """Small container to hold named dictionaries of capacity data for processing"""
 
@@ -199,6 +202,24 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
                 res[fi][FlowType.OUT] -= flow
 
     return res
+
+
+def poll_storage_state_results(M: TemoaModel, epsilon=1e-5) -> dict[SSI, float]:
+    """
+    Poll a solved model for flow results.
+    :param M: A solved Model
+    :param epsilon: epsilon (default 1e-5)
+    :return: nested dictionary of FlowIndex, FlowType : value
+    """
+    res: dict[SSI, float] = defaultdict(float)
+
+    # Storage level, the state variable for all but last time slice of each season
+    for ssi in M.StorageLevel_rpsdtv:
+        state = value(M.V_StorageLevel[ssi])
+        ssi = SSI(*ssi)
+        if abs(state) < epsilon:
+            continue
+        res[ssi] = state
 
 
 def poll_objective(M: TemoaModel) -> list[tuple[str, float]]:

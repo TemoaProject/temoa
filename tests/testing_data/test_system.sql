@@ -964,18 +964,19 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
 INSERT INTO StorageDuration VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
-CREATE TABLE StorageInitFrac
+CREATE TABLE StorageFraction
 (   
     region TEXT,
     period INTEGER REFERENCES TimePeriod (period),
     season TEXT REFERENCES TimeSeason (season),
+    time_of_day TEXT REFERENCES TimeOfDay (time_of_day),
     tech TEXT REFERENCES Technology (tech),
     vintage INTEGER REFERENCES TimePeriod (period),
     frac REAL,
     notes TEXT
 );
-INSERT INTO StorageInitFrac VALUES('R1',2025,'winter','E_BATT',2025,0.5,'');
-INSERT INTO StorageInitFrac VALUES('R2',2020,'summer','E_BATT',2020,0.5,'');
+INSERT INTO StorageFraction VALUES('R1',2025,'winter','day','E_BATT',2025,0.5,'');
+INSERT INTO StorageFraction VALUES('R2',2020,'summer','day','E_BATT',2020,0.5,'');
 CREATE TABLE TechnologyType
 (
     label       TEXT

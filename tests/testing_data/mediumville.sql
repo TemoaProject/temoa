@@ -351,7 +351,7 @@ CREATE TABLE TechGroup
 );
 INSERT INTO TechGroup VALUES('RPS_global','');
 INSERT INTO TechGroup VALUES('RPS_common','');
-INSERT INTO TechGroup VALUES('(A)_tech_grp_1','converted from old db');
+INSERT INTO TechGroup VALUES('A_tech_grp_1','converted from old db');
 CREATE TABLE GrowthRateMax
 (
     region TEXT,
@@ -484,7 +484,7 @@ CREATE TABLE MaxCapacityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MaxCapacityGroup VALUES('A',2025,'(A)_tech_grp_1',6000.0,'',NULL);
+INSERT INTO MaxCapacityGroup VALUES('A',2025,'A_tech_grp_1',6000.0,'',NULL);
 CREATE TABLE MinCapacity
 (
     region  TEXT,
@@ -511,7 +511,7 @@ CREATE TABLE MinCapacityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MinCapacityGroup VALUES('A',2025,'(A)_tech_grp_1',0.2000000000000000111,'',NULL);
+INSERT INTO MinCapacityGroup VALUES('A',2025,'A_tech_grp_1',0.2000000000000000111,'',NULL);
 CREATE TABLE OutputCurtailment
 (
     scenario    TEXT,
@@ -962,7 +962,7 @@ CREATE TABLE MinActivityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MinActivityGroup VALUES('A',2025,'(A)_tech_grp_1',0.05000000000000000277,'',NULL);
+INSERT INTO MinActivityGroup VALUES('A',2025,'A_tech_grp_1',0.05000000000000000277,'',NULL);
 CREATE TABLE EmissionLimit
 (
     region    TEXT,
@@ -988,7 +988,7 @@ CREATE TABLE MaxActivityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MaxActivityGroup VALUES('A',2025,'(A)_tech_grp_1',10000.0,'',NULL);
+INSERT INTO MaxActivityGroup VALUES('A',2025,'A_tech_grp_1',10000.0,'',NULL);
 CREATE TABLE RPSRequirement
 (
     region      TEXT    NOT NULL
@@ -1010,8 +1010,8 @@ CREATE TABLE TechGroupMember
     PRIMARY KEY (group_name, tech)
 );
 INSERT INTO TechGroupMember VALUES('RPS_common','EF');
-INSERT INTO TechGroupMember VALUES('(A)_tech_grp_1','EH');
-INSERT INTO TechGroupMember VALUES('(A)_tech_grp_1','EF');
+INSERT INTO TechGroupMember VALUES('A_tech_grp_1','EH');
+INSERT INTO TechGroupMember VALUES('A_tech_grp_1','EF');
 CREATE TABLE Technology
 (
     tech         TEXT    NOT NULL PRIMARY KEY,

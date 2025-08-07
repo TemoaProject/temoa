@@ -95,12 +95,12 @@
     "FGF_pipe"
   ],
   "tech_group_names": [
-    "(A)_tech_grp_1",
+    "A_tech_grp_1",
     "RPS_common",
     "RPS_global"
   ],
   "tech_group_members": [
-    "(A)_tech_grp_1",
+    "A_tech_grp_1",
     "RPS_common",
     "RPS_global"
   ],
@@ -1624,28 +1624,28 @@
     [
       "A",
       2025,
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ]
   ],
   "MaxActivityGroup_rpg": [
     [
       "A",
       2025,
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ]
   ],
   "MinCapacityGroupConstraint_rpg": [
     [
       "A",
       2025,
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ]
   ],
   "MaxCapacityGroupConstraint_rpg": [
     [
       "A",
       2025,
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ]
   ],
   "MinNewCapacityGroupConstraint_rpg": [],
@@ -1655,7 +1655,7 @@
       "B",
       2025,
       "EH",
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ],
     [
       "B",
@@ -1667,19 +1667,19 @@
       "A",
       2025,
       "EF",
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ],
     [
       "B",
       2025,
       "EF",
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ],
     [
       "A",
       2025,
       "EH",
-      "(A)_tech_grp_1"
+      "A_tech_grp_1"
     ],
     [
       "A",
@@ -1694,22 +1694,6 @@
   "MaxActivityShareConstraint_rptg": [],
   "MinNewCapacityShareConstraint_rptg": [],
   "MaxNewCapacityShareConstraint_rptg": [],
-  "StorageInit_rpstv": [
-    [
-      "B",
-      2025,
-      "s1",
-      "batt",
-      2025
-    ],
-    [
-      "B",
-      2025,
-      "s2",
-      "batt",
-      2025
-    ]
-  ],
   "FlowVar_rpsditvo": [
     [
       "A-B",
@@ -2538,6 +2522,22 @@
     ]
   ],
   "StorageLevel_rpsdtv": [
+    [
+      "B",
+      2025,
+      "s2",
+      "d2",
+      "batt",
+      2025
+    ],
+    [
+      "B",
+      2025,
+      "s1",
+      "d2",
+      "batt",
+      2025
+    ],
     [
       "B",
       2025,
@@ -3941,7 +3941,7 @@
       2025
     ]
   ],
-  "StorageInitFracConstraint_rpstv": [],
+  "StorageFractionConstraint_rpsdtv": [],
   "RampUpConstraint_rpsdtv": [
     [
       "B",

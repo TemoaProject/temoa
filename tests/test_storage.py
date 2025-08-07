@@ -16,6 +16,10 @@ from definitions import PROJECT_ROOT
 from temoa.temoa_model.temoa_mode import TemoaMode
 from temoa.temoa_model.temoa_model import TemoaModel
 from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa.temoa_model.temoa_rules import (
+    link_season_next_timeslice,
+    loop_season_next_timeslice
+)
 
 logger = logging.getLogger(__name__)
 # suitable scenarios for storage testing....singleton for now.
@@ -31,41 +35,32 @@ storage_config_files = [
     indirect=True,
     ids=[d['name'] for d in storage_config_files],
 )
-def test_storage_init_frac(system_test_run):
+def test_storage_fraction(system_test_run):
     """
-    The level at the end of the first time slice in each season should be
-    initialization ± flows
+    Level at the start of the time slice should equal the forced fraction
     """
 
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.StorageInitFracConstraint_rpstv) > 0, (
-        'This model does not appear to have any StorageInitFrac constraints to test'
+    assert len(model.StorageFractionConstraint_rpsdtv) > 0, (
+        'This model does not appear to have any StorageFraction constraints to test'
     )
-    # test the first periods
-    # get references to first timeslot for each rptv combo in things with storage
-    frac_slices = {
-        (r, p, s, t, v)
-        for r, p, s, t, v in model.StorageInitFracConstraint_rpstv
-    }
-    # test that the last day/season combo starts up at the initialization value
-    # devnote:  the Level variable is assessed at the end of the timeperiod, so the init ± flows
-    #           should total the end value
-    for r, p, s, t, v in frac_slices:
 
-        init_energy = (
-            model.StorageInitFrac[r, p, s, t, v]
+    for r, p, s, d, t, v in model.StorageFractionConstraint_rpsdtv:
+
+        energy = (
+            model.StorageFraction[r, p, s, d, t, v]
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
-            * sum(model.SegFrac[s, S_d] for S_d in model.time_of_day)
+            * model.SegFracPerSeason[s]
             * 365
             * model.ProcessLifeFrac[r, p, t, v]
         )
 
-        assert model.V_StorageInit[r, p, s, t, v].value == pytest.approx(
-            init_energy, rel=1e-3
-        ), f'model fails to initialise storage state at start of season {r, p, s, t, v}'
+        assert model.V_StorageLevel[r, p, s, d, t, v].value == pytest.approx(
+            energy, rel=1e-3
+        ), f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
 
 
 @pytest.mark.parametrize(
@@ -74,114 +69,39 @@ def test_storage_init_frac(system_test_run):
     indirect=True,
     ids=[d['name'] for d in storage_config_files],
 )
-def test_season_start(system_test_run):
+def test_state_sequencing(system_test_run):
     """
-    The level at the end of the first time slice in each season should be
-    initialization ± flows
-    """
-
-    model: TemoaModel  # helps with typing for some reason...
-    data_name, results, model, _ = system_test_run
-    assert len(model.V_StorageInit.index_set()) > 0, (
-        'This model does not appear to have' 'any available storage components'
-    )
-    # test the first periods
-    # get references to first timeslot for each rptv combo in things with storage
-    start_slices = {
-        (r, p, s, d, t, v)
-        for r, p, s, d, t, v in model.StorageLevel_rpsdtv
-        if d == model.time_of_day.first()
-    }
-    # test that the last day/season combo starts up at the initialization value
-    # devnote:  the Level variable is assessed at the end of the timeperiod, so the init ± flows
-    #           should total the end value
-    for r, p, s, d, t, v in start_slices:
-        inflow_indices = {
-            (rr, pp, ss, dd, ii, tt, vv, oo)
-            for rr, pp, ss, dd, ii, tt, vv, oo in model.FlowInStorage_rpsditvo
-            if all((rr == r, pp == p, ss == s, dd == d, tt == t, vv == v))
-        }
-        outflow_indices = {
-            (rr, pp, ss, dd, ii, tt, vv, oo)
-            for (rr, pp, ss, dd, ii, tt, vv, oo) in model.FlowVar_rpsditvo
-            if all((rr == r, pp == p, ss == s, dd == d, tt == t, vv == v))
-        }
-
-        # calculate the inflow and outflow.  Inflow is taxed by efficiency in the model,
-        # so we need to do that here as well
-        inflow = sum(
-            model.V_FlowIn[r, p, s, d, i, t, v, o].value * model.Efficiency[r, i, t, v, o]
-            for (r, p, s, d, i, t, v, o) in inflow_indices
-        )
-        outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
-        assert model.V_StorageInit[r, p, s, t, v].value + inflow - outflow == pytest.approx(
-            model.V_StorageLevel[r, p, s, d, t, v].value, rel=1e-3
-        ), f'model fails to initialise storage state at start of season {r, p, s, t, v}'
-
-
-@pytest.mark.parametrize(
-    'system_test_run',
-    argvalues=storage_config_files,
-    indirect=True,
-    ids=[d['name'] for d in storage_config_files],
-)
-def test_season_end(system_test_run):
-    """
-    The season should end on the appropriate initialisation state
-    (state should loop correctly)
+    Make sure that everything is looping properly
     """
 
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.V_StorageInit.index_set()) > 0, (
-        'This model does not appear to have' 'any available storage components'
+    assert len(model.StorageLevel_rpsdtv) > 0, (
+        'This model does not appear to have any available storage components'
     )
-    # test the first periods
-    # get references to first timeslot for each rptv combo in things with storage
-    end_slices = {
-        (r, p, s, d, t, v)
-        for r, p, s, d, t, v in model.StorageLevel_rpsdtv
-        if d == model.time_of_day.last()
-    }
-    # test that the last day/season combo starts up at the initialization value
-    # devnote:  the Level variable is assessed at the end of the timeperiod, so the init ± flows
-    #           should total the end value
-    for r, p, s, d, t, v in end_slices:
-        inflow_indices = {
-            (rr, pp, ss, dd, ii, tt, vv, oo)
-            for rr, pp, ss, dd, ii, tt, vv, oo in model.FlowInStorage_rpsditvo
-            if all((rr == r, pp == p, ss == s, dd == d, tt == t, vv == v))
-        }
-        outflow_indices = {
-            (rr, pp, ss, dd, ii, tt, vv, oo)
-            for (rr, pp, ss, dd, ii, tt, vv, oo) in model.FlowVar_rpsditvo
-            if all((rr == r, pp == p, ss == s, dd == d, tt == t, vv == v))
-        }
+    
+    for r, p, s, d, t, v in model.StorageLevel_rpsdtv:
 
-        # calculate the inflow and outflow.  Inflow is taxed by efficiency in the model,
-        # so we need to do that here as well
-        inflow = sum(
-            model.V_FlowIn[r, p, s, d, i, t, v, o].value * model.Efficiency[r, i, t, v, o]
-            for (r, p, s, d, i, t, v, o) in inflow_indices
+        charge = sum(
+            model.V_FlowIn[r, p, s, d, S_i, t, v, S_o].value * model.Efficiency[r, S_i, t, v, S_o]
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.ProcessOutputsByInput[r, p, t, v, S_i]
         )
-        outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
+        discharge = sum(
+            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o].value
+            for S_o in model.processOutputs[r, p, t, v]
+            for S_i in model.ProcessInputsByOutput[r, p, t, v, S_o]
+        )
 
-        if model.interseason_storage:
-            # periods loop
-            if s == model.time_season.last():
-                # end of last season should loop to start of first season
-                following_init = model.V_StorageInit[r, p, model.time_season.first(), t, v].value
-            else:
-                # end of other seasons should continue to start of next season
-                following_init = model.V_StorageInit[r, p, model.time_season.next(s), t, v].value
-        else:
-            # seasons loop
-            # end of season should loop to start of same season
-            following_init = model.V_StorageInit[r, p, s, t, v].value
+        if model.link_seasons: s_next, d_next = link_season_next_timeslice(model, s, d)
+        else: s_next, d_next = loop_season_next_timeslice(model, s, d)
 
-        assert model.V_StorageLevel[r, p, s, d, t, v].value + inflow - outflow == pytest.approx(
-            following_init, rel=1e-3
-        ), f'model fails to correctly loop storage state at end of season {r, p, s, t, v}'
+        state = model.V_StorageLevel[r, p, s, d, t, v].value
+        next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value
+    
+        assert state + charge - discharge == pytest.approx(
+           next_state, rel=1e-3
+        ), f'model fails to correctly sequence storage states {r, p, s, t, v}'
 
 
 @pytest.mark.parametrize(
@@ -197,7 +117,7 @@ def test_storage_flow_balance(system_test_run):
     """
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.V_StorageInit.index_set()) > 0, (
+    assert len(model.StorageLevel_rpsdtv) > 0, (
         'This model does not appear to have' 'any available storage components'
     )
     for s_tech in model.tech_storage:
@@ -219,9 +139,11 @@ def test_storage_flow_balance(system_test_run):
             for (r, p, s, d, i, t, v, o) in inflow_indices
         )
         outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
+        
         assert inflow == pytest.approx(
             outflow, rel=1e-3
-        ), f'total inflow and outflow of storage tech {s_tech} do not match - not looping state correctly'
+        ), (f'total inflow and outflow of storage tech {s_tech} do not match',
+            ' - there is a discontinuity of storage states')
 
 
 @pytest.mark.skip('not ready for primetime')

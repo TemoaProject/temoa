@@ -1221,10 +1221,10 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, duration FROM main.StorageDuration').fetchall()
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
-        # StorageInitFrac
-        if self.table_exists('StorageInitFrac'):
-            raw = cur.execute('SELECT region, period, season, tech, vintage, frac FROM main.StorageInitFrac').fetchall()
-            load_element(M.StorageInitFrac, raw, self.viable_rtv, (0,3,4))
+        # StorageFraction
+        if self.table_exists('StorageFraction'):
+            raw = cur.execute('SELECT region, period, season, time_of_day, tech, vintage, frac FROM main.StorageFraction').fetchall()
+            load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
         if self.debugging:
@@ -1283,7 +1283,7 @@ class HybridLoader:
             M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             M.ResourceBound.name: M.ResourceConstraint_rpr.name,
-            M.StorageInitFrac.name: M.StorageInitFracConstraint_rpstv.name
+            M.StorageFraction.name: M.StorageFractionConstraint_rpsdtv.name
         }
 
         res = {}

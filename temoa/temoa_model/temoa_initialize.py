@@ -886,16 +886,11 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t not in M.tech_uncap
     )
 
-    M.storageInitIndices_rpstv = set(
-        (r, p, s, t, v)
+    M.storageLevelIndices_rpsdtv = set(
+        (r, p, s, d, t, v)
         for r, p, t in M.storageVintages.keys()
         for v in M.storageVintages[r, p, t]
         for s in M.time_season
-    )
-
-    M.storageLevelIndices_rpsdtv = set(
-        (r, p, s, d, t, v)
-        for (r, p, s, t, v) in M.storageInitIndices_rpstv
         for d in M.time_of_day
     )
 
@@ -1076,18 +1071,8 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
     return M.activeCurtailment_rpsditvo
 
 
-def StorageInitVariableIndices(M: 'TemoaModel'):
-    return M.storageInitIndices_rpstv
-
-
 def StorageLevelVariableIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, d, t, v)
-        for r, p, s, d, t, v in M.storageLevelIndices_rpsdtv
-        if d != M.time_of_day.last()
-    )
-    
-    return indices
+    return M.storageLevelIndices_rpsdtv
 
 
 def StorageConstraintIndices(M: 'TemoaModel'):
