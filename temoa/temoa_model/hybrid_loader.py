@@ -382,11 +382,11 @@ class HybridLoader:
         raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
         load_element(M.time_season, raw)
 
-        # link_seasons
+        # LinkSeasons
         raw = cur.execute("SELECT value from MetaData WHERE element == 'link_seasons'").fetchall()
         if not raw:
             raise ValueError('link_seasons boolean parameter missing from MetaData table. Seasons will loop by default.')
-        data[M.link_seasons.name] = {None: bool(raw[0][0])}
+        data[M.LinkSeasons.name] = {None: bool(raw[0][0])}
 
         # myopic_base_year
         if mi:

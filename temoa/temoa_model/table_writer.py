@@ -226,9 +226,9 @@ class TableWriter:
     def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
         """Write the storage level table to the DB"""
 
-        # For backwards compatibility
+        # For backwards compatibility, check if the output table actually exists
         qry = self.con.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='OutputStorageLevel';").fetchone()
-        if qry is None: return
+        if qry is None: return # if not, skip
 
         storage_levels = poll_storage_level_results(M=M)
 

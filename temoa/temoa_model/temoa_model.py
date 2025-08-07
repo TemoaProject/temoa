@@ -116,6 +116,7 @@ class TemoaModel(AbstractModel):
         M.ProcessByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
+        M.time_next = dict()
         M.flex_commodities = set()
 
         ################################################
@@ -219,6 +220,7 @@ class TemoaModel(AbstractModel):
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
         M.SegFrac = Param(M.time_season, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
+        M.LinkSeasons = Param(default=0) # do states carry from one season to the next? otherwise loop each season
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
@@ -469,7 +471,6 @@ class TemoaModel(AbstractModel):
         M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
 
         M.MyopicBaseyear = Param(default=0)
-        M.link_seasons = Param(default=0) # do states carry from one season to the next? otherwise loop each season
 
         ################################################
         #                 Model Variables              #

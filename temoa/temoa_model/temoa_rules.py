@@ -1140,58 +1140,14 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     stored_energy = charge - discharge
 
-    # What time slice follows this one
-    if M.link_seasons: s_next, d_next = link_season_next_timeslice(M, s, d)
-    else: s_next, d_next = loop_season_next_timeslice(M, s, d)
+    s_next, d_next = M.time_next[s, d]
 
     expr = M.V_StorageLevel[r, p, s, d, t, v] + stored_energy == M.V_StorageLevel[r, p, s_next, d_next, t, v]
 
     return expr
 
 
-def link_season_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
-    
-    # Final time slice of final season (end of period)
-    # Loop storage state back to initial state of first season
-    # Loop the period
-    if s == M.time_season.last() and d == M.time_of_day.last():
-        s_next = M.time_season.first()
-        d_next = M.time_of_day.first()
 
-    # Last time slice of any season that is NOT the last season
-    # Carry storage state to initial state of next season
-    # Carry storage state between seasons
-    elif d == M.time_of_day.last():
-        s_next = M.time_season.next(s)
-        d_next = M.time_of_day.first()
-
-    # Any other time slice
-    # Carry storage state to next time slice in the same season
-    # Continuing through this season
-    else:
-        s_next = s
-        d_next = M.time_of_day.next(d)
-
-    return s_next, d_next
-
-
-def loop_season_next_timeslice(M: 'TemoaModel', s, d) -> Expression:
-
-    s_next = s
-
-    # Final time slice of any season
-    # Loop storage state back to initial state of same season
-    # Loop each season
-    if d == M.time_of_day.last():
-        d_next = M.time_of_day.first()
-
-    # Any other time slice
-    # Carry storage state to next time slice in the same season
-    # Continuing through this season
-    else:
-        d_next = M.time_of_day.next(d)
-
-    return s_next, d_next
 
 
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -1443,9 +1399,7 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
     """
 
-    # What time slice follows this one
-    if M.link_seasons: s_next, d_next = link_season_next_timeslice(M, s, d)
-    else: s_next, d_next = loop_season_next_timeslice(M, s, d)
+    s_next, d_next = M.time_next[s, d]
 
     activity_sd = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
@@ -1492,9 +1446,7 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampDownDay}}
     """
 
-    # What time slice follows this one
-    if M.link_seasons: s_next, d_next = link_season_next_timeslice(M, s, d)
-    else: s_next, d_next = loop_season_next_timeslice(M, s, d)
+    s_next, d_next = M.time_next[s, d]
 
     activity_sd = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
