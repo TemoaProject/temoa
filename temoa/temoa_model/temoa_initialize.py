@@ -1231,7 +1231,6 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-# StorageInit needs an overhaul
 def StorageInitIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, t, v)
@@ -1264,7 +1263,6 @@ def StorageStateIndices(M: 'TemoaModel'):
     return indices
 
 
-# StorageInit needs an overhaul
 def StorageInitFracIndices(M: 'TemoaModel'):
     indices = set((r, p, s, t, v) for r, p, s, t, v in M.StorageInitFrac.sparse_iterkeys())
 
@@ -1384,13 +1382,17 @@ def TechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
+def GrowthRateMaxIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t)
+        for r, t in M.GrowthRateMax.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+
 def get_loan_life(M, r, t, _):
     return M.LoanLifetimeTech[r, t]
-
-
-def GrowthRateMax_rtv_initializer(M: 'TemoaModel'):
-    # need to do this outside of the model because the elements are not initialized yet for 'product'
-    return set(product(M.time_optimize, M.GrowthRateMax.sparse_iterkeys()))
 
 
 def copy_from(other_set):

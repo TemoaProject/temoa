@@ -651,12 +651,9 @@ class TemoaModel(AbstractModel):
             ['Starting Growth and Activity Constraints'], rule=progress_check
         )
 
-        M.GrowthRateMaxConstraint_rtv = Set(
-            dimen=3,
-            initialize=GrowthRateMax_rtv_initializer,
-        )
-        M.GrowthRateConstraint = Constraint(
-            M.GrowthRateMaxConstraint_rtv, rule=GrowthRateConstraint_rule
+        M.GrowthRateMaxConstraint_rtv = Set(dimen=3, initialize=GrowthRateMaxIndices)
+        M.GrowthRateMaxConstraint = Constraint(
+            M.GrowthRateMaxConstraint_rtv, rule=GrowthRateMaxConstraint_rule
         )
 
         M.MaxActivityConstraint = Constraint(
