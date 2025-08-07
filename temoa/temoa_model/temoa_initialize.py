@@ -958,13 +958,14 @@ def EmissionActivityIndices(M: 'TemoaModel'):
 
     return indices
 
+# devnote: this does not appear to be used anywhere
+# given that it doesnt check if periods are valid, cant think what it would be for
+# def EmissionActivityByPeriodAndTechVariableIndices(M: 'TemoaModel'):
+#     indices = set(
+#         (e, p, t) for e, i, t, v, o in M.EmissionActivity.sparse_iterkeys() for p in M.time_optimize
+#     )
 
-def EmissionActivityByPeriodAndTechVariableIndices(M: 'TemoaModel'):
-    indices = set(
-        (e, p, t) for e, i, t, v, o in M.EmissionActivity.sparse_iterkeys() for p in M.time_optimize
-    )
-
-    return indices
+#     return indices
 
 
 def ModelProcessLifeIndices(M: 'TemoaModel'):

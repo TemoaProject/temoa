@@ -128,6 +128,7 @@ class TableWriter:
         else:
             p_0 = None  # min year will be used in poll
         e_costs, e_flows = poll_emissions(M=M, p_0=p_0)
+
         self.emission_register = e_flows
         self.write_emissions(iteration=iteration)
         self.write_costs(M, emission_entries=e_costs, iteration=iteration)
@@ -251,7 +252,10 @@ class TableWriter:
             val = self.emission_register[ei]
             if abs(val) < self.epsilon:
                 continue
-            entry = (scenario, ei.r, sector, ei.p, ei.e, ei.t, ei.v, val)
+            if hasattr(ei, 'p'): # emissions from flows
+                entry = (scenario, ei.r, sector, ei.p, ei.e, ei.t, ei.v, val)
+            else: # embodied emissions
+                entry = (scenario, ei.r, sector, ei.v, ei.e, ei.t, ei.v, val)
             data.append(entry)
         qry = f'INSERT INTO OutputEmission VALUES {_marks(8)}'
         self.con.executemany(qry, data)
@@ -322,7 +326,7 @@ class TableWriter:
             FlowType.OUT: 'OutputFlowOut',
             FlowType.IN: 'OutputFlowIn',
             FlowType.CURTAIL: 'OutputCurtailment',
-            FlowType.FLEX: 'OutputCurtailment',
+            FlowType.FLEX: 'OutputCurtailment', # devnote: should flex have its own table?
         }
 
         for flow_type, table_name in table_associations.items():

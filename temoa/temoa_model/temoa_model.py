@@ -455,8 +455,8 @@ class TemoaModel(AbstractModel):
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
         # Initial storage charge level, expressed as fraction of full energy capacity.
         # If the parameter is not defined, the model optimizes the initial storage charge level.
-        # Dev note: needs overhaul
         M.StorageInitFrac = Param(M.regions, M.time_optimize, M.time_season, M.tech_storage, M.vintage_all)
+        M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
 
         M.MyopicBaseyear = Param(default=0)
         M.link_seasons = Param(default=0) # do states carry from one season to the next? otherwise loop each season

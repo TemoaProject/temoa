@@ -1144,6 +1144,21 @@ class HybridLoader:
                 ).fetchall()
             load_element(M.EmissionActivity, raw, self.viable_ritvo, (0, 2, 3, 4, 5))
 
+        # EmissionEmbodied
+        if self.table_exists('EmissionEmbodied'):
+            if mi:
+                raw = cur.execute(
+                    'SELECT region, emis_comm, tech, vintage, value '
+                    'FROM main.EmissionEmbodied'
+                ).fetchall()
+            else:
+                raw = cur.execute(
+                    'SELECT region, emis_comm, tech, vintage, value '
+                    'FROM main.EmissionEmbodied'
+                ).fetchall()
+            load_element(M.EmissionEmbodied, raw, self.viable_rtv, (0, 2, 3))
+
+
         # LinkedTechs
         # Note:  Both of the linked techs must be viable.  As this is non period/vintage
         #        specific, it should be true that if one is built, the other is also

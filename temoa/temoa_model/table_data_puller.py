@@ -331,10 +331,10 @@ def poll_cost_results(
             continue
 
         var_cost = value(M.CostVariable[r, p, t, v])
-        undiscounted_var_cost = activity * var_cost * value(MPL[r, p, t, v])
+        undiscounted_var_cost = activity * var_cost * value(M.PeriodLength[p])
 
         model_var_cost = temoa_rules.fixed_or_variable_cost(
-            activity, var_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
+            activity, var_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
         )
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -424,7 +424,10 @@ def poll_emissions(
         p_0 = min(M.time_optimize)
 
     GDR = value(M.GlobalDiscountRate)
-    MPL = M.ModelProcessLife
+
+    ###########################
+    #   Process Emissions    
+    ###########################
 
     base = [
         (r, p, e, i, t, v, o)
@@ -459,32 +462,68 @@ def poll_emissions(
     ud_costs = defaultdict(float)
     d_costs = defaultdict(float)
     for ei in flows:
+        # zero out tiny flows
+        if abs(flows[ei]) < epsilon:
+            flows[ei] = 0.0
+            continue
         # screen to see if there is an associated cost
         cost_index = (ei.r, ei.p, ei.e)
         if cost_index not in M.CostEmission:
             continue
-        # check for epsilon
-        if abs(flows[ei]) < epsilon:
-            flows[ei] = 0.0
-            continue
         undiscounted_emiss_cost = (
-            flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * MPL[ei.r, ei.p, ei.t, ei.v]
+            flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * M.PeriodLength[ei.p]
         )
         discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
             cap_or_flow=flows[ei],
             cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
-            process_lifetime=MPL[ei.r, ei.p, ei.t, ei.v],
+            cost_years=M.PeriodLength[ei.p],
             GDR=GDR,
             P_0=p_0,
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += undiscounted_emiss_cost
         d_costs[ei.r, ei.p, ei.t, ei.v] += discounted_emiss_cost
+
+    ###########################
+    #   Embodied Emissions    
+    ###########################
+
+    # iterate through embodied flows
+    embodied_flows: dict[EI, float] = defaultdict(float)
+    for r, e, t, v in M.EmissionEmbodied.sparse_iterkeys():
+        embodied_flows[EI(r, v, t, v, e)] += value(M.V_NewCapacity[r, t, v] * M.EmissionEmbodied[r, e, t, v]) # for embodied costs
+        flows[EI(r, v, t, v, e)] += value(M.V_NewCapacity[r, t, v] * M.EmissionEmbodied[r, e, t, v]) # add embodied to process emissions
+
+    # add embodied costs to process costs
+    for ei in embodied_flows:
+        # zero out again if still tiny after embodied flows
+        if abs(flows[ei]) < epsilon:
+            flows[ei] = 0.0
+            continue
+        # screen to see if there is an associated cost
+        cost_index = (ei.r, ei.v, ei.e)
+        if cost_index not in M.CostEmission:
+            continue
+        undiscounted_emiss_cost = (
+            embodied_flows[ei] * M.CostEmission[ei.r, ei.v, ei.e] * 1 # treat as fixed cost incurred in a single year (year of construction)
+        )
+        discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
+            cap_or_flow=embodied_flows[ei],
+            cost_factor=M.CostEmission[ei.r, ei.v, ei.e],
+            cost_years=1, # treat as fixed cost incurred in a single year (year of construction)
+            GDR=GDR,
+            P_0=p_0,
+            p=ei.v,
+        )
+        ud_costs[ei.r, ei.v, ei.t, ei.v] += undiscounted_emiss_cost
+        d_costs[ei.r, ei.v, ei.t, ei.v] += discounted_emiss_cost
+    
+    # finally, now that all costs are added up for each rptv, put in cost dict
     costs = defaultdict(dict)
-    for k in ud_costs:
-        costs[k][CostType.EMISS] = ud_costs[k]
-    for k in d_costs:
-        costs[k][CostType.D_EMISS] = d_costs[k]
+    for rptv in ud_costs:
+        costs[rptv][CostType.EMISS] = ud_costs[rptv]
+    for rptv in d_costs:
+        costs[rptv][CostType.D_EMISS] = d_costs[rptv]
 
     # wow, that was like pulling teeth
     return costs, flows
