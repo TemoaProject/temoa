@@ -1471,8 +1471,6 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[s_next, d_next])
 
-    # We should adjust the hours elapsed to the number of days this season represents
-    # but then we'd adjust the activity by that same factor, so they cancel out. Serendipitous.
     hours_elapsed = 8760 * (value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next])) / 2
     hours_elapsed /= M.SegFracPerSeason[s] * 365 # adjust for how many days this season represents
     ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
