@@ -355,7 +355,7 @@ def CreateDemands(M: 'TemoaModel'):
     # demand in the tuple (r, s, d, dem)
     DSD_region_getter = iget(0)
 
-    # Step 1
+    # Step 1: Check if any demand commodities are going unused
     used_dems = set(dem for r, p, dem in M.Demand.sparse_iterkeys())
     unused_dems = sorted(M.commodity_demand.difference(used_dems))
     if unused_dems:
@@ -364,7 +364,7 @@ def CreateDemands(M: 'TemoaModel'):
             logger.warning(msg.format(dem))
             SE.write(msg.format(dem))
 
-    # Step 2
+    # Step 2: Build the demand default distribution (= segfrac)
     DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
     unset_defaults = set(M.SegFrac.sparse_iterkeys())
     unset_defaults.difference_update(DDD.sparse_iterkeys())
@@ -377,7 +377,7 @@ def CreateDemands(M: 'TemoaModel'):
         for tslice in unset_defaults:
             DDD[tslice] = M.SegFrac[tslice]  # DDD._constructed = True
 
-    # Step 3
+    # Step 3: Check that DDD sums to 1
     total = sum(i for i in DDD.values())
     if abs(value(total) - 1.0) > 0.001:
         # We can't explicitly test for "!= 1.0" because of incremental rounding
@@ -402,7 +402,7 @@ def CreateDemands(M: 'TemoaModel'):
         logger.error(msg.format(items, total))
         raise ValueError(msg.format(items, total))
 
-    # Step 4
+    # Step 4: Fill out demand specific distribution table and check sums to 1 by region and demand
     DSD = M.DemandSpecificDistribution
 
     demands_specified = set(map(DSD_dem_getter, (i for i in DSD.sparse_iterkeys())))

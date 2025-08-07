@@ -1413,8 +1413,19 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[s_next, d_next])
 
+    hours_elapsed = 8760 * (value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next])) / 2
+    hours_elapsed /= M.SegFracPerSeason[s] * 365 # adjust for how many days this season represents
+    ramp_fraction = hours_elapsed * value(M.RampUp[r, t])
+
+    if ramp_fraction >= 1:
+        msg = (
+            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}) to ({}, {}). Constraint skipped."
+        )
+        logger.warning(msg.format(r, t, s, d, s_next, d_next))
+        return Constraint.Skip
+
     activity_increase = activity_sd_next - activity_sd # opposite sign from rampdown
-    rampable_activity = M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.RampUp[r, t])
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * M.ProcessLifeFrac[r, p, t, v]
     expr = activity_increase <= rampable_activity
 
     return expr
@@ -1460,8 +1471,21 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
     ) / value(M.SegFrac[s_next, d_next])
 
-    activity_decrease = activity_sd - activity_sd_next # opposite sign from rampup
-    rampable_activity = M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.RampDown[r, t])
+    # We should adjust the hours elapsed to the number of days this season represents
+    # but then we'd adjust the activity by that same factor, so they cancel out. Serendipitous.
+    hours_elapsed = 8760 * (value(M.SegFrac[s, d]) + value(M.SegFrac[s_next, d_next])) / 2
+    hours_elapsed /= M.SegFracPerSeason[s] * 365 # adjust for how many days this season represents
+    ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
+
+    if ramp_fraction >= 1:
+        msg = (
+            "Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}) to ({}, {}). Constraint skipped."
+        )
+        logger.warning(msg.format(r, t, s, d, s_next, d_next))
+        return Constraint.Skip
+
+    activity_decrease = activity_sd - activity_sd_next # opposite sign from rampdown
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * M.ProcessLifeFrac[r, p, t, v]
     expr = activity_decrease <= rampable_activity
 
     return expr
