@@ -85,6 +85,8 @@ class TemoaModel(AbstractModel):
         M.activeFlowInStorage_rpsditvo = None
         M.activeCurtailment_rpsditvo = None
         M.activeActivity_rptv = None
+        M.storageInitIndices_rpstv = None
+        M.storageLevelIndices_rpsdtv = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
         M.activeRegionsForTech = None
@@ -93,6 +95,7 @@ class TemoaModel(AbstractModel):
         M.activeCapacity_rtv = None
         M.activeCapacityAvailable_rpt = None
         M.activeCapacityAvailable_rptv = None
+        M.commodityBalance_rpc = None # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess = dict()  # The downstream process of a commodity during a period
         M.commodityUStreamProcess = dict()  # The upstream process of a commodity during a period
         M.ProcessInputsByOutput = dict()
@@ -105,7 +108,8 @@ class TemoaModel(AbstractModel):
         M.baseloadVintages = dict()
         M.curtailmentVintages = dict()
         M.storageVintages = dict()
-        M.rampVintages = dict()
+        M.rampUpVintages = dict()
+        M.rampDownVintages = dict()
         M.inputsplitVintages = dict()
         M.inputsplitannualVintages = dict()
         M.outputsplitVintages = dict()
@@ -153,7 +157,8 @@ class TemoaModel(AbstractModel):
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         M.tech_storage = Set(within=M.tech_all - M.tech_annual)
         M.tech_reserve = Set(within=M.tech_all)
-        M.tech_ramping = Set(within=M.tech_all)
+        M.tech_upramping = Set(within=M.tech_all)
+        M.tech_downramping = Set(within=M.tech_all)
         M.tech_curtailment = Set(within=M.tech_all)
         M.tech_flex = Set(within=M.tech_all)
         # ensure there is no overlap flex <=> curtailable technologies
@@ -383,6 +388,7 @@ class TemoaModel(AbstractModel):
             within=M.RegionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier
         )
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
+        
         M.GrowthRateMax = Param(M.RegionalIndices, M.tech_all)
         M.GrowthRateSeed = Param(M.RegionalIndices, M.tech_all)
 
@@ -401,7 +407,6 @@ class TemoaModel(AbstractModel):
         M.MaxActivityGroup_rpg = Set(
             within=M.RegionalGlobalIndices * M.time_optimize * M.tech_group_names
         )
-
         M.MaxActivityGroup = Param(M.MaxActivityGroup_rpg)
 
         M.MinCapacityGroupConstraint_rpg = Set(
@@ -442,20 +447,27 @@ class TemoaModel(AbstractModel):
 
         M.MaxNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
         M.MaxNewCapacityShare = Param(M.GroupShareIndices)
+
+        # Initial storage charge level, expressed as fraction of full energy capacity.
+        # If the parameter is not defined, the model optimizes the initial storage charge level.
+        M.StorageInit_rpstv = Set(dimen=5, initialize=StorageInitVariableIndices)
+        M.StorageInitFracConstraint_rpstv = Set(within=M.StorageInit_rpstv)
+        M.StorageInitFrac = Param(M.StorageInit_rpstv)
+
+        # Storage duration is expressed in hours
+        M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
+
         M.LinkedTechs = Param(M.RegionalIndices, M.tech_all, M.commodity_emissions, within=Any)
 
         # Define parameters associated with electric sector operation
-        M.RampUp = Param(M.regions, M.tech_ramping)
-        M.RampDown = Param(M.regions, M.tech_ramping)
+        M.RampUp = Param(M.regions, M.tech_upramping)
+        M.RampDown = Param(M.regions, M.tech_downramping)
+
         M.CapacityCredit = Param(
             M.RegionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0
         )
         M.PlanningReserveMargin = Param(M.regions, default=0.2)
-        # Storage duration is expressed in hours
-        M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
-        # Initial storage charge level, expressed as fraction of full energy capacity.
-        # If the parameter is not defined, the model optimizes the initial storage charge level.
-        M.StorageInitFrac = Param(M.regions, M.time_optimize, M.time_season, M.tech_storage, M.vintage_all)
+        
         M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
 
         M.MyopicBaseyear = Param(default=0)
@@ -496,9 +508,9 @@ class TemoaModel(AbstractModel):
         M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=FlowInStorageVariableIndices)
         M.V_FlowIn = Var(M.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        M.StorageInit_rpstv = Set(dimen=5, initialize=StorageInitIndices)
         M.V_StorageInit = Var(M.StorageInit_rpstv, domain=NonNegativeReals)
-        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageStateIndices)
+
+        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageLevelVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
         # Derived decision variables
@@ -605,8 +617,11 @@ class TemoaModel(AbstractModel):
         )
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
-        # This set works for all the storage-related constraints
-        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
+
+        # This set works for most storage-related constraints
+        M.StorageConstraints_rpsdtv = Set(
+            dimen=6, initialize=StorageConstraintIndices
+        )
 
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
@@ -632,14 +647,14 @@ class TemoaModel(AbstractModel):
             M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
         )
 
-        M.StorageInitFracConstraint_rpstv = Set(dimen=5, initialize=StorageInitFracIndices)
         M.StorageInitFracConstraint = Constraint(
             M.StorageInitFracConstraint_rpstv, rule=StorageInitFrac_Constraint
         )
 
-        M.RampConstraint_rpsdtv = Set(dimen=6, initialize=RampConstraintIndices)
-        M.RampUpConstraint = Constraint(M.RampConstraint_rpsdtv, rule=RampUpDay_Constraint)
-        M.RampDownConstraint = Constraint(M.RampConstraint_rpsdtv, rule=RampDownDay_Constraint)
+        M.RampUpConstraint_rpsdtv = Set(dimen=6, initialize=RampUpConstraintIndices)
+        M.RampUpConstraint = Constraint(M.RampUpConstraint_rpsdtv, rule=RampUp_Constraint)
+        M.RampDownConstraint_rpsdtv = Set(dimen=6, initialize=RampDownConstraintIndices)
+        M.RampDownConstraint = Constraint(M.RampDownConstraint_rpsdtv, rule=RampDown_Constraint)
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)

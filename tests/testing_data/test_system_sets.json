@@ -98,7 +98,8 @@
     "E_BATT"
   ],
   "tech_reserve": [],
-  "tech_ramping": [],
+  "tech_upramping": [],
+  "tech_downramping": [],
   "tech_curtailment": [
     "S_OILREF"
   ],
@@ -42933,7 +42934,8 @@
       2020
     ]
   ],
-  "RampConstraint_rpsdtv": [],
+  "RampUpConstraint_rpsdtv": [],
+  "RampDownConstraint_rpsdtv": [],
   "ReserveMargin_rpsd": [
     [
       "R2",

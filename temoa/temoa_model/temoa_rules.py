@@ -1232,7 +1232,7 @@ def link_season_storage_energy(M: 'TemoaModel', r, p, s, d, t, v, stored_energy)
     return expr
 
 
-def loop_season_storage_energy(M: 'TemoaModel', r, p, s, d, t, v) -> Expression:
+def loop_season_storage_energy(M: 'TemoaModel', r, p, s, d, t, v, stored_energy) -> Expression:
     r"""
     This variant of the storage energy constraint, used by default, loops the state
     of storage within each season rather than carrying it between seasons. Necessary
@@ -1489,7 +1489,7 @@ def StorageInitFrac_Constraint(M: 'TemoaModel', r, p, s, t, v):
     return expr
 
 
-def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # M.time_of_day is a sorted set, and M.time_of_day.first() returns the first
     # element in the set, similarly, M.time_of_day.last() returns the last element.
     # M.time_of_day.prev(d) function will return the previous element before s, and
@@ -1581,7 +1581,7 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
     Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`

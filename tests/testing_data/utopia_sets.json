@@ -103,7 +103,8 @@
     "E51"
   ],
   "tech_reserve": [],
-  "tech_ramping": [],
+  "tech_upramping": [],
+  "tech_downramping": [],
   "tech_curtailment": [],
   "tech_flex": [],
   "tech_exchange": [],
@@ -24505,7 +24506,8 @@
     ]
   ],
   "StorageInitFracConstraint_rpstv": [],
-  "RampConstraint_rpsdtv": [],
+  "RampUpConstraint_rpsdtv": [],
+  "RampDownConstraint_rpsdtv": [],
   "ReserveMargin_rpsd": [
     [
       "utopia",

@@ -677,8 +677,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.baseloadVintages[r, p, t] = set()
             if t in M.tech_storage and (r, p, t) not in M.storageVintages:
                 M.storageVintages[r, p, t] = set()
-            if t in M.tech_ramping and (r, p, t) not in M.rampVintages:
-                M.rampVintages[r, p, t] = set()
+            if t in M.tech_upramping and (r, p, t) not in M.rampUpVintages:
+                M.rampUpVintages[r, p, t] = set()
+            if t in M.tech_downramping and (r, p, t) not in M.rampDownVintages:
+                M.rampDownVintages[r, p, t] = set()
             if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys() and (
                 r,
                 p,
@@ -736,8 +738,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.baseloadVintages[r, p, t].add(v)
             if t in M.tech_storage:
                 M.storageVintages[r, p, t].add(v)
-            if t in M.tech_ramping:
-                M.rampVintages[r, p, t].add(v)
+            if t in M.tech_upramping:
+                M.rampUpVintages[r, p, t].add(v)
+            if t in M.tech_upramping:
+                M.rampDownVintages[r, p, t].add(v)
             if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys():
                 M.inputsplitVintages[r, p, i, t].add(v)
             if (r, p, i, t) in M.TechInputSplitAnnual.sparse_iterkeys():
@@ -786,6 +790,11 @@ def CreateSparseDicts(M: 'TemoaModel'):
         )
         for i in sorted(l_unused_techs):
             SE.write(msg.format(i))
+
+    # valid region-period-commodity sets for commodity balance constraints
+    commodityUpstream_rpi = set(M.commodityUStreamProcess.keys())
+    commodityDownstream_rpo = set(M.commodityDStreamProcess.keys())
+    M.commodityBalance_rpc = commodityUpstream_rpi.intersection(commodityDownstream_rpo)
 
     M.activeFlow_rpsditvo = set(
         (r, p, s, d, i, t, v, o)
@@ -876,6 +885,20 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         if t not in M.tech_uncap
     )
+
+    M.storageInitIndices_rpstv = set(
+        (r, p, s, t, v)
+        for r, p, t in M.storageVintages.keys()
+        for v in M.storageVintages[r, p, t]
+        for s in M.time_season
+    )
+
+    M.storageLevelIndices_rpsdtv = set(
+        (r, p, s, d, t, v)
+        for (r, p, s, t, v) in M.storageInitIndices_rpstv
+        for d in M.time_of_day
+    )
+
     logger.debug('Completed creation of SparseDicts')
 
 
@@ -1053,6 +1076,24 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
     return M.activeCurtailment_rpsditvo
 
 
+def StorageInitVariableIndices(M: 'TemoaModel'):
+    return M.storageInitIndices_rpstv
+
+
+def StorageLevelVariableIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for r, p, s, d, t, v in M.storageLevelIndices_rpsdtv
+        if d != M.time_of_day.last()
+    )
+    
+    return indices
+
+
+def StorageConstraintIndices(M: 'TemoaModel'):
+    return M.storageLevelIndices_rpsdtv
+
+
 def CapacityConstraintIndices(M: 'TemoaModel'):
     capacity_indices = set(
         (r, p, s, d, t, v)
@@ -1199,12 +1240,9 @@ def RegionalExchangeCapacityConstraintIndices(M: 'TemoaModel'):
 def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
     # Generate indices only for those commodities that are produced by
     # technologies with varying output at the time slice level.
-    period_commodity_with_up = set(M.commodityUStreamProcess.keys())
-    period_commodity_with_dn = set(M.commodityDStreamProcess.keys())
-    balanceable_rpc = period_commodity_with_up.intersection(period_commodity_with_dn)
     indices = set(
         (r, p, s, d, c)
-        for r, p, c in balanceable_rpc
+        for r, p, c in M.commodityBalance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
         and c not in M.commodity_annual
@@ -1218,12 +1256,9 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
 def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     # Generate indices only for those commodities that are produced by
     # technologies with constant annual output.
-    period_commodity_with_up = set(M.commodityUStreamProcess.keys())
-    period_commodity_with_dn = set(M.commodityDStreamProcess.keys())
-    balanceable_rpc = period_commodity_with_up.intersection(period_commodity_with_dn)
     indices = set(
         (r, p, c)
-        for r, p, c in balanceable_rpc
+        for r, p, c in M.commodityBalance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
         and c in M.commodity_annual
@@ -1232,51 +1267,25 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def StorageInitIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, t, v)
-        for r, p, t in M.storageVintages.keys()
-        for v in M.storageVintages[r, p, t]
-        for s in M.time_season
-    )
-
-    return indices
-
-
-def StorageConstraintIndices(M: 'TemoaModel'):
+def RampUpConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
-        for (r, p, s, t, v) in M.StorageInit_rpstv
-        for d in M.time_of_day
-    )
-
-    return indices
-
-
-def StorageStateIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, d, t, v)
-        for (r, p, s, t, v) in M.StorageInit_rpstv
-        for d in M.time_of_day
-        if d != M.time_of_day.last() # replaced by storageinit
-    )
-
-    return indices
-
-
-def StorageInitFracIndices(M: 'TemoaModel'):
-    indices = set((r, p, s, t, v) for r, p, s, t, v in M.StorageInitFrac.sparse_iterkeys())
-
-    return indices
-
-
-def RampConstraintIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, d, t, v)
-        for r, p, t in M.rampVintages.keys()
+        for r, p, t in M.rampUpVintages.keys()
         for s in M.time_season
         for d in M.time_of_day
-        for v in M.rampVintages[r, p, t]
+        for v in M.rampUpVintages[r, p, t]
+    )
+
+    return indices
+
+
+def RampDownConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for r, p, t in M.rampDownVintages.keys()
+        for s in M.time_season
+        for d in M.time_of_day
+        for v in M.rampDownVintages[r, p, t]
     )
 
     return indices

@@ -457,11 +457,12 @@ class HybridLoader:
         if self.table_exists('RampUp'):
             ramp_up_techs = cur.execute('SELECT tech FROM main.RampUp').fetchall()
             techs.update({t[0] for t in ramp_up_techs})
+        load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
+        techs = set()
         if self.table_exists('RampDown'):
             ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDown').fetchall()
             techs.update({t[0] for t in ramp_dn_techs})
-        load_element(M.tech_ramping, sorted((t,) for t in techs), self.viable_techs)  # sort for
-        # deterministic behavior
+        load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
 
         # tech_curtailment
         raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
@@ -977,14 +978,14 @@ class HybridLoader:
             raw = cur.execute(
                 'SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare'
             ).fetchall()
-            load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
+            load_element(M.MinNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MaxNewCapacityShare
         if self.table_exists('MaxNewCapacityShare'):
             raw = cur.execute(
                 'SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare'
             ).fetchall()
-            load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
+            load_element(M.MaxNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MinActivityGroup
         if self.table_exists('MinActivityGroup'):
@@ -1221,16 +1222,9 @@ class HybridLoader:
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
         # StorageInitFrac
-        # Not currently supported -- odd behavior and not region-indexed
         if self.table_exists('StorageInitFrac'):
             raw = cur.execute('SELECT region, period, season, tech, vintage, frac FROM main.StorageInitFrac').fetchall()
             load_element(M.StorageInitFrac, raw, self.viable_rtv, (0,3,4))
-            # if len(raw) > 0:
-            #     logger.warning(
-            #         'Initialization of storage values currently NOT supported.'
-            #         '  Values in StorageInit table will be ignored, and storage init value'
-            #         ' will be optimized.'
-            #     )
 
         # For T/S:  dump the size of all data elements into the log
         if self.debugging:
@@ -1289,6 +1283,7 @@ class HybridLoader:
             M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             M.ResourceBound.name: M.ResourceConstraint_rpr.name,
+            M.StorageInitFrac.name: M.StorageInitFracConstraint_rpstv.name
         }
 
         res = {}
