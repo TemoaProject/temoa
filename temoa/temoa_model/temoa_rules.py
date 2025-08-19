@@ -2974,7 +2974,6 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
         for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-        if (_r, p, s, d, S_i, _t, S_v, S_o) in M.V_FlowOut
     )
     activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
@@ -2983,7 +2982,6 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
         for S_v in M.processVintages.get((_r, p, _t), [])
         for S_i in M.processInputs[_r, p, _t, S_v]
         for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
-        if (_r, p, S_i, _t, S_v, S_o) in M.V_FlowOutAnnual
     )
 
     act_lim = value(M.LimitActivity[r, p, t, op])
@@ -3125,7 +3123,6 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-        if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
     sub_activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
@@ -3134,7 +3131,6 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
     )
 
     super_group = gather_group_techs(M, g2)
@@ -3147,7 +3143,6 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-        if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
     super_activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
@@ -3156,7 +3151,6 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
     )
 
     share_lim = value(M.LimitActivityShare[r, p, g1, g2, op])
@@ -3271,7 +3265,6 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
             for S_i in M.processInputs[_r, p, t, S_v]
             for s in M.TimeSeason[p]
             for d in M.time_of_day
-            if (_r, p, s, d, S_i, t, S_v, o) in M.V_FlowOut
         )
     else:
         activity_rpt = sum(
@@ -3279,7 +3272,6 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
             for S_i in M.processInputs[_r, p, t, S_v]
-            if (_r, p, S_i, t, S_v, o) in M.V_FlowOutAnnual
         )
 
     possible_activity_rpt = sum(
