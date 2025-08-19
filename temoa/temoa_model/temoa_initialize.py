@@ -787,7 +787,6 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
         # All demand technologies must be annual technologies
         if o in M.commodity_demand and t not in M.tech_demand:
-            M.tech_annual.add(t)
             M.tech_demand.add(t)
 
         # Add in the period (p) index, since it's not included in the efficiency
@@ -990,10 +989,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
     M.activeFlow_rpitvo = set(
         (r, p, i, t, v, o)
         for r, p, t in M.processVintages
-        if t in M.tech_annual
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
+        if t in M.tech_annual or (t in M.tech_demand and o in M.commodity_demand)
     )
 
     M.activeFlex_rpsditvo = set(
@@ -1668,6 +1667,18 @@ def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
 #                 for d in M.time_of_day:
 #                     if s != s0 or d != d0:
 #                         yield r, p, s, d, t, v, dem, s0, d0
+
+
+def DemandActivityConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v, dem)
+        for r, p, dem in M.DemandConstraint_rpc
+        for t, v in M.commodityUStreamProcess[r, p, dem]
+        if t not in M.tech_annual
+        for s in M.TimeSeason[p]
+        for d in M.time_of_day
+    )
+    return indices
 
 
 # devnote: no longer needed

@@ -44,6 +44,7 @@ legacy_config_files = [
     {'name': 'mediumville', 'filename': 'config_mediumville.toml'},
     {'name': 'seasonal_storage', 'filename': 'config_seasonal_storage.toml'},
     {'name': 'survival_curve', 'filename': 'config_survival_curve.toml'},
+    {'name': 'annualised_demand', 'filename': 'config_annualised_demand.toml'},
 ]
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]

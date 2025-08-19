@@ -42,7 +42,6 @@ from temoa.temoa_model.model_checking.validators import (
     region_group_check,
     validate_Efficiency,
     validate_tech_sets,
-    validate_demand_tech_sets,
     no_slash_or_pipe,
     validate_ReserveMargin,
 )
@@ -184,7 +183,7 @@ class TemoaModel(AbstractModel):
         M.tech_all = Set(initialize=M.tech_production, validate=no_slash_or_pipe) # was M.tech_resource | M.tech_production
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
-        M.tech_demand = Set(within=M.tech_annual)
+        M.tech_demand = Set(within=M.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         M.tech_storage = Set(within=M.tech_all)
         M.tech_reserve = Set(within=M.tech_all)
@@ -384,7 +383,6 @@ class TemoaModel(AbstractModel):
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
-        M.validate_demand_techs = BuildAction(rule=validate_demand_tech_sets)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
@@ -651,12 +649,12 @@ class TemoaModel(AbstractModel):
         M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=Demand_Constraint)
 
         # devnote: testing a workaround
-        # M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
-        #     dimen=9, initialize=DemandActivityConstraintIndices
-        # )
-        # M.DemandActivityConstraint = Constraint(
-        #     M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
-        # )
+        M.DemandActivityConstraint_rpsdtv_dem = Set(
+            dimen=7, initialize=DemandActivityConstraintIndices
+        )
+        M.DemandActivityConstraint = Constraint(
+            M.DemandActivityConstraint_rpsdtv_dem, rule=DemandActivity_Constraint
+        )
 
         M.CommodityBalanceConstraint_rpsdc = Set(
             dimen=5, initialize=CommodityBalanceConstraintIndices

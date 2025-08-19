@@ -189,9 +189,12 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
 
     # basic annual flows
     for r, p, i, t, v, o in M.V_FlowOutAnnual.keys():
+        # Make sure this isn't just a non-annual demand tech
+        if t not in M.tech_annual:
+            continue
         for s in M.TimeSeason[p]:
             for d in M.time_of_day:
-                if t in M.tech_demand:
+                if o in M.commodity_demand:
                     distribution = value(M.DemandSpecificDistribution[r, p, s, d, o])
                 else:
                     distribution = value(M.SegFrac[p, s, d])
