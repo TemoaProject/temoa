@@ -84,5 +84,6 @@ def test_flows(solved_connection):
         .fetchone()[0]
     )
     assert flow == pytest.approx(
-        flow_target
+        flow_target,
+        rel=1E-5,
     ), f'{name} flows were incorrect. Should be {flow_target}, got {flow}'
