@@ -19,13 +19,13 @@ scenario_mode = "perfect_foresight"
 # Input file (Mandatory)
 # Input can be a .sqlite or .dat file
 # Both relative path and absolute path are accepted
-input_database = "testing_outputs/storageville.sqlite"
+input_database = "tests/testing_outputs/storageville.sqlite"
 
 # Output file (Mandatory)
 # The output file must be an existing .sqlite file
 # the user may target the same input file or a separate /
 # copied sqlite file in a different location
-output_database = "testing_outputs/storageville.sqlite"
+output_database = "tests/testing_outputs/storageville.sqlite"
 
 # ------------------------------------
 #             SOLVER

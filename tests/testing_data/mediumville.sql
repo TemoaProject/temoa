@@ -243,10 +243,10 @@ CREATE TABLE DemandSpecificDistribution
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
         REFERENCES Commodity (name),
-    dds         REAL,
-    dds_notes   TEXT,
+    dsd         REAL,
+    dsd_notes   TEXT,
     PRIMARY KEY (region, season, tod, demand_name),
-    CHECK (dds >= 0 AND dds <= 1)
+    CHECK (dsd >= 0 AND dsd <= 1)
 );
 INSERT INTO DemandSpecificDistribution VALUES('A','s1','d1','RL',0.25,NULL);
 INSERT INTO DemandSpecificDistribution VALUES('A','s1','d2','RL',0.25,NULL);
@@ -713,7 +713,7 @@ CREATE TABLE TechInputSplit
     PRIMARY KEY (region, period, input_comm, tech)
 );
 INSERT INTO TechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
-CREATE TABLE TechInputSplitAverage
+CREATE TABLE TechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -726,7 +726,7 @@ CREATE TABLE TechInputSplitAverage
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplitAverage VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
+INSERT INTO TechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
 CREATE TABLE TechOutputSplit
 (
     region         TEXT,

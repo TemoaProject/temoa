@@ -414,10 +414,10 @@ CREATE TABLE DemandSpecificDistribution
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
         REFERENCES Commodity (name),
-    dds         REAL,
-    dds_notes   TEXT,
+    dsd         REAL,
+    dsd_notes   TEXT,
     PRIMARY KEY (region, season, tod, demand_name),
-    CHECK (dds >= 0 AND dds <= 1)
+    CHECK (dsd >= 0 AND dsd <= 1)
 );
 INSERT INTO DemandSpecificDistribution VALUES('R1','spring','day','RH',0.05000000000000000277,'');
 INSERT INTO DemandSpecificDistribution VALUES('R1','spring','night','RH',0.1000000000000000055,'');
@@ -1005,7 +1005,7 @@ INSERT INTO TechInputSplit VALUES('R2',2025,'GSL','T_BLND',0.7199999999999999734
 INSERT INTO TechInputSplit VALUES('R2',2025,'ETH','T_BLND',0.08000000000000000166,'');
 INSERT INTO TechInputSplit VALUES('R2',2030,'GSL','T_BLND',0.7199999999999999734,'');
 INSERT INTO TechInputSplit VALUES('R2',2030,'ETH','T_BLND',0.08000000000000000166,'');
-CREATE TABLE TechInputSplitAverage
+CREATE TABLE TechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER

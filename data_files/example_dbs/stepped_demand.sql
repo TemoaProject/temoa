@@ -273,10 +273,10 @@ CREATE TABLE DemandSpecificDistribution
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
         REFERENCES Commodity (name),
-    dds         REAL,
-    dds_notes   TEXT,
+    dsd         REAL,
+    dsd_notes   TEXT,
     PRIMARY KEY (region, season, tod, demand_name),
-    CHECK (dds >= 0 AND dds <= 1)
+    CHECK (dsd >= 0 AND dsd <= 1)
 );
 INSERT INTO DemandSpecificDistribution VALUES('electricville','inter','day','RL',0.3332999999999999852,'');
 INSERT INTO DemandSpecificDistribution VALUES('electricville','summer','day','RL',0.3332999999999999852,'');
@@ -1007,7 +1007,7 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechInputSplitAverage
+CREATE TABLE TechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER

@@ -132,7 +132,6 @@
     "TXE",
     "TXG"
   ],
-  "tech_variable": [],
   "tech_retirement": [],
   "commodity_demand": [
     "RH",
@@ -25326,5 +25325,8 @@
     ]
   ],
   "TechOutputSplitAnnualConstraint_rptvo": [],
+  "TechOutputSplitAverageConstraint_rptvo": [],
+  "MaxSeasonalActivityConstraint_rpst": [],
+  "MinSeasonalActivityConstraint_rpst": [],
   "LinkedEmissionsTechConstraint_rpsdtve": []
 }
