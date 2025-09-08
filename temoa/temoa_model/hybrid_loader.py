@@ -1036,13 +1036,15 @@ class HybridLoader:
         if self.table_exists('RampUpHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
             load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
-            load_element(M.tech_upramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
+            raw = cur.execute('SELECT DISTINCT tech FROM main.RampUpHourly').fetchall()
+            load_element(M.tech_upramping, raw, self.viable_techs)
 
         # RampDownHourly
         if self.table_exists('RampDownHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
             load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
-            load_element(M.tech_downramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
+            raw = cur.execute('SELECT DISTINCT tech FROM main.RampDownHourly').fetchall()
+            load_element(M.tech_downramping, raw, self.viable_techs)
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):
