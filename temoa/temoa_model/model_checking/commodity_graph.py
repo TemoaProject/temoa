@@ -129,21 +129,29 @@ def generate_graph(
     # loop finder...
     try:
         cycles = nx.simple_cycles(G=dg)
-        for cycle in cycles:
-            cycle = list(cycle)
-            if len(cycle) < 2:  # a storage item--not reportable
-                continue
-            res = ''
-            first = cycle[0]
-            for node in cycle:
-                res += f'{node} --> '
-            res += first
-            logger.info(
-                'Found cycle in region %s, period %d. No action needed if this is correct: %s',
-                region,
-                period,
-                res,
-            )
+        try:
+            for cycle in cycles:
+                cycle = list(cycle)
+                if len(cycle) < 2:  # a storage item--not reportable
+                    continue
+                res = ''
+                first = cycle[0]
+                last_node = first
+                for node in cycle:
+                    if node.split(' ')[0] == last_node.split(' ')[0]:
+                        # This is just an exchange tech loop. Ignore.
+                        raise ValueError("Just an exchange tech")
+                    res += f'{node} --> '
+                    last_node = node
+                res += first
+                logger.info(
+                    'Found cycle in region %s, period %d. No action needed if this is correct: %s',
+                    region,
+                    period,
+                    res,
+                )
+        except ValueError:
+            pass
     except nx.NetworkXError as e:
         logger.warning('NetworkX exception encountered: %s.  Loop evaluation NOT performed.', e)
     if config.plot_commodity_network:
