@@ -156,6 +156,7 @@
   "commodity_source": [
     "ethos"
   ],
+  "commodity_annual": [],
   "commodity_carrier": [
     "ethos",
     "DSL",
@@ -186,13 +187,6 @@
     "co2",
     "nox"
   ],
-  "tech_mga": [],
-  "tech_electric": [],
-  "tech_transport": [],
-  "tech_industrial": [],
-  "tech_commercial": [],
-  "tech_residential": [],
-  "tech_PowerPlants": [],
   "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
@@ -22823,7 +22817,7 @@
       "GSL"
     ]
   ],
-  "CommodityBalanceAnnualConstraint_rpc": [],
+  "AnnualCommodityBalanceConstraint_rpc": [],
   "BaseloadDiurnalConstraint_rpsdtv": [
     [
       "utopia",

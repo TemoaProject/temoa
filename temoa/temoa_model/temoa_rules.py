@@ -29,7 +29,7 @@ from pyomo.environ import Constraint, value
 from temoa.temoa_model.temoa_initialize import (
     DemandConstraintErrorCheck,
     CommodityBalanceConstraintErrorCheck,
-    CommodityBalanceConstraintErrorCheckAnnual,
+    AnnualCommodityBalanceConstraintErrorCheck,
 )
 
 if TYPE_CHECKING:
@@ -744,11 +744,10 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     respectively, which are defined in :code:`temoa_initialize.py` by parsing the
     :code:`tech_exchange` processes.
 
-    Finally, for commodities that are exclusively produced at a constant annual rate, the
-    :code:`CommodityBalanceAnnual_Constraint` is used, which is simplified and
-    reduces computational burden.
+    Finally, for annual commodities, AnnualCommodityBalance is used which balances
+    the sum of flows over each year.
 
-    *production + imports = consumption + exports + excess*
+    *production + imports = consumption + exports + flex waste*
 
     .. math::
        :label: CommodityBalance
@@ -771,80 +770,86 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
            &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
     """
-    if c in M.commodity_demand:
+    if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
         return Constraint.Skip
 
-    vflow_in_ToStorage = sum(
+    # Only storage techs have a flow in variable
+    # For other techs, it would be redundant as in = out / eff
+    stored = sum(
         M.V_FlowIn[r, p, s, d, c, S_t, S_v, S_o]
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
         if S_t in M.tech_storage
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
     )
 
-    vflow_in_ToNonStorage = sum(
+    consumed = sum(
         M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
         if S_t not in M.tech_storage and S_t not in M.tech_annual
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
     )
 
-    vflow_in_ToNonStorageAnnual = value(M.SegFrac[s, d]) * sum(
+    consumed_annual = value(M.SegFrac[s, d]) * sum(
         M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
         if S_t not in M.tech_storage and S_t in M.tech_annual
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
     )
 
-    try:
-        vflow_out = sum(
-            M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, c]
+    # Includes output from storage
+    produced = sum(
+        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, c]
+        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+        if S_t not in M.tech_annual
+        for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+    )
+
+    produced_annual = value(M.SegFrac[s, d]) * sum(
+        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
+        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+        if S_t in M.tech_annual
+        for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+    )
+
+    # export of commodity c from region r to other regions
+    exported = 0
+    if (r, p, c) in M.exportRegions:
+        exported = sum(
+            M.V_FlowOut[r + '-' + reg, p, s, d, c, S_t, S_v, S_o]
+            / value(M.Efficiency[r + '-' + reg, c, S_t, S_v, S_o])
+            for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
+        )
+
+    # import of commodity c from other regions into region r
+    imported = 0
+    if (r, p, c) in M.importRegions:
+        imported = sum(
+            M.V_FlowOut[reg + '-' + r, p, s, d, S_i, S_t, S_v, c]
+            for reg, S_t, S_v, S_i in M.importRegions[r, p, c]
+        )
+
+    flex_waste = 0
+    flex_waste_annual = 0
+    if c in M.flex_commodities:
+        flex_waste = sum(
+            M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
             for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t not in M.tech_annual and S_t in M.tech_flex
+            for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+        )
+        flex_waste_annual = value(M.SegFrac[s, d]) * sum(
+            M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t in M.tech_annual and S_t in M.tech_flex
             for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
         )
 
-        # export of commodity c from region r to other regions
-        interregional_exports = 0
-        if (r, p, c) in M.exportRegions:
-            interregional_exports = sum(
-                M.V_FlowOut[r + '-' + reg, p, s, d, c, S_t, S_v, S_o]
-                / value(M.Efficiency[r + '-' + reg, c, S_t, S_v, S_o])
-                for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
-            )
-
-        # import of commodity c from other regions into region r
-        interregional_imports = 0
-        if (r, p, c) in M.importRegions:
-            interregional_imports = sum(
-                M.V_FlowOut[reg + '-' + r, p, s, d, S_i, S_t, S_v, c]
-                for reg, S_t, S_v, S_i in M.importRegions[r, p, c]
-            )
-
-        v_out_excess = 0
-        if c in M.flex_commodities:
-            v_out_excess = sum(
-                M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
-                for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-                if S_t not in M.tech_storage and S_t not in M.tech_annual and S_t in M.tech_flex
-                for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
-            )
-
-    except KeyError:
-        raise KeyError(
-            'The commodity "'
-            + str(c)
-            + '" can be produced \
-      by at least one technology in the tech_annual set and one technology \
-      not in the tech_annual set. All the producers of the commodity must \
-      either be in tech_annual or not in tech_annual'
-        )
+    supplied = produced + produced_annual + imported
+    demanded = stored + consumed + consumed_annual + exported + flex_waste + flex_waste_annual
 
     CommodityBalanceConstraintErrorCheck(
-        vflow_out + interregional_imports,
-        vflow_in_ToStorage
-        + vflow_in_ToNonStorage
-        + vflow_in_ToNonStorageAnnual
-        + interregional_exports
-        + v_out_excess,
+        supplied,
+        demanded,
         r,
         p,
         s,
@@ -852,113 +857,116 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         c,
     )
 
-    expr = (
-        vflow_out + interregional_imports
-        == vflow_in_ToStorage
-        + vflow_in_ToNonStorage
-        + vflow_in_ToNonStorageAnnual
-        + interregional_exports
-        + v_out_excess
-    )
+    expr = supplied == demanded
 
     return expr
 
 
-def CommodityBalanceAnnual_Constraint(M: 'TemoaModel', r, p, c):
+def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     r"""
-    Similar to the CommodityBalance_Constraint, but this version applies only
-    to commodities produced at a constant annual rate. This version of the
-    constraint improves computational performance for commodities that do not
-    need to be balanced at the timeslice level.
-
-    While the commodity :math:`c` can only be produced by technologies in the
-    :code:`tech_annual` set, it can be consumed by any technology in the
-    :math:`T-T^{s}` set.
-
-    *production + imports = consumption + exports + excess*
-
-    .. math::
-       :label: CommodityBalanceAnnual
-
-           \sum_{I,T, V} \textbf{FOA}_{r, p, i, t \in T^{a}, v, c}
-            +
-           &\sum_{reg} \textbf{FIM}_{reg-r, p, i, t, v, c} \; \forall reg \neq r
-           \\ =
-           &\sum_{S, D, T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-           \\ + &\quad
-           \sum_{I, T^{a}, V, O} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o}
-           \\ &+
-           \sum_{reg} \textbf{FEX}_{r-reg, p, c, t, v, o} \; \forall reg \neq r
-           \\ &+
-           \textbf{FX}_{r, p, i, t, v, c}
-
-           \\
-           &\forall \{r, p, c\} \in \Theta_{\text{CommodityBalanceAnnual}}
-
+    Similar to CommodityBalance_Constraint but only balances the supply and demand of the commodity
+    at the annual level, summing all flows over the year. Applies only to commodities tagged as annual
+    'a' in the Commodity table.
     """
-    if c in M.commodity_demand:
-        return Constraint.Skip
 
-    vflow_in = sum(
-        M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+    if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
+        return Constraint.Skip
+    
+    # Only storage techs have a flow in variable
+    # For other techs, it would be redundant as in = out / eff
+    stored = sum(
+        M.V_FlowIn[r, p, S_s, S_d, c, S_t, S_v, S_o]
+        for S_s in M.time_season
+        for S_d in M.time_of_day
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_annual
+        if S_t in M.tech_storage
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
-        for d in M.time_of_day
-        for s in M.time_season
     )
 
-    vflow_in_annual = sum(
+    consumed = sum(
+        M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+        if S_t not in M.tech_storage and S_t not in M.tech_annual
+        for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
+    )
+
+    consumed_annual = sum(
         M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
         for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t in M.tech_annual
+        if S_t not in M.tech_storage and S_t in M.tech_annual
         for S_o in M.ProcessOutputsByInput[r, p, S_t, S_v, c]
     )
 
-    vflow_out = sum(
+    # Includes output from storage
+    produced = sum(
+        M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, c]
+        for S_s in M.time_season
+        for S_d in M.time_of_day
+        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+        if S_t not in M.tech_annual
+        for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+    )
+
+    produced_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
         for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+        if S_t in M.tech_annual
         for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
     )
 
     # export of commodity c from region r to other regions
-    interregional_exports = 0
+    exported = 0
     if (r, p, c) in M.exportRegions:
-        interregional_exports = sum(
-            M.V_FlowOutAnnual[str(r) + '-' + str(reg), p, c, S_t, S_v, S_o]
-            / value(M.Efficiency[str(r) + '-' + str(reg), c, S_t, S_v, S_o])
-            for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
+        exported = sum(
+            M.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
+            / value(M.Efficiency[r + '-' + S_r, c, S_t, S_v, S_o])
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+            for S_r, S_t, S_v, S_o in M.exportRegions[r, p, c]
         )
 
     # import of commodity c from other regions into region r
-    interregional_imports = 0
+    imported = 0
     if (r, p, c) in M.importRegions:
-        interregional_imports = sum(
-            M.V_FlowOutAnnual[str(reg) + '-' + str(r), p, S_i, S_t, S_v, c]
-            for reg, S_t, S_v, S_i in M.importRegions[r, p, c]
+        imported = sum(
+            M.V_FlowOut[S_r + '-' + r, p, S_s, S_d, S_i, S_t, S_v, c]
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+            for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
         )
 
-    v_out_excess = 0
+    flex_waste = 0
+    flex_waste_annual = 0
     if c in M.flex_commodities:
-        v_out_excess = sum(
+        flex_waste = sum(
+            M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
+            for S_s in M.time_season
+            for S_d in M.time_of_day
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t not in M.tech_annual and S_t in M.tech_flex
+            for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+        )
+        flex_waste_annual = sum(
             M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
             for S_t, S_v in M.commodityUStreamProcess[r, p, c]
             if S_t in M.tech_flex and S_t in M.tech_annual
             for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
         )
 
-    CommodityBalanceConstraintErrorCheckAnnual(
-        vflow_out + interregional_imports,
-        vflow_in_annual + vflow_in + interregional_exports + v_out_excess,
+    supplied = produced + produced_annual + imported
+    demanded = stored + consumed + consumed_annual + exported + flex_waste + flex_waste_annual
+
+    AnnualCommodityBalanceConstraintErrorCheck(
+        supplied,
+        demanded,
         r,
         p,
         c,
     )
 
-    expr = (
-        vflow_out + interregional_imports
-        == vflow_in_annual + vflow_in + interregional_exports + v_out_excess
-    )
+    expr = supplied == demanded
 
     return expr
 

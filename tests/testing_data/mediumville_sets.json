@@ -133,6 +133,7 @@
     "GeoHyd"
   ],
   "commodity_source": [],
+  "commodity_annual": [],
   "commodity_carrier": [
     "ELC",
     "HYD",
@@ -153,13 +154,6 @@
     "co2",
     "FusionGas"
   ],
-  "tech_mga": [],
-  "tech_electric": [],
-  "tech_transport": [],
-  "tech_industrial": [],
-  "tech_commercial": [],
-  "tech_residential": [],
-  "tech_PowerPlants": [],
   "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
@@ -3776,20 +3770,65 @@
       "s1",
       "d1",
       "ELC"
-    ]
-  ],
-  "CommodityBalanceAnnualConstraint_rpc": [
+    ],
     [
-      "B",
+      "A",
       2025,
+      "s1",
+      "d1",
       "GeoHyd"
     ],
     [
       "A",
       2025,
+      "s1",
+      "d2",
+      "GeoHyd"
+    ],
+    [
+      "A",
+      2025,
+      "s2",
+      "d1",
+      "GeoHyd"
+    ],
+    [
+      "A",
+      2025,
+      "s2",
+      "d2",
+      "GeoHyd"
+    ],
+    [
+      "B",
+      2025,
+      "s1",
+      "d1",
+      "GeoHyd"
+    ],
+    [
+      "B",
+      2025,
+      "s1",
+      "d2",
+      "GeoHyd"
+    ],
+    [
+      "B",
+      2025,
+      "s2",
+      "d1",
+      "GeoHyd"
+    ],
+    [
+      "B",
+      2025,
+      "s2",
+      "d2",
       "GeoHyd"
     ]
   ],
+  "AnnualCommodityBalanceConstraint_rpc": [],
   "BaseloadDiurnalConstraint_rpsdtv": [
     [
       "A",

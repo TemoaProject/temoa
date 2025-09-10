@@ -66,45 +66,46 @@ def get_str_padding(obj):
     return len(str(obj))
 
 
-def CommodityBalanceConstraintErrorCheck(vflow_out, vflow_in, r, p, s, d, c):
-    # an "int" here indicates that the summation ended up without any variables (empty)
-    if isinstance(vflow_out, int):
-        flow_in_expr = StringIO()
-        vflow_in.pprint(ostream=flow_in_expr)
-        msg = (
-            "Unable to meet an interprocess '{}' transfer in ({}, {}, {}).\n"
-            'No flow out.  Constraint flow in:\n   {}\n'
-            'Possible reasons:\n'
-            " - Is there a missing period in set 'time_future'?\n"
-            " - Is there a missing tech in set 'tech_resource'?\n"
-            " - Is there a missing tech in set 'tech_production'?\n"
-            " - Is there a missing commodity in set 'commodity_physical'?\n"
-            ' - Are there missing entries in the Efficiency parameter?\n'
-            ' - Does a process need a longer LifetimeProcess parameter setting?'
-        )
-        logger.error(msg.format(r, c, s, d, p, flow_in_expr.getvalue()))
-        raise Exception(msg.format(r, c, s, d, p, flow_in_expr.getvalue()))
-
-
-def CommodityBalanceConstraintErrorCheckAnnual(vflow_out, vflow_in, r, p, c):
+def CommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, s, d, c):
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
-    #        is an indicator of a problem
-    if isinstance(vflow_out, int):
-        flow_in_expr = StringIO()
-        vflow_in.pprint(ostream=flow_in_expr)
+    #        is an indicator of a problem. How this might come up I do not know
+    if isinstance(supplied, int) or isinstance(demanded, int):
+        expr = str(supplied == demanded)
         msg = (
-            "Unable to meet an interprocess '{}' transfer in ({}, {}, {}).\n"
-            'No flow out.  Constraint flow in:\n   {}\n'
+            "Unable to balance commodity {} in ({}, {}, {}, {}).\n"
+            'No flows on one side of constraint expression:\n'
+            '   {}\n'
             'Possible reasons:\n'
             " - Is there a missing period in set 'time_future'?\n"
             " - Is there a missing tech in set 'tech_resource'?\n"
             " - Is there a missing tech in set 'tech_production'?\n"
             " - Is there a missing commodity in set 'commodity_physical'?\n"
-            ' - Are there missing entries in the Efficiency parameter?\n'
-            ' - Does a process need a longer LifetimeProcess parameter setting?'
+            ' - Are there missing entries in the Efficiency table?\n'
+            ' - Does a process need a longer Lifetime?'
         )
-        logger.error(msg)
-        raise Exception(msg.format(r, c, p, flow_in_expr.getvalue()))
+        logger.error(msg.format(c, r, p, s, d, expr))
+        raise Exception(msg.format(c, r, p, s, d, expr))
+
+
+def AnnualCommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, c):
+    # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
+    #        is an indicator of a problem. How this might come up I do not know
+    if isinstance(supplied, int) or isinstance(demanded, int):
+        expr = str(supplied == demanded)
+        msg = (
+            "Unable to balance annual commodity {} in ({}, {}).\n"
+            'No flows on one side of constraint expression:\n'
+            '   {}\n'
+            'Possible reasons:\n'
+            " - Is there a missing period in set 'time_future'?\n"
+            " - Is there a missing tech in set 'tech_resource'?\n"
+            " - Is there a missing tech in set 'tech_production'?\n"
+            " - Is there a missing commodity in set 'commodity_physical'?\n"
+            ' - Are there missing entries in the Efficiency table?\n'
+            ' - Does a process need a longer Lifetime?'
+        )
+        logger.error(msg.format(c, r, p, expr))
+        raise Exception(msg.format(c, r, p, expr))
 
 
 def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
@@ -112,14 +113,14 @@ def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
     #        is an indicator of a problem
     if isinstance(supply, int):
         msg = (
-            "Error: Demand '{}' for ({}, {}, {}) unable to be met by any "
+            "Error: Demand '{}' for ({}, {}, {}, {}) unable to be met by any "
             'technology.\n\tPossible reasons:\n'
             ' - Is the Efficiency parameter missing an entry for this demand?\n'
             ' - Does a tech that satisfies this demand need a longer '
-            'LifetimeProcess?\n'
+            'Lifetime?\n'
         )
         logger.error(msg)
-        raise Exception(msg.format(r, dem, p, s, d))
+        raise Exception(msg.format(dem, r, p, s, d))
 
 
 def validate_time(M: 'TemoaModel'):
@@ -1199,14 +1200,13 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
     # technologies with varying output at the time slice level.
     period_commodity_with_up = set(M.commodityUStreamProcess.keys())
     period_commodity_with_dn = set(M.commodityDStreamProcess.keys())
-    period_commodity = period_commodity_with_up.intersection(period_commodity_with_dn)
+    balanceable_rpc = period_commodity_with_up.intersection(period_commodity_with_dn)
     indices = set(
-        (r, p, s, d, o)
-        for r, p, o in period_commodity
+        (r, p, s, d, c)
+        for r, p, c in balanceable_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
-        for t, v in M.commodityUStreamProcess[r, p, o]
-        if (r, t) not in M.tech_storage and t not in M.tech_annual
+        and c not in M.commodity_annual
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -1214,19 +1214,18 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def CommodityBalanceAnnualConstraintIndices(M: 'TemoaModel'):
+def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     # Generate indices only for those commodities that are produced by
     # technologies with constant annual output.
     period_commodity_with_up = set(M.commodityUStreamProcess.keys())
     period_commodity_with_dn = set(M.commodityDStreamProcess.keys())
-    period_commodity = period_commodity_with_up.intersection(period_commodity_with_dn)
+    balanceable_rpc = period_commodity_with_up.intersection(period_commodity_with_dn)
     indices = set(
-        (r, p, o)
-        for r, p, o in period_commodity
+        (r, p, c)
+        for r, p, c in balanceable_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
-        for t, v in M.commodityUStreamProcess[r, p, o]
-        if (r, t) not in M.tech_storage and t in M.tech_annual
+        and c in M.commodity_annual
     )
 
     return indices

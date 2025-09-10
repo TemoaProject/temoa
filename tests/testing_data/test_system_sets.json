@@ -151,6 +151,7 @@
   "commodity_source": [
     "ethos"
   ],
+  "commodity_annual": [],
   "commodity_carrier": [
     "ethos",
     "OIL",
@@ -180,13 +181,6 @@
     "RH",
     "CO2"
   ],
-  "tech_mga": [],
-  "tech_electric": [],
-  "tech_transport": [],
-  "tech_industrial": [],
-  "tech_commercial": [],
-  "tech_residential": [],
-  "tech_PowerPlants": [],
   "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
@@ -41032,7 +41026,7 @@
       "DSL"
     ]
   ],
-  "CommodityBalanceAnnualConstraint_rpc": [],
+  "AnnualCommodityBalanceConstraint_rpc": [],
   "BaseloadDiurnalConstraint_rpsdtv": [
     [
       "R1",
