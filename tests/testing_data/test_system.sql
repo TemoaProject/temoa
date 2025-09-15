@@ -10,6 +10,7 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES('link_seasons',1,'Carry storage states between seasons');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -963,13 +964,18 @@ CREATE TABLE StorageDuration
 );
 INSERT INTO StorageDuration VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
 INSERT INTO StorageDuration VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
-CREATE TABLE StorageInit
-(
-    tech  TEXT
-        PRIMARY KEY,
-    value REAL,
+CREATE TABLE StorageInitFrac
+(   
+    region TEXT,
+    period INTEGER REFERENCES TimePeriod (period),
+    season TEXT REFERENCES TimeSeason (season),
+    tech TEXT REFERENCES Technology (tech),
+    vintage INTEGER REFERENCES TimePeriod (period),
+    frac REAL,
     notes TEXT
 );
+INSERT INTO StorageInitFrac VALUES('R1',2025,'winter','E_BATT',2025,0.5,'');
+INSERT INTO StorageInitFrac VALUES('R2',2020,'summer','E_BATT',2020,0.5,'');
 CREATE TABLE TechnologyType
 (
     label       TEXT

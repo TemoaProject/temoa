@@ -382,6 +382,12 @@ class HybridLoader:
         raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
         load_element(M.time_season, raw)
 
+        # link_seasons
+        raw = cur.execute("SELECT value from MetaData WHERE element == 'link_seasons'").fetchall()
+        if not raw:
+            raise ValueError('link_seasons boolean parameter missing from MetaData table. Seasons will loop by default.')
+        data[M.link_seasons.name] = {None: bool(raw[0][0])}
+
         # myopic_base_year
         if mi:
             raw = cur.execute(
@@ -1199,16 +1205,17 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, duration FROM main.StorageDuration').fetchall()
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
-        # StorageInit
+        # StorageInitFrac
         # Not currently supported -- odd behavior and not region-indexed
-        if self.table_exists('StorageInit'):
-            raw = cur.execute('SELECT * FROM main.StorageInit').fetchall()
-            if len(raw) > 0:
-                logger.warning(
-                    'Initialization of storage values currently NOT supported.'
-                    '  Values in StorageInit table will be ignored, and storage init value'
-                    ' will be optimized.'
-                )
+        if self.table_exists('StorageInitFrac'):
+            raw = cur.execute('SELECT region, period, season, tech, vintage, frac FROM main.StorageInitFrac').fetchall()
+            load_element(M.StorageInitFrac, raw, self.viable_rtv, (0,3,4))
+            # if len(raw) > 0:
+            #     logger.warning(
+            #         'Initialization of storage values currently NOT supported.'
+            #         '  Values in StorageInit table will be ignored, and storage init value'
+            #         ' will be optimized.'
+            #     )
 
         # For T/S:  dump the size of all data elements into the log
         if self.debugging:

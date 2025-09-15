@@ -1231,58 +1231,53 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def StorageVariableIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, d, t, v)
-        for r, p, t in M.storageVintages.keys()
-        for s in M.time_season
-        for d in M.time_of_day
-        for v in M.storageVintages[r, p, t]
-    )
-
-    return indices
-
-
+# StorageInit needs an overhaul
 def StorageInitIndices(M: 'TemoaModel'):
     indices = set(
-        (r, t, v) for r, p, t in M.storageVintages.keys() for v in M.storageVintages[r, p, t]
+        (r, p, s, t, v)
+        for r, p, t in M.storageVintages.keys()
+        for v in M.storageVintages[r, p, t]
+        for s in M.time_season
     )
 
     return indices
 
 
-def StorageInitConstraintIndices(M: 'TemoaModel'):
-    indices = set((r, t, v) for r, t, v in M.StorageInitFrac.sparse_iterkeys())
+def StorageConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for (r, p, s, t, v) in M.StorageInit_rpstv
+        for d in M.time_of_day
+    )
 
     return indices
 
 
-def RampConstraintDayIndices(M: 'TemoaModel'):
+def StorageStateIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for (r, p, s, t, v) in M.StorageInit_rpstv
+        for d in M.time_of_day
+        if d != M.time_of_day.last() # replaced by storageinit
+    )
+
+    return indices
+
+
+# StorageInit needs an overhaul
+def StorageInitFracIndices(M: 'TemoaModel'):
+    indices = set((r, p, s, t, v) for r, p, s, t, v in M.StorageInitFrac.sparse_iterkeys())
+
+    return indices
+
+
+def RampConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
         for r, p, t in M.rampVintages.keys()
         for s in M.time_season
         for d in M.time_of_day
         for v in M.rampVintages[r, p, t]
-    )
-
-    return indices
-
-
-def RampConstraintSeasonIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, s, t, v)
-        for r, p, t in M.rampVintages.keys()
-        for s in M.time_season
-        for v in M.rampVintages[r, p, t]
-    )
-
-    return indices
-
-
-def RampConstraintPeriodIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, t, v) for r, p, t in M.rampVintages.keys() for v in M.rampVintages[r, p, t]
     )
 
     return indices

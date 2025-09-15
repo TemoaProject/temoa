@@ -6949,36 +6949,342 @@
   "MaxActivityShareConstraint_rptg": [],
   "MinNewCapacityShareConstraint_rptg": [],
   "MaxNewCapacityShareConstraint_rptg": [],
-  "StorageInit_rtv": [
+  "StorageInit_rpstv": [
     [
-      "R2",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
+      "R1",
+      2020,
+      "summer",
       "E_BATT",
       2020
     ],
     [
       "R1",
+      2030,
+      "spring",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R2",
+      2025,
+      "fall",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2030,
+      "winter",
       "E_BATT",
       2030
     ],
     [
       "R1",
+      2030,
+      "fall",
       "E_BATT",
       2020
     ],
     [
       "R2",
+      2025,
+      "winter",
       "E_BATT",
       2025
     ],
     [
       "R1",
+      2030,
+      "summer",
       "E_BATT",
       2025
+    ],
+    [
+      "R2",
+      2025,
+      "spring",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2025,
+      "summer",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2020,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "spring",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2030,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "summer",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R1",
+      2025,
+      "fall",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2030,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "summer",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2030,
+      "fall",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2030,
+      "fall",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2020,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "fall",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "summer",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R2",
+      2020,
+      "fall",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "summer",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "winter",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R2",
+      2025,
+      "summer",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "spring",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2030,
+      "winter",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2025,
+      "summer",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "spring",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "winter",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2025,
+      "winter",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "fall",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R2",
+      2030,
+      "fall",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R1",
+      2030,
+      "summer",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2020,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "spring",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2020,
+      "winter",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "summer",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2025,
+      "fall",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2020,
+      "fall",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2020,
+      "summer",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "spring",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R2",
+      2030,
+      "fall",
+      "E_BATT",
+      2020
     ]
   ],
   "FlowVar_rpsditvo": [
@@ -22354,22 +22660,6 @@
     [
       "R1",
       2030,
-      "fall",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
-      2030,
-      "spring",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2025,
       "winter",
       "day",
       "E_BATT",
@@ -22389,47 +22679,7 @@
       "summer",
       "day",
       "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2025,
-      "fall",
-      "day",
-      "E_BATT",
       2020
-    ],
-    [
-      "R1",
-      2030,
-      "winter",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2025,
-      "spring",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R1",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2025
     ],
     [
       "R2",
@@ -22440,39 +22690,7 @@
       2025
     ],
     [
-      "R2",
-      2025,
-      "fall",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
       "R1",
-      2020,
-      "summer",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2020,
-      "winter",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2020,
-      "spring",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
       2030,
       "fall",
       "day",
@@ -22481,96 +22699,24 @@
     ],
     [
       "R1",
-      2030,
-      "fall",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2020,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "winter",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "spring",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2030,
-      "fall",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2025,
-      "winter",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "summer",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2030,
-      "summer",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2025,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
       2025,
       "fall",
       "day",
       "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "summer",
+      "day",
+      "E_BATT",
       2025
     ],
     [
       "R2",
-      2025,
-      "summer",
+      2030,
+      "fall",
       "day",
       "E_BATT",
       2020
@@ -22581,31 +22727,23 @@
       "spring",
       "day",
       "E_BATT",
-      2025
+      2020
     ],
     [
       "R1",
-      2025,
-      "fall",
-      "night",
+      2030,
+      "spring",
+      "day",
       "E_BATT",
       2025
     ],
     [
       "R2",
       2030,
-      "fall",
+      "spring",
       "day",
       "E_BATT",
       2025
-    ],
-    [
-      "R1",
-      2030,
-      "fall",
-      "day",
-      "E_BATT",
-      2020
     ],
     [
       "R2",
@@ -22617,41 +22755,17 @@
     ],
     [
       "R1",
-      2025,
-      "winter",
-      "night",
+      2020,
+      "summer",
+      "day",
       "E_BATT",
       2020
-    ],
-    [
-      "R2",
-      2030,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2025,
-      "winter",
-      "night",
-      "E_BATT",
-      2025
     ],
     [
       "R1",
-      2030,
-      "fall",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
       2020,
       "fall",
-      "night",
+      "day",
       "E_BATT",
       2020
     ],
@@ -22659,6 +22773,94 @@
       "R2",
       2030,
       "summer",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2030,
+      "winter",
+      "day",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R1",
+      2030,
+      "winter",
+      "day",
+      "E_BATT",
+      2030
+    ],
+    [
+      "R1",
+      2030,
+      "summer",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2020,
+      "summer",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2030,
+      "fall",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "winter",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R1",
+      2025,
+      "fall",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2030,
+      "fall",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2025,
+      "winter",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "spring",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2025,
+      "spring",
       "day",
       "E_BATT",
       2020
@@ -22673,22 +22875,6 @@
     ],
     [
       "R2",
-      2020,
-      "winter",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "fall",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R1",
       2025,
       "fall",
       "day",
@@ -22697,35 +22883,19 @@
     ],
     [
       "R2",
-      2025,
-      "summer",
-      "night",
+      2030,
+      "winter",
+      "day",
       "E_BATT",
-      2025
+      2020
     ],
     [
       "R2",
-      2025,
+      2030,
       "spring",
       "day",
       "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2025,
-      "fall",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "fall",
-      "day",
-      "E_BATT",
-      2020
+      2030
     ],
     [
       "R1",
@@ -22733,148 +22903,76 @@
       "winter",
       "day",
       "E_BATT",
-      2030
+      2020
     ],
     [
-      "R1",
-      2025,
+      "R2",
+      2030,
       "summer",
       "day",
       "E_BATT",
       2025
     ],
     [
-      "R1",
-      2030,
-      "winter",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
       "R2",
       2025,
-      "winter",
-      "night",
+      "summer",
+      "day",
       "E_BATT",
       2020
     ],
     [
       "R1",
       2020,
-      "winter",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
       "spring",
       "day",
       "E_BATT",
-      2025
+      2020
     ],
     [
-      "R2",
-      2030,
-      "fall",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
+      "R1",
       2025,
       "summer",
-      "night",
+      "day",
       "E_BATT",
       2020
     ],
     [
-      "R2",
-      2025,
-      "spring",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
+      "R1",
       2030,
-      "winter",
+      "summer",
       "day",
       "E_BATT",
       2030
     ],
     [
       "R1",
+      2030,
+      "fall",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R1",
+      2030,
+      "spring",
+      "day",
+      "E_BATT",
+      2020
+    ],
+    [
+      "R2",
+      2025,
+      "winter",
+      "day",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
       2020,
-      "fall",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
       "winter",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2025,
-      "summer",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "winter",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2025,
-      "winter",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "spring",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R1",
-      2030,
-      "spring",
       "day",
       "E_BATT",
       2020
@@ -22891,70 +22989,14 @@
       "R2",
       2030,
       "fall",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "spring",
       "day",
       "E_BATT",
       2030
     ],
     [
-      "R1",
-      2025,
-      "summer",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2025,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
       "R2",
       2030,
       "spring",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
-      2030,
-      "winter",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2030,
-      "winter",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2025,
-      "spring",
-      "day",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2020,
-      "summer",
       "day",
       "E_BATT",
       2020
@@ -22963,30 +23005,6 @@
       "R1",
       2025,
       "winter",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "spring",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R2",
-      2030,
-      "winter",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
-      2030,
-      "spring",
       "day",
       "E_BATT",
       2025
@@ -23002,26 +23020,10 @@
     [
       "R1",
       2025,
-      "summer",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2020,
-      "summer",
+      "spring",
       "day",
       "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "summer",
-      "day",
-      "E_BATT",
-      2030
+      2025
     ],
     [
       "R2",
@@ -23032,90 +23034,10 @@
       2025
     ],
     [
-      "R1",
-      2025,
-      "winter",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2020,
-      "fall",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
       "R2",
       2030,
       "winter",
       "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2020,
-      "summer",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2025,
-      "spring",
-      "day",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "summer",
-      "night",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
-      2025,
-      "fall",
-      "night",
-      "E_BATT",
-      2025
-    ],
-    [
-      "R1",
-      2030,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R1",
-      2030,
-      "fall",
-      "day",
-      "E_BATT",
-      2030
-    ],
-    [
-      "R2",
-      2020,
-      "spring",
-      "night",
-      "E_BATT",
-      2020
-    ],
-    [
-      "R2",
-      2030,
-      "winter",
-      "night",
       "E_BATT",
       2025
     ]
@@ -42995,9 +42917,23 @@
       2025
     ]
   ],
-  "StorageInitConstraint_rtv": [],
-  "RampConstraintDay_rpsdtv": [],
-  "RampConstraintPeriod_rptv": [],
+  "StorageInitFracConstraint_rpstv": [
+    [
+      "R1",
+      2025,
+      "winter",
+      "E_BATT",
+      2025
+    ],
+    [
+      "R2",
+      2020,
+      "summer",
+      "E_BATT",
+      2020
+    ]
+  ],
+  "RampConstraint_rpsdtv": [],
   "ReserveMargin_rpsd": [
     [
       "R2",

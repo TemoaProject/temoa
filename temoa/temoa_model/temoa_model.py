@@ -68,6 +68,8 @@ class TemoaModel(AbstractModel):
         #       (not formal model elements)            #
         ################################################
 
+        
+
         # Dev Note:  The triple-quotes UNDER the items below pop up as dox in most IDEs
         M.processInputs = dict()
         M.processOutputs = dict()
@@ -453,10 +455,11 @@ class TemoaModel(AbstractModel):
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
         # Initial storage charge level, expressed as fraction of full energy capacity.
         # If the parameter is not defined, the model optimizes the initial storage charge level.
-        M.StorageInit_rtv = Set(dimen=3, initialize=StorageInitIndices)
-        M.StorageInitFrac = Param(M.StorageInit_rtv)
+        # Dev note: needs overhaul
+        M.StorageInitFrac = Param(M.regions, M.time_optimize, M.time_season, M.tech_storage, M.vintage_all)
 
         M.MyopicBaseyear = Param(default=0)
+        M.link_seasons = Param(default=0) # do states carry from one season to the next? otherwise loop each season
 
         ################################################
         #                 Model Variables              #
@@ -493,9 +496,10 @@ class TemoaModel(AbstractModel):
         M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=FlowInStorageVariableIndices)
         M.V_FlowIn = Var(M.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageVariableIndices)
+        M.StorageInit_rpstv = Set(dimen=5, initialize=StorageInitIndices)
+        M.V_StorageInit = Var(M.StorageInit_rpstv, domain=NonNegativeReals)
+        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageStateIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
-        M.V_StorageInit = Var(M.StorageInit_rtv, domain=NonNegativeReals)
 
         # Derived decision variables
 
@@ -602,7 +606,8 @@ class TemoaModel(AbstractModel):
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
         # This set works for all the storage-related constraints
-        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageVariableIndices)
+        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
+
         M.StorageEnergyConstraint = Constraint(
             M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
         )
@@ -627,32 +632,14 @@ class TemoaModel(AbstractModel):
             M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
         )
 
-        M.StorageInitConstraint_rtv = Set(dimen=2, initialize=StorageInitConstraintIndices)
-        M.StorageInitConstraint = Constraint(
-            M.StorageInitConstraint_rtv, rule=StorageInit_Constraint
+        M.StorageInitFracConstraint_rpstv = Set(dimen=5, initialize=StorageInitFracIndices)
+        M.StorageInitFracConstraint = Constraint(
+            M.StorageInitFracConstraint_rpstv, rule=StorageInitFrac_Constraint
         )
 
-        M.RampConstraintDay_rpsdtv = Set(dimen=6, initialize=RampConstraintDayIndices)
-        M.RampUpConstraintDay = Constraint(M.RampConstraintDay_rpsdtv, rule=RampUpDay_Constraint)
-        M.RampDownConstraintDay = Constraint(
-            M.RampConstraintDay_rpsdtv, rule=RampDownDay_Constraint
-        )
-
-        # M.RampConstraintSeason_rpstv = Set(dimen=5, initialize=RampConstraintSeasonIndices)
-        # M.RampUpConstraintSeason = Constraint(
-        #     M.RampConstraintSeason_rpstv, rule=RampUpSeason_Constraint
-        # )
-        # M.RampDownConstraintSeason = Constraint(
-        #     M.RampConstraintSeason_rpstv, rule=RampDownSeason_Constraint
-        # )
-
-        M.RampConstraintPeriod_rptv = Set(dimen=4, initialize=RampConstraintPeriodIndices)
-        M.RampUpConstraintPeriod = Constraint(
-            M.RampConstraintPeriod_rptv, rule=RampUpPeriod_Constraint
-        )
-        M.RampDownConstraintPeriod = Constraint(
-            M.RampConstraintPeriod_rptv, rule=RampDownPeriod_Constraint
-        )
+        M.RampConstraint_rpsdtv = Set(dimen=6, initialize=RampConstraintIndices)
+        M.RampUpConstraint = Constraint(M.RampConstraint_rpsdtv, rule=RampUpDay_Constraint)
+        M.RampDownConstraint = Constraint(M.RampConstraint_rpsdtv, rule=RampDownDay_Constraint)
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)

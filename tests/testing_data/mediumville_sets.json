@@ -1691,9 +1691,18 @@
   "MaxActivityShareConstraint_rptg": [],
   "MinNewCapacityShareConstraint_rptg": [],
   "MaxNewCapacityShareConstraint_rptg": [],
-  "StorageInit_rtv": [
+  "StorageInit_rpstv": [
     [
       "B",
+      2025,
+      "s1",
+      "batt",
+      2025
+    ],
+    [
+      "B",
+      2025,
+      "s2",
       "batt",
       2025
     ]
@@ -2530,14 +2539,6 @@
       "B",
       2025,
       "s2",
-      "d2",
-      "batt",
-      2025
-    ],
-    [
-      "B",
-      2025,
-      "s2",
       "d1",
       "batt",
       2025
@@ -2547,14 +2548,6 @@
       2025,
       "s1",
       "d1",
-      "batt",
-      2025
-    ],
-    [
-      "B",
-      2025,
-      "s1",
-      "d2",
       "batt",
       2025
     ]
@@ -3945,8 +3938,8 @@
       2025
     ]
   ],
-  "StorageInitConstraint_rtv": [],
-  "RampConstraintDay_rpsdtv": [
+  "StorageInitFracConstraint_rpstv": [],
+  "RampConstraint_rpsdtv": [
     [
       "A",
       2025,
@@ -4008,20 +4001,6 @@
       2025,
       "s1",
       "d1",
-      "EH",
-      2025
-    ]
-  ],
-  "RampConstraintPeriod_rptv": [
-    [
-      "B",
-      2025,
-      "EH",
-      2025
-    ],
-    [
-      "A",
-      2025,
       "EH",
       2025
     ]
