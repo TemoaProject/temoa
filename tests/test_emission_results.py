@@ -71,6 +71,10 @@ emissions_tests = [
     {'name': 'total', 'tech': '%', 'target': 3.6},
 ]
 
+embodied_tests = [
+    {'name': 'embodied archetype', 'tech': 'TechEmbodied', 'target': 0.3},
+]
+
 
 # Emissions
 @pytest.mark.parametrize(
@@ -86,7 +90,7 @@ def test_emissions(solved_connection):
     con, name, tech, emis_target = solved_connection
     emis = (
         con.cursor()
-        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
         .fetchone()[0]
     )
     assert emis == pytest.approx(
@@ -103,12 +107,12 @@ def test_emissions(solved_connection):
 )
 def test_emissions_costs_undiscounted(solved_connection):
     """
-    Test that the emission costs from each technology archetype are correct, and check total emissions
+    Test that the undiscounted emission costs from each technology archetype are correct
     """
     con, name, tech, emis_target = solved_connection
     ec = (
         con.cursor()
-        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}'")
+        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
         .fetchone()[0]
     )
     cost_target = 0.7 * emis_target * 5  # emission cost x emissions x 5y
@@ -126,7 +130,77 @@ def test_emissions_costs_undiscounted(solved_connection):
 )
 def test_emissions_costs_discounted(solved_connection):
     """
-    Test that the emission costs from each technology archetype are correct, and check total emissions
+    Test that the discounted emission costs from each technology archetype are correct
+    """
+    con, name, tech, emis_target = solved_connection
+    ec = (
+        con.cursor()
+        .execute(f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied'")
+        .fetchone()[0]
+    )
+    cost_target = (
+        0.7 * emis_target * 4.32947667063082 * 1.05
+    )  # emission cost x emissions x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
+    assert ec == pytest.approx(
+        cost_target
+    ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
+
+
+# Embodied emissions
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=embodied_tests,
+    indirect=True,
+    ids=[t['name'] for t in embodied_tests],
+)
+def test_embodied_emissions(solved_connection):
+    """
+    Test that the embodied emissions from each technology archetype are correct, and check total emissions
+    """
+    con, name, tech, emis_target = solved_connection
+    emis = (
+        con.cursor()
+        .execute(f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}'")
+        .fetchone()[0]
+    )
+    assert emis == pytest.approx(
+        emis_target
+    ), f'{name} embodied emissions were incorrect. Should be {emis_target}, got {emis}'
+
+
+# Embodied emission costs undiscounted
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=embodied_tests,
+    indirect=True,
+    ids=[t['name'] for t in embodied_tests],
+)
+def test_embodied_emissions_costs_undiscounted(solved_connection):
+    """
+    Test that the undiscounted embodied emission costs from each technology archetype are correct
+    """
+    con, name, tech, emis_target = solved_connection
+    ec = (
+        con.cursor()
+        .execute(f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}'")
+        .fetchone()[0]
+    )
+    cost_target = 0.7 * emis_target  # emission cost x embodied emissions
+    assert ec == pytest.approx(
+        cost_target
+    ), f'{name} undiscounted embodied emission costs were incorrect. Should be {cost_target}, got {ec}'
+
+
+# Embodied emission costs discounted
+@pytest.mark.parametrize(
+    'solved_connection',
+    argvalues=embodied_tests,
+    indirect=True,
+    ids=[t['name'] for t in embodied_tests],
+)
+def test_embodied_emissions_costs_discounted(solved_connection):
+    """
+    Test that discounted embodied emission costs from each technology archetype are correct
     """
     con, name, tech, emis_target = solved_connection
     ec = (
@@ -135,8 +209,8 @@ def test_emissions_costs_discounted(solved_connection):
         .fetchone()[0]
     )
     cost_target = (
-        0.7 * emis_target * 4.32947667063082 * 1.05
-    )  # emission cost x emissions x P/A(5%, 5y, 1) [x F/P(5%, 1y) legacy bug?]
+        0.7 * emis_target / 1.05 * 1.05
+    )  # emission cost x embodied emissions x P/A(5%, 1y, 1) [x F/P(5%, 1y) legacy bug?]
     assert ec == pytest.approx(
         cost_target
     ), f'{name} discounted emission costs were incorrect. Should be {cost_target}, got {ec}'
@@ -160,6 +234,7 @@ curtailment_tests = [
 )
 def test_curtailment(solved_connection):
     con, name, tech, curt_target = solved_connection
+    print(name, tech, curt_target)
     curt = (
         con.cursor()
         .execute(f"SELECT SUM(curtailment) FROM main.OutputCurtailment WHERE tech LIKE '{tech}'")

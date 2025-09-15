@@ -19,8 +19,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'Discount Rate for future costs');
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -34,7 +34,6 @@ CREATE TABLE OutputObjective
     objective_name    TEXT,
     total_system_cost REAL
 );
-INSERT INTO OutputObjective VALUES('test run','TotalCost',3.600000000000003641);
 CREATE TABLE SectorLabel
 (
     sector TEXT,
@@ -114,6 +113,8 @@ INSERT INTO Commodity VALUES('flex_null','d',NULL);
 INSERT INTO Commodity VALUES('annual_flex_out','p',NULL);
 INSERT INTO Commodity VALUES('annual_flex_in','s',NULL);
 INSERT INTO Commodity VALUES('annual_flex_null','d',NULL);
+INSERT INTO Commodity VALUES('embodied_in','s',NULL);
+INSERT INTO Commodity VALUES('embodied_out','d',NULL);
 CREATE TABLE CommodityType
 (
     label       TEXT
@@ -195,6 +196,7 @@ INSERT INTO Demand VALUES('TestRegion',2000,'ordinary_out',0.3,NULL,NULL);
 INSERT INTO Demand VALUES('TestRegion',2000,'curtailment_out',0.3,NULL,NULL);
 INSERT INTO Demand VALUES('TestRegion',2000,'flex_null',0.3,NULL,NULL);
 INSERT INTO Demand VALUES('TestRegion',2000,'annual_flex_null',0.3,NULL,NULL);
+INSERT INTO Demand VALUES('TestRegion',2000,'embodied_out',0.6,NULL,NULL);
 CREATE TABLE DemandSpecificDistribution
 (
     region      TEXT,
@@ -243,6 +245,7 @@ INSERT INTO Efficiency VALUES('TestRegion','curtailment_in','TechCurtailment',20
 INSERT INTO Efficiency VALUES('TestRegion','flex_out','TechFlexNull',2000,'flex_null',1.0,NULL);
 INSERT INTO Efficiency VALUES('TestRegion','annual_flex_out','TechFlexNull',2000,'annual_flex_null',1.0,NULL);
 INSERT INTO Efficiency VALUES('TestRegion','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL);
+INSERT INTO Efficiency VALUES('TestRegion','embodied_in','TechEmbodied',2000,'embodied_out',1.0,NULL);
 CREATE TABLE EmissionActivity
 (
     region      TEXT,
@@ -266,6 +269,21 @@ INSERT INTO EmissionActivity VALUES('TestRegion','emission','flex_in','TechFlex'
 INSERT INTO EmissionActivity VALUES('TestRegion','emission','ordinary_in','TechOrdinary',2000,'ordinary_out',1.0,NULL,NULL);
 INSERT INTO EmissionActivity VALUES('TestRegion','emission','curtailment_in','TechCurtailment',2000,'curtailment_out',1.0,NULL,NULL);
 INSERT INTO EmissionActivity VALUES('TestRegion','emission','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL,NULL);
+CREATE TABLE IF NOT EXISTS EmissionEmbodied
+(
+    region      TEXT,
+    emis_comm   TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    value    REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, emis_comm,  tech, vintage)
+);
+INSERT INTO EmissionEmbodied VALUES('TestRegion','emission','TechEmbodied',2000,0.5,NULL,NULL);
 CREATE TABLE ExistingCapacity
 (
     region   TEXT,
@@ -925,17 +943,17 @@ CREATE TABLE Technology
     curtail      INTEGER NOT NULL DEFAULT 0,
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
-    variable     INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,0,NULL);
-INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,0,NULL);
+INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,NULL);
+INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,NULL);
+INSERT INTO Technology VALUES('TechEmbodied','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,

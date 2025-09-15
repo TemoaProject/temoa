@@ -193,8 +193,8 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
         REFERENCES Commodity (name),
-    dds         REAL,
-    dds_notes   TEXT,
+    dsd         REAL,
+    dsd_notes   TEXT,
     PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dds >= 0 AND dds <= 1)
 );
@@ -242,6 +242,20 @@ CREATE TABLE IF NOT EXISTS EmissionActivity
     units       TEXT,
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE IF NOT EXISTS EmissionEmbodied
+(
+    region      TEXT,
+    emis_comm   TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    value    REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS ExistingCapacity
 (

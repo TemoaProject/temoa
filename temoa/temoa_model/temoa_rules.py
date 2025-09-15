@@ -110,7 +110,7 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         capacity = value(M.CapacityFactorProcess[r, s, d, t, v])
     else:  # use the capacity factor for the tech
         capacity = value(M.CapacityFactorTech[r, s, d, t])
-
+    
     if t in M.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
         # capacity must be available to cover both activity and curtailment.
@@ -424,7 +424,7 @@ def loan_cost(
 def fixed_or_variable_cost(
     cap_or_flow: float | Var,
     cost_factor: float,
-    process_lifetime: float,
+    cost_years: float,
     GDR: float | None,
     P_0: float,
     p: int,
@@ -434,7 +434,7 @@ def fixed_or_variable_cost(
     flow as the driving variable.)
     :param cap_or_flow: Capacity if fixed cost / flow out if variable
     :param cost_factor: the cost (either fixed or variable) of the cap/flow variable
-    :param process_lifetime: see the computation of this variable separately
+    :param cost_years: for how many years is this cost incurred
     :param GDR: discount rate or None
     :param P_0: the period to discount this back to
     :param p: the period under evaluation
@@ -444,9 +444,9 @@ def fixed_or_variable_cost(
     res = cap_or_flow * (
         cost_factor
         * (
-            process_lifetime
+            cost_years
             if not GDR
-            else (x ** (P_0 - p + 1) * (1 - x ** (-process_lifetime)) / GDR)
+            else (x ** (P_0 - p + 1) * (1 - x ** (-cost_years)) / GDR)
         )
     )
     return res
@@ -557,7 +557,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             cap_or_flow=M.V_FlowOut[r, p, s, d, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
-            process_lifetime=M.PeriodLength[p],
+            cost_years=M.PeriodLength[p],
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -565,16 +565,16 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for (r, p, e, s, d, i, t, v, o) in normal
     )
 
-    # 2. flex emissions -- removed (double counting)
+    # 2. flex emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
 
-    # 3. curtailment emissions -- removed (curtailment consumes no input, so no emittances)
+    # 3. curtailment emissions -- removed (curtailment is no-flow, for accounting only, so no emissions)
 
     # 4. annual emissions
     var_annual_emissions = sum(
         fixed_or_variable_cost(
             cap_or_flow=M.V_FlowOutAnnual[r, p, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
-            process_lifetime=M.PeriodLength[p],
+            cost_years=M.PeriodLength[p],
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -582,9 +582,24 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for (r, p, e, i, t, v, o) in annual
         if t not in M.tech_flex
     )
-    # 5. flex annual emissions -- removed (double counting)
 
-    period_emission_cost = var_emissions + var_annual_emissions
+    # 5. flex annual emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
+
+    # 6. embodied - treated as a fixed cost in a single year (year of construction)
+    embodied_emissions = sum(
+        fixed_or_variable_cost(
+            cap_or_flow=M.V_NewCapacity[r, t, v] * M.EmissionEmbodied[r, e, t, v],
+            cost_factor=M.CostEmission[r, p, e],
+            cost_years=1, # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            GDR=GDR,
+            P_0=P_0,
+            p=p,
+        )
+        for (r, e, t, v) in M.EmissionEmbodied.sparse_iterkeys()
+        if v == p
+    )
+
+    period_emission_cost = var_emissions + var_annual_emissions + embodied_emissions
 
     period_costs = (
         loan_costs + fixed_costs + variable_costs + variable_costs_annual + period_emission_cost
@@ -1804,7 +1819,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
     # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
 
-    actual_emissions = sum(
+    process_emissions = sum(
         M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
         * M.EmissionActivity[reg, e, S_i, S_t, S_v, S_o]
         for reg in regions
@@ -1816,7 +1831,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         for S_d in M.time_of_day
     )
 
-    actual_emissions_annual = sum(
+    process_emissions_annual = sum(
         M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, S_o]
         * M.EmissionActivity[reg, e, S_i, S_t, S_v, S_o]
         for reg in regions
@@ -1826,7 +1841,20 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         if (reg, p, S_t, S_v) in M.processInputs.keys()
     )
 
-    expr = actual_emissions + actual_emissions_annual <= emission_limit
+    embodied_emissions = sum(
+        M.V_NewCapacity[r, t, v]
+        * M.EmissionEmbodied[r, e, t, v]
+        for (S_r, S_e, t, v) in M.EmissionEmbodied.sparse_iterkeys()
+        if v == p and S_r == r and S_e == e
+    )
+
+    expr = (
+        process_emissions + process_emissions_annual + embodied_emissions
+        # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
+        # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
+        # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
+        <= emission_limit
+    )
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -1836,6 +1864,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         logger.warning(msg, (e, emission_limit))
         SE.write(msg % (e, emission_limit))
         return Constraint.Skip
+    
     return expr
 
 
