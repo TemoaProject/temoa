@@ -1839,7 +1839,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     return expr
 
 
-def GrowthRateConstraint_rule(M: 'TemoaModel', p, r, t):
+def GrowthRateMaxConstraint_rule(M: 'TemoaModel', r, p, t):
     r"""
 
     This constraint sets an upper bound growth rate on technology-specific capacity.
@@ -1862,22 +1862,24 @@ def GrowthRateConstraint_rule(M: 'TemoaModel', p, r, t):
     GRM = value(M.GrowthRateMax[r, t])
     CapPT = M.V_CapacityAvailableByPeriodAndTech
 
-    periods = sorted(set(p_ for r_, p_, t_ in CapPT if t_ == t))
+    # periods the technology can have capacity in this region (sorted)
+    periods = sorted(set(S_p for S_r, S_p, S_t in CapPT if S_t == t and S_r == r))
 
     if p not in periods:
+        # cant have capacity in this period
         return Constraint.Skip
-
+    
     if p == periods[0]:
+        # first period it can have capacity
+        # plant a seed and grow it
         expr = CapPT[r, p, t] <= GRS * GRM
-
     else:
-        p_prev = periods.index(p)
-        p_prev = periods[p_prev - 1]
-        if (r, p_prev, t) in CapPT.keys():
-            expr = CapPT[r, p, t] <= GRM * CapPT[r, p_prev, t]
-        else:
-            expr = CapPT[r, p, t] <= GRS * GRM
-
+        # can have capacity in previous period
+        # plant a seed and grow last period's capacity
+        # note: we plant a seed every period to survive zero-outs
+        p_prev = periods[periods.index(p) - 1] # previous period
+        expr = CapPT[r, p, t] <= GRS + GRM * CapPT[r, p_prev, t]
+        
     return expr
 
 
