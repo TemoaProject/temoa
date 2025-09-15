@@ -21,9 +21,11 @@ from temoa.temoa_model.table_data_puller import (
     FI,
     FlowType,
     EI,
+    SLI,
     _marks,
     CapData,
     poll_objective,
+    poll_storage_level_results,
     poll_cost_results,
     poll_emissions,
 )
@@ -79,7 +81,7 @@ basic_output_tables = [
     'OutputObjective',
     'OutputRetiredCapacity',
 ]
-optional_output_tables = ['OutputFlowOutSummary', 'OutputMCDelta']
+optional_output_tables = ['OutputFlowOutSummary', 'OutputMCDelta', 'OutputStorageLevel']
 
 flow_summary_file_loc = Path(
     PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
@@ -105,6 +107,7 @@ class TableWriter:
         self,
         M: TemoaModel,
         results_with_duals: SolverResults | None = None,
+        save_storage_levels: bool = False,
         append=False,
         iteration: int | None = None,
     ) -> None:
@@ -137,6 +140,8 @@ class TableWriter:
         self.write_flow_tables(iteration=iteration)
         if results_with_duals:  # write the duals
             self.write_dual_variables(results_with_duals, iteration=iteration)
+        if save_storage_levels:
+            self.write_storage_level(M, iteration=iteration)
         # catch-all
         self.con.commit()
         self.con.execute('VACUUM')
@@ -197,7 +202,12 @@ class TableWriter:
     def clear_scenario(self):
         cur = self.con.cursor()
         for table in basic_output_tables:
-            cur.execute(f'DELETE FROM {table} WHERE scenario = ?', (self.config.scenario,))
+            cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
+        for table in optional_output_tables:
+            try:
+                cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
+            except sqlite3.OperationalError:
+                pass
         self.con.commit()
         self.clear_iterative_runs()
 
@@ -218,6 +228,41 @@ class TableWriter:
             except sqlite3.OperationalError:
                 pass
         self.con.commit()
+
+    def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
+        """Write the storage level table to the DB"""
+
+        # For backwards compatibility, make the output table if it doesn't exist
+        qry = self.con.execute(
+            f"""CREATE TABLE IF NOT EXISTS 
+            OutputStorageLevel(
+            scenario TEXT,
+            region TEXT,
+            sector TEXT REFERENCES SectorLabel (sector),
+            period INTEGER REFERENCES TimePeriod (period),
+            season TEXT REFERENCES TimePeriod (period),
+            tod TEXT REFERENCES TimeOfDay (tod),
+            tech TEXT REFERENCES Technology (tech),
+            vintage INTEGER REFERENCES TimePeriod (period),
+            level REAL,
+            PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
+            );"""
+        )
+
+        storage_levels = poll_storage_level_results(M=M)
+
+        scenario_name = (
+            self.config.scenario + f'-{iteration}'
+            if iteration is not None
+            else self.config.scenario
+        )
+
+        for sli, storage_level in storage_levels.items():
+            sector = self.tech_sectors[sli.t]
+            qry = 'INSERT INTO OutputStorageLevel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            data = (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
+            self.con.execute(qry, data)
+            self.con.commit()
 
     def write_objective(self, M: TemoaModel, iteration=None) -> None:
         """Write the value of all ACTIVE objectives to the DB"""
@@ -313,6 +358,7 @@ class TableWriter:
             if iteration is not None
             else self.config.scenario
         )
+
         for fi in self.flow_register:
             sector = self.tech_sectors.get(fi.t)
             for flow_type in self.flow_register[fi]:

@@ -601,17 +601,19 @@ CREATE TABLE StorageDuration
     PRIMARY KEY (region, tech)
 );
 INSERT INTO StorageDuration VALUES('electricville','batt',10.0,NULL);
-CREATE TABLE StorageInitFrac
+CREATE TABLE StorageFraction
 (   
     region TEXT,
     period INTEGER REFERENCES TimePeriod (period),
     season TEXT REFERENCES TimeSeason (season),
+    tod TEXT REFERENCES TimeOfDay (tod),
     tech TEXT REFERENCES Technology (tech),
     vintage INTEGER REFERENCES TimePeriod (period),
     frac REAL,
-    notes TEXT
+    notes TEXT,
+    PRIMARY KEY (region, period, season, tod, tech, vintage)
 );
-INSERT INTO StorageInitFrac VALUES('electricville',2025,'s1','batt',2025,0.5,'');
+INSERT INTO StorageFraction VALUES('electricville',2025,'s1','d1','batt',2025,0.5,'');
 CREATE TABLE TechnologyType
 (
     label       TEXT

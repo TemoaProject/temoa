@@ -69,6 +69,7 @@ class MyopicSequencer:
         'OutputNetCapacity',
         'OutputObjective',
         'OutputRetiredCapacity',
+        'OutputStorageLevel',
     ]
     tables_without_scenario_reference = [
         'MyopicEfficiency',
@@ -85,6 +86,7 @@ class MyopicSequencer:
         'OutputFlowOut',
         'OutputNetCapacity',
         'OutputRetiredCapacity',
+        'OutputStorageLevel',
     ]
 
     def __init__(self, config: TemoaConfig | None):

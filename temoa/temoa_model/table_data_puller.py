@@ -70,6 +70,9 @@ class FlowType(Enum):
 FI = namedtuple('FI', ['r', 'p', 's', 'd', 'i', 't', 'v', 'o'])
 """Flow Index"""
 
+SLI = namedtuple('SLI', ['r', 'p', 's', 'd', 't', 'v'])
+"""Storage Level Index"""
+
 CapData = namedtuple('CapData', ['built', 'net', 'retired'])
 """Small container to hold named dictionaries of capacity data for processing"""
 
@@ -197,6 +200,25 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
                     continue
                 res[fi][FlowType.FLEX] = flow
                 res[fi][FlowType.OUT] -= flow
+
+    return res
+
+
+def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
+    """
+    Poll a solved model for flow results.
+    :param M: A solved Model
+    :param epsilon: epsilon (default 1e-5)
+    :return: dictionary of storage level index, storage level
+    """
+    res: dict[SLI, float] = defaultdict(float)
+
+    # Storage level, the state variable for all but last time slice of each season
+    for sli in M.StorageLevel_rpsdtv:
+        state = value(M.V_StorageLevel[sli])
+        sli = SLI(*sli)
+        if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
+        res[sli] = state
 
     return res
 
