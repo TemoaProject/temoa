@@ -579,6 +579,11 @@ class HybridLoader:
         ).fetchall()
         load_element(M.DemandSpecificDistribution, raw)
 
+        # DemandPeriodDistribution
+        if self.table_exists('DemandPeriodDistribution'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, demand_name, dpd FROM main.DemandPeriodDistribution')
+            load_element(M.DemandPeriodDistribution, raw)
+
         # Demand
         raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand', mi=mi)
         load_element(M.Demand, raw)

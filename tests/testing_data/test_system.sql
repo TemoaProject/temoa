@@ -436,6 +436,24 @@ INSERT INTO DemandSpecificDistribution VALUES('R2','fall','day','RH',0.050000000
 INSERT INTO DemandSpecificDistribution VALUES('R2','fall','night','RH',0.1000000000000000055,'');
 INSERT INTO DemandSpecificDistribution VALUES('R2','winter','day','RH',0.2999999999999999889,'');
 INSERT INTO DemandSpecificDistribution VALUES('R2','winter','night','RH',0.4000000000000000222,'');
+CREATE TABLE DemandPeriodDistribution
+(
+    region      TEXT,
+    period    INTEGER
+        REFERENCES TimePeriod (period),
+    season      TEXT
+        REFERENCES TimeSeason (season),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    demand_name TEXT
+        REFERENCES Commodity (name),
+    dpd         REAL,
+    dpd_notes   TEXT,
+    PRIMARY KEY (region, period, season, tod, demand_name),
+    CHECK (dpd >= 0 AND dpd <= 1)
+);
+INSERT INTO DemandPeriodDistribution VALUES('R1',2020,'fall','day','VMT',0.125,'Same as default distribution (segfrac)');
+INSERT INTO DemandPeriodDistribution VALUES('R2',2025,'winter','night','VMT',0.125,'Same as default distribution (segfrac)');
 CREATE TABLE LoanRate
 (
     region  TEXT,

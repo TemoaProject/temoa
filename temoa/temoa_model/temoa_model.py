@@ -117,6 +117,7 @@ class TemoaModel(AbstractModel):
         M.exportRegions = dict()
         M.importRegions = dict()
         M.time_next = dict()
+        M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
         M.flex_commodities = set()
 
         ################################################
@@ -226,9 +227,8 @@ class TemoaModel(AbstractModel):
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
         #            cause any problems, so let it be for now.
         M.DemandDefaultDistribution = Param(M.time_season, M.time_of_day, mutable=True)
-        M.DemandSpecificDistribution = Param(
-            M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0
-        )
+        M.DemandSpecificDistribution = Param(M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0)
+        M.DemandPeriodDistribution = Param(M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand, default=0)
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)

@@ -655,7 +655,7 @@ def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
     DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
 
     expr = (
-        supply + supply_annual == M.Demand[r, p, dem] * M.DemandSpecificDistribution[r, s, d, dem]
+        supply + supply_annual == M.Demand[r, p, dem] * get_demand_distribution(M, r, p, s, d, dem)
     )
 
     return expr
@@ -700,8 +700,8 @@ def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem, s_0, d_0):
     )
 
     expr = (
-        act_a * M.DemandSpecificDistribution[r, s, d, dem]
-        == act_b * M.DemandSpecificDistribution[r, s_0, d_0, dem]
+        act_a * get_demand_distribution(M, r, p, s, d, dem)
+        == act_b * get_demand_distribution(M, r, p, s_0, d_0, dem)
     )
     return expr
 
@@ -2947,3 +2947,12 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     )
 
     return -primary_flow == linked_flow
+
+
+# Doing it this way allows us to avoid building a big period-indexed parameter for every demand
+# when only a few demands will likely utilise that option
+def get_demand_distribution(M: 'TemoaModel', r, p, s, d, dem):
+    if M.demandPeriodDistributions[(r, p, dem)]:
+        return M.DemandPeriodDistribution[r, p, s, d, dem]
+    else:
+        return M.DemandSpecificDistribution[r, s, d, dem]

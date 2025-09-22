@@ -435,10 +435,15 @@ def CreateDemands(M: 'TemoaModel'):
             if DSD_dem_getter(k) == dem and DSD_region_getter(k) == r
         ]
         if len(keys) != expected_key_length:
-            logger.debug(
-                'Missing some keys in this set for creation of Demand Distribution %s: %s',
-                dem,
-                keys,
+            missing = set(
+                (s, d)
+                for s in M.time_season
+                for d in M.time_of_day
+                if (r, s, d, dem) not in keys
+            )
+            logger.warning(
+                'Missing some time slices for Demand Specific Distribution %s: %s',
+                (r, dem), missing,
             )
         total = sum(DSD[i] for i in keys)
         if abs(value(total) - 1.0) > 0.001:
@@ -469,6 +474,48 @@ def CreateDemands(M: 'TemoaModel'):
             )
             logger.error(msg.format(dem, items, total))
             raise ValueError(msg.format(dem, items, total))
+        
+        # No DPD by default
+        for p in M.time_optimize:
+            M.demandPeriodDistributions[(r, p, dem)] = False
+        
+    # Step 6: Validate DPD
+    DPD = M.DemandPeriodDistribution
+
+    # Get the rp_dem combos that have period indexing, so we know later on which demands use it
+    rp_dem = set(
+        (r, p, dem)
+        for r, p, s, d, dem in DPD.sparse_iterkeys()
+    )
+    for r, p, dem in rp_dem:
+
+        # Check that each DPD demand actually has all the timeslices defined
+        missing = set(
+            (s, d)
+            for s in M.time_season
+            for d in M.time_of_day
+            if (r, p, s, d, dem) not in DPD.sparse_iterkeys()
+        )
+        if len(missing) > 0:
+            msg = ('Missing some time slices for Demand Period Distribution {}: {}')
+            logger.warning(msg.format((r, p, dem), missing))
+
+        total = sum(
+            M.DemandPeriodDistribution[r, p, s, d, dem]
+            for s in M.time_season
+            for d in M.time_of_day
+        )
+        if abs(value(total) - 1.0) > 0.001:
+            msg = (
+                'The values of the DemandPeriodDistribution parameter do not '
+                'sum to 1 for {}. Current sum = {}. Defaulting to DSD/DDD.'
+            )
+            logger.warning(msg.format((r, p, dem), total))
+            continue
+        
+        # This is a good DPD, override DSD/DDD
+        M.demandPeriodDistributions[(r, p, dem)] = True
+    
     logger.debug('Finished creating demand distributions')
 
 
