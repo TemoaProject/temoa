@@ -1600,9 +1600,9 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
         :label: Storage Energy (Sequential Seasons)
 
         \mathbf{SSL}_{r,p,s^{seq},t,v}
-        + DA_{r,p,s^{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{first},t,v} +
-        \sum_{D,I,O} \mathbf{FI}_{r,p,s^*,d,i,t,v,o} \cdot EFF_{r,i,t,v,o}
-        - \sum_{D,I,O} \mathbf{FO}_{r,p,s^*,d,i,t,v,o}
+        + DA_{r,p,s^{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{last},t,v} +
+        \sum_{I,O} \mathbf{FI}_{r,p,s^*,d_{last},i,t,v,o} \cdot EFF_{r,i,t,v,o}
+        - \sum_{I,O} \mathbf{FO}_{r,p,s^*,d_{last},i,t,v,o}
         \right)
 
         = DA_{r,p,s^{seq}_{next}} \cdot \mathbf{SL}_{r,p,s_{next}^*,d_{first},t,v}
@@ -1632,19 +1632,18 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s
     charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        M.V_FlowIn[r, p, s, M.time_of_day.last(), S_i, t, v, S_o]
+        * get_variable_efficiency(M, r, p, s, M.time_of_day.last(), S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        for d in M.time_of_day
     )
 
     # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
     # with input=i in p,s
     discharge = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        M.V_FlowOut[r, p, s, M.time_of_day.last(), S_i, t, v, S_o]
         for S_o in M.processOutputs[r, p, t, v]
         for S_i in M.processInputsByOutput[r, p, t, v, S_o]
-        for d in M.time_of_day
     )
 
     s_seq_next = M.time_next_sequential[p, s_seq]
@@ -1657,7 +1656,7 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
 
     stored_energy = (charge - discharge) * days_adjust
 
-    start = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.first(), t, v] * days_adjust
+    start = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.last(), t, v] * days_adjust
     end = M.V_SeasonalStorageLevel[r, p, s_seq_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
 
     expr = start + stored_energy == end
