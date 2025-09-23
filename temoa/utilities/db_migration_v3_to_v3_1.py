@@ -29,6 +29,7 @@ import os
 import sys
 import argparse
 import sqlite3
+import pandas as pd
 from pathlib import Path
 
 # Just to get the default lifetime...
@@ -178,11 +179,9 @@ no_transfer = {
 
 all_good = True
 for old_name, new_name in direct_transfer_tables:
-    good = column_check(old_name, new_name)
-    all_good = all_good and good
+    all_good = all_good and column_check(old_name, new_name)
 for old_name, new_name in period_added_tables:
-    good = column_check(old_name, new_name)
-    all_good = all_good and good
+    all_good = all_good and column_check(old_name, new_name)
 if not all_good: sys.exit(-1)
 
 
@@ -246,18 +245,25 @@ for old_name, new_name in direct_transfer_tables:
     con_new.executemany(query, data)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
+# Need these
+time_future = cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
+time_optimize = [p[0] for p in time_future[0:-1]]
+
 # get lifetimes. Major headache but needs to be done
-data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
-lifetime_tech = dict()
-for rtl in data: lifetime_tech[rtl[0:2]] = rtl[2]
-data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
 lifetime_process = dict()
-for rtvl in data: lifetime_process[rtvl[0:3]] = rtvl[3]
+data = cur.execute('SELECT region, tech, vintage FROM Efficiency').fetchall()
+for rtv in data:
+    lifetime_process[rtv] = TemoaModel.default_lifetime_tech
+data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
+for rtl in data:
+    for v in time_optimize:
+        lifetime_process[*rtl[0:2], v] = rtl[2]
+data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
+for rtvl in data:
+    lifetime_process[rtvl[0:3]] = rtvl[3]
 
 # add period indexing to seasonal tables
 print('\n --- Adding period index to some tables ---')
-time_future = cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
-time_optimize = [p[0] for p in time_future[0:-1]]
 for old_name, new_name in period_added_tables:
     if old_name == '':
         old_name = new_name
@@ -271,47 +277,51 @@ for old_name, new_name in period_added_tables:
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     cols = [c for c in new_columns if c in old_columns]
-    data = con_old.execute(f'SELECT {str(cols)[1:-1].replace("'","")} FROM {old_name}').fetchall()
+    data = pd.read_sql_query(f'SELECT {str(cols)[1:-1].replace("'","")} FROM {old_name}', con_old)
 
-    if not data:
+    if len(data) == 0:
         print('No data for: ' + old_name)
         continue
     
+    # This insanity collects the viable periods for each table
     if 'vintage' in cols:
-        r = cols.index('region')
-        t = cols.index('tech')
-        v = cols.index('vintage')
+        data['periods'] = [
+            (
+                p for p in time_optimize
+                if v <= p < v+lifetime_process[r, t, v]
+            )
+            for r, t, v in data[['region','tech','vintage']]
+        ]
     elif 'tech' in cols:
-        r = cols.index('region')
-        t = cols.index('tech')
-
+        periods = dict()
+        for r, t in data[['region','tech']].drop_duplicates().values:
+            periods[r, t] = [
+                p for p in time_optimize
+                if any((
+                    v <= p < v+lifetime_process[r, t, v]
+                    for v in [
+                        t[0] for t in con_old.execute(
+                            f'SELECT vintage FROM Efficiency WHERE region == "{r}" AND tech == "{t}"'
+                        ).fetchall()
+                    ]
+                ))
+            ]
+        data['periods'] = [
+            periods[r, t]
+            for (r, t) in data[['region','tech']].values
+        ]
+    else:
+        data['periods'] = [time_optimize for i in data.index]
+        
     data_new = []
     for p in time_optimize:
-        for row in data:
-            # Remove infeasible rows
-            if 'vintage' in cols:
-                if row[v] > p: continue # v <= p
-                if (row[r], row[t], row[v]) in lifetime_process: life = lifetime_process[row[r], row[t], row[v]]
-                elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
-                else: life = TemoaModel.default_lifetime_tech
-                if row[v] + life <= p: continue # v+l > p
-            elif 'tech' in cols:
-                vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE tech == "{row[t]}"').fetchall()]
-                good = False
-                for v in vints:
-                    # Can any of these vintages make p good?
-                    if v > p: continue # Nope, need v <= p
-                    if (row[r], row[t], v) in lifetime_process: life = lifetime_process[row[r], row[t], v]
-                    elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
-                    else: life = TemoaModel.default_lifetime_tech
-                    if v + life <= p: continue # Nope, need v+l > p
-                    good = True
-                if not good: continue
-
+        for _idx, row in data.iterrows():
+            if p not in row['periods']:
+                continue
             if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
-                data_new.append((p, *row))
+                data_new.append((p, *row.iloc[0:-1]))
             else:
-                data_new.append((row[0], p, *row[1::]))
+                data_new.append((row.iloc[0], p, *row.iloc[1:-1]))
 
     if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
         cols = ['period',*cols]
@@ -327,17 +337,30 @@ for old_name, new_name in period_added_tables:
         f'VALUES ({placeholders})'
     )
     con_new.executemany(query, data_new)
-    print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
+    print(f'Transfered {len(data_new)} rows from {old_name} to {new_name}')
 
+
+print('\n --- Making some final changes ---')
+n_del = len(con_new.execute((
+    "SELECT * FROM DemandSpecificDistribution "
+    "WHERE (region, period, demand_name) "
+    "NOT IN (SELECT region, period, commodity FROM Demand)"
+)).fetchall())
+if n_del > 0:
+    con_new.execute((
+        "DELETE FROM DemandSpecificDistribution "
+        "WHERE (region, period, demand_name) "
+        "NOT IN (SELECT region, period, commodity FROM Demand)"
+    ))
+    print(f"{n_del} extraneous rows removed from DemandSpecificDistribution after adding period index")
 
 # TimeSeason unique seasons to SeasonLabel
 con_new.execute("INSERT OR REPLACE INTO SeasonLabel(season) SELECT DISTINCT season FROM TimeSeason")
-
+print('Filled SeasonLabel')
 
 # Removal of tech_resource
 con_new.execute("UPDATE Technology SET flag='p' WHERE flag=='r';")
 print('Converted all resource techs to production techs.')
-
 
 # LoanLifetimeTech -> LoanLifetimeProcess
 try:
