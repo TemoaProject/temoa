@@ -339,7 +339,7 @@ def poll_cost_results(
             activity = sum(
                 value(M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o])
                 for S_i in M.processInputs[r, p, t, v]
-                for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+                for S_o in M.processOutputsByInput[r, p, t, v, S_i]
                 for S_s in M.time_season
                 for S_d in M.time_of_day
             )
@@ -347,7 +347,7 @@ def poll_cost_results(
             activity = sum(
                 value(M.V_FlowOutAnnual[r, p, S_i, t, v, S_o])
                 for S_i in M.processInputs[r, p, t, v]
-                for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+                for S_o in M.processOutputsByInput[r, p, t, v, S_i]
             )
         if abs(activity) < epsilon:
             continue

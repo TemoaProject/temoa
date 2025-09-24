@@ -14,7 +14,7 @@ scenario = "testing"
 # See documentation for explanations.  A standard single run is "perfect foresight"
 # mode must be one of (case-insensitive):
 #     [perfect_foresight, MGA, myopic, method_of_morris, build_only]
-scenario_mode = "build_only"
+scenario_mode = "perfect_foresight"
 
 # Input file (Mandatory)
 # Input can be a .sqlite or .dat file

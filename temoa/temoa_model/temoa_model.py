@@ -97,8 +97,8 @@ class TemoaModel(AbstractModel):
         M.commodityBalance_rpc = None # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess = dict()  # The downstream process of a commodity during a period
         M.commodityUStreamProcess = dict()  # The upstream process of a commodity during a period
-        M.ProcessInputsByOutput = dict()
-        M.ProcessOutputsByInput = dict()
+        M.processInputsByOutput = dict()
+        M.processOutputsByInput = dict()
         M.processTechs = dict()
         M.processReservePeriods = dict()
         M.processVintages = dict()
@@ -109,14 +109,19 @@ class TemoaModel(AbstractModel):
         M.storageVintages = dict()
         M.rampUpVintages = dict()
         M.rampDownVintages = dict()
-        M.inputsplitVintages = dict()
-        M.inputsplitannualVintages = dict()
-        M.outputsplitVintages = dict()
-        M.outputsplitannualVintages = dict()
-        M.ProcessByPeriodAndOutput = dict()
+        M.minInputSplitVintages = dict()
+        M.minInputSplitAnnualVintages = dict()
+        M.maxInputSplitVintages = dict()
+        M.maxInputSplitAnnualVintages = dict()
+        M.minOutputSplitVintages = dict()
+        M.minOutputSplitAnnualVintages = dict()
+        M.maxOutputSplitVintages = dict()
+        M.maxOutputSplitAnnualVintages = dict()
+        M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
         M.time_next = dict()
+        M.demandPeriodDistributions: dict[tuple, bool] = dict() # which demands have period indexing
         M.flex_commodities = set()
 
         ################################################
@@ -226,9 +231,8 @@ class TemoaModel(AbstractModel):
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
         #            cause any problems, so let it be for now.
         M.DemandDefaultDistribution = Param(M.time_season, M.time_of_day, mutable=True)
-        M.DemandSpecificDistribution = Param(
-            M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0
-        )
+        M.DemandSpecificDistribution = Param(M.regions, M.time_season, M.time_of_day, M.commodity_demand, mutable=True, default=0)
+        M.DemandPeriodDistribution = Param(M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand, default=0)
 
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
@@ -294,10 +298,18 @@ class TemoaModel(AbstractModel):
 
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
-        M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.TechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
-        M.TechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
-        M.TechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        # Min tech input split
+        M.MinTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        M.MinTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        # Min tech output split
+        M.MinTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.MinTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        # Max tech input split
+        M.MaxTechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        M.MaxTechInputSplitAnnual = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
+        # Max tech output split
+        M.MaxTechOutputSplit = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
+        M.MaxTechOutputSplitAnnual = Param(M.regions, M.time_optimize, M.tech_all, M.commodity_carrier)
 
         M.RenewablePortfolioStandardConstraint_rpg = Set(
             within=M.regions * M.time_optimize * M.tech_group_names
@@ -448,6 +460,14 @@ class TemoaModel(AbstractModel):
 
         M.MaxNewCapacityShareConstraint_rptg = Set(within=M.GroupShareIndices)
         M.MaxNewCapacityShare = Param(M.GroupShareIndices)
+
+        M.TwoGroupShareIndices = Set(dimen=4, initialize=TwoGroupShareIndices)
+
+        M.MinNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        M.MinNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
+        
+        M.MaxNewCapacityGroupShareConstraint_rpgg = Set(within=M.TwoGroupShareIndices)
+        M.MaxNewCapacityGroupShare = Param(M.TwoGroupShareIndices)
 
         # This set works for all storage-related constraints
         M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
@@ -736,6 +756,13 @@ class TemoaModel(AbstractModel):
             M.MaxNewCapacityShareConstraint_rptg, rule=MaxNewCapacityShare_Constraint
         )
 
+        M.MinNewCapacityGroupShareConstraint = Constraint(
+            M.MinNewCapacityGroupShareConstraint_rpgg, rule=MinNewCapacityGroupShare_Constraint
+        )
+        M.MaxNewCapacityGroupShareConstraint = Constraint(
+            M.MaxNewCapacityGroupShareConstraint_rpgg, rule=MaxNewCapacityGroupShare_Constraint
+        )
+
         M.progress_marker_8 = BuildAction(
             ['Starting Max/Min Capacity and Tech Split ' 'Constraints'], rule=progress_check
         )
@@ -759,47 +786,93 @@ class TemoaModel(AbstractModel):
         M.MaxAnnualCapacityFactorConstraint = Constraint(
             M.MaxAnnualCapacityFactorConstraint_rpto, rule=MaxAnnualCapacityFactor_Constraint
         )
-
-        M.TechInputSplitConstraint_rpsditv = Set(
-            dimen=7, initialize=TechInputSplitConstraintIndices
+        
+        ## Min tech input splits
+        M.MinTechInputSplitConstraint_rpsditv = Set(
+            dimen=7, initialize=MinTechInputSplitConstraintIndices
         )
-        M.TechInputSplitConstraint = Constraint(
-            M.TechInputSplitConstraint_rpsditv, rule=TechInputSplit_Constraint
-        )
-
-        M.TechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=5, initialize=TechInputSplitAnnualConstraintIndices
-        )
-        M.TechInputSplitAnnualConstraint = Constraint(
-            M.TechInputSplitAnnualConstraint_rpitv, rule=TechInputSplitAnnual_Constraint
+        M.MinTechInputSplitConstraint = Constraint(
+            M.MinTechInputSplitConstraint_rpsditv, rule=MinTechInputSplit_Constraint
         )
 
-        M.TechInputSplitAverageConstraint_rpitv = Set(
-            dimen=5, initialize=TechInputSplitAverageConstraintIndices
+        M.MinTechInputSplitAnnualConstraint_rpitv = Set(
+            dimen=5, initialize=MinTechInputSplitAnnualConstraintIndices
         )
-        M.TechInputSplitAverageConstraint = Constraint(
-            M.TechInputSplitAverageConstraint_rpitv, rule=TechInputSplitAverage_Constraint
-        )
-
-        M.TechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=7, initialize=TechOutputSplitConstraintIndices
-        )
-        M.TechOutputSplitConstraint = Constraint(
-            M.TechOutputSplitConstraint_rpsdtvo, rule=TechOutputSplit_Constraint
+        M.MinTechInputSplitAnnualConstraint = Constraint(
+            M.MinTechInputSplitAnnualConstraint_rpitv, rule=MinTechInputSplitAnnual_Constraint
         )
 
-        M.TechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=5, initialize=TechOutputSplitAnnualConstraintIndices
+        M.MinTechInputSplitAverageConstraint_rpitv = Set(
+            dimen=5, initialize=MinTechInputSplitAverageConstraintIndices
         )
-        M.TechOutputSplitAnnualConstraint = Constraint(
-            M.TechOutputSplitAnnualConstraint_rptvo, rule=TechOutputSplitAnnual_Constraint
+        M.MinTechInputSplitAverageConstraint = Constraint(
+            M.MinTechInputSplitAverageConstraint_rpitv, rule=MinTechInputSplitAverage_Constraint
         )
 
-        M.TechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=5, initialize=TechOutputSplitAverageConstraintIndices
+        ## Min tech output splits
+        M.MinTechOutputSplitConstraint_rpsdtvo = Set(
+            dimen=7, initialize=MinTechOutputSplitConstraintIndices
         )
-        M.TechOutputSplitAverageConstraint = Constraint(
-            M.TechOutputSplitAverageConstraint_rptvo, rule=TechOutputSplitAverage_Constraint
+        M.MinTechOutputSplitConstraint = Constraint(
+            M.MinTechOutputSplitConstraint_rpsdtvo, rule=MinTechOutputSplit_Constraint
+        )
+
+        M.MinTechOutputSplitAnnualConstraint_rptvo = Set(
+            dimen=5, initialize=MinTechOutputSplitAnnualConstraintIndices
+        )
+        M.MinTechOutputSplitAnnualConstraint = Constraint(
+            M.MinTechOutputSplitAnnualConstraint_rptvo, rule=MinTechOutputSplitAnnual_Constraint
+        )
+
+        M.MinTechOutputSplitAverageConstraint_rptvo = Set(
+            dimen=5, initialize=MinTechOutputSplitAverageConstraintIndices
+        )
+        M.MinTechOutputSplitAverageConstraint = Constraint(
+            M.MinTechOutputSplitAverageConstraint_rptvo, rule=MinTechOutputSplitAverage_Constraint
+        )
+
+        ## Max tech input splits
+        M.MaxTechInputSplitConstraint_rpsditv = Set(
+            dimen=7, initialize=MaxTechInputSplitConstraintIndices
+        )
+        M.MaxTechInputSplitConstraint = Constraint(
+            M.MaxTechInputSplitConstraint_rpsditv, rule=MaxTechInputSplit_Constraint
+        )
+
+        M.MaxTechInputSplitAnnualConstraint_rpitv = Set(
+            dimen=5, initialize=MaxTechInputSplitAnnualConstraintIndices
+        )
+        M.MaxTechInputSplitAnnualConstraint = Constraint(
+            M.MaxTechInputSplitAnnualConstraint_rpitv, rule=MaxTechInputSplitAnnual_Constraint
+        )
+
+        M.MaxTechInputSplitAverageConstraint_rpitv = Set(
+            dimen=5, initialize=MaxTechInputSplitAverageConstraintIndices
+        )
+        M.MaxTechInputSplitAverageConstraint = Constraint(
+            M.MaxTechInputSplitAverageConstraint_rpitv, rule=MaxTechInputSplitAverage_Constraint
+        )
+
+        ## Max tech output splits
+        M.MaxTechOutputSplitConstraint_rpsdtvo = Set(
+            dimen=7, initialize=MaxTechOutputSplitConstraintIndices
+        )
+        M.MaxTechOutputSplitConstraint = Constraint(
+            M.MaxTechOutputSplitConstraint_rpsdtvo, rule=MaxTechOutputSplit_Constraint
+        )
+
+        M.MaxTechOutputSplitAnnualConstraint_rptvo = Set(
+            dimen=5, initialize=MaxTechOutputSplitAnnualConstraintIndices
+        )
+        M.MaxTechOutputSplitAnnualConstraint = Constraint(
+            M.MaxTechOutputSplitAnnualConstraint_rptvo, rule=MaxTechOutputSplitAnnual_Constraint
+        )
+
+        M.MaxTechOutputSplitAverageConstraint_rptvo = Set(
+            dimen=5, initialize=MaxTechOutputSplitAverageConstraintIndices
+        )
+        M.MaxTechOutputSplitAverageConstraint = Constraint(
+            M.MaxTechOutputSplitAverageConstraint_rptvo, rule=MaxTechOutputSplitAverage_Constraint
         )
 
         M.RenewablePortfolioStandardConstraint = Constraint(

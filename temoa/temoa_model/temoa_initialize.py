@@ -435,10 +435,15 @@ def CreateDemands(M: 'TemoaModel'):
             if DSD_dem_getter(k) == dem and DSD_region_getter(k) == r
         ]
         if len(keys) != expected_key_length:
-            logger.debug(
-                'Missing some keys in this set for creation of Demand Distribution %s: %s',
-                dem,
-                keys,
+            missing = set(
+                (s, d)
+                for s in M.time_season
+                for d in M.time_of_day
+                if (r, s, d, dem) not in keys
+            )
+            logger.warning(
+                'Missing some time slices for Demand Specific Distribution %s: %s',
+                (r, dem), missing,
             )
         total = sum(DSD[i] for i in keys)
         if abs(value(total) - 1.0) > 0.001:
@@ -469,6 +474,48 @@ def CreateDemands(M: 'TemoaModel'):
             )
             logger.error(msg.format(dem, items, total))
             raise ValueError(msg.format(dem, items, total))
+        
+        # No DPD by default
+        for p in M.time_optimize:
+            M.demandPeriodDistributions[(r, p, dem)] = False
+        
+    # Step 6: Validate DPD
+    DPD = M.DemandPeriodDistribution
+
+    # Get the rp_dem combos that have period indexing, so we know later on which demands use it
+    rp_dem = set(
+        (r, p, dem)
+        for r, p, s, d, dem in DPD.sparse_iterkeys()
+    )
+    for r, p, dem in rp_dem:
+
+        # Check that each DPD demand actually has all the timeslices defined
+        missing = set(
+            (s, d)
+            for s in M.time_season
+            for d in M.time_of_day
+            if (r, p, s, d, dem) not in DPD.sparse_iterkeys()
+        )
+        if len(missing) > 0:
+            msg = ('Missing some time slices for Demand Period Distribution {}: {}')
+            logger.warning(msg.format((r, p, dem), missing))
+
+        total = sum(
+            M.DemandPeriodDistribution[r, p, s, d, dem]
+            for s in M.time_season
+            for d in M.time_of_day
+        )
+        if abs(value(total) - 1.0) > 0.001:
+            msg = (
+                'The values of the DemandPeriodDistribution parameter do not '
+                'sum to 1 for {}. Current sum = {}. Defaulting to DSD/DDD.'
+            )
+            logger.warning(msg.format((r, p, dem), total))
+            continue
+        
+        # This is a good DPD, override DSD/DDD
+        M.demandPeriodDistributions[(r, p, dem)] = True
+    
     logger.debug('Finished creating demand distributions')
 
 
@@ -660,10 +707,10 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.commodityDStreamProcess[r, p, i] = set()
             if (r, p, o) not in M.commodityUStreamProcess:
                 M.commodityUStreamProcess[r, p, o] = set()
-            if (r, p, t, v, i) not in M.ProcessOutputsByInput:
-                M.ProcessOutputsByInput[r, p, t, v, i] = set()
-            if (r, p, t, v, o) not in M.ProcessInputsByOutput:
-                M.ProcessInputsByOutput[r, p, t, v, o] = set()
+            if (r, p, t, v, i) not in M.processOutputsByInput:
+                M.processOutputsByInput[r, p, t, v, i] = set()
+            if (r, p, t, v, o) not in M.processInputsByOutput:
+                M.processInputsByOutput[r, p, t, v, o] = set()
             if (r, t) not in M.processTechs:
                 M.processTechs[r, t] = set()
             # While the dictionary just above identifies the vintage (v)
@@ -681,36 +728,69 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.rampUpVintages[r, p, t] = set()
             if t in M.tech_downramping and (r, p, t) not in M.rampDownVintages:
                 M.rampDownVintages[r, p, t] = set()
-            if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys() and (
+
+            # min tech split
+            if (r, p, i, t) in M.MinTechInputSplit.sparse_iterkeys() and (
                 r,
                 p,
                 i,
                 t,
-            ) not in M.inputsplitVintages:
-                M.inputsplitVintages[r, p, i, t] = set()
-            if (r, p, i, t) in M.TechInputSplitAnnual.sparse_iterkeys() and (
+            ) not in M.minInputSplitVintages:
+                M.minInputSplitVintages[r, p, i, t] = set()
+            if (r, p, i, t) in M.MinTechInputSplitAnnual.sparse_iterkeys() and (
                 r,
                 p,
                 i,
                 t,
-            ) not in M.inputsplitannualVintages:
-                M.inputsplitannualVintages[r, p, i, t] = set()
-            if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys() and (
+            ) not in M.minInputSplitAnnualVintages:
+                M.minInputSplitAnnualVintages[r, p, i, t] = set()
+            if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys() and (
                 r,
                 p,
                 t,
                 o,
-            ) not in M.outputsplitVintages:
-                M.outputsplitVintages[r, p, t, o] = set()
-            if (r, p, t, o) in M.TechOutputSplitAnnual.sparse_iterkeys() and (
+            ) not in M.minOutputSplitVintages:
+                M.minOutputSplitVintages[r, p, t, o] = set()
+            if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys() and (
                 r,
                 p,
                 t,
                 o,
-            ) not in M.outputsplitannualVintages:
-                M.outputsplitannualVintages[r, p, t, o] = set()
-            if t in M.tech_resource and (r, p, o) not in M.ProcessByPeriodAndOutput:
-                M.ProcessByPeriodAndOutput[r, p, o] = set()
+            ) not in M.minOutputSplitAnnualVintages:
+                M.minOutputSplitAnnualVintages[r, p, t, o] = set()
+
+            # max tech split
+            if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys() and (
+                r,
+                p,
+                i,
+                t,
+            ) not in M.maxInputSplitVintages:
+                M.maxInputSplitVintages[r, p, i, t] = set()
+            if (r, p, i, t) in M.MaxTechInputSplitAnnual.sparse_iterkeys() and (
+                r,
+                p,
+                i,
+                t,
+            ) not in M.maxInputSplitAnnualVintages:
+                M.maxInputSplitAnnualVintages[r, p, i, t] = set()
+            if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys() and (
+                r,
+                p,
+                t,
+                o,
+            ) not in M.maxOutputSplitVintages:
+                M.maxOutputSplitVintages[r, p, t, o] = set()
+            if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys() and (
+                r,
+                p,
+                t,
+                o,
+            ) not in M.maxOutputSplitAnnualVintages:
+                M.maxOutputSplitAnnualVintages[r, p, t, o] = set()
+
+            if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput:
+                M.processByPeriodAndOutput[r, p, o] = set()
             if t in M.tech_reserve and (r, p) not in M.processReservePeriods:
                 M.processReservePeriods[r, p] = set()
 
@@ -728,8 +808,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             M.processOutputs[pindex].add(o)
             M.commodityDStreamProcess[r, p, i].add((t, v))
             M.commodityUStreamProcess[r, p, o].add((t, v))
-            M.ProcessOutputsByInput[r, p, t, v, i].add(o)
-            M.ProcessInputsByOutput[r, p, t, v, o].add(i)
+            M.processOutputsByInput[r, p, t, v, i].add(o)
+            M.processInputsByOutput[r, p, t, v, o].add(i)
             M.processTechs[r, t].add((p, v))
             M.processVintages[r, p, t].add(v)
             if t in M.tech_curtailment:
@@ -742,16 +822,29 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 M.rampUpVintages[r, p, t].add(v)
             if t in M.tech_upramping:
                 M.rampDownVintages[r, p, t].add(v)
-            if (r, p, i, t) in M.TechInputSplit.sparse_iterkeys():
-                M.inputsplitVintages[r, p, i, t].add(v)
-            if (r, p, i, t) in M.TechInputSplitAnnual.sparse_iterkeys():
-                M.inputsplitannualVintages[r, p, i, t].add(v)
-            if (r, p, t, o) in M.TechOutputSplit.sparse_iterkeys():
-                M.outputsplitVintages[r, p, t, o].add(v)
-            if (r, p, t, o) in M.TechOutputSplitAnnual.sparse_iterkeys():
-                M.outputsplitannualVintages[r, p, t, o].add(v)
+
+            # min tech split
+            if (r, p, i, t) in M.MinTechInputSplit.sparse_iterkeys():
+                M.minInputSplitVintages[r, p, i, t].add(v)
+            if (r, p, i, t) in M.MinTechInputSplitAnnual.sparse_iterkeys():
+                M.minInputSplitAnnualVintages[r, p, i, t].add(v)
+            if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys():
+                M.minOutputSplitVintages[r, p, t, o].add(v)
+            if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys():
+                M.minInputSplitAnnualVintages[r, p, t, o].add(v)
+
+            # max tech split
+            if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys():
+                M.maxInputSplitVintages[r, p, i, t].add(v)
+            if (r, p, i, t) in M.MaxTechInputSplitAnnual.sparse_iterkeys():
+                M.maxInputSplitAnnualVintages[r, p, i, t].add(v)
+            if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys():
+                M.maxOutputSplitVintages[r, p, t, o].add(v)
+            if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys():
+                M.maxInputSplitAnnualVintages[r, p, t, o].add(v)
+
             if t in M.tech_resource:
-                M.ProcessByPeriodAndOutput[r, p, o].add((i, t, v))
+                M.processByPeriodAndOutput[r, p, o].add((i, t, v))
             if t in M.tech_reserve:
                 M.processReservePeriods[r, p].add((t, v))
             if t in M.tech_exchange:
@@ -808,7 +901,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t not in M.tech_annual
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -819,7 +912,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t in M.tech_annual
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     M.activeFlex_rpsditvo = set(
@@ -828,7 +921,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if (t not in M.tech_annual) and (t in M.tech_flex)
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -839,7 +932,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if (t in M.tech_annual) and (t in M.tech_flex)
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     M.activeFlowInStorage_rpsditvo = set(
@@ -848,7 +941,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t in M.tech_storage
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -858,7 +951,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for r, p, t in M.curtailmentVintages.keys()
         for v in M.curtailmentVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
-        for o in M.ProcessOutputsByInput[r, p, t, v, i]
+        for o in M.processOutputsByInput[r, p, t, v, i]
         for s in M.time_season
         for d in M.time_of_day
     )
@@ -972,6 +1065,17 @@ def GroupShareIndices(M: 'TemoaModel'):
     return indices
 
 
+def TwoGroupShareIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, g1, g2)
+        for g1 in M.tech_group_names
+        for g2 in M.tech_group_names
+        for r, p, _t in M.processVintages.keys()
+        if _t in M.tech_group_members[g2]
+    )
+    return indices
+
+
 def EmissionActivityIndices(M: 'TemoaModel'):
     indices = set(
         (r, e, i, t, v, o)
@@ -981,6 +1085,7 @@ def EmissionActivityIndices(M: 'TemoaModel'):
     )
 
     return indices
+
 
 # devnote: this does not appear to be used anywhere
 # given that it doesnt check if periods are valid, cant think what it would be for
@@ -1149,7 +1254,7 @@ ensure demand activity remains consistent across time slices.
     viable_tech_vintage = defaultdict(list)
 
     # start the loop over possible combos
-    for r, p, t, v, dem in M.ProcessInputsByOutput:
+    for r, p, t, v, dem in M.processInputsByOutput:
         # we aren't concerned with non-demand commodities or annual techs
         if dem not in M.commodity_demand or t in M.tech_annual:
             continue
@@ -1293,18 +1398,18 @@ def ReserveMarginIndices(M: 'TemoaModel'):
     return indices
 
 
-def TechInputSplitConstraintIndices(M: 'TemoaModel'):
+def MinTechInputSplitConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, i, t, v)
-        for r, p, i, t in M.inputsplitVintages.keys()
+        for r, p, i, t in M.minInputSplitVintages.keys()
         if t not in M.tech_annual
-        for v in M.inputsplitVintages[r, p, i, t]
+        for v in M.minInputSplitVintages[r, p, i, t]
         for s in M.time_season
         for d in M.time_of_day
     )
     ann_indices = set(
         (r, p, i, t)
-        for r, p, i, t in M.inputsplitVintages.keys()
+        for r, p, i, t in M.minInputSplitVintages.keys()
         if t in M.tech_annual
     )
     if len(ann_indices) > 0:
@@ -1317,39 +1422,39 @@ def TechInputSplitConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def TechInputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+def MinTechInputSplitAnnualConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, i, t, v)
-        for r, p, i, t in M.inputsplitannualVintages.keys()
+        for r, p, i, t in M.minInputSplitAnnualVintages.keys()
         if t in M.tech_annual
-        for v in M.inputsplitannualVintages[r, p, i, t]
+        for v in M.minInputSplitAnnualVintages[r, p, i, t]
     )
 
     return indices
 
 
-def TechInputSplitAverageConstraintIndices(M: 'TemoaModel'):
+def MinTechInputSplitAverageConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, i, t, v)
-        for r, p, i, t in M.inputsplitannualVintages.keys()
+        for r, p, i, t in M.minInputSplitAnnualVintages.keys()
         if t not in M.tech_annual
-        for v in M.inputsplitannualVintages[r, p, i, t]
+        for v in M.minInputSplitAnnualVintages[r, p, i, t]
     )
     return indices
 
 
-def TechOutputSplitConstraintIndices(M: 'TemoaModel'):
+def MinTechOutputSplitConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v, o)
-        for r, p, t, o in M.outputsplitVintages.keys()
+        for r, p, t, o in M.minOutputSplitVintages.keys()
         if t not in M.tech_annual
-        for v in M.outputsplitVintages[r, p, t, o]
+        for v in M.minOutputSplitVintages[r, p, t, o]
         for s in M.time_season
         for d in M.time_of_day
     )
     ann_indices = set(
         (r, p, t, o)
-        for r, p, t, o in M.outputsplitVintages.keys()
+        for r, p, t, o in M.minOutputSplitVintages.keys()
         if t in M.tech_annual
     )
     if len(ann_indices) > 0:
@@ -1362,23 +1467,113 @@ def TechOutputSplitConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def TechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+def MinTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t, v, o)
-        for r, p, t, o in M.outputsplitannualVintages.keys()
+        for r, p, t, o in M.minOutputSplitAnnualVintages.keys()
         if t in M.tech_annual
-        for v in M.outputsplitannualVintages[r, p, t, o]
+        for v in M.minOutputSplitAnnualVintages[r, p, t, o]
     )
 
     return indices
 
 
-def TechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
+def MinTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t, v, o)
-        for r, p, t, o in M.outputsplitannualVintages.keys()
+        for r, p, t, o in M.minOutputSplitAnnualVintages.keys()
         if t not in M.tech_annual
-        for v in M.outputsplitannualVintages[r, p, t, o]
+        for v in M.minOutputSplitAnnualVintages[r, p, t, o]
+    )
+    return indices
+
+
+def MaxTechInputSplitConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, i, t, v)
+        for r, p, i, t in M.maxInputSplitVintages.keys()
+        if t not in M.tech_annual
+        for v in M.maxInputSplitVintages[r, p, i, t]
+        for s in M.time_season
+        for d in M.time_of_day
+    )
+    ann_indices = set(
+        (r, p, i, t)
+        for r, p, i, t in M.maxInputSplitVintages.keys()
+        if t in M.tech_annual
+    )
+    if len(ann_indices) > 0:
+        msg = (
+            "Warning: Annual technologies included in TechInputSplit table. "
+            "Use TechInputSplitAnnual table instead or these constraints will be ignored: {}"
+        )
+        logger.warning(msg.format(ann_indices))
+
+    return indices
+
+
+def MaxTechInputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, i, t, v)
+        for r, p, i, t in M.maxInputSplitAnnualVintages.keys()
+        if t in M.tech_annual
+        for v in M.maxInputSplitAnnualVintages[r, p, i, t]
+    )
+
+    return indices
+
+
+def MaxTechInputSplitAverageConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, i, t, v)
+        for r, p, i, t in M.maxInputSplitAnnualVintages.keys()
+        if t not in M.tech_annual
+        for v in M.maxInputSplitAnnualVintages[r, p, i, t]
+    )
+    return indices
+
+
+def MaxTechOutputSplitConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v, o)
+        for r, p, t, o in M.maxOutputSplitVintages.keys()
+        if t not in M.tech_annual
+        for v in M.maxOutputSplitVintages[r, p, t, o]
+        for s in M.time_season
+        for d in M.time_of_day
+    )
+    ann_indices = set(
+        (r, p, t, o)
+        for r, p, t, o in M.maxOutputSplitVintages.keys()
+        if t in M.tech_annual
+    )
+    if len(ann_indices) > 0:
+        msg = (
+            "Warning: Annual technologies included in TechOutputSplit table. "
+            "Use TechOutputSplitAnnual table instead or these constraints will be ignored: {}"
+        )
+        logger.warning(msg.format(ann_indices))
+
+    return indices
+
+
+def MaxTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, v, o)
+        for r, p, t, o in M.maxOutputSplitAnnualVintages.keys()
+        if t in M.tech_annual
+        for v in M.maxOutputSplitAnnualVintages[r, p, t, o]
+    )
+
+    return indices
+
+
+def MaxTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, v, o)
+        for r, p, t, o in M.maxOutputSplitAnnualVintages.keys()
+        if t not in M.tech_annual
+        for v in M.maxOutputSplitAnnualVintages[r, p, t, o]
     )
     return indices
 

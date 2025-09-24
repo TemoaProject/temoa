@@ -579,6 +579,11 @@ class HybridLoader:
         ).fetchall()
         load_element(M.DemandSpecificDistribution, raw)
 
+        # DemandPeriodDistribution
+        if self.table_exists('DemandPeriodDistribution'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, demand_name, dpd FROM main.DemandPeriodDistribution')
+            load_element(M.DemandPeriodDistribution, raw)
+
         # Demand
         raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand', mi=mi)
         load_element(M.Demand, raw)
@@ -616,10 +621,10 @@ class HybridLoader:
         raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
         load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
 
-        # TechInputSplit
-        if self.table_exists('TechInputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.TechInputSplit', mi=mi)
-            loaded = load_element(M.TechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
+        # MinTechInputSplit
+        if self.table_exists('MinTechInputSplit'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplit', mi=mi)
+            loaded = load_element(M.MinTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
@@ -638,10 +643,10 @@ class HybridLoader:
                         ic,
                 )
 
-        # TechInputSplitAnnual
-        if self.table_exists('TechInputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.TechInputSplitAnnual', mi=mi)
-            loaded = load_element(M.TechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
+        # MinTechInputSplitAnnual
+        if self.table_exists('MinTechInputSplitAnnual'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplitAnnual', mi=mi)
+            loaded = load_element(M.MinTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
@@ -660,10 +665,10 @@ class HybridLoader:
                         ic,
                     )
 
-        # TechOutputSplit
-        if self.table_exists('TechOutputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.TechOutputSplit', mi=mi)
-            loaded = load_element(M.TechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
+        # MinTechOutputSplit
+        if self.table_exists('MinTechOutputSplit'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplit', mi=mi)
+            loaded = load_element(M.MinTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
             # raise warning regarding any deletions here...  similar to input split above
             if len(loaded) < len(raw):
                 missing = set(raw) - set(loaded)
@@ -681,10 +686,97 @@ class HybridLoader:
                         oc,
                     )
 
-        # TechOutputSplitAnnual
-        if self.table_exists('TechOutputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.TechOutputSplitAnnual', mi=mi)
-            loaded = load_element(M.TechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
+        # MinTechOutputSplitAnnual
+        if self.table_exists('MinTechOutputSplitAnnual'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplitAnnual', mi=mi)
+            loaded = load_element(M.MinTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
+            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+            # a blending process and any missing items should be reviewed
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing):
+                    region, period, tech, oc, _ = item
+                    logger.warning(
+                        'Technology Output Split Annual requirement in region %s, period %d for tech %s with output'
+                        'commodity %s has '
+                        'been removed because the tech path with that output is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        oc,
+                    )
+
+        # MaxTechInputSplit
+        if self.table_exists('MaxTechInputSplit'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplit', mi=mi)
+            loaded = load_element(M.MaxTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
+            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+            # a blending process and any missing items should be reviewed
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                    region, period, ic, tech, _ = item
+                    logger.warning(
+                        'Technology Input Split requirement in region %s, period %d for tech %s with input'
+                        'commodity %s has '
+                        'been removed because the tech path with that input is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        ic,
+                )
+
+        # MaxTechInputSplitAnnual
+        if self.table_exists('MaxTechInputSplitAnnual'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplitAnnual', mi=mi)
+            loaded = load_element(M.MaxTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
+            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
+            # a blending process and any missing items should be reviewed
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                    region, period, ic, tech, _ = item
+                    logger.warning(
+                        'Technology Input Split Annual requirement in region %s, period %d for tech %s with input'
+                        'commodity %s has '
+                        'been removed because the tech path with that input is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        ic,
+                    )
+
+        # MaxTechOutputSplit
+        if self.table_exists('MaxTechOutputSplit'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplit', mi=mi)
+            loaded = load_element(M.MaxTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
+            # raise warning regarding any deletions here...  similar to input split above
+            if len(loaded) < len(raw):
+                missing = set(raw) - set(loaded)
+                for item in sorted(missing):
+                    region, period, tech, oc, _ = item
+                    logger.warning(
+                        'Technology Output Split requirement in region %s, period %d for tech %s with output'
+                        'commodity %s has '
+                        'been removed because the tech path with that output is '
+                        'invalid/not available/orphan.  See the other warnings for this TECH in '
+                        'this region-period, and check for availability of all components in data.',
+                        region,
+                        period,
+                        tech,
+                        oc,
+                    )
+
+        # MaxTechOutputSplitAnnual
+        if self.table_exists('MaxTechOutputSplitAnnual'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplitAnnual', mi=mi)
+            loaded = load_element(M.MaxTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
@@ -812,6 +904,16 @@ class HybridLoader:
         if self.table_exists('MaxNewCapacityShare'):
             raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare', mi=mi)
             load_element(M.MaxNewCapacityShare, raw, self.viable_rt, (0, 2))
+
+        # MinNewCapacityGroupShare
+        if self.table_exists('MinNewCapacityGroupShare'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, min_proportion FROM main.MinNewCapacityGroupShare', mi=mi)
+            load_element(M.MinNewCapacityGroupShare, raw)
+
+        # MaxNewCapacityGroupShare
+        if self.table_exists('MaxNewCapacityGroupShare'):
+            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, max_proportion FROM main.MaxNewCapacityGroupShare', mi=mi)
+            load_element(M.MaxNewCapacityGroupShare, raw)
 
         # MinActivityGroup
         if self.table_exists('MinActivityGroup'):
@@ -1011,6 +1113,7 @@ class HybridLoader:
             M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,
             M.MaxNewCapacityGroup.name: M.MaxNewCapacityGroupConstraint_rpg.name,
             M.MaxNewCapacityShare.name: M.MaxNewCapacityShareConstraint_rptg.name,
+            M.MaxNewCapacityGroupShare.name: M.MaxNewCapacityGroupShareConstraint_rpgg.name,
             M.MaxResource.name: M.MaxResourceConstraint_rt.name,
             M.MinActivity.name: M.MinActivityConstraint_rpt.name,
             M.MinSeasonalActivity.name: M.MinSeasonalActivityConstraint_rpst.name,
@@ -1023,6 +1126,7 @@ class HybridLoader:
             M.MinNewCapacity.name: M.MinNewCapacityConstraint_rpt.name,
             M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
             M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
+            M.MinNewCapacityGroupShare.name: M.MinNewCapacityGroupShareConstraint_rpgg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             M.ResourceBound.name: M.ResourceConstraint_rpr.name,
             M.StorageFraction.name: M.StorageFractionConstraint_rpsdtv.name

@@ -81,12 +81,12 @@ def test_state_sequencing(system_test_run):
         charge = sum(
             model.V_FlowIn[r, p, s, d, S_i, t, v, S_o].value * model.Efficiency[r, S_i, t, v, S_o]
             for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.ProcessOutputsByInput[r, p, t, v, S_i]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
         discharge = sum(
             model.V_FlowOut[r, p, s, d, S_i, t, v, S_o].value
             for S_o in model.processOutputs[r, p, t, v]
-            for S_i in model.ProcessInputsByOutput[r, p, t, v, S_o]
+            for S_i in model.processInputsByOutput[r, p, t, v, S_o]
         )
 
         s_next, d_next = model.time_next[s, d]

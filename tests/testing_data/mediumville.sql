@@ -639,8 +639,8 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampDown VALUES('A','EH',0.2000000000000000111);
-INSERT INTO RampDown VALUES('B','EH',0.2000000000000000111);
+INSERT INTO RampDown VALUES('A','EH',0.05);
+INSERT INTO RampDown VALUES('B','EH',0.05);
 CREATE TABLE RampUp
 (
     region TEXT,
@@ -649,8 +649,8 @@ CREATE TABLE RampUp
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampUp VALUES('B','EH',100.0);
-INSERT INTO RampUp VALUES('A','EH',100.0);
+INSERT INTO RampUp VALUES('B','EH',0.05);
+INSERT INTO RampUp VALUES('A','EH',0.05);
 CREATE TABLE Region
 (
     region TEXT
@@ -700,7 +700,7 @@ INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
-CREATE TABLE TechInputSplit
+CREATE TABLE MinTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -713,8 +713,8 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
-CREATE TABLE TechInputSplitAnnual
+INSERT INTO MinTechInputSplit VALUES('A',2025,'HYD','EH',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
+CREATE TABLE MinTechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -727,8 +727,8 @@ CREATE TABLE TechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-INSERT INTO TechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
-CREATE TABLE TechOutputSplit
+INSERT INTO MinTechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater',0.8000000000000000444,'80% geothermal');
+CREATE TABLE MinTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -741,7 +741,7 @@ CREATE TABLE TechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm)
 );
-INSERT INTO TechOutputSplit VALUES('B',2025,'EH','ELC',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
+INSERT INTO MinTechOutputSplit VALUES('B',2025,'EH','ELC',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
 CREATE TABLE TimeOfDay
 (
     sequence INTEGER UNIQUE,
@@ -855,6 +855,20 @@ CREATE TABLE MaxNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
+CREATE TABLE MaxNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+INSERT INTO MaxNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 1, '');
 CREATE TABLE MinActivityShare
 (
     region         TEXT,
@@ -933,6 +947,20 @@ CREATE TABLE MinNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
+CREATE TABLE MinNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    min_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+INSERT INTO MinNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 0, '');
 CREATE TABLE OutputEmission
 (
     scenario  TEXT,

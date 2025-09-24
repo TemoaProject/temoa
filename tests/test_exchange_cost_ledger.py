@@ -38,7 +38,7 @@ data = {
     'tech_annual': set(),
     'LifetimeProcess': {('A-B', 't1', 2000): 30, ('B-A', 't1', 2000): 30},
     'processInputs': {('A-B', 2000, 't1', 2000): ('c1',), ('B-A', 2000, 't1', 2000): ('c1',)},
-    'ProcessOutputsByInput': {
+    'processOutputsByInput': {
         ('A-B', 2000, 't1', 2000, 'c1'): ('c1',),
         ('B-A', 2000, 't1', 2000, 'c1'): ('c1',),
     },

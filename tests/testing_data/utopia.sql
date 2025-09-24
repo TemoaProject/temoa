@@ -991,7 +991,7 @@ INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
-CREATE TABLE TechInputSplit
+CREATE TABLE MinTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -1004,7 +1004,7 @@ CREATE TABLE TechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechInputSplitAnnual
+CREATE TABLE MinTechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -1017,7 +1017,7 @@ CREATE TABLE TechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech)
 );
-CREATE TABLE TechOutputSplit
+CREATE TABLE MinTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -1030,13 +1030,13 @@ CREATE TABLE TechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm)
 );
-INSERT INTO TechOutputSplit VALUES('utopia',1990,'SRE','DSL',0.6999999999999999556,'');
-INSERT INTO TechOutputSplit VALUES('utopia',2000,'SRE','DSL',0.6999999999999999556,'');
-INSERT INTO TechOutputSplit VALUES('utopia',2010,'SRE','DSL',0.6999999999999999556,'');
-INSERT INTO TechOutputSplit VALUES('utopia',1990,'SRE','GSL',0.2999999999999999889,'');
-INSERT INTO TechOutputSplit VALUES('utopia',2000,'SRE','GSL',0.2999999999999999889,'');
-INSERT INTO TechOutputSplit VALUES('utopia',2010,'SRE','GSL',0.2999999999999999889,'');
-CREATE TABLE TechOutputSplitAnnual
+INSERT INTO MinTechOutputSplit VALUES('utopia',1990,'SRE','DSL',0.6999999999999999556,'');
+INSERT INTO MinTechOutputSplit VALUES('utopia',2000,'SRE','DSL',0.6999999999999999556,'');
+INSERT INTO MinTechOutputSplit VALUES('utopia',2010,'SRE','DSL',0.6999999999999999556,'');
+INSERT INTO MinTechOutputSplit VALUES('utopia',1990,'SRE','GSL',0.2999999999999999889,'');
+INSERT INTO MinTechOutputSplit VALUES('utopia',2000,'SRE','GSL',0.2999999999999999889,'');
+INSERT INTO MinTechOutputSplit VALUES('utopia',2010,'SRE','GSL',0.2999999999999999889,'');
+CREATE TABLE MinTechOutputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
