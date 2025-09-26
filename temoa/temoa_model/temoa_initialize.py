@@ -22,7 +22,7 @@ from collections import defaultdict
 from itertools import product as cross_product, product
 from operator import itemgetter as iget
 from sys import stderr as SE
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from deprecated import deprecated
 from pyomo.core import Set
@@ -985,6 +985,13 @@ def CreateSparseDicts(M: 'TemoaModel'):
         if t not in M.tech_uncap
     )
 
+    M.groupRegionActiveFlow_rpt = set(
+        (gr, p, t)
+        for _r, p, t in M.processVintages.keys()
+        for gr in M.regionalGlobalIndices
+        if _r in gather_group_regions(M, gr)
+    )
+
     M.storageLevelIndices_rpsdtv = set(
         (r, p, s, d, t, v)
         for r, p, t in M.storageVintages.keys()
@@ -1049,7 +1056,7 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
         for i in regional_perms:
             indices.add('+'.join(i))
     indices.add('global')
-    indices = indices.union(M.RegionalIndices)
+    indices = indices.union(M.regionalIndices)
 
     return indices
 
@@ -1058,7 +1065,7 @@ def GroupShareIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t, g)
         for g in M.tech_group_names
-        for r, p, t in M.processVintages.keys()
+        for r, p, t in M.groupRegionActiveFlow_rpt
         if t in M.tech_group_members[g]
     )
 
@@ -1070,9 +1077,10 @@ def TwoGroupShareIndices(M: 'TemoaModel'):
         (r, p, g1, g2)
         for g1 in M.tech_group_names
         for g2 in M.tech_group_names
-        for r, p, _t in M.processVintages.keys()
+        for r, p, _t in M.groupRegionActiveFlow_rpt
         if _t in M.tech_group_members[g2]
     )
+
     return indices
 
 
@@ -1631,6 +1639,16 @@ def loop_season_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
         d_next = M.time_of_day.next(d)
 
     return s_next, d_next
+
+
+def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
+    if region == 'global':
+        regions = M.regions
+    elif '+' in region:
+        regions = region.split('+')
+    else:
+        regions = (region,)
+    return regions
 
 
 def get_loan_life(M, r, t, _):

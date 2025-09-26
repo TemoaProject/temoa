@@ -45,10 +45,12 @@
   "regions": [
     "utopia"
   ],
-  "RegionalIndices": [
+  "regionalIndices": [
     "utopia"
   ],
-  "RegionalGlobalIndices": [],
+  "regionalGlobalIndices": [
+    "utopia"
+  ],
   "tech_resource": [
     "IMPDSL1",
     "IMPGSL1",
@@ -188,7 +190,6 @@
     "co2",
     "nox"
   ],
-  "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
       "utopia",

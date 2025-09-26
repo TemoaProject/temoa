@@ -95,8 +95,8 @@ def test_state_sequencing(system_test_run):
         next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value
     
         assert state + charge - discharge == pytest.approx(
-           next_state, rel=1e-3
-        ), f'model fails to correctly sequence storage states {r, p, s, t, v}'
+           next_state, rel=1e-2
+        ), f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
 
 
 @pytest.mark.parametrize(

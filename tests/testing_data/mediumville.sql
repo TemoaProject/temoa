@@ -361,7 +361,7 @@ CREATE TABLE GrowthRateMax
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO GrowthRateMax VALUES('A','GeoHeater',0.2000000000000000111,NULL);
+INSERT INTO GrowthRateMax VALUES('global','GeoHeater',0.2000000000000000111,NULL);
 CREATE TABLE GrowthRateSeed
 (
     region TEXT,
@@ -372,7 +372,7 @@ CREATE TABLE GrowthRateSeed
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO GrowthRateSeed VALUES('A','GeoHeater',1000.0,'jobs','unk');
+INSERT INTO GrowthRateSeed VALUES('global','GeoHeater',1000.0,'jobs','unk');
 CREATE TABLE LoanLifetimeTech
 (
     region   TEXT,
@@ -868,7 +868,7 @@ CREATE TABLE MaxNewCapacityGroupShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group)
 );
-INSERT INTO MaxNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 1, '');
+INSERT INTO MaxNewCapacityGroupShare VALUES('global', 2025, 'RPS_common', 'A_tech_grp_1', 1, '');
 CREATE TABLE MinActivityShare
 (
     region         TEXT,

@@ -31,13 +31,14 @@
     "A",
     "B"
   ],
-  "RegionalIndices": [
+  "regionalIndices": [
     "A",
     "A-B",
     "B",
     "B-A"
   ],
-  "RegionalGlobalIndices": [
+  "regionalGlobalIndices": [
+    "global",
     "A",
     "B"
   ],
@@ -157,7 +158,6 @@
     "co2",
     "FusionGas"
   ],
-  "ResourceConstraint_rpr": [],
   "CapacityFactor_rsdt": [
     [
       "A",
@@ -1686,6 +1686,24 @@
       2025,
       "EF",
       "RPS_common"
+    ],
+    [
+      "global",
+      2025,
+      "EH",
+      "A_tech_grp_1"
+    ],
+    [
+      "global",
+      2025,
+      "EF",
+      "A_tech_grp_1"
+    ],
+    [
+      "global",
+      2025,
+      "EF",
+      "RPS_common"
     ]
   ],
   "MinCapacityShareConstraint_rptg": [],
@@ -1762,17 +1780,53 @@
       2025,
       "RPS_global",
       "RPS_common"
+    ],
+    [
+      "global",
+      2025,
+      "RPS_global",
+      "A_tech_grp_1"
+    ],
+    [
+      "global",
+      2025,
+      "A_tech_grp_1",
+      "A_tech_grp_1"
+    ],
+    [
+      "global",
+      2025,
+      "RPS_common",
+      "A_tech_grp_1"
+    ],
+    [
+      "global",
+      2025,
+      "RPS_global",
+      "RPS_common"
+    ],
+    [
+      "global",
+      2025,
+      "A_tech_grp_1",
+      "RPS_common"
+    ],
+    [
+      "global",
+      2025,
+      "RPS_common",
+      "RPS_common"
     ]
   ],
   "MaxNewCapacityGroupShareConstraint_rpgg": [
     [
-      "A",
+      "global",
       2025,
       "RPS_common",
       "A_tech_grp_1"
     ]
   ],
-  "MinNewCapacityGroupShareConstraint_rpgg":  [
+  "MinNewCapacityGroupShareConstraint_rpgg": [
     [
       "A",
       2025,
@@ -4216,7 +4270,7 @@
   ],
   "GrowthRateMaxConstraint_rtv": [
     [
-      "A",
+      "global",
       2025,
       "GeoHeater"
     ]
