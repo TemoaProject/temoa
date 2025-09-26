@@ -59,6 +59,8 @@ CREATE TABLE CapacityCredit
 CREATE TABLE CapacityFactorProcess
 (
     region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
     season  TEXT
         REFERENCES TimeSeason (season),
     tod     TEXT
@@ -68,7 +70,7 @@ CREATE TABLE CapacityFactorProcess
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, season, tod, tech, vintage),
+    PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE CapacityFactorTech

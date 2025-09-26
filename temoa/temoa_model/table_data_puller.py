@@ -144,7 +144,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         if abs(flow) < epsilon:
             continue
         res[fi][FlowType.IN] = flow
-        res[fi][FlowType.LOST] = (1 - value(M.Efficiency[ritvo(fi)])) * flow
+        res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
 
     # regular flows
     for key in M.V_FlowOut:
@@ -155,9 +155,9 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         res[fi][FlowType.OUT] = flow
 
         if fi.t not in M.tech_storage:  # we can get the flow in by out/eff...
-            flow = value(M.V_FlowOut[fi]) / value(M.Efficiency[ritvo(fi)])
+            flow = value(M.V_FlowOut[fi]) / temoa_rules.get_variable_efficiency(M, *key)
             res[fi][FlowType.IN] = flow
-            res[fi][FlowType.LOST] = (1 - value(M.Efficiency[ritvo(fi)])) * flow
+            res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
 
     # curtailment flows
     for key in M.V_Curtailment:

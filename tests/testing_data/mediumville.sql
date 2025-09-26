@@ -60,6 +60,8 @@ INSERT INTO CapacityCredit VALUES('A',2025,'EF',2025,0.5999999999999999778,NULL)
 CREATE TABLE CapacityFactorProcess
 (
     region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
     season  TEXT
         REFERENCES TimeSeason (season),
     tod     TEXT
@@ -69,11 +71,11 @@ CREATE TABLE CapacityFactorProcess
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, season, tod, tech, vintage),
+    PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorProcess VALUES('A','s2','d1','EFL',2025,0.8000000000000000444,NULL);
-INSERT INTO CapacityFactorProcess VALUES('A','s1','d2','EFL',2025,0.9000000000000000222,NULL);
+INSERT INTO CapacityFactorProcess VALUES('A',2025,'s2','d1','EFL',2025,0.8000000000000000444,NULL);
+INSERT INTO CapacityFactorProcess VALUES('A',2025,'s1','d2','EFL',2025,0.9000000000000000222,NULL);
 CREATE TABLE CapacityFactorTech
 (
     region TEXT,
