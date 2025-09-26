@@ -161,18 +161,19 @@ def validate_time(M: 'TemoaModel'):
         raise RuntimeError(msg)
 
     # Ensure that the time_exist < time_future
-    max_exist = max(M.time_exist)
-    min_horizon = min(M.time_future)
+    if len(M.time_exist) > 0:
+        max_exist = max(M.time_exist)
+        min_horizon = min(M.time_future)
 
-    if not (max_exist < min_horizon):
-        msg = (
-            'All items in time_future must be larger than in time_exist.'
-            '\ntime_exist max:   {}'
-            '\ntime_future min: {}'
-        )
-        logger.error(msg.format(max_exist, min_horizon))
-        raise Exception(msg.format(max_exist, min_horizon))
-    logger.debug('Finished validating time')
+        if not (max_exist < min_horizon):
+            msg = (
+                'All items in time_future must be larger than in time_exist.'
+                '\ntime_exist max:   {}'
+                '\ntime_future min: {}'
+            )
+            logger.error(msg.format(max_exist, min_horizon))
+            raise Exception(msg.format(max_exist, min_horizon))
+        logger.debug('Finished validating time')
 
 
 def validate_SegFrac(M: 'TemoaModel'):
@@ -884,10 +885,11 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for i in sorted(l_unused_techs):
             SE.write(msg.format(i))
 
-    # Establishing chronology of states
+    # Establishing sequence of states
     for s, d in M.time_season * M.time_of_day:
-        if M.LinkSeasons: s_next, d_next = link_season_next_timeslice(M, s, d)
-        else: s_next, d_next = loop_season_next_timeslice(M, s, d)
+        match M.StateSequencing:
+            case 0: s_next, d_next = loop_period_next_timeslice(M, s, d)
+            case 1: s_next, d_next = loop_season_next_timeslice(M, s, d)
         M.time_next[s, d] = (s_next, d_next)
 
     # valid region-period-commodity sets for commodity balance constraints
@@ -1595,7 +1597,7 @@ def GrowthRateMaxIndices(M: 'TemoaModel'):
     return indices
 
 
-def link_season_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
+def loop_period_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
     
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season

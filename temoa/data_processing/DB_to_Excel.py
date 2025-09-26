@@ -101,13 +101,16 @@ def make_excel(ifile, ofile: Path, scenario):
         'SELECT DISTINCT EmissionActivity.region, EmissionActivity.tech, EmissionActivity.emis_comm, Technology.sector FROM EmissionActivity \
 	INNER JOIN Technology ON EmissionActivity.tech=Technology.tech'
     )
-    all_emis_techs = pd.read_sql_query(query, con)
-
+    try:
+        all_emis_techs = pd.read_sql_query(query, con)
+    except:
+        all_emis_techs = {}
+    
     query = (
         "SELECT region, tech, sector, period, emis_comm, sum(emission) as emissions FROM OutputEmission WHERE scenario='"
         + scenario
         + "' GROUP BY \
-	region, tech, sector, period, emis_comm"
+    region, tech, sector, period, emis_comm"
     )
     df_emissions_raw = pd.read_sql_query(query, con)
     if not df_emissions_raw.empty:

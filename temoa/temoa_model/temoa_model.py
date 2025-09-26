@@ -220,13 +220,13 @@ class TemoaModel(AbstractModel):
         # these "progress markers" report build progress in the log, if the level == debug
         M.progress_marker_2 = BuildAction(['Starting to build Params'], rule=progress_check)
 
-        M.GlobalDiscountRate = Param()
+        M.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
         M.SegFrac = Param(M.time_season, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
-        M.LinkSeasons = Param(default=0) # do states carry from one season to the next? otherwise loop each season
+        M.StateSequencing = Param(default=0) # How do states carry between time segments?
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
