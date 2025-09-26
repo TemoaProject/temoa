@@ -562,7 +562,7 @@ class HybridLoader:
 
         # EfficiencyVariable
         if self.table_exists("EfficiencyVariable"):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, input_comm, tech, vintage, output_comm, efficiency FROM main.EfficiencyVariable')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, input_comm, tech, vintage, output_comm, efficiency FROM main.EfficiencyVariable')
             load_element(M.EfficiencyVariable, raw, self.viable_ritvo, (0, 4, 5, 6, 7))
 
         # ExistingCapacity
@@ -617,11 +617,11 @@ class HybridLoader:
 
         # DemandPeriodDistribution
         if self.table_exists('DemandPeriodDistribution'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, demand_name, dpd FROM main.DemandPeriodDistribution')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, demand_name, dpd FROM main.DemandPeriodDistribution')
             load_element(M.DemandPeriodDistribution, raw)
 
         # Demand
-        raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand', mi=mi)
+        raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand')
         load_element(M.Demand, raw)
 
         # RescourceBound
@@ -639,7 +639,7 @@ class HybridLoader:
 
         # CapacityFactorProcess
         if self.table_exists("CapacityFactorProcess"):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, tech, vintage, factor FROM main.CapacityFactorProcess')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, factor FROM main.CapacityFactorProcess')
             load_element(M.CapacityFactorProcess, raw, self.viable_rtv, (0, 4, 5))
 
         # LifetimeTech
@@ -659,7 +659,7 @@ class HybridLoader:
 
         # MinTechInputSplit
         if self.table_exists('MinTechInputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplit')
             loaded = load_element(M.MinTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -681,7 +681,7 @@ class HybridLoader:
 
         # MinTechInputSplitAnnual
         if self.table_exists('MinTechInputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplitAnnual', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplitAnnual')
             loaded = load_element(M.MinTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -703,7 +703,7 @@ class HybridLoader:
 
         # MinTechOutputSplit
         if self.table_exists('MinTechOutputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplit')
             loaded = load_element(M.MinTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
             # raise warning regarding any deletions here...  similar to input split above
             if len(loaded) < len(raw):
@@ -724,7 +724,7 @@ class HybridLoader:
 
         # MinTechOutputSplitAnnual
         if self.table_exists('MinTechOutputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplitAnnual', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplitAnnual')
             loaded = load_element(M.MinTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -746,7 +746,7 @@ class HybridLoader:
 
         # MaxTechInputSplit
         if self.table_exists('MaxTechInputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplit')
             loaded = load_element(M.MaxTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -768,7 +768,7 @@ class HybridLoader:
 
         # MaxTechInputSplitAnnual
         if self.table_exists('MaxTechInputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplitAnnual', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplitAnnual')
             loaded = load_element(M.MaxTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -790,7 +790,7 @@ class HybridLoader:
 
         # MaxTechOutputSplit
         if self.table_exists('MaxTechOutputSplit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplit')
             loaded = load_element(M.MaxTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
             # raise warning regarding any deletions here...  similar to input split above
             if len(loaded) < len(raw):
@@ -811,7 +811,7 @@ class HybridLoader:
 
         # MaxTechOutputSplitAnnual
         if self.table_exists('MaxTechOutputSplitAnnual'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplitAnnual', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplitAnnual')
             loaded = load_element(M.MaxTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
@@ -833,11 +833,11 @@ class HybridLoader:
 
         # RenewablePortfolioStandard
         if self.table_exists('RPSRequirement'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech_group, requirement FROM main.RPSRequirement', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech_group, requirement FROM main.RPSRequirement')
             load_element(M.RenewablePortfolioStandard, raw)
 
         # CostFixed
-        raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostFixed', mi=mi)
+        raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostFixed')
         load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
 
         # CostInvest
@@ -853,14 +853,14 @@ class HybridLoader:
         load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
 
         # CostVariable
-        raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostVariable', mi=mi)
+        raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostVariable')
         load_element(M.CostVariable, raw, self.viable_rtv, (0, 2, 3))
 
         # CostEmissions (and supporting index set)
         if self.table_exists('CostEmission'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, emis_comm from main.CostEmission', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm from main.CostEmission')
             load_element(M.CostEmission_rpe, raw)
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, emis_comm, cost from main.CostEmission', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, cost from main.CostEmission')
             load_element(M.CostEmission, raw)
 
         # DefaultLoanRate
@@ -885,92 +885,92 @@ class HybridLoader:
 
         # MinCapacity
         if self.table_exists('MinCapacity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinCapacity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinCapacity')
             load_element(M.MinCapacity, raw, self.viable_rt, (0, 2))
 
         # MaxCapacity
         if self.table_exists('MaxCapacity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxCapacity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxCapacity')
             load_element(M.MaxCapacity, raw, self.viable_rt, (0, 2))
 
         # MinNewCap
         if self.table_exists('MinNewCapacity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinNewCapacity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinNewCapacity')
             load_element(M.MinNewCapacity, raw, self.viable_rt, (0, 2))
 
         # MaxNewCap
         if self.table_exists('MaxNewCapacity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxNewCapacity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxNewCapacity')
             load_element(M.MaxNewCapacity, raw, self.viable_rt, (0, 2))
 
         # MaxCapacityGroup
         if self.table_exists('MaxCapacityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup')
             load_element(M.MaxCapacityGroup, raw)
 
         # MinCapacityGroup
         if self.table_exists('MinCapacityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup')
             load_element(M.MinCapacityGroup, raw)
 
         # MinNewCapacityGroup
         if self.table_exists('MinNewCapacityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup')
             load_element(M.MinNewCapacityGroup, raw)
 
         # MaxNewCapacityGroup
         if self.table_exists('MaxNewCapacityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup')
             load_element(M.MaxNewCapacityGroup, raw)
 
         # MinCapacityShare
         if self.table_exists('MinCapacityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinCapacityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinCapacityShare')
             load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MaxCapacityShare
         if self.table_exists('MaxCapacityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxCapacityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxCapacityShare')
             load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MinNewCapacityShare
         if self.table_exists('MinNewCapacityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare')
             load_element(M.MinNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MaxNewCapacityShare
         if self.table_exists('MaxNewCapacityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare')
             load_element(M.MaxNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MinNewCapacityGroupShare
         if self.table_exists('MinNewCapacityGroupShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, min_proportion FROM main.MinNewCapacityGroupShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, min_proportion FROM main.MinNewCapacityGroupShare')
             load_element(M.MinNewCapacityGroupShare, raw)
 
         # MaxNewCapacityGroupShare
         if self.table_exists('MaxNewCapacityGroupShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, sub_group, super_group, max_proportion FROM main.MaxNewCapacityGroupShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, max_proportion FROM main.MaxNewCapacityGroupShare')
             load_element(M.MaxNewCapacityGroupShare, raw)
 
         # MinActivityGroup
         if self.table_exists('MinActivityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, min_act FROM main.MinActivityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_act FROM main.MinActivityGroup')
             load_element(M.MinActivityGroup, raw)
 
         # MaxActivityGroup
         if self.table_exists('MaxActivityGroup'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, group_name, max_act FROM main.MaxActivityGroup', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_act FROM main.MaxActivityGroup')
             load_element(M.MaxActivityGroup, raw)
 
         # MinActivityShare
         if self.table_exists('MinActivityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinActivityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinActivityShare')
             load_element(M.MinActivityShare, raw, self.viable_rt, (0, 2))
 
         # MaxActivityShare
         if self.table_exists('MaxActivityShare'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxActivityShare', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxActivityShare')
             load_element(M.MaxActivityShare, raw, self.viable_rt, (0, 2))
 
         # MaxResource
@@ -980,32 +980,32 @@ class HybridLoader:
 
         # MaxActivity
         if self.table_exists('MaxActivity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, max_act FROM main.MaxActivity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_act FROM main.MaxActivity')
             load_element(M.MaxActivity, raw, self.viable_rt, (0, 2))
 
         # MinActivity
         if self.table_exists('MinActivity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, min_act FROM main.MinActivity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_act FROM main.MinActivity')
             load_element(M.MinActivity, raw, self.viable_rt, (0, 2))
 
         # MaxSeasonalActivity
         if self.table_exists('MaxSeasonalActivity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tech, max_act FROM main.MaxSeasonalActivity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, max_act FROM main.MaxSeasonalActivity')
             load_element(M.MaxSeasonalActivity, raw, self.viable_rt, (0, 3))
 
         # MinSeasonalActivity
         if self.table_exists('MinSeasonalActivity'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tech, min_act FROM main.MinSeasonalActivity', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, min_act FROM main.MinSeasonalActivity')
             load_element(M.MinSeasonalActivity, raw, self.viable_rt, (0, 3))
 
         # MinAnnualCapacityFactor
         if self.table_exists('MinAnnualCapacityFactor'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MinAnnualCapacityFactor', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MinAnnualCapacityFactor')
             load_element(M.MinAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
 
         # MaxAnnualCapacityFactor
         if self.table_exists('MaxAnnualCapacityFactor'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MaxAnnualCapacityFactor', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MaxAnnualCapacityFactor')
             load_element(M.MaxAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
 
         # GrowthRateMax
@@ -1020,7 +1020,7 @@ class HybridLoader:
 
         # EmissionLimit
         if self.table_exists('EmissionLimit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, emis_comm, value FROM main.EmissionLimit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, value FROM main.EmissionLimit')
             load_element(M.EmissionLimit, raw)
 
         # EmissionActivity
@@ -1081,7 +1081,7 @@ class HybridLoader:
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, tech, vintage, credit FROM main.CapacityCredit', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, credit FROM main.CapacityCredit')
             load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
 
         # PlanningReserveMargin
@@ -1096,7 +1096,7 @@ class HybridLoader:
 
         # StorageFraction
         if self.table_exists('StorageFraction'):
-            raw = self.raw_check_mi_period(cur=cur, qry='SELECT region, period, season, tod, tech, vintage, frac FROM main.StorageFraction', mi=mi)
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, frac FROM main.StorageFraction')
             load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
@@ -1111,7 +1111,7 @@ class HybridLoader:
 
         return data
     
-    def raw_check_mi_period(self, cur: Cursor, qry: str, mi: MyopicIndex | None = None) -> list:
+    def raw_check_mi_period(self, mi: MyopicIndex | None, cur: Cursor, qry: str) -> list:
         if mi:
             return cur.execute(
                 qry + ' WHERE period >= ? AND period <= ?',
