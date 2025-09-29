@@ -3145,7 +3145,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
     super_activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in super_group if S_t not in M.tech_annual
+        for S_t in super_group if S_t in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
