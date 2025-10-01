@@ -311,7 +311,6 @@ CREATE TABLE IF NOT EXISTS Technology
     curtail      INTEGER NOT NULL DEFAULT 0,
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
-    variable     INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)

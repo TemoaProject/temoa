@@ -178,28 +178,56 @@ def validate_time(M: 'TemoaModel'):
 
 def validate_SegFrac(M: 'TemoaModel'):
     """Ensure that the segment fractions adds up to 1"""
-    total = sum(i for i in M.SegFrac.values())
 
-    if abs(float(total) - 1.0) > 0.001:
-        # We can't explicitly test for "!= 1.0" because of incremental rounding
-        # errors associated with the specification of SegFrac by time slice,
-        # but we check to make sure it is within the specified tolerance.
+    for p in M.time_optimize:
 
-        key_padding = max(map(get_str_padding, M.SegFrac.sparse_iterkeys()))
-
-        fmt = '%%-%ds = %%s' % key_padding
-        # Works out to something like "%-25s = %s"
-
-        items = sorted(M.SegFrac.items())
-        items = '\n   '.join(fmt % (str(k), v) for k, v in items)
-
-        msg = (
-            'The values of the SegFrac parameter do not sum to 1.  Each item '
-            'in SegFrac represents a fraction of a year, so they must total to '
-            '1.  Current values:\n   {}\n\tsum = {}'
+        expected_keys = set(
+            (p, s, d)
+            for s in M.time_season[p]
+            for d in M.time_of_day
         )
-        logger.error(msg.format(items, total))
-        raise Exception(msg.format(items, total))
+        keys = set(
+            (_p, s, d)
+            for _p, s, d in M.SegFrac.sparse_iterkeys()
+            if _p == p
+        )
+
+        if expected_keys != keys:
+            extra = keys.difference(expected_keys)
+            missing = expected_keys.difference(keys)
+            msg = (
+                'TimeSegmentFraction elements for period {} do not match time_season and TimeOfDay.'
+                '\n\nIndices missing from TimeSegmentFraction:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from time_season/TimeOfDay:\n{}'
+            ).format(p, missing, extra)
+            logger.error(msg)
+            raise Exception(msg)
+
+        total = sum(
+            M.SegFrac[k]
+            for k in keys
+        )
+
+        if abs(float(total) - 1.0) > 0.001:
+            # We can't explicitly test for "!= 1.0" because of incremental rounding
+            # errors associated with the specification of SegFrac by time slice,
+            # but we check to make sure it is within the specified tolerance.
+
+            key_padding = max(map(get_str_padding, keys))
+
+            fmt = '%%-%ds = %%s' % key_padding
+            # Works out to something like "%-25s = %s"
+
+            items = sorted([(k, M.SegFrac[k]) for k in keys])
+            items = '\n   '.join(fmt % (str(k), v) for k, v in items)
+
+            msg = (
+                'The values of TimeSegmentFraction do not sum to 1 for period {}. '
+                'Each item in SegFrac represents a fraction of a year, so they must '
+                'total to 1.  Current values:\n   {}\n\tsum = {}'
+            ).format(p, items, total)
+            logger.error(msg)
+            raise Exception(msg)
 
 
 def CheckEfficiencyIndices(M: 'TemoaModel'):
@@ -271,7 +299,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
 
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(M.time_season) * len(M.time_of_day)
+    num_seg = len(M.time_season[p]) * len(M.time_of_day)
     for (r, p, i, t, v, o), count in count_rpitvo.items():
 
         if count > 0:
@@ -288,15 +316,15 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
     count_rptv = dict()
     # Pull CapacityFactorTech by default
-    for r, s, d, t in M.CapacityFactor_rsdt:
-        for p, v in M.processTechs[r, t]:
+    for r, p, s, d, t in M.CapacityFactor_rpsdt:
+        for v in M.processVintages[r, p, t]:
             M.capacityFactorProcesses[r, p, t, v] = False
             count_rptv[r, p, t, v] = 0
     
     # Check for bad values and count up the good ones
     for r, p, s, d, t, v in M.CapacityFactorProcess.sparse_iterkeys():
 
-        if (p, v) not in M.processTechs[r, t]:
+        if v not in M.processVintages[r, p, t]:
             msg = f"Invalid process {p, v} for {r, t} in CapacityFactorProcess table"
             logger.error(msg)
             raise ValueError(msg)
@@ -306,7 +334,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(M.time_season) * len(M.time_of_day)
+    num_seg = len(M.time_season[p]) * len(M.time_of_day)
     for (r, p, t, v), count in count_rptv.items():
         if count > 0:
             M.capacityFactorProcesses[r, p, t, v] = True
@@ -334,7 +362,7 @@ def CreateCapacityFactors(M: 'TemoaModel'):
 
     all_cfs = set(
         (r, s, d, t, v)
-        for (r, t, v), s, d in cross_product(processes, M.time_season, M.time_of_day)
+        for (r, t, v), s, d in cross_product(processes, M.time_season[p], M.time_of_day)
     )
 
     # Step 2
@@ -391,7 +419,7 @@ def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     :param v: vintage
     :return: the capacity factor
     """
-    return M.CapacityFactorTech[r, s, d, t]
+    return M.CapacityFactorTech[r, p, s, d, t]
 
 
 def get_default_loan_rate(M, *_):
@@ -416,15 +444,12 @@ def CreateDemands(M: 'TemoaModel'):
     logger.debug('Started creating demand distributions in CreateDemands()')
 
     # Step 0: some setup for a couple of reusable items
-
-    # iget(3): 3 = magic number to specify the fourth column.  Currently the
-    # demand in the tuple (r, s, d, dem)
-    DSD_dem_getter = iget(3)
-
-    # iget(0): 0 = magic number to specify the first column.  Currently the
-    # demand in the tuple (r, s, d, dem)
-    DSD_region_getter = iget(0)
-
+    # Get the nth element from the tuple (r, p, s, d, dem)
+    # So we only have to update these indices in one place if they change
+    DSD_region = iget(0)
+    DSD_period = iget(1)
+    DSD_dem = iget(4)
+    
     # Step 1: Check if any demand commodities are going unused
     used_dems = set(dem for r, p, dem in M.Demand.sparse_iterkeys())
     unused_dems = sorted(M.commodity_demand.difference(used_dems))
@@ -434,153 +459,110 @@ def CreateDemands(M: 'TemoaModel'):
             logger.warning(msg.format(dem))
             SE.write(msg.format(dem))
 
+    # devnote: DDD just clones SegFrac. Unless we want to specify it in the database,
+    #          makes sense to just use SegFrac directly
     # Step 2: Build the demand default distribution (= segfrac)
-    DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
-    unset_defaults = set(M.SegFrac.sparse_iterkeys())
-    unset_defaults.difference_update(DDD.sparse_iterkeys())
-    if unset_defaults:
+    # DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
+    # unset_defaults = set(M.SegFrac.sparse_iterkeys())
+    # unset_defaults.difference_update(DDD.sparse_iterkeys())
+    # if unset_defaults:
         # Some hackery because Pyomo thinks that this Param is constructed.
         # However, in our view, it is not yet, because we're specifically
         # targeting values that have not yet been constructed, that we know are
         # valid, and that we will need.
         # DDD._constructed = False
-        for tslice in unset_defaults:
-            DDD[tslice] = M.SegFrac[tslice]  # DDD._constructed = True
+        # for tslice in unset_defaults:
+        #     DDD[tslice] = M.SegFrac[tslice]  # DDD._constructed = True
 
     # Step 3: Check that DDD sums to 1
-    total = sum(i for i in DDD.values())
-    if abs(value(total) - 1.0) > 0.001:
-        # We can't explicitly test for "!= 1.0" because of incremental rounding
-        # errors associated with the specification of demand shares by time slice,
-        # but we check to make sure it is within the specified tolerance.
+    # devnote: this seems redundant to the SegFrac sum to 1 check.
+    # total = sum(i for i in DDD.values())
+    # if abs(value(total) - 1.0) > 0.001:
+    #     # We can't explicitly test for "!= 1.0" because of incremental rounding
+    #     # errors associated with the specification of demand shares by time slice,
+    #     # but we check to make sure it is within the specified tolerance.
 
-        key_padding = max(map(get_str_padding, DDD.sparse_iterkeys()))
+    #     key_padding = max(map(get_str_padding, DDD.sparse_iterkeys()))
 
-        fmt = '%%-%ds = %%s' % key_padding
-        # Works out to something like "%-25s = %s"
+    #     fmt = '%%-%ds = %%s' % key_padding
+    #     # Works out to something like "%-25s = %s"
 
-        items = sorted(DDD.items())
-        items = '\n   '.join(fmt % (str(k), v) for k, v in items)
+    #     items = sorted(DDD.items())
+    #     items = '\n   '.join(fmt % (str(k), v) for k, v in items)
 
-        msg = (
-            'The values of the DemandDefaultDistribution parameter do not '
-            'sum to 1.  The DemandDefaultDistribution specifies how end-use '
-            'demands are distributed among the time slices (i.e., time_season, '
-            'time_of_day), so together, the data must total to 1.  Current '
-            'values:\n   {}\n\tsum = {}'
-        )
-        logger.error(msg.format(items, total))
-        raise ValueError(msg.format(items, total))
+    #     msg = (
+    #         'The values of the DemandDefaultDistribution parameter do not '
+    #         'sum to 1.  The DemandDefaultDistribution specifies how end-use '
+    #         'demands are distributed among the time slices (i.e., time_season, '
+    #         'time_of_day), so together, the data must total to 1.  Current '
+    #         'values:\n   {}\n\tsum = {}'
+    #     )
+    #     logger.error(msg.format(items, total))
+    #     raise ValueError(msg.format(items, total))
 
     # Step 4: Fill out demand specific distribution table and check sums to 1 by region and demand
     DSD = M.DemandSpecificDistribution
 
-    demands_specified = set(map(DSD_dem_getter, (i for i in DSD.sparse_iterkeys())))
+    demands_specified = set(map(DSD_dem, (i for i in DSD.sparse_iterkeys())))
     unset_demand_distributions = used_dems.difference(
         demands_specified
     )  # the demands not mentioned in DSD *at all*
-    unset_distributions = set(
-        cross_product(M.regions, M.time_season, M.time_of_day, unset_demand_distributions)
-    )
 
-    if unset_distributions:
-        # Some hackery because Pyomo thinks that this Param is constructed.
-        # However, in our view, it is not yet, because we're specifically
-        # targeting values that have not yet been constructed, that we know are
-        # valid, and that we will need.
-        # DSD._constructed = False
-        for r, s, d, dem in unset_distributions:
-            DSD[r, s, d, dem] = DDD[s, d]  # DSD._constructed = True
+    if unset_demand_distributions:
+        for p in M.time_optimize:
+            unset_distributions = set(
+                cross_product(M.regions, (p,), M.time_season[p], M.time_of_day, unset_demand_distributions)
+            )
+            for r, p, s, d, dem in unset_distributions:
+                DSD[r, p, s, d, dem] = M.SegFrac[p, s, d]  # DSD._constructed = True
 
     # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    expected_key_length = len(M.time_season) * len(M.time_of_day)
-    used_reg_dems = set((r, dem) for r, p, dem in M.Demand.sparse_iterkeys())
-    count_rp_dem = dict()
-    for r, dem in used_reg_dems:
+    used_rp_dems = set((r, p, dem) for r, p, dem in M.Demand.sparse_iterkeys())
+    for r, p, dem in used_rp_dems:
+        expected_key_length = len(M.time_season[p]) * len(M.time_of_day)
         keys = [
             k
             for k in DSD.sparse_iterkeys()
-            if DSD_dem_getter(k) == dem and DSD_region_getter(k) == r
+            if DSD_region(k) == r and DSD_period(k) == p and DSD_dem(k) == dem 
         ]
         if len(keys) != expected_key_length:
+            # this could be very slow but only calls when there's a problem
             missing = set(
                 (s, d)
-                for s in M.time_season
+                for s in M.time_season[p]
                 for d in M.time_of_day
-                if (r, s, d, dem) not in keys # this could be very slow but only calls when there's a problem
+                if (r, p, s, d, dem) not in keys
             )
             logger.warning(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
-                (r, dem), missing,
+                (r, p, dem), missing,
             )
-        total = sum(DSD[i] for i in keys)
+        total = sum(value(DSD[i]) for i in keys)
         if abs(value(total) - 1.0) > 0.001:
             # We can't explicitly test for "!= 1.0" because of incremental rounding
             # errors associated with the specification of demand shares by time slice,
             # but we check to make sure it is within the specified tolerance.
-
-            keys = [
-                k
-                for k in DSD.sparse_iterkeys()
-                if DSD_dem_getter(k) == dem and DSD_region_getter(k) == r
-            ]
             key_padding = max(map(get_str_padding, keys))
 
             fmt = '%%-%ds = %%s' % key_padding
             # Works out to something like "%-25s = %s"
 
-            items = sorted((k, DSD[k]) for k in keys)
+            items = sorted((k, value(DSD[k])) for k in keys)
             items = '\n   '.join(fmt % (str(k), v) for k, v in items)
 
             msg = (
                 'The values of the DemandSpecificDistribution parameter do not '
-                'sum to 1.  The DemandSpecificDistribution specifies how end-use '
+                'sum to 1 for {}. The DemandSpecificDistribution specifies how end-use '
                 'demands are distributed per time-slice (i.e., time_season, '
-                'time_of_day).  Within each end-use Demand, then, the distribution '
-                'must total to 1.\n\n   Demand-specific distribution in error: '
-                ' {}\n\n   {}\n\tsum = {}'
+                'time_of_day). Within each region, period, end-use demand, then, the distribution '
+                'must total to 1.\n\n Demand-specific distribution in error: '
+                ' \n   {}\n\tsum = {}'
             )
-            logger.error(msg.format(dem, items, total))
-            raise ValueError(msg.format(dem, items, total))
-        
-        # No DPD by default
-        for p in M.time_optimize:
-            M.demandPeriodDistributions[r, p, dem] = False
-            count_rp_dem[r, p, dem] = 0
-        
-    # Step 6: Validate DPD
-    DPD = M.DemandPeriodDistribution
-
-    # This is a fast way to check if we're missing indices
-    for r, p, s, d, dem in DPD.sparse_iterkeys():
-        count_rp_dem[r, p, dem] += 1
-
-    for (r, p, dem), count in count_rp_dem.items():
-
-        if count == 0: continue
-        elif count < expected_key_length:
-            logger.warning(
-                "Some but not all DemandPeriodDistribution values were set (%i out of a possible %i) for: %s"
-                , count, expected_key_length, (r, p, dem)
-            )
-
-        total = sum(
-            M.DemandPeriodDistribution[r, p, s, d, dem]
-            for s in M.time_season
-            for d in M.time_of_day
-        )
-        if abs(value(total) - 1.0) < 0.001:
-            # This is a good DPD, override DSD/DDD
-            M.demandPeriodDistributions[r, p, dem] = True
-        else:
-            msg = (
-                'The values of the DemandPeriodDistribution parameter do not '
-                'sum to 1 for {}. Current sum = {}. Defaulting to DSD/DDD.'
-            )
-            logger.warning(msg.format((r, p, dem), total))
+            logger.error(msg.format((r, p, dem), items, total))
+            raise ValueError(msg.format((r, p, dem), items, total))
     
     logger.debug('Finished creating demand distributions')
 
@@ -965,7 +947,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -985,7 +967,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1005,7 +987,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1015,7 +997,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.curtailmentVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1059,7 +1041,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.storageVintages.keys()
         for v in M.storageVintages[r, p, t]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1067,16 +1049,19 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
 
 def CreateStateSequence(M: 'TemoaModel'):
+
     # Establishing sequence of states
     match M.StateSequencing:
         case 0:
             msg = 'Looping state each period, chaining between seasons.'
-            for s, d in M.time_season * M.time_of_day:
-                M.time_next[s, d] = loop_period_next_timeslice(M, s, d)
+            for p in M.time_optimize:
+                for s, d in M.time_season[p] * M.time_of_day:
+                    M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
         case 1:
             msg = 'Looping state each season.'
-            for s, d in M.time_season * M.time_of_day:
-                M.time_next[s, d] = loop_season_next_timeslice(M, s, d)
+            for p in M.time_optimize:
+                for s, d in M.time_season[p] * M.time_of_day:
+                    M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
 
     msg += (' This behaviour can be changed using the'
             ' state_sequencing parameter in the MetaData table. '
@@ -1098,7 +1083,8 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
     indices = set(
         (r, s, d, t, v)
         for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
-        for s in M.time_season
+        for p in M.time_optimize
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1108,7 +1094,9 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
 def CapacityFactorTechIndices(M: 'TemoaModel'):
     processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
     all_cfs = set(
-        (r, s, d, t) for (r, t, v), s, d in cross_product(processes, M.time_season, M.time_of_day)
+        (r, p, s, d, t)
+        for p in M.time_optimize
+        for (r, t, v), s, d in cross_product(processes, M.time_season[p], M.time_of_day)
     )
     return all_cfs
 
@@ -1287,7 +1275,7 @@ def CapacityConstraintIndices(M: 'TemoaModel'):
         for r, p, t, v in M.activeActivity_rptv
         if t not in M.tech_annual
         if t not in M.tech_uncap
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1302,7 +1290,7 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
         if (r, p, t) in M.processVintages.keys()
         for v in M.processVintages[r, p, t]
         if (r, p, t, v) in M.activeActivity_rptv
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1350,27 +1338,27 @@ ensure demand activity remains consistent across time slices.
         if dem not in M.commodity_demand or t in M.tech_annual:
             continue
         # capture the (p, t, v) in case we need to act on it
-        viable_tech_vintage[r, dem].append((p, t, v))
+        viable_tech_vintage[r, p, dem].append((t, v))
         suppliers[dem].add(t)  # one more recognized supplier
         if len(suppliers[dem]) > 1:
             # We need to act on (build) for this region-demand, put in a placeholder
-            anchor_season_tod[r, dem] = None
+            anchor_season_tod[r, p, dem] = None
 
     # Find the first timestep of the year where the demand is appreciably sized:
     #   appreciable = not so small that we get into numerical instability when applying small multipliers
     appreciable_size = 0.0001
 
-    for r, dem in anchor_season_tod:
+    for r, p, dem in anchor_season_tod:
         found_flag = False
         s0, d0 = None, None
-        for s0, d0 in ((ss, dd) for ss in M.time_season for dd in M.time_of_day):
-            if (r, s0, d0, dem) in M.DemandSpecificDistribution.sparse_iterkeys():
-                if value(M.DemandSpecificDistribution[r, s0, d0, dem]) >= appreciable_size:
+        for s0, d0 in ((ss, dd) for ss in M.time_season[p] for dd in M.time_of_day):
+            if (r, p, s0, d0, dem) in M.DemandSpecificDistribution.sparse_iterkeys():
+                if value(M.DemandSpecificDistribution[r, p, s0, d0, dem]) >= appreciable_size:
                     found_flag = True
                     break  # we have one with some value associated
         found = 'found' if found_flag else 'not found'
         # set it.  If nothing was found the first indices should work just fine...
-        anchor_season_tod[r, dem] = (s0, d0)
+        anchor_season_tod[r, p, dem] = (s0, d0)
         logger.debug(
             'Using season/tod: %s, %s for commodity %s in region %s which was %s in DSD '
             'to set DemandActivity baseline',
@@ -1382,10 +1370,10 @@ ensure demand activity remains consistent across time slices.
         )
 
     # Start yielding the constraint indices
-    for r, dem in anchor_season_tod:
-        s0, d0 = anchor_season_tod[r, dem]
-        for p, t, v in viable_tech_vintage[r, dem]:
-            for s in M.time_season:
+    for r, p, dem in anchor_season_tod:
+        s0, d0 = anchor_season_tod[r, p, dem]
+        for t, v in viable_tech_vintage[r, p, dem]:
+            for s in M.time_season[p]:
                 for d in M.time_of_day:
                     if s != s0 or d != d0:
                         yield r, p, s, d, t, v, dem, s0, d0
@@ -1395,7 +1383,7 @@ def DemandConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, dem)
         for r, p, dem in M.Demand.sparse_iterkeys()
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1407,7 +1395,7 @@ def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.baseloadVintages.keys()
         for v in M.baseloadVintages[r, p, t]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1433,7 +1421,7 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
         and c not in M.commodity_annual
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
 
@@ -1458,7 +1446,7 @@ def RampUpConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
         for r, p, t in M.rampUpVintages.keys()
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
         for v in M.rampUpVintages[r, p, t]
     )
@@ -1470,7 +1458,7 @@ def RampDownConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
         for r, p, t in M.rampDownVintages.keys()
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
         for v in M.rampDownVintages[r, p, t]
     )
@@ -1483,7 +1471,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
         (r, p, s, d)
         for r in M.regions
         for p in M.time_optimize
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
     return indices
@@ -1495,7 +1483,7 @@ def MinTechInputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, i, t in M.minInputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.minInputSplitVintages[r, p, i, t]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1540,7 +1528,7 @@ def MinTechOutputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, t, o in M.minOutputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.minOutputSplitVintages[r, p, t, o]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1585,7 +1573,7 @@ def MaxTechInputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, i, t in M.maxInputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.maxInputSplitVintages[r, p, i, t]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1630,7 +1618,7 @@ def MaxTechOutputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, t, o in M.maxOutputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.maxOutputSplitVintages[r, p, t, o]
-        for s in M.time_season
+        for s in M.time_season[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1678,20 +1666,20 @@ def GrowthRateMaxIndices(M: 'TemoaModel'):
     return indices
 
 
-def loop_period_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
+def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
     
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
-    if s == M.time_season.last() and d == M.time_of_day.last():
-        s_next = M.time_season.first()
+    if s == M.time_season[p].last() and d == M.time_of_day.last():
+        s_next = M.time_season[p].first()
         d_next = M.time_of_day.first()
 
     # Last time slice of any season that is NOT the last season
     # Carry state to initial state of next season
     # Carry state between seasons
     elif d == M.time_of_day.last():
-        s_next = M.time_season.next(s)
+        s_next = M.time_season[p].next(s)
         d_next = M.time_of_day.first()
 
     # Any other time slice
@@ -1704,7 +1692,7 @@ def loop_period_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
     return s_next, d_next
 
 
-def loop_season_next_timeslice(M: 'TemoaModel', s, d) -> tuple[str, str]:
+def loop_season_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
 
     # We loop each season so never carrying state between seasons
     s_next = s

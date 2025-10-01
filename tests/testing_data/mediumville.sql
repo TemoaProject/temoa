@@ -8,9 +8,10 @@ CREATE TABLE MetaData
     PRIMARY KEY (element)
 );
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'');
 INSERT INTO MetaData VALUES('link_seasons',1,'Carry storage states between seasons');
+INSERT INTO MetaData VALUES('state_sequencing',0,'0 = loop periods, 1 = loop seasons');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -19,8 +20,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.4199999999999999845,'');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.42000000000000001776,'');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -56,7 +57,7 @@ CREATE TABLE CapacityCredit
     PRIMARY KEY (region, period, tech, vintage),
     CHECK (credit >= 0 AND credit <= 1)
 );
-INSERT INTO CapacityCredit VALUES('A',2025,'EF',2025,0.5999999999999999778,NULL);
+INSERT INTO CapacityCredit VALUES('A',2025,'EF',2025,0.6,NULL);
 CREATE TABLE CapacityFactorProcess
 (
     region  TEXT,
@@ -74,11 +75,13 @@ CREATE TABLE CapacityFactorProcess
     PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorProcess VALUES('A',2025,'s2','d1','EFL',2025,0.8000000000000000444,NULL);
-INSERT INTO CapacityFactorProcess VALUES('A',2025,'s1','d2','EFL',2025,0.9000000000000000222,NULL);
+INSERT INTO CapacityFactorProcess VALUES('A',2025,'s2','d1','EFL',2025,0.8,NULL);
+INSERT INTO CapacityFactorProcess VALUES('A',2025,'s1','d2','EFL',2025,0.9,NULL);
 CREATE TABLE CapacityFactorTech
 (
     region TEXT,
+    period INTEGER
+        REFERENCES TimePeriod (period),
     season TEXT
         REFERENCES TimeSeason (season),
     tod    TEXT
@@ -87,11 +90,11 @@ CREATE TABLE CapacityFactorTech
         REFERENCES Technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, season, tod, tech),
+    PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('A','s1','d1','EF',0.8000000000000000444,NULL);
-INSERT INTO CapacityFactorTech VALUES('B','s2','d2','bulbs',0.75,NULL);
+INSERT INTO CapacityFactorTech VALUES('A',2025,'s1','d1','EF',0.8,NULL);
+INSERT INTO CapacityFactorTech VALUES('B',2025,'s2','d2','bulbs',0.75,NULL);
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -126,6 +129,7 @@ CREATE TABLE CommodityType
         PRIMARY KEY,
     description TEXT
 );
+INSERT INTO CommodityType VALUES('a','annual commodity');
 INSERT INTO CommodityType VALUES('p','physical commodity');
 INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('d','demand commodity');
@@ -143,7 +147,7 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES ('A', 2025, 'co2', 1.99, 'dollars', 'none' );
+INSERT INTO CostEmission VALUES('A',2025,'co2',1.9900000000000000355,'dollars','none');
 CREATE TABLE CostFixed
 (
     region  TEXT    NOT NULL,
@@ -158,7 +162,7 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostFixed VALUES('A',2025,'EH',2025,3.299999999999999823,'','');
+INSERT INTO CostFixed VALUES('A',2025,'EH',2025,3.2999999999999998223,'','');
 INSERT INTO CostFixed VALUES('A',2025,'EF',2025,2.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('A',2025,'EFL',2025,3.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('B',2025,'batt',2025,1.0,NULL,NULL);
@@ -169,7 +173,7 @@ INSERT INTO CostFixed VALUES('A',2025,'heater',2025,2.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('B',2025,'heater',2025,2.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('B',2025,'GeoThermal',2025,6.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('B',2025,'GeoHeater',2025,1.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'EH',2025,3.299999999999999823,NULL,NULL);
+INSERT INTO CostFixed VALUES('B',2025,'EH',2025,3.2999999999999998223,NULL,NULL);
 INSERT INTO CostFixed VALUES('A',2025,'GeoThermal',2025,4.0,NULL,NULL);
 INSERT INTO CostFixed VALUES('A',2025,'GeoHeater',2025,4.5,NULL,NULL);
 CREATE TABLE CostInvest
@@ -195,9 +199,9 @@ INSERT INTO CostInvest VALUES('B','heater',2025,9.0,NULL,NULL);
 INSERT INTO CostInvest VALUES('A','EFL',2025,2.0,NULL,NULL);
 INSERT INTO CostInvest VALUES('B','GeoThermal',2025,3.0,NULL,NULL);
 INSERT INTO CostInvest VALUES('B','GeoHeater',2025,4.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','EH',2025,3.299999999999999823,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','GeoThermal',2025,5.599999999999999645,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','GeoHeater',2025,4.200000000000000177,NULL,NULL);
+INSERT INTO CostInvest VALUES('B','EH',2025,3.2999999999999998223,NULL,NULL);
+INSERT INTO CostInvest VALUES('A','GeoThermal',2025,5.5999999999999996447,NULL,NULL);
+INSERT INTO CostInvest VALUES('A','GeoHeater',2025,4.2000000000000001776,NULL,NULL);
 CREATE TABLE CostVariable
 (
     region  TEXT    NOT NULL,
@@ -240,6 +244,8 @@ INSERT INTO Demand VALUES('B',2025,'RH',50.0,NULL,NULL);
 CREATE TABLE DemandSpecificDistribution
 (
     region      TEXT,
+    period      INTEGER
+        REFERENCES TimePeriod (period),
     season      TEXT
         REFERENCES TimeSeason (season),
     tod         TEXT
@@ -247,26 +253,26 @@ CREATE TABLE DemandSpecificDistribution
     demand_name TEXT
         REFERENCES Commodity (name),
     dsd         REAL,
-    dsd_notes   TEXT,
-    PRIMARY KEY (region, season, tod, demand_name),
+    notes       TEXT,
+    PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO DemandSpecificDistribution VALUES('A','s1','d1','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s1','d2','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s2','d1','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s2','d2','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s1','d1','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s1','d2','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s2','d1','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s2','d2','RL',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s1','d1','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s2','d1','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s1','d1','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s2','d1','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s1','d2','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('A','s2','d2','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s1','d2','RH',0.25,NULL);
-INSERT INTO DemandSpecificDistribution VALUES('B','s2','d2','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s1','d1','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s1','d2','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s2','d1','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s2','d2','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s1','d1','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s1','d2','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s2','d1','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s2','d2','RL',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s1','d1','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s2','d1','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s1','d1','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s2','d1','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s1','d2','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s2','d2','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s1','d2','RH',0.25,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s2','d2','RH',0.25,NULL);
 CREATE TABLE LoanRate
 (
     region  TEXT,
@@ -304,14 +310,36 @@ INSERT INTO Efficiency VALUES('B','HYD','EF',2025,'ELC',1.0,NULL);
 INSERT INTO Efficiency VALUES('A','earth','well',2025,'HYD',1.0,NULL);
 INSERT INTO Efficiency VALUES('B','earth','well',2025,'HYD',1.0,NULL);
 INSERT INTO Efficiency VALUES('A','earth','EFL',2025,'FusionGasFuel',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('A-B','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
-INSERT INTO Efficiency VALUES('B','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('B','GeoHyd','GeoHeater',2025,'RH',0.979999999999999983,NULL);
+INSERT INTO Efficiency VALUES('A','FusionGasFuel','heater',2025,'RH',0.9,NULL);
+INSERT INTO Efficiency VALUES('A-B','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.95,NULL);
+INSERT INTO Efficiency VALUES('B','FusionGasFuel','heater',2025,'RH',0.9,NULL);
+INSERT INTO Efficiency VALUES('B','GeoHyd','GeoHeater',2025,'RH',0.98000000000000007105,NULL);
 INSERT INTO Efficiency VALUES('B','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
-INSERT INTO Efficiency VALUES('B-A','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
-INSERT INTO Efficiency VALUES('A','GeoHyd','GeoHeater',2025,'RH',0.9000000000000000222,NULL);
+INSERT INTO Efficiency VALUES('B-A','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.95,NULL);
+INSERT INTO Efficiency VALUES('A','GeoHyd','GeoHeater',2025,'RH',0.9,NULL);
 INSERT INTO Efficiency VALUES('A','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
+CREATE TABLE EfficiencyVariable
+(
+    region      TEXT,
+    period      INTEGER
+        REFERENCES TimePeriod (period),
+    season      TEXT
+        REFERENCES TimeSeason (season),
+    tod         TEXT
+        REFERENCES TimeOfDay (tod),
+    input_comm  TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    output_comm TEXT
+        REFERENCES Commodity (name),
+    efficiency  REAL,
+    notes       TEXT,
+    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    CHECK (efficiency > 0)
+);
 CREATE TABLE EmissionActivity
 (
     region      TEXT,
@@ -330,8 +358,22 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('A','co2','HYD','EH',2025,'ELC',0.02000000000000000041,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('A','FusionGas','HYD','EF',2025,'ELC',-0.2000000000000000111,NULL,'needs to be negative as a driver of linked tech...don''t ask');
+INSERT INTO EmissionActivity VALUES('A','co2','HYD','EH',2025,'ELC',0.02,NULL,NULL);
+INSERT INTO EmissionActivity VALUES('A','FusionGas','HYD','EF',2025,'ELC',-0.2,NULL,'needs to be negative as a driver of linked tech...don''t ask');
+CREATE TABLE EmissionEmbodied
+(
+    region      TEXT,
+    emis_comm   TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    value       REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, emis_comm,  tech, vintage)
+);
 CREATE TABLE ExistingCapacity
 (
     region   TEXT,
@@ -363,7 +405,7 @@ CREATE TABLE GrowthRateMax
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO GrowthRateMax VALUES('global','GeoHeater',0.2000000000000000111,NULL);
+INSERT INTO GrowthRateMax VALUES('global','GeoHeater',0.2,NULL);
 CREATE TABLE GrowthRateSeed
 (
     region TEXT,
@@ -473,7 +515,7 @@ CREATE TABLE MinActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech)
 );
-INSERT INTO MinActivity VALUES('A',2025,'EF',0.00100000000000000002,'PJ/CY','goofy units');
+INSERT INTO MinActivity VALUES('A',2025,'EF',0.001,'PJ/CY','goofy units');
 CREATE TABLE MaxCapacityGroup
 (
     region     TEXT,
@@ -499,8 +541,8 @@ CREATE TABLE MinCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech)
 );
-INSERT INTO MinCapacity VALUES('A',2025,'EH',0.1000000000000000055,'','');
-INSERT INTO MinCapacity VALUES('B',2025,'batt',0.1000000000000000055,'','');
+INSERT INTO MinCapacity VALUES('A',2025,'EH',0.1,'','');
+INSERT INTO MinCapacity VALUES('B',2025,'batt',0.1,'','');
 CREATE TABLE MinCapacityGroup
 (
     region     TEXT,
@@ -513,7 +555,7 @@ CREATE TABLE MinCapacityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MinCapacityGroup VALUES('A',2025,'A_tech_grp_1',0.2000000000000000111,'',NULL);
+INSERT INTO MinCapacityGroup VALUES('A',2025,'A_tech_grp_1',0.2,'',NULL);
 CREATE TABLE OutputCurtailment
 (
     scenario    TEXT,
@@ -611,7 +653,7 @@ CREATE TABLE OutputFlowOut
     period      INTEGER
         REFERENCES TimePeriod (period),
     season      TEXT
-        REFERENCES TimePeriod (period),
+        REFERENCES TimeSeason (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -625,6 +667,25 @@ CREATE TABLE OutputFlowOut
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
+CREATE TABLE OutputStorageLevel
+(
+    scenario TEXT,
+    region TEXT,
+    sector TEXT
+        REFERENCES SectorLabel (sector),
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    season TEXT
+        REFERENCES TimePeriod (period),
+    tod TEXT
+        REFERENCES TimeOfDay (tod),
+    tech TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER
+        REFERENCES TimePeriod (period),
+    level REAL,
+    PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
+);
 CREATE TABLE PlanningReserveMargin
 (
     region TEXT
@@ -632,7 +693,7 @@ CREATE TABLE PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-INSERT INTO PlanningReserveMargin VALUES('A',0.05000000000000000277);
+INSERT INTO PlanningReserveMargin VALUES('A',0.05);
 CREATE TABLE RampDown
 (
     region TEXT,
@@ -662,20 +723,22 @@ CREATE TABLE Region
 INSERT INTO Region VALUES('A','main region');
 INSERT INTO Region VALUES('B','just a 2nd region');
 CREATE TABLE TimeSegmentFraction
-(
+(   
+    period INTEGER
+        REFERENCES TimePeriod (period),
     season  TEXT
         REFERENCES TimeSeason (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
     notes   TEXT,
-    PRIMARY KEY (season, tod),
+    PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
-INSERT INTO TimeSegmentFraction VALUES('s2','d1',0.25,NULL);
-INSERT INTO TimeSegmentFraction VALUES('s2','d2',0.25,NULL);
-INSERT INTO TimeSegmentFraction VALUES('s1','d1',0.25,NULL);
-INSERT INTO TimeSegmentFraction VALUES('s1','d2',0.25,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2025,'s2','d1',0.25,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2025,'s2','d2',0.25,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2025,'s1','d1',0.25,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2025,'s1','d2',0.25,NULL);
 CREATE TABLE StorageDuration
 (
     region   TEXT,
@@ -685,12 +748,22 @@ CREATE TABLE StorageDuration
     PRIMARY KEY (region, tech)
 );
 INSERT INTO StorageDuration VALUES('B','batt',15.0,NULL);
-CREATE TABLE StorageInit
+CREATE TABLE StorageLevelFraction
 (
-    tech  TEXT
-        PRIMARY KEY,
-    value REAL,
-    notes TEXT
+    region   TEXT,
+    period   INTEGER
+        REFERENCES TimePeriod (period),
+    season   TEXT
+        REFERENCES TimeSeason (season),
+    tod      TEXT
+        REFERENCES TimeOfDay (tod),
+    tech     TEXT
+        REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
+    fraction REAL,
+    notes    TEXT,
+    PRIMARY KEY(region, period, season, tod, tech, vintage)
 );
 CREATE TABLE TechnologyType
 (
@@ -744,6 +817,71 @@ CREATE TABLE MinTechOutputSplit
     PRIMARY KEY (region, period, tech, output_comm)
 );
 INSERT INTO MinTechOutputSplit VALUES('B',2025,'EH','ELC',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
+CREATE TABLE MinTechOutputSplitAnnual
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    tech           TEXT
+        REFERENCES Technology (tech),
+    output_comm    TEXT
+        REFERENCES Commodity (name),
+    min_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, tech, output_comm)
+);
+CREATE TABLE MaxTechInputSplit
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    input_comm     TEXT
+        REFERENCES Commodity (name),
+    tech           TEXT
+        REFERENCES Technology (tech),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, input_comm, tech)
+);
+CREATE TABLE MaxTechInputSplitAnnual
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    input_comm     TEXT
+        REFERENCES Commodity (name),
+    tech           TEXT
+        REFERENCES Technology (tech),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, input_comm, tech)
+);
+CREATE TABLE MaxTechOutputSplit
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    tech           TEXT
+        REFERENCES Technology (tech),
+    output_comm    TEXT
+        REFERENCES Commodity (name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, tech, output_comm)
+);
+CREATE TABLE MaxTechOutputSplitAnnual
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    tech           TEXT
+        REFERENCES Technology (tech),
+    output_comm    TEXT
+        REFERENCES Commodity (name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, tech, output_comm)
+);
 CREATE TABLE TimeOfDay
 (
     sequence INTEGER UNIQUE,
@@ -765,12 +903,23 @@ INSERT INTO TimePeriod VALUES(2,2025,'f');
 INSERT INTO TimePeriod VALUES(3,2030,'f');
 CREATE TABLE TimeSeason
 (
-    sequence INTEGER UNIQUE,
-    season   TEXT
+    season TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeSeason VALUES(1,'s1');
-INSERT INTO TimeSeason VALUES(2,'s2');
+INSERT INTO TimeSeason VALUES('s1');
+INSERT INTO TimeSeason VALUES('s2');
+CREATE TABLE PeriodSeasons
+(   
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence)
+);
+INSERT INTO PeriodSeasons VALUES(2025,1,'s1',NULL);
+INSERT INTO PeriodSeasons VALUES(2025,2,'s2',NULL);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -857,20 +1006,6 @@ CREATE TABLE MaxNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
-CREATE TABLE MaxNewCapacityGroupShare
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES TimePeriod (period),
-    sub_group      TEXT
-        REFERENCES TechGroup (group_name),
-    super_group    TEXT
-        REFERENCES TechGroup (group_name),
-    max_proportion REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group)
-);
-INSERT INTO MaxNewCapacityGroupShare VALUES('global', 2025, 'RPS_common', 'A_tech_grp_1', 1, '');
 CREATE TABLE MinActivityShare
 (
     region         TEXT,
@@ -945,7 +1080,7 @@ CREATE TABLE MinNewCapacityShare
         REFERENCES Technology (tech),
     group_name     TEXT
         REFERENCES TechGroup (group_name),
-    max_proportion REAL,
+    min_proportion REAL,
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name)
 );
@@ -962,7 +1097,21 @@ CREATE TABLE MinNewCapacityGroupShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group)
 );
-INSERT INTO MinNewCapacityGroupShare VALUES('A', 2025, 'RPS_common', 'A_tech_grp_1', 0, '');
+INSERT INTO MinNewCapacityGroupShare VALUES('A',2025,'RPS_common','A_tech_grp_1',0.0,'');
+CREATE TABLE MaxNewCapacityGroupShare
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES TimePeriod (period),
+    sub_group      TEXT
+        REFERENCES TechGroup (group_name),
+    super_group    TEXT
+        REFERENCES TechGroup (group_name),
+    max_proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group)
+);
+INSERT INTO MaxNewCapacityGroupShare VALUES('global',2025,'RPS_common','A_tech_grp_1',1.0,'');
 CREATE TABLE OutputEmission
 (
     scenario  TEXT,
@@ -992,7 +1141,7 @@ CREATE TABLE MinActivityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-INSERT INTO MinActivityGroup VALUES('A',2025,'A_tech_grp_1',0.05000000000000000277,'',NULL);
+INSERT INTO MinActivityGroup VALUES('A',2025,'A_tech_grp_1',0.05,'',NULL);
 CREATE TABLE EmissionLimit
 (
     region    TEXT,
@@ -1019,6 +1168,36 @@ CREATE TABLE MaxActivityGroup
     PRIMARY KEY (region, period, group_name)
 );
 INSERT INTO MaxActivityGroup VALUES('A',2025,'A_tech_grp_1',10000.0,'',NULL);
+CREATE TABLE IF NOT EXISTS "MinSeasonalActivity"
+(
+	"region"    TEXT
+        REFERENCES Region (region),
+	"period"	INTEGER
+        REFERENCES TimePeriod (period),
+	"season"	TEXT
+        REFERENCES TimeSeason (season),
+	"tech"      TEXT
+        REFERENCES Technology (tech),
+	"min_act"	REAL,
+	"units"	TEXT,
+	"notes"	TEXT,
+	PRIMARY KEY("region","period","season","tech")
+);
+CREATE TABLE IF NOT EXISTS "MaxSeasonalActivity"
+(
+	"region"    TEXT
+        REFERENCES Region (region),
+	"period"	INTEGER
+        REFERENCES TimePeriod (period),
+	"season"	TEXT
+        REFERENCES TimeSeason (season),
+	"tech"      TEXT
+        REFERENCES Technology (tech),
+	"max_act"	REAL,
+	"units"	TEXT,
+	"notes"	TEXT,
+	PRIMARY KEY("region","period","season","tech")
+);
 CREATE TABLE RPSRequirement
 (
     region      TEXT    NOT NULL
@@ -1030,7 +1209,7 @@ CREATE TABLE RPSRequirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-INSERT INTO RPSRequirement VALUES('B',2025,'RPS_common',0.2999999999999999889,NULL);
+INSERT INTO RPSRequirement VALUES('B',2025,'RPS_common',0.3,NULL);
 CREATE TABLE TechGroupMember
 (
     group_name TEXT
@@ -1055,21 +1234,20 @@ CREATE TABLE Technology
     curtail      INTEGER NOT NULL DEFAULT 0,
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
-    variable     INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
-INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,0,'residential lighting');
-INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,1,1,1,0,0,0,'hydro power electric plant');
-INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,0,'big battery');
-INSERT INTO Technology VALUES('EF','p','electric','electric','',0,0,0,0,0,0,0,0,'fusion plant');
-INSERT INTO Technology VALUES('EFL','p','electric','electric','',0,0,0,0,0,1,0,0,'linked (to Fusion) producer');
-INSERT INTO Technology VALUES('heater','p','residential','electric','',0,0,0,0,0,0,0,0,'heater');
-INSERT INTO Technology VALUES('FGF_pipe','p','transport',NULL,'',0,0,0,0,0,0,0,1,'transportation line A->B');
-INSERT INTO Technology VALUES('GeoThermal','p','residential','hydro','',0,1,0,0,0,0,0,0,'geothermal hot water source');
-INSERT INTO Technology VALUES('GeoHeater','p','residential','hydro','',0,0,0,0,0,0,1,0,'geothermal heater from geo hyd');
+INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,'plain old water');
+INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,'residential lighting');
+INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,1,1,1,0,0,'hydro power electric plant');
+INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,'big battery');
+INSERT INTO Technology VALUES('EF','p','electric','electric','',0,0,0,0,0,0,0,'fusion plant');
+INSERT INTO Technology VALUES('EFL','p','electric','electric','',0,0,0,0,0,1,0,'linked (to Fusion) producer');
+INSERT INTO Technology VALUES('heater','p','residential','electric','',0,0,0,0,0,0,0,'heater');
+INSERT INTO Technology VALUES('FGF_pipe','p','transport',NULL,'',0,0,0,0,0,0,1,'transportation line A->B');
+INSERT INTO Technology VALUES('GeoThermal','p','residential','hydro','',0,1,0,0,0,0,0,'geothermal hot water source');
+INSERT INTO Technology VALUES('GeoHeater','p','residential','hydro','',0,0,0,0,0,0,0,'geothermal heater from geo hyd');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

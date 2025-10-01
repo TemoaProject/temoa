@@ -14,3 +14,6 @@ data_files/untracked_data/*
 # ignore (for now) associated jupyter notebooks
 other_notebooks/
 /temoa/temoa_model/config_sample_9R
+
+# ignore cached vscode settings
+.vscode

@@ -348,7 +348,7 @@ class HybridLoader:
                     data[c.name] = {t[:-1]: t[-1] for t in screened}
             return screened
 
-        def load_indexed_set(indexed_set: Set, index_value, element, element_validator):
+        def load_indexed_set(indexed_set: Set, index_value, element, element_validator=None):
             """
             load an element into an indexed set in the data store
             :param indexed_set: the name of the pyomo Set
@@ -392,20 +392,42 @@ class HybridLoader:
                 "SELECT period FROM main.TimePeriod WHERE flag = 'f' ORDER BY sequence"
             ).fetchall()
         load_element(M.time_future, raw)
+        time_optimize = [p[0] for p in raw[0:-1]]
 
         # time_of_day
         if self.table_exists("TimeOfDay"):
             raw = cur.execute('SELECT tod FROM main.TimeOfDay ORDER BY sequence').fetchall()
             load_element(M.time_of_day, raw)
         else:
+            logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
-        # time_season
-        if self.table_exists("TimeSeason"):
-            raw = cur.execute('SELECT season FROM main.TimeSeason ORDER BY sequence').fetchall()
-            load_element(M.time_season, raw)
+        # PeriodSeasons
+        if self.table_exists("PeriodSeasons"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, season FROM main.PeriodSeasons WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, season FROM main.PeriodSeasons ORDER BY period, sequence').fetchall()
+            for row in raw:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=row[0],
+                    element=row[1]
+                )
+            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into time_season_all set
         else:
-            load_element(M.time_season, [('S',)])
+            for period in time_optimize:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=period,
+                    element='S'
+                )
+            logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
+            load_element(M.time_season_all, [('S',)])
 
         # StateSequencing
         raw = cur.execute("SELECT value from MetaData WHERE element == 'state_sequencing'").fetchall()
@@ -479,16 +501,14 @@ class HybridLoader:
         load_element(M.tech_reserve, raw, self.viable_techs)
 
         # tech_ramping
-        techs = set()
         if self.table_exists('RampUp'):
             ramp_up_techs = cur.execute('SELECT tech FROM main.RampUp').fetchall()
-            techs.update({t[0] for t in ramp_up_techs})
-        load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-        techs = set()
+            techs = {t[0] for t in ramp_up_techs}
+            load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
         if self.table_exists('RampDown'):
             ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDown').fetchall()
-            techs.update({t[0] for t in ramp_dn_techs})
-        load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
+            techs = {t[0] for t in ramp_dn_techs}
+            load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
 
         # tech_curtailment
         raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
@@ -603,39 +623,34 @@ class HybridLoader:
 
         # SegFrac
         if self.table_exists("TimeSegmentFraction"):
-            raw = cur.execute('SELECT season, tod, segfrac FROM main.TimeSegmentFraction').fetchall()
+            raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT period, season, tod, segfrac FROM main.TimeSegmentFraction')
             load_element(M.SegFrac, raw)
         else:
-            load_element(M.SegFrac, [("S","D",1)])
+            logger.warning(
+                'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
+                ' (assume this is an annual model)'
+            )
+            filler_segfrac = [(p, "S", "D", 1) for p in time_optimize] # if no segfrac table, assume this is an annual model
+            load_element(M.SegFrac, filler_segfrac)
 
         # DemandSpecificDistribution
         if self.table_exists('DemandSpecificDistribution'):
-            raw = cur.execute(
-                'SELECT region, season, tod, demand_name, dsd FROM main.DemandSpecificDistribution'
-            ).fetchall()
+            raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT region, period, season, tod, demand_name, dsd FROM main.DemandSpecificDistribution')
             load_element(M.DemandSpecificDistribution, raw)
-
-        # DemandPeriodDistribution
-        if self.table_exists('DemandPeriodDistribution'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, demand_name, dpd FROM main.DemandPeriodDistribution')
-            load_element(M.DemandPeriodDistribution, raw)
 
         # Demand
         raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand')
         load_element(M.Demand, raw)
 
-        # RescourceBound
-        # Not currently implemented
-
         # CapacityToActivity
         if self.table_exists("CapacityToActivity"):
-            raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity ').fetchall()
+            raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity').fetchall()
             load_element(M.CapacityToActivity, raw, self.viable_rt, (0, 1))
 
         # CapacityFactorTech
         if self.table_exists("CapacityFactorTech"):
-            raw = cur.execute('SELECT region, season, tod, tech, factor ' 'FROM main.CapacityFactorTech').fetchall()
-            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 3))
+            raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT region, period, season, tod, tech, factor FROM main.CapacityFactorTech')
+            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 4))
 
         # CapacityFactorProcess
         if self.table_exists("CapacityFactorProcess"):
@@ -858,8 +873,6 @@ class HybridLoader:
 
         # CostEmissions (and supporting index set)
         if self.table_exists('CostEmission'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm from main.CostEmission')
-            load_element(M.CostEmission_rpe, raw)
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, cost from main.CostEmission')
             load_element(M.CostEmission, raw)
 
@@ -935,7 +948,7 @@ class HybridLoader:
 
         # MinNewCapacityShare
         if self.table_exists('MinNewCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare')
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinNewCapacityShare')
             load_element(M.MinNewCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MaxNewCapacityShare
@@ -1095,8 +1108,8 @@ class HybridLoader:
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
         # StorageFraction
-        if self.table_exists('StorageFraction'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, frac FROM main.StorageFraction')
+        if self.table_exists('StorageLevelFraction'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, fraction FROM main.StorageLevelFraction')
             load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
@@ -1139,6 +1152,7 @@ class HybridLoader:
         M: TemoaModel = TemoaModel()  # for typing
         param_idx_sets = {
             M.CostInvest.name: M.CostInvest_rtv.name,
+            M.CostEmission.name: M.CostEmission_rpe.name,
             M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
             M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
             M.MaxSeasonalActivity.name: M.MaxSeasonalActivityConstraint_rpst.name,

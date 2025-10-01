@@ -198,7 +198,7 @@ class SvMgaSequencer:
         for membership later
         """
         r, _, i, t, v, o = reitvo
-        psd_set = [(p, s, d) for p in M.time_optimize for s in M.time_season for d in M.time_of_day]
+        psd_set = [(p, s, d) for p in M.time_optimize for s in M.time_season[p] for d in M.time_of_day]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
         annual_flow_idxs = [(r, p, i, t, v, o) for p in M.time_optimize]
 

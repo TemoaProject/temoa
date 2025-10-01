@@ -233,7 +233,7 @@ class TableWriter:
         """Write the storage level table to the DB"""
 
         # For backwards compatibility, make the output table if it doesn't exist
-        qry = self.con.execute(
+        self.con.execute(
             f"""CREATE TABLE IF NOT EXISTS 
             OutputStorageLevel(
             scenario TEXT,
