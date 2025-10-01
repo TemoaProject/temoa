@@ -119,7 +119,7 @@ def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
             ' - Does a tech that satisfies this demand need a longer '
             'Lifetime?\n'
         )
-        logger.error(msg)
+        logger.error(msg.format(dem, r, p, s, d))
         raise Exception(msg.format(dem, r, p, s, d))
 
 
@@ -262,8 +262,10 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
     c_physical = set(i for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    c_physical = c_physical | set(i for r, i, t, v in M.ConstructionInput)
     techs = set(t for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
     c_outputs = set(o for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    c_outputs = c_outputs | set(o for r, t, v, o in M.EndOfLifeOutput)
 
     symdiff = c_physical.symmetric_difference(M.commodity_physical)
     if symdiff:
@@ -307,10 +309,15 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
     count_rpitvo = dict()
     # Pull non-variable efficiency by default
     for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+        if (r, t, v) not in M.processPeriods:
+            # Probably an existing vintage that retires in p0
+            # Still want it for end of life flows
+            continue
         for p in M.processPeriods[r, t, v]:
             M.efficiencyVariables[r, p, i, t, v, o] = False 
             count_rpitvo[r, p, i, t, v, o] = 0
     
+    annual = set()
     # Check for bad values and count up the good ones
     for r, p, s, d, i, t, v, o in M.EfficiencyVariable.sparse_iterkeys():
         
@@ -319,8 +326,19 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
             logger.error(msg)
             raise ValueError(msg)
         
+        if t in M.tech_annual:
+            annual.add(t)
+        
         # Good value, pull from EfficiencyVariable table
         count_rpitvo[r, p, i, t, v, o] += 1
+
+    for t in annual:
+        msg = (
+            f"Variable efficiencies were provided for the annual technology {t}, which has "
+            "no variable output. This will only be applied to flows on non-annual commodities. "
+            "This is ambiguous behaviour and not recommended."
+        )
+        logger.warning(msg)
 
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
@@ -726,13 +744,14 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 msg = (
                     '\nWarning: %s specified as ExistingCapacity, but its '
                     'LifetimeProcess parameter does not extend past the beginning '
-                    'of time_future.  (i.e. useless parameter)'
+                    'of time_future.'
                     '\n\tLifetime:     %s'
                     '\n\tFirst period: %s\n'
                 )
                 logger.warning(msg, l_process, l_lifetime, l_first_period)
-                SE.write(msg % (l_process, l_lifetime, l_first_period))
-                continue
+                # Devnote: these are now useful due to end of life outputs
+                #SE.write(msg % (l_process, l_lifetime, l_first_period))
+                #continue
 
         eindex = (r, i, t, v, o)
         if M.Efficiency[eindex] == 0:
@@ -765,6 +784,16 @@ def CreateSparseDicts(M: 'TemoaModel'):
             #     l_loan_life = value(M.LoanLifetimeProcess[l_process])
             #     if v + l_loan_life >= p:
             #         M.processLoans[pindex] = True
+
+            if t not in M.tech_uncap and any((
+                p==v and l_lifetime<value(M.PeriodLength[p]), # eol the period it is constructed
+                p==v+l_lifetime, # natural eol at start of this period
+                (p < v+l_lifetime < p+value(M.PeriodLength[p])), # eol mid-period
+                t in M.tech_retirement and v < p < v+l_lifetime, # allowed early retirement
+            )):
+                if (r, t, v) not in M.retirementPeriods:
+                    M.retirementPeriods[r, t, v] = set()
+                M.retirementPeriods[r, t, v].add(p)
 
             # if tech is no longer active, don't include it
             if v + l_lifetime <= p:
@@ -928,28 +957,51 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if t in M.tech_exchange:
                 M.importRegions[r[r.find('-') + 1 :], p, o].add((r[: r.find('-')], t, v, i))
 
-    for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
-        if t in M.tech_exchange:
-            reg = r.split('-')[0]
-            for r1, i1, t1, v1, o1 in M.Efficiency.sparse_iterkeys():
-                if (r1 == reg) & (o1 == i):
-                    for p in M.time_optimize:
-                        if p >= v and (r1, p, o1) not in M.commodityDStreamProcess:
-                            msg = (
-                                'The {} process in region {} has no downstream process other '
-                                'than a transport ({}) process. This will cause the commodity '
-                                'balance constraint to fail. Add a dummy technology downstream '
-                                'of the {} process to the Efficiency table to avoid this '
-                                'issue.  The dummy technology should have the same region and '
-                                'vintage as the {} process, an efficiency of 100%, with the {} '
-                                'commodity as the input and output.'
-                                'The dummy technology may also need a corresponding row in the '
-                                'ExistingCapacity table with capacity values that equal the {} '
-                                'technology.'
-                            )
-                            f_msg = msg.format(t1, r1, t, t1, t1, o1, t1)
-                            logger.error(f_msg)
-                            raise ValueError(f_msg)
+    # devnote: I think this was only necessary because the commodity balance constraint rpc indices
+    # weren't accounting for imports/exports. I added them to the set below so this should be fixed
+    # for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+    #     if t in M.tech_exchange:
+    #         reg = r.split('-')[0]
+    #         for r1, i1, t1, v1, o1 in M.Efficiency.sparse_iterkeys():
+    #             if (r1 == reg) & (o1 == i):
+    #                 for p in M.time_optimize:
+    #                     if p >= v and (r1, p, o1) not in M.commodityDStreamProcess:
+    #                         msg = (
+    #                             'The {} process in region {} has no downstream process other '
+    #                             'than a transport ({}) process. This will cause the commodity '
+    #                             'balance constraint to fail. Add a dummy technology downstream '
+    #                             'of the {} process to the Efficiency table to avoid this '
+    #                             'issue.  The dummy technology should have the same region and '
+    #                             'vintage as the {} process, an efficiency of 100%, with the {} '
+    #                             'commodity as the input and output.'
+    #                             'The dummy technology may also need a corresponding row in the '
+    #                             'ExistingCapacity table with capacity values that equal the {} '
+    #                             'technology.'
+    #                         )
+    #                         f_msg = msg.format(t1, r1, t, t1, t1, o1, t1)
+    #                         logger.error(f_msg)
+    #                         raise ValueError(f_msg)
+
+    # Need this here for the commodity balance rpc set
+    for r, i, t, v in M.ConstructionInput:
+        if (r, v, i) not in M.capacityConsumptionTechs:
+            M.capacityConsumptionTechs[r, v, i] = set()
+        M.capacityConsumptionTechs[r, v, i].add(t)
+    for r, t, v, o in M.EndOfLifeOutput:
+        if (r, t, v) not in M.retirementPeriods:
+            msg = (
+                f'Process {(r, t, v)} in EndOfLifeOutput does not retire within the planning horizon. '
+                'All processes in EndOfLifeOutput must naturally reach end of life at the start of '
+                'or during the planning horizon (p0 <= v+lifetime < pE) or be a retirement tech '
+                '(allowing early retirement).'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+        for p in M.retirementPeriods[r, t, v]:
+            # What periods can this process retire in, either naturally or economically?
+            if (r, p, o) not in M.retirementProductionProcesses:
+                M.retirementProductionProcesses[r, p, o] = set()
+            M.retirementProductionProcesses[r, p, o].add((t, v))
 
     l_unused_techs = M.tech_all - l_used_techs
     if l_unused_techs:
@@ -961,8 +1013,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             SE.write(msg.format(i))
 
     # valid region-period-commodity sets for commodity balance constraints
-    commodityUpstream_rpi = set(M.commodityUStreamProcess.keys())
-    commodityDownstream_rpo = set(M.commodityDStreamProcess.keys())
+    commodityUpstream_rpi = set(M.commodityUStreamProcess.keys() | M.retirementProductionProcesses.keys() | M.importRegions.keys())
+    commodityDownstream_rpo = set(M.commodityDStreamProcess.keys() | M.capacityConsumptionTechs.keys() | M.exportRegions.keys())
     M.commodityBalance_rpc = commodityUpstream_rpi.intersection(commodityDownstream_rpo)
 
     M.activeFlow_rpsditvo = set(
@@ -1257,6 +1309,14 @@ def RetiredCapacityVariableIndices(M: 'TemoaModel'):
         if t in M.tech_retirement
         for v in M.processVintages[r, p, t]
         if p > v and t not in M.tech_uncap
+    )
+
+
+def AnnualRetirementVariableIndices(M: 'TemoaModel'):
+    return set(
+        (r, p, t, v)
+        for r, t, v in M.retirementPeriods.keys()
+        for p in M.retirementPeriods[r, t, v]
     )
 
 

@@ -192,7 +192,7 @@ INSERT INTO Commodity VALUES('OIL','p','crude oil');
 INSERT INTO Commodity VALUES('NG','p','natural gas');
 INSERT INTO Commodity VALUES('URN','p','uranium');
 INSERT INTO Commodity VALUES('ETH','p','ethanol');
-INSERT INTO Commodity VALUES('SOL','p','solar insolation');
+INSERT INTO Commodity VALUES('SOL','s','solar insolation');
 INSERT INTO Commodity VALUES('GSL','p','gasoline');
 INSERT INTO Commodity VALUES('DSL','p','diesel');
 INSERT INTO Commodity VALUES('ELC','p','electricity');
@@ -211,6 +211,34 @@ INSERT INTO CommodityType VALUES('s','source commodity');
 INSERT INTO CommodityType VALUES('p','physical commodity');
 INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('d','demand commodity');
+CREATE TABLE ConstructionInput
+(
+    region      TEXT,
+    input_comm   TEXT
+        REFERENCES Commodity (name),
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    value       REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, input_comm, tech, vintage)
+);
+CREATE TABLE EndOfLifeOutput
+(
+    region      TEXT,
+    tech        TEXT
+        REFERENCES Technology (tech),
+    vintage     INTEGER
+        REFERENCES TimePeriod (period),
+    output_comm   TEXT
+        REFERENCES Commodity (name),
+    value       REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, tech, vintage, output_comm)
+);
 CREATE TABLE CostEmission
 (
     region    TEXT

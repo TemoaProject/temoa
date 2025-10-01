@@ -63,7 +63,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
             return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) - retired_cap
         else:
             return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] - retired_cap
-
+    
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
@@ -269,6 +269,41 @@ previous period's total installed capacity (CAPAVL)
         cap_avail = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
     expr = M.V_RetiredCapacity[r, p, t, v] <= cap_avail
     return expr
+
+
+def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Get the annualised retirement rate for a process in a given period. 
+    Used to model end of life flows and emissions. Assumes that retirement
+    is evenly distributed over the model period, in the same way we assume
+    capacity is deployed evenly over the model period.
+    """
+
+    # Need to know what already (before period p) retired economically so we don't double count
+    already_retired = 0
+    if t in M.tech_retirement:
+        already_retired = sum(
+            M.V_RetiredCapacity[r, S_p, t, v] for S_p in M.time_optimize if v < S_p < p
+        )
+
+    # If it naturally retires at the beginning of or during this period, all capacity minus already retired
+    l = value(M.LifetimeProcess[r, t, v])
+    if v+l == p or value(M.ModelProcessLife[r, p, t, v]) < value(M.PeriodLength[p]):
+        if v in M.time_optimize:
+            retired = M.V_NewCapacity[r, t, v] - already_retired
+        elif v in M.time_exist:
+            retired = M.ExistingCapacity[r, t, v] - already_retired
+    # Otherwise if not the vintage period then just early (economic) retirement in this period
+    elif t in M.tech_retirement and v < p:
+        retired = M.V_RetiredCapacity[r, p, t, v]
+    # Neither natural retirement nor early economic retirement possible
+    else:
+        retired = 0.0
+
+    # Distribute retirement evenly over planning period
+    retired /= value(M.PeriodLength[p])
+
+    return M.V_AnnualRetirement[r, p, t, v] == retired
 
 
 # ---------------------------------------------------------------
@@ -586,21 +621,37 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     # 5. flex annual emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
 
-    # 6. embodied - treated as a fixed cost in a single year (year of construction)
+    # 6. embodied - treated as a fixed cost distributed over the deployment period (vintage)
     embodied_emissions = sum(
         fixed_or_variable_cost(
-            cap_or_flow=M.V_NewCapacity[r, t, v] * value(M.EmissionEmbodied[r, e, t, v]),
+            cap_or_flow=M.V_NewCapacity[r, t, v] * value(M.EmissionEmbodied[r, e, t, v]) / value(M.PeriodLength[p]),
             cost_factor=value(M.CostEmission[r, p, e]),
-            cost_years=1, # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=M.PeriodLength[v], # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             GDR=GDR,
             P_0=P_0,
             p=p,
         )
         for (r, e, t, v) in M.EmissionEmbodied.sparse_iterkeys()
+        if (r, p, e) in M.CostEmission
         if v == p
     )
 
-    period_emission_cost = var_emissions + var_annual_emissions + embodied_emissions
+    # 6. endoflife - treated as a fixed cost distributed over the retirement period
+    endoflife_emissions = sum(
+        fixed_or_variable_cost(
+            cap_or_flow=M.V_AnnualRetirement[r, p, t, v] * value(M.EmissionEndOfLife[r, e, t, v]),
+            cost_factor=value(M.CostEmission[r, p, e]),
+            cost_years=M.PeriodLength[p], # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            GDR=GDR,
+            P_0=P_0,
+            p=p,
+        )
+        for (r, e, t, v) in M.EmissionEndOfLife.sparse_iterkeys()
+        if (r, p, e) in M.CostEmission
+        if p in M.retirementPeriods[r, t, v]
+    )
+
+    period_emission_cost = var_emissions + var_annual_emissions + embodied_emissions + endoflife_emissions
 
     period_costs = (
         loan_costs + fixed_costs + variable_costs + variable_costs_annual + period_emission_cost
@@ -789,83 +840,115 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
         return Constraint.Skip
 
-    # Only storage techs have a flow in variable
-    # For other techs, it would be redundant as in = out / eff
-    stored = sum(
-        M.V_FlowIn[r, p, s, d, c, S_t, S_v, S_o]
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t in M.tech_storage
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+    produced = 0
+    consumed = 0
 
-    consumed = sum(
-        M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_storage and S_t not in M.tech_annual
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+    if (r, p, c) in M.commodityDStreamProcess:
+        # Only storage techs have a flow in variable
+        # For other techs, it would be redundant as in = out / eff
+        consumed += sum(
+            M.V_FlowIn[r, p, s, d, c, S_t, S_v, S_o]
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t in M.tech_storage
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    consumed_annual = value(M.SegFrac[p, s, d]) * sum(
-        M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_storage and S_t in M.tech_annual
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+        # Into flows
+        consumed += sum(
+            M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t not in M.tech_storage and S_t not in M.tech_annual
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    # Includes output from storage
-    produced = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, c]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-        if S_t not in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-    )
+        # Into annual flows
+        consumed += value(M.SegFrac[p, s, d]) * sum(
+            M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t not in M.tech_storage and S_t in M.tech_annual
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    produced_annual = value(M.SegFrac[p, s, d]) * sum(
-        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-        if S_t in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-    )
+    if (r, p, c) in M.capacityConsumptionTechs:
+        # Consumed by building capacity
+        # Assume evenly distributed over a year
+        consumed += value(M.SegFrac[p, s, d]) * sum(
+            value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
+            for S_t in M.capacityConsumptionTechs[r, p, c]
+        ) / M.PeriodLength[p]
+
+    if (r, p, c) in M.commodityUStreamProcess:
+        # From flows including output from storage
+        produced += sum(
+            M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, c]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t not in M.tech_annual
+            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        )
+
+        # From annual flows
+        produced += value(M.SegFrac[p, s, d]) * sum(
+            M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t in M.tech_annual
+            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        )
+
+        if c in M.commodity_flex:
+            # Wasted by flex flows
+            consumed += sum(
+                M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
+                for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+                if S_t not in M.tech_annual and S_t in M.tech_flex
+                for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+            )
+            # Wasted by annual flex flows
+            consumed += value(M.SegFrac[p, s, d]) * sum(
+                M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
+                for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+                if S_t in M.tech_annual and S_t in M.tech_flex
+                for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+            )
+    
+    if (r, p, c) in M.retirementProductionProcesses:
+        # Produced by retiring capacity
+        # Assume evenly distributed over a year
+        produced += value(M.SegFrac[p, s, d]) * sum(
+            value(M.EndOfLifeOutput[r, S_t, S_v, c]) * M.V_AnnualRetirement[r, p, S_t, S_v]
+            for S_t, S_v in M.retirementProductionProcesses[r, p, c]
+        )
 
     # export of commodity c from region r to other regions
-    exported = 0
     if (r, p, c) in M.exportRegions:
-        exported = sum(
+        consumed += sum(
             M.V_FlowOut[r + '-' + reg, p, s, d, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
             for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
+            if S_t not in M.tech_annual
+        )
+        consumed += sum(
+            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[reg + '-' + r, p, c, S_t, S_v, S_o]
+            / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
+            for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
+            if S_t in M.tech_annual
         )
 
     # import of commodity c from other regions into region r
-    imported = 0
     if (r, p, c) in M.importRegions:
-        imported = sum(
+        produced += sum(
             M.V_FlowOut[reg + '-' + r, p, s, d, S_i, S_t, S_v, c]
             for reg, S_t, S_v, S_i in M.importRegions[r, p, c]
+            if S_t not in M.tech_annual
         )
-
-    flex_waste = 0
-    flex_waste_annual = 0
-    if c in M.commodity_flex:
-        flex_waste = sum(
-            M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
-            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-            if S_t not in M.tech_annual and S_t in M.tech_flex
-            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        produced += sum(
+            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[reg + '-' + r, p, S_i, S_t, S_v, c]
+            for reg, S_t, S_v, S_i in M.importRegions[r, p, c]
+            if S_t in M.tech_annual
         )
-        flex_waste_annual = value(M.SegFrac[p, s, d]) * sum(
-            M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
-            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-            if S_t in M.tech_annual and S_t in M.tech_flex
-            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-        )
-
-    supplied = produced + produced_annual + imported
-    demanded = stored + consumed + consumed_annual + exported + flex_waste + flex_waste_annual
 
     CommodityBalanceConstraintErrorCheck(
-        supplied,
-        demanded,
+        produced,
+        consumed,
         r,
         p,
         s,
@@ -873,7 +956,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         c,
     )
 
-    expr = supplied == demanded
+    expr = produced == consumed
 
     return expr
 
@@ -888,101 +971,128 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
         return Constraint.Skip
     
-    # Only storage techs have a flow in variable
-    # For other techs, it would be redundant as in = out / eff
-    stored = sum(
-        M.V_FlowIn[r, p, S_s, S_d, c, S_t, S_v, S_o]
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t in M.tech_storage
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+    produced = 0
+    consumed = 0
+    
+    if (r, p, c) in M.commodityDStreamProcess:
+        # Only storage techs have a flow in variable
+        # For other techs, it would be redundant as in = out / eff
+        consumed += sum(
+            M.V_FlowIn[r, p, S_s, S_d, c, S_t, S_v, S_o]
+            for S_s in M.time_season[p]
+            for S_d in M.time_of_day
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t in M.tech_storage
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    consumed = sum(
-        M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_storage and S_t not in M.tech_annual
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+        consumed += sum(
+            M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
+            for S_s in M.time_season[p]
+            for S_d in M.time_of_day
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t not in M.tech_storage and S_t not in M.tech_annual
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    consumed_annual = sum(
-        M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
-        for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-        if S_t not in M.tech_storage and S_t in M.tech_annual
-        for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
-    )
+        consumed += sum(
+            M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
+            for S_t, S_v in M.commodityDStreamProcess[r, p, c]
+            if S_t not in M.tech_storage and S_t in M.tech_annual
+            for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
+        )
 
-    # Includes output from storage
-    produced = sum(
-        M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, c]
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-        if S_t not in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-    )
+    if (r, p, c) in M.capacityConsumptionTechs:
+        # Consumed by building capacity
+        # Assume evenly distributed over a year
+        consumed += sum(
+            value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
+            for S_t in M.capacityConsumptionTechs[r, p, c]
+        ) / M.PeriodLength[p]
 
-    produced_annual = sum(
-        M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-        if S_t in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-    )
+    if (r, p, c) in M.commodityUStreamProcess:
+        # Includes output from storage
+        produced += sum(
+            M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, c]
+            for S_s in M.time_season[p]
+            for S_d in M.time_of_day
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t not in M.tech_annual
+            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        )
+
+        produced += sum(
+            M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
+            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+            if S_t in M.tech_annual
+            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        )
+
+        if c in M.commodity_flex:
+            consumed += sum(
+                M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
+                for S_s in M.time_season[p]
+                for S_d in M.time_of_day
+                for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+                if S_t not in M.tech_annual and S_t in M.tech_flex
+                for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+            )
+            consumed += sum(
+                M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
+                for S_t, S_v in M.commodityUStreamProcess[r, p, c]
+                if S_t in M.tech_flex and S_t in M.tech_annual
+                for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+            )
+
+    if (r, p, c) in M.retirementProductionProcesses:
+        # Produced by retiring capacity
+        # Assume evenly distributed over a year
+        produced += sum(
+            value(M.EndOfLifeOutput[r, S_t, S_v, c]) * M.V_AnnualRetirement[r, p, S_t, S_v]
+            for S_t, S_v in M.retirementProductionProcesses[r, p, c]
+        )
 
     # export of commodity c from region r to other regions
-    exported = 0
     if (r, p, c) in M.exportRegions:
-        exported = sum(
+        consumed += sum(
             M.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o)
             for S_s in M.time_season[p]
             for S_d in M.time_of_day
             for S_r, S_t, S_v, S_o in M.exportRegions[r, p, c]
+            if S_t not in M.tech_annual
+        )
+        consumed += sum(
+            M.V_FlowOutAnnual[r + '-' + S_r, p, c, S_t, S_v, S_o]
+            / M.Efficiency[r + '-' + S_r, c, S_t, S_v, S_o]
+            for S_r, S_t, S_v, S_o in M.exportRegions[r, p, c]
+            if S_t in M.tech_annual
         )
 
     # import of commodity c from other regions into region r
-    imported = 0
     if (r, p, c) in M.importRegions:
-        imported = sum(
+        produced += sum(
             M.V_FlowOut[S_r + '-' + r, p, S_s, S_d, S_i, S_t, S_v, c]
             for S_s in M.time_season[p]
             for S_d in M.time_of_day
             for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
+            if S_t not in M.tech_annual
         )
-
-    flex_waste = 0
-    flex_waste_annual = 0
-    if c in M.commodity_flex:
-        flex_waste = sum(
-            M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
-            for S_s in M.time_season[p]
-            for S_d in M.time_of_day
-            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-            if S_t not in M.tech_annual and S_t in M.tech_flex
-            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
+        produced += sum(
+            M.V_FlowOutAnnual[r + '-' + S_r, p, S_i, S_t, S_v, c]
+            for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
+            if S_t in M.tech_annual
         )
-        flex_waste_annual = sum(
-            M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
-            for S_t, S_v in M.commodityUStreamProcess[r, p, c]
-            if S_t in M.tech_flex and S_t in M.tech_annual
-            for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
-        )
-
-    supplied = produced + produced_annual + imported
-    demanded = stored + consumed + consumed_annual + exported + flex_waste + flex_waste_annual
 
     AnnualCommodityBalanceConstraintErrorCheck(
-        supplied,
-        demanded,
+        produced,
+        consumed,
         r,
         p,
         c,
     )
 
-    expr = supplied == demanded
+    expr = produced == consumed
 
     return expr
 
@@ -1685,13 +1795,22 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     embodied_emissions = sum(
         M.V_NewCapacity[reg, t, v]
         * value(M.EmissionEmbodied[reg, e, t, v])
+        / value(M.PeriodLength[v])
         for reg in regions
         for (S_r, S_e, t, v) in M.EmissionEmbodied.sparse_iterkeys()
         if v == p and S_r == reg and S_e == e
     )
 
+    retirement_emissions = sum(
+        M.V_AnnualRetirement[reg, p, t, v]
+        * value(M.EmissionEndOfLife[reg, e, t, v])
+        for reg in regions
+        for (S_r, S_e, t, v) in M.EmissionEndOfLife.sparse_iterkeys()
+        if p in M.retirementPeriods[r, t, v] and S_r == reg and S_e == e
+    )
+
     expr = (
-        process_emissions + process_emissions_annual + embodied_emissions
+        process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
         # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
         # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
         # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
@@ -3180,9 +3299,9 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
 # ---------------------------------------------------------------
 def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
     life_length = value(M.LifetimeProcess[r, t, v])
-    tpl = min(v + life_length - p, value(M.PeriodLength[p]))
+    mpl = min(v + life_length - p, value(M.PeriodLength[p]))
 
-    return tpl
+    return mpl
 
 
 def ParamPeriodLength(M: 'TemoaModel', p):

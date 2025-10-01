@@ -1078,6 +1078,27 @@ class HybridLoader:
             ).fetchall()
             load_element(M.EmissionEmbodied, raw, self.viable_rtv, (0, 2, 3))
 
+        # EmissionEndOfLife
+        if self.table_exists('EmissionEndOfLife'):
+            raw = cur.execute(
+                'SELECT region, emis_comm, tech, vintage, value '
+                'FROM main.EmissionEndOfLife'
+            ).fetchall()
+            load_element(M.EmissionEndOfLife, raw, self.viable_rtv, (0, 2, 3))
+        
+        # ConstructionInput
+        if self.table_exists('ConstructionInput'):
+            raw = cur.execute(
+                'SELECT region, input_comm, tech, vintage, value FROM main.ConstructionInput'
+            ).fetchall()
+            load_element(M.ConstructionInput, raw, self.viable_rtv, (0, 2, 3))
+
+        # EndOfLifeOutput
+        if self.table_exists('EndOfLifeOutput'):
+            raw = cur.execute(
+                'SELECT region, tech, vintage, output_comm, value FROM main.EndOfLifeOutput'
+            ).fetchall()
+            load_element(M.EndOfLifeOutput, raw, self.viable_rtv, (0, 1, 2))
 
         # LinkedTechs
         # Note:  Both of the linked techs must be viable.  As this is non period/vintage

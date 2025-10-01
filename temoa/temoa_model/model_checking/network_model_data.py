@@ -55,7 +55,9 @@ class NetworkModelData:
         self.demand_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get(
             'demand_commodities'
         )
-        self.source_commodities: set[str] = kwargs.get('source_commodities')
+        self.cap_commodities: set[str] = kwargs.get('cap_commodities')
+        self.exc_commodities: set[str] = kwargs.get('exc_commodities')
+        self.source_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get('source_commodities')
         self.all_commodities: set[str] = kwargs.get('all_commodities')
         # dict of (region, period): {Tech}
         self._available_techs: dict[tuple[str, int | str], set[Tech]] = kwargs.get(
@@ -73,6 +75,8 @@ class NetworkModelData:
         return NetworkModelData(
             demand_commodities=self.demand_commodities.copy(),
             source_commodities=self.source_commodities.copy(),
+            cap_commodities=self.cap_commodities.copy(),
+            exc_commodities=self.exc_commodities.copy(),
             all_commodities=self.all_commodities.copy(),
             available_techs=self.available_techs.copy(),
             available_linked_techs=self.available_linked_techs.copy(),
@@ -144,7 +148,7 @@ def _build_from_model(M: TemoaModel, myopic_index=None) -> NetworkModelData:
         raise NotImplementedError('cannot build network data from model using a MyopicIndex')
     res = NetworkModelData()
     res.all_commodities = set(M.commodity_all)
-    res.source_commodities = set(M.commodity_source)
+    source_com = defaultdict(set)
     dem_com = defaultdict(set)
     for r, p, d in M.Demand:
         dem_com[r, p].add(d)
@@ -173,16 +177,23 @@ def _build_from_db(
     #            re-use some of the hybrid loader code in a clear way.  Not too much overlap, though
     res = NetworkModelData()
     cur = con.cursor()
+    raw = cur.execute('SELECT tech FROM Technology WHERE retire==1').fetchall()
+    tech_retire = {t[0] for t in raw}
+    raw = cur.execute('SELECT period FROM TimePeriod').fetchall()
+    periods = [p[0] for p in raw]
+    period_length = {periods[i]: periods[i+1] - periods[i] for i in range(len(periods)-1)}
     raw = cur.execute('SELECT Commodity.name FROM Commodity').fetchall()
+    res.cap_commodities = set()
+    res.exc_commodities = set()
     res.all_commodities = {t[0] for t in raw}
     raw = cur.execute("SELECT Commodity.name FROM Commodity WHERE flag = 's'").fetchall()
-    res.source_commodities = {t[0] for t in raw}
+    source_comms = {t[0] for t in raw}
+    source_dict = defaultdict(set)
     # use Demand to get the region, period specific demand comms
     raw = cur.execute('SELECT region, period, commodity FROM main.Demand').fetchall()
     demand_dict = defaultdict(set)
     for r, p, d in raw:
         demand_dict[r, p].add(d)
-    res.demand_commodities = demand_dict
     # need lifetime to screen techs... :/
     default_lifetime = TemoaModel.default_lifetime_tech
     if not myopic_index:
@@ -230,12 +241,65 @@ def _build_from_db(
     living_techs = set()  # for screening the linked techs below
     # filter out the dead ones...
     for element in raw:
+        (r, ic, tech, v, oc, lifetime) = element
         for p in periods:
-            (r, ic, tech, v, oc, lifetime) = element
             if v <= p < v + lifetime:
-                techs[r, p].add(Tech(r, ic, tech, v, oc))
-                living_techs.add(tech)
+                if '-' in r:
+                    r1, r2 = r.split('-')
+                    source = f"{ic} ({r1})"
+                    destination = f"{oc} ({r2})"
+                    techs[r2, p].add(Tech(r2, source, tech, v, oc))
+                    techs[r1, p].add(Tech(r1, ic, tech, v, destination))
+                    techs[r, p].add(Tech(r, ic, tech, v, oc))
+                    source_dict[r2, p].add(source)
+                    demand_dict[r1, p].add(destination)
+                    res.all_commodities.add(source)
+                    res.exc_commodities.add(source)
+                    res.all_commodities.add(destination)
+                    res.exc_commodities.add(destination)
+                else:
+                    techs[r, p].add(Tech(r, ic, tech, v, oc))
+                    living_techs.add(tech)
+                    if ic in source_comms:
+                        source_dict[r, p].add(ic)
+
+            # End of life output
+            if any((
+                p==v and lifetime<period_length[p], # eol the period it is constructed
+                p==v+lifetime, # natural eol at start of this period
+                (p < v+lifetime < p+period_length[p]), # eol mid-period
+                tech in tech_retire and v < p < v+lifetime, # allowed early retirement
+            )):
+                try:
+                    raw = cur.execute(
+                        'SELECT region, tech, vintage, output_comm FROM EndOfLifeOutput '
+                        f' WHERE region == "{r}" AND tech == "{tech}" AND vintage == {v}'
+                    )
+                
+                    for r, tech, v, oc in raw:
+                        techs[r, p].add(Tech(r, tech, 'EndOfLife', v, oc))
+                        source_dict[r, p].add(tech)
+                        res.cap_commodities.add(tech)
+                        living_techs.add(tech)
+                except:
+                    # EndOfLifeOutput table did not exist TODO remove this eventually
+                    pass
+
+    # Construction input
+    try:
+        raw = cur.execute('SELECT region, input_comm, tech, vintage FROM ConstructionInput')
+        for r, ic, tech, v in raw:
+            techs[r, v].add(Tech(r, ic, 'Construction', v, tech))
+            demand_dict[r, v].add(tech)
+            res.cap_commodities.add(tech)
+            living_techs.add(tech)
+    except:
+        # ConstructionInput table did not exist TODO remove this eventually
+        pass
+
     res.available_techs = techs
+    res.demand_commodities = demand_dict
+    res.source_commodities = source_dict
 
     # pick up the linked techs...
     raw = cur.execute(
