@@ -1626,8 +1626,8 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
             &\qquad \qquad \forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall r_i \in R
     """
     if (not M.tech_reserve) or (
-        (r, p) not in M.processReservePeriods.keys()
-    ):  # If reserve set empty or if r,p not in M.processReservePeriod.keys(), skip the constraint
+        (r, p) not in M.processReservePeriods
+    ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
         return Constraint.Skip
 
     cap_avail = sum(
@@ -1637,7 +1637,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
         for t in M.tech_reserve
-        if (r, p, t) in M.processVintages.keys()
+        if (r, p, t) in M.processVintages
         for v in M.processVintages[r, p, t]
         # Make sure (r,p,t,v) combinations are defined
         if (r, p, t, v) in M.activeCapacityAvailable_rptv
@@ -1669,7 +1669,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[p, s, d])
             for t in M.tech_reserve
-            if (r1r2, p, t) in M.processVintages.keys()
+            if (r1r2, p, t) in M.processVintages
             for v in M.processVintages[r1r2, p, t]
             # Make sure (r,p,t,v) combinations are defined
             if (r1r2, p, t, v) in M.activeCapacityAvailable_rptv
@@ -1777,7 +1777,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
         if tmp_e == e and tmp_r == reg and S_t not in M.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in M.processInputs.keys()
+        if (reg, p, S_t, S_v) in M.processInputs
         for S_s in M.time_season[p]
         for S_d in M.time_of_day
     )
@@ -1789,7 +1789,7 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         for tmp_r, tmp_e, S_i, S_t, S_v, S_o in M.EmissionActivity.sparse_iterkeys()
         if tmp_e == e and tmp_r == reg and S_t in M.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in M.processInputs.keys()
+        if (reg, p, S_t, S_v) in M.processInputs
     )
 
     embodied_emissions = sum(
@@ -2285,7 +2285,7 @@ def MaxResource_Constraint(M: 'TemoaModel', r, t):
             M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
             for p in M.time_optimize
             for _r in regions
-            if (_r, p, t) in M.processVintages.keys()
+            if (_r, p, t) in M.processVintages
             for S_v in M.processVintages[_r, p, t]
             for S_i in M.processInputs[_r, p, t, S_v]
             for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
@@ -2295,7 +2295,7 @@ def MaxResource_Constraint(M: 'TemoaModel', r, t):
             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
             for p in M.time_optimize
             for _r in regions
-            if (_r, p, t) in M.processVintages.keys()
+            if (_r, p, t) in M.processVintages
             for S_v in M.processVintages[_r, p, t]
             for S_i in M.processInputs[_r, p, t, S_v]
             for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
@@ -2610,7 +2610,7 @@ def MinCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         M.V_CapacityAvailableByPeriodAndTech[_r, p, S_t]
         for S_t in M.tech_group_members[g]
         for _r in regions
-        if (_r, p, S_t) in M.processVintages.keys()
+        if (_r, p, S_t) in M.processVintages
     )
     min_cap_share = value(M.MinCapacityShare[r, p, t, g])
 
@@ -2645,7 +2645,7 @@ def MaxCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         M.V_CapacityAvailableByPeriodAndTech[_r, p, S_t]
         for S_t in M.tech_group_members[g]
         for _r in regions
-        if (_r, p, S_t) in M.processVintages.keys()
+        if (_r, p, S_t) in M.processVintages
     )
     max_cap_share = value(M.MaxCapacityShare[r, p, t, g])
 
@@ -2673,7 +2673,7 @@ def MinNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         M.V_NewCapacity[_r, S_t, p]
         for S_t in M.tech_group_members[g]
         for _r in regions
-        if (_r, S_t, p) in M.V_NewCapacity.keys()
+        if (_r, S_t, p) in M.V_NewCapacity
     )
     min_cap_share = value(M.MinNewCapacityShare[r, p, t, g])
 
@@ -2708,7 +2708,7 @@ def MaxNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         M.V_NewCapacity[_r, S_t, p]
         for S_t in M.tech_group_members[g]
         for _r in regions
-        if (_r, S_t, p) in M.V_NewCapacity.keys()
+        if (_r, S_t, p) in M.V_NewCapacity
     )
     max_cap_share = value(M.MaxNewCapacityShare[r, p, t, g])
 
@@ -3367,7 +3367,7 @@ def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
     return sum(
         value(M.SegFrac[p, s, S_d])
         for S_d in M.time_of_day
-        if (p, s, S_d) in M.SegFrac.sparse_iterkeys()
+        if (p, s, S_d) in M.SegFrac
     )
 
 
