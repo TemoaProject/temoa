@@ -1037,35 +1037,35 @@ CREATE TABLE IF NOT EXISTS MaxActivityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name)
 );
-CREATE TABLE IF NOT EXISTS "MinSeasonalActivity"
+CREATE TABLE IF NOT EXISTS MinSeasonalActivity
 (
-	"region"    TEXT
+	region  TEXT
         REFERENCES Region (region),
-	"period"	INTEGER
+	period	INTEGER
         REFERENCES TimePeriod (period),
-	"season"	TEXT
+	season	TEXT
         REFERENCES TimeSeason (season),
-	"tech"      TEXT
+	tech    TEXT
         REFERENCES Technology (tech),
-	"min_act"	REAL,
-	"units"	TEXT,
-	"notes"	TEXT,
-	PRIMARY KEY("region","period","season","tech")
+	min_act	REAL,
+	units	TEXT,
+	notes	TEXT,
+	PRIMARY KEY(region,period,season,tech)
 );
-CREATE TABLE IF NOT EXISTS "MaxSeasonalActivity"
+CREATE TABLE IF NOT EXISTS MaxSeasonalActivity
 (
-	"region"    TEXT
+	region  TEXT
         REFERENCES Region (region),
-	"period"	INTEGER
+	period	INTEGER
         REFERENCES TimePeriod (period),
-	"season"	TEXT
+	season	TEXT
         REFERENCES TimeSeason (season),
-	"tech"      TEXT
+	tech    TEXT
         REFERENCES Technology (tech),
-	"max_act"	REAL,
-	"units"	TEXT,
-	"notes"	TEXT,
-	PRIMARY KEY("region","period","season","tech")
+	max_act	REAL,
+	units	TEXT,
+	notes	TEXT,
+	PRIMARY KEY(region,period,season,tech)
 );
 CREATE TABLE IF NOT EXISTS RPSRequirement
 (

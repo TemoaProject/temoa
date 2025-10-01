@@ -121,6 +121,23 @@ def DemandConstraintErrorCheck(supply, r, p, s, d, dem):
         )
         logger.error(msg)
         raise Exception(msg.format(dem, r, p, s, d))
+    
+
+def validate_tech_sets(M: 'TemoaModel'):
+    """
+    Check sets for any errors
+    """
+
+    # Baseload technologies cannot also be annual technologies
+    baseload_annual = M.tech_annual & M.tech_baseload
+    if baseload_annual:
+        msg = (
+            'The following technologies were added to both baseload and annual sets. '
+            'Annual technologies have no output variability by time slice so '
+            f'there is no need to tag them as baseload:\n{list(baseload_annual)}'
+        )
+        logger.error(msg)
+        raise ValueError(msg)
 
 
 def validate_time(M: 'TemoaModel'):
@@ -196,12 +213,12 @@ def validate_SegFrac(M: 'TemoaModel'):
             extra = keys.difference(expected_keys)
             missing = expected_keys.difference(keys)
             msg = (
-                'TimeSegmentFraction elements for period {} do not match time_season and TimeOfDay.'
+                'TimeSegmentFraction elements for period {} do not match PeriodSeasons and TimeOfDay.'
                 '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from time_season/TimeOfDay:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from PeriodSeasons/TimeOfDay:\n{}'
             ).format(p, missing, extra)
             logger.error(msg)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         total = sum(
             M.SegFrac[k]
@@ -882,7 +899,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if (r, p, t, o) in M.MinTechOutputSplit.sparse_iterkeys():
                 M.minOutputSplitVintages[r, p, t, o].add(v)
             if (r, p, t, o) in M.MinTechOutputSplitAnnual.sparse_iterkeys():
-                M.minInputSplitAnnualVintages[r, p, t, o].add(v)
+                M.minOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             # max tech split
             if (r, p, i, t) in M.MaxTechInputSplit.sparse_iterkeys():
@@ -892,7 +909,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if (r, p, t, o) in M.MaxTechOutputSplit.sparse_iterkeys():
                 M.maxOutputSplitVintages[r, p, t, o].add(v)
             if (r, p, t, o) in M.MaxTechOutputSplitAnnual.sparse_iterkeys():
-                M.maxInputSplitAnnualVintages[r, p, t, o].add(v)
+                M.maxOutputSplitAnnualVintages[r, p, t, o].add(v)
 
             if t in M.tech_resource:
                 M.processByPeriodAndOutput[r, p, o].add((i, t, v))
@@ -1092,11 +1109,11 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
 
 
 def CapacityFactorTechIndices(M: 'TemoaModel'):
-    processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
     all_cfs = set(
         (r, p, s, d, t)
-        for p in M.time_optimize
-        for (r, t, v), s, d in cross_product(processes, M.time_season[p], M.time_of_day)
+        for r, p, t in M.activeCapacityAvailable_rpt
+        for s in M.time_season[p]
+        for d in M.time_of_day
     )
     return all_cfs
 

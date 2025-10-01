@@ -194,7 +194,7 @@ lifetime_tech = dict()
 for rtl in data: lifetime_tech[rtl[0:2]] = rtl[2]
 data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
 lifetime_process = dict()
-for rtvl in data: lifetime_tech[rtvl[0:3]] = rtvl[3]
+for rtvl in data: lifetime_process[rtvl[0:3]] = rtvl[3]
 
 # add period indexing to seasonal tables
 print('\n --- Adding period index to some tables ---')
