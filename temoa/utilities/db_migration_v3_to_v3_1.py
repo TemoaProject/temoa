@@ -27,6 +27,7 @@ Transition a v3.0 database to a v3.1 database.
 
 import argparse
 import sqlite3
+import sys
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -39,7 +40,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--schema',
-    help='Path to schema file (default=../../data_files/temoa_schema_v3_1)',
+    help='Path to schema file (default=data_files/temoa_schema_v3_1)',
     required=False,
     dest='schema',
     default='data_files/temoa_schema_v3_1.sql',
@@ -62,6 +63,28 @@ con_new.executescript(sql_script)
 
 # turn off FK verification while process executes
 con_new.execute('PRAGMA foreign_keys = 0;')
+
+def column_check(old_name: str, new_name: str) -> bool:
+    if old_name == '':
+        old_name = new_name
+
+    try:
+        con_old.execute(f'SELECT * FROM {old_name}').fetchone()
+    except sqlite3.OperationalError:
+        return True
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+
+    missing = [c for c in new_columns if c not in old_columns and c != 'period']
+    if len(missing) > 0:
+        msg = (
+            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
+            f'\n{missing}\n'
+            )
+        print(msg)
+        return False
+    return True
 
 # table mapping for DIRECT transfers
 # fmt: off
@@ -141,6 +164,15 @@ period_added_tables =[
     ('',                      'TimeSegmentFraction'),
 ]
 
+all_good = True
+for old_name, new_name in direct_transfer_tables:
+    good = column_check(old_name, new_name)
+    all_good = all_good and good
+for old_name, new_name in period_added_tables:
+    good = column_check(old_name, new_name)
+    all_good = all_good and good
+if not all_good: sys.exit(-1)
+
 # It wasn't active anyway... can't be bothered
 # StorageInit -> StorageFraction
 
@@ -165,16 +197,6 @@ for old_name, new_name in direct_transfer_tables:
         continue
 
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
-    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
-
-    missing = [c for c in new_columns if c not in old_columns]
-    if len(missing) > 0:
-        msg = (
-            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
-            f'\n{missing}\n'
-            )
-        raise ValueError(msg)
-
     data = con_old.execute(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
 
     if not data:
@@ -209,17 +231,6 @@ for old_name, new_name in period_added_tables:
     except sqlite3.OperationalError:
         print('TABLE NOT FOUND: ' + old_name)
         continue
-
-    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
-    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
-
-    missing = [c for c in new_columns if c not in old_columns and c != 'period']
-    if len(missing) > 0:
-        msg = (
-            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
-            f'\n{missing}\n'
-            )
-        raise ValueError(msg)
     
     columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall() if c[1] != 'period']
     data = con_old.execute(f'SELECT {str(columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
