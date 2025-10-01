@@ -1640,10 +1640,11 @@ INSERT INTO Technology VALUES('TXG','p','transport','petroleum','',0,0,0,1,1,0,0
 CREATE TABLE OutputCost
 (
     scenario TEXT,
-    region   TEXT,
-    period   INTEGER,
-    tech     TEXT,
-    vintage  INTEGER,
+    region   TEXT REFERENCES Region (region),
+    sector   TEXT REFERENCES SectorLabel (sector),
+    period   INTEGER REFERENCES TimePeriod (period),
+    tech     TEXT REFERENCES Technology (tech),
+    vintage  INTEGER REFERENCES TimePeriod (period),
     d_invest REAL,
     d_fixed  REAL,
     d_var    REAL,

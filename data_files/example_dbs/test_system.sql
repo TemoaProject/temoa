@@ -1652,10 +1652,11 @@ INSERT INTO Technology VALUES('E_TRANS','p','electric','','',0,0,0,0,0,0,1,'elec
 CREATE TABLE OutputCost
 (
     scenario TEXT,
-    region   TEXT,
-    period   INTEGER,
-    tech     TEXT,
-    vintage  INTEGER,
+    region   TEXT REFERENCES Region (region),
+    sector   TEXT REFERENCES SectorLabel (sector),
+    period   INTEGER REFERENCES TimePeriod (period),
+    tech     TEXT REFERENCES Technology (tech),
+    vintage  INTEGER REFERENCES TimePeriod (period),
     d_invest REAL,
     d_fixed  REAL,
     d_var    REAL,
