@@ -846,7 +846,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
 
     flex_waste = 0
     flex_waste_annual = 0
-    if c in M.flex_commodities:
+    if c in M.commodity_flex:
         flex_waste = sum(
             M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
             for S_t, S_v in M.commodityUStreamProcess[r, p, c]
@@ -955,7 +955,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
     flex_waste = 0
     flex_waste_annual = 0
-    if c in M.flex_commodities:
+    if c in M.commodity_flex:
         flex_waste = sum(
             M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
             for S_s in M.time_season[p]
@@ -1123,6 +1123,10 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
 
 
 def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+    """
+    This constraint enforces the continuity of state of charge (StorageLevel) between time slices.
+    StorageLevel in the next time slice is equal to current StorageLevel plus net charge in the current time slice.
+    """
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
@@ -1147,9 +1151,6 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     expr = M.V_StorageLevel[r, p, s, d, t, v] + stored_energy == M.V_StorageLevel[r, p, s_next, d_next, t, v]
 
     return expr
-
-
-
 
 
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):

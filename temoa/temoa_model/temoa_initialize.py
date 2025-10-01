@@ -228,6 +228,31 @@ def validate_SegFrac(M: 'TemoaModel'):
             ).format(p, items, total)
             logger.error(msg)
             raise Exception(msg)
+        
+
+def validate_TimeNext(M: 'TemoaModel'):
+    """
+    If using this table, check that defined states are actually valid.
+    TimeSegmentFraction is already compared to other tables so just compare to SegFrac.
+    """
+    # Only check TimeNext if it is actually being used
+    if M.StateSequencing != 2:
+        return
+    
+    segfrac_psd = set(M.SegFrac.sparse_iterkeys())
+    time_next_psd = set((p, s, d) for p, s, d, s_next, d_next in M.TimeNext)
+    time_next_psd_next = set((p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext)
+
+    missing_psd = segfrac_psd.difference(time_next_psd)
+    missing_psd_next = segfrac_psd.difference(time_next_psd_next)
+    if missing_psd or missing_psd_next:
+        msg = (
+            'Failed to build state sequence. '
+            '\nThese states from TimeSegmentFraction were not given a next state:\n{}\n'
+            '\nThese states from TimeSegmentFraction do not follow any state:\n{}'
+        ).format(missing_psd, missing_psd_next)
+        logger.error(msg)
+        raise ValueError(msg)
 
 
 def CheckEfficiencyIndices(M: 'TemoaModel'):
@@ -723,7 +748,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         l_used_techs.add(t)
 
         if t in M.tech_flex:
-            M.flex_commodities.add(o)
+            M.commodity_flex.add(o)
 
         # Add in the period (p) index, since it's not included in the efficiency
         # table.
@@ -1062,11 +1087,17 @@ def CreateStateSequence(M: 'TemoaModel'):
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
+        case 2:
+            # Hidden feature. Define the sequence directly in the TimeNext table
+            msg = 'Pulling state sequence from TimeNext table.'
+            for p, s, d, s_next, d_next in M.TimeNext:
+                M.time_next[p, s, d] = s_next, d_next
 
     msg += (' This behaviour can be changed using the'
             ' state_sequencing parameter in the MetaData table. '
             '0 = loop periods, '
-            '1 = loop seasons.')
+            '1 = loop seasons, '
+            '2 = define manually in TimeNext.')
     logger.info(msg)
     logger.debug('Created sequence of states.')
 
