@@ -956,7 +956,10 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         c,
     )
 
-    expr = produced == consumed
+    if c in M.commodity_waste:
+        expr = produced >= consumed
+    else:
+        expr = produced == consumed
 
     return expr
 
@@ -1092,7 +1095,10 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         c,
     )
 
-    expr = produced == consumed
+    if c in M.commodity_waste:
+        expr = produced >= consumed
+    else:
+        expr = produced == consumed
 
     return expr
 

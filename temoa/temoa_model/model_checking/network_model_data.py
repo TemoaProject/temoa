@@ -55,10 +55,11 @@ class NetworkModelData:
         self.demand_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get(
             'demand_commodities'
         )
-        self.cap_commodities: set[str] = kwargs.get('cap_commodities')
-        self.exc_commodities: set[str] = kwargs.get('exc_commodities')
+        self.waste_commodities: set[str] = kwargs.get('waste_commodities')
+        self.capacity_commodities: set[str] = kwargs.get('capacity_commodities')
+        self.exchange_commodities: set[str] = kwargs.get('exchange_commodities')
         self.source_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get('source_commodities')
-        self.all_commodities: set[str] = kwargs.get('all_commodities')
+        self.physical_commodities: set[str] = kwargs.get('all_commodities')
         # dict of (region, period): {Tech}
         self._available_techs: dict[tuple[str, int | str], set[Tech]] = kwargs.get(
             'available_techs'
@@ -74,10 +75,11 @@ class NetworkModelData:
         """create a copy of the current"""
         return NetworkModelData(
             demand_commodities=self.demand_commodities.copy(),
+            waste_commodities=self.waste_commodities.copy(),
             source_commodities=self.source_commodities.copy(),
-            cap_commodities=self.cap_commodities.copy(),
-            exc_commodities=self.exc_commodities.copy(),
-            all_commodities=self.all_commodities.copy(),
+            capacity_commodities=self.capacity_commodities.copy(),
+            exchange_commodities=self.exchange_commodities.copy(),
+            all_commodities=self.physical_commodities.copy(),
             available_techs=self.available_techs.copy(),
             available_linked_techs=self.available_linked_techs.copy(),
         )
@@ -117,7 +119,7 @@ class NetworkModelData:
 
     def __str__(self):
         return (
-            f'all commodities: {len(self.all_commodities)}, demand commodities: {len(self.demand_commodities)}, '
+            f'all commodities: {len(self.physical_commodities)}, demand commodities: {len(self.demand_commodities)}, '
             f'source commodities: {len(self.source_commodities)},'
             f'available techs: {len(tuple(chain(*self.available_techs.values())))}, '
             f'linked techs: {len(self.available_linked_techs)}'
@@ -147,7 +149,7 @@ def _build_from_model(M: TemoaModel, myopic_index=None) -> NetworkModelData:
     if myopic_index is not None:
         raise NotImplementedError('cannot build network data from model using a MyopicIndex')
     res = NetworkModelData()
-    res.all_commodities = set(M.commodity_all)
+    res.physical_commodities = set(M.commodity_all)
     source_com = defaultdict(set)
     dem_com = defaultdict(set)
     for r, p, d in M.Demand:
@@ -180,14 +182,18 @@ def _build_from_db(
     raw = cur.execute('SELECT tech FROM Technology WHERE retire==1').fetchall()
     tech_retire = {t[0] for t in raw}
     raw = cur.execute('SELECT period FROM TimePeriod').fetchall()
-    periods = [p[0] for p in raw]
+    periods = [p[0] for p in sorted(raw)]
     period_length = {periods[i]: periods[i+1] - periods[i] for i in range(len(periods)-1)}
-    raw = cur.execute('SELECT Commodity.name FROM Commodity').fetchall()
-    res.cap_commodities = set()
-    res.exc_commodities = set()
-    res.all_commodities = {t[0] for t in raw}
+    periods = periods[:-1]
+    raw = cur.execute("SELECT name FROM main.Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'").fetchall()
+    res.physical_commodities = {c[0] for c in raw}
+    res.capacity_commodities = set()
+    res.exchange_commodities = set()
+    raw = cur.execute("SELECT Commodity.name FROM Commodity WHERE flag LIKE '%w%'").fetchall()
+    waste_comms = {c[0] for c in raw}
+    waste_dict = defaultdict(set)
     raw = cur.execute("SELECT Commodity.name FROM Commodity WHERE flag = 's'").fetchall()
-    source_comms = {t[0] for t in raw}
+    source_comms = {c[0] for c in raw}
     source_dict = defaultdict(set)
     # use Demand to get the region, period specific demand comms
     raw = cur.execute('SELECT region, period, commodity FROM main.Demand').fetchall()
@@ -228,10 +234,9 @@ def _build_from_db(
             # f'   WHERE main.MyopicEfficiency.vintage <= {myopic_index.last_demand_year}'
         )
     raw = cur.execute(query).fetchall()
-    periods = cur.execute('SELECT period FROM TimePeriod').fetchall()
     # need to exclude the final year which is a non-demand year and should have no tech data
     # This ensures that the periods in this will match the periods in the hybrid loader.
-    periods = [t[0] for t in sorted(periods)[:-1]]
+    
     # filter further if myopic
     if myopic_index:
         periods = {
@@ -253,15 +258,17 @@ def _build_from_db(
                     techs[r, p].add(Tech(r, ic, tech, v, oc))
                     source_dict[r2, p].add(source)
                     demand_dict[r1, p].add(destination)
-                    res.all_commodities.add(source)
-                    res.exc_commodities.add(source)
-                    res.all_commodities.add(destination)
-                    res.exc_commodities.add(destination)
+                    res.physical_commodities.add(source)
+                    res.exchange_commodities.add(source)
+                    res.physical_commodities.add(destination)
+                    res.exchange_commodities.add(destination)
                 else:
                     techs[r, p].add(Tech(r, ic, tech, v, oc))
                     living_techs.add(tech)
                     if ic in source_comms:
                         source_dict[r, p].add(ic)
+                    if oc in waste_comms:
+                        waste_dict[r, p].add(oc)
 
             # End of life output
             if any((
@@ -279,8 +286,10 @@ def _build_from_db(
                     for _r, _tech, _v, _oc in raw_eol:
                         techs[_r, p].add(Tech(_r, _tech, 'EndOfLife', _v, _oc))
                         source_dict[_r, p].add(_tech)
-                        res.cap_commodities.add(_tech)
+                        res.capacity_commodities.add(_tech)
                         living_techs.add(_tech)
+                        if _oc in waste_comms:
+                            waste_dict[_r, p].add(_oc)
                 except:
                     # EndOfLifeOutput table did not exist TODO remove this eventually
                     pass
@@ -291,7 +300,7 @@ def _build_from_db(
         for r, ic, tech, v in raw:
             techs[r, v].add(Tech(r, ic, 'Construction', v, tech))
             demand_dict[r, v].add(tech)
-            res.cap_commodities.add(tech)
+            res.capacity_commodities.add(tech)
             living_techs.add(tech)
     except:
         # ConstructionInput table did not exist TODO remove this eventually
@@ -300,6 +309,7 @@ def _build_from_db(
     res.available_techs = techs
     res.demand_commodities = demand_dict
     res.source_commodities = source_dict
+    res.waste_commodities = waste_dict
 
     # pick up the linked techs...
     raw = cur.execute(

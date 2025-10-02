@@ -207,10 +207,11 @@ class TemoaModel(AbstractModel):
         M.commodity_demand = Set()
         M.commodity_emissions = Set()
         M.commodity_physical = Set()
+        M.commodity_waste = Set()
         M.commodity_flex = Set(within=M.commodity_physical)
         M.commodity_source = Set(within=M.commodity_physical)
         M.commodity_annual = Set(within=M.commodity_physical)
-        M.commodity_carrier = Set(initialize=M.commodity_physical | M.commodity_demand)
+        M.commodity_carrier = Set(initialize=M.commodity_physical | M.commodity_demand | M.commodity_waste)
         M.commodity_all = Set(
             initialize=M.commodity_carrier | M.commodity_emissions, validate=no_slash_or_pipe
         )
@@ -285,7 +286,7 @@ class TemoaModel(AbstractModel):
 
         # devnote: need these here or CheckEfficiencyIndices may flag these commodities as unused
         M.ConstructionInput = Param(M.regions, M.commodity_physical, M.tech_with_capacity, M.vintage_optimize)
-        M.EndOfLifeOutput = Param(M.regions, M.tech_with_capacity, M.vintage_all, M.commodity_physical)
+        M.EndOfLifeOutput = Param(M.regions, M.tech_with_capacity, M.vintage_all, M.commodity_carrier)
         
         M.Efficiency = Param(
             M.regionalIndices,

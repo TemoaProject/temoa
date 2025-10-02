@@ -35553,6 +35553,18 @@
     ]
   ],
   "CapacityAnnualConstraint_rptv": [],
+  "commodity_waste": [],
+  "tech_exist": [
+    "E_NUCLEAR",
+    "E_TRANS"
+  ],
+  "operator": [],
+  "DegrowthCapacityConstraint_rtpop": [],
+  "DegrowthNewCapacityConstraint_rtpop": [],
+  "DegrowthNewCapacityDeltaConstraint_rtpop": [],
+  "GrowthCapacityConstraint_rtpop": [],
+  "GrowthNewCapacityConstraint_rtpop": [],
+  "GrowthNewCapacityDeltaConstraint_rtpop": [],
   "DemandConstraint_rpsdc": [
     [
       "R2",
@@ -45818,7 +45830,6 @@
       "day"
     ]
   ],
-  "GrowthRateMaxConstraint_rtv": [],
   "MinTechInputSplitConstraint_rpsditv": [
     [
       "R2",
