@@ -216,6 +216,8 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
 
     # end of life flows
     for (r, t, v, o) in M.EndOfLifeOutput.sparse_iterkeys():
+        if (r, t, v) not in M.retirementPeriods:
+            continue
         for p in M.retirementPeriods[r, t, v]:
             annual = value(M.EndOfLifeOutput[r, t, v, o]) * value(M.V_AnnualRetirement[r, p, t, v])
             for s in M.time_season[p]:
@@ -572,6 +574,8 @@ def poll_emissions(
     # iterate through end of life flows
     eol_flows: dict[EI, float] = defaultdict(float)
     for r, e, t, v in M.EmissionEndOfLife.sparse_iterkeys():
+        if (r, t, v) not in M.retirementPeriods:
+            continue
         for p in M.retirementPeriods[r, t, v]:
             eol_flows[EI(r, p, t, v, e)] += value(M.V_AnnualRetirement[r, p, t, v] * M.EmissionEndOfLife[r, e, t, v]) # for eol costs
             flows[EI(r, p, t, v, e)] += value(M.V_AnnualRetirement[r, p, t, v] * M.EmissionEndOfLife[r, e, t, v]) # add eol to process emissions

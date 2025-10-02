@@ -126,7 +126,7 @@ class TemoaModel(AbstractModel):
         M.processByPeriodAndOutput = dict()
         M.exportRegions = dict()
         M.importRegions = dict()
-        M.time_next = dict()
+        M.time_next = dict() # {(s, d): (s_next, d_next)} sequence of following time slices
 
         ################################################
         #             Switching Sets                   #
@@ -142,6 +142,8 @@ class TemoaModel(AbstractModel):
         ################################################
 
         M.progress_marker_1 = BuildAction(['Starting to build Sets'], rule=progress_check)
+
+        M.operator = Set()
 
         # Define time periods
         M.time_exist = Set(ordered=True)
@@ -189,6 +191,9 @@ class TemoaModel(AbstractModel):
 
         M.tech_uncap = Set(within=M.tech_all - M.tech_reserve)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
+
+        M.tech_exist = Set()
+        """techs with existing capacity, want to keep these for accounting reasons"""
 
         # the below is a convenience for domain checking in params below that should not accept uncap techs...
         M.tech_with_capacity = Set(initialize=M.tech_all - M.tech_uncap)
@@ -269,7 +274,7 @@ class TemoaModel(AbstractModel):
         # Define technology performance parameters
         M.CapacityToActivity = Param(M.regionalIndices, M.tech_all, default=1)
 
-        M.ExistingCapacity = Param(M.regionalIndices, M.tech_with_capacity, M.vintage_exist)
+        M.ExistingCapacity = Param(M.regionalIndices, M.tech_exist, M.vintage_exist)
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
         #            Uncomment this assignment, and comment out the orig below it...
@@ -448,8 +453,12 @@ class TemoaModel(AbstractModel):
         )
         M.MaxAnnualCapacityFactor = Param(M.MaxAnnualCapacityFactorConstraint_rpto)
         
-        M.GrowthRateMax = Param(M.regionalGlobalIndices, M.tech_all)
-        M.GrowthRateSeed = Param(M.regionalGlobalIndices, M.tech_all)
+        M.GrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.GrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.GrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
+        M.DegrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
 
         M.EmissionLimitConstraint_rpe = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions
@@ -729,9 +738,31 @@ class TemoaModel(AbstractModel):
             ['Starting Growth and Activity Constraints'], rule=progress_check
         )
 
-        M.GrowthRateMaxConstraint_rtv = Set(dimen=3, initialize=GrowthRateMaxIndices)
-        M.GrowthRateMaxConstraint = Constraint(
-            M.GrowthRateMaxConstraint_rtv, rule=GrowthRateMaxConstraint_rule
+        M.GrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthCapacityIndices)
+        M.GrowthCapacityConstraint = Constraint(
+            M.GrowthCapacityConstraint_rtpop, rule=GrowthCapacityConstraint_rule
+        )
+        M.DegrowthCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthCapacityIndices)
+        M.DegrowthCapacityConstraint = Constraint(
+            M.DegrowthCapacityConstraint_rtpop, rule=DegrowthCapacityConstraint_rule
+        )
+
+        M.GrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityIndices)
+        M.GrowthNewCapacityConstraint = Constraint(
+            M.GrowthNewCapacityConstraint_rtpop, rule=GrowthNewCapacityConstraint_rule
+        )
+        M.DegrowthNewCapacityConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityIndices)
+        M.DegrowthNewCapacityConstraint = Constraint(
+            M.DegrowthNewCapacityConstraint_rtpop, rule=DegrowthNewCapacityConstraint_rule
+        )
+
+        M.GrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=GrowthNewCapacityDeltaIndices)
+        M.GrowthNewCapacityDeltaConstraint = Constraint(
+            M.GrowthNewCapacityDeltaConstraint_rtpop, rule=GrowthNewCapacityDeltaConstraint_rule
+        )
+        M.DegrowthNewCapacityDeltaConstraint_rtpop = Set(dimen=4, initialize=DegrowthNewCapacityDeltaIndices)
+        M.DegrowthNewCapacityDeltaConstraint = Constraint(
+            M.DegrowthNewCapacityDeltaConstraint_rtpop, rule=DegrowthNewCapacityDeltaConstraint_rule
         )
 
         M.MaxActivityConstraint = Constraint(

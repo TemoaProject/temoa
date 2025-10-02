@@ -117,7 +117,7 @@ def price_checker(M: 'TemoaModel') -> bool:
 
         if not any((has_fc, has_ic)):
             logger.warning(
-                f'Check 1a (detail): tech {tech} of vintage {vintage} in region {region} does not '
+                f'Check 1a (detail): tech with capacity {tech} of vintage {vintage} in region {region} does not '
                 f'have a Fixed Cost or Investment Cost component'
             )
             techs_without_fc_or_ic.add(tech)

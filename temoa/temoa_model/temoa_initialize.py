@@ -729,7 +729,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                     'Warning: %s has a specified Efficiency, but does not '
                     'have any existing install base (ExistingCapacity).\n'
                 )
-                SE.write(msg % str(l_process))
+                logger.warning(msg, str(l_process))
+                # SE.write(msg % str(l_process))
                 continue
             if t not in M.tech_uncap and M.ExistingCapacity[l_process] == 0:
                 msg = (
@@ -737,19 +738,20 @@ def CreateSparseDicts(M: 'TemoaModel'):
                     '%s.  If specifying a capacity of zero, you may simply '
                     'omit the declaration.\n'
                 )
-                logger.info(msg, str(l_process))
-                SE.write(msg % str(l_process))
+                logger.warning(msg, str(l_process))
+                # SE.write(msg % str(l_process))
                 continue
             if v + l_lifetime <= l_first_period:
                 msg = (
-                    '\nWarning: %s specified as ExistingCapacity, but its '
-                    'LifetimeProcess parameter does not extend past the beginning '
-                    'of time_future.'
-                    '\n\tLifetime:     %s'
-                    '\n\tFirst period: %s\n'
-                )
-                logger.warning(msg, l_process, l_lifetime, l_first_period)
-                # Devnote: these are now useful due to end of life outputs
+                    '{} specified as ExistingCapacity, but its '
+                    'lifetime ({} years) does not extend past the '
+                    'beginning of time_future ({}) so it is never active. This '
+                    'may be intentional for use in Growth constraints '
+                    'or end of life flows.'
+                ).format(l_process, l_lifetime, l_first_period)
+                logger.info(msg)
+                # Devnote: these are now useful due to end of life flows and
+                # Growth constraints growing from existing cap so do not skip
                 #SE.write(msg % (l_process, l_lifetime, l_first_period))
                 #continue
 
@@ -766,7 +768,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
         l_used_techs.add(t)
 
-        if t in M.tech_flex:
+        if t in M.tech_flex and o not in M.commodity_flex:
             M.commodity_flex.add(o)
 
         # Add in the period (p) index, since it's not included in the efficiency
@@ -784,7 +786,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             #     l_loan_life = value(M.LoanLifetimeProcess[l_process])
             #     if v + l_loan_life >= p:
             #         M.processLoans[pindex] = True
-
+            
+            # Get all periods where the process can retire
             if t not in M.tech_uncap and any((
                 p==v and l_lifetime<value(M.PeriodLength[p]), # eol the period it is constructed
                 p==v+l_lifetime, # natural eol at start of this period
@@ -989,14 +992,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         M.capacityConsumptionTechs[r, v, i].add(t)
     for r, t, v, o in M.EndOfLifeOutput:
         if (r, t, v) not in M.retirementPeriods:
-            msg = (
-                f'Process {(r, t, v)} in EndOfLifeOutput does not retire within the planning horizon. '
-                'All processes in EndOfLifeOutput must naturally reach end of life at the start of '
-                'or during the planning horizon (p0 <= v+lifetime < pE) or be a retirement tech '
-                '(allowing early retirement).'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
+            continue # might be running myopic
         for p in M.retirementPeriods[r, t, v]:
             # What periods can this process retire in, either naturally or economically?
             if (r, p, o) not in M.retirementProductionProcesses:
@@ -1172,7 +1168,6 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
         for s in M.time_season[p]
         for d in M.time_of_day
     )
-
     return indices
 
 
@@ -1736,7 +1731,6 @@ def MaxTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
         if t in M.tech_annual
         for v in M.maxOutputSplitAnnualVintages[r, p, t, o]
     )
-
     return indices
 
 
@@ -1750,10 +1744,52 @@ def MaxTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def GrowthRateMaxIndices(M: 'TemoaModel'):
+def GrowthCapacityIndices(M: 'TemoaModel'):
     indices = set(
-        (r, p, t)
-        for r, t in M.GrowthRateMax.sparse_iterkeys()
+        (r, p, t, op)
+        for r, t, op in M.GrowthCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthCapacityIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+
+def GrowthNewCapacityIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.GrowthNewCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthNewCapacityIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthNewCapacity.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+
+def GrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.GrowthNewCapacityDelta.sparse_iterkeys()
+        for p in M.time_optimize
+    )
+    return indices
+
+def DegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, t, op)
+        for r, t, op in M.DegrowthNewCapacityDelta.sparse_iterkeys()
         for p in M.time_optimize
     )
     return indices

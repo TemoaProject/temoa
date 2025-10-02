@@ -271,23 +271,23 @@ def _build_from_db(
                 tech in tech_retire and v < p < v+lifetime, # allowed early retirement
             )):
                 try:
-                    raw = cur.execute(
+                    raw_eol = cur.execute(
                         'SELECT region, tech, vintage, output_comm FROM EndOfLifeOutput '
                         f' WHERE region == "{r}" AND tech == "{tech}" AND vintage == {v}'
-                    )
-                
-                    for r, tech, v, oc in raw:
-                        techs[r, p].add(Tech(r, tech, 'EndOfLife', v, oc))
-                        source_dict[r, p].add(tech)
-                        res.cap_commodities.add(tech)
-                        living_techs.add(tech)
+                    ).fetchall()
+                    
+                    for _r, _tech, _v, _oc in raw_eol:
+                        techs[_r, p].add(Tech(_r, _tech, 'EndOfLife', _v, _oc))
+                        source_dict[_r, p].add(_tech)
+                        res.cap_commodities.add(_tech)
+                        living_techs.add(_tech)
                 except:
                     # EndOfLifeOutput table did not exist TODO remove this eventually
                     pass
 
     # Construction input
     try:
-        raw = cur.execute('SELECT region, input_comm, tech, vintage FROM ConstructionInput')
+        raw = cur.execute('SELECT region, input_comm, tech, vintage FROM ConstructionInput').fetchall()
         for r, ic, tech, v in raw:
             techs[r, v].add(Tech(r, ic, 'Construction', v, tech))
             demand_dict[r, v].add(tech)

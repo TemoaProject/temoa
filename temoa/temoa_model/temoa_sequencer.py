@@ -195,7 +195,7 @@ class TemoaSequencer:
                     logger.warning('Price check of model is automatic with CHECK')
                 good_prices = price_checker(instance)
                 if not good_prices and not self.config.silent:
-                    print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
+                    print('Warning: Cost anomalies discovered. Check log file for details.')
                 con.close()
 
             case TemoaMode.PERFECT_FORESIGHT:
@@ -211,7 +211,7 @@ class TemoaSequencer:
                 if self.config.price_check:
                     good_prices = price_checker(instance)
                     if not good_prices and not self.config.silent:
-                        print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
+                        print('Warning: Cost anomalies discovered. Check log file for details.')
                 suffixes = (
                     [
                         'dual',

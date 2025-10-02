@@ -79,8 +79,12 @@ tables_with_regional_groups = {
     'MinNewCapacityGroupShare': 'region',
     'MaxNewCapacityGroupShare': 'region',
     'MaxResource': 'region',
-    'GrowthRateMax': 'region',
-    'GrowthRateSeed': 'region',
+    'GrowthCapacity': 'region',
+    'DegrowthCapacity': 'region',
+    'GrowthNewCapacity': 'region',
+    'DegrowthNewCapacity': 'region',
+    'GrowthNewCapacityDelta': 'region',
+    'DegrowthNewCapacityDelta': 'region',
 }
 
 
@@ -337,7 +341,7 @@ class HybridLoader:
                         '\n%s' % (c.name, e)
                     )
             if len(screened) < len(values):
-                msg = ('Some values for {} failed to validate and were ignored:\n{}')
+                msg = ('Some values for {} failed to validate and were ignored: {}')
                 logger.warning(msg.format(c.name, [val for val in values if val not in screened]))
             match c:
                 case Set():
@@ -597,6 +601,13 @@ class HybridLoader:
         raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 'a'").fetchall()
         load_element(M.commodity_annual, raw, self.viable_input_comms)
 
+        #  === OPERATORS ===
+
+        # operator
+        if self.table_exists("Operator"):
+            raw = cur.execute("SELECT operator FROM main.Operator").fetchall()
+            load_element(M.operator, raw)
+
         #  === PARAMS ===
 
         # Efficiency
@@ -624,8 +635,8 @@ class HybridLoader:
                 previous_period = raw[0]
                 # noinspection SqlUnused
                 raw = cur.execute(
-                    'SELECT region, tech, vintage, capacity FROM main.OutputNetCapacity '
-                    ' WHERE period = ? '
+                    'SELECT region, tech, vintage, capacity FROM main.OutputBuiltCapacity '
+                    ' WHERE vintage <= ? '
                     ' AND scenario = ? '
                     'UNION '
                     '  SELECT region, tech, vintage, capacity FROM main.ExistingCapacity ',
@@ -635,7 +646,10 @@ class HybridLoader:
                 raw = cur.execute(
                     'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
                 ).fetchall()
-            load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
+            # devnote: We want full existing capacity history for end of life flows and growth constraints
+            # load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
+            load_element(M.ExistingCapacity, raw)
+            load_element(M.tech_exist, list({(row[1],) for row in raw})) # need to keep these for accounting purposes
 
         # GlobalDiscountRate
         if self.table_exists("MetaDataReal"):
@@ -1045,15 +1059,41 @@ class HybridLoader:
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MaxAnnualCapacityFactor')
             load_element(M.MaxAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
 
-        # GrowthRateMax
-        if self.table_exists('GrowthRateMax'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.GrowthRateMax').fetchall()
-            load_element(M.GrowthRateMax, raw, self.viable_rt, (0, 1))
+        # GrowthCapacity
+        if self.table_exists('GrowthCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthCapacity').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.GrowthCapacity, raw, self.viable_rt, (0, 1))
 
-        # GrowthRateSeed
-        if self.table_exists('GrowthRateSeed'):
-            raw = cur.execute('SELECT region, tech, seed FROM main.GrowthRateSeed').fetchall()
-            load_element(M.GrowthRateSeed, raw, self.viable_rt, (0, 1))
+        # DegrowthCapacity
+        if self.table_exists('DegrowthCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthCapacity').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.DegrowthCapacity, raw, self.viable_rt, (0, 1))
+
+        # GrowthNewCapacity
+        if self.table_exists('GrowthNewCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthNewCapacity').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.GrowthNewCapacity, raw, self.viable_rt, (0, 1))
+
+        # DegrowthNewCapacity
+        if self.table_exists('DegrowthNewCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthNewCapacity').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.DegrowthNewCapacity, raw, self.viable_rt, (0, 1))
+
+        # GrowthNewCapacityDelta
+        if self.table_exists('GrowthNewCapacityDelta'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthNewCapacityDelta').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.GrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
+
+        # DegrowthNewCapacityDelta
+        if self.table_exists('DegrowthNewCapacityDelta'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthNewCapacityDelta').fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.DegrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
 
         # EmissionLimit
         if self.table_exists('EmissionLimit'):
@@ -1168,6 +1208,12 @@ class HybridLoader:
         self.data = data
 
         return data
+    
+    def tuple_values(self, raw, index_length):
+        new_raw = []
+        for row in raw:
+            new_raw.append((*row[0:index_length], row[index_length::]))
+        return new_raw
     
     def raw_check_mi_period(self, mi: MyopicIndex | None, cur: Cursor, qry: str) -> list:
         if mi:
