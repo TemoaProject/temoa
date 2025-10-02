@@ -21751,7 +21751,6 @@
             "ELC"
         ]
     ],
-    "GroupShareIndices": [],
     "LifetimeProcess_rtv": [
         [
             "utopia",
@@ -22045,8 +22044,7 @@
         ]
     ],
     "LimitActivityConstraint_rpt": [],
-    "LimitActivityGroup_rpg": [],
-    "LimitActivityShareConstraint_rptg": [],
+    "LimitActivityShareConstraint_rpgg": [],
     "LimitAnnualCapacityFactorConstraint_rpto": [],
     "LimitCapacityConstraint_rpt": [
         [
@@ -22116,8 +22114,7 @@
             "ge"
         ]
     ],
-    "LimitCapacityGroupConstraint_rpg": [],
-    "LimitCapacityShareConstraint_rptg": [],
+    "LimitCapacityShareConstraint_rpgg": [],
     "LimitDegrowthCapacityConstraint_rpt": [],
     "LimitDegrowthNewCapacityConstraint_rpt": [],
     "LimitDegrowthNewCapacityDeltaConstraint_rpt": [],
@@ -22126,9 +22123,7 @@
     "LimitGrowthNewCapacityConstraint_rpt": [],
     "LimitGrowthNewCapacityDeltaConstraint_rpt": [],
     "LimitNewCapacityConstraint_rpt": [],
-    "LimitNewCapacityGroupConstraint_rpg": [],
-    "LimitNewCapacityGroupShareConstraint_rpgg": [],
-    "LimitNewCapacityShareConstraint_rptg": [],
+    "LimitNewCapacityShareConstraint_rpgg": [],
     "LimitResourceConstraint_rt": [],
     "LimitSeasonalCapacityFactorConstraint_rpst": [],
     "LimitStorageFractionConstraint_rpsdtv": [],
@@ -25702,7 +25697,6 @@
         ]
     ],
     "TimeNext": [],
-    "TwoGroupShareIndices": [],
     "commodity_all": [
         "ethos",
         "RH",
@@ -25816,6 +25810,27 @@
     "tech_flex": [],
     "tech_group_members": [],
     "tech_group_names": [],
+    "tech_or_group": [
+        "IMPOIL1",
+        "IMPHYD",
+        "E21",
+        "RL1",
+        "TXG",
+        "E51",
+        "IMPDSL1",
+        "IMPHCO1",
+        "E01",
+        "SRE",
+        "RHE",
+        "E70",
+        "IMPFEQ",
+        "TXE",
+        "IMPURN1",
+        "IMPGSL1",
+        "TXD",
+        "RHO",
+        "E31"
+    ],
     "tech_production": [
         "E01",
         "E21",

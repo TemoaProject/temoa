@@ -1153,29 +1153,44 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
     return indices
 
 
-def GroupShareIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, t, g, op)
-        for g in M.tech_group_names
-        for r, p, t in M.groupRegionActiveFlow_rpt
-        for op in M.operator
-        if t in M.tech_group_members[g]
-    )
+# def GroupShareIndices(M: 'TemoaModel'):
+#     indices = set(
+#         (r, p, t, g, op)
+#         for g in M.tech_group_names
+#         for r, p, t in M.groupRegionActiveFlow_rpt
+#         for op in M.operator
+#         if t in M.tech_group_members[g]
+#     )
 
-    return indices
+#     return indices
 
 
-def TwoGroupShareIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, p, g1, g2, op)
-        for g1 in M.tech_group_names
-        for g2 in M.tech_group_names
-        for r, p, _t in M.groupRegionActiveFlow_rpt
-        for op in M.operator
-        if _t in M.tech_group_members[g2]
-    )
+# def GroupShareIndices(M: 'TemoaModel'):
+#     indices = set(
+#         (r, p, g1, g2, op)
+#         for op in M.operator
+#         for g1 in M.tech_or_group
+#         for g2 in M.tech_or_group
+#         for r, p, t in M.groupRegionActiveFlow_rpt
+#         for _r, _p, _t in M.groupRegionActiveFlow_rpt
+#         if r==_r and p==_p
+#         if t in gather_group_techs(M, g1) and _t in gather_group_techs(M, g2)
+#     )
 
-    return indices
+#     return indices
+
+
+# def TwoGroupShareIndices(M: 'TemoaModel'):
+#     indices = set(
+#         (r, p, g1, g2, op)
+#         for g1 in M.tech_group_names
+#         for g2 in M.tech_group_names
+#         for r, p, _t in M.groupRegionActiveFlow_rpt
+#         for op in M.operator
+#         if _t in M.tech_group_members[g2]
+#     )
+
+#     return indices
 
 
 def EmissionActivityIndices(M: 'TemoaModel'):
@@ -1703,6 +1718,16 @@ def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
     else:
         regions = (region,)
     return regions
+
+
+def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
+    if t_or_g in M.tech_group_names:
+        techs = M.tech_group_members[t_or_g]
+    elif '+' in t_or_g:
+        techs = t_or_g.split('+')
+    else:
+        techs = (t_or_g,)
+    return techs
 
 
 def get_loan_life(M, r, t, _):
