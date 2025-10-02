@@ -3529,7 +3529,7 @@
             "le"
         ]
     ],
-    "LimitSeasonalActivityConstraint_rpst": [],
+    "LimitSeasonalCapacityFactorConstraint_rpst": [],
     "LimitStorageFractionConstraint_rpsdtv": [],
     "LimitTechInputSplitAnnualConstraint_rpitv": [],
     "LimitTechInputSplitAverageConstraint_rpitv": [

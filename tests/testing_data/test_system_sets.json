@@ -40449,7 +40449,7 @@
     "LimitNewCapacityGroupShareConstraint_rpgg": [],
     "LimitNewCapacityShareConstraint_rptg": [],
     "LimitResourceConstraint_rt": [],
-    "LimitSeasonalActivityConstraint_rpst": [],
+    "LimitSeasonalCapacityFactorConstraint_rpst": [],
     "LimitStorageFractionConstraint_rpsdtv": [
         [
             "R1",

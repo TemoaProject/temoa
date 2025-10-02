@@ -2175,61 +2175,60 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     return expr
 
 
-def LimitSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t, op):
+# def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
 
-    r"""
-    Sets a limit on the activity from a specific technology.
-    Note that the indices for these constraints are region, period, season, and tech.
-    The first component of the constraint pertains to technologies with
-    variable output at the time slice level, and the second component pertains to
-    technologies with constant annual output belonging to the :code:`tech_annual`
-    set.
-    .. math::
-        :label: LimitSeasonalActivity
-        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
-        \forall \{r, p, s, t\} \in \Theta_{\text{LimitSeasonalActivity}}
-        \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
-        \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{LimitSeasonalActivity}}
-    """
+#     r"""
+#     Sets a limit on the capacity factor of a specific technology in a season.
+#     Note that the indices for these constraints are region, period, season, and tech.
+#     The first component of the constraint pertains to technologies with
+#     variable output at the time slice level, and the second component pertains to
+#     technologies with constant annual output belonging to the :code:`tech_annual`
+#     set.
+#     .. math::
+#         :label: LimitSeasonalCapacityFactor
+#         \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
+#         \forall \{r, p, s, t\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+#         \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
+#         \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+#     """
 
-    # Notice that this constraint follows the implementation of the
-    # LimitActivity_Constraint(). The difference is that this function is defined
-    # over each representative day, or "season", as opposed to the entire
-    # year, or "period".
+#     # Notice that this constraint follows the implementation of the
+#     # LimitAnnualCapacityFactor_Constraint(). The difference is that this function is defined
+#     # over each "season" as opposed to the entire year, or "period"
 
-    # The V_FlowOut variable is scaled by the weights of each representative day.
-    # In order to determine the daily, or "seasonal", flow, the V_FLowOut variable
-    # must be converted back to its un-scaled value. We do this by dividing the
-    # V_FlowOut value by M.SegFrac[p, s, d]*365*24.
+#     # The V_FlowOut variable is scaled by the weights of each season.
+#     # In order to determine the daily flow, the V_FlowOut variable
+#     # must be converted back to its un-scaled value. We do this by dividing the
+#     # V_FlowOut value by M.SegFracPerSeason[p, s, d]*365 (how many days are in this season).
 
-    regions = gather_group_regions(M, r)
+#     regions = gather_group_regions(M, r)
 
-    try:
-        activity_rpst = sum(
-            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[p, s, d])*365*24)
-            for _r in regions
-            for S_v in M.processVintages[_r, p, t]
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            for d in M.time_of_day
-        )
-    except:
-        msg = (
-        "\nWarning: LimitSeasonalActivity constraint can not be defined for "
-        "technologies in \"tech_annual\". Continuing by ignoring the constraint "
-        "for '%s'.\n "
-        )
-        SE.write(msg % (t))
-        return Constraint.Skip
+#     try:
+#         activity_rpst = sum(
+#             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFracPerSeason[p, s, d])*365)
+#             for _r in regions
+#             for S_v in M.processVintages[_r, p, t]
+#             for S_i in M.processInputs[_r, p, t, S_v]
+#             for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+#             for d in M.time_of_day
+#         )
+#     except:
+#         msg = (
+#         "\nWarning: LimitSeasonalCapacityFactor constraint cannot be defined for "
+#         "technologies in \"tech_annual\". Continuing by ignoring the constraint "
+#         "for '%s'.\n "
+#         )
+#         SE.write(msg % (t))
+#         return Constraint.Skip
     
-    act_lim = value(M.LimitSeasonalActivity[r, p, s, t, op])
-    expr = operator_expression(activity_rpst, op, act_lim)
+#     act_lim = value(M.LimitSeasonalCapacityFactor[r, p, s, t, op])
+#     expr = operator_expression(activity_rpst, op, act_lim)
 
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        return Constraint.Skip
+#     # in the case that there is nothing to sum, skip
+#     if isinstance(expr, bool):  # an empty list was generated
+#         return Constraint.Skip
     
-    return expr
+    # return expr
 
 
 def LimitActivityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
@@ -2631,6 +2630,65 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     )
     annual_cf = value(M.LimitAnnualCapacityFactor[r, p, t, o, op])
     expr = operator_expression(activity_rpt, op, annual_cf * possible_activity_rpt)
+    # in the case that there is nothing to sum, skip
+    if isinstance(expr, bool):  # an empty list was generated
+        return Constraint.Skip
+    return expr
+
+
+def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
+    r"""
+    The LimitSeasonalCapacityFactor sets an upper bound on the seasonal capacity factor
+    from a specific technology. The first portion of the constraint pertains to
+    technologies with variable output at the time slice level, and the second portion
+    pertains to technologies with constant annual output belonging to the
+    :code:`tech_annual` set.
+    .. math::
+       :label: LimitSeasonalCapacityFactor
+       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+       \forall \{r, p, t, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}"""
+    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
+    # if r == 'global', the constraint is system-wide
+    regions = gather_group_regions(M, r)
+    # we need to screen here because it is possible that the restriction extends beyond the
+    # lifetime of any vintage of the tech...
+    if all(
+        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
+        for _r in regions
+    ):
+        return Constraint.Skip
+
+    # The V_FlowOut variable is scaled by the number of days in the season.
+    # To adjust for this, we divide by M.SegFracPerSeason[p, s, d]*365, 
+    # the number of days this season represents.
+    if t not in M.tech_annual:
+        activity_rpst = sum(
+            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
+            for _r in regions
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+            for d in M.time_of_day
+        )
+    else:
+        activity_rpst = sum(
+            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o] * M.SegFracPerSeason[p, s]
+            for _r in regions
+            for S_v in M.processVintages[_r, p, t]
+            for S_i in M.processInputs[_r, p, t, S_v]
+            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
+        )
+
+    possible_activity_rpst = sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
+        * value(M.CapacityToActivity[_r, t])
+        * value(M.SegFracPerSeason[p, s])
+        for _r in regions
+    )
+    seasonal_cf = value(M.LimitSeasonalCapacityFactor[r, p, s, t, op])
+    expr = operator_expression(activity_rpst, op, seasonal_cf * possible_activity_rpst)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip

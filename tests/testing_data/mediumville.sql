@@ -639,7 +639,6 @@ CREATE TABLE LimitAnnualCapacityFactor
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     factor      REAL,
-    source      TEXT,
     notes       TEXT,
     PRIMARY KEY (region, period, tech, operator),
     CHECK (factor >= 0 AND factor <= 1)
@@ -766,7 +765,7 @@ CREATE TABLE LimitResource
     PRIMARY KEY (region, tech, operator)
 );
 INSERT INTO LimitResource VALUES('B','EF','le',9000.0,'clumps',NULL);
-CREATE TABLE LimitSeasonalActivity
+CREATE TABLE LimitSeasonalCapacityFactor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -778,10 +777,9 @@ CREATE TABLE LimitSeasonalActivity
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
-	activity	REAL,
-	units	TEXT,
+	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region,period,season,tech, operator)
+	PRIMARY KEY(region, period, season, tech, operator)
 );
 CREATE TABLE LimitTechInputSplit
 (

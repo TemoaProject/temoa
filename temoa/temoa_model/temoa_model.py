@@ -407,15 +407,15 @@ class TemoaModel(AbstractModel):
         )
         M.LimitActivity = Param(M.LimitActivityConstraint_rpt)
 
-        M.LimitSeasonalActivityConstraint_rpst = Set(
+        M.LimitSeasonalCapacityFactorConstraint_rpst = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all * M.operator
         )
-        M.LimitSeasonalActivity = Param(M.LimitSeasonalActivityConstraint_rpst)
+        M.LimitSeasonalCapacityFactor = Param(M.LimitSeasonalCapacityFactorConstraint_rpst, validate=validate_0to1)
 
         M.LimitAnnualCapacityFactorConstraint_rpto = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.tech_all * M.commodity_carrier * M.operator
         )
-        M.LimitAnnualCapacityFactor = Param(M.LimitAnnualCapacityFactorConstraint_rpto)
+        M.LimitAnnualCapacityFactor = Param(M.LimitAnnualCapacityFactorConstraint_rpto, validate=validate_0to1)
         
         M.LimitGrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
         M.LimitDegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_all, M.operator, domain=Any)
@@ -706,8 +706,8 @@ class TemoaModel(AbstractModel):
             M.LimitActivityConstraint_rpt, rule=LimitActivity_Constraint
         )
 
-        M.LimitSeasonalActivityConstraint = Constraint(
-            M.LimitSeasonalActivityConstraint_rpst, rule=LimitSeasonalActivity_Constraint
+        M.LimitSeasonalCapacityFactorConstraint = Constraint(
+            M.LimitSeasonalCapacityFactorConstraint_rpst, rule=LimitSeasonalCapacityFactor_Constraint
         )
 
         M.LimitActivityGroupConstraint = Constraint(
