@@ -53,38 +53,26 @@ logger = getLogger(__name__)
 # the tables below are ones in which we might find regional groups which should be captured
 # to make the members of the RegionalGlobalIndices Set in the model.  They need to aggregated
 tables_with_regional_groups = {
-    'MinAnnualCapacityFactor': 'region',
-    'MaxAnnualCapacityFactor': 'region',
-    'EmissionLimit': 'region',
-    'MinActivityGroup': 'region',
-    'MaxActivityGroup': 'region',
-    'MinSeasonalActivity': 'region',
-    'MaxSeasonalActivity': 'region',
-    'MinCapacity': 'region',
-    'MaxCapacity': 'region',
-    'MinActivity': 'region',
-    'MaxActivity': 'region',
-    'MinNewCapacity': 'region',
-    'MaxNewCapacity': 'region',
-    'MinNewCapacityGroup': 'region',
-    'MaxNewCapacityGroup': 'region',
-    'MinCapacityGroup': 'region',
-    'MaxCapacityGroup': 'region',
-    'MinActivityShare': 'region',
-    'MaxActivityShare': 'region',
-    'MinCapacityShare': 'region',
-    'MaxCapacityShare': 'region',
-    'MinNewCapacityShare': 'region',
-    'MaxNewCapacityShare': 'region',
-    'MinNewCapacityGroupShare': 'region',
-    'MaxNewCapacityGroupShare': 'region',
-    'MaxResource': 'region',
-    'GrowthCapacity': 'region',
-    'DegrowthCapacity': 'region',
-    'GrowthNewCapacity': 'region',
-    'DegrowthNewCapacity': 'region',
-    'GrowthNewCapacityDelta': 'region',
-    'DegrowthNewCapacityDelta': 'region',
+    'LimitAnnualCapacityFactor': 'region',
+    'LimitEmission': 'region',
+    'LimitActivityGroup': 'region',
+    'LimitSeasonalActivity': 'region',
+    'LimitCapacity': 'region',
+    'LimitActivity': 'region',
+    'LimitNewCapacity': 'region',
+    'LimitNewCapacityGroup': 'region',
+    'LimitCapacityGroup': 'region',
+    'LimitActivityShare': 'region',
+    'LimitCapacityShare': 'region',
+    'LimitNewCapacityShare': 'region',
+    'LimitNewCapacityGroupShare': 'region',
+    'LimitResource': 'region',
+    'LimitGrowthCapacity': 'region',
+    'LimitDegrowthCapacity': 'region',
+    'LimitGrowthNewCapacity': 'region',
+    'LimitDegrowthNewCapacity': 'region',
+    'LimitGrowthNewCapacityDelta': 'region',
+    'LimitDegrowthNewCapacityDelta': 'region',
 }
 
 
@@ -714,16 +702,16 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
             load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
 
-        # MinTechInputSplit
-        if self.table_exists('MinTechInputSplit'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplit')
-            loaded = load_element(M.MinTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
+        # LimitTechInputSplit
+        if self.table_exists('LimitTechInputSplit'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplit')
+            loaded = load_element(M.LimitTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
                 missing = set(raw) - set(loaded)
                 for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
-                    region, period, ic, tech, _ = item
+                    region, period, ic, tech, _, _ = item
                     logger.warning(
                         'Technology Input Split requirement in region %s, period %d for tech %s with input'
                         'commodity %s has '
@@ -736,16 +724,16 @@ class HybridLoader:
                         ic,
                 )
 
-        # MinTechInputSplitAnnual
-        if self.table_exists('MinTechInputSplitAnnual'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, min_proportion FROM main.MinTechInputSplitAnnual')
-            loaded = load_element(M.MinTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
+        # LimitTechInputSplitAnnual
+        if self.table_exists('LimitTechInputSplitAnnual'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplitAnnual')
+            loaded = load_element(M.LimitTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
                 missing = set(raw) - set(loaded)
                 for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
-                    region, period, ic, tech, _ = item
+                    region, period, ic, tech, _, _ = item
                     logger.warning(
                         'Technology Input Split Annual requirement in region %s, period %d for tech %s with input'
                         'commodity %s has '
@@ -758,15 +746,15 @@ class HybridLoader:
                         ic,
                     )
 
-        # MinTechOutputSplit
-        if self.table_exists('MinTechOutputSplit'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplit')
-            loaded = load_element(M.MinTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
+        # LimitTechOutputSplit
+        if self.table_exists('LimitTechOutputSplit'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplit')
+            loaded = load_element(M.LimitTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
             # raise warning regarding any deletions here...  similar to input split above
             if len(loaded) < len(raw):
                 missing = set(raw) - set(loaded)
                 for item in sorted(missing):
-                    region, period, tech, oc, _ = item
+                    region, period, tech, oc, _, _ = item
                     logger.warning(
                         'Technology Output Split requirement in region %s, period %d for tech %s with output'
                         'commodity %s has '
@@ -779,103 +767,16 @@ class HybridLoader:
                         oc,
                     )
 
-        # MinTechOutputSplitAnnual
-        if self.table_exists('MinTechOutputSplitAnnual'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, min_proportion FROM main.MinTechOutputSplitAnnual')
-            loaded = load_element(M.MinTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
+        # LimitTechOutputSplitAnnual
+        if self.table_exists('LimitTechOutputSplitAnnual'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplitAnnual')
+            loaded = load_element(M.LimitTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
             # a blending process and any missing items should be reviewed
             if len(loaded) < len(raw):
                 missing = set(raw) - set(loaded)
                 for item in sorted(missing):
-                    region, period, tech, oc, _ = item
-                    logger.warning(
-                        'Technology Output Split Annual requirement in region %s, period %d for tech %s with output'
-                        'commodity %s has '
-                        'been removed because the tech path with that output is '
-                        'invalid/not available/orphan.  See the other warnings for this TECH in '
-                        'this region-period, and check for availability of all components in data.',
-                        region,
-                        period,
-                        tech,
-                        oc,
-                    )
-
-        # MaxTechInputSplit
-        if self.table_exists('MaxTechInputSplit'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplit')
-            loaded = load_element(M.MaxTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
-            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
-            # a blending process and any missing items should be reviewed
-            if len(loaded) < len(raw):
-                missing = set(raw) - set(loaded)
-                for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
-                    region, period, ic, tech, _ = item
-                    logger.warning(
-                        'Technology Input Split requirement in region %s, period %d for tech %s with input'
-                        'commodity %s has '
-                        'been removed because the tech path with that input is '
-                        'invalid/not available/orphan.  See the other warnings for this TECH in '
-                        'this region-period, and check for availability of all components in data.',
-                        region,
-                        period,
-                        tech,
-                        ic,
-                )
-
-        # MaxTechInputSplitAnnual
-        if self.table_exists('MaxTechInputSplitAnnual'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, input_comm, tech, max_proportion FROM main.MaxTechInputSplitAnnual')
-            loaded = load_element(M.MaxTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
-            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
-            # a blending process and any missing items should be reviewed
-            if len(loaded) < len(raw):
-                missing = set(raw) - set(loaded)
-                for item in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
-                    region, period, ic, tech, _ = item
-                    logger.warning(
-                        'Technology Input Split Annual requirement in region %s, period %d for tech %s with input'
-                        'commodity %s has '
-                        'been removed because the tech path with that input is '
-                        'invalid/not available/orphan.  See the other warnings for this TECH in '
-                        'this region-period, and check for availability of all components in data.',
-                        region,
-                        period,
-                        tech,
-                        ic,
-                    )
-
-        # MaxTechOutputSplit
-        if self.table_exists('MaxTechOutputSplit'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplit')
-            loaded = load_element(M.MaxTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
-            # raise warning regarding any deletions here...  similar to input split above
-            if len(loaded) < len(raw):
-                missing = set(raw) - set(loaded)
-                for item in sorted(missing):
-                    region, period, tech, oc, _ = item
-                    logger.warning(
-                        'Technology Output Split requirement in region %s, period %d for tech %s with output'
-                        'commodity %s has '
-                        'been removed because the tech path with that output is '
-                        'invalid/not available/orphan.  See the other warnings for this TECH in '
-                        'this region-period, and check for availability of all components in data.',
-                        region,
-                        period,
-                        tech,
-                        oc,
-                    )
-
-        # MaxTechOutputSplitAnnual
-        if self.table_exists('MaxTechOutputSplitAnnual'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, max_proportion FROM main.MaxTechOutputSplitAnnual')
-            loaded = load_element(M.MaxTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
-            # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
-            # a blending process and any missing items should be reviewed
-            if len(loaded) < len(raw):
-                missing = set(raw) - set(loaded)
-                for item in sorted(missing):
-                    region, period, tech, oc, _ = item
+                    region, period, tech, oc, _, _ = item
                     logger.warning(
                         'Technology Output Split Annual requirement in region %s, period %d for tech %s with output'
                         'commodity %s has '
@@ -938,171 +839,111 @@ class HybridLoader:
 
             load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
 
-        # MinCapacity
-        if self.table_exists('MinCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinCapacity')
-            load_element(M.MinCapacity, raw, self.viable_rt, (0, 2))
+        # LimitCapacity
+        if self.table_exists('LimitCapacity'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, capacity FROM main.LimitCapacity')
+            load_element(M.LimitCapacity, raw, self.viable_rt, (0, 2))
 
-        # MaxCapacity
-        if self.table_exists('MaxCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxCapacity')
-            load_element(M.MaxCapacity, raw, self.viable_rt, (0, 2))
+        # LimitNewCap
+        if self.table_exists('LimitNewCapacity'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, new_cap FROM main.LimitNewCapacity')
+            load_element(M.LimitNewCapacity, raw, self.viable_rt, (0, 2))
 
-        # MinNewCap
-        if self.table_exists('MinNewCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_cap FROM main.MinNewCapacity')
-            load_element(M.MinNewCapacity, raw, self.viable_rt, (0, 2))
+        # LimitCapacityGroup
+        if self.table_exists('LimitCapacityGroup'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, capacity FROM main.LimitCapacityGroup')
+            load_element(M.LimitCapacityGroup, raw)
 
-        # MaxNewCap
-        if self.table_exists('MaxNewCapacity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_cap FROM main.MaxNewCapacity')
-            load_element(M.MaxNewCapacity, raw, self.viable_rt, (0, 2))
+        # LimitNewCapacityGroup
+        if self.table_exists('LimitNewCapacityGroup'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, new_cap FROM main.LimitNewCapacityGroup')
+            load_element(M.LimitNewCapacityGroup, raw)
 
-        # MaxCapacityGroup
-        if self.table_exists('MaxCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup')
-            load_element(M.MaxCapacityGroup, raw)
+        # LimitCapacityShare
+        if self.table_exists('LimitCapacityShare'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitCapacityShare')
+            load_element(M.LimitCapacityShare, raw, self.viable_rt, (0, 2))
 
-        # MinCapacityGroup
-        if self.table_exists('MinCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup')
-            load_element(M.MinCapacityGroup, raw)
+        # LimitNewCapacityShare
+        if self.table_exists('LimitNewCapacityShare'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitNewCapacityShare')
+            load_element(M.LimitNewCapacityShare, raw, self.viable_rt, (0, 2))
 
-        # MinNewCapacityGroup
-        if self.table_exists('MinNewCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup')
-            load_element(M.MinNewCapacityGroup, raw)
+        # LimitNewCapacityGroupShare
+        if self.table_exists('LimitNewCapacityGroupShare'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityGroupShare')
+            load_element(M.LimitNewCapacityGroupShare, raw)
 
-        # MaxNewCapacityGroup
-        if self.table_exists('MaxNewCapacityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup')
-            load_element(M.MaxNewCapacityGroup, raw)
+        # LimitActivityGroup
+        if self.table_exists('LimitActivityGroup'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, operator, activity FROM main.LimitActivityGroup')
+            load_element(M.LimitActivityGroup, raw)
 
-        # MinCapacityShare
-        if self.table_exists('MinCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinCapacityShare')
-            load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
+        # LimitActivityShare
+        if self.table_exists('LimitActivityShare'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, operator, share FROM main.LimitActivityShare')
+            load_element(M.LimitActivityShare, raw, self.viable_rt, (0, 2))
 
-        # MaxCapacityShare
-        if self.table_exists('MaxCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxCapacityShare')
-            load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
+        # LimitResource
+        if self.table_exists('LimitResource'):
+            raw = cur.execute('SELECT region, tech, operator, cum_act FROM main.LimitResource').fetchall()
+            load_element(M.LimitResource, raw, self.viable_rt, (0, 1))
 
-        # MinNewCapacityShare
-        if self.table_exists('MinNewCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinNewCapacityShare')
-            load_element(M.MinNewCapacityShare, raw, self.viable_rt, (0, 2))
+        # LimitActivity
+        if self.table_exists('LimitActivity'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, operator, activity FROM main.LimitActivity')
+            load_element(M.LimitActivity, raw, self.viable_rt, (0, 2))
 
-        # MaxNewCapacityShare
-        if self.table_exists('MaxNewCapacityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare')
-            load_element(M.MaxNewCapacityShare, raw, self.viable_rt, (0, 2))
+        # LimitSeasonalActivity
+        if self.table_exists('LimitSeasonalActivity'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, operator, activity FROM main.LimitSeasonalActivity')
+            load_element(M.LimitSeasonalActivity, raw, self.viable_rt, (0, 3))
 
-        # MinNewCapacityGroupShare
-        if self.table_exists('MinNewCapacityGroupShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, min_proportion FROM main.MinNewCapacityGroupShare')
-            load_element(M.MinNewCapacityGroupShare, raw)
+        # LimitAnnualCapacityFactor
+        if self.table_exists('LimitAnnualCapacityFactor'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, operator, factor FROM main.LimitAnnualCapacityFactor')
+            load_element(M.LimitAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
 
-        # MaxNewCapacityGroupShare
-        if self.table_exists('MaxNewCapacityGroupShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, sub_group, super_group, max_proportion FROM main.MaxNewCapacityGroupShare')
-            load_element(M.MaxNewCapacityGroupShare, raw)
-
-        # MinActivityGroup
-        if self.table_exists('MinActivityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, min_act FROM main.MinActivityGroup')
-            load_element(M.MinActivityGroup, raw)
-
-        # MaxActivityGroup
-        if self.table_exists('MaxActivityGroup'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, group_name, max_act FROM main.MaxActivityGroup')
-            load_element(M.MaxActivityGroup, raw)
-
-        # MinActivityShare
-        if self.table_exists('MinActivityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, min_proportion FROM main.MinActivityShare')
-            load_element(M.MinActivityShare, raw, self.viable_rt, (0, 2))
-
-        # MaxActivityShare
-        if self.table_exists('MaxActivityShare'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, group_name, max_proportion FROM main.MaxActivityShare')
-            load_element(M.MaxActivityShare, raw, self.viable_rt, (0, 2))
-
-        # MaxResource
-        if self.table_exists('MaxResource'):
-            raw = cur.execute('SELECT region, tech, max_res FROM main.MaxResource').fetchall()
-            load_element(M.MaxResource, raw, self.viable_rt, (0, 1))
-
-        # MaxActivity
-        if self.table_exists('MaxActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, max_act FROM main.MaxActivity')
-            load_element(M.MaxActivity, raw, self.viable_rt, (0, 2))
-
-        # MinActivity
-        if self.table_exists('MinActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, min_act FROM main.MinActivity')
-            load_element(M.MinActivity, raw, self.viable_rt, (0, 2))
-
-        # MaxSeasonalActivity
-        if self.table_exists('MaxSeasonalActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, max_act FROM main.MaxSeasonalActivity')
-            load_element(M.MaxSeasonalActivity, raw, self.viable_rt, (0, 3))
-
-        # MinSeasonalActivity
-        if self.table_exists('MinSeasonalActivity'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, min_act FROM main.MinSeasonalActivity')
-            load_element(M.MinSeasonalActivity, raw, self.viable_rt, (0, 3))
-
-        # MinAnnualCapacityFactor
-        if self.table_exists('MinAnnualCapacityFactor'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MinAnnualCapacityFactor')
-            load_element(M.MinAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
-
-        # MaxAnnualCapacityFactor
-        if self.table_exists('MaxAnnualCapacityFactor'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, output_comm, factor FROM main.MaxAnnualCapacityFactor')
-            load_element(M.MaxAnnualCapacityFactor, raw, self.viable_rt, (0, 2))
-
-        # GrowthCapacity
-        if self.table_exists('GrowthCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthCapacity').fetchall()
+        # LimitGrowthCapacity
+        if self.table_exists('LimitGrowthCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.GrowthCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthCapacity, raw, self.viable_rt, (0, 1))
 
-        # DegrowthCapacity
-        if self.table_exists('DegrowthCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthCapacity').fetchall()
+        # LimitDegrowthCapacity
+        if self.table_exists('LimitDegrowthCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.DegrowthCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthCapacity, raw, self.viable_rt, (0, 1))
 
-        # GrowthNewCapacity
-        if self.table_exists('GrowthNewCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthNewCapacity').fetchall()
+        # LimitGrowthNewCapacity
+        if self.table_exists('LimitGrowthNewCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthNewCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.GrowthNewCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthNewCapacity, raw, self.viable_rt, (0, 1))
 
-        # DegrowthNewCapacity
-        if self.table_exists('DegrowthNewCapacity'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthNewCapacity').fetchall()
+        # LimitDegrowthNewCapacity
+        if self.table_exists('LimitDegrowthNewCapacity'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthNewCapacity').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.DegrowthNewCapacity, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthNewCapacity, raw, self.viable_rt, (0, 1))
 
-        # GrowthNewCapacityDelta
-        if self.table_exists('GrowthNewCapacityDelta'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.GrowthNewCapacityDelta').fetchall()
+        # LimitGrowthNewCapacityDelta
+        if self.table_exists('LimitGrowthNewCapacityDelta'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitGrowthNewCapacityDelta').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.GrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitGrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
 
-        # DegrowthNewCapacityDelta
-        if self.table_exists('DegrowthNewCapacityDelta'):
-            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.DegrowthNewCapacityDelta').fetchall()
+        # LimitDegrowthNewCapacityDelta
+        if self.table_exists('LimitDegrowthNewCapacityDelta'):
+            raw = cur.execute('SELECT region, tech, operator, rate, seed FROM main.LimitDegrowthNewCapacityDelta').fetchall()
             raw = self.tuple_values(raw, 3)
-            load_element(M.DegrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
+            load_element(M.LimitDegrowthNewCapacityDelta, raw, self.viable_rt, (0, 1))
 
-        # EmissionLimit
-        if self.table_exists('EmissionLimit'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, value FROM main.EmissionLimit')
-            load_element(M.EmissionLimit, raw)
+        # LimitEmission
+        if self.table_exists('LimitEmission'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, emis_comm, operator, value FROM main.LimitEmission')
+            load_element(M.LimitEmission, raw)
 
         # EmissionActivity
         # The current emission constraint screens by valid inputs, so if it is NOT
@@ -1197,9 +1038,9 @@ class HybridLoader:
             load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
 
         # StorageFraction
-        if self.table_exists('StorageLevelFraction'):
-            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, fraction FROM main.StorageLevelFraction')
-            load_element(M.StorageFraction, raw, self.viable_rtv, (0,4,5))
+        if self.table_exists('LimitStorageLevelFraction'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tod, tech, vintage, operator, fraction FROM main.LimitStorageLevelFraction')
+            load_element(M.LimitStorageFraction, raw, self.viable_rtv, (0,4,5))
 
         # For T/S:  dump the size of all data elements into the log
         if self.debugging:
@@ -1248,35 +1089,23 @@ class HybridLoader:
         param_idx_sets = {
             M.CostInvest.name: M.CostInvest_rtv.name,
             M.CostEmission.name: M.CostEmission_rpe.name,
-            M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
-            M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
-            M.MaxSeasonalActivity.name: M.MaxSeasonalActivityConstraint_rpst.name,
-            M.MaxActivityGroup.name: M.MaxActivityGroup_rpg.name,
-            M.MaxActivityShare.name: M.MaxActivityShareConstraint_rptg.name,
-            M.MaxAnnualCapacityFactor.name: M.MaxAnnualCapacityFactorConstraint_rpto.name,
-            M.MaxCapacity.name: M.MaxCapacityConstraint_rpt.name,
-            M.MaxCapacityGroup.name: M.MaxCapacityGroupConstraint_rpg.name,
-            M.MaxCapacityShare.name: M.MaxCapacityShareConstraint_rptg.name,
-            M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,
-            M.MaxNewCapacityGroup.name: M.MaxNewCapacityGroupConstraint_rpg.name,
-            M.MaxNewCapacityShare.name: M.MaxNewCapacityShareConstraint_rptg.name,
-            M.MaxNewCapacityGroupShare.name: M.MaxNewCapacityGroupShareConstraint_rpgg.name,
-            M.MaxResource.name: M.MaxResourceConstraint_rt.name,
-            M.MinActivity.name: M.MinActivityConstraint_rpt.name,
-            M.MinSeasonalActivity.name: M.MinSeasonalActivityConstraint_rpst.name,
-            M.MinActivityGroup.name: M.MinActivityGroup_rpg.name,
-            M.MinActivityShare.name: M.MinActivityShareConstraint_rptg.name,
-            M.MinAnnualCapacityFactor.name: M.MinAnnualCapacityFactorConstraint_rpto.name,
-            M.MinCapacity.name: M.MinCapacityConstraint_rpt.name,
-            M.MinCapacityGroup.name: M.MinCapacityGroupConstraint_rpg.name,
-            M.MinCapacityShare.name: M.MinCapacityShareConstraint_rptg.name,
-            M.MinNewCapacity.name: M.MinNewCapacityConstraint_rpt.name,
-            M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
-            M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
-            M.MinNewCapacityGroupShare.name: M.MinNewCapacityGroupShareConstraint_rpgg.name,
+            M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
+            M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
+            M.LimitSeasonalActivity.name: M.LimitSeasonalActivityConstraint_rpst.name,
+            M.LimitActivityGroup.name: M.LimitActivityGroup_rpg.name,
+            M.LimitActivityShare.name: M.LimitActivityShareConstraint_rptg.name,
+            M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
+            M.LimitCapacity.name: M.LimitCapacityConstraint_rpt.name,
+            M.LimitCapacityGroup.name: M.LimitCapacityGroupConstraint_rpg.name,
+            M.LimitCapacityShare.name: M.LimitCapacityShareConstraint_rptg.name,
+            M.LimitNewCapacity.name: M.LimitNewCapacityConstraint_rpt.name,
+            M.LimitNewCapacityGroup.name: M.LimitNewCapacityGroupConstraint_rpg.name,
+            M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rptg.name,
+            M.LimitNewCapacityGroupShare.name: M.LimitNewCapacityGroupShareConstraint_rpgg.name,
+            M.LimitResource.name: M.LimitResourceConstraint_rt.name,
+            M.LimitStorageFraction.name: M.LimitStorageFractionConstraint_rpsdtv.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             # M.ResourceBound.name: M.ResourceConstraint_rpr.name,
-            M.StorageFraction.name: M.StorageFractionConstraint_rpsdtv.name
         }
 
         res = {}

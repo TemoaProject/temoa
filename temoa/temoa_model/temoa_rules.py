@@ -217,7 +217,7 @@ def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
     r"""
 
 The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
-but is also used in the Max and Min constraint calculations.  For any process
+but is also used in the Limit constraint calculations.  For any process
 with an end-of-life (EOL) on a period boundary, all of its capacity is available
 for use in all periods in which it is active (the process' PLF is 1). However,
 for any process with an EOL that falls between periods, Temoa makes the
@@ -1127,7 +1127,7 @@ def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
     # dev note:  This constraint does not have a table in the current schema
     #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
     #            by BOTH a non-annual and annual tech.  It should be re-written to add these
-    # dev note:  Cant think of a case where this would be needed but cant use MaxActivityGroup
+    # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
     try:
         collected = sum(
             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
@@ -1427,7 +1427,7 @@ def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def StorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
     r"""
 
     This constraint is used if the users wishes to force a specific storage charge level
@@ -1442,7 +1442,7 @@ def StorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
 
     .. math::
-       :label: StorageFraction
+       :label: LimitStorageFraction
 
           \textbf{SF}_{r,p,s,d,t,v} \le
           \ SF_{r,p,s,d,t,v}
@@ -1451,7 +1451,7 @@ def StorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr \cdot MPL_{r,p,t,v}
 
           \\
-          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageFraction}}
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{LimitStorageFraction}}
     """
 
     energy_capacity = (
@@ -1463,7 +1463,7 @@ def StorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
 
-    expr = M.V_StorageLevel[r, p, s, d, t, v] == energy_capacity * value(M.StorageFraction[r, p, s, d, t, v])
+    expr = operator_expression(M.V_StorageLevel[r, p, s, d, t, v], op, energy_capacity * value(M.LimitStorageFraction[r, p, s, d, t, v, op]))
 
     return expr
 
@@ -1732,19 +1732,19 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     return cap_avail >= cap_target
 
 
-def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
+def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
     r"""
 
     A modeler can track emissions through use of the :code:`commodity_emissions`
     set and :code:`EmissionActivity` parameter.  The :math:`EAC` parameter is
     analogous to the efficiency table, tying emissions to a unit of activity.  The
-    EmissionLimit constraint allows the modeler to assign an upper bound per period
+    LimitEmission constraint allows the modeler to assign an upper bound per period
     to each emission commodity. Note that this constraint sums emissions from
     technologies with output varying at the time slice and those with constant annual
     output in separate terms.
 
     .. math::
-       :label: EmissionLimit
+       :label: LimitEmission
 
            \sum_{S,D,I,T,V,O|{r,e,i,t,v,o} \in EAC} \left (
            EAC_{r, e, i, t, v, o} \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
@@ -1757,10 +1757,10 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
            ELM_{r, p, e}
 
            \\
-           & \forall \{r, p, e\} \in \Theta_{\text{EmissionLimit}}
+           & \forall \{r, p, e\} \in \Theta_{\text{LimitEmission}}
 
     """
-    emission_limit = value(M.EmissionLimit[r, p, e])
+    emission_limit = value(M.LimitEmission[r, p, e, op])
 
     # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'),
     # or 'global'.  Note that regions!=M.regions. We iterate over regions to find actual_emissions
@@ -1814,13 +1814,13 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
         if S_r == reg and S_e == e
     )
 
-    expr = (
+    lhs = (
         process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
         # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
         # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
         # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
-        <= emission_limit
     )
+    expr = operator_expression(lhs, op, emission_limit)
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -1834,15 +1834,15 @@ def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):
     return expr
 
 
-def GrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of available capacity"""
-    return GrowthCapacity(M, r, p, t, op, False)
+    return LimitGrowthCapacity(M, r, p, t, op, False)
 
-def DegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of available capacity"""
-    return GrowthCapacity(M, r, p, t, op, True)
+    return LimitGrowthCapacity(M, r, p, t, op, True)
 
-def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the change of capacity available between periods. 
     Forces the model to ramp up and down the availability of new technologies 
@@ -1853,7 +1853,7 @@ def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
     regions = gather_group_regions(M, r)
 
-    growth = M.DegrowthCapacity if degrowth else M.GrowthCapacity
+    growth = M.LimitDegrowthCapacity if degrowth else M.LimitGrowthCapacity
     RATE = 1 + value(growth[r, t, op][0])
     SEED = value(growth[r, t, op][1])
     CapRPT = M.V_CapacityAvailableByPeriodAndTech
@@ -1922,15 +1922,15 @@ def GrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     return expr
 
 
-def GrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of new capacity deployment"""
-    return GrowthNewCapacity(M, r, p, t, op, False)
+    return LimitGrowthNewCapacity(M, r, p, t, op, False)
 
-def DegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of new capacity deployment"""
-    return GrowthNewCapacity(M, r, p, t, op, True)
+    return LimitGrowthNewCapacity(M, r, p, t, op, True)
 
-def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the change of new capacity deployed between periods. 
     Forces the model to ramp up and down the deployment of new technologies 
@@ -1941,7 +1941,7 @@ def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
     regions = gather_group_regions(M, r)
 
-    growth = M.DegrowthNewCapacity if degrowth else M.GrowthNewCapacity
+    growth = M.LimitDegrowthNewCapacity if degrowth else M.LimitGrowthNewCapacity
     RATE = 1 + value(growth[r, t, op][0])
     SEED = value(growth[r, t, op][1])
     NewCapRTV = M.V_NewCapacity
@@ -2008,15 +2008,15 @@ def GrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     return expr
     
 
-def GrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of change in new capacity deployment"""
-    return GrowthNewCapacityDelta(M, r, p, t, op, False)
+    return LimitGrowthNewCapacityDelta(M, r, p, t, op, False)
 
-def DegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of change in new capacity deployment"""
-    return GrowthNewCapacityDelta(M, r, p, t, op, True)
+    return LimitGrowthNewCapacityDelta(M, r, p, t, op, True)
 
-def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
     Constrain the acceleration of new capacity deployed between periods. 
     Forces the model to ramp up and down the change in deployment of new technologies 
@@ -2027,7 +2027,7 @@ def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
 
     regions = gather_group_regions(M, r)
 
-    growth = M.DegrowthNewCapacityDelta if degrowth else M.GrowthNewCapacityDelta
+    growth = M.LimitDegrowthNewCapacityDelta if degrowth else M.LimitGrowthNewCapacityDelta
     RATE = 1 + value(growth[r, t, op][0])
     SEED = value(growth[r, t, op][1])
     NewCapRTV = M.V_NewCapacity
@@ -2120,10 +2120,10 @@ def GrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     return expr
 
 
-def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):
+def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
 
-    The MaxActivity sets an upper bound on the activity from a specific technology.
+    Sets a limit on the activity from a specific technology.
     Note that the indices for these constraints are region, period and tech, not tech
     and vintage. The first version of the constraint pertains to technologies with
     variable output at the time slice level, and the second version pertains to
@@ -2131,15 +2131,15 @@ def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):
     set.
 
     .. math::
-       :label: MaxActivity
+       :label: LimitActivity
 
        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAA_{r, p, t}
 
-       \forall \{r, p, t\} \in \Theta_{\text{MaxActivity}}
+       \forall \{r, p, t\} \in \Theta_{\text{LimitActivity}}
 
        \sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}  \le MAA_{r, p, t}
 
-       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{MaxActivity}}
+       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{LimitActivity}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by
     # a + (r='Mexico+US+Canada'), or 'global'.
@@ -2167,33 +2167,33 @@ def MaxActivity_Constraint(M: 'TemoaModel', r, p, t):
             if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
-    max_act = value(M.MaxActivity[r, p, t])
-    expr = activity_rpt <= max_act
+    act_lim = value(M.LimitActivity[r, p, t, op])
+    expr = operator_expression(activity_rpt, op, act_lim)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
     return expr
 
 
-def MaxSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
+def LimitSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t, op):
 
     r"""
-    The MaxSeasonalActivity sets an upper bound on the activity from a specific technology.
+    Sets a limit on the activity from a specific technology.
     Note that the indices for these constraints are region, period, season, and tech.
     The first component of the constraint pertains to technologies with
     variable output at the time slice level, and the second component pertains to
     technologies with constant annual output belonging to the :code:`tech_annual`
     set.
     .. math::
-        :label: MaxSeasonalActivity
-        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le MAXSSNACT_{r, p, s, t}
-        \forall \{r, p, s, t\} \in \Theta_{\text{MaxSeasonalActivity}}
-        \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le MAXSSNACT_{r, p, s, t}
-        \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{MaxSeasonalActivity}}
+        :label: LimitSeasonalActivity
+        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
+        \forall \{r, p, s, t\} \in \Theta_{\text{LimitSeasonalActivity}}
+        \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o}  \le LIMSSNACT_{r, p, s, t}
+        \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{LimitSeasonalActivity}}
     """
 
     # Notice that this constraint follows the implementation of the
-    # MaxActivity_Constraint(). The difference is that this function is defined
+    # LimitActivity_Constraint(). The difference is that this function is defined
     # over each representative day, or "season", as opposed to the entire
     # year, or "period".
 
@@ -2215,15 +2215,15 @@ def MaxSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
         )
     except:
         msg = (
-        "\nWarning: MaxSeasonalActivity constraint can not be defined for "
+        "\nWarning: LimitSeasonalActivity constraint can not be defined for "
         "technologies in \"tech_annual\". Continuing by ignoring the constraint "
         "for '%s'.\n "
         )
         SE.write(msg % (t))
         return Constraint.Skip
     
-    max_act = value(M.MaxSeasonalActivity[r, p, s, t])
-    expr = activity_rpst <= max_act
+    act_lim = value(M.LimitSeasonalActivity[r, p, s, t, op])
+    expr = operator_expression(activity_rpst, op, act_lim)
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -2232,195 +2232,18 @@ def MaxSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
     return expr
 
 
-def MinActivity_Constraint(M: 'TemoaModel', r, p, t):
+def LimitActivityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
     r"""
-
-    The MinActivity sets a lower bound on the activity from a specific technology.
-    Note that the indices for these constraints are region, period and tech, not tech and
-    vintage. The first version of the constraint pertains to technologies with
-    variable output at the time slice level, and the second version pertains to
-    technologies with constant annual output belonging to the :code:`tech_annual`
-    set.
-
-    .. math::
-       :label: MinActivity
-
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MIA_{r, p, t}
-
-       \forall \{r, p, t\} \in \Theta_{\text{MinActivity}}
-
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge MIA_{r, p, t}
-
-       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{MinActivity}}
-    """
-    # r can be an individual region (r='US'), or a combination of regions separated by
-    # a + (r='Mexico+US+Canada'), or 'global'.
-    # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
-
-    if t not in M.tech_annual:
-        activity_rpt = sum(
-            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            for s in M.time_season[p]
-            for d in M.time_of_day
-            if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
-        )
-    else:
-        activity_rpt = sum(
-            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
-        )
-
-    min_act = value(M.MinActivity[r, p, t])
-    expr = activity_rpt >= min_act
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        logger.error(
-            'No elements available to support min-activity: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            t,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MinSeasonalActivity_Constraint(M: 'TemoaModel', r, p, s, t):
-
-    r"""
-    The MinSeasonalActivity sets a lower bound on the activity from a specific technology
-    over a specific season. Note that the indices for these constraints are region,
-    period, season and tech, not tech and vintage. The first version of the constraint
-    pertains to technologies with variable output at the time slice level, and the
-    second version pertains to technologies with constant annual output belonging to
-    the :code:`tech_annual` set.
-    .. math::
-        :label: MinSeasonalActivity
-        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MINSSNACT_{r, p, t}
-        \forall \{r, p, s, t\} \in \Theta_{\text{MinSeasonalActivity}}
-        \sum_{I,V,O} \textbf{FOA}_{r, p, s, i, t, v, o} \ge MINSSNACT_{r, p, s, t}
-        \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{MinSeasonalActivity}}
-    """
-
-    # Notice that this constraint follows the implementation of the
-    # MinActivity_Constraint(). The difference is that this function is defined
-    # over each representative day, or "season", as opposed to the entire
-    # year, or "period".
-
-    # The V_FlowOut variable is scaled by the weights of each representative day.
-    # In order to determine the daily, or "seasonal", flow, the V_FLowOut variable
-    # must be converted back to its un-scaled value. We do this using the
-    # weighting_factor below:
-
-    regions = gather_group_regions(M, r)
-
-    try:
-        activity_rpst = sum(
-            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFrac[p, s, d])*365*24)
-            for _r in regions
-            for S_v in M.processVintages[_r, p, t]
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            for d in M.time_of_day
-        )
-    except:
-        msg = (
-        "\nWarning: MinSeasonalActivity constraint can not be defined for "
-        "technologies in \"tech_annual\". Continuing by ignoring the constraint "
-        "for '%s'.\n "
-        )
-        SE.write(msg % (t))
-        return Constraint.Skip
-
-    min_act = value(M.MinSeasonalActivity[r, p, s, t])
-    expr = activity_rpst >= min_act
-
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        return Constraint.Skip
-    
-    return expr
-
-
-def MinActivityGroup_Constraint(M: 'TemoaModel', r, p, g):
-    r"""
-
-    The MinActivityGroup constraint sets a minimum activity limit for a user-defined
-    technology group.
-
-    .. math::
-       :label: MinActivityGroup
-
-           \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
-           \textbf{FOA}_{r, p, i, t, v, o}
-           \ge MnAG_{r, p, g}
-           \forall \{r, p, g\} \in \Theta_{\text{MinActivityGroup}}
-
-    where :math:`g` represents the assigned technology group and :math:`MnAG`
-    refers to the :code:`MinActivityGroup` parameter."""
-
-    regions = gather_group_regions(M, r)
-
-    activity_p = 0
-    activity_p_annual = 0
-    for _r in regions:
-        activity_p += sum(
-            M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-            for S_t in M.tech_group_members[g]
-            if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-            for S_v in M.processVintages[_r, p, S_t]
-            for S_i in M.processInputs[_r, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-            for s in M.time_season[p]
-            for d in M.time_of_day
-            if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
-        )
-
-        activity_p_annual += sum(
-            M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-            for S_t in M.tech_group_members[g]
-            if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
-            for S_v in M.processVintages[_r, p, S_t]
-            for S_i in M.processInputs[_r, p, S_t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-            if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
-        )
-    min_act = value(M.MinActivityGroup[r, p, g])
-    expr = activity_p + activity_p_annual >= min_act
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        logger.error(
-            'No elements available to support min-activity group: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MaxActivityGroup_Constraint(M: 'TemoaModel', r, p, g):
-    r"""
-    The MaxActivityGroup constraint sets a maximum activity limit for a user-defined
+    The LimitActivityGroup constraint sets an activity limit for a user-defined
     technology group.
     .. math::
-       :label: MaxActivityGroup
+       :label: LimitActivityGroup
            \sum_{R,S,D,I,T,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} + \sum_{I,T,V,O}
            \textbf{FOA}_{r, p, i, t, v, o}
            \le MxAG_{r, p, g}
-           \forall \{r, p, g\} \in \Theta_{\text{MaxActivityGroup}}
+           \forall \{r, p, g\} \in \Theta_{\text{LimitActivityGroup}}
     where :math:`g` represents the assigned technology group and :math:`MxAG`
-    refers to the :code:`MaxActivityGroup` parameter."""
+    refers to the :code:`LimitActivityGroup` parameter."""
 
     regions = gather_group_regions(M, r)
 
@@ -2448,71 +2271,71 @@ def MaxActivityGroup_Constraint(M: 'TemoaModel', r, p, g):
             if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
         )
 
-    max_act = value(M.MaxActivityGroup[r, p, g])
-    expr = activity_p + activity_p_annual <= max_act
+    act_lim = value(M.LimitActivityGroup[r, p, g, op])
+    expr = operator_expression(activity_p + activity_p_annual, op, act_lim)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
     return expr
 
 
-def MaxNewCapacity_Constraint(M: 'TemoaModel', r, p, t):
+def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
-    The MaxNewCapacity constraint sets a limit on the maximum newly installed capacity of a
+    The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
     given technology in a given year. Note that the indices for these constraints are region,
     period and tech.
     .. math::
-       :label: MaxNewCapacity
-       \textbf{CAP}_{r, t, p} \le MAX_{r, p, t}"""
+       :label: LimitNewCapacity
+       \textbf{CAP}_{r, t, p} \le LIM_{r, p, t}"""
     regions = gather_group_regions(M, r)
-    max_cap = value(M.MaxNewCapacity[r, p, t])
+    cap_lim = value(M.LimitNewCapacity[r, p, t, op])
     new_cap = sum(
         M.V_NewCapacity[_r, t, p]
         for _r in regions
     )
-    expr = new_cap <= max_cap
+    expr = operator_expression(new_cap, op, cap_lim)
     return expr
 
 
-def MaxCapacity_Constraint(M: 'TemoaModel', r, p, t):
+def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
 
-    The MaxCapacity constraint sets a limit on the maximum available capacity of a
+    The LimitCapacity constraint sets a limit on the available capacity of a
     given technology. Note that the indices for these constraints are region, period and
     tech, not tech and vintage.
 
     .. math::
-       :label: MaxCapacity
+       :label: LimitCapacity
 
        \textbf{CAPAVL}_{r, p, t} \le MAC_{r, p, t}
 
-       \forall \{r, p, t\} \in \Theta_{\text{MaxCapacity}}"""
+       \forall \{r, p, t\} \in \Theta_{\text{LimitCapacity}}"""
     regions = gather_group_regions(M, r)
-    max_cap = value(M.MaxCapacity[r, p, t])
+    cap_lim = value(M.LimitCapacity[r, p, t, op])
     capacity = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
         for _r in regions
     )
-    expr = capacity <= max_cap
+    expr = operator_expression(capacity, op, cap_lim)
     return expr
 
 
-def MaxResource_Constraint(M: 'TemoaModel', r, t):
+def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     r"""
 
-    The MaxResource constraint sets a limit on the maximum available resource of a
+    The LimitResource constraint sets a limit on the available resource of a
     given technology across all model time periods. Note that the indices for these
     constraints are region and tech.
 
     .. math::
-       :label: MaxResource
+       :label: LimitResource
 
        \sum_{P} \textbf{CAPAVL}_{r, p, t} \le MAR_{r, t}
 
-       \forall \{r, t\} \in \Theta_{\text{MaxCapacity}}"""
+       \forall \{r, t\} \in \Theta_{\text{LimitCapacity}}"""
     # logger.warning(
-    #     'The MaxResource constraint is not currently supported in the model, pending review.  Recommend '
-    #     'removing data from the MaxResource Table'
+    #     'The LimitResource constraint is not currently supported in the model, pending review.  Recommend '
+    #     'removing data from the LimitResource Table'
     # )
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
     #            regardless of whatever "resources" are consumed.
@@ -2544,18 +2367,18 @@ def MaxResource_Constraint(M: 'TemoaModel', r, t):
             for d in M.time_of_day
         )
     
-    max_resource = value(M.MaxResource[r, t])
-    expr = activity_rt <= max_resource
+    resource_lim = value(M.LimitResource[r, t, op])
+    expr = operator_expression(activity_rt, op, resource_lim)
     return expr
 
 
-def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
+def LimitCapacityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
     r"""
-    Similar to the :code:`MaxCapacity` constraint, but works on a group of technologies.
+    Similar to the :code:`LimitCapacity` constraint, but works on a group of technologies.
     """
     regions = gather_group_regions(M, r)
 
-    max_capgroup = value(M.MaxCapacityGroup[r, p, g])
+    cap_lim = value(M.LimitCapacityGroup[r, p, g, op])
 
     cap = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
@@ -2564,11 +2387,11 @@ def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
 
-    expr = cap <= max_capgroup
+    expr = operator_expression(cap, op, cap_lim)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool): # an empty list was generated
         logger.error(
-            'No elements available to support max-capacity group: %s.'
+            'No elements available to support LimitCapacityGroup: %s.'
             ' Check data/log for available/suppressed techs. Constraint ignored.',
             (r, p, g)
         )
@@ -2576,91 +2399,23 @@ def MaxCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     return expr
 
 
-def MinNewCapacity_Constraint(M: 'TemoaModel', r, p, t):
+def LimitNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g, op):
     r"""
-    The MinNewCapacity constraint sets a limit on the minimum newly installed capacity of a
-    given technology in a given year. Note that the indices for these constraints are region,
-    period, and tech.
-    .. math::
-       :label: MaxMinCapacity
-       \textbf{CAP}_{r, t, p} \ge MIN_{r, p, t}"""
-    regions = gather_group_regions(M, r)
-    min_cap = value(M.MinNewCapacity[r, p, t])
-    new_cap = sum(
-        M.V_NewCapacity[_r, t, p]
-        for _r in regions
-    )
-    expr = new_cap >= min_cap
-    return expr
-
-
-def MinCapacity_Constraint(M: 'TemoaModel', r, p, t):
-    r"""
-
-    The MinCapacity constraint sets a limit on the minimum available capacity of a
-    given technology. Note that the indices for these constraints are region, period and
-    tech, not tech and vintage.
-
-    .. math::
-       :label: MinCapacityCapacityAvailableByPeriodAndTech
-
-       \textbf{CAPAVL}_{r, p, t} \ge MIC_{r, p, t}
-
-       \forall \{r, p, t\} \in \Theta_{\text{MinCapacity}}"""
-    regions = gather_group_regions(M, r)
-    min_cap = value(M.MinCapacity[r, p, t])
-    capacity = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
-        for _r in regions
-    )
-    expr = capacity >= min_cap
-    return expr
-
-
-def MinCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
-    r"""
-    Similar to the :code:`MinCapacity` constraint, but works on a group of technologies.
-    """
-    regions = gather_group_regions(M, r)
-
-    min_capgroup = value(M.MinCapacityGroup[r, p, g])
-
-    cap = sum(
-        M.V_CapacityAvailableByPeriodAndTech[r_i, p, t]
-        for t in M.tech_group_members[g]
-        for r_i in regions
-        if (r_i, p, t) in M.V_CapacityAvailableByPeriodAndTech
-    )
-
-    expr = cap >= min_capgroup
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        logger.error(
-            'No elements available to support min-capacity group: %s.'
-            ' Check data/log for available/suppressed techs. Constraint ignored.',
-            (r, p, g)
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MinNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
-    r"""
-    Similar to the :code:`MinNewCapacity` constraint, but works on a group of technologies."""
+    Similar to the :code:`LimitNewCapacity` constraint, but works on a group of technologies."""
 
     regions = gather_group_regions(M, r)
 
-    min_new_cap = value(M.MinNewCapacityGroup[r, p, g])
+    new_cap_lim = value(M.LimitNewCapacityGroup[r, p, g, op])
     agg_new_cap = sum(
         M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g]
         for _r in regions
         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
-    expr = agg_new_cap >= min_new_cap
+    expr = operator_expression(agg_new_cap, op, new_cap_lim)
     if isinstance(expr, bool):
         logger.error(
-            'No elements available to support min new capacity group: (%s, %d, %s).'
+            'No elements available to support LimitNewCapacityGroup: (%s, %d, %s).'
             '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
             r,
             p,
@@ -2670,105 +2425,9 @@ def MinNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
     return expr
 
 
-def MaxNewCapacityGroup_Constraint(M: 'TemoaModel', r, p, g):
+def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, t, g, op):
     r"""
-    Similar to the :code:`MinNewCapacity` constraint, but works on a group of technologies."""
-
-    regions = gather_group_regions(M, r)
-
-    max_new_cap = value(M.MaxNewCapacityGroup[r, p, g])
-    agg_new_cap = sum(
-        M.V_NewCapacity[_r, t, p]
-        for t in M.tech_group_members[g]
-        for _r in regions
-        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-    )
-    expr = max_new_cap >= agg_new_cap
-    if isinstance(expr, bool):
-        logger.error(
-            'No elements available to support max new capacity group: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MinActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
-    r"""
-    The MinActivityShare constraint sets a minimum capacity share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no less than 10% of LDVs must be of a certain type."""
-
-    regions = gather_group_regions(M, r)
-
-    if t not in M.tech_annual:
-        activity_tech = sum(
-            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            for s in M.time_season[p]
-            for d in M.time_of_day
-            if (_r, p, s, d, S_i, t, S_v, S_o) in M.V_FlowOut
-        )
-    else:
-        activity_tech = sum(
-            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for S_o in M.processOutputsByInput[_r, p, t, S_v, S_i]
-            if (_r, p, S_i, t, S_v, S_o) in M.V_FlowOutAnnual
-        )
-
-    activity_group = sum(
-        M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in M.tech_group_members[g]
-        for _r in regions
-        if (_r, p, S_t) in M.processVintages and S_t not in M.tech_annual
-        for S_v in M.processVintages[_r, p, S_t]
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in M.time_season[p]
-        for d in M.time_of_day
-        if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
-    )
-    activity_group_annual = sum(
-        M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in M.tech_group_members[g]
-        for _r in regions
-        if (_r, p, S_t) in M.processVintages and S_t in M.tech_annual
-        for S_v in M.processVintages[_r, p, S_t]
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        if (_r, p, S_i, S_t, S_v, S_o) in M.V_FlowOutAnnual
-    )
-    activity_group = activity_group + activity_group_annual
-
-    min_activity_share = value(M.MinActivityShare[r, p, t, g])
-    expr = activity_tech >= min_activity_share * activity_group
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        logger.error(
-            'No elements available to support min-activity share group: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
-    r"""
-    The MaxActivityShare constraint sets a maximum Activity share for a given
+    The LimitActivityShare constraint limits the activity share for a given
     technology within a technology groups to which it belongs.
     For instance, you might define a tech_group of light-duty vehicles, whose
     members are different types for LDVs. This constraint could be used to enforce
@@ -2821,56 +2480,21 @@ def MaxActivityShare_Constraint(M: 'TemoaModel', r, p, t, g):
     )
     activity_group = activity_group + activity_group_annual
 
-    max_activity_share = value(M.MaxActivityShare[r, p, t, g])
-    expr = activity_tech <= max_activity_share * activity_group
+    share_lim = value(M.LimitActivityShare[r, p, t, g, op])
+    expr = operator_expression(activity_tech, op, share_lim * activity_group)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
     logger.debug(
-        'created max activity constraint for (%s, %d, %s, %s) of %0.2f',
-        (r, p, t, g, max_activity_share),
+        'created limit activity share constraint for (%s, %d, %s, %s) of %0.2f',
+        r, p, t, g, share_lim,
     )
     return expr
 
 
-def MinCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
+def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g, op):
     r"""
-    The MinCapacityShare constraint sets a minimum capacity share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no less than 10% of LDVs must be of a certain type."""
-
-    regions = gather_group_regions(M, r)
-
-    capacity_t = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, t]
-        for _r in regions
-    )
-    capacity_group = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, S_t]
-        for S_t in M.tech_group_members[g]
-        for _r in regions
-        if (_r, p, S_t) in M.processVintages
-    )
-    min_cap_share = value(M.MinCapacityShare[r, p, t, g])
-
-    expr = capacity_t >= min_cap_share * capacity_group
-    if isinstance(expr, bool):
-        logger.error(
-            'No elements available to support min-capacity share: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MaxCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
-    r"""
-    The MaxCapacityShare constraint sets a maximum capacity share for a given
+    The LimitCapacityShare constraint limits the share for a given
     technology within a technology groups to which it belongs.
     For instance, you might define a tech_group of light-duty vehicles, whose
     members are different types for LDVs. This constraint could be used to enforce
@@ -2888,52 +2512,17 @@ def MaxCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
         for _r in regions
         if (_r, p, S_t) in M.processVintages
     )
-    max_cap_share = value(M.MaxCapacityShare[r, p, t, g])
+    share_lim = value(M.LimitCapacityShare[r, p, t, g, op])
 
-    expr = capacity_t <= max_cap_share * capacity_group
+    expr = operator_expression(capacity_t, op, share_lim * capacity_group)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
 
 
-def MinNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
+def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g, op):
     r"""
-    The MinNewCapacityShare constraint sets a minimum new capacity share for a given
-    technology within a technology groups to which it belongs.
-    For instance, you might define a tech_group of light-duty vehicles, whose
-    members are different types for LDVs. This constraint could be used to enforce
-    that no less than 10% of new LDV purchases in a given year must be of a certain type."""
-
-    regions = gather_group_regions(M, r)
-
-    capacity_t = sum(
-        M.V_NewCapacity[_r, t, p]
-        for _r in regions
-    )
-    capacity_group = sum(
-        M.V_NewCapacity[_r, S_t, p]
-        for S_t in M.tech_group_members[g]
-        for _r in regions
-        if (_r, S_t, p) in M.V_NewCapacity
-    )
-    min_cap_share = value(M.MinNewCapacityShare[r, p, t, g])
-
-    expr = capacity_t >= min_cap_share * capacity_group
-    if isinstance(expr, bool):
-        logger.error(
-            'No elements available to support min-new capacity share: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            g,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MaxNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
-    r"""
-    The MaxCapacityShare constraint sets a maximum new capacity share for a given
+    The LimitCapacityShare constraint limits the share for a given
     technology within a technology groups to which it belongs.
     For instance, you might define a tech_group of light-duty vehicles, whose
     members are different types for LDVs. This constraint could be used to enforce
@@ -2941,33 +2530,33 @@ def MaxNewCapacityShare_Constraint(M: 'TemoaModel', r, p, t, g):
 
     regions = gather_group_regions(M, r)
 
-    capacity_t = sum(
+    new_cap_t = sum(
         M.V_NewCapacity[_r, t, p]
         for _r in regions
     )
-    capacity_group = sum(
+    new_cap_group = sum(
         M.V_NewCapacity[_r, S_t, p]
         for S_t in M.tech_group_members[g]
         for _r in regions
         if (_r, S_t, p) in M.V_NewCapacity
     )
-    max_cap_share = value(M.MaxNewCapacityShare[r, p, t, g])
+    share_lim = value(M.LimitNewCapacityShare[r, p, t, g, op])
 
-    expr = capacity_t <= max_cap_share * capacity_group
+    expr = operator_expression(new_cap_t, op, share_lim * new_cap_group)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
 
 
-def MinNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
+def LimitNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     r"""
-    Sets the minimum aggregate capacity of one group of technologies as a share of 
+    Limits the aggregate capacity of one group of technologies as a share of 
     another group of technologies.
     """
 
     regions = gather_group_regions(M, r)
 
-    min_share = value(M.MinNewCapacityGroupShare[r, p, g1, g2])
+    share_lim = value(M.LimitNewCapacityGroupShare[r, p, g1, g2, op])
     agg_new_cap_g1 = sum(
         M.V_NewCapacity[_r, t, p]
         for t in M.tech_group_members[g1]
@@ -2980,45 +2569,11 @@ def MinNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
         for _r in regions
         if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
     )
-    expr = agg_new_cap_g1 >= agg_new_cap_g2 * min_share
+    expr = operator_expression(agg_new_cap_g1, op, agg_new_cap_g2 * share_lim)
 
     if isinstance(expr, bool): # one side of expression was empty
         logger.error(
-            'Missing group techs to support min new capacity group share constraint: %s.'
-            '  Check data/log for available/suppressed techs. Constraint ignored.',
-            (r, p, g1, g2)
-        )
-        return Constraint.Skip
-    
-    return expr
-
-
-def MaxNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
-    r"""
-    Sets the maximum aggregate capacity of one group of technologies as a share of 
-    another group of technologies.
-    """
-
-    regions = gather_group_regions(M, r)
-
-    max_share = value(M.MaxNewCapacityGroupShare[r, p, g1, g2])
-    agg_new_cap_g1 = sum(
-        M.V_NewCapacity[_r, t, p]
-        for t in M.tech_group_members[g1]
-        for _r in regions
-        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-    )
-    agg_new_cap_g2 = sum(
-        M.V_NewCapacity[_r, t, p]
-        for t in M.tech_group_members[g2]
-        for _r in regions
-        if (_r, p, t) in M.V_CapacityAvailableByPeriodAndTech
-    )
-    expr = agg_new_cap_g1 <= agg_new_cap_g2 * max_share
-
-    if isinstance(expr, bool): # one side of expression was empty
-        logger.error(
-            'Missing group techs to support max new capacity group share constraint: %s.'
+            'Missing group techs to support LimitNewCapacityGroupShare constraint: %s.'
             '  Check data/log for available/suppressed techs. Constraint ignored.',
             (r, p, g1, g2)
         )
@@ -3027,19 +2582,19 @@ def MaxNewCapacityGroupShare_Constraint(M: 'TemoaModel', r, p, g1, g2):
     return expr
 
 
-def MinAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
+def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     r"""
-    The MinAnnualCapacityFactor sets a lower bound on the annual capacity factor
+    The LimitAnnualCapacityFactor sets an upper bound on the annual capacity factor
     from a specific technology. The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
     .. math::
-       :label: MinAnnualCapacityFactor
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \ge MINCF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o\} \in \Theta_{\text{MinAnnualCapacityFactor}}
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge MINCF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{MinAnnualCapacityFactor}}"""
+       :label: LimitAnnualCapacityFactor
+       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+       \forall \{r, p, t, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
+       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
+       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{LimitAnnualCapacityFactor}}"""
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = gather_group_regions(M, r)
@@ -3070,85 +2625,23 @@ def MinAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
             if (_r, p, S_i, t, S_v, o) in M.V_FlowOutAnnual
         )
 
-    max_possible_activity_rpt = sum(
+    possible_activity_rpt = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, t] * value(M.CapacityToActivity[_r, t])
         for _r in regions
     )
-    min_annual_cf = value(M.MinAnnualCapacityFactor[r, p, t, o])
-    expr = activity_rpt >= min_annual_cf * max_possible_activity_rpt
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
-        logger.error(
-            'No elements available to support min-annual capacity factor: (%s, %d, %s).'
-            '  Check data/log for available/suppressed techs.  Requirement IGNORED.',
-            r,
-            p,
-            t,
-        )
-        return Constraint.Skip
-    return expr
-
-
-def MaxAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o):
-    r"""
-    The MaxAnnualCapacityFactor sets an upper bound on the annual capacity factor
-    from a specific technology. The first portion of the constraint pertains to
-    technologies with variable output at the time slice level, and the second portion
-    pertains to technologies with constant annual output belonging to the
-    :code:`tech_annual` set.
-    .. math::
-       :label: MaxAnnualCapacityFactor
-       \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le MAXCF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o\} \in \Theta_{\text{MaxAnnualCapacityFactor}}
-       \sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge MAXCF_{r, p, t} * \textbf{CAPAVL}_{r, p, t} * \text{C2A}_{r, t}
-       \forall \{r, p, t, o \in T^{a}\} \in \Theta_{\text{MaxAnnualCapacityFactor}}"""
-    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
-    # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
-    # we need to screen here because it is possible that the restriction extends beyond the
-    # lifetime of any vintage of the tech...
-    if all(
-        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
-        for _r in regions
-    ):
-        return Constraint.Skip
-
-    if t not in M.tech_annual:
-        activity_rpt = sum(
-            M.V_FlowOut[_r, p, s, d, S_i, t, S_v, o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            for s in M.time_season[p]
-            for d in M.time_of_day
-            if (_r, p, s, d, S_i, t, S_v, o) in M.V_FlowOut
-        )
-    else:
-        activity_rpt = sum(
-            M.V_FlowOutAnnual[_r, p, S_i, t, S_v, o]
-            for _r in regions
-            for S_v in M.processVintages.get((_r, p, t), [])
-            for S_i in M.processInputs[_r, p, t, S_v]
-            if (_r, p, S_i, t, S_v, o) in M.V_FlowOutAnnual
-        )
-
-    max_possible_activity_rpt = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, t] * value(M.CapacityToActivity[_r, t])
-        for _r in regions
-    )
-    max_annual_cf = value(M.MaxAnnualCapacityFactor[r, p, t, o])
-    expr = activity_rpt <= max_annual_cf * max_possible_activity_rpt
+    annual_cf = value(M.LimitAnnualCapacityFactor[r, p, t, o, op])
+    expr = operator_expression(activity_rpt, op, annual_cf * possible_activity_rpt)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
     return expr
 
 
-def MinTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
+def LimitTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v, op):
     r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    MinTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
+    LimitTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = sum(
@@ -3162,15 +2655,15 @@ def MinTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = inp >= value(M.MinTechInputSplit[r, p, i, t]) * total_inp
+    expr = operator_expression(inp, op, value(M.LimitTechInputSplit[r, p, i, t, op]) * total_inp)
     return expr
 
 
-def MinTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
+def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    MinTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
+    LimitTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
     function, only the technologies with constant annual output (i.e., members
     of the :math:`tech_annual` set) are considered."""
     inp = sum(
@@ -3184,16 +2677,16 @@ def MinTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = inp >= value(M.MinTechInputSplitAnnual[r, p, i, t]) * total_inp
+    expr = operator_expression(inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp)
     return expr
 
 
-def MinTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
+def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
+    Allows users to limit shares of commodity inputs to a process
     producing a single output. Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from MinTechInputSplit as it specifies shares on an annual basis,
+    This constraint differs from LimitTechInputSplit as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the input shares over the course of a year."""
 
@@ -3212,17 +2705,17 @@ def MinTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
-    expr = inp >= value(M.MinTechInputSplitAnnual[r, p, i, t]) * total_inp
+    expr = operator_expression(inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp)
     return expr
 
 
-def MinTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
+def LimitTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o, op):
     r"""
 
     Some processes take a single input and make multiple outputs, and the user would like to
     specify either a constant or time-varying ratio of outputs per unit input.  The most
     canonical example is an oil refinery.  Crude oil is used to produce many different refined
-    products. In many cases, the modeler would like to specify a minimum share of each refined
+    products. In many cases, the modeler would like to limit the share of each refined
     product produced by the refinery.
 
     For example, a hypothetical (and highly simplified) refinery might have a crude oil input
@@ -3244,13 +2737,13 @@ def MinTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
     The constraint is formulated as follows:
 
     .. math::
-       :label: MinTechOutputSplit
+       :label: LimitTechOutputSplit
 
          \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
        \geq
          TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{MinTechOutputSplit}}"""
+       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{LimitTechOutputSplit}}"""
     out = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, o]
         for S_i in M.processInputsByOutput[r, p, t, v, o]
@@ -3262,18 +2755,18 @@ def MinTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = out >= value(M.MinTechOutputSplit[r, p, t, o]) * total_out
+    expr = operator_expression(out, op, value(M.LimitTechOutputSplit[r, p, t, o, op]) * total_out)
     return expr
 
 
-def MinTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
+def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     r"""
-    This constraint operates similarly to MinTechOutputSplit_Constraint.
+    This constraint operates similarly to LimitTechOutputSplit_Constraint.
     However, under this function, only the technologies with constant annual
     output (i.e., members of the :math:`tech_annual` set) are considered.
 
     .. math::
-       :label: MinTechOutputSplitAnnual
+       :label: LimitTechOutputSplitAnnual
 
          \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
@@ -3281,7 +2774,7 @@ def MinTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
 
          TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{MinTechOutputSplitAnnual}}"""
+       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o]
         for S_i in M.processInputsByOutput[r, p, t, v, o]
@@ -3293,16 +2786,16 @@ def MinTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = out >= value(M.MinTechOutputSplitAnnual[r, p, t, o]) * total_out
+    expr = operator_expression(out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out)
     return expr
 
 
-def MinTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
+def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     r"""
-    Allows users to specify fixed or minimum shares of commodity outputs from a process.
+    Allows users to limit shares of commodity outputs from a process.
     Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from MinTechOutputSplit as it specifies shares on an annual basis,
+    This constraint differs from LimitTechOutputSplit as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the output shares over the course of a year."""
 
@@ -3321,188 +2814,7 @@ def MinTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
         for S_d in M.time_of_day
     )
 
-    expr = out >= value(M.MinTechOutputSplitAnnual[r, p, t, o]) * total_out
-    return expr
-
-
-def MaxTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v):
-    r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
-    producing a single output. These shares can vary by model time period. See
-    MaxTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
-    only the technologies with variable output at the timeslice level (i.e.,
-    NOT in the :code:`tech_annual` set) are considered."""
-    inp = sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, i, t, v, S_o)
-        for S_o in M.processOutputsByInput[r, p, t, v, i]
-    )
-
-    total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    expr = inp <= value(M.MaxTechInputSplit[r, p, i, t]) * total_inp
-    return expr
-
-
-def MaxTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v):
-    r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
-    producing a single output. These shares can vary by model time period. See
-    MaxTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
-    function, only the technologies with constant annual output (i.e., members
-    of the :math:`tech_annual` set) are considered."""
-    inp = sum(
-        M.V_FlowOutAnnual[r, p, i, t, v, S_o] / value(M.Efficiency[r, i, t, v, S_o])
-        for S_o in M.processOutputsByInput[r, p, t, v, i]
-    )
-
-    total_inp = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o] / value(M.Efficiency[r, S_i, t, v, S_o])
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    expr = inp <= value(M.MaxTechInputSplitAnnual[r, p, i, t]) * total_inp
-    return expr
-
-
-def MaxTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v):
-    r"""
-    Allows users to specify fixed or minimum shares of commodity inputs to a process
-    producing a single output. Under this constraint, only the technologies with variable
-    output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from MaxTechInputSplit as it specifies shares on an annual basis,
-    so even though it applies to technologies with variable output at the timeslice level,
-    the constraint only fixes the input shares over the course of a year."""
-
-    inp = sum(
-        M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-        for S_o in M.processOutputsByInput[r, p, t, v, i]
-    )
-
-    total_inp = sum(
-        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, i]
-    )
-
-    expr = inp <= value(M.MaxTechInputSplitAnnual[r, p, i, t]) * total_inp
-    return expr
-
-
-def MaxTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o):
-    r"""
-
-    Some processes take a single input and make multiple outputs, and the user would like to
-    specify either a constant or time-varying ratio of outputs per unit input.  The most
-    canonical example is an oil refinery.  Crude oil is used to produce many different refined
-    products. In many cases, the modeler would like to specify a minimum share of each refined
-    product produced by the refinery.
-
-    For example, a hypothetical (and highly simplified) refinery might have a crude oil input
-    that produces 4 parts diesel, 3 parts gasoline, and 2 parts kerosene.  The relative
-    ratios to the output then are:
-
-    .. math::
-
-       d = \tfrac{4}{9} \cdot \text{total output}, \qquad
-       g = \tfrac{3}{9} \cdot \text{total output}, \qquad
-       k = \tfrac{2}{9} \cdot \text{total output}
-
-    Note that it is possible to specify output shares that sum to less than unity. In such
-    cases, the model optimizes the remaining share. In addition, it is possible to change the
-    specified shares by model time period. Under this constraint, only the
-    technologies with variable output at the timeslice level (i.e., NOT in the
-    :code:`tech_annual` set) are considered.
-
-    The constraint is formulated as follows:
-
-    .. math::
-       :label: MaxTechOutputSplit
-
-         \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
-       \geq
-         TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
-
-       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{MaxTechOutputSplit}}"""
-    out = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, o]
-        for S_i in M.processInputsByOutput[r, p, t, v, o]
-    )
-
-    total_out = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    expr = out <= value(M.MaxTechOutputSplit[r, p, t, o]) * total_out
-    return expr
-
-
-def MaxTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o):
-    r"""
-    This constraint operates similarly to MaxTechOutputSplit_Constraint.
-    However, under this function, only the technologies with constant annual
-    output (i.e., members of the :math:`tech_annual` set) are considered.
-
-    .. math::
-       :label: MaxTechOutputSplitAnnual
-
-         \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
-
-       \geq
-
-         TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
-
-       \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{MaxTechOutputSplitAnnual}}"""
-    out = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, o]
-        for S_i in M.processInputsByOutput[r, p, t, v, o]
-    )
-
-    total_out = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    expr = out <= value(M.MaxTechOutputSplitAnnual[r, p, t, o]) * total_out
-    return expr
-
-
-def MaxTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o):
-    r"""
-    Allows users to specify fixed or minimum shares of commodity outputs from a process.
-    Under this constraint, only the technologies with variable
-    output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from MaxTechOutputSplit as it specifies shares on an annual basis,
-    so even though it applies to technologies with variable output at the timeslice level,
-    the constraint only fixes the output shares over the course of a year."""
-
-    out = sum(
-        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, o]
-        for S_i in M.processInputsByOutput[r, p, t, v, o]
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-    )
-
-    total_out = sum(
-        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        for S_s in M.time_season[p]
-        for S_d in M.time_of_day
-    )
-
-    expr = out <= value(M.MaxTechOutputSplitAnnual[r, p, t, o]) * total_out
+    expr = operator_expression(out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out)
     return expr
 
 
@@ -3655,28 +2967,31 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
     """Returns an expression, applying a configured operator"""
     if any((lhs is None, operator is None, rhs is None)):
         msg = (
-            'Tried to build a constraint using a bad expression or operator. Constraint skipped: '
-            '{} {} {}'
+            'Tried to build a constraint using a bad expression or operator: {} {} {}'
         ).format(lhs, operator, rhs)
         logger.error(msg)
         raise ValueError(msg)
-    match operator:
-        case "e":
-            expr = lhs == rhs
-        case "l":
-            expr = lhs < rhs
-        case "g":
-            expr = lhs > rhs
-        case "le":
-            expr = lhs <= rhs
-        case "ge":
-            expr = lhs >= rhs
-        case _:
-            msg = (
-                'Tried to build a constraint using a bad operator. Constraint skipped: {} {} {}'
-            ).format(lhs, operator, rhs)
-            logger.error(msg)
-            raise ValueError(msg)
+    try:
+        match operator:
+            case "e":
+                expr = lhs == rhs
+            case "le":
+                expr = lhs <= rhs
+            case "ge":
+                expr = lhs >= rhs
+            case _:
+                msg = (
+                    'Tried to build a constraint using a bad operator. Allowed operators are "e","le", or "ge". Got "{}": {} {} {}'
+                ).format(operator, lhs, operator, rhs)
+                logger.error(msg)
+                raise ValueError(msg)
+    except Exception as e:
+        print(e)
+        msg = (
+            'Tried to build a constraint using a bad expression or operator: {} {} {}'
+        ).format(lhs, operator, rhs)
+        logger.error(msg)
+        raise ValueError(msg)
         
     return expr
 

@@ -208,8 +208,8 @@ INSERT INTO Commodity VALUES('phosphorous','a','phosphorous');
 INSERT INTO Commodity VALUES('diesel','a','diesel');
 INSERT INTO Commodity VALUES('heating','d','demand for residential heating');
 INSERT INTO Commodity VALUES('nickel','a','nickel');
-INSERT INTO Commodity VALUES('used_batt_nmc','aw','used battery - lithium nickel manganese cobalt oxide');
-INSERT INTO Commodity VALUES('used_batt_lfp','aw','used battery - lithium iron phosphate');
+INSERT INTO Commodity VALUES('used_batt_nmc','wa','used battery - lithium nickel manganese cobalt oxide');
+INSERT INTO Commodity VALUES('used_batt_lfp','wa','used battery - lithium iron phosphate');
 INSERT INTO Commodity VALUES('co2e','e','emitted co2-equivalent GHGs');
 INSERT INTO Commodity VALUES('waste_steel','w','waste steel from cars');
 CREATE TABLE CommodityType

@@ -38,14 +38,14 @@ def test_storage_fraction(system_test_run):
 
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.StorageFractionConstraint_rpsdtv) > 0, (
+    assert len(model.LimitStorageFractionConstraint_rpsdtv) > 0, (
         'This model does not appear to have any StorageFraction constraints to test'
     )
 
-    for r, p, s, d, t, v in model.StorageFractionConstraint_rpsdtv:
+    for r, p, s, d, t, v, op in model.LimitStorageFractionConstraint_rpsdtv:
 
         energy = (
-            model.StorageFraction[r, p, s, d, t, v]
+            model.LimitStorageFraction[r, p, s, d, t, v, op]
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
@@ -141,18 +141,19 @@ def test_storage_flow_balance(system_test_run):
             ' - there is a discontinuity of storage states')
 
 
-@pytest.mark.skip('not ready for primetime')
-def test_hard_initialization():
-    filename = 'config_storageville.toml'
-    options = {'silent': True, 'debug': True}
-    config_file = pathlib.Path(PROJECT_ROOT, 'tests', 'testing_configs', filename)
+# devnote: the StorageInit constraint was reworked into LimitStorageLevelFraction
+# @pytest.mark.skip('not ready for primetime')
+# def test_hard_initialization():
+#     filename = 'config_storageville.toml'
+#     options = {'silent': True, 'debug': True}
+#     config_file = pathlib.Path(PROJECT_ROOT, 'tests', 'testing_configs', filename)
 
-    sequencer = TemoaSequencer(
-        config_file=config_file,
-        output_path=tmp_path,
-        mode_override=TemoaMode.BUILD_ONLY,
-        **options,
-    )
-    # get a built, unsolved model
-    model = sequencer.start()
-    model.V_StorageInit['electricville', 'batt', 2025] = 0.5
+#     sequencer = TemoaSequencer(
+#         config_file=config_file,
+#         output_path=tmp_path,
+#         mode_override=TemoaMode.BUILD_ONLY,
+#         **options,
+#     )
+#     # get a built, unsolved model
+#     model = sequencer.start()
+#     model.V_StorageInit['electricville', 'batt', 2025] = 0.5

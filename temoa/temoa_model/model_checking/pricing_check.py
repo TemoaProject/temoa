@@ -274,7 +274,7 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
     Check that the tech_uncap set members...
     1.  do not have fixed or invest costs
     2.  Either have no Var cost, or a Var cost in every year of their lifespan (similar to check #3 above)
-    3.  Are not in the MaxCapacity/MinCapacity parameters
+    3.  Are not in the LimitCapacity parameters
 
     :param M:
     :return: True if "clean" (no warnings), else False
@@ -335,7 +335,7 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
                 extra_periods,
             )
 
-    capacity_params = (M.MaxCapacity, M.MinCapacity, M.ExistingCapacity)
+    capacity_params = (M.ExistingCapacity,)
     bad_cap_entries = False
     for param in capacity_params:
         bad_entries = {(r, t, v) for r, t, v in param.keys() if t in M.tech_uncap}

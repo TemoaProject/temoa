@@ -63,7 +63,7 @@ def solved_connection(request, tmp_path_factory):
 
 # List of tech archetypes to test and their correct flowout value
 flow_tests = [
-    {'name': 'lithium import', 'tech': 'LI_IMPORT', 'period': 2005, 'target': 0.199},
+    {'name': 'lithium import', 'tech': 'IMPORT_LI', 'period': 2000, 'target': 0.129291623},
 ]
 
 # Flows

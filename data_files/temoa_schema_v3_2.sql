@@ -1,18 +1,23 @@
-PRAGMA foreign_keys=OFF;
+PRAGMA foreign_keys= OFF;
 BEGIN TRANSACTION;
-CREATE TABLE MetaData
+
+CREATE TABLE IF NOT EXISTS MetaData
 (
     element TEXT,
     value   INT,
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
-INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO MetaData VALUES('link_seasons',1,'Carry storage states between seasons');
-INSERT INTO MetaData VALUES('state_sequencing',0,'0 = loop periods, 1 = loop seasons');
-CREATE TABLE MetaDataReal
+REPLACE INTO MetaData
+VALUES ('myopic_base_year', 2000, 'Base Year for Myopic Analysis');
+REPLACE INTO MetaData
+VALUES ('DB_MAJOR', 3, 'DB major version number');
+REPLACE INTO MetaData
+VALUES ('DB_MINOR', 0, 'DB minor version number');
+REPLACE INTO MetaData
+VALUES ('state_sequencing', 0, '0 = loop periods, 1 = loop seasons');
+
+CREATE TABLE IF NOT EXISTS MetaDataReal
 (
     element TEXT,
     value   REAL,
@@ -20,27 +25,31 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
-CREATE TABLE OutputDualVariable
+REPLACE INTO MetaDataReal
+VALUES ('global_discount_rate', 0.05, 'Discount Rate for future costs');
+REPLACE INTO MetaDataReal
+VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in LoanRate table');
+
+CREATE TABLE IF NOT EXISTS OutputDualVariable
 (
     scenario        TEXT,
     constraint_name TEXT,
     dual            REAL,
     PRIMARY KEY (constraint_name, scenario)
 );
-CREATE TABLE OutputObjective
+CREATE TABLE IF NOT EXISTS OutputObjective
 (
     scenario          TEXT,
     objective_name    TEXT,
     total_system_cost REAL
 );
-CREATE TABLE SectorLabel
+CREATE TABLE IF NOT EXISTS SectorLabel
 (
     sector TEXT,
     PRIMARY KEY (sector)
 );
-CREATE TABLE CapacityCredit
+
+CREATE TABLE IF NOT EXISTS CapacityCredit
 (
     region  TEXT,
     period  INTEGER,
@@ -51,7 +60,7 @@ CREATE TABLE CapacityCredit
     PRIMARY KEY (region, period, tech, vintage),
     CHECK (credit >= 0 AND credit <= 1)
 );
-CREATE TABLE CapacityFactorProcess
+CREATE TABLE IF NOT EXISTS CapacityFactorProcess
 (
     region  TEXT,
     period  INTEGER
@@ -68,7 +77,7 @@ CREATE TABLE CapacityFactorProcess
     PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE CapacityFactorTech
+CREATE TABLE IF NOT EXISTS CapacityFactorTech
 (
     region TEXT,
     period INTEGER
@@ -84,11 +93,7 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD1','TechCurtailment',1.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD2','TechCurtailment',0.5,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD1','TechOrdinary',1.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD2','TechOrdinary',0.5,NULL);
-CREATE TABLE CapacityToActivity
+CREATE TABLE IF NOT EXISTS CapacityToActivity
 (
     region TEXT,
     tech   TEXT
@@ -97,7 +102,7 @@ CREATE TABLE CapacityToActivity
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE Commodity
+CREATE TABLE IF NOT EXISTS Commodity
 (
     name        TEXT
         PRIMARY KEY,
@@ -105,38 +110,29 @@ CREATE TABLE Commodity
         REFERENCES CommodityType (label),
     description TEXT
 );
-INSERT INTO Commodity VALUES('annual_in','s',NULL);
-INSERT INTO Commodity VALUES('flex_in','s',NULL);
-INSERT INTO Commodity VALUES('ordinary_in','s',NULL);
-INSERT INTO Commodity VALUES('curtailment_in','s',NULL);
-INSERT INTO Commodity VALUES('annual_out','d',NULL);
-INSERT INTO Commodity VALUES('flex_out','p',NULL);
-INSERT INTO Commodity VALUES('ordinary_out','d',NULL);
-INSERT INTO Commodity VALUES('curtailment_out','d',NULL);
-INSERT INTO Commodity VALUES('emission','e',NULL);
-INSERT INTO Commodity VALUES('flex_null','d',NULL);
-INSERT INTO Commodity VALUES('annual_flex_out','p',NULL);
-INSERT INTO Commodity VALUES('annual_flex_in','s',NULL);
-INSERT INTO Commodity VALUES('annual_flex_null','d',NULL);
-INSERT INTO Commodity VALUES('embodied_in','s',NULL);
-INSERT INTO Commodity VALUES('embodied_out','d',NULL);
-INSERT INTO Commodity VALUES('eol_in','s',NULL);
-INSERT INTO Commodity VALUES('eol_out','d',NULL);
-CREATE TABLE CommodityType
+CREATE TABLE IF NOT EXISTS CommodityType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO CommodityType VALUES('w','waste commodity');
-INSERT INTO CommodityType VALUES('wa','waste annual commodity');
-INSERT INTO CommodityType VALUES('wp','waste physical commodity');
-INSERT INTO CommodityType VALUES('a','annual commodity');
-INSERT INTO CommodityType VALUES('p','physical commodity');
-INSERT INTO CommodityType VALUES('e','emissions commodity');
-INSERT INTO CommodityType VALUES('d','demand commodity');
-INSERT INTO CommodityType VALUES('s','source commodity');
-CREATE TABLE ConstructionInput
+REPLACE INTO CommodityType
+VALUES ('p', 'physical commodity');
+REPLACE INTO CommodityType
+VALUES ('a', 'annual commodity');
+REPLACE INTO CommodityType
+VALUES ('e', 'emissions commodity');
+REPLACE INTO CommodityType
+VALUES ('d', 'demand commodity');
+REPLACE INTO CommodityType
+VALUES ('s', 'source commodity');
+REPLACE INTO CommodityType
+VALUES ('w', 'waste commodity');
+REPLACE INTO CommodityType
+VALUES ('wa', 'waste annual commodity');
+REPLACE INTO CommodityType
+VALUES ('wp', 'waste physical commodity');
+CREATE TABLE IF NOT EXISTS ConstructionInput
 (
     region      TEXT,
     input_comm   TEXT
@@ -150,7 +146,7 @@ CREATE TABLE ConstructionInput
     notes       TEXT,
     PRIMARY KEY (region, input_comm, tech, vintage)
 );
-CREATE TABLE CostEmission
+CREATE TABLE IF NOT EXISTS CostEmission
 (
     region    TEXT,
     period    INTEGER
@@ -162,9 +158,7 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('TestRegion',2000,'emission',0.7,NULL,NULL);
-INSERT INTO CostEmission VALUES('TestRegion',2005,'emission',0.7,NULL,NULL);
-CREATE TABLE CostFixed
+CREATE TABLE IF NOT EXISTS CostFixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -178,7 +172,7 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-CREATE TABLE CostInvest
+CREATE TABLE IF NOT EXISTS CostInvest
 (
     region  TEXT,
     tech    TEXT
@@ -190,7 +184,7 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE CostVariable
+CREATE TABLE IF NOT EXISTS CostVariable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -204,7 +198,7 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-CREATE TABLE Demand
+CREATE TABLE IF NOT EXISTS Demand
 (
     region    TEXT,
     period    INTEGER
@@ -216,15 +210,7 @@ CREATE TABLE Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-INSERT INTO Demand VALUES('TestRegion',2000,'annual_out',1.0,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'ordinary_out',0.3,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'curtailment_out',0.3,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'flex_null',0.3,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'annual_flex_null',0.3,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'embodied_out',0.6,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'eol_out',0.6,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'ordinary_out',0.3,NULL,NULL);
-CREATE TABLE DemandSpecificDistribution
+CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
 (
     region      TEXT,
     period      INTEGER
@@ -240,7 +226,7 @@ CREATE TABLE DemandSpecificDistribution
     PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-CREATE TABLE EndOfLifeOutput
+CREATE TABLE IF NOT EXISTS EndOfLifeOutput
 (
     region      TEXT,
     tech        TEXT
@@ -254,7 +240,7 @@ CREATE TABLE EndOfLifeOutput
     notes       TEXT,
     PRIMARY KEY (region, tech, vintage, output_comm)
 );
-CREATE TABLE Efficiency
+CREATE TABLE IF NOT EXISTS Efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -270,16 +256,7 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('TestRegion','annual_in','TechAnnual',2000,'annual_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','flex_in','TechFlex',2000,'flex_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','ordinary_in','TechOrdinary',2000,'ordinary_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','curtailment_in','TechCurtailment',2000,'curtailment_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','flex_out','TechFlexNull',2000,'flex_null',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','annual_flex_out','TechFlexNull',2000,'annual_flex_null',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','embodied_in','TechEmbodied',2000,'embodied_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','eol_in','TechEndOfLife',2000,'eol_out',1.0,NULL);
-CREATE TABLE EfficiencyVariable
+CREATE TABLE IF NOT EXISTS EfficiencyVariable
 (
     region      TEXT,
     period      INTEGER
@@ -301,7 +278,7 @@ CREATE TABLE EfficiencyVariable
     PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE EmissionActivity
+CREATE TABLE IF NOT EXISTS EmissionActivity
 (
     region      TEXT,
     emis_comm   TEXT
@@ -319,12 +296,7 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','annual_in','TechAnnual',2000,'annual_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','flex_in','TechFlex',2000,'flex_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','ordinary_in','TechOrdinary',2000,'ordinary_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','curtailment_in','TechCurtailment',2000,'curtailment_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL,NULL);
-CREATE TABLE EmissionEmbodied
+CREATE TABLE IF NOT EXISTS EmissionEmbodied
 (
     region      TEXT,
     emis_comm   TEXT
@@ -338,8 +310,7 @@ CREATE TABLE EmissionEmbodied
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-INSERT INTO EmissionEmbodied VALUES('TestRegion','emission','TechEmbodied',2000,0.5,NULL,NULL);
-CREATE TABLE EmissionEndOfLife
+CREATE TABLE IF NOT EXISTS EmissionEndOfLife
 (
     region      TEXT,
     emis_comm   TEXT
@@ -353,8 +324,7 @@ CREATE TABLE EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-INSERT INTO EmissionEndOfLife VALUES('TestRegion','emission','TechEndOfLife',2000,0.5,NULL,NULL);
-CREATE TABLE ExistingCapacity
+CREATE TABLE IF NOT EXISTS ExistingCapacity
 (
     region   TEXT,
     tech     TEXT
@@ -366,13 +336,13 @@ CREATE TABLE ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE TechGroup
+CREATE TABLE IF NOT EXISTS TechGroup
 (
     group_name TEXT
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE LoanLifetimeTech
+CREATE TABLE IF NOT EXISTS LoanLifetimeTech
 (
     region   TEXT,
     tech     TEXT
@@ -381,7 +351,7 @@ CREATE TABLE LoanLifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LoanRate
+CREATE TABLE IF NOT EXISTS LoanRate
 (
     region  TEXT,
     tech    TEXT
@@ -392,7 +362,7 @@ CREATE TABLE LoanRate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeProcess
+CREATE TABLE IF NOT EXISTS LifetimeProcess
 (
     region   TEXT,
     tech     TEXT
@@ -403,7 +373,7 @@ CREATE TABLE LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeTech
+CREATE TABLE IF NOT EXISTS LifetimeTech
 (
     region   TEXT,
     tech     TEXT
@@ -412,16 +382,15 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('TestRegion','TechEndOfLife',5.0,NULL);
-CREATE TABLE Operator
+CREATE TABLE IF NOT EXISTS Operator
 (
 	operator TEXT PRIMARY KEY,
 	notes TEXT
 );
-INSERT INTO Operator VALUES('e','equal to');
-INSERT INTO Operator VALUES('le','less than or equal to');
-INSERT INTO Operator VALUES('ge','greater than or equal to');
-CREATE TABLE LimitGrowthCapacity
+REPLACE INTO Operator VALUES('e','equal to');
+REPLACE INTO Operator VALUES('le','less than or equal to');
+REPLACE INTO Operator VALUES('ge','greater than or equal to');
+CREATE TABLE IF NOT EXISTS LimitGrowthCapacity
 (
     region TEXT,
     tech   TEXT
@@ -434,7 +403,7 @@ CREATE TABLE LimitGrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitDegrowthCapacity
+CREATE TABLE IF NOT EXISTS LimitDegrowthCapacity
 (
     region TEXT,
     tech   TEXT
@@ -447,7 +416,7 @@ CREATE TABLE LimitDegrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitGrowthNewCapacity
+CREATE TABLE IF NOT EXISTS LimitGrowthNewCapacity
 (
     region TEXT,
     tech   TEXT
@@ -460,7 +429,7 @@ CREATE TABLE LimitGrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacity
+CREATE TABLE IF NOT EXISTS LimitDegrowthNewCapacity
 (
     region TEXT,
     tech   TEXT
@@ -473,7 +442,7 @@ CREATE TABLE LimitDegrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitGrowthNewCapacityDelta
+CREATE TABLE IF NOT EXISTS LimitGrowthNewCapacityDelta
 (
     region TEXT,
     tech   TEXT
@@ -486,7 +455,7 @@ CREATE TABLE LimitGrowthNewCapacityDelta
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacityDelta
+CREATE TABLE IF NOT EXISTS LimitDegrowthNewCapacityDelta
 (
     region TEXT,
     tech   TEXT
@@ -499,7 +468,7 @@ CREATE TABLE LimitDegrowthNewCapacityDelta
     notes  TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitStorageLevelFraction
+CREATE TABLE IF NOT EXISTS LimitStorageLevelFraction
 (
     region   TEXT,
     period   INTEGER
@@ -518,7 +487,7 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
-CREATE TABLE LimitActivity
+CREATE TABLE IF NOT EXISTS LimitActivity
 (
     region  TEXT,
     period  INTEGER
@@ -532,11 +501,7 @@ CREATE TABLE LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech, operator)
 );
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechFlex','ge',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechAnnualFlex','ge',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechFlex','le',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechAnnualFlex','le',1.0,NULL,NULL);
-CREATE TABLE LimitActivityGroup
+CREATE TABLE IF NOT EXISTS LimitActivityGroup
 (
     region     TEXT,
     period     INTEGER
@@ -550,7 +515,7 @@ CREATE TABLE LimitActivityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name, operator)
 );
-CREATE TABLE LimitActivityShare
+CREATE TABLE IF NOT EXISTS LimitActivityShare
 (
     region         TEXT,
     period         INTEGER
@@ -565,7 +530,7 @@ CREATE TABLE LimitActivityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name, operator)
 );
-CREATE TABLE LimitAnnualCapacityFactor
+CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
 (
     region      TEXT,
     period      INTEGER
@@ -582,7 +547,7 @@ CREATE TABLE LimitAnnualCapacityFactor
     PRIMARY KEY (region, period, tech, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE LimitCapacity
+CREATE TABLE IF NOT EXISTS LimitCapacity
 (
     region  TEXT,
     period  INTEGER
@@ -596,11 +561,7 @@ CREATE TABLE LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech, operator)
 );
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechOrdinary','ge',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechCurtailment','ge',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechOrdinary','le',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechCurtailment','le',1.0,NULL,NULL);
-CREATE TABLE LimitCapacityGroup
+CREATE TABLE IF NOT EXISTS LimitCapacityGroup
 (
     region     TEXT,
     period     INTEGER
@@ -614,7 +575,7 @@ CREATE TABLE LimitCapacityGroup
     notes      TEXT,
     PRIMARY KEY (region, period, group_name, operator)
 );
-CREATE TABLE LimitCapacityShare
+CREATE TABLE IF NOT EXISTS LimitCapacityShare
 (
     region         TEXT,
     period         INTEGER
@@ -629,7 +590,7 @@ CREATE TABLE LimitCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name, operator)
 );
-CREATE TABLE LimitNewCapacity
+CREATE TABLE IF NOT EXISTS LimitNewCapacity
 (
     region  TEXT,
     period  INTEGER
@@ -643,7 +604,7 @@ CREATE TABLE LimitNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech, operator)
 );
-CREATE TABLE LimitNewCapacityGroup
+CREATE TABLE IF NOT EXISTS LimitNewCapacityGroup
 (
     region      TEXT,
     period      INTEGER
@@ -657,7 +618,7 @@ CREATE TABLE LimitNewCapacityGroup
     notes       TEXT,
     PRIMARY KEY (region, period, group_name, operator)
 );
-CREATE TABLE LimitNewCapacityGroupShare
+CREATE TABLE IF NOT EXISTS LimitNewCapacityGroupShare
 (
     region         TEXT,
     period         INTEGER
@@ -672,7 +633,7 @@ CREATE TABLE LimitNewCapacityGroupShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitNewCapacityShare
+CREATE TABLE IF NOT EXISTS LimitNewCapacityShare
 (
     region         TEXT,
     period         INTEGER
@@ -687,7 +648,7 @@ CREATE TABLE LimitNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, tech, group_name, operator)
 );
-CREATE TABLE LimitResource
+CREATE TABLE IF NOT EXISTS LimitResource
 (
     region  TEXT,
     tech    TEXT
@@ -699,7 +660,7 @@ CREATE TABLE LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech, operator)
 );
-CREATE TABLE LimitSeasonalActivity
+CREATE TABLE IF NOT EXISTS LimitSeasonalActivity
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -716,7 +677,7 @@ CREATE TABLE LimitSeasonalActivity
 	notes	TEXT,
 	PRIMARY KEY(region,period,season,tech, operator)
 );
-CREATE TABLE LimitTechInputSplit
+CREATE TABLE IF NOT EXISTS LimitTechInputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -731,7 +692,7 @@ CREATE TABLE LimitTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechInputSplitAnnual
+CREATE TABLE IF NOT EXISTS LimitTechInputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -746,7 +707,7 @@ CREATE TABLE LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechOutputSplit
+CREATE TABLE IF NOT EXISTS LimitTechOutputSplit
 (
     region         TEXT,
     period         INTEGER
@@ -761,7 +722,7 @@ CREATE TABLE LimitTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitTechOutputSplitAnnual
+CREATE TABLE IF NOT EXISTS LimitTechOutputSplitAnnual
 (
     region         TEXT,
     period         INTEGER
@@ -776,7 +737,7 @@ CREATE TABLE LimitTechOutputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitEmission
+CREATE TABLE IF NOT EXISTS LimitEmission
 (
     region    TEXT,
     period    INTEGER
@@ -790,7 +751,7 @@ CREATE TABLE LimitEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm, operator)
 );
-CREATE TABLE LinkedTech
+CREATE TABLE IF NOT EXISTS LinkedTech
 (
     primary_region TEXT,
     primary_tech   TEXT
@@ -802,7 +763,7 @@ CREATE TABLE LinkedTech
     notes          TEXT,
     PRIMARY KEY (primary_region, primary_tech, emis_comm)
 );
-CREATE TABLE OutputCurtailment
+CREATE TABLE IF NOT EXISTS OutputCurtailment
 (
     scenario    TEXT,
     region      TEXT,
@@ -824,7 +785,7 @@ CREATE TABLE OutputCurtailment
     curtailment REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE OutputNetCapacity
+CREATE TABLE IF NOT EXISTS OutputNetCapacity
 (
     scenario TEXT,
     region   TEXT,
@@ -839,7 +800,7 @@ CREATE TABLE OutputNetCapacity
     capacity REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
-CREATE TABLE OutputBuiltCapacity
+CREATE TABLE IF NOT EXISTS OutputBuiltCapacity
 (
     scenario TEXT,
     region   TEXT,
@@ -852,7 +813,7 @@ CREATE TABLE OutputBuiltCapacity
     capacity REAL,
     PRIMARY KEY (region, scenario, tech, vintage)
 );
-CREATE TABLE OutputRetiredCapacity
+CREATE TABLE IF NOT EXISTS OutputRetiredCapacity
 (
     scenario TEXT,
     region   TEXT,
@@ -867,7 +828,7 @@ CREATE TABLE OutputRetiredCapacity
     capacity REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
-CREATE TABLE OutputFlowIn
+CREATE TABLE IF NOT EXISTS OutputFlowIn
 (
     scenario    TEXT,
     region      TEXT,
@@ -890,7 +851,7 @@ CREATE TABLE OutputFlowIn
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE OutputFlowOut
+CREATE TABLE IF NOT EXISTS OutputFlowOut
 (
     scenario    TEXT,
     region      TEXT,
@@ -913,7 +874,7 @@ CREATE TABLE OutputFlowOut
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE OutputStorageLevel
+CREATE TABLE IF NOT EXISTS OutputStorageLevel
 (
     scenario TEXT,
     region TEXT,
@@ -932,14 +893,14 @@ CREATE TABLE OutputStorageLevel
     level REAL,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
-CREATE TABLE PlanningReserveMargin
+CREATE TABLE IF NOT EXISTS PlanningReserveMargin
 (
     region TEXT
         PRIMARY KEY
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE RampDown
+CREATE TABLE IF NOT EXISTS RampDown
 (
     region TEXT,
     tech   TEXT
@@ -947,7 +908,7 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUp
+CREATE TABLE IF NOT EXISTS RampUp
 (
     region TEXT,
     tech   TEXT
@@ -955,14 +916,13 @@ CREATE TABLE RampUp
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE Region
+CREATE TABLE IF NOT EXISTS Region
 (
     region TEXT
         PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO Region VALUES('TestRegion',NULL);
-CREATE TABLE TimeSegmentFraction
+CREATE TABLE IF NOT EXISTS TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
@@ -975,11 +935,7 @@ CREATE TABLE TimeSegmentFraction
     PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
-INSERT INTO TimeSegmentFraction VALUES(2000,'S1','TOD1',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2000,'S1','TOD2',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2005,'S1','TOD1',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2005,'S1','TOD2',0.5,NULL);
-CREATE TABLE StorageDuration
+CREATE TABLE IF NOT EXISTS StorageDuration
 (
     region   TEXT,
     tech     TEXT,
@@ -987,25 +943,42 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE TechnologyType
+CREATE TABLE IF NOT EXISTS TechnologyType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
-INSERT INTO TechnologyType VALUES('p','production technology');
-INSERT INTO TechnologyType VALUES('pb','baseload production technology');
-INSERT INTO TechnologyType VALUES('ps','storage production technology');
-CREATE TABLE TimeOfDay
+REPLACE INTO TechnologyType
+VALUES ('r', 'resource technology');
+REPLACE INTO TechnologyType
+VALUES ('p', 'production technology');
+REPLACE INTO TechnologyType
+VALUES ('pb', 'baseload production technology');
+REPLACE INTO TechnologyType
+VALUES ('ps', 'storage production technology');
+-- CREATE TABLE IF NOT EXISTS TimeNext
+-- (
+--     period       INTEGER
+--         REFERENCES TimePeriod (period),
+--     season       TEXT
+--         REFERENCES TimeSeason (season),
+--     tod          TEXT
+--         REFERENCES TimeOfDay (tod),
+--     season_next  TEXT
+--         REFERENCES TimeSeason (season),
+--     tod_next     TEXT
+--         REFERENCES TimeOfDay (tod),
+--     notes        TEXT,
+--     PRIMARY KEY (period, season, tod)
+-- );
+CREATE TABLE IF NOT EXISTS TimeOfDay
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeOfDay VALUES(1,'TOD1');
-INSERT INTO TimeOfDay VALUES(2,'TOD2');
-CREATE TABLE TimePeriod
+CREATE TABLE IF NOT EXISTS TimePeriod
 (
     sequence INTEGER UNIQUE,
     period   INTEGER
@@ -1013,17 +986,12 @@ CREATE TABLE TimePeriod
     flag     TEXT
         REFERENCES TimePeriodType (label)
 );
-INSERT INTO TimePeriod VALUES(1,1999,'e');
-INSERT INTO TimePeriod VALUES(2,2000,'f');
-INSERT INTO TimePeriod VALUES(3,2005,'f');
-INSERT INTO TimePeriod VALUES(4,2010,'f');
-CREATE TABLE TimeSeason
+CREATE TABLE IF NOT EXISTS TimeSeason
 (
     season TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeSeason VALUES('S1');
-CREATE TABLE PeriodSeasons
+CREATE TABLE IF NOT EXISTS PeriodSeasons
 (
     period INTEGER
         REFERENCES TimePeriod (period),
@@ -1033,17 +1001,17 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2000,1,'S1',NULL);
-INSERT INTO PeriodSeasons VALUES(2005,1,'S1',NULL);
-CREATE TABLE TimePeriodType
+CREATE TABLE IF NOT EXISTS TimePeriodType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TimePeriodType VALUES('e','existing vintages');
-INSERT INTO TimePeriodType VALUES('f','future');
-CREATE TABLE OutputEmission
+REPLACE INTO TimePeriodType
+VALUES('e', 'existing vintages');
+REPLACE INTO TimePeriodType
+VALUES('f', 'future');
+CREATE TABLE IF NOT EXISTS OutputEmission
 (
     scenario  TEXT,
     region    TEXT,
@@ -1060,7 +1028,7 @@ CREATE TABLE OutputEmission
     emission  REAL,
     PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
 );
-CREATE TABLE RPSRequirement
+CREATE TABLE IF NOT EXISTS RPSRequirement
 (
     region      TEXT    NOT NULL
         REFERENCES Region (region),
@@ -1071,7 +1039,7 @@ CREATE TABLE RPSRequirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE TechGroupMember
+CREATE TABLE IF NOT EXISTS TechGroupMember
 (
     group_name TEXT
         REFERENCES TechGroup (group_name),
@@ -1079,7 +1047,7 @@ CREATE TABLE TechGroupMember
         REFERENCES Technology (tech),
     PRIMARY KEY (group_name, tech)
 );
-CREATE TABLE Technology
+CREATE TABLE IF NOT EXISTS Technology
 (
     tech         TEXT    NOT NULL PRIMARY KEY,
     flag         TEXT    NOT NULL,
@@ -1096,14 +1064,6 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,NULL);
-INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,NULL);
-INSERT INTO Technology VALUES('TechEmbodied','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechEndOfLife','p','energy',NULL,NULL,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,
@@ -1125,3 +1085,4 @@ CREATE TABLE OutputCost
     FOREIGN KEY (tech) REFERENCES Technology (tech)
 );
 COMMIT;
+PRAGMA FOREIGN_KEYS = 1;
