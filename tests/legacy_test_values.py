@@ -41,17 +41,29 @@ class ExpectedVals(Enum):
 # these values were captured on base level runs of the .dat files in the tests/testing_data folder
 test_vals = {
     'test_system': {
-        ExpectedVals.OBJ_VALUE: 491977.7000753,
+        # reduced after removing ancient 1-year-shift obj function bug
+        ExpectedVals.OBJ_VALUE: 468550.1905,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
-        ExpectedVals.CONSTR_COUNT: 2834, # increased by 2 when reworking storageinit. Increased after making annualretirement derived var
-        ExpectedVals.VAR_COUNT: 1904, # reduced by 6 when reworking storageinit. Increased after making annualretirement derived var
+        # increased by 2 when reworking storageinit.
+        # increased after making annualretirement derived var
+        ExpectedVals.CONSTR_COUNT: 2834,
+        # reduced by 6 when reworking storageinit.
+        # increased after making annualretirement derived var
+        ExpectedVals.VAR_COUNT: 1904,
     },
     'utopia': {
-        ExpectedVals.OBJ_VALUE: 36468.56, # reduced after reworking storageinit -> storage was less constrained
+        # reduced after reworking storageinit -> storage was less constrained
+        # reduced after removing ancient 1-year-shift obj function bug
+        ExpectedVals.OBJ_VALUE: 34731.9619,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
-        ExpectedVals.CONSTR_COUNT: 1471, # reduced 3/27:  unlim_cap techs now employed. Increased after making annualretirement derived var
-        ExpectedVals.VAR_COUNT: 1070,  # reduced 3/27:  unlim_cap techs now employed. Reduced by 4 storageinit. Increased after making annualretirement derived var
+        # reduced 3/27:  unlim_cap techs now employed.
+        # increased after making annualretirement derived var
+        ExpectedVals.CONSTR_COUNT: 1471,
+        # reduced 3/27:  unlim_cap techs now employed.
+        # reduced by 4 in storageinit rework.
+        # increased after making annualretirement derived var
+        ExpectedVals.VAR_COUNT: 1070, 
     },
 }
