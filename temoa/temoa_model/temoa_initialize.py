@@ -196,9 +196,9 @@ def validate_SegFrac(M: 'TemoaModel'):
             extra = keys.difference(expected_keys)
             missing = expected_keys.difference(keys)
             msg = (
-                'TimeSegmentFraction elements for period {} do not match PeriodSeasons and TimeOfDay.'
+                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
                 '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from PeriodSeasons/TimeOfDay:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
             ).format(p, missing, extra)
             logger.error(msg)
             raise ValueError(msg)
@@ -348,7 +348,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
         if count > 0:
             M.isEfficiencyVariable[r, p, i, t, v, o] = True
             if count < num_seg:
-                logger.warning(
+                logger.info(
                     'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
                     ' Missing values will default to value set in Efficiency table.'
                     , count, num_seg, (r, p, i, t, v, o)
@@ -382,7 +382,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
         if count > 0:
             M.isCapacityFactorProcess[r, p, t, v] = True
             if count < num_seg:
-                logger.warning(
+                logger.info(
                     'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
                     ' Missing values will default to CapacityFactorTech value or 1 if that is not set either.'
                     , count, num_seg, (r, p, t, v)
@@ -559,7 +559,7 @@ def CreateDemands(M: 'TemoaModel'):
                 cross_product(M.regions, (p,), M.TimeSeason[p], M.time_of_day, unset_demand_distributions)
             )
             for r, p, s, d, dem in unset_distributions:
-                DSD[r, p, s, d, dem] = M.SegFrac[p, s, d]  # DSD._constructed = True
+                DSD[r, p, s, d, dem] = value(M.SegFrac[p, s, d])  # DSD._constructed = True
 
     # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
     #         Also check that all keys are made...  The demand distro should be supported
