@@ -94,7 +94,7 @@ class TemoaModel(AbstractModel):
         M.activeRegionsForTech = None
         """currently available regions by period and tech {(p, t) : r}"""
 
-        M.activeCapacity_rtv = None
+        M.newCapacity_rtv = None
         M.activeCapacityAvailable_rpt = None
         M.activeCapacityAvailable_rptv = None
         M.groupRegionActiveFlow_rpt = None # Set of valid group-region, period, tech indices
@@ -139,7 +139,7 @@ class TemoaModel(AbstractModel):
         M.isEfficiencyVariable: dict[tuple, bool] = dict() # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
         M.isCapacityFactorProcess: dict[tuple, bool] = dict() # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
         M.isSeasonalStorage: dict[tuple, bool] = dict() # {t: bool} whether a storage tech is seasonal storage
-        M.isSurvivalCurveProcess: dict[str, bool] = dict() # {(r, t, v): bool} whether a process uses survival curves.
+        M.isSurvivalCurveProcess: dict[tuple, bool] = dict() # {(r, t, v): bool} whether a process uses survival curves.
 
         ################################################
         #                 Model Sets                   #
@@ -628,9 +628,11 @@ class TemoaModel(AbstractModel):
         # M.RetiredCapacityConstraint = Constraint(
         #     M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
         # )
+        M.progress_marker_4a = BuildAction(['Starting AnnualRetirementConstraint'], rule=progress_check)
         M.AnnualRetirementConstraint = Constraint(
             M.AnnualRetirementVar_rptv, rule=AnnualRetirement_Constraint
         )
+        M.progress_marker_4b = BuildAction(['Starting AdjustedCapacityConstraint'], rule=progress_check)
         M.AdjustedCapacityConstraint = Constraint(
             M.CostFixed_rptv, rule=AdjustedCapacity_Constraint
         )

@@ -306,7 +306,7 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
 
 
 def validate_ReserveMargin(M: 'TemoaModel'):
-    for r in M.PlanningReserveMargin:
+    for r in M.PlanningReserveMargin.sparse_iterkeys():
         if all((r, p) not in M.processReservePeriods for p in M.time_optimize):
             logger.warning(
                 'Planning reserve margin provided but there are no reserve '

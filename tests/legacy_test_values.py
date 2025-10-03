@@ -50,7 +50,8 @@ test_vals = {
         ExpectedVals.CONSTR_COUNT: 2834,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
-        ExpectedVals.VAR_COUNT: 1904,
+        # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
+        ExpectedVals.VAR_COUNT: 1900,
     },
     'utopia': {
         # reduced after reworking storageinit -> storage was less constrained
@@ -66,7 +67,8 @@ test_vals = {
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
-        ExpectedVals.VAR_COUNT: 1070, 
+        # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
+        ExpectedVals.VAR_COUNT: 1055, 
     },
     'mediumville': {
         # added 2025/06/12 prior to addition of dynamic reserve margin
@@ -94,6 +96,7 @@ test_vals = {
         ExpectedVals.EFF_DOMAIN_SIZE: 64,
         ExpectedVals.EFF_INDEX_SIZE: 8,
         ExpectedVals.CONSTR_COUNT: 101,
-        ExpectedVals.VAR_COUNT: 103, 
+        # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
+        ExpectedVals.VAR_COUNT: 101, 
     },
 }

@@ -510,7 +510,7 @@ class TableWriter:
     def _insert_cost_results(self, regular_entries, exchange_entries, emission_entries, iteration):
         # add the emission costs to the same row data, if provided
         if emission_entries:
-            for k in emission_entries.keys():
+            for k in emission_entries:
                 regular_entries[k].update(emission_entries[k])
         self._write_cost_rows(regular_entries, iteration=iteration)
         self._write_cost_rows(exchange_entries, iteration=iteration)
