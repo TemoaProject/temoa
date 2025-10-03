@@ -9,7 +9,7 @@ CREATE TABLE MetaData
 );
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
+INSERT INTO MetaData VALUES('days_per_period',365,'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -18,8 +18,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'Discount Rate for future costs');
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -38,7 +38,6 @@ CREATE TABLE SeasonLabel
     season TEXT PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO SeasonLabel VALUES('S1',NULL);
 CREATE TABLE SectorLabel
 (
     sector TEXT PRIMARY KEY,
@@ -90,10 +89,6 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD1','TechCurtailment',1.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD2','TechCurtailment',0.5,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD1','TechOrdinary',1.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('TestRegion',2000,'S1','TOD2','TechOrdinary',0.5,NULL);
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -111,37 +106,24 @@ CREATE TABLE Commodity
         REFERENCES CommodityType (label),
     description TEXT
 );
-INSERT INTO Commodity VALUES('annual_in','s',NULL);
-INSERT INTO Commodity VALUES('flex_in','s',NULL);
-INSERT INTO Commodity VALUES('ordinary_in','s',NULL);
-INSERT INTO Commodity VALUES('curtailment_in','s',NULL);
-INSERT INTO Commodity VALUES('annual_out','d',NULL);
-INSERT INTO Commodity VALUES('flex_out','p',NULL);
-INSERT INTO Commodity VALUES('ordinary_out','d',NULL);
-INSERT INTO Commodity VALUES('curtailment_out','d',NULL);
-INSERT INTO Commodity VALUES('emission','e',NULL);
-INSERT INTO Commodity VALUES('flex_null','d',NULL);
-INSERT INTO Commodity VALUES('annual_flex_out','p',NULL);
-INSERT INTO Commodity VALUES('annual_flex_in','s',NULL);
-INSERT INTO Commodity VALUES('annual_flex_null','d',NULL);
-INSERT INTO Commodity VALUES('embodied_in','s',NULL);
-INSERT INTO Commodity VALUES('embodied_out','d',NULL);
-INSERT INTO Commodity VALUES('eol_in','s',NULL);
-INSERT INTO Commodity VALUES('eol_out','d',NULL);
+INSERT INTO Commodity VALUES('source','s',NULL);
+INSERT INTO Commodity VALUES('annual','a',NULL);
+INSERT INTO Commodity VALUES('physical','p',NULL);
+INSERT INTO Commodity VALUES('demand','d',NULL);
 CREATE TABLE CommodityType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
+INSERT INTO CommodityType VALUES('s','source commodity');
+INSERT INTO CommodityType VALUES('a','annual commodity');
+INSERT INTO CommodityType VALUES('p','physical commodity');
+INSERT INTO CommodityType VALUES('d','demand commodity');
+INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('w','waste commodity');
 INSERT INTO CommodityType VALUES('wa','waste annual commodity');
 INSERT INTO CommodityType VALUES('wp','waste physical commodity');
-INSERT INTO CommodityType VALUES('a','annual commodity');
-INSERT INTO CommodityType VALUES('p','physical commodity');
-INSERT INTO CommodityType VALUES('e','emissions commodity');
-INSERT INTO CommodityType VALUES('d','demand commodity');
-INSERT INTO CommodityType VALUES('s','source commodity');
 CREATE TABLE ConstructionInput
 (
     region      TEXT,
@@ -168,8 +150,6 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('TestRegion',2000,'emission',0.6999999999999999556,NULL,NULL);
-INSERT INTO CostEmission VALUES('TestRegion',2005,'emission',0.6999999999999999556,NULL,NULL);
 CREATE TABLE CostFixed
 (
     region  TEXT    NOT NULL,
@@ -196,6 +176,8 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
+INSERT INTO CostInvest VALUES('region','annual',2000,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','non_annual',2000,1.0,NULL,NULL);
 CREATE TABLE CostVariable
 (
     region  TEXT    NOT NULL,
@@ -210,6 +192,8 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
+INSERT INTO CostVariable VALUES('region',2000,'annual',2000,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2000,'non_annual',2000,1.0,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -222,19 +206,7 @@ CREATE TABLE Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-INSERT INTO Demand VALUES('TestRegion',2000,'annual_out',1.0,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'ordinary_out',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'curtailment_out',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'flex_null',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'annual_flex_null',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'embodied_out',0.5999999999999999778,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2000,'eol_out',0.5999999999999999778,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'ordinary_out',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'annual_out',1.0,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'curtailment_out',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'flex_null',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'annual_flex_null',0.2999999999999999889,NULL,NULL);
-INSERT INTO Demand VALUES('TestRegion',2005,'embodied_out',0.5999999999999999778,NULL,NULL);
+INSERT INTO Demand VALUES('region',2000,'demand',1.0,NULL,NULL);
 CREATE TABLE DemandSpecificDistribution
 (
     region      TEXT,
@@ -281,15 +253,16 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('TestRegion','annual_in','TechAnnual',2000,'annual_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','flex_in','TechFlex',2000,'flex_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','ordinary_in','TechOrdinary',2000,'ordinary_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','curtailment_in','TechCurtailment',2000,'curtailment_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','flex_out','TechFlexNull',2000,'flex_null',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','annual_flex_out','TechFlexNull',2000,'annual_flex_null',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','embodied_in','TechEmbodied',2000,'embodied_out',1.0,NULL);
-INSERT INTO Efficiency VALUES('TestRegion','eol_in','TechEndOfLife',2000,'eol_out',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','annual','annual',2000,'physical',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','annual','annual',2000,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','physical','annual',2000,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','physical','annual',2000,'annual',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','import',2000,'physical',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','import',2000,'annual',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','annual','non_annual',2000,'physical',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','annual','non_annual',2000,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','physical','non_annual',2000,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','physical','non_annual',2000,'annual',1.0,NULL);
 CREATE TABLE EfficiencyVariable
 (
     region      TEXT,
@@ -330,11 +303,6 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','annual_in','TechAnnual',2000,'annual_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','flex_in','TechFlex',2000,'flex_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','ordinary_in','TechOrdinary',2000,'ordinary_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','curtailment_in','TechCurtailment',2000,'curtailment_out',1.0,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('TestRegion','emission','annual_flex_in','TechAnnualFlex',2000,'annual_flex_out',1.0,NULL,NULL);
 CREATE TABLE EmissionEmbodied
 (
     region      TEXT,
@@ -349,7 +317,6 @@ CREATE TABLE EmissionEmbodied
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-INSERT INTO EmissionEmbodied VALUES('TestRegion','emission','TechEmbodied',2000,0.5,NULL,NULL);
 CREATE TABLE EmissionEndOfLife
 (
     region      TEXT,
@@ -364,7 +331,6 @@ CREATE TABLE EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-INSERT INTO EmissionEndOfLife VALUES('TestRegion','emission','TechEndOfLife',2000,0.5,NULL,NULL);
 CREATE TABLE ExistingCapacity
 (
     region   TEXT,
@@ -394,6 +360,8 @@ CREATE TABLE LoanLifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
+INSERT INTO LoanLifetimeProcess VALUES ('region','annual',2000,1,NULL);
+INSERT INTO LoanLifetimeProcess VALUES ('region','non_annual',2000,1,NULL);
 CREATE TABLE LoanRate
 (
     region  TEXT,
@@ -425,7 +393,8 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('TestRegion','TechEndOfLife',5.0,NULL);
+INSERT INTO LifetimeTech VALUES ('region', 'annual', 1, NULL);
+INSERT INTO LifetimeTech VALUES ('region', 'non_annual', 1, NULL);
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -538,10 +507,8 @@ CREATE TABLE LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechFlex','ge',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechAnnualFlex','ge',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechFlex','le',1.0,NULL,NULL);
-INSERT INTO LimitActivity VALUES('TestRegion',2000,'TechAnnualFlex','le',1.0,NULL,NULL);
+INSERT INTO LimitActivity VALUES('region',2000,'annual','le',0.5,NULL,NULL);
+INSERT INTO LimitActivity VALUES('region',2000,'non_annual','le',0.5,NULL,NULL);
 CREATE TABLE LimitActivityShare
 (
     region         TEXT,
@@ -584,10 +551,6 @@ CREATE TABLE LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechOrdinary','ge',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechCurtailment','ge',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechOrdinary','le',1.0,NULL,NULL);
-INSERT INTO LimitCapacity VALUES('TestRegion',2000,'TechCurtailment','le',1.0,NULL,NULL);
 CREATE TABLE LimitCapacityShare
 (
     region         TEXT,
@@ -903,7 +866,7 @@ CREATE TABLE Region
         PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO Region VALUES('TestRegion',NULL);
+INSERT INTO Region VALUES('region',NULL);
 CREATE TABLE ReserveCapacityDerate
 (
     region  TEXT,
@@ -932,10 +895,7 @@ CREATE TABLE TimeSegmentFraction
     PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
-INSERT INTO TimeSegmentFraction VALUES(2000,'S1','TOD1',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2000,'S1','TOD2',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2005,'S1','TOD1',0.5,NULL);
-INSERT INTO TimeSegmentFraction VALUES(2005,'S1','TOD2',0.5,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'S1','D1',1.0,NULL);
 CREATE TABLE StorageDuration
 (
     region   TEXT,
@@ -971,8 +931,7 @@ CREATE TABLE TimeOfDay
     tod      TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeOfDay VALUES(1,'TOD1');
-INSERT INTO TimeOfDay VALUES(2,'TOD2');
+INSERT INTO TimeOfDay VALUES(0,'D1');
 CREATE TABLE TimePeriod
 (
     sequence INTEGER UNIQUE,
@@ -981,10 +940,8 @@ CREATE TABLE TimePeriod
     flag     TEXT
         REFERENCES TimePeriodType (label)
 );
-INSERT INTO TimePeriod VALUES(1,1999,'e');
-INSERT INTO TimePeriod VALUES(2,2000,'f');
-INSERT INTO TimePeriod VALUES(3,2005,'f');
-INSERT INTO TimePeriod VALUES(4,2010,'f');
+INSERT INTO TimePeriod VALUES(0,2000,'f');
+INSERT INTO TimePeriod VALUES(1,2001,'f');
 CREATE TABLE TimeSeason
 (
     period INTEGER
@@ -995,8 +952,7 @@ CREATE TABLE TimeSeason
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO TimeSeason VALUES(2000,1,'S1',NULL);
-INSERT INTO TimeSeason VALUES(2005,1,'S1',NULL);
+INSERT INTO TimeSeason VALUES(2000,0,'S1',NULL);
 CREATE TABLE TimeSeasonSequential
 (
     period INTEGER
@@ -1072,14 +1028,9 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,0,NULL);
-INSERT INTO Technology VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechCurtailment','p','energy',NULL,NULL,0,0,0,1,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechFlexNull','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechAnnualFlex','p','energy',NULL,NULL,0,1,0,0,0,1,0,0,NULL);
-INSERT INTO Technology VALUES('TechEmbodied','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('TechEndOfLife','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('annual','p','energy',NULL,NULL,0,1,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('import','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('non_annual','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,

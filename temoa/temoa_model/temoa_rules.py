@@ -244,11 +244,24 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
 
-    useful_activity = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
+    if t in M.tech_annual:
+        # Annual demand technology
+        useful_activity = sum(
+            (
+                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in M.commodity_demand
+                else value(M.SegFrac[p, s, d])
+            )
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        useful_activity = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
     
     if t in M.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
@@ -742,7 +755,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     P_0 = min(M.time_optimize)
     P_e = M.time_future.last()  # End point of modeled horizon
     GDR = value(M.GlobalDiscountRate)
-    MPL = M.ModelProcessLife
+    # MPL = M.ModelProcessLife
 
     if value(M.MyopicDiscountingYear) != 0:
         P_0 = value(M.MyopicDiscountingYear)
@@ -933,7 +946,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 # ---------------------------------------------------------------
 
 
-def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
+def Demand_Constraint(M: 'TemoaModel', r, p, dem):
     r"""
 
     The Demand constraint drives the model.  This constraint ensures that supply at
@@ -957,30 +970,31 @@ def Demand_Constraint(M: 'TemoaModel', r, p, s, d, dem):
     could satisfy both an end-use and internal system demand, then the output from
     :math:`\textbf{FO}` and :math:`\textbf{FOA}` would be double counted."""
 
-    supply = sum(
-        M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
-        for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-        if S_t not in M.tech_annual
-        for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
-    )
+    # All demand techs are annual now
+    # supply = sum(
+    #     M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
+    #     for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
+    #     if S_t not in M.tech_annual
+    #     for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
+    # )
 
     supply_annual = sum(
         M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, dem]
         for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-        if S_t in M.tech_annual
         for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
-    ) * value(M.SegFrac[p, s, d])
+    )
 
-    DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
+    DemandConstraintErrorCheck(supply_annual, r, p, dem)
 
     expr = (
-        supply + supply_annual == value(M.Demand[r, p, dem]) * value(M.DemandSpecificDistribution[r, p, s, d, dem])
+        supply_annual == value(M.Demand[r, p, dem])
     )
 
     return expr
 
 
-def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem, s_0, d_0):
+# devnote: no longer needed
+def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem):
     r"""
 
     For end-use demands, it is unreasonable to let the model arbitrarily shift the
@@ -1010,17 +1024,18 @@ def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem, s_0, d_0):
     and not  :math:`\textbf{FOA}`
     """
 
-    act_a = sum(
-        M.V_FlowOut[r, p, s_0, d_0, S_i, t, v, dem]
+    activity = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, dem]
         for S_i in M.processInputsByOutput[r, p, t, v, dem]
     )
-    act_b = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, dem] for S_i in M.processInputsByOutput[r, p, t, v, dem]
+
+    annual_activity = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, dem]
+        for S_i in M.processInputsByOutput[r, p, t, v, dem]
     )
 
     expr = (
-        act_a * value(M.DemandSpecificDistribution[r, p, s, d, dem])
-        == act_b * value(M.DemandSpecificDistribution[r, p, s_0, d_0, dem])
+        annual_activity * value(M.DemandSpecificDistribution[r, p, s, d, dem]) == activity
     )
     return expr
 
@@ -1145,10 +1160,15 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         )
 
         # Into annual flows
-        consumed += value(M.SegFrac[p, s, d]) * sum(
-            M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+        consumed += sum(
+            (
+                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in M.commodity_demand
+                else value(M.SegFrac[p, s, d])
+            )
+            * M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-            if S_t not in M.tech_storage and S_t in M.tech_annual
+            if S_t in M.tech_annual
             for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
         )
 
@@ -1210,7 +1230,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             if S_t not in M.tech_annual
         )
         consumed += sum(
-            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[reg + '-' + r, p, c, S_t, S_v, S_o]
+            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[r + '-' + reg, p, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
             for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
             if S_t in M.tech_annual
@@ -1281,7 +1301,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         consumed += sum(
             M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / value(M.Efficiency[r, c, S_t, S_v, S_o])
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
-            if S_t not in M.tech_storage and S_t in M.tech_annual
+            if S_t in M.tech_annual
             for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
         )
 
@@ -1362,7 +1382,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
             if S_t not in M.tech_annual
         )
         produced += sum(
-            M.V_FlowOutAnnual[r + '-' + S_r, p, S_i, S_t, S_v, c]
+            M.V_FlowOutAnnual[S_r + '-' + r, p, S_i, S_t, S_v, c]
             for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
             if S_t in M.tech_annual
         )
@@ -2205,9 +2225,26 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
 
     # In most Temoa input databases, demand is endogenous, so we use electricity
     # generation instead as a proxy for electricity demand.
+    # Non-annual generation
     total_generation = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
         for (t, S_v) in M.processReservePeriods[r, p]
+        if t not in M.tech_annual
+        for S_i in M.processInputs[r, p, t, S_v]
+        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+    )
+
+    # Generators might serve demands directly
+    # Annual generation
+    total_generation += sum(
+        (
+            value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+            if S_o in M.commodity_demand
+            else value(M.SegFrac[p, s, d])
+        )
+        * M.V_FlowOutAnnual[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in M.processReservePeriods[r, p]
+        if t in M.tech_annual
         for S_i in M.processInputs[r, p, t, S_v]
         for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
     )
@@ -3535,11 +3572,12 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
 # ---------------------------------------------------------------
 # Define rule-based parameters
 # ---------------------------------------------------------------
-def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
-    life_length = value(M.LifetimeProcess[r, t, v])
-    mpl = min(v + life_length - p, value(M.PeriodLength[p]))
+# devnote: MPL no longer used. Instead, use adjusted capacity * period length
+# def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
+#     life_length = value(M.LifetimeProcess[r, t, v])
+#     mpl = min(v + life_length - p, value(M.PeriodLength[p]))
 
-    return mpl
+#     return mpl
 
 
 def ParamPeriodLength(M: 'TemoaModel', p):
@@ -3637,19 +3675,52 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     the primary region corresponds to the linked technology as well. The lifetimes
     of the primary and linked technologies should be specified and identical.
     """
+    
+    if t in M.tech_annual:
+        primary_flow = sum(
+            (
+                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in M.commodity_demand
+                else value(M.SegFrac[p, s, d])
+            )
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        primary_flow = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+
     linked_t = M.LinkedTechs[r, t, e]
 
-    primary_flow = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
+    # linked_flow = sum(
+    #     M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
+    #     for S_i in M.processInputs[r, p, linked_t, v]
+    #     for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
+    # )
 
-    linked_flow = sum(
-        M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
-        for S_i in M.processInputs[r, p, linked_t, v]
-        for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
-    )
+    if linked_t in M.tech_annual:
+        linked_flow = sum(
+            (
+                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in M.commodity_demand
+                else value(M.SegFrac[p, s, d])
+            )
+            * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
+            for S_i in M.processInputs[r, p, linked_t, v]
+            for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
+        )
+    else:
+        linked_flow = sum(
+            M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
+            for S_i in M.processInputs[r, p, linked_t, v]
+            for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
+        )
 
     return -primary_flow == linked_flow
 

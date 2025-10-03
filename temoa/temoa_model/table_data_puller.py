@@ -189,10 +189,17 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
 
     # basic annual flows
     for r, p, i, t, v, o in M.V_FlowOutAnnual.keys():
+        # Make sure this isn't just a non-annual demand tech
+        if t not in M.tech_annual:
+            continue
         for s in M.TimeSeason[p]:
             for d in M.time_of_day:
+                if o in M.commodity_demand:
+                    distribution = value(M.DemandSpecificDistribution[r, p, s, d, o])
+                else:
+                    distribution = value(M.SegFrac[p, s, d])
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * value(M.SegFrac[p, s, d])
+                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * distribution
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.OUT] = flow
@@ -301,7 +308,7 @@ def poll_cost_results(
 
     # conveniences...
     GDR = value(M.GlobalDiscountRate)
-    MPL = M.ModelProcessLife
+    # MPL = M.ModelProcessLife
     LLN = M.LoanLifetimeProcess
 
     exchange_costs = ExchangeTechCostLedger(M)
@@ -366,15 +373,15 @@ def poll_cost_results(
             )
 
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
-        cap = value(M.V_Capacity[r, p, t, v]) / value(M.ProcessLifeFrac[r, p, t, v])
+        cap = value(M.V_Capacity[r, p, t, v])
         if abs(cap) < epsilon:
             continue
 
         fixed_cost = value(M.CostFixed[r, p, t, v])
-        undiscounted_fixed_cost = cap * fixed_cost * value(MPL[r, p, t, v])
+        undiscounted_fixed_cost = cap * fixed_cost * value(M.PeriodLength[p])
 
         model_fixed_cost = temoa_rules.fixed_or_variable_cost(
-            cap, fixed_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
+            cap, fixed_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
         )
         if '-' in r:
             exchange_costs.add_cost_record(

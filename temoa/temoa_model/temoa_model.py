@@ -183,6 +183,7 @@ class TemoaModel(AbstractModel):
         M.tech_all = Set(initialize=M.tech_production, validate=no_slash_or_pipe) # was M.tech_resource | M.tech_production
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
+        M.tech_demand = Set(within=M.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         M.tech_storage = Set(within=M.tech_all)
         M.tech_reserve = Set(within=M.tech_all)
@@ -280,8 +281,10 @@ class TemoaModel(AbstractModel):
             default=0
         )
 
-        M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
-        M.initialize_Demands = BuildAction(rule=CreateDemands)
+        M.DemandConstraint_rpc = Set(
+            within=M.regions * M.time_optimize * M.commodity_demand
+        )
+        M.Demand = Param(M.DemandConstraint_rpc)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
         # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
@@ -380,6 +383,7 @@ class TemoaModel(AbstractModel):
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
+        M.initialize_Demands = BuildAction(rule=CreateDemands)
 
         M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
         M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
@@ -423,8 +427,9 @@ class TemoaModel(AbstractModel):
         )
         M.CostEmission = Param(M.CostEmission_rpe)
 
-        M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
-        M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
+        # devnote: no longer used
+        # M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
+        # M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
 
         M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
@@ -641,14 +646,14 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
-        M.DemandConstraint_rpsdc = Set(dimen=5, initialize=DemandConstraintIndices)
-        M.DemandConstraint = Constraint(M.DemandConstraint_rpsdc, rule=Demand_Constraint)
+        M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=Demand_Constraint)
 
-        M.DemandActivityConstraint_rpsdtv_dem_s0d0 = Set(
-            dimen=9, initialize=DemandActivityConstraintIndices
+        # devnote: testing a workaround
+        M.DemandActivityConstraint_rpsdtv_dem = Set(
+            dimen=7, initialize=DemandActivityConstraintIndices
         )
         M.DemandActivityConstraint = Constraint(
-            M.DemandActivityConstraint_rpsdtv_dem_s0d0, rule=DemandActivity_Constraint
+            M.DemandActivityConstraint_rpsdtv_dem, rule=DemandActivity_Constraint
         )
 
         M.CommodityBalanceConstraint_rpsdc = Set(

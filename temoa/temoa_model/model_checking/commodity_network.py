@@ -78,11 +78,14 @@ class CommodityNetwork:
 
         self.orig_connex: set[tuple] = set()
 
+        # devnote: changing this from error to info as a power sector model might have
+        # transmission-only nodes (exchange techs only, no demands)
         if not self.model_data.demand_commodities[self.region, self.period]:
-            raise ValueError(
-                f'No demand commodities discovered in region {self.region} period {self.period}.  Check '
-                f'Demand table data'
+            msg = (
+                f'No demand commodities discovered in region {self.region} period {self.period}. Ignore this '
+                'if this was intentional.'
             )
+            logger.info(msg)
         # dev note:  This code was originally designed/tested to run on tuples of (ic, tech_name, oc)
         #            since the implementation of Tech named tuple, we could switch over to that soon,
         #            but it will be work to re-work the tests.  The networks are smaller this way
