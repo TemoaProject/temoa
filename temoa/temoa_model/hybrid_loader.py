@@ -396,7 +396,7 @@ class HybridLoader:
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
-            case 'seasonal_timeslices' | 'representative_periods' | 'sequential_days':
+            case 'seasonal_timeslices' | 'representative_periods' | 'consecutive_days':
                 pass
             case 'manual':
                 # This is a hidden feature allowing the user to manually specify the sequence of states using the TimeNext table

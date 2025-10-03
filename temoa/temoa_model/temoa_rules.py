@@ -1538,7 +1538,7 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             - \sum\limits_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
             = {SL}_{r,p,s_{{next}},d_{{next}},t,v}
 
-    Note that for all seasonal representations except sequential days, the last time slice
+    Note that for all seasonal representations except consecutive_days, the last time slice
     of each season will loop back to the first time slice of the same season, preventing 
     seasonal deltas for non-seasonal storage (see SeasonalStorageEnergyUpperBound).
     """
@@ -1946,7 +1946,7 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     One of two constraints built from the RampUpHourly table, along with the
     RampUpSeason_Constraint. RampUpDay constrains ramp rates between time slices
     within each season and RampUpSeason constrains ramp rates between sequential
-    seasons. If the :code:`time_sequencing` parameter is set to :code:`sequential_days`
+    seasons. If the :code:`time_sequencing` parameter is set to :code:`consecutive_days`
     then the RampUpSeason constraint is skipped as seasons already connect together.
 
     The ramp rate constraint is utilized to limit the rate of electricity generation
