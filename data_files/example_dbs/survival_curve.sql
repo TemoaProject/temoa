@@ -8,7 +8,7 @@ CREATE TABLE MetaData
     PRIMARY KEY (element)
 );
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
+INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
 INSERT INTO MetaData VALUES('days_per_period',365,'count of days in each period');
 CREATE TABLE MetaDataReal
 (
@@ -38,6 +38,7 @@ CREATE TABLE SeasonLabel
     season TEXT PRIMARY KEY,
     notes  TEXT
 );
+INSERT INTO SeasonLabel VALUES('s',NULL);
 CREATE TABLE SectorLabel
 (
     sector TEXT PRIMARY KEY,

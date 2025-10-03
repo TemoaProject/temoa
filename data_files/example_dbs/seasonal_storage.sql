@@ -38,6 +38,22 @@ CREATE TABLE SeasonLabel
     season TEXT PRIMARY KEY,
     notes  TEXT
 );
+INSERT INTO SeasonLabel VALUES('charge','non-sequential season - charging day');
+INSERT INTO SeasonLabel VALUES('discharge','non-sequential season - discharging day');
+INSERT INTO SeasonLabel VALUES('summer','sequential season - summer day');
+INSERT INTO SeasonLabel VALUES('sept_w1','sequential season - day in first week of September');
+INSERT INTO SeasonLabel VALUES('sept_w2','sequential season - day in second week of September');
+INSERT INTO SeasonLabel VALUES('sept_w3','sequential season - day in third week of September');
+INSERT INTO SeasonLabel VALUES('sept_w4','sequential season - day in fourth week of September');
+INSERT INTO SeasonLabel VALUES('sept_29th','sequential season - 29th of September');
+INSERT INTO SeasonLabel VALUES('sept_30th','sequential season - 30th of September');
+INSERT INTO SeasonLabel VALUES('winter','sequential season - winter day');
+INSERT INTO SeasonLabel VALUES('apr_w1','sequential season - day in first week of September');
+INSERT INTO SeasonLabel VALUES('apr_w2','sequential season - day in second week of September');
+INSERT INTO SeasonLabel VALUES('apr_w3','sequential season - day in third week of September');
+INSERT INTO SeasonLabel VALUES('apr_w4','sequential season - day in fourth week of September');
+INSERT INTO SeasonLabel VALUES('apr_29th','sequential season - 29th of April');
+INSERT INTO SeasonLabel VALUES('apr_30th','sequential season - 30th of April');
 CREATE TABLE SectorLabel
 (
     sector TEXT PRIMARY KEY,

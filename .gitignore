@@ -17,3 +17,6 @@ other_notebooks/
 
 # ignore cached vscode settings
 .vscode
+
+# ignore built docs
+docs/_build
