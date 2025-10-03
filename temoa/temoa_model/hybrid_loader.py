@@ -664,12 +664,12 @@ class HybridLoader:
         if self.table_exists("TimeSeasonSequential"):
             if mi:
                 raw = cur.execute(
-                    'SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential WHERE'
+                    'SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential WHERE'
                     ' period >= ? AND period <= ? ORDER BY period, sequence',
                     (mi.base_year, mi.last_demand_year)
                 ).fetchall()
             else:
-                raw = cur.execute('SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
+                raw = cur.execute('SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
             all_seasons = all_seasons | set((row[1],) for row in raw)
             load_element(M.TimeSeasonSequential, raw)
             load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
@@ -736,10 +736,15 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LifetimeProcess').fetchall()
             load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
-        # LoanLifetimeTech
-        if self.table_exists("LoanLifetimeTech"):
-            raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
-            load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
+        # LifetimeSurvivalCurve
+        if self.table_exists("LifetimeSurvivalCurve"):
+            raw = cur.execute('SELECT region, period, tech, vintage, fraction FROM main.LifetimeSurvivalCurve').fetchall()
+            load_element(M.LifetimeSurvivalCurve, raw, self.viable_rtv, val_loc=(0, 2, 3))
+
+        # LoanLifetimeProcess
+        if self.table_exists("LoanLifetimeProcess"):
+            raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LoanLifetimeProcess').fetchall()
+            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1))
 
         # LimitTechInputSplit
         if self.table_exists('LimitTechInputSplit'):

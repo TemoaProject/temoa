@@ -61,8 +61,7 @@ CREATE TABLE CapacityFactorProcess
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     tech    TEXT
@@ -96,8 +95,7 @@ CREATE TABLE CapacityFactorTech
     region TEXT,
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod    TEXT
         REFERENCES TimeOfDay (tod),
     tech   TEXT
@@ -512,8 +510,7 @@ CREATE TABLE DemandSpecificDistribution
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
@@ -652,8 +649,7 @@ CREATE TABLE EfficiencyVariable
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -762,27 +758,17 @@ CREATE TABLE TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE LoanLifetimeTech
+CREATE TABLE LoanLifetimeProcess
 (
     region   TEXT,
     tech     TEXT
         REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     lifetime REAL,
     notes    TEXT,
-    PRIMARY KEY (region, tech)
+    PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LoanLifetimeTech VALUES('utopia','E01',40.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','E21',40.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','E31',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','E51',100.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','E70',40.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','RHE',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','RHO',30.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','RL1',10.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','SRE',50.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','TXD',15.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','TXE',15.0,'');
-INSERT INTO LoanLifetimeTech VALUES('utopia','TXG',15.0,'');
 CREATE TABLE LoanRate
 (
     region  TEXT,
@@ -923,8 +909,7 @@ CREATE TABLE LimitStorageLevelFraction
     region   TEXT,
     period   INTEGER
         REFERENCES TimePeriod (period),
-    season   TEXT
-        REFERENCES TimeSeason (season),
+    season   TEXT,
     tod      TEXT
         REFERENCES TimeOfDay (tod),
     tech     TEXT
@@ -1059,8 +1044,7 @@ CREATE TABLE LimitSeasonalCapacityFactor
         REFERENCES Region (region),
 	period	INTEGER
         REFERENCES TimePeriod (period),
-	season	TEXT
-        REFERENCES TimeSeason (season),
+	season	TEXT,
 	tech    TEXT
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -1235,8 +1219,7 @@ CREATE TABLE OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -1258,8 +1241,7 @@ CREATE TABLE OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -1281,8 +1263,7 @@ CREATE TABLE OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -1326,8 +1307,7 @@ CREATE TABLE TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
@@ -1360,6 +1340,18 @@ CREATE TABLE StorageDuration
     duration REAL,
     notes    TEXT,
     PRIMARY KEY (region, tech)
+);
+CREATE TABLE SurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
 );
 CREATE TABLE TechnologyType
 (
@@ -1399,8 +1391,7 @@ CREATE TABLE TimeSeason
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
@@ -1419,12 +1410,11 @@ CREATE TABLE TimeSeasonSequential
         REFERENCES TimePeriod (period),
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT
-        REFERENCES TimeSeason (season),
-    count REAL NOT NULL,
+    season TEXT,
+    num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
+    CHECK (num_days > 0)
 );
 CREATE TABLE TimePeriodType
 (

@@ -65,8 +65,7 @@ CREATE TABLE IF NOT EXISTS CapacityFactorProcess
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     tech    TEXT
@@ -82,8 +81,7 @@ CREATE TABLE IF NOT EXISTS CapacityFactorTech
     region TEXT,
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod    TEXT
         REFERENCES TimeOfDay (tod),
     tech   TEXT
@@ -215,8 +213,7 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
@@ -261,8 +258,7 @@ CREATE TABLE IF NOT EXISTS EfficiencyVariable
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -342,14 +338,16 @@ CREATE TABLE IF NOT EXISTS TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE IF NOT EXISTS LoanLifetimeTech
+CREATE TABLE IF NOT EXISTS LoanLifetimeProcess
 (
     region   TEXT,
     tech     TEXT
         REFERENCES Technology (tech),
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     lifetime REAL,
     notes    TEXT,
-    PRIMARY KEY (region, tech)
+    PRIMARY KEY (region, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS LoanRate
 (
@@ -467,8 +465,7 @@ CREATE TABLE IF NOT EXISTS LimitStorageLevelFraction
     region   TEXT,
     period   INTEGER
         REFERENCES TimePeriod (period),
-    season   TEXT
-        REFERENCES TimeSeason (season),
+    season   TEXT,
     tod      TEXT
         REFERENCES TimeOfDay (tod),
     tech     TEXT
@@ -592,8 +589,7 @@ CREATE TABLE IF NOT EXISTS LimitSeasonalCapacityFactor
         REFERENCES Region (region),
 	period	INTEGER
         REFERENCES TimePeriod (period),
-	season	TEXT
-        REFERENCES TimeSeason (season),
+	season	TEXT,
 	tech    TEXT
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -762,8 +758,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -785,8 +780,7 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT
-        REFERENCES TimeSeason (season),
+    season      TEXT,
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -808,8 +802,7 @@ CREATE TABLE IF NOT EXISTS OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -852,8 +845,7 @@ CREATE TABLE IF NOT EXISTS TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT
-        REFERENCES TimeSeason (season),
+    season  TEXT,
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
@@ -868,6 +860,18 @@ CREATE TABLE IF NOT EXISTS StorageDuration
     duration REAL,
     notes    TEXT,
     PRIMARY KEY (region, tech)
+);
+CREATE TABLE LifetimeSurvivalCurve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES Technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES TimePeriod (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS TechnologyType
 (
@@ -887,12 +891,10 @@ VALUES ('ps', 'storage production technology');
 -- (
 --     period       INTEGER
 --         REFERENCES TimePeriod (period),
---     season       TEXT
---         REFERENCES TimeSeason (season),
+--     season       TEXT,
 --     tod          TEXT
 --         REFERENCES TimeOfDay (tod),
---     season_next  TEXT
---         REFERENCES TimeSeason (season),
+--     season_next  TEXT,
 --     tod_next     TEXT
 --         REFERENCES TimeOfDay (tod),
 --     notes        TEXT,
@@ -927,12 +929,11 @@ CREATE TABLE IF NOT EXISTS TimeSeasonSequential
         REFERENCES TimePeriod (period),
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT
-        REFERENCES TimeSeason (season),
-    count REAL NOT NULL,
+    season TEXT,
+    num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
+    CHECK (num_days > 0)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType
 (

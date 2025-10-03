@@ -314,7 +314,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
             # Still want it for end of life flows
             continue
         for p in M.processPeriods[r, t, v]:
-            M.efficiencyVariables[r, p, i, t, v, o] = False 
+            M.isEfficiencyVariable[r, p, i, t, v, o] = False 
             count_rpitvo[r, p, i, t, v, o] = 0
     
     annual = set()
@@ -346,7 +346,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
     for (r, p, i, t, v, o), count in count_rpitvo.items():
 
         if count > 0:
-            M.efficiencyVariables[r, p, i, t, v, o] = True
+            M.isEfficiencyVariable[r, p, i, t, v, o] = True
             if count < num_seg:
                 logger.warning(
                     'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
@@ -361,7 +361,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
     # Pull CapacityFactorTech by default
     for r, p, s, d, t in M.CapacityFactor_rpsdt:
         for v in M.processVintages[r, p, t]:
-            M.capacityFactorProcesses[r, p, t, v] = False
+            M.isCapacityFactorProcess[r, p, t, v] = False
             count_rptv[r, p, t, v] = 0
     
     # Check for bad values and count up the good ones
@@ -380,7 +380,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
     num_seg = len(M.time_season[p]) * len(M.time_of_day)
     for (r, p, t, v), count in count_rptv.items():
         if count > 0:
-            M.capacityFactorProcesses[r, p, t, v] = True
+            M.isCapacityFactorProcess[r, p, t, v] = True
             if count < num_seg:
                 logger.warning(
                     'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
@@ -793,6 +793,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if t not in M.tech_uncap and any((
                 p <= v+l_lifetime < p + value(M.PeriodLength[p]), # natural eol this period
                 t in M.tech_retirement and v < p <= v+l_lifetime - value(M.PeriodLength[p]), # allowed early retirement
+                M.isSurvivalCurveProcess[r, t, v] and v <= p <= v+l_lifetime
             )):
                 if (r, t, v) not in M.retirementPeriods:
                     M.retirementPeriods[r, t, v] = set()
@@ -954,9 +955,9 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
     # A dictionary of whether a storage tech is seasonal, just to speed things up
     for t in M.tech_storage:
-        M.is_seasonal_storage[t] = False
+        M.isSeasonalStorage[t] = False
     for t in M.tech_seasonal_storage:
-        M.is_seasonal_storage[t] = True
+        M.isSeasonalStorage[t] = True
 
     M.activeFlow_rpsditvo = set(
         (r, p, s, d, i, t, v, o)
@@ -1131,6 +1132,124 @@ def CreateTimeSequence(M: 'TemoaModel'):
     
     logger.debug('Created time sequence.')
 
+
+def CreateSurvivalCurve(M: 'TemoaModel'):
+    
+    rtv_interpolated = set() # so we only need one warning
+
+    for (r, _, t, v, _) in M.Efficiency:
+        M.isSurvivalCurveProcess[r, t, v] = False # by default
+
+    # Collect rptv indices into (r, t, v): p dictionary
+    for r, p, t, v in M.LifetimeSurvivalCurve:
+        if (r, t, v) not in M.survivalCurvePeriods:
+            M.survivalCurvePeriods[r, t, v] = list()
+        M.survivalCurvePeriods[r, t, v].append(p)
+        M.isSurvivalCurveProcess[r, t, v] = True
+
+    # Go through all the periods for each (r, t, v) in order
+    for r, t, v in M.survivalCurvePeriods:
+        periods_rtv = sorted(M.survivalCurvePeriods[r, t, v])
+
+        p_first = periods_rtv[0]
+        p_last = periods_rtv[-1]
+
+        if p_first != v:
+            msg = (
+                'LifetimeSurvivalCurve must be defined starting in the vintage period. Must '
+                f'define ({r}, >{v}<, {t}, {v})'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+        # Let them know about the linear interpolation
+        if periods_rtv != list(range(p_first, p_last+1, 1)):
+            rtv_interpolated.add((r, t, v))
+
+        between_periods = []
+        for i, p in enumerate(periods_rtv):
+            
+            if p < v:
+                msg = (
+                    'LifetimeSurvivalCurve defined for a period that comes before its vintage. '
+                    f'This is not allowed: ({r, p, t, v})'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
+            if i == 0:
+                continue # Cant look back from first period. Could be zero but hey why not
+            
+            # Check that the survival curve monotonically decreases
+            p_prev = periods_rtv[i-1]
+            lsc = value(M.LifetimeSurvivalCurve[r, p, t, v])
+            lsc_prev = value(M.LifetimeSurvivalCurve[r, p_prev, t, v])
+            if lsc - lsc_prev > 0.0001:
+                msg = (
+                    'LifetimeSurvivalCurve fraction increases going forward in time from {} to {}. '
+                    'This is not allowed.'
+                ).format((r, p_prev, t, v), (r, p, t, v))
+                logger.error(msg)
+                raise ValueError(msg)
+            
+            if p - p_prev > 1:
+                _between_periods = list(range(p_prev+1, p, 1))
+                for _p in _between_periods:
+                    x = (_p - p_prev) / (p - p_prev)
+                    lsc_x = lsc_prev + x * (lsc - lsc_prev)
+                    M.LifetimeSurvivalCurve[r, _p, t, v] = lsc_x
+                between_periods.extend(_between_periods)
+
+            if lsc < 0.0001:
+                if p != p_last:
+                    msg = (
+                        'There is no need to continue a survival curve beyond fraction ~= 0. '
+                        f'ignoring periods beyond {p} for ({r, t, v})'
+                    )
+                    logger.info(msg)
+
+                # Make sure the lifetime for this process aligns with survival curve end
+                if value(M.LifetimeProcess[r, t, v]) < p - v:
+                    msg = (
+                        f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
+                        f'does not extend beyond the end of that survival curve in {p}. To agree with '
+                        f'the survival curve, set LifetimeProcess[{r, t, v}] >= {p-v}'
+                    )
+                    logger.error(msg)
+                    raise ValueError(msg)
+                elif value(M.LifetimeProcess[r, t, v]) != p - v:
+                    msg = (
+                        f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
+                        f'does match the end of that survival curve in {p}. To agree with '
+                        f'the survival curve and suppress some warnings, set '
+                        f'LifetimeProcess[{r, t, v}] = {p-v}'
+                    )
+                    logger.info(msg)
+                
+                continue
+            
+            # Check that the last period is zero. This is important for investment costs
+            if p == p_last:
+                if lsc > 0.0001:
+                    msg = (
+                        'Any defined survival curve must continue to zero for the purposes of '
+                        'investment cost accounting, even if this period would extend beyond '
+                        f'defined future periods. Continue ({r, t, v}) to fraction == 0.'
+                    )
+                    logger.error(msg)
+                    raise ValueError(msg)
+                
+        M.survivalCurvePeriods[r, t, v].extend(between_periods)
+        M.survivalCurvePeriods[r, t, v] = set(M.survivalCurvePeriods[r, t, v])
+
+    if rtv_interpolated:
+        msg = (
+            'For the purposes of investment cost accounting, LifetimeSurvivalCurve must be defined '
+            f'for each individual year. Gaps between defined years will be filled by linear interpolation. '
+            'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
+        ).format([rtv for rtv in rtv_interpolated])
+        logger.info(msg)
+
     
 # ---------------------------------------------------------------
 # Create sparse parameter indices.
@@ -1190,46 +1309,6 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
     indices = indices.union(M.regionalIndices)
 
     return indices
-
-
-# def GroupShareIndices(M: 'TemoaModel'):
-#     indices = set(
-#         (r, p, t, g, op)
-#         for g in M.tech_group_names
-#         for r, p, t in M.groupRegionActiveFlow_rpt
-#         for op in M.operator
-#         if t in M.tech_group_members[g]
-#     )
-
-#     return indices
-
-
-# def GroupShareIndices(M: 'TemoaModel'):
-#     indices = set(
-#         (r, p, g1, g2, op)
-#         for op in M.operator
-#         for g1 in M.tech_or_group
-#         for g2 in M.tech_or_group
-#         for r, p, t in M.groupRegionActiveFlow_rpt
-#         for _r, _p, _t in M.groupRegionActiveFlow_rpt
-#         if r==_r and p==_p
-#         if t in gather_group_techs(M, g1) and _t in gather_group_techs(M, g2)
-#     )
-
-#     return indices
-
-
-# def TwoGroupShareIndices(M: 'TemoaModel'):
-#     indices = set(
-#         (r, p, g1, g2, op)
-#         for g1 in M.tech_group_names
-#         for g2 in M.tech_group_names
-#         for r, p, _t in M.groupRegionActiveFlow_rpt
-#         for op in M.operator
-#         if _t in M.tech_group_members[g2]
-#     )
-
-#     return indices
 
 
 def EmissionActivityIndices(M: 'TemoaModel'):
@@ -1814,8 +1893,8 @@ def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
     return techs
 
 
-def get_loan_life(M, r, t, _):
-    return M.LoanLifetimeTech[r, t]
+def get_loan_life(M: 'TemoaModel', r, t, v):
+    return M.LifetimeProcess[r, t, v]
 
 
 def copy_from(other_set):

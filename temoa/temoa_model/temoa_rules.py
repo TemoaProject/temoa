@@ -50,11 +50,15 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     For a given :code:`(r,p,t,v)` index, this constraint sets the capacity equal to
     the amount installed in period :code:`v` and subtracts from it any and all retirements
     that occurred up until the period in question, :code:`p`."""
+
+    PLF = value(M.ProcessLifeFrac[r, p, t, v])
+    LSC = value(M.LifetimeSurvivalCurve[r, p, t, v])
+
     if t not in M.tech_retirement:
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * value(M.ProcessLifeFrac[r, p, t, v])
+            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * LSC * PLF
         else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * value(M.ProcessLifeFrac[r, p, t, v])
+            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * LSC * PLF
 
     else:
         retired_cap = sum(
@@ -63,9 +67,9 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
             if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
         if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * value(M.ProcessLifeFrac[r, p, t, v]) - retired_cap
+            return M.V_Capacity[r, p, t, v] == (value(M.ExistingCapacity[r, t, v]) * LSC - retired_cap) * PLF
         else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * value(M.ProcessLifeFrac[r, p, t, v]) - retired_cap
+            return M.V_Capacity[r, p, t, v] == (M.V_NewCapacity[r, t, v] * LSC - retired_cap) * PLF
     
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -292,8 +296,13 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
             retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
     else:
         if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Existing capacity minus remaining capacity
-            retired = value(M.ExistingCapacity[r, t, v]) - M.V_Capacity[r, p, t, v]
+            # Existing capacity in first period. Remaining existing capacity in last
+            # existing period minus remaining capacity
+            retired = (
+                value(M.ExistingCapacity[r, t, v])
+                * value(M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v])
+                - M.V_Capacity[r, p, t, v]
+            )
         elif p == v:
             # New capacity in its vintage period. New capacity minus remaining capacity
             retired = M.V_NewCapacity[r, t, v] - M.V_Capacity[r, p, t, v]
@@ -412,14 +421,20 @@ def TotalCost_rule(M):
 
 def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert an annuity to present value"""
+    if rate == 0:
+        return periods
     return ((1 + rate)**periods - 1) / (rate * (1 + rate)**periods)
 
 def pv_to_annuity(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert present value to an annuity"""
+    if rate == 0:
+        return 1 / periods
     return (rate * (1 + rate)**periods) / ((1 + rate)**periods - 1)
     
 def fv_to_pv(rate: float, periods: int) -> float | Expression:
     """Multiplication factor to convert a future value to present value"""
+    if rate == 0:
+        return 1
     return 1 / (1 + rate)**periods
 
 
@@ -448,7 +463,7 @@ def loan_cost(
     :return: fixed number or pyomo expression based on input types
     """
 
-    # calculate the annualised loan repayment (annuity)
+    # calculate the amortised loan repayment (annuity)
     annuity = (
         capacity * invest_cost  # lump investment cost is capacity times CostInvest
         * loan_annualize        # calculate loan annuities for investment cost, if used
@@ -467,9 +482,79 @@ def loan_cost(
         res = (
             annuity
             * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
-            * pv_to_annuity(GDR, lifetime_process)          # reannualised over lifetime of process using GDR
-            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # PV of all reannualised costs (within planning horizon)
+            * pv_to_annuity(GDR, lifetime_process)          # reamortised over lifetime of process using GDR
+            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # PV of all reamortised costs (within planning horizon)
             * fv_to_pv(GDR, vintage - P_0)                  # finally, discounted from vintage year to P_0
+        )
+    return res
+
+
+def loan_cost_survival_curve(
+    M: 'TemoaModel',
+    r: str,
+    t: str,
+    v: str,
+    capacity: float | Var,
+    invest_cost: float,
+    loan_annualize: float,
+    lifetime_loan_process: float | int,
+    P_0: int,
+    P_e: int,
+    GDR: float,
+) -> float | Expression:
+    """
+    function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
+    pyomo variables/params to make a pyomo Expression
+    :param capacity: The capacity to use to calculate cost
+    :param invest_cost: the cost/capacity
+    :param loan_annualize: parameter
+    :param lifetime_loan_process: lifetime of the loan
+    :param P_0: the year to discount the costs back to
+    :param P_e: the 'end year' or cutoff year for loan payments
+    :param GDR: Global Discount Rate
+    :return: fixed number or pyomo expression based on input types
+    """
+
+    # calculate the amortised loan repayment (annuity)
+    annuity = (
+        capacity * invest_cost  # lump investment cost is capacity times CostInvest
+        * loan_annualize        # calculate loan annuities for investment cost, if used
+    )
+    
+    if not GDR:
+        # Undiscounted result
+        res = (
+            annuity
+            * lifetime_loan_process                         # sum of loan payments over loan period
+            / sum(                                          # redistributed over survival curve within horizon
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
+                for p in M.survivalCurvePeriods[r, t, v]
+                if v <= p
+            )
+            * sum(                                          # summed over survival curve within horizon
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
+                for p in M.survivalCurvePeriods[r, t, v]
+                if v <= p < P_e
+            )
+        )
+    else:
+        # Discounted result
+        res = (
+            annuity
+            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
+            / sum(                                          # redistributed over survival curve within horizon
+                value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
+                * fv_to_pv(GDR, p - v + 1)
+                for p in M.survivalCurvePeriods[r, t, v]
+                if v <= p # this shouldnt be possible but play it safe
+            )
+            * sum(                                          # PV of all reamortised costs (within planning horizon)
+                value(M.LifetimeSurvivalCurve[r, p, t, v])
+                * fv_to_pv(GDR, p - v + 1)
+                for p in M.survivalCurvePeriods[r, t, v]
+                if v <= p < P_e
+            )
+            * fv_to_pv(GDR, v - P_0)                  # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -530,7 +615,24 @@ def PeriodCost_rule(M: 'TemoaModel', p):
             vintage=S_v,
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-        if S_v == p
+        if S_v == p and not M.isSurvivalCurveProcess[r, S_t, S_v]
+    )
+    loan_costs += sum(
+        loan_cost_survival_curve(
+            M,
+            r,
+            S_t,
+            S_v,
+            M.V_NewCapacity[r, S_t, S_v],
+            value(M.CostInvest[r, S_t, S_v]),
+            value(M.LoanAnnualize[r, S_t, S_v]),
+            value(M.LoanLifetimeProcess[r, S_t, S_v]),
+            P_0,
+            P_e,
+            GDR,
+        )
+        for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
+        if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]
     )
 
     fixed_costs = sum(
@@ -1265,7 +1367,7 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
 
     # We allow a non-zero daily delta only in the case of seasonal storage
-    if M.is_seasonal_storage[t] and d == M.time_of_day.last():
+    if M.isSeasonalStorage[t] and d == M.time_of_day.last():
         return Constraint.Skip # handled by SeasonalStorageEnergy_Constraint
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
@@ -1367,7 +1469,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     """
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         return Constraint.Skip # redundant on SeasonalStorageEnergyUpperBound
 
     energy_capacity = (
@@ -1568,14 +1670,14 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
         * value(M.LimitStorageFraction[r, p, s, d, t, v, op])
     )
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         s_seq = s # sequential season
         s = M.sequential_to_season[p, s_seq] # non-sequential season
 
     # adjust the storage level to the individual-day level
     energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
 
-    if M.is_seasonal_storage[t]:
+    if M.isSeasonalStorage[t]:
         # seasonal storage upper energy limit is absolute
         energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_seq, s])
 
@@ -3090,25 +3192,26 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     return frac
 
 
-def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
-    """
-    This calculation is broken out specifically so that it can be used for param creation
-    and separately to calculate loan costs rather than rely on fully-built model parameters
-    :param loan_rate:
-    :param loan_life:
+# devnote: made redundant by time-value equations for objective function
+# def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
+#     """
+#     This calculation is broken out specifically so that it can be used for param creation
+#     and separately to calculate loan costs rather than rely on fully-built model parameters
+#     :param loan_rate:
+#     :param loan_life:
 
-    """
-    if not loan_rate:
-        # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
-        return 1.0 / loan_life
-    annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
-    return annualized_rate
+#     """
+#     if not loan_rate:
+#         # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
+#         return 1.0 / loan_life
+#     annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
+#     return annualized_rate
 
 
 def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
     dr = value(M.LoanRate[r, t, v])
     lln = value(M.LoanLifetimeProcess[r, t, v])
-    annualized_rate = loan_annualization_rate(dr, lln)
+    annualized_rate = pv_to_annuity(dr, lln)
     return annualized_rate
 
 
@@ -3196,13 +3299,13 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
 # Much faster to build a dictionary and check that than check the parameter
 # indices directly every time - saves build time
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
-    if M.efficiencyVariables[r, p, i, t, v, o]:
+    if M.isEfficiencyVariable[r, p, i, t, v, o]:
         return value(M.Efficiency[r, i, t, v, o]) * value(M.EfficiencyVariable[r, p, s, d, i, t, v, o])
     else:
         return value(M.Efficiency[r, i, t, v, o])
     
 def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
-    if M.capacityFactorProcesses[r, p, t, v]:
+    if M.isCapacityFactorProcess[r, p, t, v]:
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
         return value(M.CapacityFactorTech[r, p, s, d, t])

@@ -43,6 +43,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from collections import defaultdict
 from logging import getLogger
 from typing import TYPE_CHECKING
+from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.temoa_model.temoa_model import TemoaModel
@@ -226,7 +227,7 @@ def price_checker(M: 'TemoaModel') -> bool:
             continue
 
         # get the lifetime of the tech, or default
-        lifetime = M.LifetimeProcess[region, tech, vintage]
+        lifetime = value(M.LifetimeProcess[region, tech, vintage])
         # get all applicable future periods that should be priced for this item
         expected_periods = {p for p in M.time_optimize if vintage <= p < vintage + lifetime}
         missing_fixed_costs = (

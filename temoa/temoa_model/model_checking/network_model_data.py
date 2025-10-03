@@ -181,6 +181,13 @@ def _build_from_db(
     cur = con.cursor()
     raw = cur.execute('SELECT tech FROM Technology WHERE retire==1').fetchall()
     tech_retire = {t[0] for t in raw}
+    tech_survival_curve = set()
+    try:
+        raw = cur.execute('SELECT DISTINCT region, tech, vintage FROM SurvivalCurve').fetchall()
+        tech_survival_curve = set(raw)
+    except:
+        # table didn't exist
+        pass
     raw = cur.execute('SELECT period FROM TimePeriod').fetchall()
     periods = [p[0] for p in sorted(raw)]
     period_length = {periods[i]: periods[i+1] - periods[i] for i in range(len(periods)-1)}
@@ -274,6 +281,7 @@ def _build_from_db(
             if any((
                 p <= v+lifetime < p + period_length[p], # natural eol this period
                 tech in tech_retire and v < p <= v+lifetime - period_length[p], # allowed early retirement
+                tech in tech_survival_curve and v <= p <= v+lifetime
             )):
                 try:
                     raw_eol = cur.execute(

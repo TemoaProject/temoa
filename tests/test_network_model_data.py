@@ -52,6 +52,7 @@ params = [
         'name': 'basic',
         'data': [
             [], # retirement techs
+            [], # survival curve techs
             [
                 (2020,),
                 (2025,),
@@ -100,6 +101,7 @@ params = [
         'name': 'bad linked tech',
         'data': [
             [], # retirement techs
+            [], # survival curve techs
             [
                 (2020,),
                 (2025,),
@@ -147,6 +149,7 @@ params = [
         'name': 'good linked tech',
         'data': [
             [], # retirement techs
+            [], # survival curve techs
             [
                 (2020,),
                 (2025,),

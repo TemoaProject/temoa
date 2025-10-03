@@ -85,4 +85,12 @@ test_vals = {
         ExpectedVals.CONSTR_COUNT: 182,
         ExpectedVals.VAR_COUNT: 90, 
     },
+    'survival_curve': {
+        # added 2025/06/19 after addition of survival curves
+        ExpectedVals.OBJ_VALUE: 31.8083,
+        ExpectedVals.EFF_DOMAIN_SIZE: 64,
+        ExpectedVals.EFF_INDEX_SIZE: 8,
+        ExpectedVals.CONSTR_COUNT: 101,
+        ExpectedVals.VAR_COUNT: 103, 
+    },
 }

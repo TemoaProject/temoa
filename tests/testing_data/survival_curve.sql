@@ -7,10 +7,10 @@ CREATE TABLE MetaData
     notes   TEXT,
     PRIMARY KEY (element)
 );
+INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO MetaData VALUES('myopic_base_year',1990,'');
-INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
+INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES('days_per_period',365,'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -19,8 +19,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -39,12 +39,6 @@ CREATE TABLE SectorLabel
     sector TEXT,
     PRIMARY KEY (sector)
 );
-INSERT INTO SectorLabel VALUES('supply');
-INSERT INTO SectorLabel VALUES('electric');
-INSERT INTO SectorLabel VALUES('transport');
-INSERT INTO SectorLabel VALUES('commercial');
-INSERT INTO SectorLabel VALUES('residential');
-INSERT INTO SectorLabel VALUES('industrial');
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
@@ -104,25 +98,22 @@ CREATE TABLE Commodity
         REFERENCES CommodityType (label),
     description TEXT
 );
-INSERT INTO Commodity VALUES('ELC','d','electricity');
-INSERT INTO Commodity VALUES('NGA','p','natural gas');
-INSERT INTO Commodity VALUES('CO2','e','CO2 emission');
-INSERT INTO Commodity VALUES('CO2_CAP','d','captured CO2');
-INSERT INTO Commodity VALUES('ETHOS','s','source');
+INSERT INTO Commodity VALUES('source','s',NULL);
+INSERT INTO Commodity VALUES('demand','d',NULL);
 CREATE TABLE CommodityType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
+INSERT INTO CommodityType VALUES('p','physical commodity');
+INSERT INTO CommodityType VALUES('a','annual commodity');
+INSERT INTO CommodityType VALUES('e','emissions commodity');
+INSERT INTO CommodityType VALUES('d','demand commodity');
+INSERT INTO CommodityType VALUES('s','source commodity');
 INSERT INTO CommodityType VALUES('w','waste commodity');
 INSERT INTO CommodityType VALUES('wa','waste annual commodity');
 INSERT INTO CommodityType VALUES('wp','waste physical commodity');
-INSERT INTO CommodityType VALUES('a','annual commodity');
-INSERT INTO CommodityType VALUES('s','source commodity');
-INSERT INTO CommodityType VALUES('p','physical commodity');
-INSERT INTO CommodityType VALUES('e','emissions commodity');
-INSERT INTO CommodityType VALUES('d','demand commodity');
 CREATE TABLE ConstructionInput
 (
     region      TEXT,
@@ -149,7 +140,6 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('linkville',2000,'CO2',2.0,NULL,NULL);
 CREATE TABLE CostFixed
 (
     region  TEXT    NOT NULL,
@@ -164,6 +154,32 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
+INSERT INTO CostFixed VALUES('region',2025,'tech_ancient',1994,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2025,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2030,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2035,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2040,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2025,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2030,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2035,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2040,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2045,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2030,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2035,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2040,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2045,'tech_future',2045,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_future',2050,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2035,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2040,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2045,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_future',2045,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2040,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2045,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2045,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostFixed VALUES('region',2050,'tech_future',2030,1.0,NULL,NULL);
 CREATE TABLE CostInvest
 (
     region  TEXT,
@@ -176,8 +192,12 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO CostInvest VALUES('linkville','PLANT',2000,100.0,'','');
-INSERT INTO CostInvest VALUES('linkville','CCS',2000,50.0,'','');
+INSERT INTO CostInvest VALUES('region','tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','tech_future',2045,1.0,NULL,NULL);
+INSERT INTO CostInvest VALUES('region','tech_future',2050,1.0,NULL,NULL);
 CREATE TABLE CostVariable
 (
     region  TEXT    NOT NULL,
@@ -192,9 +212,32 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostVariable VALUES('linkville',2000,'PLANT',2000,10.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('linkville',2000,'CCS',2000,10.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('linkville',2000,'FAKE_SOURCE',2000,0.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2025,'tech_ancient',1994,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2025,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2030,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2035,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2040,'tech_old',2010,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2025,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2030,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2035,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2040,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2045,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_current',2025,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2030,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2035,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2040,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2045,'tech_future',2045,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_future',2050,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2035,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2040,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2045,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_future',2045,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2040,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2045,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_future',2040,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2045,'tech_future',2030,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_future',2035,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2050,'tech_future',2030,1.0,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -207,8 +250,12 @@ CREATE TABLE Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-INSERT INTO Demand VALUES('linkville',2000,'CO2_CAP',1000.0,NULL,NULL);
-INSERT INTO Demand VALUES('linkville',2000,'ELC',10.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2025,'demand',1.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2030,'demand',1.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2035,'demand',1.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2040,'demand',1.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2045,'demand',1.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2050,'demand',1.0,NULL,NULL);
 CREATE TABLE DemandSpecificDistribution
 (
     region      TEXT,
@@ -224,8 +271,6 @@ CREATE TABLE DemandSpecificDistribution
     PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO DemandSpecificDistribution VALUES('linkville',2000,'summer','day','ELC',0.5,'');
-INSERT INTO DemandSpecificDistribution VALUES('linkville',2000,'winter','day','ELC',0.5,'');
 CREATE TABLE EndOfLifeOutput
 (
     region      TEXT,
@@ -256,10 +301,14 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('linkville','ETHOS','MINE',2000,'NGA',1.0,'');
-INSERT INTO Efficiency VALUES('linkville','ETHOS','CCS',2000,'CO2_CAP',1.0,'capture eff');
-INSERT INTO Efficiency VALUES('linkville','ETHOS','FAKE_SOURCE',2000,'CO2_CAP',1.0,'');
-INSERT INTO Efficiency VALUES('linkville','NGA','PLANT',2000,'ELC',0.5,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_ancient',1994,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_old',2010,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_current',2025,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_future',2030,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_future',2035,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_future',2040,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_future',2045,'demand',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','source','tech_future',2050,'demand',1.0,NULL);
 CREATE TABLE EfficiencyVariable
 (
     region      TEXT,
@@ -299,7 +348,6 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('linkville','CO2','NGA','PLANT',2000,'ELC',-3.0,'','');
 CREATE TABLE EmissionEmbodied
 (
     region      TEXT,
@@ -340,6 +388,8 @@ CREATE TABLE ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
+INSERT INTO ExistingCapacity VALUES('region','tech_ancient',1994,3.0,NULL,NULL);
+INSERT INTO ExistingCapacity VALUES('region','tech_old',2010,0.7,NULL,NULL);
 CREATE TABLE TechGroup
 (
     group_name TEXT
@@ -388,8 +438,10 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('linkville','CCS',100.0,'');
-INSERT INTO LifetimeTech VALUES('linkville','PLANT',100.0,'');
+INSERT INTO LifetimeTech VALUES('region','tech_ancient',35.0,NULL);
+INSERT INTO LifetimeTech VALUES('region','tech_old',35.0,NULL);
+INSERT INTO LifetimeTech VALUES('region','tech_current',35.0,NULL);
+INSERT INTO LifetimeTech VALUES('region','tech_future',35.0,NULL);
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -694,7 +746,6 @@ CREATE TABLE LinkedTech
     notes          TEXT,
     PRIMARY KEY (primary_region, primary_tech, emis_comm)
 );
-INSERT INTO LinkedTech VALUES('linkville','PLANT','CO2','CCS',NULL);
 CREATE TABLE OutputCurtailment
 (
     scenario    TEXT,
@@ -830,7 +881,7 @@ CREATE TABLE PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE RampDownHourly
+CREATE TABLE RampDown
 (
     region TEXT,
     tech   TEXT
@@ -838,7 +889,7 @@ CREATE TABLE RampDownHourly
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUpHourly
+CREATE TABLE RampUp
 (
     region TEXT,
     tech   TEXT
@@ -852,7 +903,7 @@ CREATE TABLE Region
         PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO Region VALUES('linkville',NULL);
+INSERT INTO Region VALUES('region',NULL);
 CREATE TABLE TimeSegmentFraction
 (   
     period INTEGER
@@ -865,8 +916,12 @@ CREATE TABLE TimeSegmentFraction
     PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
-INSERT INTO TimeSegmentFraction VALUES(2000,'summer','day',0.5,'# S-D');
-INSERT INTO TimeSegmentFraction VALUES(2000,'winter','day',0.5,'# W-D');
+INSERT INTO TimeSegmentFraction VALUES(2025,'s','d',1.0,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2030,'s','d',1.0,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2035,'s','d',1.0,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2040,'s','d',1.0,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2045,'s','d',1.0,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2050,'s','d',1.0,NULL);
 CREATE TABLE StorageDuration
 (
     region   TEXT,
@@ -887,6 +942,62 @@ CREATE TABLE LifetimeSurvivalCurve
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
+INSERT INTO LifetimeSurvivalCurve VALUES('region',1994,'tech_ancient',1994,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',1999,'tech_ancient',1994,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2004,'tech_ancient',1994,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2009,'tech_ancient',1994,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2014,'tech_ancient',1994,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2019,'tech_ancient',1994,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2029,'tech_ancient',1994,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2010,'tech_old',2010,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2015,'tech_old',2010,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2020,'tech_old',2010,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2025,'tech_old',2010,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2030,'tech_old',2010,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2035,'tech_old',2010,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_old',2010,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2025,'tech_current',2025,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2030,'tech_current',2025,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2035,'tech_current',2025,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2040,'tech_current',2025,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_current',2025,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_current',2025,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2060,'tech_current',2025,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2030,'tech_future',2030,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2035,'tech_future',2030,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2040,'tech_future',2030,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_future',2030,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_future',2030,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2055,'tech_future',2030,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2065,'tech_future',2030,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2035,'tech_future',2035,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2040,'tech_future',2035,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_future',2035,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_future',2035,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2055,'tech_future',2035,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2060,'tech_future',2035,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2070,'tech_future',2035,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2040,'tech_future',2040,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_future',2040,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_future',2040,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2055,'tech_future',2040,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2060,'tech_future',2040,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2065,'tech_future',2040,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2075,'tech_future',2040,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2045,'tech_future',2045,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_future',2045,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2055,'tech_future',2045,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2060,'tech_future',2045,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2065,'tech_future',2045,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2070,'tech_future',2045,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2080,'tech_future',2045,0.0,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2050,'tech_future',2050,0.99000000000000003552,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2055,'tech_future',2050,0.96999999999999992894,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2060,'tech_future',2050,0.88000000000000007105,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2065,'tech_future',2050,0.62000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2070,'tech_future',2050,0.27000000000000001776,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2075,'tech_future',2050,0.08,NULL);
+INSERT INTO LifetimeSurvivalCurve VALUES('region',2085,'tech_future',2050,0.0,NULL);
 CREATE TABLE TechnologyType
 (
     label       TEXT
@@ -903,7 +1014,7 @@ CREATE TABLE TimeOfDay
     tod      TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeOfDay VALUES(1,'day');
+INSERT INTO TimeOfDay VALUES(0,'d');
 CREATE TABLE TimePeriod
 (
     sequence INTEGER UNIQUE,
@@ -912,9 +1023,15 @@ CREATE TABLE TimePeriod
     flag     TEXT
         REFERENCES TimePeriodType (label)
 );
-INSERT INTO TimePeriod VALUES(0,1995,'e');
-INSERT INTO TimePeriod VALUES(1,2000,'f');
-INSERT INTO TimePeriod VALUES(2,2005,'f');
+INSERT INTO TimePeriod VALUES(-2,1994,'e');
+INSERT INTO TimePeriod VALUES(-1,2010,'e');
+INSERT INTO TimePeriod VALUES(0,2025,'f');
+INSERT INTO TimePeriod VALUES(1,2030,'f');
+INSERT INTO TimePeriod VALUES(2,2035,'f');
+INSERT INTO TimePeriod VALUES(3,2040,'f');
+INSERT INTO TimePeriod VALUES(4,2045,'f');
+INSERT INTO TimePeriod VALUES(5,2050,'f');
+INSERT INTO TimePeriod VALUES(6,2055,'f');
 CREATE TABLE TimeSeason
 (
     period INTEGER
@@ -924,8 +1041,12 @@ CREATE TABLE TimeSeason
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO TimeSeason VALUES(2000,1,'summer',NULL);
-INSERT INTO TimeSeason VALUES(2000,2,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2025,0,'s',NULL);
+INSERT INTO TimeSeason VALUES(2030,1,'s',NULL);
+INSERT INTO TimeSeason VALUES(2035,2,'s',NULL);
+INSERT INTO TimeSeason VALUES(2040,3,'s',NULL);
+INSERT INTO TimeSeason VALUES(2045,4,'s',NULL);
+INSERT INTO TimeSeason VALUES(2050,5,'s',NULL);
 CREATE TABLE TimeSeasonSequential
 (
     period INTEGER
@@ -1000,10 +1121,10 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('PLANT','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('CCS','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('MINE','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('FAKE_SOURCE','r','supply',NULL,NULL,1,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('tech_ancient','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('tech_old','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('tech_current','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('tech_future','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,
