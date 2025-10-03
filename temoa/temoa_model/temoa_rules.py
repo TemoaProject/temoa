@@ -49,50 +49,166 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     This constraint updates the capacity of a process by taking into account retirements
     and end of life. For a given :code:`(r,p,t,v)` index, this constraint sets the capacity
     equal to the amount installed in period :code:`v` and subtracts from it any and all retirements
-    that occurred up until the period in question, :code:`p`, and end of life from the
+    that occurred prior to the period in question, :code:`p`, and end of life from the
     survival curve if defined. It finally adjusts for the process life fraction, which
     accounts for a possible mid-period end of life where, for example, EOL 3 years into a 5-year
     period would be treated as :math:`\frac{3}{5}` capacity for all 5 years.
+
+    .. figure:: images/adjusted_capacity_plf.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 50%
+
+        For processes reaching end of life mid-period, the process life fraction adjustment is applied,
+        distributing the effective capacity over the whole period.
+
+    For processes using survival curves, the yearly survival curve :math:`\text{LSC}_{r,p,t,v}` is
+    averaged over the period to get the effective remaining capacity for that period  Because this
+    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both 
+    phenomena.
+
+    .. figure:: images/adjusted_capacity_sc.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 50%
+
+        For processes with a defined survival curve, the surviving capacity is averaged over each
+        period to get the adjusted capacity. This implicitly handles mid-period end of life as a
+        survival curve will always be zero after the end of life of a process.
     
     .. math::
         :label: Adjusted Capacity
 
             \textbf{CAP}_{r,p,t,v} =
             \begin{cases}
-                \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \in T^\text{e} \\
-                \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v} \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \notin T^\text{ret},\ v \notin T^\text{e} \\
-                \left( \text{ECAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \in T^\text{e} \\
-                \left( \textbf{NCAP}_{r,t,v} \cdot \text{LSC}_{r,p,t,v}
-                - \sum\limits_{p^* = v}^{p}
-                \textbf{RCAP}_{r,p^*,t,v} \right) \cdot \text{PLF}_{r,p,t,v}
-                & \text{if } t \in T^\text{ret},\ v \notin T^\text{e}
+                \text{PLF}_{r,p,t,v} \cdot
+                \left(
+                \text{ECAP}_{r,t,v} - \sum\limits_{v < p' <= p}
+                \frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}
+                \right)
+                & \text{if } \ v \in T^e \\
+                \text{PLF}_{r,p,t,v} \cdot
+                \left(
+                \textbf{NCAP}_{r,t,v} - \sum\limits_{v < p' <= p}
+                \frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}
+                \right)
+                & \text{if } \ v \notin T^e
             \end{cases}
-   """
 
-    PLF = value(M.ProcessLifeFrac[r, p, t, v])
-    LSC = value(M.LifetimeSurvivalCurve[r, p, t, v])
+            \\\text{where } 
+            \text{PLF}_{r,p,t,v} = 
+            \begin{cases}
+                \frac{1}{\text{LEN}_p} \cdot \left(
+                \sum\limits_{y = p}^{p+\text{LEN}_{p}-1}{\text{LSC}_{r,y,t,v}}
+                \right)
+                & \text{if } t \in T^{sc} \\
+                \frac{1}{\text{LEN}_p} \cdot \left( v + \text{LTP}_{r,t,v} - p \right)
+                & \text{if } t \notin T^{sc} \\
+            \end{cases}
 
-    if t not in M.tech_retirement:
-        if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == value(M.ExistingCapacity[r, t, v]) * LSC * PLF
-        else:
-            return M.V_Capacity[r, p, t, v] == M.V_NewCapacity[r, t, v] * LSC * PLF
+    We divide :math:`\frac{\textbf{RCAP}_{r,p',t,v}}{\text{LSC}_{r,p',t,v}}`
+    because the average survival factor in :math:`\text{PLF}_{r,p,t,v}` is indexed to the vintage
+    period (the beginning of the survival curve). So, we adjust for the relative survival from
+    the time when that retirement occurred (treated here as at the beginning of each period).
+    """
 
+    if v in M.time_exist:
+        built_capacity = value(M.ExistingCapacity[r, t, v])
     else:
-        retired_cap = sum(
-            M.V_RetiredCapacity[r, S_p, t, v]
+        built_capacity = M.V_NewCapacity[r, t, v]
+
+    early_retirements = 0
+    if t in M.tech_retirement:
+        early_retirements = sum(
+            M.V_RetiredCapacity[r, S_p, t, v] / value(M.LifetimeSurvivalCurve[r, S_p, t, v])
             for S_p in M.time_optimize
             if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
-        if v in M.time_exist:
-            return M.V_Capacity[r, p, t, v] == (value(M.ExistingCapacity[r, t, v]) * LSC - retired_cap) * PLF
+
+    remaining_capacity = (built_capacity - early_retirements) * value(M.ProcessLifeFrac[r, p, t, v])
+    return M.V_Capacity[r, p, t, v] == remaining_capacity
+        
+
+def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Get the annualised retirement rate for a process in a given period. 
+    Used to output retirement (including end of life, EOL) and to model end of
+    life flows and emissions. Assumes that retirement from the beginning of each period
+    is evenly distributed over that model period :math:`\frac{1}{\text{LEN}_p}`
+    for the accounting of retirement flows (in the same way we assume capacity is
+    deployed evenly over the model period for construction inputs and embodied emissions).
+    The factor :math:`\frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}}`
+    adjusts the average survival during a period to the survival at the beginning
+    of that period.
+
+    .. math::
+        :label: Annual Retirement
+
+            \textbf{ART}_{r,p,t,v} =
+            \begin{cases}
+                \frac{1}{\text{LEN}_p} \cdot
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                & \text{if EOL} \\
+                \frac{1}{\text{LEN}_p} \cdot 
+                \left( 
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
+                \right)
+                & \text{otherwise} \\
+            \end{cases}
+            
+            \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
+    """
+    
+    ## Get the capacity at the start of this period
+    if p == v + value(M.LifetimeProcess[r, t, v]):
+        # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
+        if p == M.time_optimize.first():
+            # Must be existing capacity. Apply survival curve to existing cap
+            cap_begin = M.ExistingCapacity[r, t, v] * M.LifetimeSurvivalCurve[r, p, t, v]
         else:
-            return M.V_Capacity[r, p, t, v] == (M.V_NewCapacity[r, t, v] * LSC - retired_cap) * PLF
+            # Get previous capacity and continue survival curve
+            p_prev = M.time_optimize.prev(p)
+            cap_begin = (
+                M.V_Capacity[r, p_prev, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p, t, v])
+                / value(M.ProcessLifeFrac[r, p_prev, t, v])
+            )
+    else:
+        # The capacity at the beginning of the period
+        cap_begin = (
+            M.V_Capacity[r, p, t, v]
+            * value(M.LifetimeSurvivalCurve[r, p, t, v])
+            / value(M.ProcessLifeFrac[r, p, t, v])
+        )
+
+    ## Get the capacity at the end of this period
+    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+        # EOL so capacity ends on zero
+        cap_end = 0
+    else:
+        # Mid-life period, ending capacity is beginning capacity of next period
+        p_next = M.time_future.next(p)
+
+        if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
+            # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
+            cap_end = (
+                cap_begin
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.LifetimeSurvivalCurve[r, p, t, v])
+            )
+        else:
+            # Get the next period's beginning capacity
+            cap_end = (
+                M.V_Capacity[r, p_next, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.ProcessLifeFrac[r, p_next, t, v])
+            )
+
+    annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
+    return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
     
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -281,67 +397,6 @@ def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
 #     return expr
 
 
-def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
-    r"""
-    Get the annualised retirement rate for a process in a given period. 
-    Used to output retirement (including end of life, EOL) and model end of
-    life flows and emissions. Assumes that retirement is evenly distributed over
-    the model period in which that retirement occurs, in the same way we assume
-    capacity is deployed evenly over the model period. Note that
-    :math:`\textbf{CAP}_{r,p,t,v}` already accounts for retirement, survival
-    curves, and process life fraction via the AdjustedCapacity constraint.
-
-    .. math::
-        :label: Annual Retirement
-
-            ART_{r,p,t,v} =
-            \frac{1}{PL_{p}} \cdot
-            \begin{cases}
-                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}}, & \text{if } p = P_0,\ v \in T^{\text{exist}}, \text{ and EOL} \\
-                \textbf{NCAP}_{r,t,v}, & \text{if } p = v, \text{ and EOL} \\
-                \textbf{CAP}_{r,p{-}1,t,v}, & \text{if } v < p < v + LT_{r,t,v}, \text{ and EOL} \\
-                \textbf{ECAP}_{r,t,v} \cdot LSC_{r,p,t,v}^{\text{final}} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = P_0,\ v \in T^{\text{exist}} \text{, and not EOL} \\
-                \textbf{NCAP}_{r,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if } p = v \text{, and not EOL} \\
-                \textbf{CAP}_{r,p{-}1,t,v} - \textbf{CAP}_{r,p,t,v}, & \text{if not EOL otherwise}
-            \end{cases}
-    """
-    
-    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
-        # EOL this period
-        if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Remaining existing capacity in last existing period
-            retired = (
-                value(M.ExistingCapacity[r, t, v])
-                * M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v]
-            )
-        elif p == v:
-            # New capacity in its vintage period. All new capacity
-            retired = M.V_NewCapacity[r, t, v]
-        else:
-            # Mid-horizon retirement
-            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v]
-    else:
-        if p == M.time_optimize.first() and v in M.time_exist:
-            # Existing capacity in first period. Remaining existing capacity in last
-            # existing period minus remaining capacity
-            retired = (
-                value(M.ExistingCapacity[r, t, v])
-                * value(M.LifetimeSurvivalCurve[r, M.time_exist.last(), t, v])
-                - M.V_Capacity[r, p, t, v]
-            )
-        elif p == v:
-            # New capacity in its vintage period. New capacity minus remaining capacity
-            retired = M.V_NewCapacity[r, t, v] - M.V_Capacity[r, p, t, v]
-        else:
-            # Existing or new capacity in some mid-life period. Previous minus current remaining
-            retired = M.V_Capacity[r, M.time_optimize.prev(p), t, v] - M.V_Capacity[r, p, t, v]
-
-    # Distribute retirement evenly over planning period
-    retired /= value(M.PeriodLength[p])
-
-    return M.V_AnnualRetirement[r, p, t, v] == retired
-
-
 # ---------------------------------------------------------------
 # Define the Objective Function
 # ---------------------------------------------------------------
@@ -351,114 +406,177 @@ def TotalCost_rule(M):
     Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
     function calculates the cost of energy supply, under the assumption that capital
     costs are paid through loans. This implementation sums up all the costs incurred,
-    and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable}`. Each
-    term on the right-hand side represents the cost incurred over the model
+    and is defined as :math:`C_{tot} = C_{loans} + C_{fixed} + C_{variable} + C_{emissions}`.
+    Each term on the right-hand side represents the cost incurred over the model
     time horizon and discounted to the initial year in the horizon (:math:`{P}_0`).
     The calculation of each term is given below.
 
     .. math::
-       :label: obj_loan
+        :label: obj_invest
 
-       C_{loans} = \sum_{r, t, v \in \Theta_{IC}} \left (
-         \left [
-                 CI_{r, t, v} \cdot LA_{r, t, v}
-                 \cdot \frac{(1 + GDR)^{P_0 - v +1} \cdot (1 - (1 + GDR)^{-LLP_{r, t, v}})}{GDR} \right. \right.
-                 \\ \left. \left. \cdot \frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LTP_{r,t,v}} }
-         \right ]
-         \cdot \textbf{CAP}_{r, t, v}
-         \right )
+        \begin{aligned}
+            C_{loans} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot \textbf{NCAP}_{r, t, v}
+            && \text{(overnight capital cost)} \\
+            &\cdot \frac{A}{P}(i=\text{LR}_{r,t,v}, N=\text{LLP}_{r,t,v})
+            && \text{(overnight cost amortised into annual loan payments)} \\
+            &\cdot \frac{P}{A}(i=GDR, N=\text{LLP}_{r,t,v})
+            && \text{(annual loan payments discounted to NPV in vintage year)} \\
+            &\cdot \frac{A}{P}(i=GDR, N=\text{LTP}_{r,t,v})
+            && \text{(NPV reamortised over lifetime of process using GDR)} \\
+            &\cdot \frac{P}{A}(i=GDR, N=\min(\text{LTP}_{r,t,v}, P_e - v))
+            && \text{(costs within planning horizon discounted to NPV in vintage year)} \\
+            &\cdot \frac{P}{F}(i=GDR, N=v - P_0)
+            && \text{(NPV in vintage year discounted to base year } P_0\text{)} \\
+        \end{aligned}
 
-    Note that capital costs (:math:`{IC}_{r,t,v}`) are handled in several steps. First, each capital cost
-    is amortized using the loan rate (i.e., technology-specific discount rate) and loan
-    period. Second, the annual stream of payments is converted into a lump sum using
-    the global discount rate and loan period. Third, the new lump sum is amortized
-    at the global discount rate and technology lifetime. Fourth, loan payments beyond
-    the model time horizon are removed and the lump sum recalculated. The terms used
-    in Steps 3-4 are :math:`\frac{ GDR }{ 1-(1+GDR)^{-LTP_{r,t,v} } }\cdot
-    \frac{ 1-(1+GDR)^{-LPA_{t,v}} }{ GDR }`. The product simplifies to
-    :math:`\frac{ 1-(1+GDR)^{-LPA_{r,t,v}} }{ 1-(1+GDR)^{-LTP_{r,t,v}} }`, where
-    :math:`LPA_{r,t,v}` represents the active lifetime of process t in region r :math:`(r,t,v)`
-    before the end of the model horizon, and :math:`LTP_{r,t,v}` represents the full
-    lifetime of a regional process :math:`(r,t,v)`. Fifth, the lump sum is discounted back to the
-    beginning of the horizon (:math:`P_0`) using the global discount rate. While an
-    explicit salvage term is not included, this approach properly captures the capital
-    costs incurred within the model time horizon, accounting for technology-specific
-    loan rates and periods.
+    Note that capital costs (:math:`{CI}_{r,t,v}`) are handled in several steps.
+    
+        1. Each capital cost is amortized using the loan rate (i.e., technology-specific discount rate) and loan period.
 
-    .. math::
-       :label: obj_fixed
+        2. The annual stream of payments is converted into a lump sum using the global discount rate and loan period.
 
-       C_{fixed} = \sum_{r, p, t, v \in \Theta_{CF}} \left (
-         \left [
-                 CF_{r, p, t, v}
-           \cdot \frac{(1 + GDR)^{P_0 - p +1} \cdot (1 - (1 + GDR)^{-{MPL}_{r, t, v}})}{GDR}
-         \right ]
-         \cdot \textbf{CAP}_{r, t, v}
-         \right )
+        3. The new lump sum is amortized at the global discount rate over the process lifetime.
 
-    .. math::
-       :label: obj_variable
+        4. Loan payments beyond the model time horizon are removed and the lump sum recalculated.
 
-        &C_{variable} = \\ &\quad \sum_{r, p, t, v \in \Theta_{CV}} \left (
-               CV_{r, p, t, v}
-         \cdot
-         \frac{
-           (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
-         }{
-           GDR
-         }\cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-         \right ) \\ &\quad + \sum_{r, p, t \not \in T^{a}, v \in \Theta_{VC}} \left (
-               CV_{r, p, t, v}
-         \cdot
-         \frac{
-           (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
-         }{
-           GDR
-         }
-         \cdot \sum_{I, O} \textbf{FOA}_{r, p,i, t \in T^{a}, v, o}
-         \right )
+        5. Finally, the lump sum is discounted back to the beginning of the horizon (:math:`P_0`) using the global discount rate.
+    
+    Steps 3 and 4 serve to correctly balance the cost-benefit of technologies whose useful lives
+    would extend beyond the planning horizon. While an explicit salvage term is not included, this approach properly
+    captures the capital costs incurred within the model time horizon, accounting for process-specific loan rates
+    and periods.
+
+    In the case of processes using survival curves, steps 3 and 4 do not reamortise costs uniformly over the process lifetime.
+    Instead, costs are amortised over the life of the process in proportion to the survival fraction in each year.
+    Note that, for this calculation, a survival curve :math:`{LSC}_{r,y,t,v}` must be defined out to the year in which the
+    surviving fraction is zero, even if that extends beyond the planning horizon. It must also be defined for each integer
+    year between model periods and, if not, these gaps will be filled by linear interpolation ahead of this calculation.
 
     .. math::
-        :label: obj_emissions
+        :label: obj_invest_survival_curve
 
-        &C_{emissions} = \\ &\quad \sum_{r, p, t, v \in \Theta_{CV}} \left (
-               CE_{r, p, c} \cdot EAC_{r,e,i,t,v,o}
-         \cdot
-         \frac{
-           (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
-         }{
-           GDR
-         }\cdot \sum_{S,D,I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-         \right ) \\ &\quad + \sum_{r, p, t \not \in T^{a}, v \in \Theta_{CE}} \left (
-               CE_{r, p, c} \cdot EAC_{r,e,i,t,v,o}
-         \cdot
-         \frac{
-           (1 + GDR)^{P_0 - p + 1} \cdot (1 - (1 + GDR)^{-{MPL}_{r,p,t,v}})
-         }{
-           GDR
-         }
-         \cdot \sum_{I, O} \textbf{FOA}_{r, p,i, t \in T^{a}, v, o}
-         \right )
+        \begin{aligned}
+            C_{loans,LSC} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot \textbf{NCAP}_{r, t, v}
+            && \text{(overnight capital cost)} \\
+            &\cdot \frac{A}{P}(i=\text{LR}_{r,t,v}, N=\text{LLP}_{r,t,v})
+            && \text{(overnight cost amortised into annual loan payments)} \\
+            &\cdot \frac{P}{A}(i=GDR, N=\text{LLP}_{r,t,v})
+            && \text{(annual loan payments discounted to NPV in vintage year)} \\
+            &\cdot \left(
+                \sum_{v < Y} LSC_{r,y,t,v} \cdot \frac{P}{F}(i=GDR, N=P - v + 1)
+                \right)^{-1}
+            && \text{(reamortised over survival curve (normalized)} \\
+            &\cdot \sum_{v < Y < P_e} LSC_{r,y,t,v} \cdot \frac{P}{F}(i=GDR, N=P - v + 1)
+            && \text{(costs within planning horizon discounted to NPV in vintage year)} \\
+            &\cdot \frac{P}{F}(i=GDR, N=v - P_0)
+            && \text{(NPV in vintage year discounted to base year } P_0 \text{)}
+        \end{aligned}
 
+    Where :math:`Y` is the set of each integer year :math:`y` within the planning horizon.
+
+    .. figure:: images/survival_curve_discounting.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 60%
+
+        Steps 3 and 4 for processes with survival curves.
+
+    Fixed, variable, and emissions annual cost factors are determined by:
+
+    .. math::
+       :label: annual_fixed_variable_emission
+
+        \begin{aligned}
+            C_{fixed} =& \sum_{r, p, t, v \in \Theta_{CF}} CF_{r, p, t, v} \cdot \textbf{CAP}_{r, p, t, v}
+            && \text{(annual fixed cost)} \\
+            \\
+            C_{variable} =& \sum_{r, p, t \notin T^a, v \in \Theta_{CV}}
+            CV_{r, p, t, v} \cdot \sum_{S, D, I, O} \mathbf{FO}_{r, p, s, d, i, t, v, o}
+            && \text{(annual variable cost on flow)} \\
+            & \text{where } t \notin T^a \\
+            &+\\
+            & \sum_{r, p, t \in T^a,\ v \in \Theta_{VC}} CV_{r, p, t, v}
+            \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
+            && \text{(annual variable cost on annual flows)} \\
+            & \text{where } t \in T^a \\
+            &+\\
+            C_{emissions} =& \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
+            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{S, D, I, O} \mathbf{FO}_{r, p, s, d, i, t, v, o}
+            && \text{(annual emission cost on flow)} \\
+            & \text{where } t \notin T^a \\
+            &+\\
+            & \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
+            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
+            && \text{(annual emission cost on annual flows)} \\
+            & \text{where } t \in T^a \\
+            &+\\
+            & \sum_{r, p, e \in \Theta_{CE}} \frac{CE_{r, p, e}
+            \cdot EE_{r, e, t, v} \cdot \mathbf{NCAP}_{r, t, v=p}}{{LEN}_p}
+            && \text{(annual embodied emission cost)} \\
+            &+\\
+            & \sum_{r, p, e \in \Theta_{CE}, v} CE_{r, p, e}
+            \cdot EEOL_{r, e, t, v} \cdot \mathbf{ART}_{r, p, t, v}
+            && \text{(annual retirement/end of life emission cost)} \\
+        \end{aligned}
+
+    Each of these costs are then discounted within each period and then to the base year:
+
+    .. math::
+        :label: obj_fixed_variable_emission
+
+        \begin{aligned}
+            C_{fix,var,emiss} =& C_{fixed} + C_{variable} + C_{emissions} \\
+            &\cdot \frac{P}{A}(i=GDR,\ N=LEN_p)
+            && \text{(for each year in period } p \text{ discounted to NPV in } p \text{)}\\
+            &\cdot \frac{P}{F}(i=GDR,\ N=p - P_0)
+            && \text{(discounted from period } p \text{ to NPV in base year } P_0 \text{)}
+        \end{aligned}
     """
 
     return sum(PeriodCost_rule(M, p) for p in M.time_optimize)
 
 
 def annuity_to_pv(rate: float, periods: int) -> float | Expression:
-    """Multiplication factor to convert an annuity to present value"""
+    r"""
+    Multiplication factor to convert an annuity to net present value
+    
+    .. math::
+        :label: annuity_to_pv
+
+        \frac{P}{A}(i, N) = \frac{(1 + i)^N - 1}{i (1 + i)^N}
+
+    where:
+
+    - :math:`i` is the interest/discount rate
+    - :math:`N` is the number of periods
+    """
     if rate == 0:
         return periods
     return ((1 + rate)**periods - 1) / (rate * (1 + rate)**periods)
 
 def pv_to_annuity(rate: float, periods: int) -> float | Expression:
-    """Multiplication factor to convert present value to an annuity"""
+    r"""
+    Multiplication factor to convert net present value to an annuity
+
+    .. math::
+        :label: pv_to_annuity
+
+        \frac{A}{P}(i, N) = \frac{i + (1 + i)^N}{(1 + i)^N - 1}
+    """
     if rate == 0:
         return 1 / periods
     return (rate * (1 + rate)**periods) / ((1 + rate)**periods - 1)
     
 def fv_to_pv(rate: float, periods: int) -> float | Expression:
-    """Multiplication factor to convert a future value to present value"""
+    r"""
+    Multiplication factor to convert a future value to net present value
+    
+    .. math::
+        :label: fv_to_pv
+
+        \frac{P}{F}(i, N) = \frac{1}{(1 + i)^N}
+    """
     if rate == 0:
         return 1
     return 1 / (1 + rate)**periods
@@ -529,8 +647,9 @@ def loan_cost_survival_curve(
     GDR: float,
 ) -> float | Expression:
     """
-    function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
-    pyomo variables/params to make a pyomo Expression
+    function to calculate the loan cost only in the case of processes :math:`(r, t, v)` using
+    survival curves. It can be used with fixed values to produce a hard number or pyomo
+    variables/params to make a pyomo Expression
     :param capacity: The capacity to use to calculate cost
     :param invest_cost: the cost/capacity
     :param loan_annualize: parameter
@@ -570,7 +689,7 @@ def loan_cost_survival_curve(
             * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
             / sum(                                          # redistributed over survival curve within horizon
                 value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
-                * fv_to_pv(GDR, p - v + 1) # the +1 makes its return because LSC is indexed to start of p not end of p
+                * fv_to_pv(GDR, p - v + 1) # +1 because LSC is indexed to start of p not end of p
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p # this shouldnt be possible but play it safe
             )
@@ -663,9 +782,9 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     fixed_costs = sum(
         fixed_or_variable_cost(
-            M.V_Capacity[r, p, S_t, S_v] / value(M.ProcessLifeFrac[r, p, S_t, S_v]),
+            M.V_Capacity[r, p, S_t, S_v],
             value(M.CostFixed[r, p, S_t, S_v]),
-            value(MPL[r, p, S_t, S_v]),
+            value(M.PeriodLength[p]),
             GDR,
             P_0,
             p=p,
@@ -939,7 +1058,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     that the supply exceeds the endogenous demand. Refineries represent a
     common example, where the share of different refined products are governed
     by TechOutputSplit, but total production is driven by a particular commodity
-    like gasoline. Such a situtation can result in the overproduction of other
+    like gasoline. Such a situation can result in the overproduction of other
     refined products, such as diesel or kerosene. In such cases, we need to
     track the excess production of these commodities. To do so, the technology
     producing the excess commodity should be added to the :code:`tech_flex` set.
@@ -950,7 +1069,10 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     the latter is technology- rather than commodity-focused and is used in the
     :code:`Capacity_Constraint` to track output that is used to produce useful
     output and the amount curtailed, and to ensure that the installed capacity
-    covers both.
+    covers both. Alternatively, the commodity can be added to the
+    :code:`commodity_waste` set, for which this equality constraint becomes an
+    inequality constraint, allowing production to exceed consumption for a single
+    commodity.
 
     This constraint also accounts for imports and exports between regions
     when solving multi-regional systems. The import (:math:`\textbf{FIM}`) and export
@@ -959,30 +1081,45 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     respectively, which are defined in :code:`temoa_initialize.py` by parsing the
     :code:`tech_exchange` processes.
 
+    Consumption of the commodity by construction inputs is annualised using the period
+    length. Production of the commodity by end-of-life outputs uses the AnnualRetirement
+    variable, which is already annualised.
+
     Finally, for annual commodities, AnnualCommodityBalance is used which balances
     the sum of flows over each year.
 
-    *production + imports = consumption + exports + flex waste*
+    *process outputs + imports + end of life outputs = process inputs + construction inputs + exports + flex waste*
 
     .. math::
        :label: CommodityBalance
 
-           \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, c}
-           +
-           &\sum_{reg} \textbf{FIM}_{r-reg, p, s, d, i, t, v, c} \; \forall reg \neq r
-           \\
-           = &\sum_{T^{s}, V, I} \textbf{FIS}_{r, p, s, d, c, t, v, o}
-           \\ &\quad +
-           \sum_{T-T^{s}, V, O} \textbf{FO}_{r, p, s, d, c, t, v, o} /EFF_{r, c,t,v,o}
-           \\
-           &\quad + \; SEG_{s,d} \cdot
-           \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, c, t \in T^{a}, v, o} /EFF_{r, c,t,v,o} \\
-           &\quad + \sum_{reg} \textbf{FEX}_{r-reg, p, s, d, c, t, v, o} \; \forall reg \neq r
-           \\ &\quad + \;
-           \textbf{FLX}_{r, p, s, d, i, t, v, c}
+            \begin{aligned}
+            &\sum_{I, t \notin T^a, V} \mathbf{FO}_{r, p, s, d, i, t, v, c}
+            && \text{(processes outputting commodity)} \\
+            &+ SEG_{s,d} \cdot \sum_{I, t \in T^a, V} \frac{\mathbf{FOA}_{r, p, i, t, v, c}}{EFF_{r, i, t, v, c}}
+            && \text{(annual processes outputting commodity)} \\
+            &+ \sum_{\text{reg} \neq r, I, t \in T^x, V} \mathbf{FIM}_{r - \text{reg}, p, s, d, i, t, v, c}
+            && \text{(inter-regional imports of commodity)} \\
+            &+ SEG_{s,d} \sum_{T, V} \left ( EOLO_{r, t, v, c} \cdot \textbf{ART}_{r, p, t, v} \right )
+            && \text{(end-of-life outputs of commodity)} \\
+            &\begin{cases}
+            &= \text{if } c \notin C^w \\
+            &\geq \text{if } c \in C^w \end{cases} \\
+            &\sum_{t \in T^s, V, O} \mathbf{FIS}_{r, p, s, d, c, t, v, o}
+            && \text{(commodity stored)} \\
+            &+ \sum_{t \notin T^s, V, O} \frac{\mathbf{FO}_{r, p, s, d, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            && \text{(commodity consumed by processes)} \\
+            &+ SEG_{s,d} \cdot \sum_{t \in T^a, V, O} \frac{\mathbf{FOA}_{r, p, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            && \text{(commodity consumed by annual processes)} \\
+            &+ \sum_{\text{reg} \neq r, t \in T^x, V, O} \mathbf{FEX}_{r - \text{reg}, p, s, d, c, t, v, o}
+            && \text{(inter-regional exports of commodity)} \\
+            &+ \sum_{I, t \in T^f, V} \mathbf{FLX}_{r, p, s, d, i, t, v, c}
+            && \text{(flex wastes of commodity)} \\
+            &+ SEG_{s,d} \cdot \sum_{T, V} \left ( CON_{r, c, t, v} \cdot \frac{\textbf{NCAP}_{r, t, v}}{LEN_p} \right )
+            && \text{(consumed annually by construction inputs)}
+            \end{aligned}
 
-           \\
-           &\forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
+            \qquad \forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
     """
     if c in M.commodity_demand: # Is this necessary? Demand comms have no downstream process no shouldnt be in indices
@@ -1400,6 +1537,10 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             + \sum\limits_{I,O} \mathbf{FIS}_{r,p,s,d,i,t,v,o} \cdot {EFF}_{r,i,t,v,o}
             - \sum\limits_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
             = {SL}_{r,p,s_{{next}},d_{{next}},t,v}
+
+    Note that for all seasonal representations except sequential days, the last time slice
+    of each season will loop back to the first time slice of the same season, preventing 
+    seasonal deltas for non-seasonal storage (see SeasonalStorageEnergyUpperBound).
     """
 
     # We allow a non-zero daily delta only in the case of seasonal storage
@@ -1438,22 +1579,37 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
     over that entire day, adjusted for number of days represented by sequential vs non-sequential
     seasons. Only applies to storage technologies in the :code:`tech_seasonal_storage` set.
     :math:`s^*` represents the matching non-sequential season for the sequential season
-    :math:`s_{seq}`.
+    :math:`s^{seq}`.
 
     .. math::
         :label: Storage Energy (Sequential Seasons)
 
-            \mathbf{SSL}_{r,p,s_{seq},t,v}
-            + DA_{r,p,s_{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{first},t,v} +
-                \sum_{I,O} \mathbf{FI}_{r,p,s^*,d_{first},i,t,v,o} \cdot EFF_{r,p,i,t,v,o}
-                - \sum_{I,O} \mathbf{FO}_{r,p,s^*,d_{first},i,t,v,o}
-                \right)
+        \mathbf{SSL}_{r,p,s^{seq},t,v}
+        + DA_{r,p,s^{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{first},t,v} +
+        \sum_{D,I,O} \mathbf{FI}_{r,p,s^*,d,i,t,v,o} \cdot EFF_{r,i,t,v,o}
+        - \sum_{D,I,O} \mathbf{FO}_{r,p,s^*,d,i,t,v,o}
+        \right)
 
-            = DA_{r,p,s_{seq,next}} \cdot \mathbf{SL}_{r,p,s^*_{next},d_{first},t,v}
-            + \mathbf{SSL}_{r,p,s_{seq}^{next},t,v}
+        = DA_{r,p,s^{seq}_{next}} \cdot \mathbf{SL}_{r,p,s_{next}^*,d_{first},t,v}
+        + \mathbf{SSL}_{r,p,s^{seq}_{next},t,v}
 
-            \\
-            \text{where } DA_{r,p,s_{seq}} = \frac{\#days_{s_{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+        \\
+        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+
+    .. figure:: images/ldes_chain.*
+        :align: center
+        :width: 100%
+        :figclass: align-center
+        :figwidth: 60%
+
+        How sequential seasons chain together for seasonal storage. Hatched area is 
+        SeasonalStorageLevel :math:`SSL_{r,p,s^{seq},t,v}`. Vertical lines are 
+        StorageLevel :math:`SL_{r,p,s^*,d,t,v}`. Green line is net seasonal storage 
+        level :math:`SSL_{r,p,s^{seq},t,v} + SL_{r,p,s^*,d,t,v}`. Background grey 
+        lines show how storage levels from non-sequential seasons are combined 
+        in sequential seasons. Dashed line is SeasonalStorageEnergyUpperBound. 
+        Sequential seasons two and four here are each two days while one and three 
+        are each one day.
     """
 
     s = M.sequential_to_season[p, s_seq]
@@ -1495,7 +1651,6 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
 
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
-
     This constraint ensures that the amount of energy stored does not exceed
     the upper bound set by the energy capacity of the storage device, as calculated
     on the right-hand side.
@@ -1520,6 +1675,17 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
 
+    A season can represent many days. Within each season, flows are multiplied by the
+    number of days each season represents and, so, the upper bound needs to be adjusted
+    to allow day-scale flows (e.g., charge in the morning, discharge in the afternoon).
+    
+    .. figure:: images/daily_storage_representation.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 40%
+
+        Representation of a 3-day season for non-seasonal (daily) storage.
     """
 
     if M.isSeasonalStorage[t]:
@@ -1541,29 +1707,53 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity 
     of seasonal storage, summing the real storage level with the superimposed sequential 
-    seasonal storage level. A season can represent many days. Within each season, flows 
-    are multiplied by the number of days each season represents, and so the upper bound 
-    needs to be adjusted to allow day-scale flows (e.g., charge in the morning, discharge 
-    in the afternoon). However, between seasons, whole-day charge deltas have built up, 
-    multiplied by the number of days the season represents. These deltas stack, 
-    possibly exceeding our upper bound by a factor of :math:`\frac{N-1}{N}` where :math:`N`
-    is the number of days the season represents. Additionally, if we allowed these stacked 
-    deltas to carry between seasons then we would be multiplying the effective energy
-    capacity of the storage. So, we do not adjust the bound for seasonal storage. This
-    limits the ability of seasonal storage to perform arbitrage within each season, but
-    allows it to carry energy between seasons. :math:`s^*` represents the matching 
-    non-sequential season for the sequential season :math:`s_{seq}`.
+    seasonal storage level. :math:`s^*` represents the matching non-sequential season for
+    the sequential season :math:`s^{seq}`.
 
     .. math::
         :label: Seasonal Storage Energy Capacity
 
-        \mathbf{SSL}_{r,p,s_{seq},t,v}
-        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot DA_{r,p,s_{seq}}
+        \mathbf{SSL}_{r,p,s^{seq},t,v}
+        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot DA_{r,p,s^{seq}}
         \leq \mathbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac{SD_{r,t}}{24 \cdot DPP}
 
         \\
 
-        \text{where } DA_{r,p,s_{seq}} = \frac{\#days_{s_{seq}}}{SEG_{r,p,s^*} \cdot DPP}
+        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}    
+
+    
+    
+    Unlike non-seasonal (daily) storage, seasonal storage is allowed to carry energy
+    between seasons. However, through seasons representing multiple days, many days' 
+    charge deltas have accumulated, multiplied by the number of days the season
+    represents. If we allowed these stacked deltas to carry between seasons then we would
+    be multiplying the effective energy capacity of the storage. We could just constrain
+    the seasonal delta to the unadjusted energy capacity, but then the final day in the
+    season would sit atop a season's worth of deltas, possibly exceeding our upper or
+    lower bound by a factor of :math:`\frac{N-1}{N}` where :math:`N` is the number of
+    days the sequential season represents.
+
+    .. figure:: images/ldes_delta_problem.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 100%
+
+        The energy upper bound or non-negative lower bound could be violated in a
+        season representing multiple days if we both adjusted the upper bound to
+        the number of days and allowed a seasonal delta.
+
+    So, we do not adjust the upper energy bound for seasonal storage. This limits the
+    ability of seasonal storage to perform arbitrage within each season, but allows it to
+    carry energy between seasons realistically.
+
+    .. figure:: images/ldes_delta_representation.*
+        :align: center
+        :width: 100%
+        :figclass: center
+        :figwidth: 40%
+
+        Unadjusted energy upper bound constraint for seasonal storage.
     """
 
     s = M.sequential_to_season[p, s_seq]
@@ -1789,6 +1979,10 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
+            \\
+            \text{where: } \Delta H_{r,p,s,d,s_{next},d_{next}} = \frac{24}{2}
+            \left ( \frac{SEG_{r,p,s,d}}{\sum_{D} SEG_{r,p,s,d'}} +
+            \frac{SEG_{r,p,s_{next},d_{next}}}{\sum_{D} SEG_{r,p,s_{next},d'}} \right )
 
     where:
 
@@ -1906,9 +2100,9 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampDay but only applies to the boundary 
-    between seasons, i.e., :math:`(s,d_{last})` to :math:`(s_{next},d_{first})`
-    and :math:`s_{next}` is based on the TimeSequential table rather than the 
+    of sequential seasons. Same as RampUpDay but only applies to the boundary 
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
     TimeSeason table.
     """
 
@@ -1955,9 +2149,9 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampDay but only applies to the boundary 
-    between seasons, i.e., :math:`(s,d_{last})` to :math:`(s_{next},d_{first})`
-    and :math:`s_{next}` is based on the TimeSequential table rather than the 
+    of sequential seasons. Same as RampDownDay but only applies to the boundary 
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
     TimeSeason table.
     """
 
@@ -2080,7 +2274,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
     capacity credit, :math:`CC_{t,r}`
 
     .. math::
-        :label: reserve_margin
+        :label: reserve_margin_static
 
             &\sum_{t \in T^{res} \setminus T^{x}} {CC_{t,r} \cdot \textbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
             &+ \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r_i-r} \cdot \textbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
@@ -2147,7 +2341,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     accounting for a capacity derate factor subtracting, for example, forced outage due to icing.
 
     .. math::
-        :label: reserve_margin
+        :label: reserve_margin_dynamic
 
             &\sum_{t \in T^{res} \setminus T^{x} \setminus T^s,\ V} CFP_{r,p,s^*,d^*,t,v}\
                 \cdot RCD_{r,p,s^*,t,v}\
@@ -2161,7 +2355,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
                 \cdot RCD_{r - r_i, p, s^*, t, v}\
                 \cdot \mathbf{CAPAVL}_{p,t}\
                 \cdot SEG_{s^*,d^*} \cdot C2A_{r - r_i, t} \\
-            &+ \sum_{t \in T^s, V, I, O} \
+            &+ \sum_{t \in (T^s \cap T^{res}), V, I, O} \
                 \left(\
                 \mathbf{FO}_{r,p,s,d,i,t,v,o} - \mathbf{FI}_{r,p,s,d,i,t,v,o}\
                 \right)\
@@ -3369,24 +3563,28 @@ def ParamPeriodLength(M: 'TemoaModel', p):
 
 def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     r"""
+    Get the effective capacity of a process :math:`<r, t, v>` in a period :math:`p`.
 
-    Calculate the fraction of period p that process :math:`<t, v>` operates.
-
-    For most processes and periods, this will likely be one, but for any process
-    that will cease operation (rust out, be decommissioned, etc.) between periods,
-    calculate the fraction of the period that the technology is able to
-    create useful output.
+    Accounts for mid-period end of life or average survival over the period
+    for processes using survival curves.
     """
-    eol_year = v + value(M.LifetimeProcess[r, t, v])
-    frac = eol_year - p
+
     period_length = value(M.PeriodLength[p])
-    if frac >= period_length:
+
+    if M.isSurvivalCurveProcess[r, t, v]:
+        # Sum survival fraction over the period
+        years_remaining = sum(
+            value(M.LifetimeSurvivalCurve[r, _p, t, v]) for _p in range(p, p + period_length, 1)
+        )
+    else:
+        # Remaining life years within the EOL period
+        years_remaining = v + value(M.LifetimeProcess[r, t, v]) - p
+    
+    if years_remaining >= period_length:
         # try to avoid floating point round-off errors for the common case.
         return 1
 
-        # number of years into final period loan is complete
-
-    frac /= float(period_length)
+    frac = years_remaining / float(period_length)
     return frac
 
 

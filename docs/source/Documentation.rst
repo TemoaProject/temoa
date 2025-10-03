@@ -725,11 +725,12 @@ Sets
    :widths: 8, 28, 14, 50
 
    ":math:`{}^*\text{C}`",":code:`commodity_all`","string","union of all commodity sets"
+   ":math:`\text{C}^s`",":code:`commodity_source`","string","input sources (not balanced by CommodityBalance_Constraint)"
    ":math:`\text{C}^d`",":code:`commodity_demand`","string","end-use demand commodities"
    ":math:`\text{C}^e`",":code:`commodity_emissions`","string","emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`)"
    ":math:`\text{C}^p`",":code:`commodity_physical`","string","general energy forms (e.g. electricity, coal, uranium, oil)"
-   ":math:`\text{C}^a`",":code:`commodity_annual`","string","same as commodity physical but flows are only balanced over each period"
-   ":math:`\text{C}^w`",":code:`commodity_waste`","string","physical or annual commodity for which production can be greater than consumption"
+   ":math:`\text{C}^a`",":code:`commodity_annual`","string","same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`)"
+   ":math:`\text{C}^w`",":code:`commodity_waste`","string","production can be greater than consumption. can be physical, annual, or neither (not balanced)"
    ":math:`{}^*\text{C}^c`",":code:`commodity_carrier`","string","physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`)"
    ":math:`\text{I}`",,"string","alias of :math:`\text{C}^p`; used in documentation only to mean ""input"""
    ":math:`\text{O}`",,"string","alias of :math:`\text{C}^c`; used in documentation only to mean ""output"""
@@ -946,38 +947,38 @@ Parameters
    ":math:`\text{CF}_{r,p,t,v}`","CostFixed",":math:`\mathbb{R}`","Fixed operations \& maintenance cost"
    ":math:`\text{CI}_{r,t,v}`","CostInvest",":math:`\mathbb{R}`","Tech-specific investment cost"
    ":math:`\text{CV}_{r,p,t,v}`","CostVariable",":math:`\mathbb{R}`","Variable operations \& maintenance cost"
+   ":math:`\text{CON}_{r,i,t,v}`","ConstructionInput",":math:`\mathbb{R}`","Commodities consumed by creation of process capacity"
    ":math:`\text{DEM}_{r,p,c}`","Demand",":math:`\mathbb{R}^+_0`","End-use demands, by period"
    ":math:`\text{DDD}_{p,s,d}`","DemandDefaultDistribution",":math:`\mathbb{I}`","Default demand distribution (currently not supported)"
    ":math:`\text{DSD}_{r,p,s,d,c}`","DemandSpecificDistribution",":math:`\mathbb{I}`","Demand-specific distribution"
    ":math:`\text{EFF}_{r,i,t,v,o}`","Efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
    ":math:`\text{EAC}_{r,i,t,v,o,e}`","EmissionActivity",":math:`\mathbb{R}`","Tech-specific emissions rate"
+   ":math:`\text{EE}_{r,t,v,e}`","EmissionEmbodied",":math:`\mathbb{R}`","Emissions associated with the creation of capacity"
+   ":math:`\text{EEOL}_{r,t,v,e}`","EmissionEndOfLife",":math:`\mathbb{R}`","Emissions associated with the retirement/end of life of capacity"
+   ":math:`\text{EOLO}_{r,t,v,o}`","EndOfLifeOutput",":math:`\mathbb{R}`","Commodities produced by retirement/end of life of capacity"
    ":math:`\text{ECAP}_{r,t,v}`","ExistingCapacity",":math:`\mathbb{R}^+_0`","Pre-existing capacity"
-   ":math:`\text{RCAP}_{r,p,t,v}`","RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
-   ":math:`\text{ART}_{r,p,t,v}`","AnnualRetirement",":math:`\mathbb{R}^+_0`","Annualised capacity retiring or reaching end of life"
    ":math:`\text{GDR}`","GlobalDiscountRate",":math:`\mathbb{R}`","Global rate used to calculate present cost"
-   ":math:`\text{GRM}_{r,t}`","GrowthRateMax",":math:`\mathbb{R}`","Global rate used to calculate present cost"
-   ":math:`\text{GRS}_{r,t}`","GrowthRateSeed",":math:`\mathbb{R}`","Global rate used to calculate present cost"
    ":math:`\text{LTP}_{r,t,v}`","LifetimeProcess",":math:`\mathbb{N}`","Tech- and vintage-specific lifetime (default=LifetimeTech)"
    ":math:`\text{LTT}_{r,t}`","LifetimeTech",":math:`\mathbb{N}`","Tech-specific lifetime (default=40 years)"
    ":math:`\text{LSC}_{r,p,t,v}`","LifetimeSurvivalCurve",":math:`\mathbb{R}^+_0`","Surviving fraction of original capacity"
    ":math:`\text{LIT}_{r,t,e,t}`","LinkedTechs","text","Dummy techs used to convert CO2 emissions to physical commodity"
-   ":math:`\text{LLT}_{r,t}`","LoanLifetimeTech",":math:`\mathbb{N}`","Tech-specific loan term (default=10 years)"
-   ":math:`\text{LR}_{r,t,v}`","LoanRate",":math:`\mathbb{R}`","Tech-specific interest rate on investment cost"
-   ":math:`\text{LE}_{r,p,e}`","LimitEmission",":math:`\mathbb{R}^+_0`","Emissions limit by region and period"
+   ":math:`\text{LLP}_{r,t,v}`","LoanLifetimeProcess",":math:`\mathbb{N}`","Process-specific loan term (default=LifetimeProcess)"
+   ":math:`\text{LR}_{r,t,v}`","LoanRate",":math:`\mathbb{R}`","Process-specific interest rate on investment cost"
+   ":math:`\text{LE}_{r,p,e}`","LimitEmission",":math:`\mathbb{R}^+_0`","Limit emissions by region and period"
    ":math:`\text{LA}_{r,p,t}`","LimitActivity",":math:`\mathbb{R}^+_0`","Limit tech-specific activity by region and period"
    ":math:`\text{LC}_{r,p,t}`","LimitCapacity",":math:`\mathbb{R}^+_0`","Limit tech-specific capacity by period"
    ":math:`\text{LR}_{r,t}`","LimitResource",":math:`\mathbb{R}^+_0`","Limit resource production by tech across time periods"
-   ":math:`\text{MDP}`","MyopicDiscountingPeriod",":math:`\mathbb{N}`","Objective function NPV year when running myopically"   
+   ":math:`\text{LSF}_{r,p,s,d,t,v}`","LimitStorageLevelFraction",":math:`\mathbb{R}^+_0`","Limit storage level in any time slice"
+   ":math:`\text{MDY}`","MyopicDiscountingYear",":math:`\mathbb{N}`","Objective function NPV year when running myopically"   
    ":math:`\text{PRM}_{r}`","PlanningReserveMargin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"   
-   ":math:`\text{RMD}_{r,t}`","RampDown",":math:`\mathbb{R}`","Rate at which generation techs can ramp output down"
-   ":math:`\text{RMU}_{r,t}`","RampUp",":math:`\mathbb{R}`","Rate at which generation techs can ramp output up"
-   ":math:`\text{RSC}_{r.p,c}`","ResourceBound",":math:`\mathbb{R}^+_0`","Maximum resource production by tech and period (currently not supported)"
+   ":math:`\text{RDH}_{r,t}`","RampDownHourly",":math:`\mathbb{R}`","Hourly rate at which generation techs can ramp output down"
+   ":math:`\text{RUH}_{r,t}`","RampUpHourly",":math:`\mathbb{R}`","Hourly rate at which generation techs can ramp output up"
    ":math:`\text{SD}_{r,t}`","StorageDuration",":math:`\mathbb{N}`","Storage duration per technology, specified in hours"
    ":math:`\text{SEG}_{s,d}`","SegFrac",":math:`\mathbb{I}`","Fraction of year represented by each (s, d) tuple"
-   ":math:`\text{SIF}_{t}`","StorageInitFrac",":math:`\mathbb{I}`","Initial storage charge level expressed as fraction of full charge"
    ":math:`\text{TIS}_{r,i,t}`","TechInputSplit",":math:`\mathbb{I}`","Technology input fuel ratio at time slice level"
-   ":math:`\text{TISA}_{r,i,t}`","TechInputSplitAverage",":math:`\mathbb{I}`","Average annual technology input fuel ratio"   
+   ":math:`\text{TISA}_{r,i,t}`","TechInputSplitAnnual",":math:`\mathbb{I}`","Average annual technology input fuel ratio"   
    ":math:`\text{TOS}_{r,t,o}`","TechOutputSplit",":math:`\mathbb{I}`","Technology output fuel ratio at time slice level"
+   ":math:`\text{TISA}_{r,i,t}`","TechOutputSplitAnnual",":math:`\mathbb{I}`","Average annual technology output fuel ratio"   
    ":math:`{}^*\text{LA}_{t,v}`","LoanAnnualize",":math:`\mathbb{R}^+_0`","Loan amortization by tech and vintage; based on :math:`DR_t`"
    ":math:`{}^*\text{MPL}_{p,t,v}`","ModelProcessLife",":math:`\mathbb{N}`","Smaller of remaining model horizon or process tech life"
    ":math:`{}^*\text{PLF}_{r,p,t,v}`","ProcessLifeFrac",":math:`\mathbb{I}`","Fraction of available process capacity by region and period "
@@ -1106,6 +1107,17 @@ of activity. Thus the incurred variable costs are proportional to the activity
 of the process.
 
 
+ConstructionInput
+^^^^^^^^^^^^^^^^^
+
+:math:`{CON}_{r \in R, i \in C^p,t \in T \setminus T^u,v \in V}`
+
+The :code:`ConstructionInput` parameter allows the modeller to attach commodity
+input flows to the production of new capacity, in units of activity per unit
+capacity. Assumes that capacity is produced evenly over years in its vintage
+period.
+
+
 .. _Demand:
 
 Demand
@@ -1185,17 +1197,57 @@ to account for emissions per unit activity, but it more accurately describes
 :math:`e \in C^e` set restriction).
 
 
-EmissionLimit
-^^^^^^^^^^^^^
+EmissionEmbodied
+^^^^^^^^^^^^^^^^
 
-:math:`{ELM}_{r \in R, p \in P, e \in C^e}`
+:math:`{EE}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
 
-The :code:`EmissionLimit` parameter ensures that Temoa finds a solution that
-fits within the modeler-specified limit of emission :math:`e` in time period
-:math:`p`.
+Like the EmissionActivity parameter, but attaches emission outputs to the creation
+of capacity instead of activity flows. Assumes that capacity is produced evenly
+over each year in the deployment vintage.
+
+
+EmissionEndOfLife
+^^^^^^^^^^^^^^^^^
+
+:math:`{EEOL}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
+
+Like EmissionEmbodied, but attaches emissions to the retirement/end of life of
+capacity rather than production of capacity. Assumes that retirement or end of
+life occur evenly over years in that period.
+
+
+EndOfLifeOutput
+^^^^^^^^^^^^^^^
+
+:math:`{EOLO}_{r \in R,t \in T \setminus T^u, v \in V,o \in C_p}`
+
+Like ConstructionInput, but attaches flows to the retirement/end of life of
+capacity rather than production of capacity. Assumes that retirement or end of
+life occur evenly over years in that period.
+
+
+.. LimitEmission
+.. ^^^^^^^^^^^^^
+
+.. :math:`{LE}_{r \in R, p \in P, e \in C^e}`
+
+.. The :code:`EmissionLimit` parameter ensures that Temoa finds a solution that
+.. fits within the modeler-specified limit of emission :math:`e` in time period
+.. :math:`p`.
 
 
 ExistingCapacity
+^^^^^^^^^^^^^^^^
+
+:math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
+
+The :code:`ExistingCapacity` parameter defines the capacity installed prior to the
+beginning of :code:`time_optimize`. Note that processes with existing capacity
+require all of the engineering-economic characteristics of a standard process,
+with the exception of an investment cost.
+
+RetiredCapacity
 ^^^^^^^^^^^^^^^^
 
 :math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
@@ -1692,6 +1744,10 @@ Variables
    ":math:`CAPAVL_{r,p,t}`","V_CapacityAvailable ByPeriodAndTech",":math:`\mathbb{R}^+_0`","Derived variable representing the capacity of technology :math:`t` available in period :math:`p`"
    ":math:`SI_{r,t,v}`","V_StorageInit",":math:`\mathbb{R}^+_0`","Initial charge level associated with storage techs"
    ":math:`SL_{r,p,s,d,t,v}`","V_StorageLevel",":math:`\mathbb{R}^+_0`","Charge level each time slice associated with storage techs"
+   ":math:`SSL_{r,p,s,t,v}`","V_SeasonalStorageLevel",":math:`\mathbb{R}^+_0`","Base charge level of sequential seasons for seasonal storage"
+   ":math:`RCAP_{r,p,t,v}`","V_RetiredCapacity",":math:`\mathbb{R}^+_0`","Capacity retired before end of life"
+   ":math:`ART_{r,p,t,v}`","V_AnnualRetirement",":math:`\mathbb{R}^+_0`","Annualised capacity retiring or reaching end of life"
+   ":math:`NCAP_{r,t,v}`","V_NewCapacity",":math:`\mathbb{R}^+_0`","New deployed capacity"
 
 V_FlowOut
 ^^^^^^^^^
@@ -1840,7 +1896,7 @@ demand in every time slice.  For each process, the :code:`Capacity_Constraint` :
 ensures that there is sufficient capacity to meet the optimal commodity flows across all
 time slices. Between processes, the :code:`CommodityBalance_Constraint` :eq:`CommodityBalance`
 ensures that global commodity production across the energy system is sufficient to meet the
-endogenous demands for that commodity. Finally, the objective function :eq:`obj_loan` drives
+endogenous demands for that commodity. Finally, the objective function :eq:`obj_invest` drives
 the model to minimize the system-wide cost of energy supply by optimizing the deployment and
 utilization of energy technologies across the system.
 
@@ -1850,8 +1906,8 @@ While not required, doing so improves computational performance by eliminating t
 season and time of day :code:`(s,d)` indices associated with these technologies.
 In order to ensure the model functions correctly with these simplified technologies,
 slightly different formulations of the capacity and commodity balance constraints
-are required. See the :code:`CommodityBalanceAnnual_Constraint` :eq:`CommodityBalanceAnnual` 
-and :code:`CapacityAnnual_Constraint` :eq:`CapacityAnnual` below for details.
+are required. See the :code:`AnnualCommodityBalance_Constraint` and
+:code:`CapacityAnnual_Constraint` :eq:`CapacityAnnual` below for details.
 
 The rest of this section defines each model constraint, with a rationale for
 existence.  We use the implementation-specific names for the constraints to
@@ -1920,8 +1976,6 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa_rules.StorageThroughput_Constraint
 
-.. autofunction:: temoa_rules.StorageInit_Constraint
-
 .. autofunction:: temoa_rules.RampUpDay_Constraint
 
 .. autofunction:: temoa_rules.RampDownDay_Constraint
@@ -1937,6 +1991,12 @@ various physical and operational real-world phenomena.
 
 Objective Function
 ^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: temoa_rules.annuity_to_pv
+
+.. autofunction:: temoa_rules.pv_to_annuity
+
+.. autofunction:: temoa_rules.fv_to_pv
 
 .. autofunction:: temoa_rules.TotalCost_rule
 
@@ -1986,7 +2046,7 @@ operation, but allow the modeler some further degree of system specification.
 
 .. autofunction:: temoa_rules.LimitSeasonalCapacityFactor_Constraint
 
-.. autofunction:: temoa_rules.LimitStorageLevelFraction_Constraint
+.. autofunction:: temoa_rules.LimitStorageFraction_Constraint
 
 .. autofunction:: temoa_rules.LimitGrowthCapacity
 

@@ -431,6 +431,18 @@ def CreateCapacityFactors(M: 'TemoaModel'):
     # CFP._constructed = True
 
 
+def get_default_survival(M: 'TemoaModel', r, p, t, v):
+    """
+    Getting LifetimeSurvivalCurve where it is not defined
+    If this is a survival curve process, return 0 (likely beyond EOL)
+    Otherwise return 1 (no survival curve based EOL)
+    """
+    if M.isSurvivalCurveProcess[r, t, v]:
+        return 0
+    else:
+        return 1
+
+
 def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     """
     This initializer used to initialize the LifetimeProcess parameter from LifetimeTech where needed
@@ -1256,21 +1268,21 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             )
             logger.error(msg)
             raise ValueError(msg)
+        
+        if value(M.LifetimeSurvivalCurve[r, v, t, v]) != 1:
+            msg = (
+                'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. ',
+                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
-        # Let them know about the linear interpolation
+        # Collect a list of processes that needed to be interpolated, for warning
         if periods_rtv != list(range(p_first, p_last+1, 1)):
             rtv_interpolated.add((r, t, v))
 
         between_periods = []
         for i, p in enumerate(periods_rtv):
-            
-            if p < v:
-                msg = (
-                    'LifetimeSurvivalCurve defined for a period that comes before its vintage. '
-                    f'This is not allowed: ({r, p, t, v})'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
 
             if i == 0:
                 continue # Cant look back from first period. Could be zero but hey why not
@@ -1315,24 +1327,23 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                 elif value(M.LifetimeProcess[r, t, v]) != p - v:
                     msg = (
                         f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
-                        f'does match the end of that survival curve in {p}. To agree with '
-                        f'the survival curve and suppress some warnings, set '
+                        f'does match the end of that survival curve in {p}. This will waste compute. '
+                        'To agree with the survival curve and suppress this warning, set '
                         f'LifetimeProcess[{r, t, v}] = {p-v}'
                     )
-                    logger.info(msg)
+                    logger.warning(msg)
                 
                 continue
             
-            # Check that the last period is zero. This is important for investment costs
-            if p == p_last:
-                if lsc > 0.0001:
-                    msg = (
-                        'Any defined survival curve must continue to zero for the purposes of '
-                        'investment cost accounting, even if this period would extend beyond '
-                        f'defined future periods. Continue ({r, t, v}) to fraction == 0.'
-                    )
-                    logger.error(msg)
-                    raise ValueError(msg)
+            # Flag if the last period is not fraction = 0. This is important for investment costs
+            if p == p_last and lsc > 0.0001:
+                msg = (
+                    'Any defined survival curve must continue to zero for the purposes of '
+                    'investment cost accounting, even if this period would extend beyond '
+                    f'defined future periods. Continue ({r, t, v}) to fraction == 0.'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
                 
         M.survivalCurvePeriods[r, t, v].extend(between_periods)
         M.survivalCurvePeriods[r, t, v] = set(M.survivalCurvePeriods[r, t, v])

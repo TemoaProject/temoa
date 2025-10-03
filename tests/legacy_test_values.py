@@ -56,7 +56,8 @@ test_vals = {
         # reduced after reworking storageinit -> storage was less constrained
         # reduced after removing ancient 1-year-shift obj function bug
         # increased after rework of inter-season sequencing
-        ExpectedVals.OBJ_VALUE: 34764.3349,
+        # reduced after changing fixed costs from MLP to PL
+        ExpectedVals.OBJ_VALUE: 34711.5173,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.
@@ -87,7 +88,9 @@ test_vals = {
     },
     'survival_curve': {
         # added 2025/06/19 after addition of survival curves
-        ExpectedVals.OBJ_VALUE: 31.8083,
+        # reduced after changing fixed costs from MLP to PL
+        # increased after adding PeriodSurvivalCurve
+        ExpectedVals.OBJ_VALUE: 31.9423,
         ExpectedVals.EFF_DOMAIN_SIZE: 64,
         ExpectedVals.EFF_INDEX_SIZE: 8,
         ExpectedVals.CONSTR_COUNT: 101,

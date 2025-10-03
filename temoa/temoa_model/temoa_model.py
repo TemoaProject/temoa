@@ -335,7 +335,15 @@ class TemoaModel(AbstractModel):
         M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
-        M.LifetimeSurvivalCurve = Param(M.regionalIndices, Integers, M.tech_all, M.vintage_all, default=1, validate=validate_0to1, mutable=True)
+        M.LifetimeSurvivalCurve = Param(
+            M.regionalIndices,
+            Integers,
+            M.tech_all,
+            M.vintage_all,
+            default=get_default_survival,
+            validate=validate_0to1,
+            mutable=True
+        )
         M.Create_SurvivalCurve = BuildAction(rule=CreateSurvivalCurve)
 
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
