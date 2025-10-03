@@ -317,6 +317,7 @@ class TableWriter:
         scenario = self.config.scenario
         if iteration is not None:
             scenario = scenario + f'-{iteration}'
+
         # Built Capacity
         data = []
         for r, t, v, val in cap_data.built:
@@ -337,11 +338,11 @@ class TableWriter:
 
         # Retired Capacity
         data = []
-        for r, p, t, v, val in cap_data.retired:
+        for r, p, t, v, eol, early in cap_data.retired:
             s = self.tech_sectors.get(t)
-            new_retired_cap = (scenario, r, s, p, t, v, val)
+            new_retired_cap = (scenario, r, s, p, t, v, eol, early)
             data.append(new_retired_cap)
-        qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data)
         self.con.commit()
 

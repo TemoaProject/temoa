@@ -116,12 +116,19 @@ def poll_capacity_results(M: TemoaModel, epsilon=1e-5) -> CapData:
     # Retired Capacity
     ret = []
     for r, t, v in M.retirementPeriods:
+        lifetime = value(M.LifetimeProcess[r, t, v])
         for p in M.retirementPeriods[r, t, v]:
             # We want to output period retirement, not annual retirement, so multiply by PeriodLength
-            val = value(M.PeriodLength[p]) * value(M.V_AnnualRetirement[r, p, t, v])
-            if abs(val) < epsilon:
+            eol = value(M.PeriodLength[p]) * value(M.V_AnnualRetirement[r, p, t, v])
+            early = 0
+            if t in M.tech_retirement and v < p <= v + lifetime - value(M.PeriodLength[p]):
+                early = value(M.V_RetiredCapacity[r, p, t, v])
+                eol -= early
+            early = 0 if abs(early) < epsilon else early
+            eol = 0 if abs(eol) < epsilon else eol
+            if early == 0 and eol == 0:
                 continue
-            new_retired_cap = (r, p, t, v, val)
+            new_retired_cap = (r, p, t, v, eol, early)
             ret.append(new_retired_cap)
 
     return CapData(built=built, net=net, retired=ret)
@@ -343,7 +350,7 @@ def poll_cost_results(
             )
 
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
-        cap = value(M.V_Capacity[r, p, t, v])
+        cap = value(M.V_Capacity[r, p, t, v]) / value(M.ProcessLifeFrac[r, p, t, v])
         if abs(cap) < epsilon:
             continue
 

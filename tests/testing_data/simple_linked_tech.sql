@@ -761,7 +761,8 @@ CREATE TABLE OutputRetiredCapacity
         REFERENCES Technology (tech),
     vintage  INTEGER
         REFERENCES TimePeriod (period),
-    capacity REAL,
+    cap_eol REAL,
+    cap_early REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
 CREATE TABLE OutputFlowIn
@@ -930,7 +931,7 @@ CREATE TABLE TimeSeasonSequential
     seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
-    count NUMERIC NOT NULL,
+    count REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (count > 0)

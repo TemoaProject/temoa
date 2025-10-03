@@ -211,7 +211,9 @@ class TemoaModel(AbstractModel):
         # Define techs for which economic retirement is an option
         # Note:  Storage techs cannot (currently) be retired due to linkage to initialization
         #        process, which is currently incapable of reducing initializations on retirements.
-        M.tech_retirement = Set(within=M.tech_all - M.tech_storage)
+        # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
+        #        it was the old StorageInit constraint
+        M.tech_retirement = Set(within=M.tech_with_capacity)# - M.tech_storage)
 
         M.validate_techs = BuildAction(rule=validate_tech_sets)
 
@@ -607,9 +609,10 @@ class TemoaModel(AbstractModel):
             M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
         )
 
-        M.RetiredCapacityConstraint = Constraint(
-            M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
-        )
+        # devnote: I think this constraint is redundant
+        # M.RetiredCapacityConstraint = Constraint(
+        #     M.RetiredCapacityVar_rptv, rule=RetiredCapacity_Constraint
+        # )
         M.AnnualRetirementConstraint = Constraint(
             M.AnnualRetirementVar_rptv, rule=AnnualRetirement_Constraint
         )
