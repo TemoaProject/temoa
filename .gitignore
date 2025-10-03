@@ -20,7 +20,7 @@
 !CHANGELOG.md
 !CONTRIBUTING.md
 !.pre-commit-config.yaml
-
+!.coderabbit.yaml
 
 # recursively re-ignore
 __pycache__
