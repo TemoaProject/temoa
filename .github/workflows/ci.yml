@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["main", "temoa_alpha", "ci_testing", "1.0.0-dev-operator"]
+    branches: ["main", "temoa_alpha", "ci_testing", "1.0.0-dev-operator", "temoa_davey_code"]
   pull_request:
-    branches: ["main", "temoa_alpha", "ci_testing", "1.0.0-dev-operator"]
+    branches: ["main", "temoa_alpha", "ci_testing", "1.0.0-dev-operator", "temoa_davey_code"]
 
 jobs:
   test:
