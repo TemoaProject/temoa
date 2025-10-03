@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 legacy_config_files = [
     {'name': 'utopia', 'filename': 'config_utopia.toml'},
     {'name': 'test_system', 'filename': 'config_test_system.toml'},
+    {'name': 'mediumville', 'filename': 'config_mediumville.toml'},
 ]
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]

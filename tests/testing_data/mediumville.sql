@@ -10,8 +10,6 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'');
-INSERT INTO MetaData VALUES('link_seasons',1,'Carry storage states between seasons');
-INSERT INTO MetaData VALUES('state_sequencing',0,'0 = loop periods, 1 = loop seasons');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -118,7 +116,7 @@ INSERT INTO Commodity VALUES('ELC','p','electricity');
 INSERT INTO Commodity VALUES('HYD','p','water');
 INSERT INTO Commodity VALUES('co2','e','CO2 emissions');
 INSERT INTO Commodity VALUES('RL','d','residential lighting');
-INSERT INTO Commodity VALUES('earth','p','the source of stuff');
+INSERT INTO Commodity VALUES('earth','s','the source of stuff');
 INSERT INTO Commodity VALUES('RH','d','residential heat');
 INSERT INTO Commodity VALUES('FusionGas','e','mystery emission');
 INSERT INTO Commodity VALUES('FusionGasFuel','p','converted mystery gas to fuel');
@@ -426,7 +424,6 @@ CREATE TABLE TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-INSERT INTO TechGroup VALUES('RPS_global','');
 INSERT INTO TechGroup VALUES('RPS_common','');
 INSERT INTO TechGroup VALUES('A_tech_grp_1','converted from old db');
 CREATE TABLE LoanLifetimeTech
@@ -739,7 +736,6 @@ CREATE TABLE LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-INSERT INTO LimitTechInputSplitAnnual VALUES('A',2025,'GeoHyd','GeoHeater','le',0.8000000000000000444,'80% geothermal');
 CREATE TABLE LimitTechOutputSplit
 (
     region         TEXT,

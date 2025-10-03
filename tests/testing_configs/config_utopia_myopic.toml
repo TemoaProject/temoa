@@ -18,7 +18,36 @@ save_excel = true
 save_duals = true
 
 # save a copy of the pyomo-generated lp file to the outputs folder (may be large file!)
-save_lp_file = true
+save_lp_file = false
+
+# ------------------------------------
+#          MODEL PARAMETERS
+#  these are specific to each model
+# ------------------------------------
+
+# How to sequence time slices in the model. Options:
+# 'seasonal_timeslicing'
+# Time slices sequence through seasons and between seasons, looping from the end of each
+# period back to its start. Compatible with seasonal time-slicing databases.
+# 'representative_periods'
+# Time slices sequence through seasons but loop from the end of each season back to its start.
+# Time slices do not connect between seasons. Compatible with representative periods databases.
+# 'manual'
+# The sequence of time slices is defined manually in the TimeNext table (which is commented out in
+# the schema). This is an advanced feature and not recommended for most users.
+time_sequencing = 'seasonal_timeslicing'
+
+# How contributions to the planning reserve margin are calculated. Options:
+# 'static'
+# Traditional planning reserve. Contributions are independent of hourly availability:
+#   capacity value = available capacity * capacity credit.
+# 'dynamic'
+# The capacity credit is treated as a capacity derate factor (forced outage rate).
+# For most generators, contributions are available (derated) output in each time slice: 
+#   capacity value = available capacity * capacity credit * capacity factor
+# For storage, contributions are (derated) actual output in each time slice:
+#   capacity value = flow out * capacity credit
+reserve_margin = 'static'
 
 # ---------------------------------------------------
 #                   MODE OPTIONS

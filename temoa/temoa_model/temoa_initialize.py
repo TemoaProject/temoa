@@ -236,7 +236,7 @@ def validate_TimeNext(M: 'TemoaModel'):
     TimeSegmentFraction is already compared to other tables so just compare to SegFrac.
     """
     # Only check TimeNext if it is actually being used
-    if M.StateSequencing != 2:
+    if M.TimeSequencing.first() != 'manual':
         return
     
     segfrac_psd = set(M.SegFrac.sparse_iterkeys())
@@ -1064,31 +1064,33 @@ def CreateSparseDicts(M: 'TemoaModel'):
     logger.debug('Completed creation of SparseDicts')
 
 
-def CreateStateSequence(M: 'TemoaModel'):
+def CreateTimeSequence(M: 'TemoaModel'):
 
     # Establishing sequence of states
-    match M.StateSequencing:
-        case 0:
-            msg = 'Looping state each period, chaining between seasons.'
+    match M.TimeSequencing.first():
+        case 'seasonal_timeslicing':
+            msg = 'Running a season time slicing database, looping state each period, chaining between seasons.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
-        case 1:
-            msg = 'Looping state each season.'
+        case 'representative_periods':
+            msg = 'Running a representative periods database, looping state each season.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
-        case 2:
+        case 'manual':
             # Hidden feature. Define the sequence directly in the TimeNext table
             msg = 'Pulling state sequence from TimeNext table.'
             for p, s, d, s_next, d_next in M.TimeNext:
                 M.time_next[p, s, d] = s_next, d_next
+        case _:
+            # This should have been caught in hybrid_loader
+            msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
+            logger.error(msg)
+            raise ValueError(msg)
 
-    msg += (' This behaviour can be changed using the'
-            ' state_sequencing parameter in the MetaData table. '
-            '0 = loop periods, '
-            '1 = loop seasons, '
-            '2 = define manually in TimeNext.')
+    msg += (' This behaviour can be changed using the '
+            'time_sequencing parameter in the config file. ')
     logger.info(msg)
     logger.debug('Created sequence of states.')
 
@@ -1516,11 +1518,12 @@ def RampDownConstraintIndices(M: 'TemoaModel'):
 def ReserveMarginIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d)
-        for r in M.regions
+        for r in M.PlanningReserveMargin
         for p in M.time_optimize
         for s in M.time_season[p]
         for d in M.time_of_day
     )
+    
     return indices
 
 

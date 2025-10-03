@@ -47,6 +47,8 @@ class TemoaConfig:
         save_duals: bool = False,
         save_storage_levels: bool = False,
         save_lp_file: bool = False,
+        time_sequencing: str = None,
+        reserve_margin: str = None,
         MGA: dict | None = None,
         SVMGA: dict | None = None,
         myopic: dict | None = None,
@@ -120,6 +122,8 @@ class TemoaConfig:
         self.save_duals = save_duals
         self.save_storage_levels = save_storage_levels
         self.save_lp_file = save_lp_file
+        self.time_sequencing = time_sequencing
+        self.reserve_margin = reserve_margin
 
         self.mga_inputs = MGA
         self.svmga_inputs = SVMGA
@@ -193,6 +197,8 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Pyomo LP write status', width, self.save_lp_file)
         msg += '{:>{}s}: {}\n'.format('Save duals to output db', width, self.save_duals)
         msg += '{:>{}s}: {}\n'.format('Save storage to output db', width, self.save_storage_levels)
+        msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
+        msg += '{:>{}s}: {}\n'.format('Planning reserve margin', width, self.reserve_margin)
 
         if self.scenario_mode == TemoaMode.MYOPIC:
             msg += spacer
