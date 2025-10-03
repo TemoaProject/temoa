@@ -1204,15 +1204,16 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         sequential[p, s] += num_days
 
     # Check that TimeSeasonSequential num_days total to number of days in each period
+    count_total = dict() # {p: n} total days per period according to TimeSeasonSequential
     for p in M.time_optimize:
-        count_total = sum(
+        count_total[p] = sum(
             sequential[p, s]
             for _p, s in sequential
             if _p == p
         )
-        if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
+        if abs(count_total[p] - value(M.DaysPerPeriod)) >= 0.001:
             logger.warning(
-                f'Sum of num_days in TimeSeasonSequential ({count_total}) '
+                f'Sum of num_days in TimeSeasonSequential ({count_total[p]}) '
                 f'for period {p} does not sum to days_per_period ({value(M.DaysPerPeriod)}) '
                 'from the MetaData table.'
             )
@@ -1238,7 +1239,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
 
         # Check that the two tables agree on the total seasonal composition of each period
         segfrac = value(M.SegFracPerSeason[p, s])
-        segfracseq = sequential[p, s] / value(M.DaysPerPeriod)
+        segfracseq = sequential[p, s] / count_total[p]
         if abs(segfrac - segfracseq) >= 0.001:
             msg = (
                 'Discrepancy of total period-season composition between ' 

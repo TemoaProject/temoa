@@ -135,8 +135,20 @@ def generate_graph(
                 continue
             res = ''
             first = cycle[0]
-            for node in cycle:
-                res += f'{node} --> '
+            last_node = first
+            try:
+                for node in cycle:
+                    if node.split(' (')[0] == last_node.split(' (')[0]:
+                        # This is just an exchange tech loop. Ignore.
+                        # These are labelled in the graph as {base_tech} ({other region})
+                        # so we split on ' (' to compare the base techs
+                        raise ValueError("Just an exchange tech")
+                    res += f'{node} --> '
+                    last_node = node
+            except ValueError:
+                # This is just a trick to continue the outer loop instead of the inner loop
+                # this cycle wasn't really a cycle so just continue
+                continue
             res += first
             logger.info(
                 'Found cycle in region %s, period %d. No action needed if this is correct: %s',
@@ -144,6 +156,7 @@ def generate_graph(
                 period,
                 res,
             )
+        
     except nx.NetworkXError as e:
         logger.warning('NetworkX exception encountered: %s.  Loop evaluation NOT performed.', e)
     if config.plot_commodity_network:
