@@ -37,13 +37,12 @@ from pyomo.environ import (
 from temoa.temoa_model.model_checking.validators import (
     validate_linked_tech,
     region_check,
-    validate_CapacityFactorProcess,
+    # validate_CapacityFactorProcess,
     validate_0to1,
     region_group_check,
     validate_Efficiency,
     validate_tech_sets,
     no_slash_or_pipe,
-    validate_SeasonSequential,
     validate_ReserveMargin,
 )
 from temoa.temoa_model.temoa_initialize import *
@@ -123,7 +122,7 @@ class TemoaModel(AbstractModel):
         M.inputSplitAnnualVintages = dict()
         M.outputSplitVintages = dict()
         M.outputSplitAnnualVintages = dict()
-        M.processByPeriodAndOutput = dict()
+        # M.processByPeriodAndOutput = dict() # not currently used
         M.exportRegions = dict()
         M.importRegions = dict()
 
@@ -163,12 +162,13 @@ class TemoaModel(AbstractModel):
         M.validate_time = BuildAction(rule=validate_time)
 
         # Define the model time slices
-        M.time_season_all = Set(ordered=True, validate=no_slash_or_pipe)
-        M.time_season = Set(M.time_optimize, within=M.time_season_all, ordered=True)
+        M.time_season = Set(ordered=True, validate=no_slash_or_pipe)
+        M.time_season_sequential = Set(ordered=True, validate=no_slash_or_pipe)
+        M.TimeSeason = Set(M.time_optimize, within=M.time_season, ordered=True)
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
         # This is just to get the TimeStorageSeason table sequentially. There must be a better way but this works for now
-        M.ordered_season_sequential = Set(dimen=3, within=M.time_optimize * M.time_season_all * M.time_season_all, ordered=True)
+        M.ordered_season_sequential = Set(dimen=3, within=M.time_optimize * M.time_season_sequential * M.time_season, ordered=True)
 
         # Define regions
         M.regions = Set(validate=region_check)
@@ -178,9 +178,9 @@ class TemoaModel(AbstractModel):
         M.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
-        M.tech_resource = Set()
+        # M.tech_resource = Set() # not actually used by anything
         M.tech_production = Set()
-        M.tech_all = Set(initialize=M.tech_resource | M.tech_production, validate=no_slash_or_pipe)
+        M.tech_all = Set(initialize=M.tech_production, validate=no_slash_or_pipe) # was M.tech_resource | M.tech_production
         M.tech_baseload = Set(within=M.tech_all)
         M.tech_annual = Set(within=M.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
@@ -259,7 +259,7 @@ class TemoaModel(AbstractModel):
 
         # Define time-related parameters
         M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
-        M.SegFrac = Param(M.time_optimize, M.time_season_all, M.time_of_day)
+        M.SegFrac = Param(M.time_optimize, M.time_season, M.time_of_day)
         M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
         M.TimeSequencing = Set() # How do states carry between time segments?
         M.TimeNext = Set(ordered=True) # This is just to get data from the table. Hidden feature and usually not used
@@ -273,7 +273,7 @@ class TemoaModel(AbstractModel):
         M.DemandSpecificDistribution = Param(
             M.regions,
             M.time_optimize,
-            M.time_season_all,
+            M.time_season,
             M.time_of_day,
             M.commodity_demand,
             mutable=True,
@@ -318,7 +318,7 @@ class TemoaModel(AbstractModel):
         M.EfficiencyVariable = Param(
             M.regionalIndices,
             M.time_optimize,
-            M.time_season_all,
+            M.time_season,
             M.time_of_day,
             M.commodity_physical,
             M.tech_all,
@@ -363,9 +363,9 @@ class TemoaModel(AbstractModel):
 
         # Set up representation of time
         M.DaysPerPeriod = Param()
-        M.SegFracPerSeason = Param(M.time_optimize, M.time_season_all, initialize=SegFracPerSeason_rule)
-        M.TimeSeasonSequential = Param(M.time_optimize, M.time_season_all, M.time_season_all, mutable=True)
-        M.validate_SeasonSequential = BuildAction(rule=validate_SeasonSequential)
+        M.SegFracPerSeason = Param(M.time_optimize, M.time_season, initialize=SegFracPerSeason_rule)
+        M.TimeSeasonSequential = Param(M.time_optimize, M.time_season_sequential, M.time_season, mutable=True)
+        M.validate_SeasonSequential = BuildAction(rule=CreateTimeSeasonSequential)
         M.Create_TimeSequence = BuildAction(rule=CreateTimeSequence)
 
         # The method below creates a series of helper functions that are used to
@@ -381,7 +381,7 @@ class TemoaModel(AbstractModel):
         M.CapacityFactorProcess = Param(
             M.regionalIndices,
             M.time_optimize,
-            M.time_season_all,
+            M.time_season,
             M.time_of_day,
             M.tech_with_capacity,
             M.vintage_all,
@@ -440,7 +440,7 @@ class TemoaModel(AbstractModel):
         M.LimitActivity = Param(M.LimitActivityConstraint_rpt)
 
         M.LimitSeasonalCapacityFactorConstraint_rpst = Set(
-            within=M.regionalGlobalIndices * M.time_optimize * M.time_season_all * M.tech_all * M.operator
+            within=M.regionalGlobalIndices * M.time_optimize * M.time_season * M.tech_all * M.operator
         )
         M.LimitSeasonalCapacityFactor = Param(M.LimitSeasonalCapacityFactorConstraint_rpst, validate=validate_0to1)
 
@@ -510,9 +510,12 @@ class TemoaModel(AbstractModel):
         M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions, within=Any)
 
         # Define parameters associated with electric sector operation
-        M.ReserveMargin = Set() # How contributions to the reserve margin are calculated
+        M.ReserveMarginMethod = Set() # How contributions to the reserve margin are calculated
         M.CapacityCredit = Param(
-            M.regionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=1, validate=validate_0to1
+            M.regionalIndices, M.time_optimize, M.tech_reserve, M.vintage_all, default=0, validate=validate_0to1
+        )
+        M.ReserveCapacityDerate = Param(
+            M.regionalIndices, M.time_optimize, M.time_season, M.tech_reserve, M.vintage_all, default=1, validate=validate_0to1
         )
         M.PlanningReserveMargin = Param(M.regions)
         

@@ -90,7 +90,7 @@ print(f'price_per_kwh: ${price_per_kwh: 0.2f}\n')
 print('building storage level constraint...')
 
 # More SETS
-M.time_season.construct(data=['winter', 'summer'])
+M.TimeSeason.construct(data=['winter', 'summer'])
 tod_slices = 2
 M.time_of_day.construct(data=range(1, tod_slices + 1))
 M.tech_storage.construct(data=['battery'])
@@ -111,7 +111,7 @@ M.CapacityToActivity.construct(data={('A', 'battery'): 31.536})
 M.StorageDuration.construct(data={('A', 'battery'): 4})
 seasonal_fractions = {'winter': 0.4, 'summer': 0.6}
 M.SegFrac.construct(
-    data={(s, d): seasonal_fractions[s] / tod_slices for d in M.time_of_day for s in M.time_season}
+    data={(s, d): seasonal_fractions[s] / tod_slices for d in M.time_of_day for s in M.TimeSeason}
 )
 # QA the total
 print(f'quality check.  Total of all SegFrac: {sum(M.SegFrac.values()):0.3f}')

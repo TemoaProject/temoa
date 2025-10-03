@@ -426,9 +426,8 @@ class HybridLoader:
                 raise ValueError(msg)
         load_element(M.TimeSequencing, [(time_sequencing,)])
 
-        # ReserveMargin
-        # This is the method for calculating contributions
-        load_element(M.ReserveMargin, [(self.config.reserve_margin,)])
+        # ReserveMarginMethod
+        load_element(M.ReserveMarginMethod, [(self.config.reserve_margin,)])
 
         # myopic_base_year
         if mi:
@@ -477,9 +476,9 @@ class HybridLoader:
 
         #  === TECH SETS ===
 
-        # tech_resource
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'r'").fetchall()
-        load_element(M.tech_resource, raw, self.viable_techs)
+        # tech_resource # devnote: not used anywhere
+        # raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'r'").fetchall()
+        # load_element(M.tech_resource, raw, self.viable_techs)
 
         # tech_production
         raw = cur.execute("SELECT tech FROM main.Technology WHERE flag LIKE 'p%'").fetchall()
@@ -660,20 +659,6 @@ class HybridLoader:
             ] # if no segfrac table, assume this is a periodic model
         load_element(M.SegFrac, raw)
 
-        all_seasons = set() # includes all regular and virtual seasonal storage seasons
-        if self.table_exists("TimeSeasonSequential"):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year)
-                ).fetchall()
-            else:
-                raw = cur.execute('SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
-            all_seasons = all_seasons | set((row[1],) for row in raw)
-            load_element(M.TimeSeasonSequential, raw)
-            load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
-
         # TimeSeason
         if self.table_exists("TimeSeason"):
             if mi:
@@ -686,21 +671,34 @@ class HybridLoader:
                 raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
             for row in raw:
                 load_indexed_set(
-                    M.time_season,
+                    M.TimeSeason,
                     index_value=row[0],
                     element=row[1]
                 )
-            all_seasons = all_seasons | set((row[1],) for row in raw)
+            load_element(M.time_season, list(set((row[1],) for row in raw)))
         else:
             for period in time_optimize:
                 load_indexed_set(
-                    M.time_season,
+                    M.TimeSeason,
                     index_value=period,
                     element='S'
                 )
             logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
-            all_seasons.add(('S',))
-        load_element(M.time_season_all, list(all_seasons))
+            load_element(M.time_season, [('S',)])
+
+        if self.table_exists("TimeSeasonSequential"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
+            load_element(M.TimeSeasonSequential, raw)
+            if raw:
+                load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
+                load_element(M.time_season_sequential, list(set((row[1],) for row in raw)))
 
         # DemandSpecificDistribution
         if self.table_exists('DemandSpecificDistribution'):
@@ -1057,6 +1055,11 @@ class HybridLoader:
         if self.table_exists('CapacityCredit'):
             raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, credit FROM main.CapacityCredit')
             load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
+
+        # ReserveCapacityDerate
+        if self.table_exists('ReserveCapacityDerate'):
+            raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, season, tech, vintage, factor FROM main.ReserveCapacityDerate')
+            load_element(M.ReserveCapacityDerate, raw, self.viable_rtv, (0, 3, 4))
 
         # PlanningReserveMargin
         if self.table_exists('PlanningReserveMargin'):

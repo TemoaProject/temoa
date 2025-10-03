@@ -28,6 +28,7 @@ Transition a v3.0 database to a v3.1 database.
 import argparse
 import sqlite3
 import sys
+from temoa.temoa_model.temoa_model import TemoaModel
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -275,7 +276,7 @@ for old_name, new_name in period_added_tables:
                 if row[v] > p: continue # v <= p
                 if (row[r], row[t], row[v]) in lifetime_process: life = lifetime_process[row[r], row[t], row[v]]
                 elif (row[r], row[t]) in lifetime_tech: life = lifetime_tech[row[r], row[t]]
-                else: life = 40 # TODO replace by calling default lifetime from TemoaModel
+                else: life = TemoaModel.default_lifetime_tech
                 if row[v] + life <= p: continue # v+l > p
 
             if old_name[0:5] == 'TimeS': # horrible but covers TimeSeason and TimeSegmentFraction
@@ -289,6 +290,11 @@ for old_name, new_name in period_added_tables:
     query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
     con_new.executemany(query, data_new)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
+
+
+# Removal of tech_resource
+con_new.execute("UPDATE Technology SET flag='p' WHERE flag=='r';")
+print('Converted all resource techs to production techs.')
 
 
 # LoanLifetimeTech -> LoanLifetimeProcess

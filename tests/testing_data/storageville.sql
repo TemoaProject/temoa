@@ -48,8 +48,10 @@ INSERT INTO SectorLabel VALUES('industrial');
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
-    period  INTEGER,
-    tech    TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    tech    TEXT
+        REFERENCES Technology (tech),
     vintage INTEGER,
     credit  REAL,
     notes   TEXT,
@@ -914,7 +916,6 @@ CREATE TABLE TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
@@ -1025,7 +1026,7 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
+INSERT INTO Technology VALUES('well','p','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
 INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,0,' residential lighting');
 INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,0,0,0,0,0,'hydro power electric plant');
 INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,0,'big battery');

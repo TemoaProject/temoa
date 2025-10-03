@@ -661,7 +661,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         if S_p == p and S_t not in M.tech_annual
         for S_i in M.processInputs[r, S_p, S_t, S_v]
         for S_o in M.processOutputsByInput[r, S_p, S_t, S_v, S_i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -703,7 +703,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         if t not in M.tech_annual
     ]
@@ -1104,7 +1104,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         # For other techs, it would be redundant as in = out / eff
         consumed += sum(
             M.V_FlowIn[r, p, S_s, S_d, c, S_t, S_v, S_o]
-            for S_s in M.time_season[p]
+            for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
             if S_t in M.tech_storage
@@ -1113,7 +1113,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
         consumed += sum(
             M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
-            for S_s in M.time_season[p]
+            for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
             if S_t not in M.tech_storage and S_t not in M.tech_annual
@@ -1139,7 +1139,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         # Includes output from storage
         produced += sum(
             M.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, c]
-            for S_s in M.time_season[p]
+            for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_t, S_v in M.commodityUStreamProcess[r, p, c]
             if S_t not in M.tech_annual
@@ -1156,7 +1156,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         if c in M.commodity_flex:
             consumed += sum(
                 M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
-                for S_s in M.time_season[p]
+                for S_s in M.TimeSeason[p]
                 for S_d in M.time_of_day
                 for S_t, S_v in M.commodityUStreamProcess[r, p, c]
                 if S_t not in M.tech_annual and S_t in M.tech_flex
@@ -1182,7 +1182,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         consumed += sum(
             M.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o)
-            for S_s in M.time_season[p]
+            for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_r, S_t, S_v, S_o in M.exportRegions[r, p, c]
             if S_t not in M.tech_annual
@@ -1198,7 +1198,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     if (r, p, c) in M.importRegions:
         produced += sum(
             M.V_FlowOut[S_r + '-' + r, p, S_s, S_d, S_i, S_t, S_v, c]
-            for S_s in M.time_season[p]
+            for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_r, S_t, S_v, S_i in M.importRegions[r, p, c]
             if S_t not in M.tech_annual
@@ -1225,48 +1225,49 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     return expr
 
 
-def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
-    r"""
-    The ResourceExtraction constraint allows a modeler to specify an annual limit on
-    the amount of a particular resource Temoa may use in a period. The first version
-    of the constraint pertains to technologies with variable output at the time slice
-    level, and the second version pertains to technologies with constant annual output
-    belonging to the :code:`tech_annual` set.
+# Devnote: Not currently active
+# def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
+#     r"""
+#     The ResourceExtraction constraint allows a modeler to specify an annual limit on
+#     the amount of a particular resource Temoa may use in a period. The first version
+#     of the constraint pertains to technologies with variable output at the time slice
+#     level, and the second version pertains to technologies with constant annual output
+#     belonging to the :code:`tech_annual` set.
 
-    .. math::
-       :label: ResourceExtraction
+#     .. math::
+#        :label: ResourceExtraction
 
-       \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
 
-       \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
-    """
-    logger.warning(
-        'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
-        'Recommend removing data from supporting table'
-    )
-    # dev note:  This constraint does not have a table in the current schema
-    #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
-    #            by BOTH a non-annual and annual tech.  It should be re-written to add these
-    # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
-    try:
-        collected = sum(
-            M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
-            for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
-            for S_s in M.time_season[p]
-            for S_d in M.time_of_day
-        )
-    except KeyError:
-        collected = sum(
-            M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
-            for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
-        )
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#     """
+#     logger.warning(
+#         'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
+#         'Recommend removing data from supporting table'
+#     )
+#     # dev note:  This constraint does not have a table in the current schema
+#     #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
+#     #            by BOTH a non-annual and annual tech.  It should be re-written to add these
+#     # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
+#     try:
+#         collected = sum(
+#             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#             for S_s in M.TimeSeason[p]
+#             for S_d in M.time_of_day
+#         )
+#     except KeyError:
+#         collected = sum(
+#             M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput.keys()
+#         )
 
-    expr = collected <= value(M.ResourceBound[reg, p, r])
-    return expr
+#     expr = collected <= value(M.ResourceBound[reg, p, r])
+#     return expr
 
 
 def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -1937,13 +1938,13 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
     
     # Get available generation in this time slice depending on method specified in config file
-    match M.ReserveMargin.first():
+    match M.ReserveMarginMethod.first():
         case 'static':
             available = ReserveMarginStatic(M, r, p, s, d)
         case 'dynamic':
             available = ReserveMarginDynamic(M, r, p, s, d)
         case _:
-            msg = f"Invalid reserve margin parameter '{M.ReserveMargin.first()}'. Check the config file."
+            msg = f"Invalid reserve margin parameter '{M.ReserveMarginMethod.first()}'. Check the config file."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -2084,7 +2085,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     # Derated available generation
     available = sum(
         M.V_Capacity[r, p, t, v]
-        * value(M.CapacityCredit[r, p, t, v])
+        * value(M.ReserveCapacityDerate[r, p, s, t, v])
         * value(M.CapacityFactorProcess[r, p, s, d, t, v])
         * value(M.CapacityToActivity[r, t])
         * value(M.SegFrac[p, s, d])
@@ -2096,7 +2097,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     # Derated net output flow
     available += sum(
         M.V_FlowOut[r, p, s, d, i, t, v, o]
-        * value(M.CapacityCredit[r, p, t, v])
+        * value(M.ReserveCapacityDerate[r, p, s, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
         for i in M.processInputs[r, p, t, v]
@@ -2104,7 +2105,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     )
     available -= sum(
         M.V_FlowIn[r, p, s, d, i, t, v, o]
-        * value(M.CapacityCredit[r, p, t, v])
+        * value(M.ReserveCapacityDerate[r, p, s, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
         for i in M.processInputs[r, p, t, v]
@@ -2134,7 +2135,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
         # add the available output of the exchange tech.
         available += sum(
             M.V_Capacity[r1r2, p, t, v]
-            * value(M.CapacityCredit[r1r2, p, t, v])
+            * value(M.ReserveCapacityDerate[r, p, s, t, v])
             * value(M.CapacityFactorProcess[r, p, s, d, t, v])
             * value(M.CapacityToActivity[r1r2, t])
             * value(M.SegFrac[p, s, d])
@@ -2195,7 +2196,7 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
         if tmp_e == e and tmp_r == reg and S_t not in M.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
         if (reg, p, S_t, S_v) in M.processInputs
-        for S_s in M.time_season[p]
+        for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
     )
 
@@ -2570,7 +2571,7 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
         for S_v in M.processVintages.get((_r, p, _t), [])
         for S_i in M.processInputs[_r, p, _t, S_v]
         for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         if (_r, p, s, d, S_i, _t, S_v, S_o) in M.V_FlowOut
     )
@@ -2677,7 +2678,7 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
         for S_v in M.processVintages[_r, p, _t]
         for S_i in M.processInputs[_r, p, _t, S_v]
         for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     
@@ -2705,7 +2706,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
@@ -2727,7 +2728,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         if (_r, p, s, d, S_i, S_t, S_v, S_o) in M.V_FlowOut
     )
@@ -2849,7 +2850,7 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
             for _r in regions
             for S_v in M.processVintages.get((_r, p, t), [])
             for S_i in M.processInputs[_r, p, t, S_v]
-            for s in M.time_season[p]
+            for s in M.TimeSeason[p]
             for d in M.time_of_day
             if (_r, p, s, d, S_i, t, S_v, o) in M.V_FlowOut
         )
@@ -2985,14 +2986,14 @@ def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
 
     inp = sum(
         M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in M.time_season[p]
+        for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
         M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in M.time_season[p]
+        for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, i]
@@ -3095,7 +3096,7 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     out = sum(
         M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, o]
         for S_i in M.processInputsByOutput[r, p, t, v, o]
-        for S_s in M.time_season[p]
+        for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
     )
 
@@ -3103,7 +3104,7 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
         M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        for S_s in M.time_season[p]
+        for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
     )
 
@@ -3126,7 +3127,7 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
         for t in M.tech_group_members[g]
         for (_t, v) in M.processReservePeriods[r, p]
         if _t == t
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
@@ -3135,7 +3136,7 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
     total_inp = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
         for (t, v) in M.processReservePeriods[r, p]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]

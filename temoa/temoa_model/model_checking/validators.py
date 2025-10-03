@@ -272,7 +272,7 @@ def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, p, s, d, t, v) -> bo
         (
             r in M.regions,
             p in M.time_optimize,
-            s in M.time_season[p],
+            s in M.TimeSeason[p],
             d in M.time_of_day,
             t in M.tech_with_capacity,
             v in M.vintage_all,
@@ -303,99 +303,6 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     print('vintage', v in M.vintage_all)
     print('output_commodity', so in M.commodity_carrier)
     return False
-
-
-def validate_SeasonSequential(M: 'TemoaModel'):
-    
-    if all((
-        not M.tech_seasonal_storage,
-        not M.RampUpHourly,
-        not M.RampDownHourly,
-    )):
-        # Don't need it anyway
-        return
-
-    if not M.TimeSeasonSequential:
-        if M.TimeSequencing.first() in ('sequential_days', 'seasonal_timeslices'):
-            logger.info(
-                'No data in TimeSeasonSequential. By default, assuming sequential seasons '
-                'match TimeSeason and TimeSegmentFraction.'
-            )
-            for p in M.time_season:
-                for s in M.time_season[p]:
-                    M.ordered_season_sequential.add((p, s, s))
-                    M.TimeSeasonSequential[p, s, s] = value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
-
-        else:
-            msg = (
-                f'No data in TimeSeasonSequential but time_sequencing parameter set to {M.TimeSequencing.first()} '
-                'and inter-season features used. TimeSeasonSequential must be filled for this type of time ' 
-                'sequencing if seasonal storage or inter-season constraints like RampUp/RampDown are used. Check '
-                'the config file.'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-            
-    sequential = dict()
-    for p, s_seq, s in M.TimeSeasonSequential:
-        count = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'sequential_days' and abs(count - 1.0) >= 0.01:
-            msg = (
-                'TimeSequencing set to sequential_days but a season in the TimeSegmentFraction table does not '
-                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {count}. '
-                'Check the config file.'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-        if (p, s) not in sequential:
-            sequential[p, s] = 0
-        sequential[p, s] += count
-
-    # Check that TimeSeasonSequential day counts total to number of days in each period
-    for p in M.time_optimize:
-        count_total = sum(
-            sequential[p, s]
-            for _p, s in sequential
-            if _p == p
-        )
-        if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
-            logger.warning(
-                f'Sum of day count in TimeSeasonSequential ({sum(sequential.values())}) '
-                f'does not sum to days_per_period ({value(M.DaysPerPeriod)}) from the '
-                'MetaData table.'
-            )
-
-    # Check that seasons using in storage seasons are actual seasons
-    for (p, s) in sequential:
-        if (p, s) not in M.SegFracPerSeason:
-            msg = (
-                f'Period-season index {(p, s)} that does not exist in '
-                'TimeSegmentFraction referenced in TimeSeasonSequential .'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-    
-    for (p, s) in M.SegFracPerSeason:
-        if s not in M.time_season[p]:
-            continue
-
-        # Check that all seasons are used in sequential seasons
-        if (p, s) not in sequential:
-            msg = (f'Period-season index {(p, s)} absent from TimeSeasonSequential')
-            logger.warning(msg)
-
-        # Check that the two tables agree on the total seasonal composition of each period
-        segfrac = value(M.SegFracPerSeason[p, s])
-        segfracseq = sequential[p, s] / value(M.DaysPerPeriod)
-        if abs(segfrac - segfracseq) >= 0.001:
-            msg = (
-                'Discrepancy of total period-season composition between ' 
-                'TimeSegmentFraction and TimeSeasonSequential. Total fraction of each '
-                'period assigned to each season should match: ' 
-                f'TimeSegmentFraction: {(p, s, value(M.SegFracPerSeason[p, s]))}'
-                f', TimeSeasonSequential: {(p, s, segfracseq)}'
-            )
-            logger.warning(msg)
 
 
 def validate_ReserveMargin(M: 'TemoaModel'):

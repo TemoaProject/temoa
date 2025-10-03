@@ -183,7 +183,7 @@ def validate_SegFrac(M: 'TemoaModel'):
 
         expected_keys = set(
             (p, s, d)
-            for s in M.time_season[p]
+            for s in M.TimeSeason[p]
             for d in M.time_of_day
         )
         keys = set(
@@ -342,7 +342,7 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
 
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(M.time_season[p]) * len(M.time_of_day)
+    num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
     for (r, p, i, t, v, o), count in count_rpitvo.items():
 
         if count > 0:
@@ -377,7 +377,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(M.time_season[p]) * len(M.time_of_day)
+    num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
     for (r, p, t, v), count in count_rptv.items():
         if count > 0:
             M.isCapacityFactorProcess[r, p, t, v] = True
@@ -407,7 +407,7 @@ def CreateCapacityFactors(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for (r, t, v) in processes
         for p in M.processPeriods[r, t, v]
-        for s, d in cross_product(M.time_season[p], M.time_of_day)
+        for s, d in cross_product(M.TimeSeason[p], M.time_of_day)
     )
 
     # Step 2
@@ -556,7 +556,7 @@ def CreateDemands(M: 'TemoaModel'):
     if unset_demand_distributions:
         for p in M.time_optimize:
             unset_distributions = set(
-                cross_product(M.regions, (p,), M.time_season[p], M.time_of_day, unset_demand_distributions)
+                cross_product(M.regions, (p,), M.TimeSeason[p], M.time_of_day, unset_demand_distributions)
             )
             for r, p, s, d, dem in unset_distributions:
                 DSD[r, p, s, d, dem] = M.SegFrac[p, s, d]  # DSD._constructed = True
@@ -567,7 +567,7 @@ def CreateDemands(M: 'TemoaModel'):
     #         and we need to ensure even the zeros are passed in
     used_rp_dems = set((r, p, dem) for r, p, dem in M.Demand.sparse_iterkeys())
     for r, p, dem in used_rp_dems:
-        expected_key_length = len(M.time_season[p]) * len(M.time_of_day)
+        expected_key_length = len(M.TimeSeason[p]) * len(M.time_of_day)
         keys = [
             k
             for k in DSD.sparse_iterkeys()
@@ -577,7 +577,7 @@ def CreateDemands(M: 'TemoaModel'):
             # this could be very slow but only calls when there's a problem
             missing = set(
                 (s, d)
-                for s in M.time_season[p]
+                for s in M.TimeSeason[p]
                 for d in M.time_of_day
                 if (r, p, s, d, dem) not in keys
             )
@@ -856,8 +856,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                         M.outputSplitAnnualVintages[r, p, t, o, op] = set()
                     M.outputSplitAnnualVintages[r, p, t, o, op].add(v)
 
-            if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput:
-                M.processByPeriodAndOutput[r, p, o] = set()
+            # if t in M.tech_resource and (r, p, o) not in M.processByPeriodAndOutput: # not currently used
+            #     M.processByPeriodAndOutput[r, p, o] = set()
             if t in M.tech_reserve and (r, p) not in M.processReservePeriods:
                 M.processReservePeriods[r, p] = set()
 
@@ -891,8 +891,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             if t in M.tech_downramping:
                 M.rampDownVintages[r, p, t].add(v)
 
-            if t in M.tech_resource:
-                M.processByPeriodAndOutput[r, p, o].add((i, t, v))
+            # if t in M.tech_resource:
+            #     M.processByPeriodAndOutput[r, p, o].add((i, t, v)) # not currently used
             if t in M.tech_reserve:
                 M.processReservePeriods[r, p].add((t, v))
             if t in M.tech_exchange:
@@ -966,7 +966,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -986,7 +986,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1006,7 +1006,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.processVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1016,7 +1016,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for v in M.curtailmentVintages[r, p, t]
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1062,7 +1062,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.storageVintages.keys()
         for v in M.storageVintages[r, p, t]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1087,17 +1087,17 @@ def CreateTimeSequence(M: 'TemoaModel'):
         case 'sequential_days':
             msg = 'Running a sequential days database.'
             for p in M.time_optimize:
-                for s, d in M.time_season[p] * M.time_of_day:
+                for s, d in M.TimeSeason[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
         case 'seasonal_timeslices':
             msg = 'Running a seasonal time slice database.'
             for p in M.time_optimize:
-                for s, d in M.time_season[p] * M.time_of_day:
+                for s, d in M.TimeSeason[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'representative_periods':
             msg = 'Running a representative periods database.'
             for p in M.time_optimize:
-                for s, d in M.time_season[p] * M.time_of_day:
+                for s, d in M.TimeSeason[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the TimeNext table
@@ -1131,6 +1131,101 @@ def CreateTimeSequence(M: 'TemoaModel'):
                 M.time_next_sequential[p, s_seq] = seasons[i+1][0]
     
     logger.debug('Created time sequence.')
+
+
+def CreateTimeSeasonSequential(M: 'TemoaModel'):
+    
+    if all((
+        not M.tech_seasonal_storage,
+        not M.RampUpHourly,
+        not M.RampDownHourly,
+    )):
+        # Don't need it anyway
+        return
+
+    if not M.TimeSeasonSequential:
+        if M.TimeSequencing.first() in ('sequential_days', 'seasonal_timeslices'):
+            logger.info(
+                'No data in TimeSeasonSequential. By default, assuming sequential seasons '
+                'match TimeSeason and TimeSegmentFraction.'
+            )
+            for s in M.time_season:
+                M.time_season_sequential.add(s)
+            for p in M.TimeSeason:
+                for s in M.TimeSeason[p]:
+                    M.ordered_season_sequential.add((p, s, s))
+                    M.TimeSeasonSequential[p, s, s] = value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+
+        else:
+            msg = (
+                f'No data in TimeSeasonSequential but time_sequencing parameter set to {M.TimeSequencing.first()} '
+                'and inter-season features used. TimeSeasonSequential must be filled for this type of time ' 
+                'sequencing if seasonal storage or inter-season constraints like RampUp/RampDown are used. Check '
+                'the config file.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+            
+    sequential = dict()
+    for p, s_seq, s in M.TimeSeasonSequential:
+        count = value(M.TimeSeasonSequential[p, s_seq, s])
+        if M.TimeSequencing.first() == 'sequential_days' and abs(count - 1.0) >= 0.01:
+            msg = (
+                'TimeSequencing set to sequential_days but a season in the TimeSegmentFraction table does not '
+                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {count}. '
+                'Check the config file.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+        if (p, s) not in sequential:
+            sequential[p, s] = 0
+        sequential[p, s] += count
+
+    # Check that TimeSeasonSequential day counts total to number of days in each period
+    for p in M.time_optimize:
+        count_total = sum(
+            sequential[p, s]
+            for _p, s in sequential
+            if _p == p
+        )
+        if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
+            logger.warning(
+                f'Sum of day count in TimeSeasonSequential ({sum(sequential.values())}) '
+                f'does not sum to days_per_period ({value(M.DaysPerPeriod)}) from the '
+                'MetaData table.'
+            )
+
+    # Check that seasons using in storage seasons are actual seasons
+    for (p, s) in sequential:
+        if (p, s) not in M.SegFracPerSeason:
+            msg = (
+                f'Period-season index {(p, s)} that does not exist in '
+                'TimeSegmentFraction referenced in TimeSeasonSequential .'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+    
+    for (p, s) in M.SegFracPerSeason:
+        if s not in M.TimeSeason[p]:
+            continue
+
+        # Check that all seasons are used in sequential seasons
+        if (p, s) not in sequential:
+            msg = (f'Period-season index {(p, s)} absent from TimeSeasonSequential')
+            logger.warning(msg)
+
+        # Check that the two tables agree on the total seasonal composition of each period
+        segfrac = value(M.SegFracPerSeason[p, s])
+        segfracseq = sequential[p, s] / value(M.DaysPerPeriod)
+        if abs(segfrac - segfracseq) >= 0.001:
+            msg = (
+                'Discrepancy of total period-season composition between ' 
+                'TimeSegmentFraction and TimeSeasonSequential. Total fraction of each '
+                'period assigned to each season should match: ' 
+                f'TimeSegmentFraction: {(p, s, value(M.SegFracPerSeason[p, s]))}'
+                f', TimeSeasonSequential: {(p, s, segfracseq)}'
+            )
+            logger.warning(msg)
 
 
 def CreateSurvivalCurve(M: 'TemoaModel'):
@@ -1264,7 +1359,7 @@ def CapacityFactorProcessIndices(M: 'TemoaModel'):
         (r, s, d, t, v)
         for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
         for p in M.time_optimize
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     return indices
@@ -1274,7 +1369,7 @@ def CapacityFactorTechIndices(M: 'TemoaModel'):
     all_cfs = set(
         (r, p, s, d, t)
         for r, p, t in M.activeCapacityAvailable_rpt
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     return all_cfs
@@ -1453,7 +1548,7 @@ def CapacityConstraintIndices(M: 'TemoaModel'):
         if t not in M.tech_annual
         if t not in M.tech_uncap
         if t not in M.tech_storage
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1468,7 +1563,7 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
         if (r, p, t) in M.processVintages
         for v in M.processVintages[r, p, t]
         if (r, p, t, v) in M.activeActivity_rptv
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1529,7 +1624,7 @@ ensure demand activity remains consistent across time slices.
     for r, p, dem in anchor_season_tod:
         found_flag = False
         s0, d0 = None, None
-        for s0, d0 in ((ss, dd) for ss in M.time_season[p] for dd in M.time_of_day):
+        for s0, d0 in ((ss, dd) for ss in M.TimeSeason[p] for dd in M.time_of_day):
             if (r, p, s0, d0, dem) in M.DemandSpecificDistribution:
                 if value(M.DemandSpecificDistribution[r, p, s0, d0, dem]) >= appreciable_size:
                     found_flag = True
@@ -1551,7 +1646,7 @@ ensure demand activity remains consistent across time slices.
     for r, p, dem in anchor_season_tod:
         s0, d0 = anchor_season_tod[r, p, dem]
         for t, v in viable_tech_vintage[r, p, dem]:
-            for s in M.time_season[p]:
+            for s in M.TimeSeason[p]:
                 for d in M.time_of_day:
                     if s != s0 or d != d0:
                         yield r, p, s, d, t, v, dem, s0, d0
@@ -1561,7 +1656,7 @@ def DemandConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, dem)
         for r, p, dem in M.Demand.sparse_iterkeys()
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1573,7 +1668,7 @@ def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.baseloadVintages.keys()
         for v in M.baseloadVintages[r, p, t]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1599,7 +1694,7 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
         and c not in M.commodity_annual
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1625,7 +1720,7 @@ def RampUpDayConstraintIndices(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.rampUpVintages
         for v in M.rampUpVintages[r, p, t]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1637,7 +1732,7 @@ def RampDownDayConstraintIndices(M: 'TemoaModel'):
         (r, p, s, d, t, v)
         for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
 
@@ -1680,7 +1775,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
         for r in M.PlanningReserveMargin
         for p in M.time_optimize
         if (r, p) in M.processReservePeriods
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     
@@ -1693,7 +1788,7 @@ def LimitTechInputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, i, t, op in M.inputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.inputSplitVintages[r, p, i, t, op]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1738,7 +1833,7 @@ def LimitTechOutputSplitConstraintIndices(M: 'TemoaModel'):
         for r, p, t, o, op in M.outputSplitVintages.keys()
         if t not in M.tech_annual
         for v in M.outputSplitVintages[r, p, t, o, op]
-        for s in M.time_season[p]
+        for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
     ann_indices = set(
@@ -1832,15 +1927,15 @@ def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
-    if s == M.time_season[p].last() and d == M.time_of_day.last():
-        s_next = M.time_season[p].first()
+    if s == M.TimeSeason[p].last() and d == M.time_of_day.last():
+        s_next = M.TimeSeason[p].first()
         d_next = M.time_of_day.first()
 
     # Last time slice of any season that is NOT the last season
     # Carry state to initial state of next season
     # Carry state between seasons
     elif d == M.time_of_day.last():
-        s_next = M.time_season[p].next(s)
+        s_next = M.TimeSeason[p].next(s)
         d_next = M.time_of_day.first()
 
     # Any other time slice

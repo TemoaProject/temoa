@@ -43,8 +43,10 @@ INSERT INTO SectorLabel VALUES('electricity');
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
-    period  INTEGER,
-    tech    TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    tech    TEXT
+        REFERENCES Technology (tech),
     vintage INTEGER,
     credit  REAL,
     notes   TEXT,
@@ -907,7 +909,6 @@ CREATE TABLE TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');

@@ -24720,7 +24720,7 @@
     "RegionalExchangeCapacityConstraint_rrptv": [],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],
-    "ReserveMargin": [
+    "ReserveMarginMethod": [
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
@@ -25742,10 +25742,7 @@
         "RHE",
         "E31",
         "RL1",
-        "SRE"
-    ],
-    "tech_reserve": [],
-    "tech_resource": [
+        "SRE",
         "IMPDSL1",
         "IMPHYD",
         "IMPHCO1",
@@ -25754,6 +25751,7 @@
         "IMPURN1",
         "IMPOIL1"
     ],
+    "tech_reserve": [],
     "tech_retirement": [],
     "tech_seasonal_storage": [],
     "tech_storage": [
@@ -25803,16 +25801,17 @@
         2010,
         1990
     ],
-    "time_season": [
+    "TimeSeason": [
         2000,
         2010,
         1990
     ],
-    "time_season_all": [
+    "time_season": [
         "summer",
         "inter",
         "winter"
     ],
+    "time_season_sequential": [],
     "TimeSequencing": [
         "seasonal_timeslices"
     ],

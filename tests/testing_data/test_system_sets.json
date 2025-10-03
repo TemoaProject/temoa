@@ -44964,7 +44964,7 @@
     ],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],
-    "ReserveMargin": [
+    "ReserveMarginMethod": [
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
@@ -46652,15 +46652,13 @@
         "E_BATT",
         "E_SOLPV",
         "E_NUCLEAR",
-        "T_DSL"
-    ],
-    "tech_reserve": [],
-    "tech_resource": [
+        "T_DSL",
         "S_IMPETH",
         "S_IMPNG",
         "S_IMPURN",
         "S_IMPOIL"
     ],
+    "tech_reserve": [],
     "tech_retirement": [],
     "tech_seasonal_storage": [],
     "tech_storage": [
@@ -46705,17 +46703,18 @@
         2020,
         2030
     ],
-    "time_season": [
+    "TimeSeason": [
         2025,
         2020,
         2030
     ],
-    "time_season_all": [
+    "time_season": [
         "summer",
         "fall",
         "spring",
         "winter"
     ],
+    "time_season_sequential": [],
     "TimeSequencing": [
         "seasonal_timeslices"
     ],

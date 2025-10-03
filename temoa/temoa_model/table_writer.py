@@ -232,26 +232,6 @@ class TableWriter:
     def write_storage_level(self, M: TemoaModel, iteration=None) -> None:
         """Write the storage level table to the DB"""
 
-        # -----
-        # TODO for backwards compatibility, make the output table if it doesn't exist
-        # remove this one day when it is no longer needed
-        self.con.execute(
-            f"""CREATE TABLE IF NOT EXISTS 
-            OutputStorageLevel(
-            scenario TEXT,
-            region TEXT,
-            sector TEXT REFERENCES SectorLabel (sector),
-            period INTEGER REFERENCES TimePeriod (period),
-            season TEXT REFERENCES TimePeriod (period),
-            tod TEXT REFERENCES TimeOfDay (tod),
-            tech TEXT REFERENCES Technology (tech),
-            vintage INTEGER REFERENCES TimePeriod (period),
-            level REAL,
-            PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
-            );"""
-        )
-        # -----
-
         storage_levels = poll_storage_level_results(M=M)
 
         scenario_name = (
@@ -538,11 +518,6 @@ class TableWriter:
     def _write_cost_rows(self, entries, iteration=None):
         """Write the entries to the OutputCost table"""
         cur = self.con.cursor()
-        # -----
-        # TODO remove one day (see below)
-        cols = [c[1] for c in cur.execute('PRAGMA table_info(OutputCost);').fetchall()]
-        include_sector = cols[2] == 'sector'
-        # -----
         scenario_name = (
             self.config.scenario + f'-{iteration}'
             if iteration is not None
@@ -552,6 +527,7 @@ class TableWriter:
             (
                 scenario_name,
                 r,
+                self.tech_sectors[t],
                 p,
                 t,
                 v,
@@ -566,24 +542,8 @@ class TableWriter:
             )
             for (r, p, t, v) in entries
         ]
-        # -----
-        # TODO This was done for backwards-compatibility. Make this the only behaviour one day when
-        # this is no longer needed
-        if include_sector:
-            rows = [
-                (
-                    *r[0:2],
-                    self.tech_sectors[r[3]],
-                    *r[2::],
-                )
-                for r in rows
-            ]
-            rows.sort(key=lambda r: (r[0], r[1], r[2], r[3], r[4], r[5]))
-            qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        # -----
-        else:
-            rows.sort(key=lambda r: (r[0], r[1], r[2], r[3], r[4]))
-            qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        rows.sort(key=lambda r: (r[0:5]))
+        qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         cur.executemany(qry, rows)
         self.con.commit()
 

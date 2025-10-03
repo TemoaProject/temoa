@@ -48,8 +48,10 @@ INSERT INTO SectorLabel VALUES('industrial');
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
-    period  INTEGER,
-    tech    TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    tech    TEXT
+        REFERENCES Technology (tech),
     vintage INTEGER,
     credit  REAL,
     notes   TEXT,
@@ -1359,7 +1361,6 @@ CREATE TABLE TechnologyType
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO TechnologyType VALUES('r','resource technology');
 INSERT INTO TechnologyType VALUES('p','production technology');
 INSERT INTO TechnologyType VALUES('pb','baseload production technology');
 INSERT INTO TechnologyType VALUES('ps','storage production technology');
@@ -1478,13 +1479,13 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('IMPDSL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported diesel');
-INSERT INTO Technology VALUES('IMPGSL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported gasoline');
-INSERT INTO Technology VALUES('IMPHCO1','r','supply','coal','',1,0,0,0,0,0,0,0,' imported coal');
-INSERT INTO Technology VALUES('IMPOIL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported crude oil');
-INSERT INTO Technology VALUES('IMPURN1','r','supply','nuclear','',1,0,0,0,0,0,0,0,' imported uranium');
-INSERT INTO Technology VALUES('IMPFEQ','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported fossil equivalent');
-INSERT INTO Technology VALUES('IMPHYD','r','supply','hydro','',1,0,0,0,0,0,0,0,' imported water -- doesnt exist in Utopia');
+INSERT INTO Technology VALUES('IMPDSL1','p','supply','petroleum','',1,0,0,0,0,0,0,0,' imported diesel');
+INSERT INTO Technology VALUES('IMPGSL1','p','supply','petroleum','',1,0,0,0,0,0,0,0,' imported gasoline');
+INSERT INTO Technology VALUES('IMPHCO1','p','supply','coal','',1,0,0,0,0,0,0,0,' imported coal');
+INSERT INTO Technology VALUES('IMPOIL1','p','supply','petroleum','',1,0,0,0,0,0,0,0,' imported crude oil');
+INSERT INTO Technology VALUES('IMPURN1','p','supply','nuclear','',1,0,0,0,0,0,0,0,' imported uranium');
+INSERT INTO Technology VALUES('IMPFEQ','p','supply','petroleum','',1,0,0,0,0,0,0,0,' imported fossil equivalent');
+INSERT INTO Technology VALUES('IMPHYD','p','supply','hydro','',1,0,0,0,0,0,0,0,' imported water -- doesnt exist in Utopia');
 INSERT INTO Technology VALUES('E01','pb','electric','coal','',0,0,0,0,0,0,0,0,' coal power plant');
 INSERT INTO Technology VALUES('E21','pb','electric','nuclear','',0,0,0,0,0,0,0,0,' nuclear power plant');
 INSERT INTO Technology VALUES('E31','pb','electric','hydro','',0,0,0,0,0,0,0,0,' hydro power');
