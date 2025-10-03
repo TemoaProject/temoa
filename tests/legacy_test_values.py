@@ -55,7 +55,8 @@ test_vals = {
     'utopia': {
         # reduced after reworking storageinit -> storage was less constrained
         # reduced after removing ancient 1-year-shift obj function bug
-        ExpectedVals.OBJ_VALUE: 34731.9619,
+        # increased after rework of inter-season sequencing
+        ExpectedVals.OBJ_VALUE: 34764.3349,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.
@@ -68,10 +69,20 @@ test_vals = {
     },
     'mediumville': {
         # added 2025/06/12 prior to addition of dynamic reserve margin
-        ExpectedVals.OBJ_VALUE: 8139.1913,
+        # reduced 2025/06/16 after fixing bug in db
+        ExpectedVals.OBJ_VALUE: 7035.7275,
         ExpectedVals.EFF_DOMAIN_SIZE: 2800,
         ExpectedVals.EFF_INDEX_SIZE: 18,
-        ExpectedVals.CONSTR_COUNT: 232,
+        # increased after reviving RampSeason constraints
+        ExpectedVals.CONSTR_COUNT: 240,
         ExpectedVals.VAR_COUNT: 140, 
+    },
+    'seasonal_storage': {
+        # added 2025/06/16 after addition of seasonal storage
+        ExpectedVals.OBJ_VALUE: 76661.0231,
+        ExpectedVals.EFF_DOMAIN_SIZE: 24,
+        ExpectedVals.EFF_INDEX_SIZE: 4,
+        ExpectedVals.CONSTR_COUNT: 182,
+        ExpectedVals.VAR_COUNT: 90, 
     },
 }

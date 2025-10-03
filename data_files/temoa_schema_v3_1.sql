@@ -14,6 +14,8 @@ REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
 VALUES ('DB_MINOR', 0, 'DB minor version number');
+REPLACE INTO MetaData
+VALUES ('days_per_period', 365, 'count of days in each period');
 
 CREATE TABLE IF NOT EXISTS MetaDataReal
 (
@@ -911,18 +913,25 @@ CREATE TABLE IF NOT EXISTS TimePeriod
 );
 CREATE TABLE IF NOT EXISTS TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    season TEXT,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, season)
 );
-CREATE TABLE IF NOT EXISTS PeriodSeasons
+CREATE TABLE IF NOT EXISTS TimeSeasonSequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
+    seas_seq TEXT,
     season TEXT
         REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (count > 0)
 );
 CREATE TABLE IF NOT EXISTS TimePeriodType
 (
@@ -984,6 +993,7 @@ CREATE TABLE IF NOT EXISTS Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );

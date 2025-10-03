@@ -10,6 +10,7 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES('myopic_base_year',2000,'');
+INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -847,7 +848,7 @@ CREATE TABLE PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE RampDown
+CREATE TABLE RampDownHourly
 (
     region TEXT,
     tech   TEXT
@@ -855,7 +856,7 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUp
+CREATE TABLE RampUpHourly
 (
     region TEXT,
     tech   TEXT
@@ -936,13 +937,6 @@ INSERT INTO TimePeriod VALUES(2,2025,'f');
 INSERT INTO TimePeriod VALUES(3,2030,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('s1');
-INSERT INTO TimeSeason VALUES('s2');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -951,8 +945,21 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(2025,1,'s1',NULL);
-INSERT INTO PeriodSeasons VALUES(2025,2,'s2',NULL);
+INSERT INTO TimeSeason VALUES(2025,1,'s1',NULL);
+INSERT INTO TimeSeason VALUES(2025,2,'s2',NULL);
+CREATE TABLE TimeSeasonSequential
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (count > 0)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1011,13 +1018,14 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,'plain old water');
-INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,' residential lighting');
-INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,0,0,0,0,'hydro power electric plant');
-INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,'big battery');
+INSERT INTO Technology VALUES('well','r','supply','water','',0,0,0,0,0,0,0,0,'plain old water');
+INSERT INTO Technology VALUES('bulbs','p','residential','electric','',0,0,0,0,0,0,0,0,' residential lighting');
+INSERT INTO Technology VALUES('EH','pb','electric','hydro','',0,0,0,0,0,0,0,0,'hydro power electric plant');
+INSERT INTO Technology VALUES('batt','ps','electric','electric','',0,0,0,0,0,0,0,0,'big battery');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

@@ -1262,6 +1262,10 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     StorageLevel in the next time slice is equal to current StorageLevel plus net charge in the current time slice.
     """
 
+    # We allow a non-zero daily delta only in the case of seasonal storage
+    if M.is_seasonal_storage[t] and d == M.time_of_day.last():
+        return Constraint.Skip # handled by SeasonalStorageEnergy_Constraint
+
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
     charge = sum(
@@ -1287,6 +1291,51 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
+def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
+    """
+    This constraint enforces the continuity of state of charge between seasons for seasonal
+    storage. Sequential season storage level increases by the matched season's net charge
+    over that entire day, adjusted for number of days represented by sequential vs non-sequential
+    seasons.
+    """
+
+    s = M.sequential_to_season[p, s_seq]
+
+    # This is the sum of all input=i sent TO storage tech t of vintage v with
+    # output=o in p,s,d
+    charge = sum(
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        for d in M.time_of_day
+    )
+
+    # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
+    # with input=i in p,s,d
+    discharge = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_o in M.processOutputs[r, p, t, v]
+        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
+        for d in M.time_of_day
+    )
+
+    s_seq_next = M.time_next_sequential[p, s_seq]
+    s_next = M.sequential_to_season[p, s_seq_next]
+
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
+    # be adjusted to the number of days in the sequential season
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+    days_adjust_next = value(M.TimeSeasonSequential[p, s_seq_next, s_next]) / (value(M.SegFracPerSeason[p, s_next]) * value(M.DaysPerPeriod))
+
+    stored_energy = (charge - discharge) * days_adjust
+
+    start = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.first(), t, v] * days_adjust
+    end = M.V_SeasonalStorageLevel[r, p, s_seq_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
+
+    expr = start + stored_energy == end
+    return expr
+
+
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
@@ -1299,7 +1348,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     by the number of hours in a year to obtain the duration as a fraction of the year.
     Since the :math:`C2A` parameter assumes the conversion of capacity to annual activity,
     we need to express the storage duration as fraction of a year. Then, :math:`SEG_{s,d}`
-    summed over the time-of-day slices (:math:`d`) multiplied by 365 days / yr yields the
+    summed over the time-of-day slices (:math:`d`) multiplied by M.DaysPerPeriod yields the
     number of days per season. This step is necessary because conventional time sliced models
     use a single day to represent many days within a given season. Thus, it is necessary to
     scale the storage duration to account for the number of days in each season.
@@ -1308,24 +1357,65 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
        :label: StorageEnergyUpperBound
 
           \textbf{SL}_{r, p, s, d, t, v} \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
-          \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr
+          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{24 * value(M.DaysPerPeriod) hrs/yr}
+          \cdot \sum_{d} SEG_{s,d} \cdot M.DaysPerPeriod
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageEnergyUpperBound}}
 
     """
 
+    if M.is_seasonal_storage[t]:
+        return Constraint.Skip # redundant on SeasonalStorageEnergyUpperBound
+
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
-        * (value(M.StorageDuration[r, t]) / 8760)
-        * M.SegFracPerSeason[p, s]
-        * 365
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
+        * value(M.SegFracPerSeason[p, s]) * M.DaysPerPeriod # adjust for days in season
         * value(M.ProcessLifeFrac[r, p, t, v])
     )
     
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
+
+    return expr
+
+
+def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
+    r"""
+    Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity 
+    of seasonal storage, summing the superimposed real storage level with the sequential 
+    seasonal storage level. A season can represent many days. Within each season, flows 
+    are multiplied by the number of days each season represents, and so the upper bound 
+    needs to be adjusted to allow day-scale flows (e.g., charge in the morning, discharge 
+    in the afternoon). However, between seasons, whole-day charge deltas have built up, 
+    multiplied by the number of days the season represents. These deltas stack, 
+    possibly exceeding our upper bound by a factor of (N-1)/N where N is the number of 
+    days the season represents. Additionally, if we allowed these stacked deltas to 
+    carry between seasons then we would be multiplying the effective energy capacity of 
+    the storage. So, we do not adjust the bound for seasonal storage. Seasonal storage 
+    therefore cannot do much arbitrage within each season, but can carry energy between 
+    seasons.
+    """
+
+    s = M.sequential_to_season[p, s_seq]
+
+    energy_capacity = (
+        M.V_Capacity[r, p, t, v]
+        * value(M.CapacityToActivity[r, t])
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
+        * value(M.ProcessLifeFrac[r, p, t, v])
+    )
+
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
+    # be adjusted to the number of days in the sequential season
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+
+    # V_StorageLevel tracks the running cumulative delta in the non-sequential season, so must be adjusted
+    # to the size of the sequential season
+    running_day_delta = M.V_StorageLevel[r, p, s, d, t, v] * days_adjust
+    
+    expr = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + running_day_delta <= energy_capacity
 
     return expr
 
@@ -1467,28 +1557,38 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
           \textbf{SF}_{r,p,s,d,t,v} \le
           \ SF_{r,p,s,d,t,v}
           \cdot
-          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{8760 hrs/yr}
-          \cdot \sum_{d} SEG_{s,d} \cdot 365 days/yr \cdot MPL_{r,p,t,v}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{(24 \cdot DPP hrs/yr}
+          \cdot \sum_{d} SEG_{s,d} \cdot M.DaysPerPeriod days/yr \cdot MPL_{r,p,t,v}
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{LimitStorageFraction}}
     """
 
-    energy_capacity = (
+    energy_limit = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
-        * (value(M.StorageDuration[r, t]) / 8760)
-        * M.SegFracPerSeason[p, s]
-        * 365
+        * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
         * value(M.ProcessLifeFrac[r, p, t, v])
+        * value(M.LimitStorageFraction[r, p, s, d, t, v, op])
     )
 
-    expr = operator_expression(M.V_StorageLevel[r, p, s, d, t, v], op, energy_capacity * value(M.LimitStorageFraction[r, p, s, d, t, v, op]))
+    if M.is_seasonal_storage[t]:
+        s_seq = s # sequential season
+        s = M.sequential_to_season[p, s_seq] # non-sequential season
+
+    # adjust the storage level to the individual-day level
+    energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+
+    if M.is_seasonal_storage[t]:
+        # seasonal storage upper energy limit is absolute
+        energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_seq, s])
+
+    expr = operator_expression(energy_level, op, energy_limit)
 
     return expr
 
 
-def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # M.time_of_day is a sorted set, and M.time_of_day.first() returns the first
     # element in the set, similarly, M.time_of_day.last() returns the last element.
     # M.time_of_day.prev(d) function will return the previous element before s, and
@@ -1538,37 +1638,44 @@ def RampUp_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     s_next, d_next = M.time_next[p, s, d]
 
-    activity_sd = sum(
+    # How many hours does this time slice represent
+    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
+
+    hourly_activity_sd = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / value(M.SegFrac[p, s, d])
+    ) / hours_adjust
 
-    activity_sd_next = sum(
+    hourly_activity_sd_next = sum(
         M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / value(M.SegFrac[p, s_next, d_next])
+    ) / hours_adjust
 
-    hours_elapsed = 8760 * ( value(M.SegFrac[p, s, d]) + value(M.SegFrac[p, s_next, d_next]) ) / 2
-    hours_elapsed /= M.SegFracPerSeason[p, s] * 365 # adjust for how many days this season represents
-    ramp_fraction = hours_elapsed * value(M.RampUp[r, t])
+    # elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = 24 / 2 * (
+        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    )
+    ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). Constraint skipped."
+            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
+            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_increase = activity_sd_next - activity_sd # opposite sign from rampdown
+    activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
     expr = activity_increase <= rampable_activity
 
     return expr
 
 
-def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
 
     Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
@@ -1596,33 +1703,136 @@ def RampDown_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     s_next, d_next = M.time_next[p, s, d]
 
-    activity_sd = sum(
+    # How many hours does this time slice represent
+    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
+
+    hourly_activity_sd = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / value(M.SegFrac[p, s, d])
+    ) / hours_adjust
 
-    activity_sd_next = sum(
+    hourly_activity_sd_next = sum(
         M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / value(M.SegFrac[p, s_next, d_next])
+    ) / hours_adjust
 
-    hours_elapsed = 8760 * ( value(M.SegFrac[p, s, d]) + value(M.SegFrac[p, s_next, d_next]) ) / 2
-    hours_elapsed /= M.SegFracPerSeason[p, s] * 365 # adjust for how many days this season represents
-    ramp_fraction = hours_elapsed * value(M.RampDown[r, t])
+    # elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = 24 / 2 * (
+        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    )
+    ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). Constraint skipped."
+            "Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
+            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = activity_sd - activity_sd_next # opposite sign from rampup
+    activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
     expr = activity_decrease <= rampable_activity
 
+    return expr
+
+
+def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
+    r"""
+    Constrains the ramp up rate of activity between time slices at the boundary 
+    of sequential seasons.
+    """
+
+    s = M.sequential_to_season[p, s_seq]
+    s_seq_next = M.time_next_sequential[p, s_seq]
+    s_next = M.sequential_to_season[p, s_seq_next]
+    _, d_next = M.time_next[p, s, d]
+
+    # How many hours does this time slice represent
+    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
+
+    hourly_activity_sd = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    ) / hours_adjust
+
+    hourly_activity_sd_next = sum(
+        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    ) / hours_adjust
+
+    # elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = 24 / 2 * (
+        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    )
+    ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
+
+    if ramp_fraction >= 1:
+        msg = (
+            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
+            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+        )
+        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
+        return Constraint.Skip
+
+    activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    expr = activity_increase <= rampable_activity
+    
+    return expr
+
+
+def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
+    r"""
+    Constrains the ramp down rate of activity between time slices at the boundary 
+    of sequential seasons.
+    """
+
+    s = M.sequential_to_season[p, s_seq]
+    s_seq_next = M.time_next_sequential[p, s_seq]
+    s_next = M.sequential_to_season[p, s_seq_next]
+    _, d_next = M.time_next[p, s, d]
+
+    # How many hours does this time slice represent
+    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
+
+    hourly_activity_sd = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    ) / hours_adjust
+
+    hourly_activity_sd_next = sum(
+        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    ) / hours_adjust
+
+    # elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = 24 / 2 * (
+        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    )
+    ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
+
+    if ramp_fraction >= 1:
+        msg = (
+            "Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
+            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+        )
+        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
+        return Constraint.Skip
+
+    activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.ProcessLifeFrac[r, p, t, v])
+    expr = activity_decrease <= rampable_activity
+    
     return expr
 
 
@@ -1787,10 +1997,18 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
         if t not in M.tech_uncap and t not in M.tech_storage
     )
 
-    # Storage (not exchange)
-    # Derated output flow (discharge)
+    # Storage
+    # Derated net output flow
     available += sum(
         M.V_FlowOut[r, p, s, d, i, t, v, o]
+        * value(M.CapacityCredit[r, p, t, v])
+        for (t, v) in M.processReservePeriods[r, p]
+        if t in M.tech_storage
+        for i in M.processInputs[r, p, t, v]
+        for o in M.processOutputsByInput[r, p, t, v, i]
+    )
+    available -= sum(
+        M.V_FlowIn[r, p, s, d, i, t, v, o]
         * value(M.CapacityCredit[r, p, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
@@ -2307,13 +2525,13 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
 #     # The V_FlowOut variable is scaled by the weights of each season.
 #     # In order to determine the daily flow, the V_FlowOut variable
 #     # must be converted back to its un-scaled value. We do this by dividing the
-#     # V_FlowOut value by M.SegFracPerSeason[p, s, d]*365 (how many days are in this season).
+#     # V_FlowOut value by M.SegFracPerSeason[p, s, d] * M.DaysPerPeriod (how many days are in this season).
 
 #     regions = gather_group_regions(M, r)
 
 #     try:
 #         activity_rpst = sum(
-#             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFracPerSeason[p, s, d])*365)
+#             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o] / (value(M.SegFracPerSeason[p, s, d]) * M.DaysPerPeriod)
 #             for _r in regions
 #             for S_v in M.processVintages[_r, p, t]
 #             for S_i in M.processInputs[_r, p, t, S_v]
@@ -2865,9 +3083,6 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     ):
         return Constraint.Skip
 
-    # The V_FlowOut variable is scaled by the number of days in the season.
-    # To adjust for this, we divide by M.SegFracPerSeason[p, s, d]*365, 
-    # the number of days this season represents.
     if t not in M.tech_annual:
         activity_rpst = sum(
             M.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]

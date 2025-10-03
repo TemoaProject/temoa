@@ -3864,7 +3864,7 @@
             2025
         ]
     ],
-    "RampDownConstraint_rpsdtv": [
+    "RampDownDayConstraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3930,7 +3930,41 @@
             2025
         ]
     ],
-    "RampUpConstraint_rpsdtv": [
+    "RampDownSeasonConstraint_rpsdtv": [
+        [
+            "A",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "A",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ]
+    ],
+    "RampUpDayConstraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3992,6 +4026,40 @@
             2025,
             "s2",
             "d1",
+            "EH",
+            2025
+        ]
+    ],
+    "RampUpSeasonConstraint_rpsdtv": [
+        [
+            "A",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "A",
+            2025,
+            "s2",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "d2",
+            "EH",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s2",
+            "d2",
             "EH",
             2025
         ]
@@ -4049,6 +4117,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageConstraints_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "B",
@@ -4166,6 +4236,18 @@
         "e",
         "le"
     ],
+    "ordered_season_sequential": [
+        [
+            2025,
+            "s1",
+            "s1"
+        ],
+        [
+            2025,
+            "s2",
+            "s2"
+        ]
+    ],
     "regionalGlobalIndices": [
         "B",
         "A",
@@ -4248,7 +4330,7 @@
         "batt"
     ],
     "tech_reserve": [
-        "EH"
+        "EF"
     ],
     "tech_resource": [
         "well"
@@ -4256,6 +4338,7 @@
     "tech_retirement": [
         "EH"
     ],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "batt"
     ],
@@ -4297,7 +4380,7 @@
         "s2"
     ],
     "TimeSequencing": [
-        "seasonal_timeslicing"
+        "seasonal_timeslices"
     ],
     "vintage_all": [
         2025,

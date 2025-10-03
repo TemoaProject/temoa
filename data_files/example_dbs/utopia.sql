@@ -10,6 +10,7 @@ CREATE TABLE MetaData
 INSERT INTO MetaData VALUES('myopic_base_year',1990,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
 INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
+INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -1297,7 +1298,7 @@ CREATE TABLE PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE RampDown
+CREATE TABLE RampDownHourly
 (
     region TEXT,
     tech   TEXT
@@ -1305,7 +1306,7 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUp
+CREATE TABLE RampUpHourly
 (
     region TEXT,
     tech   TEXT
@@ -1394,14 +1395,6 @@ INSERT INTO TimePeriod VALUES(6,2010,'f');
 INSERT INTO TimePeriod VALUES(7,2020,'f');
 CREATE TABLE TimeSeason
 (
-    season TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeSeason VALUES('inter');
-INSERT INTO TimeSeason VALUES('summer');
-INSERT INTO TimeSeason VALUES('winter');
-CREATE TABLE PeriodSeasons
-(
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
@@ -1410,15 +1403,28 @@ CREATE TABLE PeriodSeasons
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO PeriodSeasons VALUES(1990,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(1990,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(1990,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2000,3,'winter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,1,'inter',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,2,'summer',NULL);
-INSERT INTO PeriodSeasons VALUES(2010,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(1990,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(1990,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(1990,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2000,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2000,3,'winter',NULL);
+INSERT INTO TimeSeason VALUES(2010,1,'inter',NULL);
+INSERT INTO TimeSeason VALUES(2010,2,'summer',NULL);
+INSERT INTO TimeSeason VALUES(2010,3,'winter',NULL);
+CREATE TABLE TimeSeasonSequential
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (count > 0)
+);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -1477,28 +1483,29 @@ CREATE TABLE Technology
     retire       INTEGER NOT NULL DEFAULT 0,
     flex         INTEGER NOT NULL DEFAULT 0,
     exchange     INTEGER NOT NULL DEFAULT 0,
+    seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('IMPDSL1','r','supply','petroleum','',1,0,0,0,0,0,0,' imported diesel');
-INSERT INTO Technology VALUES('IMPGSL1','r','supply','petroleum','',1,0,0,0,0,0,0,' imported gasoline');
-INSERT INTO Technology VALUES('IMPHCO1','r','supply','coal','',1,0,0,0,0,0,0,' imported coal');
-INSERT INTO Technology VALUES('IMPOIL1','r','supply','petroleum','',1,0,0,0,0,0,0,' imported crude oil');
-INSERT INTO Technology VALUES('IMPURN1','r','supply','nuclear','',1,0,0,0,0,0,0,' imported uranium');
-INSERT INTO Technology VALUES('IMPFEQ','r','supply','petroleum','',1,0,0,0,0,0,0,' imported fossil equivalent');
-INSERT INTO Technology VALUES('IMPHYD','r','supply','hydro','',1,0,0,0,0,0,0,' imported water -- doesnt exist in Utopia');
-INSERT INTO Technology VALUES('E01','pb','electric','coal','',0,0,0,0,0,0,0,' coal power plant');
-INSERT INTO Technology VALUES('E21','pb','electric','nuclear','',0,0,0,0,0,0,0,' nuclear power plant');
-INSERT INTO Technology VALUES('E31','pb','electric','hydro','',0,0,0,0,0,0,0,' hydro power');
-INSERT INTO Technology VALUES('E51','ps','electric','electric','',0,0,0,0,0,0,0,' electric storage');
-INSERT INTO Technology VALUES('E70','p','electric','petroleum','',0,0,0,0,0,0,0,' diesel power plant');
-INSERT INTO Technology VALUES('RHE','p','residential','electric','',0,0,0,0,0,0,0,' electric residential heating');
-INSERT INTO Technology VALUES('RHO','p','residential','petroleum','',0,0,0,0,0,0,0,' diesel residential heating');
-INSERT INTO Technology VALUES('RL1','p','residential','electric','',0,0,0,0,0,0,0,' residential lighting');
-INSERT INTO Technology VALUES('SRE','p','supply','petroleum','',0,0,0,0,0,0,0,' crude oil processor');
-INSERT INTO Technology VALUES('TXD','p','transport','petroleum','',0,0,0,0,0,0,0,' diesel powered vehicles');
-INSERT INTO Technology VALUES('TXE','p','transport','electric','',0,0,0,0,0,0,0,' electric powered vehicles');
-INSERT INTO Technology VALUES('TXG','p','transport','petroleum','',0,0,0,0,0,0,0,' gasoline powered vehicles');
+INSERT INTO Technology VALUES('IMPDSL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported diesel');
+INSERT INTO Technology VALUES('IMPGSL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported gasoline');
+INSERT INTO Technology VALUES('IMPHCO1','r','supply','coal','',1,0,0,0,0,0,0,0,' imported coal');
+INSERT INTO Technology VALUES('IMPOIL1','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported crude oil');
+INSERT INTO Technology VALUES('IMPURN1','r','supply','nuclear','',1,0,0,0,0,0,0,0,' imported uranium');
+INSERT INTO Technology VALUES('IMPFEQ','r','supply','petroleum','',1,0,0,0,0,0,0,0,' imported fossil equivalent');
+INSERT INTO Technology VALUES('IMPHYD','r','supply','hydro','',1,0,0,0,0,0,0,0,' imported water -- doesnt exist in Utopia');
+INSERT INTO Technology VALUES('E01','pb','electric','coal','',0,0,0,0,0,0,0,0,' coal power plant');
+INSERT INTO Technology VALUES('E21','pb','electric','nuclear','',0,0,0,0,0,0,0,0,' nuclear power plant');
+INSERT INTO Technology VALUES('E31','pb','electric','hydro','',0,0,0,0,0,0,0,0,' hydro power');
+INSERT INTO Technology VALUES('E51','ps','electric','electric','',0,0,0,0,0,0,0,0,' electric storage');
+INSERT INTO Technology VALUES('E70','p','electric','petroleum','',0,0,0,0,0,0,0,0,' diesel power plant');
+INSERT INTO Technology VALUES('RHE','p','residential','electric','',0,0,0,0,0,0,0,0,' electric residential heating');
+INSERT INTO Technology VALUES('RHO','p','residential','petroleum','',0,0,0,0,0,0,0,0,' diesel residential heating');
+INSERT INTO Technology VALUES('RL1','p','residential','electric','',0,0,0,0,0,0,0,0,' residential lighting');
+INSERT INTO Technology VALUES('SRE','p','supply','petroleum','',0,0,0,0,0,0,0,0,' crude oil processor');
+INSERT INTO Technology VALUES('TXD','p','transport','petroleum','',0,0,0,0,0,0,0,0,' diesel powered vehicles');
+INSERT INTO Technology VALUES('TXE','p','transport','electric','',0,0,0,0,0,0,0,0,' electric powered vehicles');
+INSERT INTO Technology VALUES('TXG','p','transport','petroleum','',0,0,0,0,0,0,0,0,' gasoline powered vehicles');
 CREATE TABLE OutputCost
 (
     scenario TEXT,

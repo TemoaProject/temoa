@@ -197,6 +197,8 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Pyomo LP write status', width, self.save_lp_file)
         msg += '{:>{}s}: {}\n'.format('Save duals to output db', width, self.save_duals)
         msg += '{:>{}s}: {}\n'.format('Save storage to output db', width, self.save_storage_levels)
+
+        msg += spacer
         msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
         msg += '{:>{}s}: {}\n'.format('Planning reserve margin', width, self.reserve_margin)
 

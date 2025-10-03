@@ -24713,8 +24713,10 @@
             1990
         ]
     ],
-    "RampDownConstraint_rpsdtv": [],
-    "RampUpConstraint_rpsdtv": [],
+    "RampDownDayConstraint_rpsdtv": [],
+    "RampDownSeasonConstraint_rpsdtv": [],
+    "RampUpDayConstraint_rpsdtv": [],
+    "RampUpSeasonConstraint_rpsdtv": [],
     "RegionalExchangeCapacityConstraint_rrptv": [],
     "RenewablePortfolioStandardConstraint_rpg": [],
     "ReserveMargin_rpsd": [],
@@ -24722,6 +24724,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageConstraints_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "utopia",
@@ -25652,6 +25656,7 @@
         "e",
         "le"
     ],
+    "ordered_season_sequential": [],
     "regionalGlobalIndices": [
         "utopia"
     ],
@@ -25750,6 +25755,7 @@
         "IMPOIL1"
     ],
     "tech_retirement": [],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "E51"
     ],
@@ -25808,7 +25814,7 @@
         "winter"
     ],
     "TimeSequencing": [
-        "seasonal_timeslicing"
+        "seasonal_timeslices"
     ],
     "vintage_all": [
         1990,

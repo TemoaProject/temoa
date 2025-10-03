@@ -2,12 +2,12 @@
 scenario = "test run"
 scenario_mode = "perfect_foresight"
 
-input_database = "tests/testing_outputs/emissions.sqlite"
-output_database = "tests/testing_outputs/emissions.sqlite"
+input_database = "tests/testing_outputs/seasonal_storage.sqlite"
+output_database = "tests/testing_outputs/seasonal_storage.sqlite"
 neos = false
 
 # solver
-solver_name = "cbc"
+solver_name = "gurobi"
 
 # generate an excel file in the output_files folder
 save_excel = false
@@ -42,7 +42,7 @@ save_lp_file = false
 #       The sequence of time slices is defined manually in the TimeNext table (which is commented out
 #       in the schema). This is an advanced feature and not recommended for most users. Seasonal
 #       storage must be tagged and the TimeSeasonSequential table filled.
-time_sequencing = 'seasonal_timeslices'
+time_sequencing = 'representative_periods'
 
 # How contributions to the planning reserve margin are calculated
 # Options:
@@ -63,9 +63,11 @@ reserve_margin = 'static'
 # if the run is not executed in that mode.
 # ---------------------------------------------------
 [MGA]
-slack = 0.1
-iterations = 4
-weight = "integer"   # currently supported: [integer, normalized]
+cost_epsilon = 0.03    # 3% relaxation on optimal cost
+iteration_limit = 15   # max iterations to perform
+time_limit_hrs = 1     # max time
+axis = "tech_category_activity"   # use the tech activity Manager to control exploration based on categories in Tech
+weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight exploration
 
 [myopic]
 myopic_view = 2  # number of periods seen at one iteration

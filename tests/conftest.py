@@ -76,6 +76,7 @@ def refresh_databases() -> None:
         ('emissions.sql', 'emissions.sqlite'),
         ('materials.sql', 'materials.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
+        ('seasonal_storage.sql', 'seasonal_storage.sqlite'),
     )
     for src, db in databases:
         if Path.exists(data_output_path / db):

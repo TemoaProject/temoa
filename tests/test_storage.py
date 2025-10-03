@@ -49,8 +49,7 @@ def test_storage_fraction(system_test_run):
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
-            * model.SegFracPerSeason[p, s]
-            * 365
+            * model.SegFracPerSeason[p, s] * model.DaysPerPeriod
             * model.ProcessLifeFrac[r, p, t, v]
         )
 
@@ -95,7 +94,7 @@ def test_state_sequencing(system_test_run):
         next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value
     
         assert state + charge - discharge == pytest.approx(
-           next_state, rel=1e-2
+           next_state, abs=1e-5
         ), f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
 
 

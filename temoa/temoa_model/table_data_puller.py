@@ -241,11 +241,25 @@ def poll_storage_level_results(M: TemoaModel, epsilon=1e-5) -> dict[SLI, float]:
     res: dict[SLI, float] = defaultdict(float)
 
     # Storage level, the state variable for all but last time slice of each season
-    for sli in M.StorageLevel_rpsdtv:
-        state = value(M.V_StorageLevel[sli])
-        sli = SLI(*sli)
+    for r, p, s, d, t, v in M.StorageLevel_rpsdtv:
+        if t in M.tech_seasonal_storage:
+            continue
+        state = value(M.V_StorageLevel[r, p, s, d, t, v]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+        sli = SLI(r, p, s, d, t, v)
         if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
         res[sli] = state
+
+    for r, p, s_seq, t, v in M.SeasonalStorageLevel_rpstv:
+        s = M.sequential_to_season[p, s_seq]
+        # Ratio of days in virtual storage season to days in actual season
+        # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
+        # be adjusted to the number of days in the virtual storage season
+        days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+        for d in M.time_of_day:
+            state = value(M.V_SeasonalStorageLevel[r, p, s_seq, t, v]) + value(M.V_StorageLevel[r, p, s, d, t, v]) * days_adjust
+            sli = SLI(r, p, s_seq, d, t, v)
+            if abs(state) < epsilon: state = 0 # still want to know but decimals are ugly
+            res[sli] = state
 
     return res
 

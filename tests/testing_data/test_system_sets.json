@@ -44914,8 +44914,10 @@
             2020
         ]
     ],
-    "RampDownConstraint_rpsdtv": [],
-    "RampUpConstraint_rpsdtv": [],
+    "RampDownDayConstraint_rpsdtv": [],
+    "RampDownSeasonConstraint_rpsdtv": [],
+    "RampUpDayConstraint_rpsdtv": [],
+    "RampUpSeasonConstraint_rpsdtv": [],
     "RegionalExchangeCapacityConstraint_rrptv": [
         [
             "R2",
@@ -44966,6 +44968,8 @@
         "static"
     ],
     "RetiredCapacityVar_rptv": [],
+    "SeasonalStorageLevel_rpstv": [],
+    "SeasonalStorageConstraints_rpsdtv": [],
     "StorageConstraints_rpsdtv": [
         [
             "R1",
@@ -46566,6 +46570,7 @@
         "e",
         "le"
     ],
+    "ordered_season_sequential": [],
     "regionalGlobalIndices": [
         "R2",
         "R1",
@@ -46657,6 +46662,7 @@
         "S_IMPOIL"
     ],
     "tech_retirement": [],
+    "tech_seasonal_storage": [],
     "tech_storage": [
         "E_BATT"
     ],
@@ -46711,7 +46717,7 @@
         "winter"
     ],
     "TimeSequencing": [
-        "seasonal_timeslicing"
+        "seasonal_timeslices"
     ],
     "vintage_all": [
         2025,

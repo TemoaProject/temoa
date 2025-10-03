@@ -581,7 +581,7 @@ def CreateDemands(M: 'TemoaModel'):
                 for d in M.time_of_day
                 if (r, p, s, d, dem) not in keys
             )
-            logger.warning(
+            logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
                 (r, p, dem), missing,
             )
@@ -954,6 +954,12 @@ def CreateSparseDicts(M: 'TemoaModel'):
     commodityDownstream_rpo = set(M.commodityDStreamProcess.keys() | M.capacityConsumptionTechs.keys() | M.exportRegions.keys())
     M.commodityBalance_rpc = commodityUpstream_rpi.intersection(commodityDownstream_rpo)
 
+    # A dictionary of whether a storage tech is seasonal, just to speed things up
+    for t in M.tech_storage:
+        M.is_seasonal_storage[t] = False
+    for t in M.tech_seasonal_storage:
+        M.is_seasonal_storage[t] = True
+
     M.activeFlow_rpsditvo = set(
         (r, p, s, d, i, t, v, o)
         for r, p, t in M.processVintages.keys()
@@ -1061,26 +1067,42 @@ def CreateSparseDicts(M: 'TemoaModel'):
         for d in M.time_of_day
     )
 
+    M.seasonalStorageLevelIndices_rpstv = set(
+        (r, p, s_stor, t, v)
+        for r, p, t in M.storageVintages.keys()
+        if t in M.tech_seasonal_storage
+        for v in M.storageVintages[r, p, t]
+        for _p, s_stor in M.sequential_to_season
+        if _p == p
+    )
+
     logger.debug('Completed creation of SparseDicts')
 
 
 def CreateTimeSequence(M: 'TemoaModel'):
 
+    logger.debug('Creating sequence of time slices.')
+
     # Establishing sequence of states
     match M.TimeSequencing.first():
-        case 'seasonal_timeslicing':
-            msg = 'Running a season time slicing database, looping state each period, chaining between seasons.'
+        case 'sequential_days':
+            msg = 'Running a sequential days database.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
+        case 'seasonal_timeslices':
+            msg = 'Running a seasonal time slice database.'
+            for p in M.time_optimize:
+                for s, d in M.time_season[p] * M.time_of_day:
+                    M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'representative_periods':
-            msg = 'Running a representative periods database, looping state each season.'
+            msg = 'Running a representative periods database.'
             for p in M.time_optimize:
                 for s, d in M.time_season[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_season_next_timeslice(M, p, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the TimeNext table
-            msg = 'Pulling state sequence from TimeNext table.'
+            msg = 'Pulling time sequence from TimeNext table.'
             for p, s, d, s_next, d_next in M.TimeNext:
                 M.time_next[p, s, d] = s_next, d_next
         case _:
@@ -1088,11 +1110,28 @@ def CreateTimeSequence(M: 'TemoaModel'):
             msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
             logger.error(msg)
             raise ValueError(msg)
-
+        
     msg += (' This behaviour can be changed using the '
             'time_sequencing parameter in the config file. ')
     logger.info(msg)
-    logger.debug('Created sequence of states.')
+
+    logger.debug('Creating superimposed sequential seasons.')
+    
+    # Superimposed sequential seasons
+    for p in M.time_optimize:
+        seasons = [
+            (s_seq, s)
+            for _p, s_seq, s in M.ordered_season_sequential
+            if _p == p
+        ]
+        for i, (s_seq, s) in enumerate(seasons):
+            M.sequential_to_season[p, s_seq] = s
+            if (s_seq, s) == seasons[-1]:
+                M.time_next_sequential[p, s_seq] = seasons[0][0]
+            else:
+                M.time_next_sequential[p, s_seq] = seasons[i+1][0]
+    
+    logger.debug('Created time sequence.')
 
     
 # ---------------------------------------------------------------
@@ -1312,6 +1351,19 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
 def StorageLevelVariableIndices(M: 'TemoaModel'):
     return M.storageLevelIndices_rpsdtv
 
+def SeasonalStorageLevelVariableIndices(M: 'TemoaModel'):
+    return M.seasonalStorageLevelIndices_rpstv
+
+
+def SeasonalStorageConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r, p, s, d, t, v)
+        for r, p, s, t, v in M.seasonalStorageLevelIndices_rpstv
+        for d in M.time_of_day
+    )
+    
+    return indices
+
 
 def StorageConstraintIndices(M: 'TemoaModel'):
     return M.storageLevelIndices_rpsdtv
@@ -1491,25 +1543,55 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def RampUpConstraintIndices(M: 'TemoaModel'):
+def RampUpDayConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
-        for r, p, t in M.rampUpVintages.keys()
+        for r, p, t in M.rampUpVintages
+        for v in M.rampUpVintages[r, p, t]
         for s in M.time_season[p]
         for d in M.time_of_day
-        for v in M.rampUpVintages[r, p, t]
     )
 
     return indices
 
 
-def RampDownConstraintIndices(M: 'TemoaModel'):
+def RampDownDayConstraintIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, s, d, t, v)
-        for r, p, t in M.rampDownVintages.keys()
+        for r, p, t in M.rampDownVintages
+        for v in M.rampDownVintages[r, p, t]
         for s in M.time_season[p]
         for d in M.time_of_day
+    )
+
+    return indices
+
+
+def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
+    if M.TimeSequencing.first() == 'sequential_days':
+        return {} # dont need this constraint
+    
+    indices = set(
+        (r, p, s_seq, M.time_of_day.last(), t, v)
+        for r, p, t in M.rampUpVintages
+        for v in M.rampUpVintages[r, p, t]
+        for _p, s_seq, _ in M.ordered_season_sequential
+        if _p == p
+    )
+
+    return indices
+
+
+def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
+    if M.TimeSequencing.first() == 'sequential_days':
+        return {} # dont need this constraint
+    
+    indices = set(
+        (r, p, s_seq, M.time_of_day.last(), t, v)
+        for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
+        for _p, s_seq, _ in M.ordered_season_sequential
+        if _p == p
     )
 
     return indices
@@ -1520,6 +1602,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
         (r, p, s, d)
         for r in M.PlanningReserveMargin
         for p in M.time_optimize
+        if (r, p) in M.processReservePeriods
         for s in M.time_season[p]
         for d in M.time_of_day
     )

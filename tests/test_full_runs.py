@@ -42,6 +42,7 @@ legacy_config_files = [
     {'name': 'utopia', 'filename': 'config_utopia.toml'},
     {'name': 'test_system', 'filename': 'config_test_system.toml'},
     {'name': 'mediumville', 'filename': 'config_mediumville.toml'},
+    {'name': 'seasonal_storage', 'filename': 'config_seasonal_storage.toml'},
 ]
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]
@@ -111,5 +112,6 @@ def test_myopic_utopia(system_test_run):
     invest_sum = res[0]
     # reduced this target after storageinit rework
     # reduced after removing ancient 1-year shift bug from objective function
-    assert invest_sum == pytest.approx(10976.37143), 'sum of investment costs did not match expected'
+    # increased after rework of inter-season sequencing
+    assert invest_sum == pytest.approx(11004.8335), 'sum of investment costs did not match expected'
     con.close()

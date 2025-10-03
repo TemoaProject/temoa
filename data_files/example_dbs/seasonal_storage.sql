@@ -7,10 +7,10 @@ CREATE TABLE MetaData
     notes   TEXT,
     PRIMARY KEY (element)
 );
+INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO MetaData VALUES('myopic_base_year',1990,'');
-INSERT INTO MetaData VALUES ('days_per_period', 365, 'count of days in each period');
+INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES('days_per_period',365,'count of days in each period');
 CREATE TABLE MetaDataReal
 (
     element TEXT,
@@ -19,8 +19,8 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
-INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'');
+INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in LoanRate table');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -39,12 +39,7 @@ CREATE TABLE SectorLabel
     sector TEXT,
     PRIMARY KEY (sector)
 );
-INSERT INTO SectorLabel VALUES('supply');
-INSERT INTO SectorLabel VALUES('electric');
-INSERT INTO SectorLabel VALUES('transport');
-INSERT INTO SectorLabel VALUES('commercial');
-INSERT INTO SectorLabel VALUES('residential');
-INSERT INTO SectorLabel VALUES('industrial');
+INSERT INTO SectorLabel VALUES('electricity');
 CREATE TABLE CapacityCredit
 (
     region  TEXT,
@@ -89,6 +84,14 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
+INSERT INTO CapacityFactorTech VALUES('region',2000,'charge','a','generator',1.0,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'charge','b','generator',1.0,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'charge','c','generator',0.2,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'charge','d','generator',0.2,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'discharge','a','generator',0.1,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'discharge','b','generator',0.1,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'discharge','c','generator',0.01,NULL);
+INSERT INTO CapacityFactorTech VALUES('region',2000,'discharge','d','generator',0.01,NULL);
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -98,6 +101,10 @@ CREATE TABLE CapacityToActivity
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
+INSERT INTO CapacityToActivity VALUES('region','generator',8760.0,'MWh/MWy');
+INSERT INTO CapacityToActivity VALUES('region','dly_stor',8760.0,'MWh/MWy');
+INSERT INTO CapacityToActivity VALUES('region','seas_stor',8760.0,'MWh/MWy');
+INSERT INTO CapacityToActivity VALUES('region','demand',8760.0,'MWh/MWy');
 CREATE TABLE Commodity
 (
     name        TEXT
@@ -106,25 +113,23 @@ CREATE TABLE Commodity
         REFERENCES CommodityType (label),
     description TEXT
 );
-INSERT INTO Commodity VALUES('ELC','d','electricity');
-INSERT INTO Commodity VALUES('NGA','p','natural gas');
-INSERT INTO Commodity VALUES('CO2','e','CO2 emission');
-INSERT INTO Commodity VALUES('CO2_CAP','d','captured CO2');
-INSERT INTO Commodity VALUES('ETHOS','s','source');
+INSERT INTO Commodity VALUES('ethos','s',NULL);
+INSERT INTO Commodity VALUES('electricity','p',NULL);
+INSERT INTO Commodity VALUES('demand','d',NULL);
 CREATE TABLE CommodityType
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
+INSERT INTO CommodityType VALUES('p','physical commodity');
+INSERT INTO CommodityType VALUES('a','annual commodity');
+INSERT INTO CommodityType VALUES('e','emissions commodity');
+INSERT INTO CommodityType VALUES('d','demand commodity');
+INSERT INTO CommodityType VALUES('s','source commodity');
 INSERT INTO CommodityType VALUES('w','waste commodity');
 INSERT INTO CommodityType VALUES('wa','waste annual commodity');
 INSERT INTO CommodityType VALUES('wp','waste physical commodity');
-INSERT INTO CommodityType VALUES('a','annual commodity');
-INSERT INTO CommodityType VALUES('s','source commodity');
-INSERT INTO CommodityType VALUES('p','physical commodity');
-INSERT INTO CommodityType VALUES('e','emissions commodity');
-INSERT INTO CommodityType VALUES('d','demand commodity');
 CREATE TABLE ConstructionInput
 (
     region      TEXT,
@@ -151,7 +156,6 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('linkville',2000,'CO2',2.0,NULL,NULL);
 CREATE TABLE CostFixed
 (
     region  TEXT    NOT NULL,
@@ -178,8 +182,10 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO CostInvest VALUES('linkville','PLANT',2000,100.0,'','');
-INSERT INTO CostInvest VALUES('linkville','CCS',2000,50.0,'','');
+INSERT INTO CostInvest VALUES('region','generator',2000,1000.0,'',NULL);
+INSERT INTO CostInvest VALUES('region','dly_stor',2000,1.0,'',NULL);
+INSERT INTO CostInvest VALUES('region','seas_stor',2000,100.0,'',NULL);
+INSERT INTO CostInvest VALUES('region','demand',2000,1.0,'',NULL);
 CREATE TABLE CostVariable
 (
     region  TEXT    NOT NULL,
@@ -194,9 +200,8 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostVariable VALUES('linkville',2000,'PLANT',2000,10.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('linkville',2000,'CCS',2000,10.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('linkville',2000,'FAKE_SOURCE',2000,0.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2000,'generator',2000,1.0,NULL,NULL);
+INSERT INTO CostVariable VALUES('region',2000,'demand',2000,1.0,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -209,8 +214,7 @@ CREATE TABLE Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-INSERT INTO Demand VALUES('linkville',2000,'CO2_CAP',1000.0,NULL,NULL);
-INSERT INTO Demand VALUES('linkville',2000,'ELC',10.0,NULL,NULL);
+INSERT INTO Demand VALUES('region',2000,'demand',8760.0,'MWh',NULL);
 CREATE TABLE DemandSpecificDistribution
 (
     region      TEXT,
@@ -227,8 +231,14 @@ CREATE TABLE DemandSpecificDistribution
     PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO DemandSpecificDistribution VALUES('linkville',2000,'summer','day','ELC',0.5,'');
-INSERT INTO DemandSpecificDistribution VALUES('linkville',2000,'winter','day','ELC',0.5,'');
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'charge','a','demand',0.0,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'charge','b','demand',0.05,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'charge','c','demand',0.05,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'charge','d','demand',0.1,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'discharge','a','demand',0.0,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'discharge','b','demand',0.2,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'discharge','c','demand',0.2,NULL);
+INSERT INTO DemandSpecificDistribution VALUES('region',2000,'discharge','d','demand',0.4,NULL);
 CREATE TABLE EndOfLifeOutput
 (
     region      TEXT,
@@ -259,10 +269,10 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('linkville','ETHOS','MINE',2000,'NGA',1.0,'');
-INSERT INTO Efficiency VALUES('linkville','ETHOS','CCS',2000,'CO2_CAP',1.0,'capture eff');
-INSERT INTO Efficiency VALUES('linkville','ETHOS','FAKE_SOURCE',2000,'CO2_CAP',1.0,'');
-INSERT INTO Efficiency VALUES('linkville','NGA','PLANT',2000,'ELC',0.5,NULL);
+INSERT INTO Efficiency VALUES('region','ethos','generator',2000,'electricity',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','electricity','dly_stor',2000,'electricity',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','electricity','seas_stor',2000,'electricity',1.0,NULL);
+INSERT INTO Efficiency VALUES('region','electricity','demand',2000,'demand',1.0,NULL);
 CREATE TABLE EfficiencyVariable
 (
     region      TEXT,
@@ -303,7 +313,6 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('linkville','CO2','NGA','PLANT',2000,'ELC',-3.0,'','');
 CREATE TABLE EmissionEmbodied
 (
     region      TEXT,
@@ -390,8 +399,6 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('linkville','CCS',100.0,'');
-INSERT INTO LifetimeTech VALUES('linkville','PLANT',100.0,'');
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -491,6 +498,8 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
+INSERT INTO LimitStorageLevelFraction VALUES('region', 2000, 'winter', 'b', 'seas_stor', 2000, 'e', 0.5, NULL);
+INSERT INTO LimitStorageLevelFraction VALUES('region', 2000, 'charge', 'b', 'dly_stor', 2000, 'e', 0.5, NULL);
 CREATE TABLE LimitActivity
 (
     region  TEXT,
@@ -698,7 +707,6 @@ CREATE TABLE LinkedTech
     notes          TEXT,
     PRIMARY KEY (primary_region, primary_tech, emis_comm)
 );
-INSERT INTO LinkedTech VALUES('linkville','PLANT','CO2','CCS',NULL);
 CREATE TABLE OutputCurtailment
 (
     scenario    TEXT,
@@ -858,7 +866,7 @@ CREATE TABLE Region
         PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO Region VALUES('linkville',NULL);
+INSERT INTO Region VALUES('region',NULL);
 CREATE TABLE TimeSegmentFraction
 (   
     period INTEGER
@@ -872,8 +880,14 @@ CREATE TABLE TimeSegmentFraction
     PRIMARY KEY (period, season, tod),
     CHECK (segfrac >= 0 AND segfrac <= 1)
 );
-INSERT INTO TimeSegmentFraction VALUES(2000,'summer','day',0.5,'# S-D');
-INSERT INTO TimeSegmentFraction VALUES(2000,'winter','day',0.5,'# W-D');
+INSERT INTO TimeSegmentFraction VALUES(2000,'charge','a',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'charge','b',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'charge','c',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'charge','d',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'discharge','a',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'discharge','b',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'discharge','c',0.125,NULL);
+INSERT INTO TimeSegmentFraction VALUES(2000,'discharge','d',0.125,NULL);
 CREATE TABLE StorageDuration
 (
     region   TEXT,
@@ -882,6 +896,8 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
+INSERT INTO StorageDuration VALUES('region','dly_stor',4.0,NULL);
+INSERT INTO StorageDuration VALUES('region','seas_stor',8760.0,NULL);
 CREATE TABLE TechnologyType
 (
     label       TEXT
@@ -898,7 +914,10 @@ CREATE TABLE TimeOfDay
     tod      TEXT
         PRIMARY KEY
 );
-INSERT INTO TimeOfDay VALUES(1,'day');
+INSERT INTO TimeOfDay VALUES(0,'a');
+INSERT INTO TimeOfDay VALUES(1,'b');
+INSERT INTO TimeOfDay VALUES(2,'c');
+INSERT INTO TimeOfDay VALUES(3,'d');
 CREATE TABLE TimePeriod
 (
     sequence INTEGER UNIQUE,
@@ -907,34 +926,19 @@ CREATE TABLE TimePeriod
     flag     TEXT
         REFERENCES TimePeriodType (label)
 );
-INSERT INTO TimePeriod VALUES(0,1995,'e');
-INSERT INTO TimePeriod VALUES(1,2000,'f');
-INSERT INTO TimePeriod VALUES(2,2005,'f');
+INSERT INTO TimePeriod VALUES(0,2000,'f');
+INSERT INTO TimePeriod VALUES(1,2005,'f');
 CREATE TABLE TimeSeason
 (
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    season TEXT
-        REFERENCES TimeSeason (season),
+    season TEXT,
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
-INSERT INTO TimeSeason VALUES(2000,1,'summer',NULL);
-INSERT INTO TimeSeason VALUES(2000,2,'winter',NULL);
-CREATE TABLE TimeSeasonSequential
-(
-    period INTEGER
-        REFERENCES TimePeriod (period),
-    sequence INTEGER,
-    seas_seq TEXT,
-    season TEXT
-        REFERENCES TimeSeason (season),
-    count NUMERIC NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (count > 0)
-);
+INSERT INTO TimeSeason VALUES(2000,0,'charge',NULL);
+INSERT INTO TimeSeason VALUES(2000,1,'discharge',NULL);
 CREATE TABLE TimePeriodType
 (
     label       TEXT
@@ -997,10 +1001,10 @@ CREATE TABLE Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-INSERT INTO Technology VALUES('PLANT','p','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('CCS','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('MINE','r','supply',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
-INSERT INTO Technology VALUES('FAKE_SOURCE','r','supply',NULL,NULL,1,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('generator','p','electricity',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('dly_stor','ps','electricity',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
+INSERT INTO Technology VALUES('seas_stor','ps','electricity',NULL,NULL,0,0,0,0,0,0,0,1,NULL);
+INSERT INTO Technology VALUES('demand','p','electricity',NULL,NULL,0,0,0,0,0,0,0,0,NULL);
 CREATE TABLE OutputCost
 (
     scenario TEXT,
@@ -1021,4 +1025,31 @@ CREATE TABLE OutputCost
     FOREIGN KEY (vintage) REFERENCES TimePeriod (period),
     FOREIGN KEY (tech) REFERENCES Technology (tech)
 );
+CREATE TABLE TimeSeasonSequential
+(
+    period INTEGER
+        REFERENCES TimePeriod (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT
+        REFERENCES TimeSeason (season),
+    count NUMERIC NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (count > 0)
+);
+INSERT INTO TimeSeasonSequential VALUES(2000,1,'summer','charge',152.5,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,2,'sept_w1','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,3,'sept_w2','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,4,'sept_w3','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,5,'sept_w4','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,6,'sept_29th','discharge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,7,'sept_30th','charge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,8,'winter','discharge',152.5,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,9,'apr_w1','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,10,'apr_w2','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,11,'apr_w3','charge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,12,'apr_w4','discharge',7,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,13,'apr_29th','charge',1,NULL);
+INSERT INTO TimeSeasonSequential VALUES(2000,14,'apr_30th','discharge',1,NULL);
 COMMIT;

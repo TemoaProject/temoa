@@ -398,37 +398,10 @@ class HybridLoader:
             logger.warning('No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)')
             load_element(M.time_of_day, [('D',)])
 
-        # PeriodSeasons
-        if self.table_exists("PeriodSeasons"):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, season FROM main.PeriodSeasons WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year)
-                ).fetchall()
-            else:
-                raw = cur.execute('SELECT period, season FROM main.PeriodSeasons ORDER BY period, sequence').fetchall()
-            for row in raw:
-                load_indexed_set(
-                    M.time_season,
-                    index_value=row[0],
-                    element=row[1]
-                )
-            load_element(M.time_season_all, list(set((row[1],) for row in raw))) # unique seasons into time_season_all set
-        else:
-            for period in time_optimize:
-                load_indexed_set(
-                    M.time_season,
-                    index_value=period,
-                    element='S'
-                )
-            logger.warning('No PeriodSeasons table found. Loading a single filler season "S" (assume this is an annual model)')
-            load_element(M.time_season_all, [('S',)])
-
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
-            case 'seasonal_timeslicing' | 'representative_periods':
+            case 'seasonal_timeslices' | 'representative_periods' | 'sequential_days':
                 pass
             case 'manual':
                 # This is a hidden feature allowing the user to manually specify the sequence of states using the TimeNext table
@@ -466,6 +439,18 @@ class HybridLoader:
             if not raw:
                 raise ValueError('No myopic_base_year found in MetaData table.')
             data[M.MyopicBaseyear.name] = {None: int(raw[0][0])}
+
+        # days_per_season
+        raw = cur.execute(
+                "SELECT value from MetaData WHERE element == 'days_per_period'"
+            ).fetchall()
+        if not raw:
+            logger.info(
+                'No value found for days_per_period in the MetaData table. '
+                'Assuming this is an annual database (365 days per period)'
+            )
+            raw = [(365,)]
+        data[M.DaysPerPeriod.name] = {None: int(raw[0][0])}
 
         #  === REGION SETS ===
 
@@ -517,17 +502,21 @@ class HybridLoader:
         raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps'").fetchall()
         load_element(M.tech_storage, raw, self.viable_techs)
 
+        # tech_seasonal_storage
+        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps' AND seas_stor > 0").fetchall()
+        load_element(M.tech_seasonal_storage, raw, self.viable_techs)
+
         # tech_reserve
         raw = cur.execute('SELECT tech FROM Technology WHERE reserve > 0').fetchall()
         load_element(M.tech_reserve, raw, self.viable_techs)
 
         # tech_ramping
-        if self.table_exists('RampUp'):
-            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUp').fetchall()
+        if self.table_exists('RampUpHourly'):
+            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUpHourly').fetchall()
             techs = {t[0] for t in ramp_up_techs}
             load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-        if self.table_exists('RampDown'):
-            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDown').fetchall()
+        if self.table_exists('RampDownHourly'):
+            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDownHourly').fetchall()
             techs = {t[0] for t in ramp_dn_techs}
             load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
 
@@ -659,14 +648,59 @@ class HybridLoader:
         # SegFrac
         if self.table_exists("TimeSegmentFraction"):
             raw = self.raw_check_mi_period(mi=mi, cur=cur, qry='SELECT period, season, tod, segfrac FROM main.TimeSegmentFraction')
-            load_element(M.SegFrac, raw)
         else:
             logger.warning(
                 'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
-                ' (assume this is an annual model)'
+                ' (assume this is a periodic model)'
             )
-            filler_segfrac = [(p, "S", "D", 1) for p in time_optimize] # if no segfrac table, assume this is an annual model
-            load_element(M.SegFrac, filler_segfrac)
+            raw = [
+                (p, "S", "D", 1)
+                for p in time_optimize
+                if mi.base_year <= p <= mi.last_demand_year
+            ] # if no segfrac table, assume this is a periodic model
+        load_element(M.SegFrac, raw)
+
+        all_seasons = set() # includes all regular and virtual seasonal storage seasons
+        if self.table_exists("TimeSeasonSequential"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, seas_seq, season, count FROM main.TimeSeasonSequential ORDER BY period, sequence').fetchall()
+            all_seasons = all_seasons | set((row[1],) for row in raw)
+            load_element(M.TimeSeasonSequential, raw)
+            load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
+
+        # TimeSeason
+        if self.table_exists("TimeSeason"):
+            if mi:
+                raw = cur.execute(
+                    'SELECT period, season FROM main.TimeSeason WHERE'
+                    ' period >= ? AND period <= ? ORDER BY period, sequence',
+                    (mi.base_year, mi.last_demand_year)
+                ).fetchall()
+            else:
+                raw = cur.execute('SELECT period, season FROM main.TimeSeason ORDER BY period, sequence').fetchall()
+            for row in raw:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=row[0],
+                    element=row[1]
+                )
+            all_seasons = all_seasons | set((row[1],) for row in raw)
+        else:
+            for period in time_optimize:
+                load_indexed_set(
+                    M.time_season,
+                    index_value=period,
+                    element='S'
+                )
+            logger.warning('No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)')
+            all_seasons.add(('S',))
+        load_element(M.time_season_all, list(all_seasons))
 
         # DemandSpecificDistribution
         if self.table_exists('DemandSpecificDistribution'):
@@ -1029,15 +1063,15 @@ class HybridLoader:
                         print('problem loading linked tech.  See log file')
                         sys.exit(-1)
 
-        # RampUp
-        if self.table_exists('RampUp'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampUp').fetchall()
-            load_element(M.RampUp, raw, self.viable_rt, (0, 1))
+        # RampUpHourly
+        if self.table_exists('RampUpHourly'):
+            raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
+            load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
 
-        # RampDown
-        if self.table_exists('RampDown'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampDown').fetchall()
-            load_element(M.RampDown, raw, self.viable_rt, (0, 1))
+        # RampDownHourly
+        if self.table_exists('RampDownHourly'):
+            raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
+            load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):
