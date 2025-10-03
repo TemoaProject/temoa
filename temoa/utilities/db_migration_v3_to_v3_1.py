@@ -25,11 +25,17 @@ Created on:  2025/03/14
 Transition a v3.0 database to a v3.1 database.
 """
 
+import os
+import sys
 import argparse
 import sqlite3
-import sys
-from temoa.temoa_model.temoa_model import TemoaModel
 from pathlib import Path
+
+# Just to get the default lifetime...
+this_dir = os.path.dirname(__file__)
+root_dir = os.path.abspath(os.path.join(this_dir, '../..'))
+sys.path.append(root_dir)
+from temoa.temoa_model.temoa_model import TemoaModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -77,7 +83,7 @@ def column_check(old_name: str, new_name: str) -> bool:
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
 
-    missing = [c for c in new_columns if c not in old_columns and c != 'period']
+    missing = [c for c in new_columns if c not in old_columns and c not in ('period','notes')]
     if len(missing) > 0:
         msg = (
             f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
@@ -109,8 +115,8 @@ direct_transfer_tables = [
     ('',                      'MetaData'),
     ('',                      'MetaDataReal'),
     ('',                      'PlanningReserveMargin'),
-    ('',                      'RampDown'),
-    ('',                      'RampUp'),
+    ('RampDown',              'RampDownHourly'),
+    ('RampUp',                'RampUpHourly'),
     ('',                      'Region'),
     ('',                      'RPSRequirement'),
     ('',                      'SectorLabel'),
@@ -220,8 +226,10 @@ for old_name, new_name in direct_transfer_tables:
         print('TABLE NOT FOUND: ' + old_name)
         continue
 
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
-    data = con_old.execute(f'SELECT {str(new_columns)[1:-1].replace("'","")} FROM {old_name}').fetchall()
+    cols = [c for c in new_columns if c in old_columns]
+    data = con_old.execute(f'SELECT {str(cols)[1:-1].replace("'","")} FROM {old_name}').fetchall()
 
     if not data:
         print('No data for: ' + old_name)
@@ -230,7 +238,11 @@ for old_name, new_name in direct_transfer_tables:
     # construct the query with correct number of placeholders
     num_placeholders = len(data[0])
     placeholders = ','.join(['?' for _ in range(num_placeholders)])
-    query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
+    query = (
+        'INSERT OR REPLACE INTO '
+        f'{new_name}{tuple(c for c in cols) if len(cols)>1 else f'({cols[0]})'} '
+        f'VALUES ({placeholders})'
+    )
     con_new.executemany(query, data)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
@@ -292,6 +304,10 @@ for old_name, new_name in period_added_tables:
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
 
+# TimeSeason unique seasons to SeasonLabel
+con_new.execute("INSERT OR REPLACE INTO SeasonLabel(season) SELECT DISTINCT season FROM TimeSeason")
+
+
 # Removal of tech_resource
 con_new.execute("UPDATE Technology SET flag='p' WHERE flag=='r';")
 print('Converted all resource techs to production techs.')
@@ -322,17 +338,15 @@ for old_name, new_name in no_transfer.items():
     print(f'{old_name} to {new_name}')
     
 
-# state_sequencing parameter
 print('\n --- Updating MetaData ---')
-cur.execute(
-    """REPLACE INTO
-    MetaData(element, value, notes)
-    VALUES('state_sequencing', 0, '0 = loop periods, 1 = loop seasons')"""
+cur.execute("DELETE FROM MetaData WHERE element == 'myopic_base_year'")
+print(
+    "myopic_base_year removed from MetaData. This parameter is no longer used. " \
+    "Costs will discount to the first future period."
 )
-print("Added state_sequencing parameter")
-# new database version
 cur.execute("UPDATE MetaData SET value = 1 WHERE element == 'DB_MINOR'")
 print("Updated database version to 3.1")
+
 
 
 print('\n --- Validating foreign keys ---')

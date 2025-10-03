@@ -55,18 +55,13 @@ logger = getLogger(__name__)
 tables_with_regional_groups = {
     'LimitAnnualCapacityFactor': 'region',
     'LimitEmission': 'region',
-    'LimitActivityGroup': 'region',
     'LimitSeasonalCapacityFactor': 'region',
     'LimitCapacity': 'region',
     'LimitActivity': 'region',
     'LimitNewCapacity': 'region',
-    'LimitNewCapacityGroup': 'region',
-    'LimitCapacityGroup': 'region',
     'LimitActivityShare': 'region',
     'LimitCapacityShare': 'region',
     'LimitNewCapacityShare': 'region',
-    'LimitNewCapacityGroupShare': 'region',
-    'LimitActivityGroupShare': 'region',
     'LimitResource': 'region',
     'LimitGrowthCapacity': 'region',
     'LimitDegrowthCapacity': 'region',
@@ -367,7 +362,7 @@ class HybridLoader:
         # time_exist
         if mi:
             raw = cur.execute(
-                'SELECT period FROM main.TimePeriod  WHERE period < ? ORDER BY sequence',
+                'SELECT period FROM main.TimePeriod WHERE period < ? ORDER BY sequence',
                 (mi.base_year,),
             ).fetchall()
         else:
@@ -380,7 +375,7 @@ class HybridLoader:
         if mi:
             raw = cur.execute(
                 'SELECT period FROM main.TimePeriod WHERE '
-                'period >= ? AND period <= ? ORDER BY sequence',
+                'flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
                 (mi.base_year, mi.last_year),
             ).fetchall()
         else:
@@ -431,13 +426,12 @@ class HybridLoader:
 
         # myopic_base_year
         if mi:
-            raw = cur.execute(
-                "SELECT value from MetaData WHERE element == 'myopic_base_year'"
-            ).fetchall()
+            # assume first future period by default
+            p0 = cur.execute(
+                "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
+            ).fetchone()
             # load as a singleton...
-            if not raw:
-                raise ValueError('No myopic_base_year found in MetaData table.')
-            data[M.MyopicBaseyear.name] = {None: int(raw[0][0])}
+            data[M.MyopicDiscountingP0.name] = {None: int(p0[0])}
 
         # days_per_season
         raw = cur.execute(
@@ -508,16 +502,6 @@ class HybridLoader:
         # tech_reserve
         raw = cur.execute('SELECT tech FROM Technology WHERE reserve > 0').fetchall()
         load_element(M.tech_reserve, raw, self.viable_techs)
-
-        # tech_ramping
-        if self.table_exists('RampUpHourly'):
-            ramp_up_techs = cur.execute('SELECT tech FROM main.RampUpHourly').fetchall()
-            techs = {t[0] for t in ramp_up_techs}
-            load_element(M.tech_upramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
-        if self.table_exists('RampDownHourly'):
-            ramp_dn_techs = cur.execute('SELECT tech FROM main.RampDownHourly').fetchall()
-            techs = {t[0] for t in ramp_dn_techs}
-            load_element(M.tech_downramping, sorted((t,) for t in techs), self.viable_techs) # sort for deterministic behavior
 
         # tech_curtailment
         raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
@@ -652,11 +636,18 @@ class HybridLoader:
                 'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
                 ' (assume this is a periodic model)'
             )
-            raw = [
-                (p, "S", "D", 1)
-                for p in time_optimize
-                if mi.base_year <= p <= mi.last_demand_year
-            ] # if no segfrac table, assume this is a periodic model
+            # if no segfrac table, assume this is a periodic model
+            if mi:
+                raw = [
+                    (p, "S", "D", 1)
+                    for p in time_optimize
+                    if mi.base_year <= p <= mi.last_demand_year
+                ]
+            else:
+                raw = [
+                    (p, "S", "D", 1)
+                    for p in time_optimize
+                ]
         load_element(M.SegFrac, raw)
 
         # TimeSeason
@@ -742,7 +733,7 @@ class HybridLoader:
         # LoanLifetimeProcess
         if self.table_exists("LoanLifetimeProcess"):
             raw = cur.execute('SELECT region, tech, vintage, lifetime FROM main.LoanLifetimeProcess').fetchall()
-            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1))
+            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1, 2))
 
         # LimitTechInputSplit
         if self.table_exists('LimitTechInputSplit'):
@@ -1045,11 +1036,13 @@ class HybridLoader:
         if self.table_exists('RampUpHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
             load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
+            load_element(M.tech_upramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
 
         # RampDownHourly
         if self.table_exists('RampDownHourly'):
             raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
             load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
+            load_element(M.tech_downramping, sorted((row[1],) for row in raw), self.viable_techs) # sort for deterministic behavior
 
         # CapacityCredit
         if self.table_exists('CapacityCredit'):
@@ -1126,17 +1119,12 @@ class HybridLoader:
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
             M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,
-            # M.LimitActivityGroup.name: M.LimitActivityGroupConstraint_rpg.name,
             M.LimitActivityShare.name: M.LimitActivityShareConstraint_rpgg.name,
             M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
             M.LimitCapacity.name: M.LimitCapacityConstraint_rpt.name,
-            # M.LimitCapacityGroup.name: M.LimitCapacityGroupConstraint_rpg.name,
             M.LimitCapacityShare.name: M.LimitCapacityShareConstraint_rpgg.name,
             M.LimitNewCapacity.name: M.LimitNewCapacityConstraint_rpt.name,
-            # M.LimitNewCapacityGroup.name: M.LimitNewCapacityGroupConstraint_rpg.name,
             M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rpgg.name,
-            # M.LimitNewCapacityGroupShare.name: M.LimitNewCapacityGroupShareConstraint_rpgg.name,
-            # M.LimitActivityGroupShare.name: M.LimitActivityGroupShareConstraint_rpgg.name,
             M.LimitResource.name: M.LimitResourceConstraint_rt.name,
             M.LimitStorageFraction.name: M.LimitStorageFractionConstraint_rpsdtv.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,

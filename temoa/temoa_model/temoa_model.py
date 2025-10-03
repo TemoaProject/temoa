@@ -522,7 +522,7 @@ class TemoaModel(AbstractModel):
         M.EmissionEmbodied = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_optimize)
         M.EmissionEndOfLife = Param(M.regions, M.commodity_emissions, M.tech_with_capacity, M.vintage_all)
 
-        M.MyopicBaseyear = Param(default=0)
+        M.MyopicDiscountingP0 = Param(default=0)
 
         ################################################
         #                 Model Variables              #
@@ -712,10 +712,10 @@ class TemoaModel(AbstractModel):
         M.RampDownDayConstraint_rpsdtv = Set(dimen=6, initialize=RampDownDayConstraintIndices)
         M.RampDownDayConstraint = Constraint(M.RampDownDayConstraint_rpsdtv, rule=RampDownDay_Constraint)
         
-        M.RampUpSeasonConstraint_rpsdtv = Set(dimen=6, initialize=RampUpSeasonConstraintIndices)
-        M.RampUpSeasonConstraint = Constraint(M.RampUpSeasonConstraint_rpsdtv, rule=RampUpSeason_Constraint)
-        M.RampDownSeasonConstraint_rpsdtv = Set(dimen=6, initialize=RampDownSeasonConstraintIndices)
-        M.RampDownSeasonConstraint = Constraint(M.RampDownSeasonConstraint_rpsdtv, rule=RampDownSeason_Constraint)
+        M.RampUpSeasonConstraint_rpsstv = Set(dimen=6, initialize=RampUpSeasonConstraintIndices)
+        M.RampUpSeasonConstraint = Constraint(M.RampUpSeasonConstraint_rpsstv, rule=RampUpSeason_Constraint)
+        M.RampDownSeasonConstraint_rpsstv = Set(dimen=6, initialize=RampDownSeasonConstraintIndices)
+        M.RampDownSeasonConstraint = Constraint(M.RampDownSeasonConstraint_rpsstv, rule=RampDownSeason_Constraint)
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         M.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)

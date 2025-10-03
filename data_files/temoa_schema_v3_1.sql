@@ -9,8 +9,6 @@ CREATE TABLE IF NOT EXISTS MetaData
     PRIMARY KEY (element)
 );
 REPLACE INTO MetaData
-VALUES ('myopic_base_year', 2000, 'Base Year for Myopic Analysis');
-REPLACE INTO MetaData
 VALUES ('DB_MAJOR', 3, 'DB major version number');
 REPLACE INTO MetaData
 VALUES ('DB_MINOR', 1, 'DB minor version number');
@@ -43,12 +41,16 @@ CREATE TABLE IF NOT EXISTS OutputObjective
     objective_name    TEXT,
     total_system_cost REAL
 );
+CREATE TABLE IF NOT EXISTS SeasonLabel
+(
+    season TEXT PRIMARY KEY,
+    notes  TEXT
+);
 CREATE TABLE IF NOT EXISTS SectorLabel
 (
-    sector TEXT,
-    PRIMARY KEY (sector)
+    sector TEXT PRIMARY KEY,
+    notes  TEXT
 );
-
 CREATE TABLE IF NOT EXISTS CapacityCredit
 (
     region  TEXT,
@@ -67,7 +69,8 @@ CREATE TABLE IF NOT EXISTS CapacityFactorProcess
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     tech    TEXT
@@ -83,7 +86,8 @@ CREATE TABLE IF NOT EXISTS CapacityFactorTech
     region TEXT,
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod    TEXT
         REFERENCES TimeOfDay (tod),
     tech   TEXT
@@ -117,15 +121,15 @@ CREATE TABLE IF NOT EXISTS CommodityType
     description TEXT
 );
 REPLACE INTO CommodityType
-VALUES ('p', 'physical commodity');
+VALUES ('s', 'source commodity');
 REPLACE INTO CommodityType
 VALUES ('a', 'annual commodity');
 REPLACE INTO CommodityType
-VALUES ('e', 'emissions commodity');
+VALUES ('p', 'physical commodity');
 REPLACE INTO CommodityType
 VALUES ('d', 'demand commodity');
 REPLACE INTO CommodityType
-VALUES ('s', 'source commodity');
+VALUES ('e', 'emissions commodity');
 REPLACE INTO CommodityType
 VALUES ('w', 'waste commodity');
 REPLACE INTO CommodityType
@@ -215,7 +219,8 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
@@ -260,7 +265,8 @@ CREATE TABLE IF NOT EXISTS EfficiencyVariable
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -467,7 +473,8 @@ CREATE TABLE IF NOT EXISTS LimitStorageLevelFraction
     region   TEXT,
     period   INTEGER
         REFERENCES TimePeriod (period),
-    season   TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod      TEXT
         REFERENCES TimeOfDay (tod),
     tech     TEXT
@@ -591,7 +598,8 @@ CREATE TABLE IF NOT EXISTS LimitSeasonalCapacityFactor
         REFERENCES Region (region),
 	period	INTEGER
         REFERENCES TimePeriod (period),
-	season	TEXT,
+	season TEXT
+        REFERENCES SeasonLabel (season),
 	tech    TEXT
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -760,7 +768,8 @@ CREATE TABLE IF NOT EXISTS OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -782,7 +791,8 @@ CREATE TABLE IF NOT EXISTS OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -804,7 +814,8 @@ CREATE TABLE IF NOT EXISTS OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -821,7 +832,7 @@ CREATE TABLE IF NOT EXISTS PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE IF NOT EXISTS RampDown
+CREATE TABLE IF NOT EXISTS RampDownHourly
 (
     region TEXT,
     tech   TEXT
@@ -829,7 +840,7 @@ CREATE TABLE IF NOT EXISTS RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE IF NOT EXISTS RampUp
+CREATE TABLE IF NOT EXISTS RampUpHourly
 (
     region TEXT,
     tech   TEXT
@@ -843,11 +854,27 @@ CREATE TABLE IF NOT EXISTS Region
         PRIMARY KEY,
     notes  TEXT
 );
+CREATE TABLE IF NOT EXISTS ReserveCapacityDerate
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    season  TEXT
+    	REFERENCES SeasonLabel (season),
+    tech    TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER,
+    factor  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, season, tech, vintage),
+    CHECK (factor >= 0 AND factor <= 1)
+);
 CREATE TABLE IF NOT EXISTS TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
@@ -863,7 +890,7 @@ CREATE TABLE IF NOT EXISTS StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LifetimeSurvivalCurve
+CREATE TABLE IF NOT EXISTS LifetimeSurvivalCurve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -891,10 +918,12 @@ VALUES ('ps', 'storage production technology');
 -- (
 --     period       INTEGER
 --         REFERENCES TimePeriod (period),
---     season       TEXT,
+--     season TEXT
+--        REFERENCES SeasonLabel (season),
 --     tod          TEXT
 --         REFERENCES TimeOfDay (tod),
---     season_next  TEXT,
+--     season_next TEXT
+--        REFERENCES SeasonLabel (season),
 --     tod_next     TEXT
 --         REFERENCES TimeOfDay (tod),
 --     notes        TEXT,
@@ -919,7 +948,8 @@ CREATE TABLE IF NOT EXISTS TimeSeason
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
@@ -929,7 +959,8 @@ CREATE TABLE IF NOT EXISTS TimeSeasonSequential
         REFERENCES TimePeriod (period),
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),
@@ -999,7 +1030,7 @@ CREATE TABLE IF NOT EXISTS Technology
     description  TEXT,
     FOREIGN KEY (flag) REFERENCES TechnologyType (label)
 );
-CREATE TABLE OutputCost
+CREATE TABLE IF NOT EXISTS OutputCost
 (
     scenario TEXT,
     region   TEXT,

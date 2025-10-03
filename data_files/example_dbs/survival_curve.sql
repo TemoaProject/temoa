@@ -7,9 +7,8 @@ CREATE TABLE MetaData
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO MetaData VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
 INSERT INTO MetaData VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO MetaData VALUES('DB_MINOR',0,'DB minor version number');
+INSERT INTO MetaData VALUES('DB_MINOR',1,'DB minor version number');
 INSERT INTO MetaData VALUES('days_per_period',365,'count of days in each period');
 CREATE TABLE MetaDataReal
 (
@@ -34,10 +33,15 @@ CREATE TABLE OutputObjective
     objective_name    TEXT,
     total_system_cost REAL
 );
+CREATE TABLE SeasonLabel
+(
+    season TEXT PRIMARY KEY,
+    notes  TEXT
+);
 CREATE TABLE SectorLabel
 (
-    sector TEXT,
-    PRIMARY KEY (sector)
+    sector TEXT PRIMARY KEY,
+    notes  TEXT
 );
 CREATE TABLE CapacityCredit
 (
@@ -57,7 +61,8 @@ CREATE TABLE CapacityFactorProcess
     region  TEXT,
     period  INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     tech    TEXT
@@ -73,7 +78,8 @@ CREATE TABLE CapacityFactorTech
     region TEXT,
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod    TEXT
         REFERENCES TimeOfDay (tod),
     tech   TEXT
@@ -263,7 +269,8 @@ CREATE TABLE DemandSpecificDistribution
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     demand_name TEXT
@@ -316,7 +323,8 @@ CREATE TABLE EfficiencyVariable
     region      TEXT,
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -529,7 +537,8 @@ CREATE TABLE LimitStorageLevelFraction
     region   TEXT,
     period   INTEGER
         REFERENCES TimePeriod (period),
-    season   TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod      TEXT
         REFERENCES TimeOfDay (tod),
     tech     TEXT
@@ -653,7 +662,8 @@ CREATE TABLE LimitSeasonalCapacityFactor
         REFERENCES Region (region),
 	period	INTEGER
         REFERENCES TimePeriod (period),
-	season	TEXT,
+	season TEXT
+        REFERENCES SeasonLabel (season),
 	tech    TEXT
         REFERENCES Technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -822,7 +832,8 @@ CREATE TABLE OutputFlowIn
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -844,7 +855,8 @@ CREATE TABLE OutputFlowOut
         REFERENCES SectorLabel (sector),
     period      INTEGER
         REFERENCES TimePeriod (period),
-    season      TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -866,7 +878,8 @@ CREATE TABLE OutputStorageLevel
         REFERENCES SectorLabel (sector),
     period INTEGER
         REFERENCES TimePeriod (period),
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod TEXT
         REFERENCES TimeOfDay (tod),
     tech TEXT
@@ -883,7 +896,7 @@ CREATE TABLE PlanningReserveMargin
         REFERENCES Region (region),
     margin REAL
 );
-CREATE TABLE RampDown
+CREATE TABLE RampDownHourly
 (
     region TEXT,
     tech   TEXT
@@ -891,7 +904,7 @@ CREATE TABLE RampDown
     rate   REAL,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUp
+CREATE TABLE RampUpHourly
 (
     region TEXT,
     tech   TEXT
@@ -906,11 +919,27 @@ CREATE TABLE Region
     notes  TEXT
 );
 INSERT INTO Region VALUES('region',NULL);
+CREATE TABLE ReserveCapacityDerate
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES TimePeriod (period),
+    season  TEXT
+    	REFERENCES SeasonLabel (season),
+    tech    TEXT
+        REFERENCES Technology (tech),
+    vintage INTEGER,
+    factor  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, season, tech, vintage),
+    CHECK (factor >= 0 AND factor <= 1)
+);
 CREATE TABLE TimeSegmentFraction
 (   
     period INTEGER
         REFERENCES TimePeriod (period),
-    season  TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     tod     TEXT
         REFERENCES TimeOfDay (tod),
     segfrac REAL,
@@ -1038,7 +1067,8 @@ CREATE TABLE TimeSeason
     period INTEGER
         REFERENCES TimePeriod (period),
     sequence INTEGER,
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     notes TEXT,
     PRIMARY KEY (period, sequence, season)
 );
@@ -1054,7 +1084,8 @@ CREATE TABLE TimeSeasonSequential
         REFERENCES TimePeriod (period),
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT,
+    season TEXT
+        REFERENCES SeasonLabel (season),
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (period, sequence, seas_seq, season),

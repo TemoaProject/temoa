@@ -281,7 +281,7 @@ class MyopicSequencer:
             last_base_year = idx.base_year  # update
 
             # delete anything in the OutputObjective table, it is nonsensical...
-            self.output_con.execute('DELETE FROM OutputObjective WHERE 1')
+            self.output_con.execute(f'DELETE FROM OutputObjective WHERE scenario == "{self.config.scenario}"')
             self.output_con.commit()
 
             # 11.  Compact the db...  lots of writes/deletes leads to bloat
@@ -475,8 +475,10 @@ class MyopicSequencer:
 
         # check that we have enough periods to do myopic run
         # 2 iterations, excluding end year, will be via shortened depth, if reqd.
-        if len(future_periods) < 3:
-            logger.error('Not enough future years to run myopic mode: %d', len(future_periods))
+        if len(future_periods) < self.view_depth+1:
+            logger.error(
+                'Not enough future years to run myopic mode. Need %d including end year. Got %d.', self.view_depth+1, len(future_periods)
+            )
             sys.exit(-1)
         self.optimization_periods = future_periods.copy()
         last_idx = len(future_periods) - 1

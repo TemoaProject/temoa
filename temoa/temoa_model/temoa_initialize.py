@@ -1168,20 +1168,20 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             
     sequential = dict()
     for p, s_seq, s in M.TimeSeasonSequential:
-        count = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'sequential_days' and abs(count - 1.0) >= 0.01:
+        num_days = value(M.TimeSeasonSequential[p, s_seq, s])
+        if M.TimeSequencing.first() == 'sequential_days' and abs(num_days - 1.0) >= 0.01:
             msg = (
                 'TimeSequencing set to sequential_days but a season in the TimeSegmentFraction table does not '
-                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {count}. '
+                f'represent exactly one day. This would lead to bad model behaviour: {p, s}, days: {num_days}. '
                 'Check the config file.'
             )
             logger.error(msg)
             raise ValueError(msg)
         if (p, s) not in sequential:
             sequential[p, s] = 0
-        sequential[p, s] += count
+        sequential[p, s] += num_days
 
-    # Check that TimeSeasonSequential day counts total to number of days in each period
+    # Check that TimeSeasonSequential num_days total to number of days in each period
     for p in M.time_optimize:
         count_total = sum(
             sequential[p, s]
@@ -1190,7 +1190,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         )
         if abs(count_total - value(M.DaysPerPeriod)) >= 0.001:
             logger.warning(
-                f'Sum of day count in TimeSeasonSequential ({sum(sequential.values())}) '
+                f'Sum of num_days in TimeSeasonSequential ({sum(sequential.values())}) '
                 f'does not sum to days_per_period ({value(M.DaysPerPeriod)}) from the '
                 'MetaData table.'
             )
@@ -1741,14 +1741,18 @@ def RampDownDayConstraintIndices(M: 'TemoaModel'):
 
 def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
     if M.TimeSequencing.first() == 'sequential_days':
-        return {} # dont need this constraint
+        return Set.Skip # dont need this constraint
     
+    # s, s_next indexing ensures we dont build redundant constraints
     indices = set(
-        (r, p, s_seq, M.time_of_day.last(), t, v)
+        (r, p, s, s_next, t, v)
         for r, p, t in M.rampUpVintages
         for v in M.rampUpVintages[r, p, t]
-        for _p, s_seq, _ in M.ordered_season_sequential
+        for _p, s_seq, s in M.ordered_season_sequential
         if _p == p
+        for s_seq_next in (M.time_next_sequential[p, s_seq],)   # next sequential season
+        for s_next in (M.sequential_to_season[p, s_seq_next],)  # next sequential season's matching season
+        if s_next != M.time_next[p, s, M.time_of_day.last()][0] # to avoid redundancy on RampDay constraint
     )
 
     return indices
@@ -1756,14 +1760,17 @@ def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
 
 def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
     if M.TimeSequencing.first() == 'sequential_days':
-        return {} # dont need this constraint
+        return Set.Skip # dont need this constraint
     
+    # s, s_next indexing ensures we dont build redundant constraints
     indices = set(
-        (r, p, s_seq, M.time_of_day.last(), t, v)
+        (r, p, s, s_next, t, v)
         for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
-        for _p, s_seq, _ in M.ordered_season_sequential
-        if _p == p
+        for _p, s_seq, s in M.ordered_season_sequential
+        for s_seq_next in (M.time_next_sequential[p, s_seq],)   # next sequential season
+        for s_next in (M.sequential_to_season[p, s_seq_next],)  # next sequential season's matching season
+        if s_next != M.time_next[p, s, M.time_of_day.last()][0] # to avoid redundancy on RampDay constraint
     )
 
     return indices
