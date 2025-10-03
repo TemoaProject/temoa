@@ -141,8 +141,8 @@ period_added_tables = [
 operator_added_tables = {
     'EmissionLimit': ('LimitEmission', 'le'),
     'TechOutputSplit': ('LimitTechOutputSplit', 'ge'),
-    'TechInputSplitAnnual': ('LimitTechInputSplitAnnual', 'le'),
-    'TechInputSplitAverage': ('LimitTechInputSplitAnnual', 'le'),
+    'TechInputSplitAnnual': ('LimitTechInputSplitAnnual', 'ge'),
+    'TechInputSplitAverage': ('LimitTechInputSplitAnnual', 'ge'),
     'TechInputSplit': ('LimitTechInputSplit', 'ge'),
     'MinNewCapacityShare': ('LimitNewCapacityShare', 'ge'),
     'MinNewCapacityGroupShare': ('LimitNewCapacityShare', 'ge'),
