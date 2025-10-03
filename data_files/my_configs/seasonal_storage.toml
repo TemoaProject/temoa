@@ -1,0 +1,156 @@
+# ----------------------------------------------------------
+#            Configuration file for a Temoa Run
+# Allows specification of run type and associated parameters
+# ----------------------------------------------------------
+#
+# For toml format info see: https://toml.io/en/
+#   - comments may be added with hash
+#   - do NOT comment out table names in brackets like:  [<table>]
+
+# Scenario Name (Mandatory)
+# This scenario name is used to label results within the output .sqlite file
+# (cannot contain "-" dash)
+scenario = "zulu"
+
+# Scenaio Mode (Mandatory)
+# See documentation for explanations.  A standard single run is "perfect_foresight"
+# mode must be one of (case-insensitive):
+#     [perfect_foresight, MGA, myopic, method_of_morris, build_only, check, monte_carlo]
+scenario_mode = "perfect_foresight"
+
+# Input database (Mandatory)
+input_database = "data_files/example_dbs/seasonal_storage.sqlite"
+
+# Output file (Mandatory)
+# The output file must be an existing .sqlite file
+# For Pefrect Foresight, the user may target the same input file or a separate /
+# copied sqlite file in a different location.  Myopic, MGA require that input_database = output_database
+output_database = "data_files/example_dbs/seasonal_storage.sqlite"
+
+# ------------------------------------
+#        DATA / MODEL CHECKS
+#  To check data / cost integrity
+# ------------------------------------
+
+# See the documentation section on Data Quality for notes on the features below
+
+# Check the pricing structure for common errors, which are reported in the log file
+# Strongly recommended
+price_check = true
+
+# Check the network connectivity for processes in the model.  Strongly
+# recommended to ensure proper performance.  Results are reported in log file
+# This requires that source commodities be marked with 's' in Commodity table
+# This is required for Myopic runs
+source_trace = true
+
+# Produce HTML files for Commodity Networks.  Requires source_trace above
+plot_commodity_network = true
+
+# ------------------------------------
+#             SOLVER
+#        Solver Selection
+# ------------------------------------
+
+# use the NEOS server to solve.  (Currently NOT supported)
+neos = false
+
+# solver (Mandatory)
+# Depending on what client machine has installed.
+#  [cbc, appsi_highs, gurobi, cplex, ...]
+solver_name = "cbc"
+
+# ------------------------------------
+#             OUTPUTS
+# select desired output products/files
+# ------------------------------------
+
+# generate an Excel file in the output_files folder
+save_excel = true
+
+# save the duals in the output Database (may slow execution slightly?)
+save_duals = true
+
+# save storage levels by time slice (may be a large amount of data)
+save_storage_levels = true
+
+# save a copy of the pyomo-generated lp file(s) to the outputs folder (maybe a large file(s)!)
+save_lp_file = false
+
+# ------------------------------------
+#          MODEL PARAMETERS
+#  these are specific to each model
+# ------------------------------------
+
+# What seasons represent in the model
+# Options:
+#   'consecutive_days'
+#       Seasons are a set of days in order, with each season representing only one day. Examples 
+#       might be a model of a representative week with 7 days or a whole-year model with 365 days.
+#       Seasonal storage need not be tagged and the TimeSeasonSequential table can be left empty.
+#   'representative_periods'
+#       Each season represents a number of days, though not necessarily in any particular order.
+#       If using inter-season constraints like seasonal storage or ramp rates, the true sequence
+#       must be defined using the TimeSeasonSequential table. Seasonal storage must also be tagged in
+#       the Technology table.
+#   'seasonal_timeslices'
+#       Each season represents a sequential slice of the year, with one or many days represented per
+#       season. We assume that the true sequence is the same as the TimeSeason sequence, so the 
+#       TimeSeasonSequential table can be left empty. Seasonal storage must still be tagged.
+#   'manual'
+#       The sequence of time slices is defined manually in the TimeNext table (which is commented out
+#       in the schema). This is an advanced feature and not recommended for most users. Seasonal
+#       storage must be tagged and the TimeSeasonSequential table filled.
+time_sequencing = 'representative_periods'
+
+# How contributions to the planning reserve margin are calculated
+# Options:
+#   'static'
+#       Traditional planning reserve formulation. Contributions are independent of hourly availability:
+#                   capacity value = net capacity * capacity credit
+#   'dynamic'
+#       Contributions are available output including a capacity derate factor (e.g., forced outage rate).
+#       For most generators, contributions are available (derated) output in each time slice: 
+#                   capacity value = net capacity * reserve capacity derate * capacity factor
+#       For storage, contributions are (derated) actual output in each time slice:
+#                   capacity value = flow out * reserve capacity derate
+reserve_margin = 'static'
+
+# ---------------------------------------------------
+#                   MODE OPTIONS
+# options below are mode-specific and will be ignored
+# if the run is not executed in that mode.
+# ---------------------------------------------------
+[MGA]
+# see notes on these in the extensions/modeling_to_generate_alternatives folder readme.txt
+cost_epsilon = 0.03    # propotional relaxation on optimal cost (ex: 0.05 = bound at 105% of original optimal cost)
+iteration_limit = 55   # max iterations to perform
+time_limit_hrs = 1     # max time
+axis = "tech_category_activity"   # use the tech activity Manager to control exploration based on categories in Tech
+weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight exploration
+
+[myopic]
+view_depth = 2   # number of periods seen/analyzed per iteration
+step_size = 1    # number of periods to step by (must be <= view depth)
+
+[morris]
+perturbation = 0.10     # amount to perturb marked parameters (ex:  0.10 -> +/- 10%)
+levels = 8              # number of levels in param grid (must be even number)
+trajectories = 10        # number of Morris trajectories to generate/explore
+seed = false               # random seed for use in generation/analysis for repeatable results.  false=system derived
+cores = 0               # number of CPU cores to use.  0 (default) = cpu count
+# Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox
+#        Groups = number of unique labels used in MM analysis columns in DB
+
+[SVMGA]
+cost_epsilon = 0.05
+# labels from appropriate tables in database.  It is recommended to only use one of the lists below and leave
+# the others blank
+emission_labels = ['co2', 'nox']
+capacity_labels = ['TXD', 'TXG']
+activity_labels = []
+
+[monte_carlo]
+# a path from the PROJECT ROOT to the settings file that contains the run data.
+run_settings = 'data_files/monte_carlo/run_settings_1.csv'
+
