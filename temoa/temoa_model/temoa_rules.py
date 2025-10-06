@@ -3200,26 +3200,12 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     of a given technology or group as a fraction of another technology or
     group."""
 
-    regions = gather_group_regions(M, r)
-
-    sub_group = gather_group_techs(M, g1)
-    sub_new_cap = sum(
-        M.V_NewCapacity[_r, _t, p]
-        for _t in sub_group
-        for _r in regions
-        if (_r, _t, p) in M.processPeriods
-    )
-
-    super_group = gather_group_techs(M, g2)
-    super_new_cap = sum(
-        M.V_NewCapacity[_r, _t, p]
-        for _t in super_group
-        for _r in regions
-        if (_r, _t, p) in M.processPeriods
-    )
+    sub_new_cap = get_total_new_capacity_expression(M, r, p, g1)
+    super_new_cap = get_total_new_capacity_expression(M, r, p, g2)
 
     share_lim = value(M.LimitNewCapacityShare[r, p, g1, g2, op])
     expr = operator_expression(sub_new_cap, op, share_lim * super_new_cap)
+
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
