@@ -41,6 +41,11 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
+# ===============================================================
+# Helper functions
+# ===============================================================
+
+
 class Operator(str, Enum):
     EQUAL = 'e'
     LESS_EQUAL = 'le'
@@ -75,6 +80,72 @@ def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
         return value(M.CapacityFactorTech[r, p, s, d, t])
+
+
+def get_total_activity_expression(
+    M: 'TemoaModel', r_group: str, p: int, t_group: str
+) -> Expression:
+    """
+    Calculates the total activity for a given set of regions and technologies in a period.
+    This encapsulates the logic of summing both timeslice and annual flows.
+    """
+    regions = gather_group_regions(M, r_group)
+    techs = gather_group_techs(M, t_group)
+
+    # Sum activity for technologies with timeslice-level output
+    activity = sum(
+        M.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
+        for _t in techs
+        if _t not in M.tech_annual
+        for _r in regions
+        for S_v in M.processVintages.get((_r, p, _t), [])
+        for S_i in M.processInputs.get((_r, p, _t, S_v), [])
+        for S_o in M.processOutputsByInput.get((_r, p, _t, S_v, S_i), [])
+        for s in M.TimeSeason[p]
+        for d in M.time_of_day
+    )
+
+    # Add activity for technologies with annual output
+    activity += sum(
+        M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
+        for _t in techs
+        if _t in M.tech_annual
+        for _r in regions
+        for S_v in M.processVintages.get((_r, p, _t), [])
+        for S_i in M.processInputs.get((_r, p, _t, S_v), [])
+        for S_o in M.processOutputsByInput.get((_r, p, _t, S_v, S_i), [])
+    )
+    return activity
+
+
+def get_total_available_capacity_expression(
+    M: 'TemoaModel', r_group: str, p: int, t_group: str
+) -> Expression:
+    """Calculates the total available capacity for a given set of regions and technologies."""
+    regions = gather_group_regions(M, r_group)
+    techs = gather_group_techs(M, t_group)
+
+    return sum(
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
+        for _t in techs
+        for _r in regions
+        if (_r, p, _t) in M.V_CapacityAvailableByPeriodAndTech
+    )
+
+
+def get_total_new_capacity_expression(
+    M: 'TemoaModel', r_group: str, p: int, t_group: str
+) -> Expression:
+    """Calculates the total new capacity for a given set of regions and technologies."""
+    regions = gather_group_regions(M, r_group)
+    techs = gather_group_techs(M, t_group)
+
+    return sum(
+        M.V_NewCapacity[_r, _t, p]
+        for _t in techs
+        for _r in regions
+        if (_r, _t, p) in M.V_NewCapacity
+    )
 
 
 # ---------------------------------------------------------------
@@ -3100,37 +3171,11 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
 
        \le LA_{r, p, t}
     """
-    # r can be an individual region (r='US'), or a combination of regions separated by
-    # a + (r='Mexico+US+Canada'), or 'global'.
-    # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
-
-    activity = sum(
-        M.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs
-        if _t not in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, _t), [])
-        for S_i in M.processInputs[_r, p, _t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
-    activity += sum(
-        M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs
-        if _t in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, _t), [])
-        for S_i in M.processInputs[_r, p, _t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, _t, S_v, S_i]
-    )
-
+    activity = get_total_activity_expression(M, r, p, t)
     act_lim = value(M.LimitActivity[r, p, t, op])
+
     expr = operator_expression(activity, op, act_lim)
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
+    if isinstance(expr, bool):
         return Constraint.Skip
     return expr
 
@@ -3148,12 +3193,10 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
 
         \text{where }v=p
     """
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    new_cap = get_total_new_capacity_expression(M, r, p, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
-    new_cap = sum(M.V_NewCapacity[_r, _t, p] for _t in techs for _r in regions)
-    expr = operator_expression(new_cap, op, cap_lim)
-    return expr
+
+    return operator_expression(new_cap, op, cap_lim)
 
 
 def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
@@ -3169,14 +3212,10 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
        \textbf{CAPAVL}_{r, p, t} \le LC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{LimitCapacity}}"""
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    capacity = get_total_available_capacity_expression(M, r, p, t)
     cap_lim = value(M.LimitCapacity[r, p, t, op])
-    capacity = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t] for _t in techs for _r in regions
-    )
-    expr = operator_expression(capacity, op, cap_lim)
-    return expr
+
+    return operator_expression(capacity, op, cap_lim)
 
 
 def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
@@ -3251,65 +3290,14 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """  # noqa: E501
 
-    regions = gather_group_regions(M, r)
-
-    sub_group = gather_group_techs(M, g1)
-    sub_activity = sum(
-        M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in sub_group
-        if S_t not in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, S_t), [])
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
-    sub_activity += sum(
-        M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in sub_group
-        if S_t in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, S_t), [])
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-    )
-
-    super_group = gather_group_techs(M, g2)
-    super_activity = sum(
-        M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in super_group
-        if S_t not in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, S_t), [])
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
-    super_activity += sum(
-        M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in super_group
-        if S_t in M.tech_annual
-        for _r in regions
-        for S_v in M.processVintages.get((_r, p, S_t), [])
-        for S_i in M.processInputs[_r, p, S_t, S_v]
-        for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
-    )
+    sub_activity = get_total_activity_expression(M, r, p, g1)
+    super_activity = get_total_activity_expression(M, r, p, g2)
 
     share_lim = value(M.LimitActivityShare[r, p, g1, g2, op])
     expr = operator_expression(sub_activity, op, share_lim * super_activity)
-    # in the case that there is nothing to sum, skip
-    if isinstance(expr, bool):  # an empty list was generated
+
+    if isinstance(expr, bool):
         return Constraint.Skip
-    logger.debug(
-        'created limit activity share constraint for (%s, %d, %s, %s) of %0.2f',
-        r,
-        p,
-        g1,
-        g2,
-        share_lim,
-    )
     return expr
 
 
@@ -3319,26 +3307,12 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     technology or technology group as a fraction of another technology or group.
     """
 
-    regions = gather_group_regions(M, r)
+    sub_capacity = get_total_available_capacity_expression(M, r, p, g1)
+    super_capacity = get_total_available_capacity_expression(M, r, p, g2)
 
-    sub_group = gather_group_techs(M, g1)
-    sub_capacity = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
-        for _t in sub_group
-        for _r in regions
-        if (_r, p, _t) in M.processVintages
-    )
-
-    super_group = gather_group_techs(M, g2)
-    super_capacity = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
-        for _t in super_group
-        for _r in regions
-        if (_r, p, _t) in M.processVintages
-    )
     share_lim = value(M.LimitCapacityShare[r, p, g1, g2, op])
-
     expr = operator_expression(sub_capacity, op, share_lim * super_capacity)
+
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
