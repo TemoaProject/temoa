@@ -338,28 +338,6 @@ reviews:
       # Default: true
       enabled: true
 
-    # SwiftLint integration configuration object.
-    # Default: {}
-    swiftlint:
-      # Enable SwiftLint - SwiftLint is a Swift linter. - Enable SwiftLint integration. - v0.57.0
-      # Default: true
-      enabled: true
-
-      # Optional path to the SwiftLint configuration file relative to the repository. This is useful when the configuration file is named differently than the default '.swiftlint.yml' or '.swiftlint.yaml'.
-      config_file: "example-value"
-
-    # PHPStan is a tool to analyze PHP code.
-    # Default: {}
-    phpstan:
-      # Enable PHPStan - PHPStan requires [config file](https://phpstan.org/config-reference#config-file) in your repository root. Please ensure that this file contains the `paths:` parameter. - v2.1.17
-      # Default: true
-      enabled: true
-
-      # Level - Specify the [rule level](https://phpstan.org/user-guide/rule-levels) to run. This setting is ignored if your configuration file already has a `level:` parameter.
-      # Options: default, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, max
-      # Default: "default"
-      level: "default"
-
     # PHPMD is a tool to find potential problems in PHP code.
     # Default: {}
     phpmd:
@@ -376,13 +354,6 @@ reviews:
 
     # golangci-lint is a fast linters runner for Go.
     # Default: {}
-    golangci-lint:
-      # Enable golangci-lint - golangci-lint is a fast linters runner for Go. - Enable golangci-lint integration. - v2.2.2
-      # Default: true
-      enabled: true
-
-      # Optional path to the golangci-lint configuration file relative to the repository. Useful when the configuration file is named differently than the default '.golangci.yml', '.golangci.yaml', '.golangci.toml', '.golangci.json'.
-      config_file: "example-value"
 
     # YAMLlint is a linter for YAML files.
     # Default: {}
@@ -404,16 +375,6 @@ reviews:
       # Enable Checkov - Checkov is a static code analysis tool for infrastructure-as-code files. - v3.2.334
       # Default: true
       enabled: true
-
-    # Detekt is a static code analysis tool for Kotlin files.
-    # Default: {}
-    detekt:
-      # Enable detekt - detekt is a static code analysis tool for Kotlin files. - v1.23.8
-      # Default: true
-      enabled: true
-
-      # Optional path to the detekt configuration file relative to the repository.
-      config_file: "example-value"
 
     # ESLint is a static code analysis tool for JavaScript files.
     # Default: {}
@@ -457,32 +418,12 @@ reviews:
       # Default: true
       enabled: true
 
-    # PMD is an extensible multilanguage static code analyzer. It’s mainly concerned with Java.
-    # Default: {}
-    pmd:
-      # Enable PMD - PMD is an extensible multilanguage static code analyzer. It’s mainly concerned with Java. - v7.15.0
-      # Default: true
-      enabled: true
-
-      # Optional path to the PMD configuration file relative to the repository.
-      config_file: "example-value"
-
     # Cppcheck is a static code analysis tool for the C and C++ programming languages.
     # Default: {}
     cppcheck:
       # Enable Cppcheck - Cppcheck is a static code analysis tool for the C and C++ programming languages. - v2.17.1
       # Default: true
       enabled: true
-
-    # Semgrep is a static analysis tool designed to scan code for security vulnerabilities and code quality issues.
-    # Default: {}
-    semgrep:
-      # Enable Semgrep - Semgrep is a static analysis tool designed to scan code for security vulnerabilities and code quality issues. - Enable Semgrep integration. - v1.128.1
-      # Default: true
-      enabled: true
-
-      # Optional path to the Semgrep configuration file relative to the repository.
-      config_file: "example-value"
 
     # CircleCI tool is a static checker for CircleCI config files.
     # Default: {}
