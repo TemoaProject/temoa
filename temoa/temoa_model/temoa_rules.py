@@ -22,6 +22,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING
+from enum import Enum
 
 from pyomo.core import Expression, Var
 from pyomo.environ import Constraint, value
@@ -38,6 +39,44 @@ if TYPE_CHECKING:
     from temoa.temoa_model.temoa_model import TemoaModel
 
 logger = getLogger(__name__)
+
+
+class Operator(str, Enum):
+    EQUAL = 'e'
+    LESS_EQUAL = 'le'
+    GREATER_EQUAL = 'ge'
+
+
+def operator_expression(lhs: Expression, operator: Operator, rhs: Expression):
+    """Returns an expression, applying a configured operator"""
+    match operator:
+        case Operator.EQUAL:
+            return lhs == rhs
+        case Operator.LESS_EQUAL:
+            return lhs <= rhs
+        case Operator.GREATER_EQUAL:
+            return lhs >= rhs
+
+
+# To avoid building big many-indexed parameters when they aren't needed - saves memory
+# Much faster to build a dictionary and check that than check the parameter
+# indices directly every time - saves build time
+def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
+    if M.isEfficiencyVariable[r, p, i, t, v, o]:
+        return value(M.Efficiency[r, i, t, v, o]) * value(
+            M.EfficiencyVariable[r, p, s, d, i, t, v, o]
+        )
+    else:
+        return value(M.Efficiency[r, i, t, v, o])
+
+
+def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
+    if M.isCapacityFactorProcess[r, p, t, v]:
+        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
+    else:
+        return value(M.CapacityFactorTech[r, p, s, d, t])
+
+
 # ---------------------------------------------------------------
 # Define the derived variables used in the objective function
 # and constraints below.
@@ -3800,55 +3839,3 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
         )
 
     return -primary_flow == linked_flow
-
-
-def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expression | None):
-    """Returns an expression, applying a configured operator"""
-    if any((lhs is None, operator is None, rhs is None)):
-        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
-            lhs, operator, rhs
-        )
-        logger.error(msg)
-        raise ValueError(msg)
-    try:
-        match operator:
-            case 'e':
-                expr = lhs == rhs
-            case 'le':
-                expr = lhs <= rhs
-            case 'ge':
-                expr = lhs >= rhs
-            case _:
-                msg = (
-                    'Tried to build a constraint using a bad operator. Allowed operators are "e","le", or "ge". Got "{}": {} {} {}'
-                ).format(operator, lhs, operator, rhs)
-                logger.error(msg)
-                raise ValueError(msg)
-    except Exception as e:
-        print(e)
-        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
-            lhs, operator, rhs
-        )
-        logger.error(msg)
-        raise ValueError(msg)
-
-    return expr
-
-
-# To avoid building big many-indexed parameters when they aren't needed - saves memory
-# Much faster to build a dictionary and check that than check the parameter
-# indices directly every time - saves build time
-def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
-    if M.isEfficiencyVariable[r, p, i, t, v, o]:
-        return value(M.Efficiency[r, i, t, v, o]) * value(
-            M.EfficiencyVariable[r, p, s, d, i, t, v, o]
-        )
-    else:
-        return value(M.Efficiency[r, i, t, v, o])
-
-
-def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
-    if M.isCapacityFactorProcess[r, p, t, v]:
-        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
-    else:
-        return value(M.CapacityFactorTech[r, p, s, d, t])
