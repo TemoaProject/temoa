@@ -19,10 +19,10 @@ in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from enum import Enum
 from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING
-from enum import Enum
 
 from pyomo.core import Expression, Var
 from pyomo.environ import Constraint, value
@@ -99,13 +99,13 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
         :figclass: align-center
         :figwidth: 50%
 
-        For processes reaching end of life mid-period, the process life fraction adjustment is applied,
-        distributing the effective capacity over the whole period.
+        For processes reaching end of life mid-period, the process life fraction adjustment is
+        applied, distributing the effective capacity over the whole period.
 
     For processes using survival curves, the yearly survival curve :math:`\text{LSC}_{r,p,t,v}` is
     averaged over the period to get the effective remaining capacity for that period  Because this
-    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both
-    phenomena.
+    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for
+    both phenomena.
 
     .. figure:: images/adjusted_capacity_sc.*
         :align: center
@@ -200,7 +200,7 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
             \end{cases}
 
             \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
-    """
+    """  # noqa: E501
 
     ## Get the capacity at the start of this period
     if p == v + value(M.LifetimeProcess[r, t, v]):
@@ -233,7 +233,8 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
         p_next = M.time_future.next(p)
 
         if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
-            # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
+            # No V_Capacity or V_RetiredCapacity for next period
+            # so just continue down the survival curve
             cap_end = (
                 cap_begin
                 * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
@@ -575,7 +576,7 @@ def TotalCost_rule(M):
             &\cdot \frac{P}{F}(i=GDR,\ N=p - P_0)
             && \text{(discounted from period } p \text{ to NPV in base year } P_0 \text{)}
         \end{aligned}
-    """
+    """  # noqa: E501
 
     return sum(PeriodCost_rule(M, p) for p in M.time_optimize)
 
@@ -639,8 +640,8 @@ def loan_cost(
     vintage: int,
 ) -> float | Expression:
     """
-    function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
-    pyomo variables/params to make a pyomo Expression
+    function to calculate the loan cost. It can be used with fixed values to produce a hard number
+    or pyomo variables/params to make a pyomo Expression
     :param capacity: The capacity to use to calculate cost
     :param invest_cost: the cost/capacity
     :param loan_annualize: parameter
@@ -894,8 +895,11 @@ def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> 
     # result with processInput
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
-    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
+    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.
+    # (See commodity balance constr)
+
+    # Curtailment does not draw any inputs,
+    # so it seems logical that curtailed flows not be taxed either
     # Earlier versions of this code had accounting for flex & curtailment that have been removed.
 
     base = [
@@ -930,9 +934,11 @@ def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> 
         for (r, p, e, s, d, i, t, v, o) in normal
     )
 
-    # 2. flex emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
+    # 2. flex emissions
+    # -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
 
-    # 3. curtailment emissions -- removed (curtailment is no-flow, for accounting only, so no emissions)
+    # 3. curtailment emissions
+    # -- removed (curtailment is no-flow, for accounting only, so no emissions)
 
     # 4. annual emissions
     var_annual_emissions = sum(
@@ -949,7 +955,8 @@ def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> 
         if t not in M.tech_flex
     )
 
-    # 5. flex annual emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
+    # 5. flex annual emissions
+    # -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
 
     # 6. embodied - treated as a fixed cost distributed over the deployment period (vintage)
     embodied_emissions = sum(
@@ -960,7 +967,7 @@ def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> 
             cost_factor=value(M.CostEmission[r, p, e]),
             cost_years=M.PeriodLength[
                 v
-            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            ],  # We assume the embodied emissions are emitted in the same yearas the capacity is installed. # noqa: E501
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -977,7 +984,7 @@ def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> 
             cost_factor=value(M.CostEmission[r, p, e]),
             cost_years=M.PeriodLength[
                 p
-            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed. # noqa: E501
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -1088,7 +1095,7 @@ def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem):
     Note that this constraint is only applied to the demand commodities with diurnal
     variations, and therefore the equation above only includes :math:`\textbf{FO}`
     and not  :math:`\textbf{FOA}`
-    """
+    """  # noqa: E501
 
     activity = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, dem] for S_i in M.processInputsByOutput[r, p, t, v, dem]
@@ -1198,7 +1205,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
 
             \qquad \forall \{r, p, s, d, c\} \in \Theta_{\text{CommodityBalance}}
 
-    """
+    """  # noqa: E501
 
     produced = 0
     consumed = 0
@@ -1477,48 +1484,48 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
 
 # Devnote: Not currently active
-# def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
-#     r"""
-#     The ResourceExtraction constraint allows a modeler to specify an annual limit on
-#     the amount of a particular resource Temoa may use in a period. The first version
-#     of the constraint pertains to technologies with variable output at the time slice
-#     level, and the second version pertains to technologies with constant annual output
-#     belonging to the :code:`tech_annual` set.
+def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
+    r"""
+    The ResourceExtraction constraint allows a modeler to specify an annual limit on
+    the amount of a particular resource Temoa may use in a period. The first version
+    of the constraint pertains to technologies with variable output at the time slice
+    level, and the second version pertains to technologies with constant annual output
+    belonging to the :code:`tech_annual` set.
 
-#     .. math::
-#        :label: ResourceExtraction
+    .. math::
+       :label: ResourceExtraction
 
-#        \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
+       \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
 
-#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
 
-#        \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
+       \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
 
-#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
-#     """
-#     logger.warning(
-#         'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
-#         'Recommend removing data from supporting table'
-#     )
-#     # dev note:  This constraint does not have a table in the current schema
-#     #            Additionally, the below (incorrect) construct assumes that a resource cannot be used
-#     #            by BOTH a non-annual and annual tech.  It should be re-written to add these
-#     # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
-#     try:
-#         collected = sum(
-#             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r] # is r the input or the output!?
-#             for S_i, S_t, S_v in M.processByPeriodAndOutput
-#             for S_s in M.TimeSeason[p]
-#             for S_d in M.time_of_day
-#         )
-#     except KeyError:
-#         collected = sum(
-#             M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
-#             for S_i, S_t, S_v in M.processByPeriodAndOutput
-#         )
+       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+    """  # noqa: E501
+    logger.warning(
+        'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
+        'Recommend removing data from supporting table'
+    )
+    # dev note:  This constraint does not have a table in the current schema
+    #            Additionally, the below (incorrect) construct assumes that a resource cannot be
+    #            used by BOTH a non-annual and annual tech.  It should be re-written to add these
+    # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
+    try:
+        collected = sum(
+            M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r]  # is r the input or the output!?
+            for S_i, S_t, S_v in M.processByPeriodAndOutput
+            for S_s in M.TimeSeason[p]
+            for S_d in M.time_of_day
+        )
+    except KeyError:
+        collected = sum(
+            M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
+            for S_i, S_t, S_v in M.processByPeriodAndOutput
+        )
 
-#     expr = collected <= value(M.ResourceBound[reg, p, r])
-#     return expr
+    expr = collected <= value(M.ResourceBound[reg, p, r])
+    return expr
 
 
 def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -1726,8 +1733,8 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
     s_seq_next = M.time_next_sequential[p, s_seq]
     s_next = M.sequential_to_season[p, s_seq_next]
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
-    # be adjusted to the number of days in the sequential season
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
+    # so must be adjusted to the number of days in the sequential season
     days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (
         value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
     )
@@ -1866,14 +1873,14 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
         * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
     )
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
-    # be adjusted to the number of days in the sequential season
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
+    # so must be adjusted to the number of days in the sequential season
     days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (
         value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
     )
 
-    # V_StorageLevel tracks the running cumulative delta in the non-sequential season, so must be adjusted
-    # to the size of the sequential season
+    # V_StorageLevel tracks the running cumulative delta in the non-sequential season,
+    # so must be adjusted to the size of the sequential season
     running_day_delta = M.V_StorageLevel[r, p, s, d, t, v] * days_adjust
 
     expr = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + running_day_delta <= energy_capacity
@@ -2093,7 +2100,8 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     - :math:`SEG_{r,p,s,d}` is the fraction of the period in time slice :math:`(s,d)`
     - :math:`DPP` is the number of days in each period
     - :math:`R_{r,t}` is the ramp rate per hour
-    - :math:`\Delta H_{r,p,s,d,s_{next},d_{next}}` is the number of elapsed hours between midpoints of time slices
+    - :math:`\Delta H_{r,p,s,d,s_{next},d_{next}}` is the number of elapsed hours between \
+      midpoints of time slices
     - :math:`CAP \cdot C2A` gives the maximum hourly change in activity
     """
 
@@ -2133,7 +2141,8 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining '
+            'from ({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -2208,7 +2217,8 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining'
+            ' from ({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -2225,7 +2235,8 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary
     of sequential seasons. Same as RampUpDay but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    between sequential seasons, i.e.,
+    :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     TimeSeason table.
     """
@@ -2267,7 +2278,8 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining '
+            'from ({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -2284,7 +2296,8 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary
     of sequential seasons. Same as RampDownDay but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    between sequential seasons, i.e.,
+    :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     TimeSeason table.
     """
@@ -2326,7 +2339,8 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining '
+            'from ({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -2347,7 +2361,10 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
         case 'dynamic':
             available = ReserveMarginDynamic(M, r, p, s, d)
         case _:
-            msg = f"Invalid reserve margin parameter '{M.ReserveMarginMethod.first()}'. Check the config file."
+            msg = (
+                f"Invalid reserve margin parameter '{M.ReserveMarginMethod.first()}'. "
+                'Check the config file.'
+            )
             logger.error(msg)
             raise ValueError(msg)
 
@@ -2446,7 +2463,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
 
             \\
             &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall r_i \in R
-    """
+    """  # noqa: E501
     if (not M.tech_reserve) or (
         (r, p) not in M.processReservePeriods
     ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
@@ -2633,8 +2650,9 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
     """
     emission_limit = value(M.LimitEmission[r, p, e, op])
 
-    # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'),
-    # or 'global'.  Note that regions!=M.regions. We iterate over regions to find actual_emissions
+    # r can be an individual region (r='US'),
+    # or a combination of regions separated by a + (r='Mexico+US+Canada'), or 'global'.
+    # Note that regions!=M.regions. We iterate over regions to find actual_emissions
     # and actual_emissions_annual.
 
     # if r == 'global', the constraint is system-wide
@@ -2642,8 +2660,11 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
     regions = gather_group_regions(M, r)
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
-    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
+    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.
+    # (See commodity balance constr)
+
+    # Curtailment does not draw any inputs,
+    # so it seems logical that curtailed flows not be taxed either
 
     process_emissions = sum(
         M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
@@ -2688,7 +2709,8 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
         process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
         # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
         # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
-        # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
+        # + emissions_flex_annual
+        # NO! flexannual is subtracted from flowoutannual, already accounted
     )
     expr = operator_expression(lhs, op, emission_limit)
 
@@ -2963,7 +2985,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
             \text{ where } v_i=p
 
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
-    """
+    """  # noqa: E501
 
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
@@ -2981,8 +3003,8 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     if len(periods) == 0:
         if p == M.time_optimize.first():
             msg = (
-                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
-                'technology can be built in this region. Constraint skipped.'
+                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods '
+                'where this technology can be built in this region. Constraint skipped.'
             ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
         return Constraint.Skip
@@ -3001,9 +3023,9 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
         ]
         if gaps:
             msg = (
-                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in which'
-                'new capacity cannot be built in this region ({}). New capacity in these periods '
-                'will be treated as zero which may cause infeasibility or other problems.'
+                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in '
+                'which new capacity cannot be built in this region ({}). New capacity in these '
+                'periods will be treated as zero which may cause infeasibility or other problems.'
             ).format('Deg' if degrowth else 'G', (r, t), gaps)
             logger.warning(msg)
 
@@ -3116,8 +3138,8 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
 def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     r"""
     The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
-    given technology or group in a given year. Note that the indices for these constraints are region,
-    period and tech.
+    given technology or group in a given year. Note that the indices for these constraints are
+    region, period and tech.
 
     .. math::
         :label: LimitNewCapacity
@@ -3174,10 +3196,11 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
        \le LR_{r, t}
 
        \forall \{r, t\} \in \Theta_{\text{LimitResource}}"""
-    # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
-    #            regardless of whatever "resources" are consumed.
-    # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
-    #            oil/mineral extraction across all model periods. Looks fine to me.
+    # dev note:  this constraint is a misnomer.
+    # It is actually a "global activity constraint on a tech"
+    # regardless of whatever "resources" are consumed.
+    # dev note:  this would generally be applied to a "dummy import" technology to restrict
+    # something like oil/mineral extraction across all model periods. Looks fine to me.
 
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
@@ -3226,7 +3249,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
 
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
-    """
+    """  # noqa: E501
 
     regions = gather_group_regions(M, r)
 
@@ -3370,8 +3393,9 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
             \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
             \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
-    """
-    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
+    """  # noqa: E501
+    # r can be an individual region (r='US'), or a combination of regions separated by plus
+    # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
@@ -3426,8 +3450,9 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
         \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
         \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
-    """
-    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
+    """  # noqa: E501
+    # r can be an individual region (r='US'), or a combination of regions
+    # separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
@@ -3608,7 +3633,7 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
             \geq
             TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
+            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""  # noqa: E501
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o] for S_i in M.processInputsByOutput[r, p, t, v, o]
     )
@@ -3751,7 +3776,8 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
 
 #     """
 #     if not loan_rate:
-#         # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
+#         # dev note:  this should not be needed as the LoanRate param has a default
+#         (see the definition)
 #         return 1.0 / loan_life
 #     annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
 #     return annualized_rate
