@@ -2133,6 +2133,61 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
     return expr
 
 
+class RampDirection(Enum):
+    UP = 'up'
+    DOWN = 'down'
+
+
+def _create_ramp_constraint(
+    M: 'TemoaModel',
+    r: str,
+    p: int,
+    t: str,
+    v: str,
+    s_curr: str,
+    d_curr: str,
+    s_next: str,
+    d_next: str,
+    direction: RampDirection,
+) -> Expression | Constraint:
+    """
+    Creates a ramp rate constraint expression between two time points.
+
+    This helper encapsulates the logic for both up- and down-ramping between
+    any two timeslices (s_curr, d_curr) and (s_next, d_next).
+    """
+    hourly_activity = _get_hourly_activity_expression(M, r, p, s_curr, d_curr, t, v)
+    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
+
+    # Elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = 12 * (
+        value(M.SegFrac[p, s_curr, d_curr]) / value(M.SegFracPerSeason[p, s_curr])
+        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    )
+
+    if direction == RampDirection.UP:
+        activity_delta = hourly_activity_next - hourly_activity
+        ramp_param = M.RampUpHourly[r, t]
+    else:  # RampDirection.DOWN
+        activity_delta = hourly_activity - hourly_activity_next
+        ramp_param = M.RampDownHourly[r, t]
+
+    ramp_fraction = hours_elapsed * value(ramp_param)
+
+    if ramp_fraction >= 1:
+        msg = (
+            f'Warning: Hourly ramp {direction.value} rate ({r}, {t}) is too large '
+            f'to be constraining from ({p}, {s_curr}, {d_curr}) to ({p}, {s_next}, {d_next}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
+        )
+        logger.warning(msg)
+        return Constraint.Skip
+
+    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
+
+    return activity_delta <= rampable_activity
+
+
 def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
     One of two constraints built from the RampUpHourly table, along with the
@@ -2187,34 +2242,7 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
 
     s_next, d_next = M.time_next[p, s, d]
-
-    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
-    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
-        )
-    )
-    ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining '
-            'from ({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_increase = hourly_activity_next - hourly_activity
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-
-    return activity_increase <= rampable_activity
+    return _create_ramp_constraint(M, r, p, t, v, s, d, s_next, d_next, RampDirection.UP)
 
 
 def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -2244,34 +2272,7 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
 
     s_next, d_next = M.time_next[p, s, d]
-
-    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
-    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
-        )
-    )
-    ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining'
-            ' from ({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_decrease = hourly_activity - hourly_activity_next  # opposite sign from rampup
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-
-    return activity_decrease <= rampable_activity
+    return _create_ramp_constraint(M, r, p, t, v, s, d, s_next, d_next, RampDirection.DOWN)
 
 
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
@@ -2284,36 +2285,9 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     TimeSeason table.
     """
 
-    d = M.time_of_day.last()
+    d_curr = M.time_of_day.last()
     d_next = M.time_of_day.first()
-
-    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
-    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
-        )
-    )
-    ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining '
-            'from ({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_increase = hourly_activity_next - hourly_activity  # opposite sign from rampdown
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-
-    return activity_increase <= rampable_activity
+    return _create_ramp_constraint(M, r, p, t, v, s, d_curr, s_next, d_next, RampDirection.UP)
 
 
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
@@ -2326,36 +2300,9 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     TimeSeason table.
     """
 
-    d = M.time_of_day.last()
+    d_curr = M.time_of_day.last()
     d_next = M.time_of_day.first()
-
-    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
-    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
-        )
-    )
-    ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining '
-            'from ({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_decrease = hourly_activity - hourly_activity_next  # opposite sign from rampup
-    rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-
-    return activity_decrease <= rampable_activity
+    return _create_ramp_constraint(M, r, p, t, v, s, d_curr, s_next, d_next, RampDirection.DOWN)
 
 
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
