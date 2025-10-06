@@ -148,6 +148,61 @@ def get_total_new_capacity_expression(
     )
 
 
+def _get_storage_charge_expression(M: 'TemoaModel', r, p, s, d, t, v) -> Expression:
+    """Calculates the total energy charged into a storage unit in a timeslice."""
+    return sum(
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
+        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    )
+
+
+def _get_storage_discharge_expression(M: 'TemoaModel', r, p, s, d, t, v) -> Expression:
+    """Calculates the total energy discharged from a storage unit in a timeslice."""
+    return sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_o in M.processOutputs[r, p, t, v]
+        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
+    )
+
+
+def _get_hourly_activity_expression(M: 'TemoaModel', r, p, s, d, t, v) -> Expression:
+    """Calculates the average hourly activity of a technology in a timeslice."""
+    hours_in_slice = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
+    if hours_in_slice == 0:
+        return 0  # Avoid division by zero for empty slices
+
+    slice_activity = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+    )
+    return slice_activity / hours_in_slice
+
+
+def _get_previous_new_capacity(M: 'TemoaModel', r_group: str, p: int, t_group: str) -> Expression:
+    """
+    Gets the new capacity from the previous period.
+    Handles the special case for the first model period by looking at ExistingCapacity.
+    """
+    regions = gather_group_regions(M, r_group)
+    techs = gather_group_techs(M, t_group)
+
+    if p == M.time_optimize.first():
+        # First future period. Grab last existing vintage as the "previous" build.
+        p_prev = M.time_exist.last()
+        return sum(
+            value(M.ExistingCapacity[_r, _t, _v])
+            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
+            if _r in regions and _t in techs and _v == p_prev
+        )
+    else:
+        # Otherwise, grab the new capacity variable from the previous future vintage.
+        p_prev = M.time_optimize.prev(p)
+        return get_total_new_capacity_expression(M, r_group, p_prev, t_group)
+
+
 # ---------------------------------------------------------------
 # Define the derived variables used in the objective function
 # and constraints below.
@@ -1711,35 +1766,18 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     # We allow a non-zero daily delta only in the case of seasonal storage
     if M.isSeasonalStorage[t] and d == M.time_of_day.last():
-        return Constraint.Skip  # handled by SeasonalStorageEnergy_Constraint
+        return Constraint.Skip
 
-    # This is the sum of all input=i sent TO storage tech t of vintage v with
-    # output=o in p,s,d
-    charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
-        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
-    # with input=i in p,s,d
-    discharge = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_o in M.processOutputs[r, p, t, v]
-        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
-    )
-
-    stored_energy = charge - discharge
+    charge = _get_storage_charge_expression(M, r, p, s, d, t, v)
+    discharge = _get_storage_discharge_expression(M, r, p, s, d, t, v)
+    net_charge = charge - discharge
 
     s_next, d_next = M.time_next[p, s, d]
 
-    expr = (
-        M.V_StorageLevel[r, p, s, d, t, v] + stored_energy
+    return (
+        M.V_StorageLevel[r, p, s, d, t, v] + net_charge
         == M.V_StorageLevel[r, p, s_next, d_next, t, v]
     )
-
-    return expr
 
 
 def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
@@ -1977,22 +2015,13 @@ def StorageChargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     """
     # Calculate energy charge in each time slice
-    slice_charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
-        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
+    slice_charge = _get_storage_charge_expression(M, r, p, s, d, t, v)
 
     # Maximum energy charge in each time slice
     max_charge = (
         M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
-
-    # Energy charge cannot exceed the power capacity of the storage unit
-    expr = slice_charge <= max_charge
-
-    return expr
+    return slice_charge <= max_charge
 
 
 def StorageDischargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -2012,21 +2041,13 @@ def StorageDischargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \forall \{r,p, s, d, t, v\} \in \Theta_{\text{StorageDischargeRate}}
     """
     # Calculate energy discharge in each time slice
-    slice_discharge = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_o in M.processOutputs[r, p, t, v]
-        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
-    )
+    slice_discharge = _get_storage_discharge_expression(M, r, p, s, d, t, v)
 
     # Maximum energy discharge in each time slice
     max_discharge = (
         M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
-
-    # Energy discharge cannot exceed the capacity of the storage unit
-    expr = slice_discharge <= max_discharge
-
-    return expr
+    return slice_discharge <= max_discharge
 
 
 def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -2048,25 +2069,14 @@ def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
     """
-    discharge = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_o in M.processOutputs[r, p, t, v]
-        for S_i in M.processInputsByOutput[r, p, t, v, S_o]
-    )
-
-    charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
-        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
+    charge = _get_storage_charge_expression(M, r, p, s, d, t, v)
+    discharge = _get_storage_discharge_expression(M, r, p, s, d, t, v)
     throughput = charge + discharge
+
     max_throughput = (
         M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
-    expr = throughput <= max_throughput
-    return expr
+    return throughput <= max_throughput
 
 
 def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
@@ -2178,26 +2188,8 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     s_next, d_next = M.time_next[p, s, d]
 
-    # How many hours does this time slice represent
-    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
-
-    hourly_activity_sd = (
-        sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
+    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
+    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
@@ -2219,11 +2211,10 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
+    activity_increase = hourly_activity_next - hourly_activity
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-    expr = activity_increase <= rampable_activity
 
-    return expr
+    return activity_increase <= rampable_activity
 
 
 def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -2254,26 +2245,8 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     s_next, d_next = M.time_next[p, s, d]
 
-    # How many hours does this time slice represent
-    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
-
-    hourly_activity_sd = (
-        sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
+    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
+    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
@@ -2295,11 +2268,10 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
+    activity_decrease = hourly_activity - hourly_activity_next  # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-    expr = activity_decrease <= rampable_activity
 
-    return expr
+    return activity_decrease <= rampable_activity
 
 
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
@@ -2315,26 +2287,8 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     d = M.time_of_day.last()
     d_next = M.time_of_day.first()
 
-    # How many hours does this time slice represent
-    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
-
-    hourly_activity_sd = (
-        sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
+    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
+    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
@@ -2356,11 +2310,10 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
+    activity_increase = hourly_activity_next - hourly_activity  # opposite sign from rampdown
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-    expr = activity_increase <= rampable_activity
 
-    return expr
+    return activity_increase <= rampable_activity
 
 
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
@@ -2376,26 +2329,8 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     d = M.time_of_day.last()
     d_next = M.time_of_day.first()
 
-    # How many hours does this time slice represent
-    hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
-
-    hourly_activity_sd = (
-        sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
+    hourly_activity = _get_hourly_activity_expression(M, r, p, s, d, t, v)
+    hourly_activity_next = _get_hourly_activity_expression(M, r, p, s_next, d_next, t, v)
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
@@ -2417,11 +2352,10 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
+    activity_decrease = hourly_activity - hourly_activity_next  # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
-    expr = activity_decrease <= rampable_activity
 
-    return expr
+    return activity_decrease <= rampable_activity
 
 
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
@@ -2946,69 +2880,64 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
-
     growth = M.LimitDegrowthNewCapacity if degrowth else M.LimitGrowthNewCapacity
     RATE = 1 + value(growth[r, t, op][0])
     SEED = value(growth[r, t, op][1])
-    NewCapRTV = M.V_NewCapacity
 
-    # relevant r, t, v indices
-    cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV.keys() if _t in techs and _r in regions)
-    # periods the technology can be built in this region (sorted)
+    regions = gather_group_regions(M, r)
+    techs = gather_group_techs(M, t)
+
+    # Find all periods where the specified tech(s) can be built in the specified region(s)
+    cap_rtv = set(
+        (_r, _t, _v) for _r, _t, _v in M.V_NewCapacity.keys() if _t in techs and _r in regions
+    )
     periods = sorted(set(_v for _r, _t, _v in cap_rtv))
 
     if len(periods) == 0:
         if p == M.time_optimize.first():
             msg = (
-                'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
-                'technology can be built in this region. Constraint skipped.'
-            ).format('Deg' if degrowth else 'G', (r, t))
+                'Tried to set {}rowthNewCapacity constraint for group ({}, {}) but there are no '
+                'periods where this technology can be built in this region.'
+                'Constraint will be skipped.'
+            ).format('Deg' if degrowth else 'G', r, t)
             logger.warning(msg)
         return Constraint.Skip
 
-    # Only warn in p0 so we dont dump multiple warnings
-    if p == periods[0]:
+    # This check ensures we only log messages ONCE per constraint, not for every period.
+    is_first_relevant_period = periods and p == periods[0]
+
+    if is_first_relevant_period:
         if SEED == 0:
             msg = (
-                'No constant term (seed) provided for {}rowthNewCapacity constraint {}. '
+                'No constant term (seed) provided for {}rowthNewCapacity constraint'
+                'for group ({}, {}). '
                 'No capacity will be built in any period following one with zero new capacity.'
-            ).format('Deg' if degrowth else 'G', (r, t))
+            ).format('Deg' if degrowth else 'G', r, t)
             logger.info(msg)
+
         gaps = [
             _p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)
         ]
         if gaps:
             msg = (
-                'Constructing {}rowthNewCapacity constraint {} and there are period gaps in which'
-                'new capacity cannot be built in this region ({}). New capacity in these periods '
-                'will be treated as zero which may cause infeasibility or other problems.'
-            ).format('Deg' if degrowth else 'G', (r, t), gaps)
+                'Constructing {}rowthNewCapacity constraint for group ({}, {}) and '
+                'there are period gaps in which new capacity cannot be built in this '
+                ' region ({}). New capacity in these periods will be treated as zero, '
+                'which may cause infeasibility or other problems.'
+            ).format('Deg' if degrowth else 'G', r, t, gaps)
             logger.warning(msg)
 
-    # sum new capacity in this period
-    new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+    if p not in periods:
+        return Constraint.Skip
 
-    if p == M.time_optimize.first():
-        # First future period. Grab last existing vintage
-        p_prev = M.time_exist.last()
-        new_cap_prev = sum(
-            value(M.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
-            if _r in regions and _t in techs and _v == p_prev
-        )
-    else:
-        # Otherwise, grab previous future vintage
-        p_prev = M.time_optimize.prev(p)
-        new_cap_prev = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
+    new_cap = get_total_new_capacity_expression(M, r, p, t)
+    new_cap_prev = _get_previous_new_capacity(M, r, p, t)
 
     if degrowth:
         expr = operator_expression(new_cap_prev, op, SEED + new_cap * RATE)
     else:
-        expr = operator_expression(new_cap, op, SEED + new_cap_prev * RATE)
+        expr = operator_expression(new_cap, op, SEED + new_cap * RATE)
 
-    # Check if any variables are actually included before returning
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
