@@ -23,13 +23,13 @@ from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING
 
-from pyomo.core import Var, Expression
+from pyomo.core import Expression, Var
 from pyomo.environ import Constraint, value
 
 from temoa.temoa_model.temoa_initialize import (
-    DemandConstraintErrorCheck,
-    CommodityBalanceConstraintErrorCheck,
     AnnualCommodityBalanceConstraintErrorCheck,
+    CommodityBalanceConstraintErrorCheck,
+    DemandConstraintErrorCheck,
     gather_group_regions,
     gather_group_techs,
 )
@@ -65,7 +65,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
 
     For processes using survival curves, the yearly survival curve :math:`\text{LSC}_{r,p,t,v}` is
     averaged over the period to get the effective remaining capacity for that period  Because this
-    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both 
+    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both
     phenomena.
 
     .. figure:: images/adjusted_capacity_sc.*
@@ -77,7 +77,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
         For processes with a defined survival curve, the surviving capacity is averaged over each
         period to get the adjusted capacity. This implicitly handles mid-period end of life as a
         survival curve will always be zero after the end of life of a process.
-    
+
     .. math::
         :label: Adjusted Capacity
 
@@ -97,8 +97,8 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
                 & \text{if } \ v \notin T^e
             \end{cases}
 
-            \\\text{where } 
-            \text{PLF}_{r,p,t,v} = 
+            \\\text{where }
+            \text{PLF}_{r,p,t,v} =
             \begin{cases}
                 \frac{1}{\text{LEN}_p} \cdot \left(
                 \sum\limits_{y = p}^{p+\text{LEN}_{p}-1}{\text{LSC}_{r,y,t,v}}
@@ -124,16 +124,17 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
         early_retirements = sum(
             M.V_RetiredCapacity[r, S_p, t, v] / value(M.LifetimeSurvivalCurve[r, S_p, t, v])
             for S_p in M.time_optimize
-            if v < S_p <= p and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
+            if v < S_p <= p
+            and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
         )
 
     remaining_capacity = (built_capacity - early_retirements) * value(M.ProcessLifeFrac[r, p, t, v])
     return M.V_Capacity[r, p, t, v] == remaining_capacity
-        
+
 
 def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     r"""
-    Get the annualised retirement rate for a process in a given period. 
+    Get the annualised retirement rate for a process in a given period.
     Used to output retirement (including end of life, EOL) and to model end of
     life flows and emissions. Assumes that retirement from the beginning of each period
     is evenly distributed over that model period :math:`\frac{1}{\text{LEN}_p}`
@@ -151,17 +152,17 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
                 \frac{1}{\text{LEN}_p} \cdot
                 \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
                 & \text{if EOL} \\
-                \frac{1}{\text{LEN}_p} \cdot 
-                \left( 
+                \frac{1}{\text{LEN}_p} \cdot
+                \left(
                 \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
                 - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
                 \right)
                 & \text{otherwise} \\
             \end{cases}
-            
+
             \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
     """
-    
+
     ## Get the capacity at the start of this period
     if p == v + value(M.LifetimeProcess[r, t, v]):
         # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
@@ -209,7 +210,7 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
 
     annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
     return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
-    
+
 
 def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     r"""
@@ -262,19 +263,16 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             for S_i in M.processInputs[r, p, t, v]
             for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
-    
+
     if t in M.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
         # capacity must be available to cover both activity and curtailment.
-        return (
-            get_capacity_factor(M, r, p, s, d, t, v)
-            * value(M.CapacityToActivity[r, t])
-            * value(M.SegFrac[p, s, d])
-            * M.V_Capacity[r, p, t, v] == useful_activity + sum(
-                M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
-                for S_i in M.processInputs[r, p, t, v]
-                for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-            )
+        return get_capacity_factor(M, r, p, s, d, t, v) * value(M.CapacityToActivity[r, t]) * value(
+            M.SegFrac[p, s, d]
+        ) * M.V_Capacity[r, p, t, v] == useful_activity + sum(
+            M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
         return (
@@ -294,7 +292,7 @@ def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
     that installed capacity is sufficient across all timeslices, thus saving
     some computational effort. Instead, annual output is sufficient to calculate
     capacity. Hourly capacity factors cannot be defined to annual technologies
-    but annual capacity factors can be set using LimitAnnualCapacityFactor, 
+    but annual capacity factors can be set using LimitAnnualCapacityFactor,
     which will be implicitly accounted for here.
 
     .. math::
@@ -314,11 +312,7 @@ def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    return (
-        value(M.CapacityToActivity[r, t])
-        * M.V_Capacity[r, p, t, v]
-        >= activity_rptv
-    )
+    return value(M.CapacityToActivity[r, t]) * M.V_Capacity[r, p, t, v] >= activity_rptv
 
 
 # devnote: long dead
@@ -375,10 +369,7 @@ def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
         \\
         \forall p \in \text{P}^o, r \in R, t \in T
     """
-    cap_avail = sum(
-        M.V_Capacity[r, p, t, S_v]
-        for S_v in M.processVintages[r, p, t]
-    )
+    cap_avail = sum(M.V_Capacity[r, p, t, S_v] for S_v in M.processVintages[r, p, t])
 
     expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
     return expr
@@ -443,7 +434,7 @@ def TotalCost_rule(M):
         \end{aligned}
 
     Note that capital costs (:math:`{CI}_{r,t,v}`) are handled in several steps.
-    
+
         1. Each capital cost is amortized using the loan rate (i.e., technology-specific discount rate) and loan period.
 
         2. The annual stream of payments is converted into a lump sum using the global discount rate and loan period.
@@ -453,7 +444,7 @@ def TotalCost_rule(M):
         4. Loan payments beyond the model time horizon are removed and the lump sum recalculated.
 
         5. Finally, the lump sum is discounted back to the beginning of the horizon (:math:`P_0`) using the global discount rate.
-    
+
     Steps 3 and 4 serve to correctly balance the cost-benefit of technologies whose useful lives
     would extend beyond the planning horizon. While an explicit salvage term is not included, this approach properly
     captures the capital costs incurred within the model time horizon, accounting for process-specific loan rates
@@ -553,7 +544,7 @@ def TotalCost_rule(M):
 def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     r"""
     Multiplication factor to convert an annuity to net present value
-    
+
     .. math::
         :label: annuity_to_pv
 
@@ -566,7 +557,8 @@ def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     """
     if rate == 0:
         return periods
-    return ((1 + rate)**periods - 1) / (rate * (1 + rate)**periods)
+    return ((1 + rate) ** periods - 1) / (rate * (1 + rate) ** periods)
+
 
 def pv_to_annuity(rate: float, periods: int) -> float | Expression:
     r"""
@@ -579,12 +571,13 @@ def pv_to_annuity(rate: float, periods: int) -> float | Expression:
     """
     if rate == 0:
         return 1 / periods
-    return (rate * (1 + rate)**periods) / ((1 + rate)**periods - 1)
-    
+    return (rate * (1 + rate) ** periods) / ((1 + rate) ** periods - 1)
+
+
 def fv_to_pv(rate: float, periods: int) -> float | Expression:
     r"""
     Multiplication factor to convert a future value to net present value
-    
+
     .. math::
         :label: fv_to_pv
 
@@ -592,7 +585,7 @@ def fv_to_pv(rate: float, periods: int) -> float | Expression:
     """
     if rate == 0:
         return 1
-    return 1 / (1 + rate)**periods
+    return 1 / (1 + rate) ** periods
 
 
 def loan_cost(
@@ -622,26 +615,33 @@ def loan_cost(
 
     # calculate the amortised loan repayment (annuity)
     annuity = (
-        capacity * invest_cost  # lump investment cost is capacity times CostInvest
-        * loan_annualize        # calculate loan annuities for investment cost, if used
+        capacity
+        * invest_cost  # lump investment cost is capacity times CostInvest
+        * loan_annualize  # calculate loan annuities for investment cost, if used
     )
-    
+
     if not GDR:
         # Undiscounted result
         res = (
             annuity
-            * lifetime_loan_process                 # sum of loan payments over loan period
-            / lifetime_process                      # redistributed over lifetime of process
-            * min(lifetime_process, P_e - vintage)  # sum of redistributed costs for life of process (within planning horizon)
+            * lifetime_loan_process  # sum of loan payments over loan period
+            / lifetime_process  # redistributed over lifetime of process
+            * min(
+                lifetime_process, P_e - vintage
+            )  # sum of redistributed costs for life of process (within planning horizon)
         )
     else:
         # Discounted result
         res = (
             annuity
-            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
-            * pv_to_annuity(GDR, lifetime_process)          # reamortised over lifetime of process using GDR
-            * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # PV of all reamortised costs (within planning horizon)
-            * fv_to_pv(GDR, vintage - P_0)                  # finally, discounted from vintage year to P_0
+            * annuity_to_pv(
+                GDR, lifetime_loan_process
+            )  # PV of all loan payments, discounted to vintage year using GDR
+            * pv_to_annuity(GDR, lifetime_process)  # reamortised over lifetime of process using GDR
+            * annuity_to_pv(
+                GDR, min(lifetime_process, P_e - vintage)
+            )  # PV of all reamortised costs (within planning horizon)
+            * fv_to_pv(GDR, vintage - P_0)  # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -675,21 +675,22 @@ def loan_cost_survival_curve(
 
     # calculate the amortised loan repayment (annuity)
     annuity = (
-        capacity * invest_cost  # lump investment cost is capacity times CostInvest
-        * loan_annualize        # calculate loan annuities for investment cost, if used
+        capacity
+        * invest_cost  # lump investment cost is capacity times CostInvest
+        * loan_annualize  # calculate loan annuities for investment cost, if used
     )
-    
+
     if not GDR:
         # Undiscounted result
         res = (
             annuity
-            * lifetime_loan_process                         # sum of loan payments over loan period
-            / sum(                                          # redistributed over survival curve within horizon
+            * lifetime_loan_process  # sum of loan payments over loan period
+            / sum(  # redistributed over survival curve within horizon
                 value(M.LifetimeSurvivalCurve[r, p, t, v])
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p
             )
-            * sum(                                          # summed over survival curve within horizon
+            * sum(  # summed over survival curve within horizon
                 value(M.LifetimeSurvivalCurve[r, p, t, v])
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
@@ -699,20 +700,23 @@ def loan_cost_survival_curve(
         # Discounted result
         res = (
             annuity
-            * annuity_to_pv(GDR, lifetime_loan_process)     # PV of all loan payments, discounted to vintage year using GDR
-            / sum(                                          # redistributed over survival curve within horizon
-                value(M.LifetimeSurvivalCurve[r, p, t, v])  # reamortised over survival curve of process using GDR
-                * fv_to_pv(GDR, p - v + 1) # +1 because LSC is indexed to start of p not end of p
+            * annuity_to_pv(
+                GDR, lifetime_loan_process
+            )  # PV of all loan payments, discounted to vintage year using GDR
+            / sum(  # redistributed over survival curve within horizon
+                value(
+                    M.LifetimeSurvivalCurve[r, p, t, v]
+                )  # reamortised over survival curve of process using GDR
+                * fv_to_pv(GDR, p - v + 1)  # +1 because LSC is indexed to start of p not end of p
                 for p in M.survivalCurvePeriods[r, t, v]
-                if v <= p # this shouldnt be possible but play it safe
+                if v <= p  # this shouldnt be possible but play it safe
             )
-            * sum(                                          # PV of all reamortised costs (within planning horizon)
-                value(M.LifetimeSurvivalCurve[r, p, t, v])
-                * fv_to_pv(GDR, p - v + 1)
+            * sum(  # PV of all reamortised costs (within planning horizon)
+                value(M.LifetimeSurvivalCurve[r, p, t, v]) * fv_to_pv(GDR, p - v + 1)
                 for p in M.survivalCurvePeriods[r, t, v]
                 if v <= p < P_e
             )
-            * fv_to_pv(GDR, v - P_0)                        # finally, discounted from vintage year to P_0
+            * fv_to_pv(GDR, v - P_0)  # finally, discounted from vintage year to P_0
         )
     return res
 
@@ -737,29 +741,24 @@ def fixed_or_variable_cost(
     :return:
     """
 
-    annual_cost = cap_or_flow * cost_factor     # annual fixed, variable, or emission cost
-    
+    annual_cost = cap_or_flow * cost_factor  # annual fixed, variable, or emission cost
+
     if not GDR:
         # Undiscounted result
-        return annual_cost * cost_years         # annual cost times years paying that cost
+        return annual_cost * cost_years  # annual cost times years paying that cost
     else:
         # Discounted result
         return (
             annual_cost
-            * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, discounted to period p
-            * fv_to_pv(GDR, p - P_0)            # discounted from p to p_0
+            * annuity_to_pv(
+                GDR, cost_years
+            )  # PV of annual costs over this period, discounted to period p
+            * fv_to_pv(GDR, p - P_0)  # discounted from p to p_0
         )
 
 
-def PeriodCost_rule(M: 'TemoaModel', p):
-    P_0 = min(M.time_optimize)
-    P_e = M.time_future.last()  # End point of modeled horizon
-    GDR = value(M.GlobalDiscountRate)
-    # MPL = M.ModelProcessLife
-
-    if value(M.MyopicDiscountingYear) != 0:
-        P_0 = value(M.MyopicDiscountingYear)
-
+def _calculate_loan_costs(M: 'TemoaModel', p: int, P_0: int, P_e: int, GDR: float) -> Expression:
+    """Helper to calculate all loan costs for a given period."""
     loan_costs = sum(
         loan_cost(
             M.V_NewCapacity[r, S_t, S_v],
@@ -792,8 +791,12 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]
     )
+    return loan_costs
 
-    fixed_costs = sum(
+
+def _calculate_fixed_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> Expression:
+    """Helper to calculate all fixed costs for a given period."""
+    return sum(
         fixed_or_variable_cost(
             M.V_Capacity[r, p, S_t, S_v],
             value(M.CostFixed[r, p, S_t, S_v]),
@@ -806,6 +809,9 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         if S_p == p
     )
 
+
+def _calculate_variable_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> Expression:
+    """Helper to calculate all variable costs for a given period."""
     variable_costs = sum(
         fixed_or_variable_cost(
             M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o],
@@ -822,8 +828,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
-
-    variable_costs_annual = sum(
+    variable_costs += sum(
         fixed_or_variable_cost(
             M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o],
             value(M.CostVariable[r, p, S_t, S_v]),
@@ -837,7 +842,11 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for S_i in M.processInputs[r, S_p, S_t, S_v]
         for S_o in M.processOutputsByInput[r, S_p, S_t, S_v, S_i]
     )
+    return variable_costs
 
+
+def _calculate_emission_costs(M: 'TemoaModel', p: int, P_0: int, GDR: float) -> Expression:
+    """Helper to calculate all emission-related costs for a given period."""
     # The emissions costs occur over the five possible emission sources.
     # to do any/all of them we need 2 baseline sets:  The regular and annual sets
     # of indices that are valid which is basically the filter of:
@@ -871,7 +880,8 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     # 1. variable emissions
     var_emissions = sum(
         fixed_or_variable_cost(
-            cap_or_flow=M.V_FlowOut[r, p, s, d, i, t, v, o] * value(M.EmissionActivity[r, e, i, t, v, o]),
+            cap_or_flow=M.V_FlowOut[r, p, s, d, i, t, v, o]
+            * value(M.EmissionActivity[r, e, i, t, v, o]),
             cost_factor=value(M.CostEmission[r, p, e]),
             cost_years=value(M.PeriodLength[p]),
             GDR=GDR,
@@ -888,7 +898,8 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     # 4. annual emissions
     var_annual_emissions = sum(
         fixed_or_variable_cost(
-            cap_or_flow=M.V_FlowOutAnnual[r, p, i, t, v, o] * value(M.EmissionActivity[r, e, i, t, v, o]),
+            cap_or_flow=M.V_FlowOutAnnual[r, p, i, t, v, o]
+            * value(M.EmissionActivity[r, e, i, t, v, o]),
             cost_factor=value(M.CostEmission[r, p, e]),
             cost_years=value(M.PeriodLength[p]),
             GDR=GDR,
@@ -904,9 +915,13 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     # 6. embodied - treated as a fixed cost distributed over the deployment period (vintage)
     embodied_emissions = sum(
         fixed_or_variable_cost(
-            cap_or_flow=M.V_NewCapacity[r, t, v] * value(M.EmissionEmbodied[r, e, t, v]) / value(M.PeriodLength[p]),
+            cap_or_flow=M.V_NewCapacity[r, t, v]
+            * value(M.EmissionEmbodied[r, e, t, v])
+            / value(M.PeriodLength[p]),
             cost_factor=value(M.CostEmission[r, p, e]),
-            cost_years=M.PeriodLength[v], # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=M.PeriodLength[
+                v
+            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -921,7 +936,9 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         fixed_or_variable_cost(
             cap_or_flow=M.V_AnnualRetirement[r, p, t, v] * value(M.EmissionEndOfLife[r, e, t, v]),
             cost_factor=value(M.CostEmission[r, p, e]),
-            cost_years=M.PeriodLength[p], # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=M.PeriodLength[
+                p
+            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -931,12 +948,24 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         if (r, t, v) in M.retirementPeriods and p in M.retirementPeriods[r, t, v]
     )
 
-    period_emission_cost = var_emissions + var_annual_emissions + embodied_emissions + endoflife_emissions
+    return var_emissions + var_annual_emissions + embodied_emissions + endoflife_emissions
 
-    period_costs = (
-        loan_costs + fixed_costs + variable_costs + variable_costs_annual + period_emission_cost
-    )
-    return period_costs
+
+def PeriodCost_rule(M: 'TemoaModel', p: int):
+    """Calculates the total discounted cost for a single period."""
+    P_0 = min(M.time_optimize)
+    P_e = M.time_future.last()
+    GDR = value(M.GlobalDiscountRate)
+
+    if value(M.MyopicDiscountingYear) != 0:
+        P_0 = value(M.MyopicDiscountingYear)
+
+    loan_costs = _calculate_loan_costs(M, p, P_0, P_e, GDR)
+    fixed_costs = _calculate_fixed_costs(M, p, P_0, GDR)
+    variable_costs = _calculate_variable_costs(M, p, P_0, GDR)
+    emission_costs = _calculate_emission_costs(M, p, P_0, GDR)
+
+    return loan_costs + fixed_costs + variable_costs + emission_costs
 
 
 # ---------------------------------------------------------------
@@ -986,9 +1015,7 @@ def Demand_Constraint(M: 'TemoaModel', r, p, dem):
 
     DemandConstraintErrorCheck(supply_annual, r, p, dem)
 
-    expr = (
-        supply_annual == value(M.Demand[r, p, dem])
-    )
+    expr = supply_annual == value(M.Demand[r, p, dem])
 
     return expr
 
@@ -1025,18 +1052,14 @@ def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem):
     """
 
     activity = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, dem]
-        for S_i in M.processInputsByOutput[r, p, t, v, dem]
+        M.V_FlowOut[r, p, s, d, S_i, t, v, dem] for S_i in M.processInputsByOutput[r, p, t, v, dem]
     )
 
     annual_activity = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, dem]
-        for S_i in M.processInputsByOutput[r, p, t, v, dem]
+        M.V_FlowOutAnnual[r, p, S_i, t, v, dem] for S_i in M.processInputsByOutput[r, p, t, v, dem]
     )
 
-    expr = (
-        annual_activity * value(M.DemandSpecificDistribution[r, p, s, d, dem]) == activity
-    )
+    expr = annual_activity * value(M.DemandSpecificDistribution[r, p, s, d, dem]) == activity
     return expr
 
 
@@ -1153,7 +1176,8 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
 
         # Into flows
         consumed += sum(
-            M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+            M.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o]
+            / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
             if S_t not in M.tech_storage and S_t not in M.tech_annual
             for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
@@ -1166,7 +1190,8 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
                 if S_o in M.commodity_demand
                 else value(M.SegFrac[p, s, d])
             )
-            * M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
+            * M.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o]
+            / get_variable_efficiency(M, r, p, s, d, c, S_t, S_v, S_o)
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
             if S_t in M.tech_annual
             for S_o in M.processOutputsByInput[r, p, S_t, S_v, c]
@@ -1175,10 +1200,14 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     if (r, p, c) in M.capacityConsumptionTechs:
         # Consumed by building capacity
         # Assume evenly distributed over a year
-        consumed += value(M.SegFrac[p, s, d]) * sum(
-            value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
-            for S_t in M.capacityConsumptionTechs[r, p, c]
-        ) / M.PeriodLength[p]
+        consumed += (
+            value(M.SegFrac[p, s, d])
+            * sum(
+                value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
+                for S_t in M.capacityConsumptionTechs[r, p, c]
+            )
+            / M.PeriodLength[p]
+        )
 
     if (r, p, c) in M.commodityUStreamProcess:
         # From flows including output from storage
@@ -1212,7 +1241,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
                 if S_t in M.tech_annual and S_t in M.tech_flex
                 for S_i in M.processInputsByOutput[r, p, S_t, S_v, c]
             )
-    
+
     if (r, p, c) in M.retirementProductionProcesses:
         # Produced by retiring capacity
         # Assume evenly distributed over a year
@@ -1230,7 +1259,8 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             if S_t not in M.tech_annual
         )
         consumed += sum(
-            value(M.SegFrac[p, s, d]) * M.V_FlowOutAnnual[r + '-' + reg, p, c, S_t, S_v, S_o]
+            value(M.SegFrac[p, s, d])
+            * M.V_FlowOutAnnual[r + '-' + reg, p, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
             for reg, S_t, S_v, S_o in M.exportRegions[r, p, c]
             if S_t in M.tech_annual
@@ -1273,10 +1303,10 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     at the period level, summing all flows over the period but allowing imbalances at the time slice
     or seasonal level. Applies only to commodities in the :code:`commodity_annual` set.
     """
-    
+
     produced = 0
     consumed = 0
-    
+
     if (r, p, c) in M.commodityDStreamProcess:
         # Only storage techs have a flow in variable
         # For other techs, it would be redundant as in = out / eff
@@ -1290,7 +1320,8 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         )
 
         consumed += sum(
-            M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
+            M.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o]
+            / get_variable_efficiency(M, r, p, S_s, S_d, c, S_t, S_v, S_o)
             for S_s in M.TimeSeason[p]
             for S_d in M.time_of_day
             for S_t, S_v in M.commodityDStreamProcess[r, p, c]
@@ -1308,10 +1339,13 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
     if (r, p, c) in M.capacityConsumptionTechs:
         # Consumed by building capacity
         # Assume evenly distributed over a year
-        consumed += sum(
-            value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
-            for S_t in M.capacityConsumptionTechs[r, p, c]
-        ) / M.PeriodLength[p]
+        consumed += (
+            sum(
+                value(M.ConstructionInput[r, c, S_t, p]) * M.V_NewCapacity[r, S_t, p]
+                for S_t in M.capacityConsumptionTechs[r, p, c]
+            )
+            / M.PeriodLength[p]
+        )
 
     if (r, p, c) in M.commodityUStreamProcess:
         # Includes output from storage
@@ -1554,18 +1588,19 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
             = {SL}_{r,p,s_{{next}},d_{{next}},t,v}
 
     Note that for all seasonal representations except consecutive_days, the last time slice
-    of each season will loop back to the first time slice of the same season, preventing 
+    of each season will loop back to the first time slice of the same season, preventing
     seasonal deltas for non-seasonal storage (see SeasonalStorageEnergyUpperBound).
     """
 
     # We allow a non-zero daily delta only in the case of seasonal storage
     if M.isSeasonalStorage[t] and d == M.time_of_day.last():
-        return Constraint.Skip # handled by SeasonalStorageEnergy_Constraint
+        return Constraint.Skip  # handled by SeasonalStorageEnergy_Constraint
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
     charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
+        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -1582,7 +1617,10 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     s_next, d_next = M.time_next[p, s, d]
 
-    expr = M.V_StorageLevel[r, p, s, d, t, v] + stored_energy == M.V_StorageLevel[r, p, s_next, d_next, t, v]
+    expr = (
+        M.V_StorageLevel[r, p, s, d, t, v] + stored_energy
+        == M.V_StorageLevel[r, p, s_next, d_next, t, v]
+    )
 
     return expr
 
@@ -1617,13 +1655,13 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
         :figclass: align-center
         :figwidth: 60%
 
-        How sequential seasons chain together for seasonal storage. Hatched area is 
-        SeasonalStorageLevel :math:`SSL_{r,p,s^{seq},t,v}`. Vertical lines are 
-        StorageLevel :math:`SL_{r,p,s^*,d,t,v}`. Green line is net seasonal storage 
-        level :math:`SSL_{r,p,s^{seq},t,v} + SL_{r,p,s^*,d,t,v}`. Background grey 
-        lines show how storage levels from non-sequential seasons are combined 
-        in sequential seasons. Dashed line is SeasonalStorageEnergyUpperBound. 
-        Sequential seasons two and four here are each two days while one and three 
+        How sequential seasons chain together for seasonal storage. Hatched area is
+        SeasonalStorageLevel :math:`SSL_{r,p,s^{seq},t,v}`. Vertical lines are
+        StorageLevel :math:`SL_{r,p,s^*,d,t,v}`. Green line is net seasonal storage
+        level :math:`SSL_{r,p,s^{seq},t,v} + SL_{r,p,s^*,d,t,v}`. Background grey
+        lines show how storage levels from non-sequential seasons are combined
+        in sequential seasons. Dashed line is SeasonalStorageEnergyUpperBound.
+        Sequential seasons two and four here are each two days while one and three
         are each one day.
     """
 
@@ -1651,13 +1689,23 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
     # be adjusted to the number of days in the sequential season
-    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
-    days_adjust_next = value(M.TimeSeasonSequential[p, s_seq_next, s_next]) / (value(M.SegFracPerSeason[p, s_next]) * value(M.DaysPerPeriod))
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (
+        value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+    )
+    days_adjust_next = value(M.TimeSeasonSequential[p, s_seq_next, s_next]) / (
+        value(M.SegFracPerSeason[p, s_next]) * value(M.DaysPerPeriod)
+    )
 
     stored_energy = (charge - discharge) * days_adjust
 
-    start = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + M.V_StorageLevel[r, p, s, M.time_of_day.last(), t, v] * days_adjust
-    end = M.V_SeasonalStorageLevel[r, p, s_seq_next, t, v] + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
+    start = (
+        M.V_SeasonalStorageLevel[r, p, s_seq, t, v]
+        + M.V_StorageLevel[r, p, s, M.time_of_day.last(), t, v] * days_adjust
+    )
+    end = (
+        M.V_SeasonalStorageLevel[r, p, s_seq_next, t, v]
+        + M.V_StorageLevel[r, p, s_next, M.time_of_day.first(), t, v] * days_adjust_next
+    )
 
     expr = start + stored_energy == end
     return expr
@@ -1692,7 +1740,7 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     A season can represent many days. Within each season, flows are multiplied by the
     number of days each season represents and, so, the upper bound needs to be adjusted
     to allow day-scale flows (e.g., charge in the morning, discharge in the afternoon).
-    
+
     .. figure:: images/daily_storage_representation.*
         :align: center
         :width: 100%
@@ -1703,15 +1751,16 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
 
     if M.isSeasonalStorage[t]:
-        return Constraint.Skip # redundant on SeasonalStorageEnergyUpperBound
+        return Constraint.Skip  # redundant on SeasonalStorageEnergyUpperBound
 
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
         * value(M.CapacityToActivity[r, t])
         * (value(M.StorageDuration[r, t]) / (24 * value(M.DaysPerPeriod)))
-        * value(M.SegFracPerSeason[p, s]) * M.DaysPerPeriod # adjust for days in season
+        * value(M.SegFracPerSeason[p, s])
+        * M.DaysPerPeriod  # adjust for days in season
     )
-    
+
     expr = M.V_StorageLevel[r, p, s, d, t, v] <= energy_capacity
 
     return expr
@@ -1719,8 +1768,8 @@ def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
 def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, t, v):
     r"""
-    Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity 
-    of seasonal storage, summing the real storage level with the superimposed sequential 
+    Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity
+    of seasonal storage, summing the real storage level with the superimposed sequential
     seasonal storage level. :math:`s^*` represents the matching non-sequential season for
     the sequential season :math:`s^{seq}`.
 
@@ -1733,12 +1782,12 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
 
         \\
 
-        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}    
+        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}
 
-    
-    
+
+
     Unlike non-seasonal (daily) storage, seasonal storage is allowed to carry energy
-    between seasons. However, through seasons representing multiple days, many days' 
+    between seasons. However, through seasons representing multiple days, many days'
     charge deltas have accumulated, multiplied by the number of days the season
     represents. If we allowed these stacked deltas to carry between seasons then we would
     be multiplying the effective energy capacity of the storage. We could just constrain
@@ -1780,12 +1829,14 @@ def SeasonalStorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s_seq, d, 
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
     # be adjusted to the number of days in the sequential season
-    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+    days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (
+        value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+    )
 
     # V_StorageLevel tracks the running cumulative delta in the non-sequential season, so must be adjusted
     # to the size of the sequential season
     running_day_delta = M.V_StorageLevel[r, p, s, d, t, v] * days_adjust
-    
+
     expr = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + running_day_delta <= energy_capacity
 
     return expr
@@ -1810,16 +1861,15 @@ def StorageChargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     """
     # Calculate energy charge in each time slice
     slice_charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
+        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
     # Maximum energy charge in each time slice
     max_charge = (
-        M.V_Capacity[r, p, t, v]
-        * value(M.CapacityToActivity[r, t])
-        * value(M.SegFrac[p, s, d])
+        M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
 
     # Energy charge cannot exceed the power capacity of the storage unit
@@ -1853,9 +1903,7 @@ def StorageDischargeRate_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     # Maximum energy discharge in each time slice
     max_discharge = (
-        M.V_Capacity[r, p, t, v]
-        * value(M.CapacityToActivity[r, t])
-        * value(M.SegFrac[p, s, d])
+        M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
 
     # Energy discharge cannot exceed the capacity of the storage unit
@@ -1890,16 +1938,15 @@ def StorageThroughput_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     )
 
     charge = sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o] * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        M.V_FlowIn[r, p, s, d, S_i, t, v, S_o]
+        * get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
     throughput = charge + discharge
     max_throughput = (
-        M.V_Capacity[r, p, t, v]
-        * value(M.CapacityToActivity[r, t])
-        * value(M.SegFrac[p, s, d])
+        M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[p, s, d])
     )
     expr = throughput <= max_throughput
     return expr
@@ -1940,15 +1987,19 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
     )
 
     if M.isSeasonalStorage[t]:
-        s_seq = s # sequential season
-        s = M.sequential_to_season[p, s_seq] # non-sequential season
+        s_seq = s  # sequential season
+        s = M.sequential_to_season[p, s_seq]  # non-sequential season
 
     # adjust the storage level to the individual-day level
-    energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod))
+    energy_level = M.V_StorageLevel[r, p, s, d, t, v] / (
+        value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+    )
 
     if M.isSeasonalStorage[t]:
         # seasonal storage upper energy limit is absolute
-        energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(M.TimeSeasonSequential[p, s_seq, s])
+        energy_level = M.V_SeasonalStorageLevel[r, p, s_seq, t, v] + energy_level * value(
+            M.TimeSeasonSequential[p, s_seq, s]
+        )
 
     expr = operator_expression(energy_level, op, energy_limit)
 
@@ -1965,13 +2016,13 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     The ramp rate constraint is utilized to limit the rate of electricity generation
     increase and decrease between two adjacent time slices in order to account for
-    physical limits associated with thermal power plants. This constraint is only 
-    applied to technologies in the set :code:`tech_upramping`. We assume for 
+    physical limits associated with thermal power plants. This constraint is only
+    applied to technologies in the set :code:`tech_upramping`. We assume for
     simplicity the rate limits do not vary with technology vintage. The ramp rate
     limits for a technology should be expressed in percentage of its rated capacity
     per hour.
 
-    In a representative periods or seasonal time slices model, the next time slice, 
+    In a representative periods or seasonal time slices model, the next time slice,
     :math:`(s_{next},d_{next})`, from the end of each season, :math:`(s,d_{last})`
     is the beginning of the same season, :math:`(s,d_{first})`
 
@@ -2012,34 +2063,44 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
 
-    hourly_activity_sd = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd = (
+        sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
-    hourly_activity_sd_next = sum(
-        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd_next = (
+        sum(
+            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = 24 / 2 * (
-        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    hours_elapsed = (
+        24
+        / 2
+        * (
+            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+        )
     )
     ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
-            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
+    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_increase <= rampable_activity
 
@@ -2077,34 +2138,44 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
 
-    hourly_activity_sd = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd = (
+        sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
-    hourly_activity_sd_next = sum(
-        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd_next = (
+        sum(
+            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = 24 / 2 * (
-        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    hours_elapsed = (
+        24
+        / 2
+        * (
+            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+        )
     )
     ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
-            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
+    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_decrease <= rampable_activity
 
@@ -2113,10 +2184,10 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
 def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
-    Constrains the ramp up rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampUpDay but only applies to the boundary 
+    Constrains the ramp up rate of activity between time slices at the boundary
+    of sequential seasons. Same as RampUpDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
-    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     TimeSeason table.
     """
 
@@ -2126,46 +2197,56 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
 
-    hourly_activity_sd = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd = (
+        sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
-    hourly_activity_sd_next = sum(
-        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd_next = (
+        sum(
+            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = 24 / 2 * (
-        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    hours_elapsed = (
+        24
+        / 2
+        * (
+            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+        )
     )
     ramp_fraction = hours_elapsed * value(M.RampUpHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
-            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd # opposite sign from rampdown
+    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_increase <= rampable_activity
-    
+
     return expr
 
 
 def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     r"""
-    Constrains the ramp down rate of activity between time slices at the boundary 
-    of sequential seasons. Same as RampDownDay but only applies to the boundary 
+    Constrains the ramp down rate of activity between time slices at the boundary
+    of sequential seasons. Same as RampDownDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
-    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the 
+    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     TimeSeason table.
     """
 
@@ -2175,42 +2256,51 @@ def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     # How many hours does this time slice represent
     hours_adjust = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
 
-    hourly_activity_sd = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd = (
+        sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
-    hourly_activity_sd_next = sum(
-        M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    ) / hours_adjust
+    hourly_activity_sd_next = (
+        sum(
+            M.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+        / hours_adjust
+    )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = 24 / 2 * (
-        value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
-        + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+    hours_elapsed = (
+        24
+        / 2
+        * (
+            value(M.SegFrac[p, s, d]) / value(M.SegFracPerSeason[p, s])
+            + value(M.SegFrac[p, s_next, d_next]) / value(M.SegFracPerSeason[p, s_next])
+        )
     )
     ramp_fraction = hours_elapsed * value(M.RampDownHourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
-            "Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). "
-            f"Should be less than {1/hours_elapsed:.4f}. Constraint skipped."
+            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
         return Constraint.Skip
 
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next # opposite sign from rampup
+    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = ramp_fraction * M.V_Capacity[r, p, t, v] * value(M.CapacityToActivity[r, t])
     expr = activity_decrease <= rampable_activity
-    
+
     return expr
 
 
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
-    
     # Get available generation in this time slice depending on method specified in config file
     match M.ReserveMarginMethod.first():
         case 'static':
@@ -2314,7 +2404,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
             &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
             &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
             &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}  \right]  \cdot (1 + PRM_r)\\
-            
+
             \\
             &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall r_i \in R
     """
@@ -2367,7 +2457,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
 
 def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     r"""
-    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values 
+    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
     are calculated from availability of generation in each hour—like an operating reserve margin—\
     accounting for a capacity derate factor subtracting, for example, forced outage due to icing.
 
@@ -2426,16 +2516,14 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     # Storage
     # Derated net output flow
     available += sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, o]
-        * value(M.ReserveCapacityDerate[r, p, s, t, v])
+        M.V_FlowOut[r, p, s, d, i, t, v, o] * value(M.ReserveCapacityDerate[r, p, s, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
         for i in M.processInputs[r, p, t, v]
         for o in M.processOutputsByInput[r, p, t, v, i]
     )
     available -= sum(
-        M.V_FlowIn[r, p, s, d, i, t, v, o]
-        * value(M.ReserveCapacityDerate[r, p, s, t, v])
+        M.V_FlowIn[r, p, s, d, i, t, v, o] * value(M.ReserveCapacityDerate[r, p, s, t, v])
         for (t, v) in M.processReservePeriods[r, p]
         if t in M.tech_storage
         for i in M.processInputs[r, p, t, v]
@@ -2550,8 +2638,7 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
     )
 
     retirement_emissions = sum(
-        M.V_AnnualRetirement[reg, p, t, v]
-        * value(M.EmissionEndOfLife[reg, e, t, v])
+        M.V_AnnualRetirement[reg, p, t, v] * value(M.EmissionEndOfLife[reg, e, t, v])
         for reg in regions
         for (S_r, S_e, t, v) in M.EmissionEndOfLife.sparse_iterkeys()
         if (r, t, v) in M.retirementPeriods and p in M.retirementPeriods[r, t, v]
@@ -2568,13 +2655,11 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
-        msg = (
-            "Warning: No technology produces emission '%s', though limit was " 'specified as %s.\n'
-        )
+        msg = "Warning: No technology produces emission '%s', though limit was specified as %s.\n"
         logger.warning(msg, (e, emission_limit))
         SE.write(msg % (e, emission_limit))
         return Constraint.Skip
-    
+
     return expr
 
 
@@ -2582,21 +2667,23 @@ def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, False)
 
+
 def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, True)
 
+
 def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
-    Constrain the change of capacity available between periods. 
-    Forces the model to ramp up and down the availability of new technologies 
+    Constrain the change of capacity available between periods.
+    Forces the model to ramp up and down the availability of new technologies
     more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
     (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
     instead of one technology, in which case, capacity available is summed over
     all technologies in the group. In the first period, previous available
-    capacity :math:`\mathbf{CAPAVL}_{r,p,t}` is replaced by previous existing 
+    capacity :math:`\mathbf{CAPAVL}_{r,p,t}` is replaced by previous existing
     capacity, if any can be found.
-    
+
     .. math::
         :label: Limit (De)Growth Capacity
 
@@ -2606,7 +2693,7 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
             \end{aligned}
 
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
-            
+
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{CAPAVL}_{r,p_{prev},t}
@@ -2634,27 +2721,29 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
             msg = (
                 'Tried to set {}rowthCapacity constraint {} but there are no periods where this '
                 'technology is available in this region. Constraint skipped.'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
         return Constraint.Skip
-    
+
     # Only warn in p0 so we dont dump multiple warnings
     if p == periods[0]:
         if SEED == 0:
             msg = (
                 'No constant term (seed) provided for {}rowthCapacity constraint {}. '
                 'No capacity will be built in any period following one with zero capacity.'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.info(msg)
-        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        gaps = [
+            _p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)
+        ]
         if gaps:
             msg = (
                 'Constructing {}rowthCapacity constraint {} and there are period gaps in which'
                 'capacity cannot exist in this region ({}). Capacity in these periods '
                 'will be treated as zero which may cause infeasibility or other problems.'
-            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            ).format('Deg' if degrowth else 'G', (r, t), gaps)
             logger.warning(msg)
-    
+
     # sum available capacity in this period
     capacity = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p)
 
@@ -2663,25 +2752,21 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
         # Adjust in-line for past PLF because we are constraining available capacity
         p_prev = M.time_exist.last()
         capacity_prev = sum(
-            value(M.ExistingCapacity[_r, _t, _v]) \
-                * min( 1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_prev)/(p - p_prev) )
+            value(M.ExistingCapacity[_r, _t, _v])
+            * min(1.0, (_v + value(M.LifetimeProcess[_r, _t, _v]) - p_prev) / (p - p_prev))
             for _r, _t, _v in M.ExistingCapacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v + value(M.LifetimeProcess[_r, _t, _v]) > p_prev
         )
     else:
         # Otherwise, grab previous future period
         p_prev = M.time_optimize.prev(p)
-        capacity_prev = sum(
-            CapRPT[_r, _p, _t]
-            for _r, _p, _t in cap_rpt
-            if _p == p_prev
-        )
+        capacity_prev = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p_prev)
 
     if degrowth:
         expr = operator_expression(capacity_prev, op, SEED + capacity * RATE)
     else:
         expr = operator_expression(capacity, op, SEED + capacity_prev * RATE)
-    
+
     # Check if any variables are actually included before returning
     if isinstance(expr, bool):
         return Constraint.Skip
@@ -2692,21 +2777,23 @@ def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, False)
 
+
 def LimitDegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, True)
 
+
 def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
-    Constrain the change of new capacity deployed between periods. 
-    Forces the model to ramp up and down the deployment of new technologies 
+    Constrain the change of new capacity deployed between periods.
+    Forces the model to ramp up and down the deployment of new technologies
     more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
     (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
     instead of one technology, in which case, new capacity is summed over
     all technologies in the group. In the first period, previous new capacity
     :math:`\mathbf{NCAP}_{r,t,v_prev}` is replaced by previous existing capacity,
     if any can be found.
-    
+
     .. math::
         :label: Limit (De)Growth New Capacity
 
@@ -2715,7 +2802,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v_{prev}}
             \text{ where } v=p
             \end{aligned}
-            
+
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
 
             \begin{aligned}\text{Degrowth:}\\
@@ -2723,7 +2810,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v}
             \text{ where } v=p
             \end{aligned}
-            
+
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
@@ -2738,34 +2825,36 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     # relevant r, t, v indices
     cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV.keys() if _t in techs and _r in regions)
     # periods the technology can be built in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
+    periods = sorted(set(_v for _r, _t, _v in cap_rtv))
 
     if len(periods) == 0:
         if p == M.time_optimize.first():
             msg = (
                 'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
                 'technology can be built in this region. Constraint skipped.'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
         return Constraint.Skip
-    
+
     # Only warn in p0 so we dont dump multiple warnings
     if p == periods[0]:
         if SEED == 0:
             msg = (
                 'No constant term (seed) provided for {}rowthNewCapacity constraint {}. '
                 'No capacity will be built in any period following one with zero new capacity.'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.info(msg)
-        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        gaps = [
+            _p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)
+        ]
         if gaps:
             msg = (
                 'Constructing {}rowthNewCapacity constraint {} and there are period gaps in which'
                 'new capacity cannot be built in this region ({}). New capacity in these periods '
                 'will be treated as zero which may cause infeasibility or other problems.'
-            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            ).format('Deg' if degrowth else 'G', (r, t), gaps)
             logger.warning(msg)
-    
+
     # sum new capacity in this period
     new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
 
@@ -2780,11 +2869,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     else:
         # Otherwise, grab previous future vintage
         p_prev = M.time_optimize.prev(p)
-        new_cap_prev = sum(
-            NewCapRTV[_r, _t, _v]
-            for _r, _t, _v in cap_rtv
-            if _v == p_prev
-        )
+        new_cap_prev = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
 
     if degrowth:
         expr = operator_expression(new_cap_prev, op, SEED + new_cap * RATE)
@@ -2795,28 +2880,30 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
-    
+
 
 def LimitGrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, False)
 
+
 def LimitDegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, True)
 
+
 def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     r"""
-    Constrain the acceleration of new capacity deployed between periods. 
-    Forces the model to ramp up and down the change in deployment of new technologies 
+    Constrain the acceleration of new capacity deployed between periods.
+    Forces the model to ramp up and down the change in deployment of new technologies
     more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
-    (rate, :math:`R_{r,t}`) terms. It is recommended to leave the rate term empty 
-    as it would prevent the possibility of inflection in the rate of deployment. 
+    (rate, :math:`R_{r,t}`) terms. It is recommended to leave the rate term empty
+    as it would prevent the possibility of inflection in the rate of deployment.
     This constraint can be defined for a technology group instead of one technology,
     in which case, new capacity is summed over all technologies in the group. In the
     first period, previous new capacities are replaced by previous existing capacities,
     if any can be found.
-    
+
     .. math::
         :label: Limit (De)Growth New Capacity Delta
 
@@ -2824,18 +2911,18 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
             &\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}}
             \leq S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}})
             \end{aligned}
-            
+
             \text{ where } v_i=p
-            
+
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacityDelta}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
             \leq S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}})
             \end{aligned}
-            
+
             \text{ where } v_i=p
-            
+
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
     """
 
@@ -2850,14 +2937,14 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     # relevant r, t, v indices
     cap_rtv = set((_r, _t, _v) for _r, _t, _v in NewCapRTV.keys() if _t in techs and _r in regions)
     # periods the technology can be built in this region (sorted)
-    periods = sorted(set(_v for _r, _t, _v  in cap_rtv))
+    periods = sorted(set(_v for _r, _t, _v in cap_rtv))
 
     if len(periods) == 0:
         if p == M.time_optimize.first():
             msg = (
                 'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
                 'technology can be built in this region. Constraint skipped.'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
         return Constraint.Skip
 
@@ -2868,15 +2955,17 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
                 'No constant term (seed) provided for {}rowthNewCapacityDelta constraint {}. '
                 'This is not recommended as deployment rates cannot inflect (change from '
                 'accelerating to decelerating or vice-versa).'
-            ).format("Deg" if degrowth else "G", (r, t))
+            ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
-        gaps = [_p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)]
+        gaps = [
+            _p for _p in M.time_optimize if _p not in periods and min(periods) < _p < max(periods)
+        ]
         if gaps:
             msg = (
                 'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in which'
                 'new capacity cannot be built in this region ({}). New capacity in these periods '
                 'will be treated as zero which may cause infeasibility or other problems.'
-            ).format("Deg" if degrowth else "G", (r, t), gaps)
+            ).format('Deg' if degrowth else 'G', (r, t), gaps)
             logger.warning(msg)
 
     # sum new capacity in this period
@@ -2899,12 +2988,8 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     else:
         # Not the first future period. Grab previous future period
         p_prev = M.time_optimize.prev(p)
-        new_cap_prev = sum(
-            NewCapRTV[_r, _t, _v]
-            for _r, _t, _v in cap_rtv
-            if _v == p_prev
-        )
-        if p == M.time_optimize.at(2): # apparently pyomo sets are indexed 1-based
+        new_cap_prev = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
+        if p == M.time_optimize.at(2):  # apparently pyomo sets are indexed 1-based
             # Second future period, grab last existing vintage
             p_prev2 = M.time_exist.last()
             new_cap_prev2 = sum(
@@ -2915,11 +3000,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
         else:
             # At least the third future period. Grab last two future vintages
             p_prev2 = M.time_optimize.prev(p_prev)
-            new_cap_prev2 = sum(
-                NewCapRTV[_r, _t, _v]
-                for _r, _t, _v in cap_rtv
-                if _v == p_prev2
-            )
+            new_cap_prev2 = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
 
     nc_delta_prev = new_cap_prev - new_cap_prev2
     nc_delta = new_cap - new_cap_prev
@@ -2928,7 +3009,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
         expr = operator_expression(nc_delta_prev, op, SEED + nc_delta * RATE)
     else:
         expr = operator_expression(nc_delta, op, SEED + nc_delta_prev * RATE)
-    
+
     # Check if any variables are actually included before returning
     if isinstance(expr, bool):
         return Constraint.Skip
@@ -2966,7 +3047,8 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
 
     activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs if _t not in M.tech_annual
+        for _t in techs
+        if _t not in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, _t), [])
         for S_i in M.processInputs[_r, p, _t, S_v]
@@ -2976,7 +3058,8 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     )
     activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs if _t in M.tech_annual
+        for _t in techs
+        if _t in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, _t), [])
         for S_i in M.processInputs[_r, p, _t, S_v]
@@ -3001,17 +3084,13 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
         :label: LimitNewCapacity
 
         \textbf{NCAP}_{r, t, v} \le LNC_{r, p, t}
-        
+
         \text{where }v=p
     """
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
-    new_cap = sum(
-        M.V_NewCapacity[_r, _t, p]
-        for _t in techs
-        for _r in regions
-    )
+    new_cap = sum(M.V_NewCapacity[_r, _t, p] for _t in techs for _r in regions)
     expr = operator_expression(new_cap, op, cap_lim)
     return expr
 
@@ -3033,9 +3112,7 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     techs = gather_group_techs(M, t)
     cap_lim = value(M.LimitCapacity[r, p, t, op])
     capacity = sum(
-        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
-        for _t in techs
-        for _r in regions
+        M.V_CapacityAvailableByPeriodAndTech[_r, p, _t] for _t in techs for _r in regions
     )
     expr = operator_expression(capacity, op, cap_lim)
     return expr
@@ -3054,7 +3131,7 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
        \sum_{P,S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t \notin T^a, v, o}
 
        +\sum_{P,I,V,O} \textbf{FO}_{r, p, i, t \in T^a, v, o}
-       
+
        \le LR_{r, t}
 
        \forall \{r, t\} \in \Theta_{\text{LimitResource}}"""
@@ -3068,7 +3145,8 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
 
     activity = sum(
         M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs if _t in M.tech_annual
+        for _t in techs
+        if _t in M.tech_annual
         for p in M.time_optimize
         for _r in regions
         if (_r, p, _t) in M.processVintages
@@ -3078,7 +3156,8 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     )
     activity += sum(
         M.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs if _t not in M.tech_annual
+        for _t in techs
+        if _t not in M.tech_annual
         for p in M.time_optimize
         for _r in regions
         if (_r, p, _t) in M.processVintages
@@ -3088,7 +3167,7 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
         for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
-    
+
     resource_lim = value(M.LimitResource[r, t, op])
     expr = operator_expression(activity, op, resource_lim)
     return expr
@@ -3106,7 +3185,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_1} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
         \leq LAS_{r,p,g_1,g_2} \cdot
         \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
-        
+
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """
 
@@ -3115,7 +3194,8 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     sub_group = gather_group_techs(M, g1)
     sub_activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in sub_group if S_t not in M.tech_annual
+        for S_t in sub_group
+        if S_t not in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
@@ -3125,7 +3205,8 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
     sub_activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in sub_group if S_t in M.tech_annual
+        for S_t in sub_group
+        if S_t in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
@@ -3135,7 +3216,8 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     super_group = gather_group_techs(M, g2)
     super_activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in super_group if S_t not in M.tech_annual
+        for S_t in super_group
+        if S_t not in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
@@ -3145,7 +3227,8 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
     super_activity += sum(
         M.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in super_group if S_t in M.tech_annual
+        for S_t in super_group
+        if S_t in M.tech_annual
         for _r in regions
         for S_v in M.processVintages.get((_r, p, S_t), [])
         for S_i in M.processInputs[_r, p, S_t, S_v]
@@ -3159,7 +3242,11 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         return Constraint.Skip
     logger.debug(
         'created limit activity share constraint for (%s, %d, %s, %s) of %0.2f',
-        r, p, g1, g2, share_lim,
+        r,
+        p,
+        g1,
+        g2,
+        share_lim,
     )
     return expr
 
@@ -3238,11 +3325,11 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
         :label: LimitAnnualCapacityFactor
 
             \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
-            
+
             \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
-            
+
             \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
-            
+
             \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
@@ -3250,10 +3337,7 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all(
-        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
-        for _r in regions
-    ):
+    if all((_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech for _r in regions):
         return Constraint.Skip
 
     if t not in M.tech_annual:
@@ -3297,11 +3381,11 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
         :label: Limit Seasonal Capacity Factor
 
         \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
-        
+
         \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
-        
+
         \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
-        
+
         \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
@@ -3309,10 +3393,7 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     regions = gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all(
-        (_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech
-        for _r in regions
-    ):
+    if all((_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech for _r in regions):
         return Constraint.Skip
 
     if t not in M.tech_annual:
@@ -3360,7 +3441,8 @@ def LimitTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v, op):
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        / get_variable_efficiency(M, r, p, s, d, S_i, t, v, S_o)
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
@@ -3387,7 +3469,9 @@ def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = operator_expression(inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp)
+    expr = operator_expression(
+        inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+    )
     return expr
 
 
@@ -3401,21 +3485,25 @@ def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     the constraint only fixes the input shares over the course of a year."""
 
     inp = sum(
-        M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        M.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o]
+        / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
         for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
     total_inp = sum(
-        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o] / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
+        M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
+        / get_variable_efficiency(M, r, p, S_s, S_d, i, t, v, S_o)
         for S_s in M.TimeSeason[p]
         for S_d in M.time_of_day
         for S_i in M.processInputs[r, p, t, v]
         for S_o in M.processOutputsByInput[r, p, t, v, i]
     )
 
-    expr = operator_expression(inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp)
+    expr = operator_expression(
+        inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+    )
     return expr
 
 
@@ -3455,8 +3543,7 @@ def LimitTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o, op):
 
        \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{LimitTechOutputSplit}}"""
     out = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, v, o]
-        for S_i in M.processInputsByOutput[r, p, t, v, o]
+        M.V_FlowOut[r, p, s, d, S_i, t, v, o] for S_i in M.processInputsByOutput[r, p, t, v, o]
     )
 
     total_out = sum(
@@ -3484,8 +3571,7 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
 
             \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
     out = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, o]
-        for S_i in M.processInputsByOutput[r, p, t, v, o]
+        M.V_FlowOutAnnual[r, p, S_i, t, v, o] for S_i in M.processInputsByOutput[r, p, t, v, o]
     )
 
     total_out = sum(
@@ -3494,7 +3580,9 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = operator_expression(out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out)
+    expr = operator_expression(
+        out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+    )
     return expr
 
 
@@ -3522,11 +3610,13 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
         for S_d in M.time_of_day
     )
 
-    expr = operator_expression(out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out)
+    expr = operator_expression(
+        out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+    )
     return expr
 
 
-#@deprecated('Deprecated. Use LimitActivityGroupShare instead') # doesn't play well with pyomo
+# @deprecated('Deprecated. Use LimitActivityGroupShare instead') # doesn't play well with pyomo
 def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
     r"""
     Allows users to specify the share of electricity generation in a region
@@ -3603,7 +3693,7 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     else:
         # Remaining life years within the EOL period
         years_remaining = v + value(M.LifetimeProcess[r, t, v]) - p
-    
+
     if years_remaining >= period_length:
         # try to avoid floating point round-off errors for the common case.
         return 1
@@ -3636,11 +3726,7 @@ def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
 
 
 def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
-    return sum(
-        value(M.SegFrac[p, s, S_d])
-        for S_d in M.time_of_day
-        if (p, s, S_d) in M.SegFrac
-    )
+    return sum(value(M.SegFrac[p, s, S_d]) for S_d in M.time_of_day if (p, s, S_d) in M.SegFrac)
 
 
 def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
@@ -3666,7 +3752,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     the primary region corresponds to the linked technology as well. The lifetimes
     of the primary and linked technologies should be specified and identical.
     """
-    
+
     if t in M.tech_annual:
         primary_flow = sum(
             (
@@ -3715,21 +3801,22 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
 
     return -primary_flow == linked_flow
 
+
 def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expression | None):
     """Returns an expression, applying a configured operator"""
     if any((lhs is None, operator is None, rhs is None)):
-        msg = (
-            'Tried to build a constraint using a bad expression or operator: {} {} {}'
-        ).format(lhs, operator, rhs)
+        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
+            lhs, operator, rhs
+        )
         logger.error(msg)
         raise ValueError(msg)
     try:
         match operator:
-            case "e":
+            case 'e':
                 expr = lhs == rhs
-            case "le":
+            case 'le':
                 expr = lhs <= rhs
-            case "ge":
+            case 'ge':
                 expr = lhs >= rhs
             case _:
                 msg = (
@@ -3739,12 +3826,12 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
                 raise ValueError(msg)
     except Exception as e:
         print(e)
-        msg = (
-            'Tried to build a constraint using a bad expression or operator: {} {} {}'
-        ).format(lhs, operator, rhs)
+        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
+            lhs, operator, rhs
+        )
         logger.error(msg)
         raise ValueError(msg)
-        
+
     return expr
 
 
@@ -3753,10 +3840,13 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
 # indices directly every time - saves build time
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
     if M.isEfficiencyVariable[r, p, i, t, v, o]:
-        return value(M.Efficiency[r, i, t, v, o]) * value(M.EfficiencyVariable[r, p, s, d, i, t, v, o])
+        return value(M.Efficiency[r, i, t, v, o]) * value(
+            M.EfficiencyVariable[r, p, s, d, i, t, v, o]
+        )
     else:
         return value(M.Efficiency[r, i, t, v, o])
-    
+
+
 def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     if M.isCapacityFactorProcess[r, p, t, v]:
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
