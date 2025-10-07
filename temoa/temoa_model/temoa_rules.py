@@ -707,7 +707,7 @@ def TotalCost_rule(M):
     return sum(PeriodCost_rule(M, p) for p in M.time_optimize)
 
 
-def annuity_to_pv(rate: float, periods: int) -> float | Expression:
+def annuity_to_pv(rate: float, periods: int | float) -> float | Expression:
     r"""
     Multiplication factor to convert an annuity to net present value
 
@@ -721,7 +721,7 @@ def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     - :math:`i` is the interest/discount rate
     - :math:`N` is the number of periods
     """
-    if rate == 0:
+    if abs(rate) < 1e-9:
         return periods
     return ((1 + rate) ** periods - 1) / (rate * (1 + rate) ** periods)
 
@@ -735,7 +735,7 @@ def pv_to_annuity(rate: float, periods: int) -> float | Expression:
 
         \frac{A}{P}(i, N) = \frac{i + (1 + i)^N}{(1 + i)^N - 1}
     """
-    if rate == 0:
+    if abs(rate) < 1e-9:
         return 1 / periods
     return (rate * (1 + rate) ** periods) / ((1 + rate) ** periods - 1)
 
@@ -816,7 +816,7 @@ def loan_cost_survival_curve(
     M: 'TemoaModel',
     r: str,
     t: str,
-    v: str,
+    v: int,
     capacity: float | Var,
     invest_cost: float,
     loan_annualize: float,
@@ -890,9 +890,9 @@ def loan_cost_survival_curve(
 def fixed_or_variable_cost(
     cap_or_flow: float | Var,
     cost_factor: float,
-    cost_years: float,
+    cost_years: int,
     GDR: float | None,
-    P_0: float,
+    P_0: int,
     p: int,
 ) -> float | Expression:
     """
