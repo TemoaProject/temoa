@@ -54,6 +54,7 @@ def operator_expression(lhs: Expression, operator: Operator, rhs: Expression):
 # indices directly every time - saves build time
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
     if M.isEfficiencyVariable[r, p, i, t, v, o]:
+        # TODO: untested codepath
         return value(M.Efficiency[r, i, t, v, o]) * value(
             M.EfficiencyVariable[r, p, s, d, i, t, v, o]
         )
@@ -157,6 +158,7 @@ def _get_hourly_activity_expression(M: 'TemoaModel', r, p, s, d, t, v) -> Expres
     """Calculates the average hourly activity of a technology in a timeslice."""
     hours_in_slice = value(M.SegFrac[p, s, d]) * value(M.DaysPerPeriod) * 24
     if hours_in_slice == 0:
+        # TODO: probably should have a warning
         return 0  # Avoid division by zero for empty slices
 
     slice_activity = sum(
@@ -172,6 +174,7 @@ def _get_previous_new_capacity(M: 'TemoaModel', r_group: str, p: int, t_group: s
     Gets the new capacity from the previous period.
     Handles the special case for the first model period by looking at ExistingCapacity.
     """
+    # TODO: untested function
     regions = gather_group_regions(M, r_group)
     techs = gather_group_techs(M, t_group)
 
@@ -735,7 +738,8 @@ def fv_to_pv(rate: float, periods: int) -> float | Expression:
 
         \frac{P}{F}(i, N) = \frac{1}{(1 + i)^N}
     """
-    if rate == 0:
+    if abs(rate) < 1e-9:
+        # TODO: untested codepath
         return 1
     return 1 / (1 + rate) ** periods
 
@@ -896,6 +900,7 @@ def fixed_or_variable_cost(
     annual_cost = cap_or_flow * cost_factor  # annual fixed, variable, or emission cost
 
     if not GDR:
+        # TODO: untested codepath
         # Undiscounted result
         return annual_cost * cost_years  # annual cost times years paying that cost
     else:
@@ -1356,6 +1361,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
         )
 
     if (r, p, c) in M.capacityConsumptionTechs:
+        # TODO: untested codepath
         # Consumed by building capacity
         # Assume evenly distributed over a year
         consumed += (
@@ -1401,6 +1407,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             )
 
     if (r, p, c) in M.retirementProductionProcesses:
+        # TODO: untested codepath
         # Produced by retiring capacity
         # Assume evenly distributed over a year
         produced += value(M.SegFrac[p, s, d]) * sum(
@@ -1448,6 +1455,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     )
 
     if c in M.commodity_waste:
+        # TODO: untested codepath
         expr = produced >= consumed
     else:
         expr = produced == consumed
@@ -1524,6 +1532,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         )
 
         if c in M.commodity_flex:
+            # TODO: untested codepath
             consumed += sum(
                 M.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
                 for S_s in M.TimeSeason[p]
@@ -1549,6 +1558,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
     # export of commodity c from region r to other regions
     if (r, p, c) in M.exportRegions:
+        # TODO: untested codepath
         consumed += sum(
             M.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
             / get_variable_efficiency(M, r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o)
@@ -1566,6 +1576,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
     # import of commodity c from other regions into region r
     if (r, p, c) in M.importRegions:
+        # TODO: untested codepath
         produced += sum(
             M.V_FlowOut[S_r + '-' + r, p, S_s, S_d, S_i, S_t, S_v, c]
             for S_s in M.TimeSeason[p]
@@ -2298,6 +2309,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
         case 'static':
             available = ReserveMarginStatic(M, r, p, s, d)
         case 'dynamic':
+            # TODO: untested codepath
             available = ReserveMarginDynamic(M, r, p, s, d)
         case _:
             msg = (
@@ -2351,10 +2363,13 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
             continue
         if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
+
+        # TODO: untested codepath
         r1, r2 = r1r2.split('-')
         # First, determine the exports, and subtract this value from the
         # total generation.
         if r1 == r:
+            # TODO: untested codepath
             total_generation -= sum(
                 M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
                 / get_variable_efficiency(M, r1r2, p, s, d, S_i, t, S_v, S_o)
@@ -2365,6 +2380,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
         # Second, determine the imports, and add this value from the
         # total generation.
         elif r2 == r:
+            # TODO: untested codepath
             total_generation += sum(
                 M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
                 for (t, S_v) in M.processReservePeriods[r1r2, p]
@@ -2430,6 +2446,8 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
             continue
         if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
+
+        # TODO: untested codepath
         r1, r2 = r1r2.split('-')
 
         # Only consider the capacity of technologies that import to
@@ -2491,6 +2509,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
             &\qquad \qquad \forall \{r, p, s, d\} \in \
             \Theta_{\text{ReserveMargin}} \text{ and } \forall r_i \in R
     """
+    # TODO: untested function
     if (not M.tech_reserve) or (
         (r, p) not in M.processReservePeriods
     ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
@@ -2665,11 +2684,13 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
 
 def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of available capacity"""
+    # TODO: untested function
     return LimitGrowthCapacity(M, r, p, t, op, False)
 
 
 def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of available capacity"""
+    # TODO: untested function
     return LimitGrowthCapacity(M, r, p, t, op, True)
 
 
@@ -2702,7 +2723,7 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
-
+    # TODO: untested function
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
 
@@ -2775,11 +2796,13 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
 
 def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of new capacity deployment"""
+    # TODO: untested function
     return LimitGrowthNewCapacity(M, r, p, t, op, False)
 
 
 def LimitDegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of new capacity deployment"""
+    # TODO: untested function
     return LimitGrowthNewCapacity(M, r, p, t, op, True)
 
 
@@ -2813,7 +2836,7 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
 
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
-
+    # TODO: untested function
     growth = M.LimitDegrowthNewCapacity if degrowth else M.LimitGrowthNewCapacity
     RATE = 1 + value(growth[r, t, op][0])
     SEED = value(growth[r, t, op][1])
@@ -2879,11 +2902,13 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
 
 def LimitGrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp up rate of change in new capacity deployment"""
+    # TODO: untested function
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, False)
 
 
 def LimitDegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
     r"""Constrain ramp down rate of change in new capacity deployment"""
+    # TODO: untested function
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, True)
 
 
@@ -2920,6 +2945,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
 
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
     """  # noqa: E501
+    # TODO: untested function
 
     regions = gather_group_regions(M, r)
     techs = gather_group_techs(M, t)
@@ -3056,6 +3082,7 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
 
         \text{where }v=p
     """
+    # TODO:  untested function
     new_cap = get_total_new_capacity_expression(M, r, p, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
 
@@ -3152,7 +3179,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
 
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """  # noqa: E501
-
+    # TODO: untested function
     sub_activity = get_total_activity_expression(M, r, p, g1)
     super_activity = get_total_activity_expression(M, r, p, g2)
 
@@ -3169,7 +3196,7 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     The LimitCapacityShare constraint limits the available capacity of a given
     technology or technology group as a fraction of another technology or group.
     """
-
+    # TODO: untested function
     sub_capacity = get_total_available_capacity_expression(M, r, p, g1)
     super_capacity = get_total_available_capacity_expression(M, r, p, g2)
 
@@ -3217,6 +3244,7 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
 
             \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
     """  # noqa: E501
+    # TODO: untested function
     # r can be an individual region (r='US'), or a combination of regions separated by plus
     # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
@@ -3274,6 +3302,7 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
 
         \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
     """  # noqa: E501
+    # TODO: untested function
     # r can be an individual region (r='US'), or a combination of regions
     # separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
@@ -3457,6 +3486,8 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
             TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
             \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""  # noqa: E501
+
+    # TODO: untested function
     out = sum(
         M.V_FlowOutAnnual[r, p, S_i, t, v, o] for S_i in M.processInputsByOutput[r, p, t, v, o]
     )
@@ -3481,7 +3512,7 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     This constraint differs from LimitTechOutputSplit as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the output shares over the course of a year."""
-
+    # TODO: untested function
     out = sum(
         M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, o]
         for S_i in M.processInputsByOutput[r, p, t, v, o]
@@ -3614,6 +3645,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     """
 
     if t in M.tech_annual:
+        # TODO: untested code path
         primary_flow = sum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
@@ -3642,6 +3674,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     # )
 
     if linked_t in M.tech_annual:
+        # TODO: untested code path
         linked_flow = sum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
