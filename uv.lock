@@ -2977,6 +2977,7 @@ plotting = [
 [package.dev-dependencies]
 dev = [
     { name = "gurobipy" },
+    { name = "mypy" },
 ]
 
 [package.metadata]
@@ -3022,7 +3023,10 @@ requires-dist = [
 provides-extras = ["docs", "dev", "plotting"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "gurobipy", specifier = ">=12.0.3" }]
+dev = [
+    { name = "gurobipy", specifier = ">=12.0.3" },
+    { name = "mypy", specifier = ">=1.17.0" },
+]
 
 [[package]]
 name = "terminado"

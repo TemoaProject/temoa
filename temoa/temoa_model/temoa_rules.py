@@ -2,21 +2,7 @@
 Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
+SPDX-License-Identifier: MIT
 """
 
 from enum import Enum
@@ -1610,48 +1596,49 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 
 
 # Devnote: Not currently active
-def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
-    r"""
-    The ResourceExtraction constraint allows a modeler to specify an annual limit on
-    the amount of a particular resource Temoa may use in a period. The first version
-    of the constraint pertains to technologies with variable output at the time slice
-    level, and the second version pertains to technologies with constant annual output
-    belonging to the :code:`tech_annual` set.
+# def ResourceExtraction_Constraint(M: 'TemoaModel', reg, p, r):
+#     r"""
+#     The ResourceExtraction constraint allows a modeler to specify an annual limit on
+#     the amount of a particular resource Temoa may use in a period. The first version
+#     of the constraint pertains to technologies with variable output at the time slice
+#     level, and the second version pertains to technologies with constant annual output
+#     belonging to the :code:`tech_annual` set.
 
-    .. math::
-       :label: ResourceExtraction
+#     .. math::
+#        :label: ResourceExtraction
 
-       \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V} \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{S, D, I, t \in T^r \& t \not \in T^{a}, V}
+#        \textbf{FO}_{r, p, s, d, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
 
-       \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
+#        \sum_{I, t \in T^r \& t \in T^{a}, V} \textbf{FOA}_{r, p, i, t, v, c} \le RSC_{r, p, c}
 
-       \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
-    """  # noqa: E501
-    logger.warning(
-        'The ResourceBound parameter / ResourceExtraction constraint is not currently supported.  '
-        'Recommend removing data from supporting table'
-    )
-    # dev note:  This constraint does not have a table in the current schema
-    #            Additionally, the below (incorrect) construct assumes that a resource cannot be
-    #            used by BOTH a non-annual and annual tech.  It should be re-written to add these
-    # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
-    try:
-        collected = sum(
-            M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r]  # is r the input or the output!?
-            for S_i, S_t, S_v in M.processByPeriodAndOutput
-            for S_s in M.TimeSeason[p]
-            for S_d in M.time_of_day
-        )
-    except KeyError:
-        collected = sum(
-            M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
-            for S_i, S_t, S_v in M.processByPeriodAndOutput
-        )
+#        \forall \{r, p, c\} \in \Theta_{\text{ResourceExtraction}}
+#     """  # noqa: E501
+#     logger.warning(
+#         'The ResourceBound parameter / ResourceExtraction constraint is not currently supported. '
+#         'Recommend removing data from supporting table'
+#     )
+#     # dev note:  This constraint does not have a table in the current schema
+#     #            Additionally, the below (incorrect) construct assumes that a resource cannot be
+#     #            used by BOTH a non-annual and annual tech.  It should be re-written to add these
+#     # dev note:  Cant think of a case where this would be needed but cant use LimitActivityGroup
+#     try:
+#         collected = sum(
+#             M.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, r]  # is r the input or the output!?
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput
+#             for S_s in M.TimeSeason[p]
+#             for S_d in M.time_of_day
+#         )
+#     except KeyError:
+#         collected = sum(
+#             M.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, r]
+#             for S_i, S_t, S_v in M.processByPeriodAndOutput
+#         )
 
-    expr = collected <= value(M.ResourceBound[reg, p, r])
-    return expr
+#     expr = collected <= value(M.ResourceBound[reg, p, r])
+#     return expr
 
 
 def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -3550,17 +3537,6 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
     return expr
 
 
-# ---------------------------------------------------------------
-# Define rule-based parameters
-# ---------------------------------------------------------------
-# devnote: MPL no longer used. Instead, use adjusted capacity * period length
-# def ParamModelProcessLife_rule(M: 'TemoaModel', r, p, t, v):
-#     life_length = value(M.LifetimeProcess[r, t, v])
-#     mpl = min(v + life_length - p, value(M.PeriodLength[p]))
-
-#     return mpl
-
-
 def ParamPeriodLength(M: 'TemoaModel', p):
     # This specifically does not use time_optimize because this function is
     # called /over/ time_optimize.
@@ -3600,23 +3576,6 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
 
     frac = years_remaining / float(period_length)
     return frac
-
-
-# devnote: made redundant by time-value equations for objective function
-# def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
-#     """
-#     This calculation is broken out specifically so that it can be used for param creation
-#     and separately to calculate loan costs rather than rely on fully-built model parameters
-#     :param loan_rate:
-#     :param loan_life:
-
-#     """
-#     if not loan_rate:
-#         # dev note:  this should not be needed as the LoanRate param has a default
-#         (see the definition)
-#         return 1.0 / loan_life
-#     annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
-#     return annualized_rate
 
 
 def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
