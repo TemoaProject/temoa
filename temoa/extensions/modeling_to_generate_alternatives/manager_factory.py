@@ -25,14 +25,15 @@ https://westernspark.us
 Created on:  4/16/24
 
 """
+
 import sqlite3
 
+from temoa.core.model import TemoaModel
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
 from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_manager import (
     TechActivityVectorManager,
 )
 from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
-from temoa.temoa_model.temoa_model import TemoaModel
 
 
 def get_manager(

@@ -28,23 +28,24 @@ Single-Vector MGA is a 2-stage solve process to look at an alternative solution 
 The "single vector" distinguishes it from "regular" MGA in that this only uses 1 extra solve to look
 in one particular vector direction, characterized by keywords from an associated config file
 """
+
 import logging
 import sqlite3
 import sys
 from collections.abc import Iterable
 
-from pyomo.core import value, Constraint, Expression, Objective
+from pyomo.core import Constraint, Expression, Objective, value
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
+from temoa._internal.hybrid_loader import HybridLoader
+from temoa._internal.run_actions import build_instance, handle_results, save_lp, solve_instance
+from temoa._internal.table_writer import TableWriter
+from temoa._internal.temoa_rules import TotalCost_rule
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
 from temoa.extensions.single_vector_mga.output_summary import summarize
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.model_checking.pricing_check import price_checker
-from temoa.temoa_model.run_actions import build_instance, solve_instance, handle_results, save_lp
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_model import TemoaModel
-from temoa.temoa_model.temoa_rules import TotalCost_rule
+from temoa.model_checking.pricing_check import price_checker
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +199,9 @@ class SvMgaSequencer:
         for membership later
         """
         r, _, i, t, v, o = reitvo
-        psd_set = [(p, s, d) for p in M.time_optimize for s in M.TimeSeason[p] for d in M.time_of_day]
+        psd_set = [
+            (p, s, d) for p in M.time_optimize for s in M.TimeSeason[p] for d in M.time_of_day
+        ]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
         annual_flow_idxs = [(r, p, i, t, v, o) for p in M.time_optimize]
 

@@ -32,6 +32,7 @@ that it is a separate class.  In future, it may make sense to re-combine these. 
 ingest DataPortal objects to make new models.  The MGA will (in future) likely just take in new obj functions
 
 """
+
 import logging.handlers
 from datetime import datetime
 from logging import getLogger
@@ -41,8 +42,8 @@ from pathlib import Path
 from pyomo.dataportal import DataPortal
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
-from temoa.temoa_model.data_brick import DataBrick, data_brick_factory
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa._internal.data_brick import DataBrick, data_brick_factory
+from temoa.core.model import TemoaModel
 
 verbose = False  # for T/S or monitoring...
 

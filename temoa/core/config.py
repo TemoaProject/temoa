@@ -24,7 +24,7 @@ from logging import getLogger
 from pathlib import Path
 from sys import stderr as SE
 
-from temoa.temoa_model.temoa_mode import TemoaMode
+from temoa.core.modes import TemoaMode
 
 logger = getLogger(__name__)
 

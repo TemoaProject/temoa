@@ -8,14 +8,10 @@ Created on:  12/29/23
 """
 
 import logging
-import pathlib
 
 import pytest
 
-from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_model import TemoaModel
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa.core.model import TemoaModel
 
 logger = logging.getLogger(__name__)
 # suitable scenarios for storage testing....singleton for now.
@@ -43,19 +39,19 @@ def test_storage_fraction(system_test_run):
     )
 
     for r, p, s, d, t, v, op in model.LimitStorageFractionConstraint_rpsdtv:
-
         energy = (
             model.LimitStorageFraction[r, p, s, d, t, v, op]
             * model.V_Capacity[r, p, t, v].value
             * model.CapacityToActivity[r, t]
             * (model.StorageDuration[r, t] / 8760)
-            * model.SegFracPerSeason[p, s] * model.DaysPerPeriod
+            * model.SegFracPerSeason[p, s]
+            * model.DaysPerPeriod
             * model.ProcessLifeFrac[r, p, t, v]
         )
 
-        assert model.V_StorageLevel[r, p, s, d, t, v].value == pytest.approx(
-            energy, abs=1e-5
-        ), f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
+        assert model.V_StorageLevel[r, p, s, d, t, v].value == pytest.approx(energy, abs=1e-5), (
+            f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
+        )
 
 
 @pytest.mark.parametrize(
@@ -74,9 +70,8 @@ def test_state_sequencing(system_test_run):
     assert len(model.StorageLevel_rpsdtv) > 0, (
         'This model does not appear to have any available storage components'
     )
-    
-    for r, p, s, d, t, v in model.StorageLevel_rpsdtv:
 
+    for r, p, s, d, t, v in model.StorageLevel_rpsdtv:
         charge = sum(
             model.V_FlowIn[r, p, s, d, S_i, t, v, S_o].value * model.Efficiency[r, S_i, t, v, S_o]
             for S_i in model.processInputs[r, p, t, v]
@@ -92,10 +87,10 @@ def test_state_sequencing(system_test_run):
 
         state = model.V_StorageLevel[r, p, s, d, t, v].value
         next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value
-    
-        assert state + charge - discharge == pytest.approx(
-           next_state, abs=1e-5
-        ), f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
+
+        assert state + charge - discharge == pytest.approx(next_state, abs=1e-5), (
+            f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
+        )
 
 
 @pytest.mark.parametrize(
@@ -112,7 +107,7 @@ def test_storage_flow_balance(system_test_run):
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
     assert len(model.StorageLevel_rpsdtv) > 0, (
-        'This model does not appear to have' 'any available storage components'
+        'This model does not appear to haveany available storage components'
     )
     for s_tech in model.tech_storage:
         inflow_indices = {
@@ -133,11 +128,11 @@ def test_storage_flow_balance(system_test_run):
             for (r, p, s, d, i, t, v, o) in inflow_indices
         )
         outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
-        
-        assert inflow == pytest.approx(
-            outflow, abs=1e-5
-        ), (f'total inflow and outflow of storage tech {s_tech} do not match',
-            ' - there is a discontinuity of storage states')
+
+        assert inflow == pytest.approx(outflow, abs=1e-5), (
+            f'total inflow and outflow of storage tech {s_tech} do not match',
+            ' - there is a discontinuity of storage states',
+        )
 
 
 # devnote: the StorageInit constraint was reworked into LimitStorageLevelFraction

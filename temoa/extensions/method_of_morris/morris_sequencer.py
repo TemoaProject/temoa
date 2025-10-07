@@ -31,6 +31,7 @@ An event sequencer to control the flow of a Method of Morris calculation.  This 
 the joblib library
 
 """
+
 import csv
 import logging
 import multiprocessing
@@ -40,17 +41,17 @@ import tomllib
 from logging.handlers import QueueListener
 from pathlib import Path
 
-from SALib.analyze import morris
-from SALib.sample.morris import sample
-from SALib.util import read_param_file, compute_groups_matrix
 from joblib import Parallel, delayed
 from numpy import array
+from SALib.analyze import morris
+from SALib.sample.morris import sample
+from SALib.util import compute_groups_matrix, read_param_file
 
 from definitions import PROJECT_ROOT, get_OUTPUT_PATH
+from temoa._internal.hybrid_loader import HybridLoader
+from temoa._internal.table_writer import TableWriter
+from temoa.core.config import TemoaConfig
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
 
 logger = logging.getLogger(__name__)
 

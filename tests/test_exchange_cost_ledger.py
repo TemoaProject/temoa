@@ -28,7 +28,7 @@ Created on:  3/3/24
 
 import pytest
 
-from temoa.temoa_model.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
+from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from tests.utilities.namespace_mock import Namespace
 
 # these are the necessary Temoa elements to make the ledger work
@@ -100,13 +100,13 @@ def test_cost_allocation(fake_model, costs):
 
     # test for ratio...
     ratio = ledger.get_use_ratio('A', 'B', 2000, 't1', 2000)
-    assert ratio == pytest.approx(
-        costs['B_ratio']
-    ), 'B should get 60% of cost as it receives 60% of flow'
+    assert ratio == pytest.approx(costs['B_ratio']), (
+        'B should get 60% of cost as it receives 60% of flow'
+    )
     ratio = ledger.get_use_ratio('B', 'A', 2000, 't1', 2000)
-    assert ratio == pytest.approx(
-        costs['A_ratio']
-    ), 'A should get 40% of cost as it receives 40% of flow'
+    assert ratio == pytest.approx(costs['A_ratio']), (
+        'A should get 40% of cost as it receives 40% of flow'
+    )
 
     # test the outpt cost entries...
     entries = ledger.get_entries()

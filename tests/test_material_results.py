@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa._internal.temoa_sequencer import TemoaSequencer
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,13 @@ def solved_connection(request, tmp_path_factory):
     sequencer.start()
     # make connection here as in your code...
     con = sqlite3.connect(sequencer.config.output_database)
-    yield con, request.param['name'], request.param['tech'], request.param['period'], request.param['target']
+    yield (
+        con,
+        request.param['name'],
+        request.param['tech'],
+        request.param['period'],
+        request.param['target'],
+    )
     con.close()
 
 
@@ -65,6 +71,7 @@ def solved_connection(request, tmp_path_factory):
 flow_tests = [
     {'name': 'lithium import', 'tech': 'IMPORT_LI', 'period': 2000, 'target': 0.129291623},
 ]
+
 
 # Flows
 @pytest.mark.parametrize(
@@ -80,10 +87,12 @@ def test_flows(solved_connection):
     con, name, tech, period, flow_target = solved_connection
     flow = (
         con.cursor()
-        .execute(f"SELECT SUM(flow) FROM main.OutputFlowOut WHERE tech == '{tech}' AND period == {period}")
+        .execute(
+            f"SELECT SUM(flow) FROM main.OutputFlowOut WHERE tech == '{tech}' AND period == {period}"
+        )
         .fetchone()[0]
     )
     assert flow == pytest.approx(
         flow_target,
-        rel=1E-5,
+        rel=1e-5,
     ), f'{name} flows were incorrect. Should be {flow_target}, got {flow}'

@@ -25,18 +25,19 @@ Created on:  2025/03/14
 Transition a v3.0 database to a v3.1 database.
 """
 
-import os
-import sys
 import argparse
+import os
 import sqlite3
-import pandas as pd
+import sys
 from pathlib import Path
+
+import pandas as pd
 
 # Just to get the default lifetime...
 this_dir = os.path.dirname(__file__)
 root_dir = os.path.abspath(os.path.join(this_dir, '../..'))
 sys.path.append(root_dir)
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.core.model import TemoaModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -72,6 +73,7 @@ con_new.executescript(sql_script)
 # turn off FK verification while process executes
 con_new.execute('PRAGMA foreign_keys = 0;')
 
+
 def column_check(old_name: str, new_name: str) -> bool:
     if old_name == '':
         old_name = new_name
@@ -84,15 +86,16 @@ def column_check(old_name: str, new_name: str) -> bool:
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
 
-    missing = [c for c in new_columns if c not in old_columns and c not in ('period','notes')]
+    missing = [c for c in new_columns if c not in old_columns and c not in ('period', 'notes')]
     if len(missing) > 0:
         msg = (
             f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
             f'\n{missing}\n'
-            )
+        )
         print(msg)
         return False
     return True
+
 
 # table mapping for DIRECT transfers
 # fmt: off
@@ -273,7 +276,7 @@ for old_name, new_name in period_added_tables:
     except sqlite3.OperationalError:
         print('TABLE NOT FOUND: ' + old_name)
         continue
-    
+
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     cols = [c for c in new_columns if c in old_columns]
@@ -282,7 +285,7 @@ for old_name, new_name in period_added_tables:
     if len(data) == 0:
         print('No data for: ' + old_name)
         continue
-    
+
     # This insanity collects the viable periods for each table
     if 'vintage' in cols:
         data['periods'] = [
@@ -312,7 +315,7 @@ for old_name, new_name in period_added_tables:
         ]
     else:
         data['periods'] = [time_optimize for i in data.index]
-        
+
     data_new = []
     for p in time_optimize:
         for _idx, row in data.iterrows():
@@ -376,7 +379,7 @@ else:
         vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE region=="{row[0]}" AND tech="{row[1]}"').fetchall()]
         for v in vints:
             new_data.append((row[0], row[1], v, row[2], row[3]))
-    query = f'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
+    query = 'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
     con_new.executemany(query, new_data)
     print(f'Transfered {len(new_data)} rows from LifetimeLoanTech to LifetimeLoanProcess')
 
@@ -385,7 +388,7 @@ else:
 print('\n --- The following transfers were impossible due to incompatible changes. Transfer manually. ---')
 for old_name, new_name in no_transfer.items():
     print(f'{old_name} to {new_name}')
-    
+
 
 print('\n --- Updating MetaData ---')
 cur.execute("DELETE FROM MetaData WHERE element == 'myopic_base_year'")

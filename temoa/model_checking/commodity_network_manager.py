@@ -34,11 +34,11 @@ from collections import defaultdict
 from logging import getLogger
 from typing import Iterable
 
-from temoa.temoa_model.model_checking.commodity_graph import generate_graph
-from temoa.temoa_model.model_checking.commodity_network import CommodityNetwork
-from temoa.temoa_model.model_checking.element_checker import ViableSet
-from temoa.temoa_model.model_checking.network_model_data import NetworkModelData, Tech
-from temoa.temoa_model.temoa_config import TemoaConfig
+from temoa.core.config import TemoaConfig
+from temoa.model_checking.commodity_graph import generate_graph
+from temoa.model_checking.commodity_network import CommodityNetwork
+from temoa.model_checking.element_checker import ViableSet
+from temoa.model_checking.network_model_data import NetworkModelData, Tech
 
 logger = getLogger(__name__)
 

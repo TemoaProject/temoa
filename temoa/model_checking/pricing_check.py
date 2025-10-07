@@ -43,10 +43,11 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from collections import defaultdict
 from logging import getLogger
 from typing import TYPE_CHECKING
+
 from pyomo.environ import value
 
 if TYPE_CHECKING:
-    from temoa.temoa_model.temoa_model import TemoaModel
+    from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
 

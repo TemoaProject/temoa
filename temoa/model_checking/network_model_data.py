@@ -34,13 +34,13 @@ import logging
 import sqlite3
 from collections import defaultdict, namedtuple
 from itertools import chain
-from typing import Self, Any
+from typing import Any, Self
 
 import deprecated
 from pyomo.core import ConcreteModel
 
+from temoa.core.model import TemoaModel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
-from temoa.temoa_model.temoa_model import TemoaModel
 
 Tech = namedtuple('Tech', ['region', 'ic', 'name', 'vintage', 'oc'])
 LinkedTech = namedtuple('LinkedTech', ['region', 'driver', 'emission', 'driven'])
@@ -58,7 +58,9 @@ class NetworkModelData:
         self.waste_commodities: set[str] = kwargs.get('waste_commodities')
         self.capacity_commodities: set[str] = kwargs.get('capacity_commodities')
         self.exchange_commodities: set[str] = kwargs.get('exchange_commodities')
-        self.source_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get('source_commodities')
+        self.source_commodities: dict[tuple[str, int | str], set[str]] = kwargs.get(
+            'source_commodities'
+        )
         self.physical_commodities: set[str] = kwargs.get('all_commodities')
         # dict of (region, period): {Tech}
         self._available_techs: dict[tuple[str, int | str], set[Tech]] = kwargs.get(
@@ -190,9 +192,11 @@ def _build_from_db(
         pass
     raw = cur.execute('SELECT period FROM TimePeriod').fetchall()
     periods = [p[0] for p in sorted(raw)]
-    period_length = {periods[i]: periods[i+1] - periods[i] for i in range(len(periods)-1)}
+    period_length = {periods[i]: periods[i + 1] - periods[i] for i in range(len(periods) - 1)}
     periods = periods[:-1]
-    raw = cur.execute("SELECT name FROM main.Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'").fetchall()
+    raw = cur.execute(
+        "SELECT name FROM main.Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'"
+    ).fetchall()
     res.physical_commodities = {c[0] for c in raw}
     res.capacity_commodities = set()
     res.exchange_commodities = set()
@@ -243,7 +247,7 @@ def _build_from_db(
     raw = cur.execute(query).fetchall()
     # need to exclude the final year which is a non-demand year and should have no tech data
     # This ensures that the periods in this will match the periods in the hybrid loader.
-    
+
     # filter further if myopic
     if myopic_index:
         periods = {
@@ -258,8 +262,8 @@ def _build_from_db(
             if v <= p < v + lifetime:
                 if '-' in r:
                     r1, r2 = r.split('-')
-                    source = f"{ic} ({r1})"
-                    destination = f"{oc} ({r2})"
+                    source = f'{ic} ({r1})'
+                    destination = f'{oc} ({r2})'
                     techs[r2, p].add(Tech(r2, source, tech, v, oc))
                     techs[r1, p].add(Tech(r1, ic, tech, v, destination))
                     techs[r, p].add(Tech(r, ic, tech, v, oc))
@@ -278,17 +282,20 @@ def _build_from_db(
                         waste_dict[r, p].add(oc)
 
             # End of life output
-            if any((
-                p <= v+lifetime < p + period_length[p], # natural eol this period
-                tech in tech_retire and v < p <= v+lifetime - period_length[p], # allowed early retirement
-                tech in tech_survival_curve and v <= p <= v+lifetime
-            )):
+            if any(
+                (
+                    p <= v + lifetime < p + period_length[p],  # natural eol this period
+                    tech in tech_retire
+                    and v < p <= v + lifetime - period_length[p],  # allowed early retirement
+                    tech in tech_survival_curve and v <= p <= v + lifetime,
+                )
+            ):
                 try:
                     raw_eol = cur.execute(
                         'SELECT region, tech, vintage, output_comm FROM EndOfLifeOutput '
                         f' WHERE region == "{r}" AND tech == "{tech}" AND vintage == {v}'
                     ).fetchall()
-                    
+
                     for _r, _tech, _v, _oc in raw_eol:
                         techs[_r, p].add(Tech(_r, _tech, 'EndOfLife', _v, _oc))
                         source_dict[_r, p].add(_tech)
@@ -302,7 +309,9 @@ def _build_from_db(
 
     # Construction input
     try:
-        raw = cur.execute('SELECT region, input_comm, tech, vintage FROM ConstructionInput').fetchall()
+        raw = cur.execute(
+            'SELECT region, input_comm, tech, vintage FROM ConstructionInput'
+        ).fetchall()
         for r, ic, tech, v in raw:
             techs[r, v].add(Tech(r, ic, 'Construction', v, tech))
             demand_dict[r, v].add(tech)

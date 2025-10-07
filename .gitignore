@@ -21,6 +21,7 @@
 !CONTRIBUTING.md
 !.pre-commit-config.yaml
 !.coderabbit.yaml
+!FEATURE_BRANCH.md
 
 # recursively re-ignore
 __pycache__

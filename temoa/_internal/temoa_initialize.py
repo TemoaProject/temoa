@@ -18,8 +18,9 @@ A complete copy of the GNU General Public License v2 (GPLv2) is available
 in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
-from collections import defaultdict
-from itertools import product as cross_product, product
+
+from itertools import product as cross_product
+
 from operator import itemgetter as iget
 from sys import stderr as SE
 from typing import TYPE_CHECKING, Iterable
@@ -28,13 +29,12 @@ from deprecated import deprecated
 from pyomo.core import Set
 
 if TYPE_CHECKING:
-    from temoa.temoa_model.temoa_model import TemoaModel
+    from temoa.core.model import TemoaModel
 
-from io import StringIO
-
-from pyomo.environ import value
 
 from logging import getLogger
+
+from pyomo.environ import value
 
 logger = getLogger(__name__)
 
@@ -72,7 +72,7 @@ def CommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, s, d, c):
     if isinstance(supplied, int) or isinstance(demanded, int):
         expr = str(supplied == demanded)
         msg = (
-            "Unable to balance commodity {} in ({}, {}, {}, {}).\n"
+            'Unable to balance commodity {} in ({}, {}, {}, {}).\n'
             'No flows on one side of constraint expression:\n'
             '   {}\n'
             'Possible reasons:\n'
@@ -93,7 +93,7 @@ def AnnualCommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, c):
     if isinstance(supplied, int) or isinstance(demanded, int):
         expr = str(supplied == demanded)
         msg = (
-            "Unable to balance annual commodity {} in ({}, {}).\n"
+            'Unable to balance annual commodity {} in ({}, {}).\n'
             'No flows on one side of constraint expression:\n'
             '   {}\n'
             'Possible reasons:\n'
@@ -136,7 +136,7 @@ def validate_time(M: 'TemoaModel'):
         if isinstance(year, int):
             continue
 
-        msg = f'Set "time_exist" requires integer-only elements.\n\n  ' f'Invalid element: "{year}"'
+        msg = f'Set "time_exist" requires integer-only elements.\n\n  Invalid element: "{year}"'
         logger.error(msg)
         raise Exception(msg)
 
@@ -144,7 +144,7 @@ def validate_time(M: 'TemoaModel'):
         if isinstance(year, int):
             continue
 
-        msg = f'Set "time_future" requires integer-only elements.\n\n ' f'invalid element: "{year}"'
+        msg = f'Set "time_future" requires integer-only elements.\n\n invalid element: "{year}"'
         logger.error(msg)
         raise Exception(msg)
 
@@ -180,17 +180,8 @@ def validate_SegFrac(M: 'TemoaModel'):
     """Ensure that the segment fractions adds up to 1"""
 
     for p in M.time_optimize:
-
-        expected_keys = set(
-            (p, s, d)
-            for s in M.TimeSeason[p]
-            for d in M.time_of_day
-        )
-        keys = set(
-            (_p, s, d)
-            for _p, s, d in M.SegFrac.sparse_iterkeys()
-            if _p == p
-        )
+        expected_keys = set((p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day)
+        keys = set((_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p)
 
         if expected_keys != keys:
             extra = keys.difference(expected_keys)
@@ -203,10 +194,7 @@ def validate_SegFrac(M: 'TemoaModel'):
             logger.error(msg)
             raise ValueError(msg)
 
-        total = sum(
-            M.SegFrac[k]
-            for k in keys
-        )
+        total = sum(M.SegFrac[k] for k in keys)
 
         if abs(float(total) - 1.0) > 0.001:
             # We can't explicitly test for "!= 1.0" because of incremental rounding
@@ -228,7 +216,7 @@ def validate_SegFrac(M: 'TemoaModel'):
             ).format(p, items, total)
             logger.error(msg)
             raise Exception(msg)
-        
+
 
 def validate_TimeNext(M: 'TemoaModel'):
     """
@@ -238,7 +226,7 @@ def validate_TimeNext(M: 'TemoaModel'):
     # Only check TimeNext if it is actually being used
     if M.TimeSequencing.first() != 'manual':
         return
-    
+
     segfrac_psd = set(M.SegFrac.sparse_iterkeys())
     time_next_psd = set((p, s, d) for p, s, d, s_next, d_next in M.TimeNext)
     time_next_psd_next = set((p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext)
@@ -302,10 +290,9 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
         f_msg = msg.format(', '.join(diff))
         logger.error(f_msg)
         raise ValueError(f_msg)
-    
+
 
 def CheckEfficiencyVariable(M: 'TemoaModel'):
-
     count_rpitvo = dict()
     # Pull non-variable efficiency by default
     for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
@@ -314,29 +301,28 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
             # Still want it for end of life flows
             continue
         for p in M.processPeriods[r, t, v]:
-            M.isEfficiencyVariable[r, p, i, t, v, o] = False 
+            M.isEfficiencyVariable[r, p, i, t, v, o] = False
             count_rpitvo[r, p, i, t, v, o] = 0
-    
+
     annual = set()
     # Check for bad values and count up the good ones
     for r, p, s, d, i, t, v, o in M.EfficiencyVariable.sparse_iterkeys():
-        
         if p not in M.processPeriods[r, t, v]:
-            msg = f"Invalid period {p} for process {r, t, v} in EfficiencyVariable table"
+            msg = f'Invalid period {p} for process {r, t, v} in EfficiencyVariable table'
             logger.error(msg)
             raise ValueError(msg)
-        
+
         if t in M.tech_annual:
             annual.add(t)
-        
+
         # Good value, pull from EfficiencyVariable table
         count_rpitvo[r, p, i, t, v, o] += 1
 
     for t in annual:
         msg = (
-            f"Variable efficiencies were provided for the annual technology {t}, which has "
-            "no variable output. This will only be applied to flows on non-annual commodities. "
-            "This is ambiguous behaviour and not recommended."
+            f'Variable efficiencies were provided for the annual technology {t}, which has '
+            'no variable output. This will only be applied to flows on non-annual commodities. '
+            'This is ambiguous behaviour and not recommended.'
         )
         logger.warning(msg)
 
@@ -344,34 +330,33 @@ def CheckEfficiencyVariable(M: 'TemoaModel'):
     # log a warning if some are missing (allowed but maybe accidental)
     num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
     for (r, p, i, t, v, o), count in count_rpitvo.items():
-
         if count > 0:
             M.isEfficiencyVariable[r, p, i, t, v, o] = True
             if count < num_seg:
                 logger.info(
                     'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
-                    ' Missing values will default to value set in Efficiency table.'
-                    , count, num_seg, (r, p, i, t, v, o)
+                    ' Missing values will default to value set in Efficiency table.',
+                    count,
+                    num_seg,
+                    (r, p, i, t, v, o),
                 )
 
 
 def CheckCapacityFactorProcess(M: 'TemoaModel'):
-
     count_rptv = dict()
     # Pull CapacityFactorTech by default
     for r, p, s, d, t in M.CapacityFactor_rpsdt:
         for v in M.processVintages[r, p, t]:
             M.isCapacityFactorProcess[r, p, t, v] = False
             count_rptv[r, p, t, v] = 0
-    
+
     # Check for bad values and count up the good ones
     for r, p, s, d, t, v in M.CapacityFactorProcess.sparse_iterkeys():
-
         if v not in M.processVintages[r, p, t]:
-            msg = f"Invalid process {p, v} for {r, t} in CapacityFactorProcess table"
+            msg = f'Invalid process {p, v} for {r, t} in CapacityFactorProcess table'
             logger.error(msg)
             raise ValueError(msg)
-        
+
         # Good value, pull from CapacityFactorProcess table
         count_rptv[r, p, t, v] += 1
 
@@ -384,8 +369,10 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
             if count < num_seg:
                 logger.info(
                     'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
-                    ' Missing values will default to CapacityFactorTech value or 1 if that is not set either.'
-                    , count, num_seg, (r, p, t, v)
+                    ' Missing values will default to CapacityFactorTech value or 1 if that is not set either.',
+                    count,
+                    num_seg,
+                    (r, p, t, v),
                 )
 
 
@@ -506,7 +493,7 @@ def CreateDemands(M: 'TemoaModel'):
     DSD_region = iget(0)
     DSD_period = iget(1)
     DSD_dem = iget(4)
-    
+
     # Step 1: Check if any demand commodities are going unused
     used_dems = set(dem for r, p, dem in M.Demand.sparse_iterkeys())
     unused_dems = sorted(M.commodity_demand.difference(used_dems))
@@ -523,13 +510,13 @@ def CreateDemands(M: 'TemoaModel'):
     # unset_defaults = set(M.SegFrac.sparse_iterkeys())
     # unset_defaults.difference_update(DDD.sparse_iterkeys())
     # if unset_defaults:
-        # Some hackery because Pyomo thinks that this Param is constructed.
-        # However, in our view, it is not yet, because we're specifically
-        # targeting values that have not yet been constructed, that we know are
-        # valid, and that we will need.
-        # DDD._constructed = False
-        # for tslice in unset_defaults:
-        #     DDD[tslice] = M.SegFrac[tslice]  # DDD._constructed = True
+    # Some hackery because Pyomo thinks that this Param is constructed.
+    # However, in our view, it is not yet, because we're specifically
+    # targeting values that have not yet been constructed, that we know are
+    # valid, and that we will need.
+    # DDD._constructed = False
+    # for tslice in unset_defaults:
+    #     DDD[tslice] = M.SegFrac[tslice]  # DDD._constructed = True
 
     # Step 3: Check that DDD sums to 1
     # devnote: this seems redundant to the SegFrac sum to 1 check.
@@ -568,7 +555,9 @@ def CreateDemands(M: 'TemoaModel'):
     if unset_demand_distributions:
         for p in M.time_optimize:
             unset_distributions = set(
-                cross_product(M.regions, (p,), M.TimeSeason[p], M.time_of_day, unset_demand_distributions)
+                cross_product(
+                    M.regions, (p,), M.TimeSeason[p], M.time_of_day, unset_demand_distributions
+                )
             )
             for r, p, s, d, dem in unset_distributions:
                 DSD[r, p, s, d, dem] = value(M.SegFrac[p, s, d])  # DSD._constructed = True
@@ -583,7 +572,7 @@ def CreateDemands(M: 'TemoaModel'):
         keys = [
             k
             for k in DSD.sparse_iterkeys()
-            if DSD_region(k) == r and DSD_period(k) == p and DSD_dem(k) == dem 
+            if DSD_region(k) == r and DSD_period(k) == p and DSD_dem(k) == dem
         ]
         if len(keys) != expected_key_length:
             # this could be very slow but only calls when there's a problem
@@ -595,7 +584,8 @@ def CreateDemands(M: 'TemoaModel'):
             )
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
-                (r, p, dem), missing,
+                (r, p, dem),
+                missing,
             )
         total = sum(value(DSD[i]) for i in keys)
         if abs(value(total) - 1.0) > 0.001:
@@ -620,7 +610,7 @@ def CreateDemands(M: 'TemoaModel'):
             )
             logger.error(msg.format((r, p, dem), items, total))
             raise ValueError(msg.format((r, p, dem), items, total))
-    
+
     logger.debug('Finished creating demand distributions')
 
 
@@ -766,8 +756,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
                 logger.info(msg)
                 # Devnote: these are now useful due to end of life flows and
                 # Growth constraints growing from existing cap so do not skip
-                #SE.write(msg % (l_process, l_lifetime, l_first_period))
-                #continue
+                # SE.write(msg % (l_process, l_lifetime, l_first_period))
+                # continue
 
         eindex = (r, i, t, v, o)
         if M.Efficiency[eindex] == 0:
@@ -804,13 +794,18 @@ def CreateSparseDicts(M: 'TemoaModel'):
             #     l_loan_life = value(M.LoanLifetimeProcess[l_process])
             #     if v + l_loan_life >= p:
             #         M.processLoans[pindex] = True
-            
+
             # Get all periods where the process can retire
-            if t not in M.tech_uncap and any((
-                p <= v+l_lifetime < p + value(M.PeriodLength[p]), # natural eol this period
-                t in M.tech_retirement and v < p <= v+l_lifetime - value(M.PeriodLength[p]), # allowed early retirement
-                M.isSurvivalCurveProcess[r, t, v] and v <= p <= v+l_lifetime
-            )):
+            if t not in M.tech_uncap and any(
+                (
+                    p <= v + l_lifetime < p + value(M.PeriodLength[p]),  # natural eol this period
+                    t in M.tech_retirement
+                    and v
+                    < p
+                    <= v + l_lifetime - value(M.PeriodLength[p]),  # allowed early retirement
+                    M.isSurvivalCurveProcess[r, t, v] and v <= p <= v + l_lifetime,
+                )
+            ):
                 if (r, t, v) not in M.retirementPeriods:
                     M.retirementPeriods[r, t, v] = set()
                 M.retirementPeriods[r, t, v].add(p)
@@ -948,7 +943,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
         M.capacityConsumptionTechs[r, v, i].add(t)
     for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys():
         if (r, t, v) not in M.retirementPeriods:
-            continue # might be running myopic
+            continue  # might be running myopic
         for p in M.retirementPeriods[r, t, v]:
             # What periods can this process retire in, either naturally or economically?
             if (r, p, o) not in M.retirementProductionProcesses:
@@ -965,8 +960,12 @@ def CreateSparseDicts(M: 'TemoaModel'):
             SE.write(msg.format(i))
 
     # valid region-period-commodity sets for commodity balance constraints
-    commodityUpstream_rpi = set(M.commodityUStreamProcess | M.retirementProductionProcesses | M.importRegions)
-    commodityDownstream_rpo = set(M.commodityDStreamProcess | M.capacityConsumptionTechs | M.exportRegions)
+    commodityUpstream_rpi = set(
+        M.commodityUStreamProcess | M.retirementProductionProcesses | M.importRegions
+    )
+    commodityDownstream_rpo = set(
+        M.commodityDStreamProcess | M.capacityConsumptionTechs | M.exportRegions
+    )
     M.commodityBalance_rpc = commodityUpstream_rpi.intersection(commodityDownstream_rpo)
 
     # A dictionary of whether a storage tech is seasonal, just to speed things up
@@ -1037,9 +1036,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
     )
 
     M.activeActivity_rptv = set(
-        (r, p, t, v)
-        for r, p, t in M.processVintages
-        for v in M.processVintages[r, p, t]
+        (r, p, t, v) for r, p, t in M.processVintages for v in M.processVintages[r, p, t]
     )
 
     # devnote: currently unused
@@ -1097,7 +1094,6 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
 
 def CreateTimeSequence(M: 'TemoaModel'):
-
     logger.debug('Creating sequence of time slices.')
 
     # Establishing sequence of states
@@ -1127,37 +1123,33 @@ def CreateTimeSequence(M: 'TemoaModel'):
             msg = f"Invalid time sequencing parameter loaded '{M.TimeSequencing.first()}'. Likely code error."
             logger.error(msg)
             raise ValueError(msg)
-        
-    msg += (' This behaviour can be changed using the '
-            'time_sequencing parameter in the config file. ')
+
+    msg += ' This behaviour can be changed using the time_sequencing parameter in the config file. '
     logger.info(msg)
 
     logger.debug('Creating superimposed sequential seasons.')
-    
+
     # Superimposed sequential seasons
     for p in M.time_optimize:
-        seasons = [
-            (s_seq, s)
-            for _p, s_seq, s in M.ordered_season_sequential
-            if _p == p
-        ]
+        seasons = [(s_seq, s) for _p, s_seq, s in M.ordered_season_sequential if _p == p]
         for i, (s_seq, s) in enumerate(seasons):
             M.sequential_to_season[p, s_seq] = s
             if (s_seq, s) == seasons[-1]:
                 M.time_next_sequential[p, s_seq] = seasons[0][0]
             else:
-                M.time_next_sequential[p, s_seq] = seasons[i+1][0]
-    
+                M.time_next_sequential[p, s_seq] = seasons[i + 1][0]
+
     logger.debug('Created time sequence.')
 
 
 def CreateTimeSeasonSequential(M: 'TemoaModel'):
-    
-    if all((
-        not M.tech_seasonal_storage,
-        not M.RampUpHourly,
-        not M.RampDownHourly,
-    )):
+    if all(
+        (
+            not M.tech_seasonal_storage,
+            not M.RampUpHourly,
+            not M.RampDownHourly,
+        )
+    ):
         # Don't need it anyway
         return
 
@@ -1172,23 +1164,29 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             for p in M.TimeSeason:
                 for s in M.TimeSeason[p]:
                     M.ordered_season_sequential.add((p, s, s))
-                    M.TimeSeasonSequential[p, s, s] = value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+                    M.TimeSeasonSequential[p, s, s] = value(M.SegFracPerSeason[p, s]) * value(
+                        M.DaysPerPeriod
+                    )
 
         else:
             msg = (
                 f'No data in TimeSeasonSequential but time_sequencing parameter set to {M.TimeSequencing.first()} '
-                'and inter-season features used. TimeSeasonSequential must be filled for this type of time ' 
+                'and inter-season features used. TimeSeasonSequential must be filled for this type of time '
                 'sequencing if seasonal storage or inter-season constraints like RampUp/RampDown are used. Check '
                 'the config file.'
             )
             logger.error(msg)
             raise ValueError(msg)
-            
+
     sequential = dict()
     prev_n = 0
     for p, s_seq, s in M.TimeSeasonSequential.sparse_iterkeys():
         num_days = value(M.TimeSeasonSequential[p, s_seq, s])
-        if M.TimeSequencing.first() == 'consecutive_days' and prev_n and abs(num_days - prev_n) >= 0.001:
+        if (
+            M.TimeSequencing.first() == 'consecutive_days'
+            and prev_n
+            and abs(num_days - prev_n) >= 0.001
+        ):
             msg = (
                 'TimeSequencing set to consecutive_days but two consecutive seasons do not represent the same '
                 f'number of days. This discontinuity will lead to bad model behaviour: {p, s}, days: {num_days}. '
@@ -1196,7 +1194,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             )
             logger.error(msg)
             raise ValueError(msg)
-        prev_n = num_days # for validating next in sequence
+        prev_n = num_days  # for validating next in sequence
 
         # Regardless of their order, make sure the total number of days adds up
         if (p, s) not in sequential:
@@ -1204,13 +1202,9 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         sequential[p, s] += num_days
 
     # Check that TimeSeasonSequential num_days total to number of days in each period
-    count_total = dict() # {p: n} total days per period according to TimeSeasonSequential
+    count_total = dict()  # {p: n} total days per period according to TimeSeasonSequential
     for p in M.time_optimize:
-        count_total[p] = sum(
-            sequential[p, s]
-            for _p, s in sequential
-            if _p == p
-        )
+        count_total[p] = sum(sequential[p, s] for _p, s in sequential if _p == p)
         if abs(count_total[p] - value(M.DaysPerPeriod)) >= 0.001:
             logger.warning(
                 f'Sum of num_days in TimeSeasonSequential ({count_total[p]}) '
@@ -1219,7 +1213,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             )
 
     # Check that seasons using in storage seasons are actual seasons
-    for (p, s) in sequential:
+    for p, s in sequential:
         if (p, s) not in M.SegFracPerSeason:
             msg = (
                 f'Period-season index {(p, s)} that does not exist in '
@@ -1227,14 +1221,14 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
             )
             logger.error(msg)
             raise ValueError(msg)
-    
-    for (p, s) in M.SegFracPerSeason.sparse_iterkeys():
+
+    for p, s in M.SegFracPerSeason.sparse_iterkeys():
         if s not in M.TimeSeason[p]:
             continue
 
         # Check that all seasons are used in sequential seasons
         if (p, s) not in sequential:
-            msg = (f'Period-season index {(p, s)} absent from TimeSeasonSequential')
+            msg = f'Period-season index {(p, s)} absent from TimeSeasonSequential'
             logger.warning(msg)
 
         # Check that the two tables agree on the total seasonal composition of each period
@@ -1242,9 +1236,9 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
         segfracseq = sequential[p, s] / count_total[p]
         if abs(segfrac - segfracseq) >= 0.001:
             msg = (
-                'Discrepancy of total period-season composition between ' 
+                'Discrepancy of total period-season composition between '
                 'TimeSegmentFraction and TimeSeasonSequential. Total fraction of each '
-                'period assigned to each season should match: ' 
+                'period assigned to each season should match: '
                 f'TimeSegmentFraction: {(p, s, value(M.SegFracPerSeason[p, s]))}'
                 f', TimeSeasonSequential: {(p, s, segfracseq)}'
             )
@@ -1252,11 +1246,10 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
 
 
 def CreateSurvivalCurve(M: 'TemoaModel'):
-    
-    rtv_interpolated = set() # so we only need one warning
+    rtv_interpolated = set()  # so we only need one warning
 
-    for (r, _, t, v, _) in M.Efficiency.sparse_iterkeys():
-        M.isSurvivalCurveProcess[r, t, v] = False # by default
+    for r, _, t, v, _ in M.Efficiency.sparse_iterkeys():
+        M.isSurvivalCurveProcess[r, t, v] = False  # by default
 
     # Collect rptv indices into (r, t, v): p dictionary
     for r, p, t, v in M.LifetimeSurvivalCurve.sparse_iterkeys():
@@ -1279,27 +1272,26 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             )
             logger.error(msg)
             raise ValueError(msg)
-        
+
         if value(M.LifetimeSurvivalCurve[r, v, t, v]) != 1:
             msg = (
                 'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. ',
-                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
+                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})',
             )
             logger.error(msg)
             raise ValueError(msg)
 
         # Collect a list of processes that needed to be interpolated, for warning
-        if periods_rtv != list(range(p_first, p_last+1, 1)):
+        if periods_rtv != list(range(p_first, p_last + 1, 1)):
             rtv_interpolated.add((r, t, v))
 
         between_periods = []
         for i, p in enumerate(periods_rtv):
-
             if i == 0:
-                continue # Cant look back from first period. Could be zero but hey why not
-            
+                continue  # Cant look back from first period. Could be zero but hey why not
+
             # Check that the survival curve monotonically decreases
-            p_prev = periods_rtv[i-1]
+            p_prev = periods_rtv[i - 1]
             lsc = value(M.LifetimeSurvivalCurve[r, p, t, v])
             lsc_prev = value(M.LifetimeSurvivalCurve[r, p_prev, t, v])
             if lsc - lsc_prev > 0.0001:
@@ -1309,9 +1301,9 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                 ).format((r, p_prev, t, v), (r, p, t, v))
                 logger.error(msg)
                 raise ValueError(msg)
-            
+
             if p - p_prev > 1:
-                _between_periods = list(range(p_prev+1, p, 1))
+                _between_periods = list(range(p_prev + 1, p, 1))
                 for _p in _between_periods:
                     x = (_p - p_prev) / (p - p_prev)
                     lsc_x = lsc_prev + x * (lsc - lsc_prev)
@@ -1331,7 +1323,7 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                     msg = (
                         f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
                         f'does not extend beyond the end of that survival curve in {p}. To agree with '
-                        f'the survival curve, set LifetimeProcess[{r, t, v}] >= {p-v}'
+                        f'the survival curve, set LifetimeProcess[{r, t, v}] >= {p - v}'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
@@ -1340,12 +1332,12 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                         f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
                         f'does match the end of that survival curve in {p}. This will waste compute. '
                         'To agree with the survival curve and suppress this warning, set '
-                        f'LifetimeProcess[{r, t, v}] = {p-v}'
+                        f'LifetimeProcess[{r, t, v}] = {p - v}'
                     )
                     logger.warning(msg)
-                
+
                 continue
-            
+
             # Flag if the last period is not fraction = 0. This is important for investment costs
             if p == p_last and lsc > 0.0001:
                 msg = (
@@ -1355,19 +1347,19 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                 )
                 logger.error(msg)
                 raise ValueError(msg)
-                
+
         M.survivalCurvePeriods[r, t, v].extend(between_periods)
         M.survivalCurvePeriods[r, t, v] = set(M.survivalCurvePeriods[r, t, v])
 
     if rtv_interpolated:
         msg = (
             'For the purposes of investment cost accounting, LifetimeSurvivalCurve must be defined '
-            f'for each individual year. Gaps between defined years will be filled by linear interpolation. '
+            'for each individual year. Gaps between defined years will be filled by linear interpolation. '
             'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
         ).format([rtv for rtv in rtv_interpolated])
         logger.info(msg)
 
-    
+
 # ---------------------------------------------------------------
 # Create sparse parameter indices.
 # These functions are called from temoa_model.py and use the sparse keys
@@ -1504,9 +1496,7 @@ def RetiredCapacityVariableIndices(M: 'TemoaModel'):
 
 def AnnualRetirementVariableIndices(M: 'TemoaModel'):
     return set(
-        (r, p, t, v)
-        for r, t, v in M.retirementPeriods
-        for p in M.retirementPeriods[r, t, v]
+        (r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]
     )
 
 
@@ -1545,6 +1535,7 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
 def StorageLevelVariableIndices(M: 'TemoaModel'):
     return M.storageLevelIndices_rpsdtv
 
+
 def SeasonalStorageLevelVariableIndices(M: 'TemoaModel'):
     return M.seasonalStorageLevelIndices_rpstv
 
@@ -1555,7 +1546,7 @@ def SeasonalStorageConstraintIndices(M: 'TemoaModel'):
         for r, p, s, t, v in M.seasonalStorageLevelIndices_rpstv
         for d in M.time_of_day
     )
-    
+
     return indices
 
 
@@ -1774,8 +1765,8 @@ def RampDownDayConstraintIndices(M: 'TemoaModel'):
 
 def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip # dont need this constraint
-    
+        return Set.Skip  # dont need this constraint
+
     # s, s_next indexing ensures we dont build redundant constraints
     indices = set(
         (r, p, s, s_next, t, v)
@@ -1783,9 +1774,12 @@ def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
         for v in M.rampUpVintages[r, p, t]
         for _p, s_seq, s in M.ordered_season_sequential
         if _p == p
-        for s_seq_next in (M.time_next_sequential[p, s_seq],)   # next sequential season
-        for s_next in (M.sequential_to_season[p, s_seq_next],)  # next sequential season's matching season
-        if s_next != M.time_next[p, s, M.time_of_day.last()][0] # to avoid redundancy on RampDay constraint
+        for s_seq_next in (M.time_next_sequential[p, s_seq],)  # next sequential season
+        for s_next in (
+            M.sequential_to_season[p, s_seq_next],
+        )  # next sequential season's matching season
+        if s_next
+        != M.time_next[p, s, M.time_of_day.last()][0]  # to avoid redundancy on RampDay constraint
     )
 
     return indices
@@ -1793,17 +1787,20 @@ def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
 
 def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip # dont need this constraint
-    
+        return Set.Skip  # dont need this constraint
+
     # s, s_next indexing ensures we dont build redundant constraints
     indices = set(
         (r, p, s, s_next, t, v)
         for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
         for _p, s_seq, s in M.ordered_season_sequential
-        for s_seq_next in (M.time_next_sequential[p, s_seq],)   # next sequential season
-        for s_next in (M.sequential_to_season[p, s_seq_next],)  # next sequential season's matching season
-        if s_next != M.time_next[p, s, M.time_of_day.last()][0] # to avoid redundancy on RampDay constraint
+        for s_seq_next in (M.time_next_sequential[p, s_seq],)  # next sequential season
+        for s_next in (
+            M.sequential_to_season[p, s_seq_next],
+        )  # next sequential season's matching season
+        if s_next
+        != M.time_next[p, s, M.time_of_day.last()][0]  # to avoid redundancy on RampDay constraint
     )
 
     return indices
@@ -1818,7 +1815,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
         for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
-    
+
     return indices
 
 
@@ -1832,14 +1829,12 @@ def LimitTechInputSplitConstraintIndices(M: 'TemoaModel'):
         for d in M.time_of_day
     )
     ann_indices = set(
-        (r, p, i, t, op)
-        for r, p, i, t, op in M.inputSplitVintages
-        if t in M.tech_annual
+        (r, p, i, t, op) for r, p, i, t, op in M.inputSplitVintages if t in M.tech_annual
     )
     if len(ann_indices) > 0:
         msg = (
-            "Warning: Annual technologies included in LimitTechInputSplit table. "
-            "Use LimitTechInputSplitAnnual table instead or these constraints will be ignored: {}"
+            'Warning: Annual technologies included in LimitTechInputSplit table. '
+            'Use LimitTechInputSplitAnnual table instead or these constraints will be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -1877,14 +1872,12 @@ def LimitTechOutputSplitConstraintIndices(M: 'TemoaModel'):
         for d in M.time_of_day
     )
     ann_indices = set(
-        (r, p, t, o, op)
-        for r, p, t, o, op in M.outputSplitVintages
-        if t in M.tech_annual
+        (r, p, t, o, op) for r, p, t, o, op in M.outputSplitVintages if t in M.tech_annual
     )
     if len(ann_indices) > 0:
         msg = (
-            "Warning: Annual technologies included in LimitTechOutputSplit table. "
-            "Use LimitTechOutputSplitAnnual table instead or these constraints will be ignored: {}"
+            'Warning: Annual technologies included in LimitTechOutputSplit table. '
+            'Use LimitTechOutputSplitAnnual table instead or these constraints will be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -1919,6 +1912,7 @@ def LimitGrowthCapacityIndices(M: 'TemoaModel'):
     )
     return indices
 
+
 def LimitDegrowthCapacityIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t, op)
@@ -1935,6 +1929,7 @@ def LimitGrowthNewCapacityIndices(M: 'TemoaModel'):
         for p in M.time_optimize
     )
     return indices
+
 
 def LimitDegrowthNewCapacityIndices(M: 'TemoaModel'):
     indices = set(
@@ -1953,6 +1948,7 @@ def LimitGrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
     )
     return indices
 
+
 def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
     indices = set(
         (r, p, t, op)
@@ -1963,7 +1959,6 @@ def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
 
 
 def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
-    
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
@@ -1989,7 +1984,6 @@ def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
 
 
 def loop_season_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
-
     # We loop each season so never carrying state between seasons
     s_next = s
 

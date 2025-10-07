@@ -30,8 +30,8 @@ import pathlib
 import pickle
 
 from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.modes import TemoaMode
 
 
 def test_serialization():
