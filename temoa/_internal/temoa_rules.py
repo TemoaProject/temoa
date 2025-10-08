@@ -26,12 +26,10 @@ from typing import TYPE_CHECKING
 from pyomo.core import Expression, Var
 from pyomo.environ import Constraint, value
 
-from temoa._internal.temoa_initialize import (
-    AnnualCommodityBalanceConstraintErrorCheck,
-    CommodityBalanceConstraintErrorCheck,
-    DemandConstraintErrorCheck,
-    gather_group_regions,
-    gather_group_techs,
+from temoa.components import (
+    commodities,
+    geography,
+    technology,
 )
 
 if TYPE_CHECKING:
@@ -1073,7 +1071,7 @@ def Demand_Constraint(M: 'TemoaModel', r, p, dem):
         for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
     )
 
-    DemandConstraintErrorCheck(supply_annual, r, p, dem)
+    commodities.DemandConstraintErrorCheck(supply_annual, r, p, dem)
 
     expr = supply_annual == value(M.Demand[r, p, dem])
 
@@ -1339,7 +1337,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
             if S_t in M.tech_annual
         )
 
-    CommodityBalanceConstraintErrorCheck(
+    commodities.CommodityBalanceConstraintErrorCheck(
         produced,
         consumed,
         r,
@@ -1481,7 +1479,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
             if S_t in M.tech_annual
         )
 
-    AnnualCommodityBalanceConstraintErrorCheck(
+    commodities.AnnualCommodityBalanceConstraintErrorCheck(
         produced,
         consumed,
         r,
@@ -2660,7 +2658,7 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
 
     # if r == 'global', the constraint is system-wide
 
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
 
     # ================= Emissions and Flex and Curtailment =================
     # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
@@ -2763,8 +2761,8 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
 
     growth = M.LimitDegrowthCapacity if degrowth else M.LimitGrowthCapacity
     RATE = 1 + value(growth[r, t, op][0])
@@ -2874,8 +2872,8 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
     """
 
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
 
     growth = M.LimitDegrowthNewCapacity if degrowth else M.LimitGrowthNewCapacity
     RATE = 1 + value(growth[r, t, op][0])
@@ -2986,8 +2984,8 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
             \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
     """
 
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
 
     growth = M.LimitDegrowthNewCapacityDelta if degrowth else M.LimitGrowthNewCapacityDelta
     RATE = 1 + value(growth[r, t, op][0])
@@ -3102,8 +3100,8 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     # r can be an individual region (r='US'), or a combination of regions separated by
     # a + (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
 
     activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
@@ -3147,8 +3145,8 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
 
         \text{where }v=p
     """
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
     new_cap = sum(M.V_NewCapacity[_r, _t, p] for _t in techs for _r in regions)
     expr = operator_expression(new_cap, op, cap_lim)
@@ -3168,8 +3166,8 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
        \textbf{CAPAVL}_{r, p, t} \le LC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{LimitCapacity}}"""
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
     cap_lim = value(M.LimitCapacity[r, p, t, op])
     capacity = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, _t] for _t in techs for _r in regions
@@ -3200,8 +3198,8 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
     #            oil/mineral extraction across all model periods. Looks fine to me.
 
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
+    regions = geography.gather_group_regions(M, r)
+    techs = technology.gather_group_techs(M, t)
 
     activity = sum(
         M.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
@@ -3249,9 +3247,9 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
     """
 
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
 
-    sub_group = gather_group_techs(M, g1)
+    sub_group = technology.gather_group_techs(M, g1)
     sub_activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in sub_group
@@ -3273,7 +3271,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         for S_o in M.processOutputsByInput[_r, p, S_t, S_v, S_i]
     )
 
-    super_group = gather_group_techs(M, g2)
+    super_group = technology.gather_group_techs(M, g2)
     super_activity = sum(
         M.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in super_group
@@ -3317,9 +3315,9 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     technology or technology group as a fraction of another technology or group.
     """
 
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
 
-    sub_group = gather_group_techs(M, g1)
+    sub_group = technology.gather_group_techs(M, g1)
     sub_capacity = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
         for _t in sub_group
@@ -3327,7 +3325,7 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         if (_r, p, _t) in M.processVintages
     )
 
-    super_group = gather_group_techs(M, g2)
+    super_group = technology.gather_group_techs(M, g2)
     super_capacity = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
         for _t in super_group
@@ -3348,9 +3346,9 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     of a given technology or group as a fraction of another technology or
     group."""
 
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
 
-    sub_group = gather_group_techs(M, g1)
+    sub_group = technology.gather_group_techs(M, g1)
     sub_new_cap = sum(
         M.V_NewCapacity[_r, _t, p]
         for _t in sub_group
@@ -3358,7 +3356,7 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
         if (_r, _t, p) in M.processPeriods
     )
 
-    super_group = gather_group_techs(M, g2)
+    super_group = technology.gather_group_techs(M, g2)
     super_new_cap = sum(
         M.V_NewCapacity[_r, _t, p]
         for _t in super_group
@@ -3394,7 +3392,7 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
     if all((_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech for _r in regions):
@@ -3450,7 +3448,7 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
-    regions = gather_group_regions(M, r)
+    regions = geography.gather_group_regions(M, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
     if all((_r, p, t) not in M.V_CapacityAvailableByPeriodAndTech for _r in regions):
@@ -3890,7 +3888,7 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
             lhs, operator, rhs
         )
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     return expr
 

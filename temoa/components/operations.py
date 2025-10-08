@@ -4,12 +4,11 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 
-def ReserveMarginIndices(M: 'TemoaModel'):
+def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
     indices = set(
-        (r, p, s, d)
-        for r in M.PlanningReserveMargin.sparse_iterkeys()
-        for p in M.time_optimize
-        if (r, p) in M.processReservePeriods
+        (r, p, s, d, t, v)
+        for r, p, t in M.baseloadVintages
+        for v in M.baseloadVintages[r, p, t]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
