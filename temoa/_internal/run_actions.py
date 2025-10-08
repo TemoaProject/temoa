@@ -175,7 +175,7 @@ def build_instance(
                         '\r[%8.2f] Instance created.       \n' % (time() - hack)
                     )  # needs spaces to clear previous line
             SE.flush()
-        except:
+        except Exception:
             SE.write(
                 '\r[%8.2f] Instance created.       \n' % (time() - hack)
             )  # needs spaces to clear previous line
@@ -342,7 +342,6 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
     """
     soln = result['Solution']
 
-    lesser_responses = ('feasible', 'globallyOptimal', 'locallyOptimal')
     logger.info('The solver reported status as: %s', soln.Status)
     if check_optimal_termination(results=result):
         return True, ''

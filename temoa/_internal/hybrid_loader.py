@@ -321,7 +321,7 @@ class HybridLoader:
                 except ValueError as e:
                     raise ValueError(
                         'Failed to validate members of %s.  Coding error likely.\n%s' % (c.name, e)
-                    )
+                    ) from e
             if len(screened) < len(values):
                 msg = 'Some values for {} failed to validate and were ignored: {}'
                 logger.warning(msg.format(c.name, [val for val in values if val not in screened]))
