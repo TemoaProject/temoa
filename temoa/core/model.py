@@ -24,6 +24,9 @@ from pyomo.environ import (
 )
 
 from temoa._internal.temoa_initialize import (
+    # ============================================================================
+    # Index creation functions for constraints and variables
+    # ============================================================================
     AnnualCommodityBalanceConstraintIndices,
     AnnualRetirementVariableIndices,
     BaseloadDiurnalConstraintIndices,
@@ -79,36 +82,48 @@ from temoa._internal.temoa_initialize import (
     SeasonalStorageLevelVariableIndices,
     StorageConstraintIndices,
     StorageLevelVariableIndices,
+    # Default value functions
     get_default_capacity_factor,
     get_default_loan_rate,
     get_default_process_lifetime,
     get_default_survival,
     get_loan_life,
+    # Set initialization functions
     init_set_time_optimize,
     init_set_vintage_exist,
     init_set_vintage_optimize,
+    # Validation functions
     validate_SegFrac,
     validate_time,
     validate_TimeNext,
 )
 
-# from temoa._internal.temoa_rules import *
+# ============================================================================
+# Temoa Constraint Functions
+# Core model constraints and business logic rules
+# ============================================================================
 from temoa._internal.temoa_rules import (
+    # Core capacity constraints
     AdjustedCapacity_Constraint,
     AnnualCommodityBalance_Constraint,
+    # Retirement constraints
     AnnualRetirement_Constraint,
+    # Ramping constraints
     BaseloadDiurnal_Constraint,
     Capacity_Constraint,
     CapacityAnnual_Constraint,
     CapacityAvailableByPeriodAndTech_Constraint,
     CommodityBalance_Constraint,
+    # Activity and flow constraints
     Demand_Constraint,
     DemandActivity_Constraint,
+    # Limit constraints (capacity, activity, emissions, etc.)
     LimitActivity_Constraint,
     LimitActivityShare_Constraint,
     LimitAnnualCapacityFactor_Constraint,
     LimitCapacity_Constraint,
     LimitCapacityShare_Constraint,
+    # Growth/degrowth constraints
     LimitDegrowthCapacityConstraint_rule,
     LimitDegrowthNewCapacityConstraint_rule,
     LimitDegrowthNewCapacityDeltaConstraint_rule,
@@ -121,6 +136,7 @@ from temoa._internal.temoa_rules import (
     LimitResource_Constraint,
     LimitSeasonalCapacityFactor_Constraint,
     LimitStorageFraction_Constraint,
+    # Technology split constraints
     LimitTechInputSplit_Constraint,
     LimitTechInputSplitAnnual_Constraint,
     LimitTechInputSplitAverage_Constraint,
@@ -128,6 +144,7 @@ from temoa._internal.temoa_rules import (
     LimitTechOutputSplitAnnual_Constraint,
     LimitTechOutputSplitAverage_Constraint,
     LinkedEmissionsTech_Constraint,
+    # Parameter calculation rules
     ParamLoanAnnualize_rule,
     ParamPeriodLength,
     ParamProcessLifeFraction_rule,
@@ -135,6 +152,7 @@ from temoa._internal.temoa_rules import (
     RampDownSeason_Constraint,
     RampUpDay_Constraint,
     RampUpSeason_Constraint,
+    # Regional and special constraints
     RegionalExchangeCapacity_Constraint,
     RenewablePortfolioStandard_Constraint,
     ReserveMargin_Constraint,
@@ -143,16 +161,22 @@ from temoa._internal.temoa_rules import (
     SegFracPerSeason_rule,
     StorageChargeRate_Constraint,
     StorageDischargeRate_Constraint,
+    # Storage constraints
     StorageEnergy_Constraint,
     StorageEnergyUpperBound_Constraint,
     StorageThroughput_Constraint,
+    # Objective function
     TotalCost_rule,
 )
+
+# ============================================================================
+# Validation Functions
+# Input validation and data integrity checks
+# ============================================================================
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
     region_group_check,
-    # validate_CapacityFactorProcess,
     validate_0to1,
     validate_Efficiency,
     validate_linked_tech,

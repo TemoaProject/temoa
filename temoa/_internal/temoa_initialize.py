@@ -20,7 +20,6 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from itertools import product as cross_product
-
 from operator import itemgetter as iget
 from sys import stderr as SE
 from typing import TYPE_CHECKING, Iterable
@@ -45,6 +44,84 @@ logger = getLogger(__name__)
 # Check valid indices, validate parameter specifications, and set default
 # parameter values.
 # ---------------------------------------------------------------
+
+
+# ============================================================================
+# Public API - Functions intended for external import
+# ============================================================================
+__all__ = [
+    # Index creation functions for constraints and variables
+    'AnnualCommodityBalanceConstraintIndices',
+    'AnnualRetirementVariableIndices',
+    'BaseloadDiurnalConstraintIndices',
+    'CapacityAnnualConstraintIndices',
+    'CapacityAvailableVariableIndices',
+    'CapacityConstraintIndices',
+    'CapacityFactorTechIndices',
+    'CapacityVariableIndices',
+    'CommodityBalanceConstraintIndices',
+    'CostFixedIndices',
+    'CostVariableIndices',
+    'CurtailmentVariableIndices',
+    'DemandActivityConstraintIndices',
+    'EmissionActivityIndices',
+    'FlexVariableAnnualIndices',
+    'FlexVariablelIndices',
+    'FlowInStorageVariableIndices',
+    'FlowVariableAnnualIndices',
+    'FlowVariableIndices',
+    'LifetimeLoanProcessIndices',
+    'LifetimeProcessIndices',
+    'LimitDegrowthCapacityIndices',
+    'LimitDegrowthNewCapacityDeltaIndices',
+    'LimitDegrowthNewCapacityIndices',
+    'LimitGrowthCapacityIndices',
+    'LimitGrowthNewCapacityDeltaIndices',
+    'LimitGrowthNewCapacityIndices',
+    'LimitTechInputSplitAnnualConstraintIndices',
+    'LimitTechInputSplitAverageConstraintIndices',
+    'LimitTechInputSplitConstraintIndices',
+    'LimitTechOutputSplitAnnualConstraintIndices',
+    'LimitTechOutputSplitAverageConstraintIndices',
+    'LimitTechOutputSplitConstraintIndices',
+    'LinkedTechConstraintIndices',
+    'ModelProcessLifeIndices',
+    'RampDownDayConstraintIndices',
+    'RampDownSeasonConstraintIndices',
+    'RampUpDayConstraintIndices',
+    'RampUpSeasonConstraintIndices',
+    'RegionalExchangeCapacityConstraintIndices',
+    'ReserveMarginIndices',
+    'RetiredCapacityVariableIndices',
+    'SeasonalStorageConstraintIndices',
+    'SeasonalStorageLevelVariableIndices',
+    'StorageConstraintIndices',
+    'StorageLevelVariableIndices',
+    # Validation and initialization functions
+    'CheckCapacityFactorProcess',
+    'CheckEfficiencyIndices',
+    'CheckEfficiencyVariable',
+    'CreateDemands',
+    'CreateRegionalIndices',
+    'CreateSparseDicts',
+    'CreateSurvivalCurve',
+    'CreateTimeSeasonSequential',
+    'CreateTimeSequence',
+    # Default value functions
+    'get_default_capacity_factor',
+    'get_default_loan_rate',
+    'get_default_process_lifetime',
+    'get_default_survival',
+    'get_loan_life',
+    # Set initialization functions
+    'init_set_time_optimize',
+    'init_set_vintage_exist',
+    'init_set_vintage_optimize',
+    # Validation functions
+    'validate_SegFrac',
+    'validate_time',
+    'validate_TimeNext',
+]
 
 
 def isValidProcess(M: 'TemoaModel', r, p, i, t, v, o):

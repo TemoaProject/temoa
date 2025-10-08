@@ -38,6 +38,79 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
+
+
+# ============================================================================
+# Public API - Functions intended for external import
+# ============================================================================
+__all__ = [
+    # Core capacity constraints
+    'AdjustedCapacity_Constraint',
+    'Capacity_Constraint',
+    'CapacityAnnual_Constraint',
+    'CapacityAvailableByPeriodAndTech_Constraint',
+    # Activity and flow constraints
+    'Demand_Constraint',
+    'DemandActivity_Constraint',
+    'CommodityBalance_Constraint',
+    'AnnualCommodityBalance_Constraint',
+    # Retirement constraints
+    'AnnualRetirement_Constraint',
+    # Storage constraints
+    'StorageEnergy_Constraint',
+    'StorageEnergyUpperBound_Constraint',
+    'SeasonalStorageEnergy_Constraint',
+    'SeasonalStorageEnergyUpperBound_Constraint',
+    'StorageChargeRate_Constraint',
+    'StorageDischargeRate_Constraint',
+    'StorageThroughput_Constraint',
+    # Ramping constraints
+    'BaseloadDiurnal_Constraint',
+    'RampUpDay_Constraint',
+    'RampDownDay_Constraint',
+    'RampUpSeason_Constraint',
+    'RampDownSeason_Constraint',
+    # Limit constraints (capacity, activity, emissions, etc.)
+    'LimitActivity_Constraint',
+    'LimitActivityShare_Constraint',
+    'LimitAnnualCapacityFactor_Constraint',
+    'LimitCapacity_Constraint',
+    'LimitCapacityShare_Constraint',
+    'LimitEmission_Constraint',
+    'LimitNewCapacity_Constraint',
+    'LimitNewCapacityShare_Constraint',
+    'LimitResource_Constraint',
+    'LimitSeasonalCapacityFactor_Constraint',
+    'LimitStorageFraction_Constraint',
+    # Technology split constraints
+    'LimitTechInputSplit_Constraint',
+    'LimitTechInputSplitAnnual_Constraint',
+    'LimitTechInputSplitAverage_Constraint',
+    'LimitTechOutputSplit_Constraint',
+    'LimitTechOutputSplitAnnual_Constraint',
+    'LimitTechOutputSplitAverage_Constraint',
+    # Growth/degrowth constraints
+    'LimitDegrowthCapacityConstraint_rule',
+    'LimitDegrowthNewCapacityConstraint_rule',
+    'LimitDegrowthNewCapacityDeltaConstraint_rule',
+    'LimitGrowthCapacityConstraint_rule',
+    'LimitGrowthNewCapacityConstraint_rule',
+    'LimitGrowthNewCapacityDeltaConstraint_rule',
+    # Regional and special constraints
+    'RegionalExchangeCapacity_Constraint',
+    'RenewablePortfolioStandard_Constraint',
+    'ReserveMargin_Constraint',
+    'LinkedEmissionsTech_Constraint',
+    # Parameter calculation rules
+    'ParamLoanAnnualize_rule',
+    'ParamPeriodLength',
+    'ParamProcessLifeFraction_rule',
+    'SegFracPerSeason_rule',
+    # Objective function
+    'TotalCost_rule',
+]
+
+
 # ---------------------------------------------------------------
 # Define the derived variables used in the objective function
 # and constraints below.

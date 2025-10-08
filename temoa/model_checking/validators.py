@@ -39,6 +39,21 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
+# ============================================================================
+# Public API - Functions intended for external import
+# ============================================================================
+__all__ = [
+    'no_slash_or_pipe',
+    'region_check',
+    'region_group_check',
+    'validate_0to1',
+    'validate_Efficiency',
+    'validate_linked_tech',
+    'validate_ReserveMargin',
+    'validate_tech_sets',
+]
+
+
 def validate_linked_tech(M: 'TemoaModel') -> bool:
     """
     A validation that for all the linked techs, they have the same lifetime in each possible vintage
