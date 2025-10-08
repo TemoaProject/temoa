@@ -3,7 +3,6 @@ from itertools import product as cross_product
 from logging import getLogger
 from operator import itemgetter as iget
 from typing import TYPE_CHECKING
-from pyomo.environ import Constraint, value
 
 from pyomo.environ import value
 

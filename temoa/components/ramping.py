@@ -1,8 +1,8 @@
+from logging import getLogger
 from typing import TYPE_CHECKING
 
-from logging import getLogger
-from pyomo.environ import Constraint, value
 from pyomo.core import Set
+from pyomo.environ import Constraint, value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel

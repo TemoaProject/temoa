@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deprecated import deprecated
-
 from pyomo.core import Expression, Var
 from pyomo.environ import value
 
