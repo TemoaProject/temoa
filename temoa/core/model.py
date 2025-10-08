@@ -10,11 +10,12 @@ SPDX-License-Identifier: MIT
 
 import logging
 
-from pyomo.core import BuildCheck
+from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
     Any,
     BuildAction,
+    Constraint,
     Integers,
     NonNegativeReals,
     Objective,
@@ -22,8 +23,131 @@ from pyomo.environ import (
     minimize,
 )
 
-from temoa._internal.temoa_initialize import *
-from temoa._internal.temoa_rules import *
+from temoa._internal.temoa_initialize import (
+    AnnualCommodityBalanceConstraintIndices,
+    AnnualRetirementVariableIndices,
+    BaseloadDiurnalConstraintIndices,
+    CapacityAnnualConstraintIndices,
+    CapacityAvailableVariableIndices,
+    CapacityConstraintIndices,
+    CapacityFactorTechIndices,
+    CapacityVariableIndices,
+    CheckCapacityFactorProcess,
+    CheckEfficiencyIndices,
+    CheckEfficiencyVariable,
+    CommodityBalanceConstraintIndices,
+    CostFixedIndices,
+    CostVariableIndices,
+    CreateDemands,
+    CreateRegionalIndices,
+    CreateSparseDicts,
+    CreateSurvivalCurve,
+    CreateTimeSeasonSequential,
+    CreateTimeSequence,
+    CurtailmentVariableIndices,
+    DemandActivityConstraintIndices,
+    EmissionActivityIndices,
+    FlexVariableAnnualIndices,
+    FlexVariablelIndices,
+    FlowInStorageVariableIndices,
+    FlowVariableAnnualIndices,
+    FlowVariableIndices,
+    LifetimeLoanProcessIndices,
+    LifetimeProcessIndices,
+    LimitDegrowthCapacityIndices,
+    LimitDegrowthNewCapacityDeltaIndices,
+    LimitDegrowthNewCapacityIndices,
+    LimitGrowthCapacityIndices,
+    LimitGrowthNewCapacityDeltaIndices,
+    LimitGrowthNewCapacityIndices,
+    LimitTechInputSplitAnnualConstraintIndices,
+    LimitTechInputSplitAverageConstraintIndices,
+    LimitTechInputSplitConstraintIndices,
+    LimitTechOutputSplitAnnualConstraintIndices,
+    LimitTechOutputSplitAverageConstraintIndices,
+    LimitTechOutputSplitConstraintIndices,
+    LinkedTechConstraintIndices,
+    ModelProcessLifeIndices,
+    RampDownDayConstraintIndices,
+    RampDownSeasonConstraintIndices,
+    RampUpDayConstraintIndices,
+    RampUpSeasonConstraintIndices,
+    RegionalExchangeCapacityConstraintIndices,
+    ReserveMarginIndices,
+    RetiredCapacityVariableIndices,
+    SeasonalStorageConstraintIndices,
+    SeasonalStorageLevelVariableIndices,
+    StorageConstraintIndices,
+    StorageLevelVariableIndices,
+    get_default_capacity_factor,
+    get_default_loan_rate,
+    get_default_process_lifetime,
+    get_default_survival,
+    get_loan_life,
+    init_set_time_optimize,
+    init_set_vintage_exist,
+    init_set_vintage_optimize,
+    validate_SegFrac,
+    validate_time,
+    validate_TimeNext,
+)
+
+# from temoa._internal.temoa_rules import *
+from temoa._internal.temoa_rules import (
+    AdjustedCapacity_Constraint,
+    AnnualCommodityBalance_Constraint,
+    AnnualRetirement_Constraint,
+    BaseloadDiurnal_Constraint,
+    Capacity_Constraint,
+    CapacityAnnual_Constraint,
+    CapacityAvailableByPeriodAndTech_Constraint,
+    CommodityBalance_Constraint,
+    Demand_Constraint,
+    DemandActivity_Constraint,
+    LimitActivity_Constraint,
+    LimitActivityShare_Constraint,
+    LimitAnnualCapacityFactor_Constraint,
+    LimitCapacity_Constraint,
+    LimitCapacityShare_Constraint,
+    LimitDegrowthCapacityConstraint_rule,
+    LimitDegrowthNewCapacityConstraint_rule,
+    LimitDegrowthNewCapacityDeltaConstraint_rule,
+    LimitEmission_Constraint,
+    LimitGrowthCapacityConstraint_rule,
+    LimitGrowthNewCapacityConstraint_rule,
+    LimitGrowthNewCapacityDeltaConstraint_rule,
+    LimitNewCapacity_Constraint,
+    LimitNewCapacityShare_Constraint,
+    LimitResource_Constraint,
+    LimitSeasonalCapacityFactor_Constraint,
+    LimitStorageFraction_Constraint,
+    LimitTechInputSplit_Constraint,
+    LimitTechInputSplitAnnual_Constraint,
+    LimitTechInputSplitAverage_Constraint,
+    LimitTechOutputSplit_Constraint,
+    LimitTechOutputSplitAnnual_Constraint,
+    LimitTechOutputSplitAverage_Constraint,
+    LinkedEmissionsTech_Constraint,
+    ParamLoanAnnualize_rule,
+    ParamPeriodLength,
+    ParamProcessLifeFraction_rule,
+    RampDownDay_Constraint,
+    RampDownSeason_Constraint,
+    RampUpDay_Constraint,
+    RampUpSeason_Constraint,
+    RegionalExchangeCapacity_Constraint,
+    RenewablePortfolioStandard_Constraint,
+    ReserveMargin_Constraint,
+    SeasonalStorageEnergy_Constraint,
+    SeasonalStorageEnergyUpperBound_Constraint,
+    SegFracPerSeason_rule,
+    StorageChargeRate_Constraint,
+    StorageDischargeRate_Constraint,
+    StorageEnergy_Constraint,
+    StorageEnergyUpperBound_Constraint,
+    StorageThroughput_Constraint,
+    TotalCost_rule,
+)
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
@@ -37,9 +161,6 @@ from temoa.model_checking.validators import (
 )
 
 logger = logging.getLogger(__name__)
-
-# disable linter rule that complains about star imports for this file
-# ruff: noqa: F405
 
 
 class TemoaModel(AbstractModel):
@@ -171,7 +292,8 @@ class TemoaModel(AbstractModel):
         M.TimeSeason = Set(M.time_optimize, within=M.time_season, ordered=True)
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
-        # This is just to get the TimeStorageSeason table sequentially. There must be a better way but this works for now
+        # This is just to get the TimeStorageSeason table sequentially.
+        # There must be a better way but this works for now
         M.ordered_season_sequential = Set(
             dimen=3, within=M.time_optimize * M.time_season_sequential * M.time_season, ordered=True
         )
@@ -216,7 +338,8 @@ class TemoaModel(AbstractModel):
         M.tech_exist = Set()
         """techs with existing capacity, want to keep these for accounting reasons"""
 
-        # the below is a convenience for domain checking in params below that should not accept uncap techs...
+        # the below is a convenience for domain checking in params below that should not accept
+        # uncap techs...
         M.tech_with_capacity = Set(initialize=M.tech_all - M.tech_uncap)
         """techs eligible for capacitization"""
         # Define techs for which economic retirement is an option
@@ -279,10 +402,12 @@ class TemoaModel(AbstractModel):
         M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
 
         # Define demand- and resource-related parameters
-        # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
-        #            cause any problems, so let it be for now.
+        # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.
+        #            This does not cause any problems, so let it be for now.
         #            Doesn't seem to be much point in the table. Just clones SegFrac
-        # M.DemandDefaultDistribution = Param(M.time_optimize, M.time_season, M.time_of_day, mutable=True)
+        # M.DemandDefaultDistribution = Param(
+        #     M.time_optimize, M.time_season, M.time_of_day, mutable=True
+        # )
         M.DemandSpecificDistribution = Param(
             M.regions,
             M.time_optimize,
@@ -297,7 +422,8 @@ class TemoaModel(AbstractModel):
         M.Demand = Param(M.DemandConstraint_rpc)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
+        # LimitResource IS implemented but sums cumulatively for a technology rather than
+        # resource commodity
         # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
         # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
@@ -306,7 +432,8 @@ class TemoaModel(AbstractModel):
 
         M.ExistingCapacity = Param(M.regionalIndices, M.tech_exist, M.vintage_exist)
 
-        # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
+        # Dev Note:  The below is temporarily useful for passing down to validator to find
+        # set violations
         #            Uncomment this assignment, and comment out the orig below it...
         # M.Efficiency = Param(
         #     Any, Any, Any, Any, Any,
@@ -365,9 +492,10 @@ class TemoaModel(AbstractModel):
 
         M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
 
-        # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a supporting
-        #            table in the database.  It is just a "passthrough" now to the default LoanLifetimeTech.
-        #            It is already stitched in to the model, so will leave it for now.  Table may be revived.
+        # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a
+        #            supporting table in the database.  It is just a "passthrough" now to the
+        #            default LoanLifetimeTech. It is already stitched in to the model,
+        #            so will leave it for now.  Table may be revived.
 
         M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
@@ -445,7 +573,7 @@ class TemoaModel(AbstractModel):
             M.vintage_all,
             # validate=validate_CapacityFactorProcess, # opting for a quicker validation, just 0->1
             validate=validate_0to1,
-            default=get_default_capacity_factor,  # surprisingly slow but only called if a value is missing
+            default=get_default_capacity_factor,  # slow but only called if a value is missing
         )
 
         M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
@@ -948,7 +1076,8 @@ class TemoaModel(AbstractModel):
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
         # M.LimitNewCapacityGroupShareConstraint = Constraint(
-        #     M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
+        #     M.LimitNewCapacityGroupShareConstraint_rpgg,
+        #     rule=LimitNewCapacityGroupShare_Constraint
         # )
 
         # M.LimitActivityGroupShareConstraint = Constraint(
