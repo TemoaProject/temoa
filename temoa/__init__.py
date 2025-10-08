@@ -25,8 +25,6 @@ from temoa._internal.table_data_puller import (
     poll_flow_results,
 )
 from temoa._internal.table_writer import TableWriter
-from temoa._internal.temoa_initialize import *
-from temoa._internal.temoa_rules import *
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel

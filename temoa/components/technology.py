@@ -282,3 +282,30 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
         ).format([rtv for rtv in rtv_interpolated])
         logger.info(msg)
+
+
+def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Get the effective capacity of a process :math:`<r, t, v>` in a period :math:`p`.
+
+    Accounts for mid-period end of life or average survival over the period
+    for processes using survival curves.
+    """
+
+    period_length = value(M.PeriodLength[p])
+
+    if M.isSurvivalCurveProcess[r, t, v]:
+        # Sum survival fraction over the period
+        years_remaining = sum(
+            value(M.LifetimeSurvivalCurve[r, _p, t, v]) for _p in range(p, p + period_length, 1)
+        )
+    else:
+        # Remaining life years within the EOL period
+        years_remaining = v + value(M.LifetimeProcess[r, t, v]) - p
+
+    if years_remaining >= period_length:
+        # try to avoid floating point round-off errors for the common case.
+        return 1
+
+    frac = years_remaining / float(period_length)
+    return frac

@@ -39,8 +39,9 @@ from enum import Enum, unique
 from pyomo.common.numeric_types import value
 from pyomo.core import Objective
 
-from temoa._internal import temoa_rules
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
+from temoa.components import costs
+from temoa.components.utils import get_variable_efficiency
 from temoa.core.model import TemoaModel
 
 logger = logging.getLogger(__name__)
@@ -154,7 +155,7 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         if abs(flow) < epsilon:
             continue
         res[fi][FlowType.IN] = flow
-        res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
+        res[fi][FlowType.LOST] = (1 - get_variable_efficiency(M, *key)) * flow
 
     # regular flows
     for key in M.V_FlowOut.keys():
@@ -165,9 +166,9 @@ def poll_flow_results(M: TemoaModel, epsilon=1e-5) -> dict[FI, dict[FlowType, fl
         res[fi][FlowType.OUT] = flow
 
         if fi.t not in M.tech_storage:  # we can get the flow in by out/eff...
-            flow = value(M.V_FlowOut[fi]) / temoa_rules.get_variable_efficiency(M, *key)
+            flow = value(M.V_FlowOut[fi]) / get_variable_efficiency(M, *key)
             res[fi][FlowType.IN] = flow
-            res[fi][FlowType.LOST] = (1 - temoa_rules.get_variable_efficiency(M, *key)) * flow
+            res[fi][FlowType.LOST] = (1 - get_variable_efficiency(M, *key)) * flow
 
     # curtailment flows
     for key in M.V_Curtailment.keys():
@@ -394,7 +395,7 @@ def poll_cost_results(
         fixed_cost = value(M.CostFixed[r, p, t, v])
         undiscounted_fixed_cost = cap * fixed_cost * value(M.PeriodLength[p])
 
-        model_fixed_cost = temoa_rules.fixed_or_variable_cost(
+        model_fixed_cost = costs.fixed_or_variable_cost(
             cap, fixed_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
         )
         if '-' in r:
@@ -440,7 +441,7 @@ def poll_cost_results(
         var_cost = value(M.CostVariable[r, p, t, v])
         undiscounted_var_cost = activity * var_cost * value(M.PeriodLength[p])
 
-        model_var_cost = temoa_rules.fixed_or_variable_cost(
+        model_var_cost = costs.fixed_or_variable_cost(
             activity, var_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
         )
         if '-' in r:
@@ -486,8 +487,8 @@ def loan_costs(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = temoa_rules.pv_to_annuity(rate=loan_rate, periods=loan_life)
-    model_ic = temoa_rules.loan_cost(
+    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=loan_life)
+    model_ic = costs.loan_cost(
         capacity,
         invest_cost,
         loan_annualize=loan_ar,
@@ -500,7 +501,7 @@ def loan_costs(
     )
     # Override the GDR to get the undiscounted value
     global_discount_rate = 0
-    undiscounted_cost = temoa_rules.loan_cost(
+    undiscounted_cost = costs.loan_cost(
         capacity,
         invest_cost,
         loan_annualize=loan_ar,
@@ -535,8 +536,8 @@ def loan_costs_survival_curve(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = temoa_rules.pv_to_annuity(rate=loan_rate, periods=loan_life)
-    model_ic = temoa_rules.loan_cost_survival_curve(
+    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=loan_life)
+    model_ic = costs.loan_cost_survival_curve(
         M,
         r,
         t,
@@ -551,7 +552,7 @@ def loan_costs_survival_curve(
     )
     # Override the GDR to get the undiscounted value
     global_discount_rate = 0
-    undiscounted_cost = temoa_rules.loan_cost_survival_curve(
+    undiscounted_cost = costs.loan_cost_survival_curve(
         M,
         r,
         t,
@@ -633,7 +634,7 @@ def poll_emissions(
         undiscounted_emiss_cost = (
             flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * M.PeriodLength[ei.p]
         )
-        discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
+        discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=flows[ei],
             cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
             cost_years=M.PeriodLength[ei.p],
@@ -673,7 +674,7 @@ def poll_emissions(
             * M.CostEmission[ei.r, ei.v, ei.e]
             * M.PeriodLength[ei.v]  # treat as fixed cost distributed over construction period
         )
-        discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
+        discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=embodied_flows[ei],
             cost_factor=M.CostEmission[ei.r, ei.v, ei.e],
             cost_years=M.PeriodLength[
@@ -718,7 +719,7 @@ def poll_emissions(
             * M.CostEmission[ei.r, ei.p, ei.e]
             * M.PeriodLength[ei.p]  # treat as fixed cost distributed over retirement period
         )
-        discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
+        discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=eol_flows[ei],
             cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
             cost_years=M.PeriodLength[
@@ -732,11 +733,11 @@ def poll_emissions(
         d_costs[ei.r, ei.p, ei.t, ei.v] += discounted_emiss_cost
 
     # finally, now that all costs are added up for each rptv, put in cost dict
-    costs = defaultdict(dict)
+    costs_dict = defaultdict(dict)
     for rptv in ud_costs:
-        costs[rptv][CostType.EMISS] = ud_costs[rptv]
+        costs_dict[rptv][CostType.EMISS] = ud_costs[rptv]
     for rptv in d_costs:
-        costs[rptv][CostType.D_EMISS] = d_costs[rptv]
+        costs_dict[rptv][CostType.D_EMISS] = d_costs[rptv]
 
     # wow, that was like pulling teeth
-    return costs, flows
+    return costs_dict, flows

@@ -48,3 +48,25 @@ def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
     else:
         regions = (region,)
     return regions
+
+
+def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
+    r"""
+
+    This constraint ensures that the process (t,v) connecting regions
+    r_e and r_i is handled by one capacity variables.
+
+    .. math::
+       :label: RegionalExchangeCapacity
+
+          \textbf{CAP}_{r_e,t,v}
+          =
+          \textbf{CAP}_{r_i,t,v}
+
+          \\
+          \forall \{r_e, r_i, t, v\} \in \Theta_{\text{RegionalExchangeCapacity}}
+    """
+
+    expr = M.V_Capacity[r_e + '-' + r_i, p, t, v] == M.V_Capacity[r_i + '-' + r_e, p, t, v]
+
+    return expr

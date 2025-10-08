@@ -47,7 +47,7 @@ from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
-from temoa._internal.temoa_rules import TotalCost_rule
+from temoa.components.costs import TotalCost_rule
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
@@ -227,7 +227,7 @@ class MgaSequencer:
         s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
         if not s_path.exists():
             s_path.mkdir()
-        for i in range(num_workers):
+        for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
                 results_queue=result_queue,

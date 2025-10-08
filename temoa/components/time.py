@@ -344,3 +344,21 @@ def init_set_vintage_exist(M: 'TemoaModel'):
 
 def init_set_vintage_optimize(M: 'TemoaModel'):
     return sorted(M.time_optimize)
+
+
+def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
+    return sum(value(M.SegFrac[p, s, S_d]) for S_d in M.time_of_day if (p, s, S_d) in M.SegFrac)
+
+
+def ParamPeriodLength(M: 'TemoaModel', p):
+    # This specifically does not use time_optimize because this function is
+    # called /over/ time_optimize.
+    periods = sorted(M.time_future)
+
+    i = periods.index(p)
+
+    # The +1 won't fail, because this rule is called over time_optimize, which
+    # lacks the last period in time_future.
+    length = periods[i + 1] - periods[i]
+
+    return length
