@@ -1,9 +1,25 @@
+# temoa/components/emissions.py
+"""
+Defines the components of the Temoa model related to emissions accounting.
+
+This module is responsible for:
+-  Defining index sets for emission-related parameters and constraints.
+-  Defining the constraint rule for 'linked technologies', a special case where
+    an emission commodity (e.g., captured CO2) is also treated as a physical
+    input to a downstream process (e.g., synthetic fuel production).
+"""
+
 from typing import TYPE_CHECKING
 
 from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def EmissionActivityIndices(M: 'TemoaModel'):
@@ -30,6 +46,11 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
     )
 
     return linkedtech_indices
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULES
+# ============================================================================
 
 
 def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
