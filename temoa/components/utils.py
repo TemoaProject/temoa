@@ -1,3 +1,11 @@
+# temoa/components/utils.py
+"""
+This module contains generic, reusable utility functions for the Temoa model.
+
+These helpers are used by various components to perform common tasks like
+building Pyomo expressions from strings or calculating time-variable efficiencies.
+"""
+
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -44,11 +52,21 @@ def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expre
     return expr
 
 
-# To avoid building big many-indexed parameters when they aren't needed - saves memory
-# Much faster to build a dictionary and check that than check the parameter
-# indices directly every time - saves build time
-def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o):
-    if M.isEfficiencyVariable[r, p, i, t, v, o]:
+def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o) -> float:
+    """
+    Calculates the effective efficiency for a process in a specific time slice.
+
+    This function handles time-varying efficiencies. It checks a pre-computed boolean,
+    `M.isEfficiencyVariable`, to determine if a variable efficiency is defined for
+    the given process.
+
+    - If True, it returns `Efficiency * EfficiencyVariable`.
+    - If False, it returns the base `Efficiency`.
+
+    This dictionary-lookup approach is used for performance, as it is much faster
+    than repeatedly checking the indices of a large Pyomo parameter during model build.
+    """
+    if M.isEfficiencyVariable.get((r, p, i, t, v, o), False):
         return value(M.Efficiency[r, i, t, v, o]) * value(
             M.EfficiencyVariable[r, p, s, d, i, t, v, o]
         )
