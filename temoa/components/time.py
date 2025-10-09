@@ -1,6 +1,14 @@
 # temoa/components/time.py
 """
 This module contains components related to time indexing in the Temoa model.
+
+It is responsible for:
+-  Validating the core time sets (`time_exist`, `time_future`).
+-  Validating the user-defined time-slice fractions (`TimeSegmentFraction`).
+-  Creating the sequence of time slices (`time_next`) based on the chosen
+    sequencing method (e.g., `seasonal_timeslices`, `consecutive_days`).
+-  Creating and validating the superimposed sequential seasons used for
+    seasonal storage and inter-season ramping constraints.
 """
 
 from logging import getLogger
@@ -15,8 +23,10 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-def init_set_time_optimize(M: 'TemoaModel'):
-    return sorted(M.time_future)[:-1]
+# ============================================================================
+# INITIAL VALIDATION FUNCTIONS
+# These are called early in the model build to ensure time data is coherent.
+# ============================================================================
 
 
 def validate_time(M: 'TemoaModel'):
@@ -72,6 +82,51 @@ def validate_time(M: 'TemoaModel'):
         logger.debug('Finished validating time')
 
 
+def validate_SegFrac(M: 'TemoaModel'):
+    """Ensure that the segment fractions adds up to 1"""
+
+    for p in M.time_optimize:
+        expected_keys = set((p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day)
+        keys = set((_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p)
+
+        if expected_keys != keys:
+            extra = keys.difference(expected_keys)
+            missing = expected_keys.difference(keys)
+            msg = (
+                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
+                '\n\nIndices missing from TimeSegmentFraction:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
+            ).format(p, missing, extra)
+            logger.error(msg)
+            raise ValueError(msg)
+
+        total = sum(M.SegFrac[k] for k in keys)
+
+        if abs(float(total) - 1.0) > 0.001:
+            # We can't explicitly test for "!= 1.0" because of incremental rounding
+            # errors associated with the specification of SegFrac by time slice,
+            # but we check to make sure it is within the specified tolerance.
+
+            def get_str_padding(obj):
+                return len(str(obj))
+
+            key_padding = max(map(get_str_padding, keys))
+
+            fmt = '%%-%ds = %%s' % key_padding
+            # Works out to something like "%-25s = %s"
+
+            items = sorted([(k, M.SegFrac[k]) for k in keys])
+            items = '\n   '.join(fmt % (str(k), v) for k, v in items)
+
+            msg = (
+                'The values of TimeSegmentFraction do not sum to 1 for period {}. '
+                'Each item in SegFrac represents a fraction of a year, so they must '
+                'total to 1.  Current values:\n   {}\n\tsum = {}'
+            ).format(p, items, total)
+            logger.error(msg)
+            raise Exception(msg)
+
+
 def validate_TimeNext(M: 'TemoaModel'):
     """
     If using this table, check that defined states are actually valid.
@@ -95,6 +150,43 @@ def validate_TimeNext(M: 'TemoaModel'):
         ).format(missing_psd, missing_psd_next)
         logger.error(msg)
         raise ValueError(msg)
+
+
+# ============================================================================
+# PYOMO SET INITIALIZERS AND PARAMETER RULES
+# ============================================================================
+
+
+def init_set_time_optimize(M: 'TemoaModel'):
+    """Initializes the `time_optimize` set (all future years except the last)."""
+    return sorted(M.time_future)[:-1]
+
+
+def init_set_vintage_exist(M: 'TemoaModel'):
+    """Initializes the `vintage_exist` set."""
+    return sorted(M.time_exist)
+
+
+def init_set_vintage_optimize(M: 'TemoaModel'):
+    """Initializes the `vintage_optimize` set."""
+    return sorted(M.time_optimize)
+
+
+def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
+    """Rule to calculate the total fraction of a period represented by a season."""
+    return sum(value(M.SegFrac[p, s, d]) for d in M.time_of_day if (p, s, d) in M.SegFrac)
+
+
+def ParamPeriodLength(M: 'TemoaModel', p):
+    """Rule to calculate the length of each optimization period in years."""
+    periods = sorted(M.time_future)
+    i = periods.index(p)
+    return periods[i + 1] - periods[i]
+
+
+# ============================================================================
+# HELPER FUNCTIONS FOR TIME SEQUENCING
+# ============================================================================
 
 
 def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
@@ -139,6 +231,11 @@ def loop_season_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
         d_next = M.time_of_day.next(d)
 
     return s_next, d_next
+
+
+# ============================================================================
+# PRE-COMPUTATION & SEQUENCE CREATION
+# ============================================================================
 
 
 def CreateTimeSequence(M: 'TemoaModel'):
@@ -291,74 +388,3 @@ def CreateTimeSeasonSequential(M: 'TemoaModel'):
                 f', TimeSeasonSequential: {(p, s, segfracseq)}'
             )
             logger.warning(msg)
-
-
-def validate_SegFrac(M: 'TemoaModel'):
-    """Ensure that the segment fractions adds up to 1"""
-
-    for p in M.time_optimize:
-        expected_keys = set((p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day)
-        keys = set((_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p)
-
-        if expected_keys != keys:
-            extra = keys.difference(expected_keys)
-            missing = expected_keys.difference(keys)
-            msg = (
-                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
-                '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
-            ).format(p, missing, extra)
-            logger.error(msg)
-            raise ValueError(msg)
-
-        total = sum(M.SegFrac[k] for k in keys)
-
-        if abs(float(total) - 1.0) > 0.001:
-            # We can't explicitly test for "!= 1.0" because of incremental rounding
-            # errors associated with the specification of SegFrac by time slice,
-            # but we check to make sure it is within the specified tolerance.
-
-            def get_str_padding(obj):
-                return len(str(obj))
-
-            key_padding = max(map(get_str_padding, keys))
-
-            fmt = '%%-%ds = %%s' % key_padding
-            # Works out to something like "%-25s = %s"
-
-            items = sorted([(k, M.SegFrac[k]) for k in keys])
-            items = '\n   '.join(fmt % (str(k), v) for k, v in items)
-
-            msg = (
-                'The values of TimeSegmentFraction do not sum to 1 for period {}. '
-                'Each item in SegFrac represents a fraction of a year, so they must '
-                'total to 1.  Current values:\n   {}\n\tsum = {}'
-            ).format(p, items, total)
-            logger.error(msg)
-            raise Exception(msg)
-
-
-def init_set_vintage_exist(M: 'TemoaModel'):
-    return sorted(M.time_exist)
-
-
-def init_set_vintage_optimize(M: 'TemoaModel'):
-    return sorted(M.time_optimize)
-
-
-def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
-    return sum(value(M.SegFrac[p, s, S_d]) for S_d in M.time_of_day if (p, s, S_d) in M.SegFrac)
-
-
-def ParamPeriodLength(M: 'TemoaModel', p):
-    # This specifically does not use time_optimize because this function is
-    # called /over/ time_optimize.
-    periods = sorted(M.time_future)
-
-    i = periods.index(p)
-
-    # The +1 won't fail, because this rule is called over time_optimize, which
-    # lacks the last period in time_future.
-    length = periods[i + 1] - periods[i]
-
-    return length
