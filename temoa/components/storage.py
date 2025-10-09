@@ -1,3 +1,16 @@
+# temoa/components/storage.py
+"""
+Defines the energy storage-related components of the Temoa model.
+
+This module is responsible for modeling the behavior of storage technologies,
+including:
+-  Defining the state variables for storage levels (both daily and seasonal).
+-  Enforcing the conservation of energy from one time slice to the next.
+-  Constraining the storage level to be within the device's energy capacity.
+-  Constraining the charge, discharge, and throughput rates to be within the
+    device's power capacity.
+"""
+
 from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
@@ -6,6 +19,11 @@ from .utils import get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def StorageLevelVariableIndices(M: 'TemoaModel'):
@@ -28,6 +46,13 @@ def SeasonalStorageConstraintIndices(M: 'TemoaModel'):
 
 def StorageConstraintIndices(M: 'TemoaModel'):
     return M.storageLevelIndices_rpsdtv
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULES
+# ============================================================================
+
+# --- Core Energy Balance Constraints ---
 
 
 def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
@@ -166,6 +191,9 @@ def SeasonalStorageEnergy_Constraint(M: 'TemoaModel', r, p, s_seq, t, v):
 
     expr = start + stored_energy == end
     return expr
+
+
+# --- Capacity and Rate Limit Constraints ---
 
 
 def StorageEnergyUpperBound_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
