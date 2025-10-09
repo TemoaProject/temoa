@@ -1,3 +1,15 @@
+# temoa/components/geography.py
+"""
+Defines the geography-related components of the Temoa model.
+
+This module is responsible for handling all logic related to multi-region models,
+including:
+-  Pre-computing the data structures for inter-regional commodity transfers
+    (imports and exports).
+-  Defining the sets of valid regions and regional groupings.
+-  Defining constraints that govern inter-regional capacity and flows.
+"""
+
 from logging import getLogger
 from typing import TYPE_CHECKING, Iterable
 
@@ -8,6 +20,25 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 logger = getLogger(name=__name__)
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+
+def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
+    if region == 'global':
+        regions = M.regions
+    elif '+' in region:
+        regions = region.split('+')
+    else:
+        regions = (region,)
+    return regions
+
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def CreateRegionalIndices(M: 'TemoaModel'):
@@ -41,14 +72,9 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
     return indices
 
 
-def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
-    if region == 'global':
-        regions = M.regions
-    elif '+' in region:
-        regions = region.split('+')
-    else:
-        regions = (region,)
-    return regions
+# ============================================================================
+# PYOMO CONSTRAINT RULES
+# ============================================================================
 
 
 def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
@@ -73,8 +99,25 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
     return expr
 
 
+# ============================================================================
+# PRE-COMPUTATION FUNCTION
+# ============================================================================
+
+
 def create_geography_sets(M: 'TemoaModel'):
-    """Populates dictionaries related to inter-regional commodity exchange."""
+    """
+    Populates dictionaries related to inter-regional commodity exchange.
+
+    This function iterates through exchange technologies (identified by a '-' in
+    their region name) and populates the `M.exportRegions` and `M.importRegions`
+    dictionaries. These are used later in the commodity balance constraints.
+
+    Populates:
+        - M.exportRegions: dict mapping (region_from, p, commodity) to a set
+          of (region_to, t, v, o) tuples.
+        - M.importRegions: dict mapping (region_to, p, commodity) to a set
+          of (region_from, t, v, i) tuples.
+    """
     logger.debug('Creating geography-related sets for exchange technologies.')
     for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
         if t not in M.tech_exchange:
