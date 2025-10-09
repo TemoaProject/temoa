@@ -1,3 +1,14 @@
+# temoa/components/flows.py
+"""
+Defines the flow-related components of the Temoa model.
+
+This module is responsible for:
+-  Pre-computing the sparse index sets for all types of commodity flows
+    (standard, annual, flexible, storage, curtailment).
+-  Defining the Pyomo index set functions used to construct the flow-related
+    decision variables (V_FlowOut, V_FlowIn, V_Flex, etc.).
+"""
+
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -5,6 +16,11 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
+
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def FlowVariableIndices(M: 'TemoaModel'):
@@ -31,10 +47,30 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
     return M.activeCurtailment_rpsditvo
 
 
+# ============================================================================
+# PRE-COMPUTATION FUNCTION
+# ============================================================================
+
+
 def create_commodity_balance_and_flow_sets(M: 'TemoaModel'):
     """
-    Creates the aggregated sets required for commodity balance constraints
-    and the indexed sets for active technology flows, capacities, and storage levels.
+    Creates aggregated sets for commodity balances and detailed index sets for active flows.
+
+    This function is a critical part of the model setup, responsible for
+    creating the large, sparse index sets that define where decision variables
+    for flows, capacity, and storage levels will be created.
+
+    Populates:
+        - M.commodityBalance_rpc: The master set of (r, p, c) for balance constraints.
+        - M.activeFlow_rpsditvo: Indices for time-sliced flows (V_FlowOut).
+        - M.activeFlow_rpitvo: Indices for annual flows (V_FlowOutAnnual).
+        - M.activeFlex_rpsditvo: Indices for flexible time-sliced flows (V_Flex).
+        - M.activeFlex_rpitvo: Indices for flexible annual flows (V_FlexAnnual).
+        - M.activeFlowInStorage_rpsditvo: Indices for flows into storage (V_FlowIn).
+        - M.activeCurtailment_rpsditvo: Indices for curtailed generation (V_Curtailment).
+        - M.activeActivity_rptv: Master set of active (r, p, t, v) processes.
+        - M.storageLevelIndices_rpsdtv: Indices for storage state variables (V_StorageLevel).
+        - M.seasonalStorageLevelIndices_rpstv: Indices for seasonal storage levels.
     """
     logger.debug('Creating commodity balance and active flow index sets.')
     # 1. Commodity Balance
