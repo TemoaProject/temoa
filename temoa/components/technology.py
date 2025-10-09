@@ -309,3 +309,83 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
 
     frac = years_remaining / float(period_length)
     return frac
+
+
+def populate_core_dictionaries(M: 'TemoaModel'):
+    """
+    Loops through the Efficiency parameter to populate the core sparse dictionaries
+    that define process relationships, inputs, outputs, and active periods.
+
+    This function is foundational for creating the sparse indices used throughout the model.
+    """
+    logger.debug('Populating core sparse dictionaries from Efficiency parameter.')
+    first_period = min(M.time_future)
+    exist_indices = M.ExistingCapacity.sparse_keys()
+
+    for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+        # A. Basic data validation and warnings
+        process = (r, t, v)
+        lifetime = value(M.LifetimeProcess[process])
+        if v in M.vintage_exist:
+            if process not in exist_indices and t not in M.tech_uncap:
+                logger.warning(
+                    f'Warning: {process} has a specified Efficiency, but does not '
+                    f'have any existing install base (ExistingCapacity).'
+                )
+                continue
+            if t not in M.tech_uncap and M.ExistingCapacity[process] == 0:
+                logger.warning(
+                    f'Notice: Unnecessary specification of ExistingCapacity for {process}. '
+                    f'Declaring a capacity of zero may be omitted.'
+                )
+                continue
+            if v + lifetime <= first_period:
+                logger.info(
+                    f'{process} specified as ExistingCapacity, but its '
+                    f'lifetime ({lifetime} years) does not extend past the '
+                    f'beginning of time_future ({first_period}).'
+                )
+
+        if M.Efficiency[r, i, t, v, o] == 0:
+            logger.info(
+                f'Notice: Unnecessary specification of Efficiency for {(r, i, t, v, o)}. '
+                f'Specifying an efficiency of zero may be omitted.'
+            )
+            continue
+
+        M.used_techs.add(t)
+
+        # B. Loop through time periods to build time-dependent relationships
+        for p in M.time_optimize:
+            # Skip if tech is not invented or is already retired
+            if p < v or v + lifetime <= p:
+                continue
+
+            pindex = (r, p, t, v)
+
+            # C. Initialize dictionary keys if not present
+            if pindex not in M.processInputs:
+                M.processInputs[pindex] = set()
+                M.processOutputs[pindex] = set()
+            if (r, p, i) not in M.commodityDStreamProcess:
+                M.commodityDStreamProcess[r, p, i] = set()
+            if (r, p, o) not in M.commodityUStreamProcess:
+                M.commodityUStreamProcess[r, p, o] = set()
+            if (r, p, t, v, i) not in M.processOutputsByInput:
+                M.processOutputsByInput[r, p, t, v, i] = set()
+            if (r, p, t, v, o) not in M.processInputsByOutput:
+                M.processInputsByOutput[r, p, t, v, o] = set()
+            if (r, p, t) not in M.processVintages:
+                M.processVintages[r, p, t] = set()
+            if (r, t, v) not in M.processPeriods:
+                M.processPeriods[r, t, v] = set()
+
+            # D. Populate the dictionaries
+            M.processInputs[pindex].add(i)
+            M.processOutputs[pindex].add(o)
+            M.commodityDStreamProcess[r, p, i].add((t, v))
+            M.commodityUStreamProcess[r, p, o].add((t, v))
+            M.processOutputsByInput[r, p, t, v, i].add(o)
+            M.processInputsByOutput[r, p, t, v, o].add(i)
+            M.processVintages[r, p, t].add(v)
+            M.processPeriods[r, t, v].add(p)

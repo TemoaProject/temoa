@@ -1,9 +1,12 @@
+from logging import getLogger
 from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+
+logger = getLogger(__name__)
 
 
 def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
@@ -85,3 +88,42 @@ def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     expr = activity_sd * value(M.SegFrac[p, s, d_0]) == activity_sd_0 * value(M.SegFrac[p, s, d])
 
     return expr
+
+
+def create_operational_vintage_sets(M: 'TemoaModel'):
+    """
+    Populates vintage-based dictionaries for technologies with special
+    operational characteristics like curtailment, baseload, storage, ramping, and reserves.
+    """
+    logger.debug('Creating vintage sets for operational constraints.')
+
+    # Initialize the dictionaries to prevent KeyErrors later
+    M.curtailmentVintages = {}
+    M.baseloadVintages = {}
+    M.storageVintages = {}
+    M.rampUpVintages = {}
+    M.rampDownVintages = {}
+    M.isSeasonalStorage = {}
+    M.processReservePeriods = {}  # Initialize the missing dictionary
+
+    # Now populate them
+    for r, p, t in M.processVintages:
+        for v in M.processVintages[r, p, t]:
+            key_rpt = (r, p, t)
+            key_rp = (r, p)
+            if t in M.tech_curtailment:
+                M.curtailmentVintages.setdefault(key_rpt, set()).add(v)
+            if t in M.tech_baseload:
+                M.baseloadVintages.setdefault(key_rpt, set()).add(v)
+            if t in M.tech_storage:
+                M.storageVintages.setdefault(key_rpt, set()).add(v)
+            if t in M.tech_upramping:
+                M.rampUpVintages.setdefault(key_rpt, set()).add(v)
+            if t in M.tech_downramping:
+                M.rampDownVintages.setdefault(key_rpt, set()).add(v)
+            if t in M.tech_reserve:
+                M.processReservePeriods.setdefault(key_rp, set()).add((t, v))
+
+    # A dictionary of whether a storage tech is seasonal, just to speed things up
+    for t in M.tech_storage:
+        M.isSeasonalStorage[t] = t in M.tech_seasonal_storage

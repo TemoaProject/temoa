@@ -507,3 +507,51 @@ def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
         return value(M.CapacityFactorTech[r, p, s, d, t])
+
+
+def create_capacity_and_retirement_sets(M: 'TemoaModel'):
+    """
+    Creates sets and dictionaries related to technology capacity, retirement,
+    and end-of-life material flows.
+    """
+    logger.debug('Creating capacity, retirement, and construction/EOL sets.')
+    # Retirement periods
+    for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
+        lifetime = value(M.LifetimeProcess[r, t, v])
+        for p in M.time_optimize:
+            is_natural_eol = p <= v + lifetime < p + value(M.PeriodLength[p])
+            is_early_retire = t in M.tech_retirement and v < p <= v + lifetime - value(
+                M.PeriodLength[p]
+            )
+            is_survival_curve = M.isSurvivalCurveProcess[r, t, v] and v <= p <= v + lifetime
+
+            if t not in M.tech_uncap and any((is_natural_eol, is_early_retire, is_survival_curve)):
+                M.retirementPeriods.setdefault((r, t, v), set()).add(p)
+
+    # Construction and End-of-life flows
+    for r, i, t, v in M.ConstructionInput.sparse_iterkeys():
+        M.capacityConsumptionTechs.setdefault((r, v, i), set()).add(t)
+
+    for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys():
+        if (r, t, v) in M.retirementPeriods:
+            for p in M.retirementPeriods[r, t, v]:
+                M.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
+
+    # Active capacity sets
+    M.newCapacity_rtv = set(
+        (r, t, v)
+        for r, p, t in M.processVintages
+        for v in M.processVintages[r, p, t]
+        if t not in M.tech_uncap and v in M.time_optimize
+    )
+    M.activeCapacityAvailable_rpt = set(
+        (r, p, t)
+        for r, p, t in M.processVintages
+        if M.processVintages[r, p, t] and t not in M.tech_uncap
+    )
+    M.activeCapacityAvailable_rptv = set(
+        (r, p, t, v)
+        for r, p, t in M.processVintages
+        for v in M.processVintages[r, p, t]
+        if t not in M.tech_uncap
+    )

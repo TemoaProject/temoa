@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Iterable
 
 from deprecated import deprecated
+from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -70,3 +71,24 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
     expr = M.V_Capacity[r_e + '-' + r_i, p, t, v] == M.V_Capacity[r_i + '-' + r_e, p, t, v]
 
     return expr
+
+
+def create_geography_sets(M: 'TemoaModel'):
+    """Populates dictionaries related to inter-regional commodity exchange."""
+    logger.debug('Creating geography-related sets for exchange technologies.')
+    for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+        if t not in M.tech_exchange:
+            continue
+
+        if '-' not in r:
+            msg = f"Exchange technology {t} has an invalid region '{r}'. Must be 'region_from-region_to'."
+            logger.error(msg)
+            raise ValueError(msg)
+
+        region_from, region_to = r.split('-', 1)
+
+        lifetime = value(M.LifetimeProcess[r, t, v])
+        for p in M.time_optimize:
+            if p >= v and v + lifetime > p:
+                M.exportRegions.setdefault((region_from, p, i), set()).add((region_to, t, v, o))
+                M.importRegions.setdefault((region_to, p, o), set()).add((region_from, t, v, i))

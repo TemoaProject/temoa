@@ -1237,3 +1237,26 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     )
     expr = operator_expression(capacity, op, cap_lim)
     return expr
+
+
+def create_limit_vintage_sets(M: 'TemoaModel'):
+    """
+    Populates vintage sets for technologies constrained by input/output split limits.
+    """
+    logger.debug('Creating vintage sets for split limits.')
+    # Assuming M.processVintages is already populated
+    for r, p, t in M.processVintages:
+        for v in M.processVintages[r, p, t]:
+            for i in M.processInputs.get((r, p, t, v), []):
+                for op in M.operator:
+                    if (r, p, i, t, op) in M.LimitTechInputSplit:
+                        M.inputSplitVintages.setdefault((r, p, i, t, op), set()).add(v)
+                    if (r, p, i, t, op) in M.LimitTechInputSplitAnnual:
+                        M.inputSplitAnnualVintages.setdefault((r, p, i, t, op), set()).add(v)
+
+            for o in M.processOutputs.get((r, p, t, v), []):
+                for op in M.operator:
+                    if (r, p, t, o, op) in M.LimitTechOutputSplit:
+                        M.outputSplitVintages.setdefault((r, p, t, o, op), set()).add(v)
+                    if (r, p, t, o, op) in M.LimitTechOutputSplitAnnual:
+                        M.outputSplitAnnualVintages.setdefault((r, p, t, o, op), set()).add(v)

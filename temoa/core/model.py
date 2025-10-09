@@ -23,15 +23,6 @@ from pyomo.environ import (
     minimize,
 )
 
-from temoa._internal.precompute import (
-    _create_capacity_and_retirement_sets,
-    _create_commodity_balance_and_flow_sets,
-    _create_geography_sets,
-    _create_limit_vintage_sets,
-    _create_operational_vintage_sets,
-    _create_technology_and_commodity_sets,
-    _populate_core_dictionaries,
-)
 from temoa.components import (
     capacity,
     commodities,
@@ -71,19 +62,19 @@ def CreateSparseDicts(M: 'TemoaModel'):
 
     # Call the decomposed functions in logical order
     # 1. Populate core relationships from Efficiency table
-    _populate_core_dictionaries(M)
+    technology.populate_core_dictionaries(M)
 
     # 2. Classify technologies and commodities
-    _create_technology_and_commodity_sets(M)
+    commodities.create_technology_and_commodity_sets(M)
 
     # 3. Create sets for specific components
-    _create_operational_vintage_sets(M)  # For operations, storage, ramping
-    _create_limit_vintage_sets(M)  # For limits
-    _create_geography_sets(M)  # For geography/exchange
-    _create_capacity_and_retirement_sets(M)  # For capacity
+    operations.create_operational_vintage_sets(M)  # For operations, storage, ramping
+    limits.create_limit_vintage_sets(M)  # For limits
+    geography.create_geography_sets(M)  # For geography/exchange
+    capacity.create_capacity_and_retirement_sets(M)  # For capacity
 
     # 4. Create final aggregated sets for constraints
-    _create_commodity_balance_and_flow_sets(M)  # For flows and commodities
+    flows.create_commodity_balance_and_flow_sets(M)  # For flows and commodities
 
     # Final check for unused technologies
     unused_techs = M.tech_all - M.used_techs

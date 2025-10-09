@@ -719,3 +719,17 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
         expr = produced == consumed
 
     return expr
+
+
+def create_technology_and_commodity_sets(M: 'TemoaModel'):
+    """
+    Populates technology and commodity subset definitions based on their roles
+    (e.g., demand, flexible) identified from the Efficiency parameter.
+    """
+    logger.debug('Creating technology and commodity subsets.')
+    for _r, _i, t, _v, o in M.Efficiency.sparse_iterkeys():
+        if t in M.tech_flex and o not in M.commodity_flex:
+            M.commodity_flex.add(o)
+
+        if o in M.commodity_demand and t not in M.tech_demand:
+            M.tech_demand.add(t)
