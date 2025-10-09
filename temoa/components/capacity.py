@@ -2,9 +2,11 @@
 """
 Defines the capacity-related components of the Temoa model.
 
-This includes the core variables for new, retired, and available capacity,
-as well as the constraints that govern their relationships and enforce
-production limits.
+This module is responsible for:
+-  Defining Pyomo index sets for variables.
+-  Defining the rules for all capacity-related constraints, such as capacity
+    production limits, retirement accounting, and available capacity aggregation.
+-  Pre-calculating sparse index sets for capacity, retirement, and material flows.
 """
 
 from __future__ import annotations
@@ -23,40 +25,11 @@ if TYPE_CHECKING:
 
 
 logger = getLogger(name=__name__)
+
+
 # ============================================================================
-# INDEX GENERATION FUNCTIONS
-# (Formerly in temoa/_internal/temoa_initialize.py)
+# HELPER FUNCTIONS AND VALIDATORS
 # ============================================================================
-# By convention, we can prefix these with an underscore to indicate they are
-# internal helpers for this component's construction.
-
-
-def CapacityVariableIndices(M: 'TemoaModel'):
-    return M.newCapacity_rtv
-
-
-def RetiredCapacityVariableIndices(M: 'TemoaModel'):
-    return set(
-        (r, p, t, v)
-        for r, p, t in M.processVintages
-        if t in M.tech_retirement and t not in M.tech_uncap
-        for v in M.processVintages[r, p, t]
-        if v < p <= v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[p])
-    )
-
-
-def AnnualRetirementVariableIndices(M: 'TemoaModel'):
-    return set(
-        (r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]
-    )
-
-
-def CapacityAvailableVariableIndices(M: 'TemoaModel'):
-    return M.activeCapacityAvailable_rpt
-
-
-def CapacityAvailableVariableIndicesVintage(M: 'TemoaModel'):
-    return M.activeCapacityAvailable_rptv
 
 
 def CheckCapacityFactorProcess(M: 'TemoaModel'):
@@ -154,6 +127,77 @@ def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     return M.CapacityFactorTech[r, p, s, d, t]
 
 
+def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
+    if M.isCapacityFactorProcess[r, p, t, v]:
+        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
+    else:
+        return value(M.CapacityFactorTech[r, p, s, d, t])
+
+
+# ============================================================================
+# PYOMO INDEX SETS
+# ============================================================================
+
+
+def CapacityVariableIndices(M: 'TemoaModel'):
+    return M.newCapacity_rtv
+
+
+def RetiredCapacityVariableIndices(M: 'TemoaModel'):
+    return set(
+        (r, p, t, v)
+        for r, p, t in M.processVintages
+        if t in M.tech_retirement and t not in M.tech_uncap
+        for v in M.processVintages[r, p, t]
+        if v < p <= v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[p])
+    )
+
+
+def AnnualRetirementVariableIndices(M: 'TemoaModel'):
+    return set(
+        (r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]
+    )
+
+
+def CapacityAvailableVariableIndices(M: 'TemoaModel'):
+    return M.activeCapacityAvailable_rpt
+
+
+def RegionalExchangeCapacityConstraintIndices(M: 'TemoaModel'):
+    indices = set(
+        (r_e, r_i, p, t, v)
+        for r_e, p, i in M.exportRegions
+        for r_i, t, v, o in M.exportRegions[r_e, p, i]
+    )
+
+    return indices
+
+
+def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
+    capacity_indices = set(
+        (r, p, t, v)
+        for r, p, t, v in M.activeActivity_rptv
+        if t in M.tech_annual and t not in M.tech_demand
+        if t not in M.tech_uncap
+    )
+
+    return capacity_indices
+
+
+def CapacityConstraintIndices(M: 'TemoaModel'):
+    capacity_indices = set(
+        (r, p, s, d, t, v)
+        for r, p, t, v in M.activeActivity_rptv
+        if (t not in M.tech_annual or t in M.tech_demand)
+        if t not in M.tech_uncap
+        if t not in M.tech_storage
+        for s in M.TimeSeason[p]
+        for d in M.time_of_day
+    )
+
+    return capacity_indices
+
+
 @deprecated('switched over to validator... this set is typically VERY empty')
 def CapacityFactorProcessIndices(M: 'TemoaModel'):
     indices = set(
@@ -176,39 +220,216 @@ def CapacityFactorTechIndices(M: 'TemoaModel'):
     return all_cfs
 
 
-def CapacityConstraintIndices(M: 'TemoaModel'):
-    capacity_indices = set(
-        (r, p, s, d, t, v)
-        for r, p, t, v in M.activeActivity_rptv
-        if (t not in M.tech_annual or t in M.tech_demand)
-        if t not in M.tech_uncap
-        if t not in M.tech_storage
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
+def CapacityAvailableVariableIndicesVintage(M: 'TemoaModel'):
+    return M.activeCapacityAvailable_rptv
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULES
+# ============================================================================
+
+
+def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Get the annualised retirement rate for a process in a given period.
+    Used to output retirement (including end of life, EOL) and to model end of
+    life flows and emissions. Assumes that retirement from the beginning of each period
+    is evenly distributed over that model period :math:`\frac{1}{\text{LEN}_p}`
+    for the accounting of retirement flows (in the same way we assume capacity is
+    deployed evenly over the model period for construction inputs and embodied emissions).
+    The factor :math:`\frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}}`
+    adjusts the average survival during a period to the survival at the beginning
+    of that period.
+
+    .. math::
+        :label: Annual Retirement
+
+            \textbf{ART}_{r,p,t,v} =
+            \begin{cases}
+                \frac{1}{\text{LEN}_p} \cdot
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                & \text{if EOL} \\
+                \frac{1}{\text{LEN}_p} \cdot
+                \left(
+                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
+                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
+                \right)
+                & \text{otherwise} \\
+            \end{cases}
+
+            \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
+    """
+
+    ## Get the capacity at the start of this period
+    if p == v + value(M.LifetimeProcess[r, t, v]):
+        # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
+        if p == M.time_optimize.first():
+            # Must be existing capacity. Apply survival curve to existing cap
+            cap_begin = M.ExistingCapacity[r, t, v] * M.LifetimeSurvivalCurve[r, p, t, v]
+        else:
+            # Get previous capacity and continue survival curve
+            p_prev = M.time_optimize.prev(p)
+            cap_begin = (
+                M.V_Capacity[r, p_prev, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p, t, v])
+                / value(M.ProcessLifeFrac[r, p_prev, t, v])
+            )
+    else:
+        # The capacity at the beginning of the period
+        cap_begin = (
+            M.V_Capacity[r, p, t, v]
+            * value(M.LifetimeSurvivalCurve[r, p, t, v])
+            / value(M.ProcessLifeFrac[r, p, t, v])
+        )
+
+    ## Get the capacity at the end of this period
+    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+        # EOL so capacity ends on zero
+        cap_end = 0
+    else:
+        # Mid-life period, ending capacity is beginning capacity of next period
+        p_next = M.time_future.next(p)
+
+        if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
+            # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
+            cap_end = (
+                cap_begin
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.LifetimeSurvivalCurve[r, p, t, v])
+            )
+        else:
+            # Get the next period's beginning capacity
+            cap_end = (
+                M.V_Capacity[r, p_next, t, v]
+                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(M.ProcessLifeFrac[r, p_next, t, v])
+            )
+
+    annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
+    return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
+
+
+def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
+    r"""
+
+    The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
+    but is also used in the Limit constraint calculations.
+
+    .. math::
+        :label: CapacityAvailable
+
+        \textbf{CAPAVL}_{r, p, t} = \sum_{v, p_i \leq p} \textbf{CAP}_{r, p, t, v}
+
+        \\
+        \forall p \in \text{P}^o, r \in R, t \in T
+    """
+    cap_avail = sum(M.V_Capacity[r, p, t, S_v] for S_v in M.processVintages[r, p, t])
+
+    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
+    return expr
+
+
+def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+    Similar to Capacity_Constraint, but for technologies belonging to the
+    :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
+    across different timeslices within a year, so we do not need to ensure
+    that installed capacity is sufficient across all timeslices, thus saving
+    some computational effort. Instead, annual output is sufficient to calculate
+    capacity. Hourly capacity factors cannot be defined to annual technologies
+    but annual capacity factors can be set using LimitAnnualCapacityFactor,
+    which will be implicitly accounted for here.
+
+    .. math::
+        :label: CapacityAnnual
+
+            \text{C2A}_{r, t}
+            \cdot \textbf{CAP}_{r, t, v}
+        =
+            \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+
+        \\
+        \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
+    """
+    activity_rptv = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    return capacity_indices
+    return value(M.CapacityToActivity[r, t]) * M.V_Capacity[r, p, t, v] >= activity_rptv
 
 
-def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
-    capacity_indices = set(
-        (r, p, t, v)
-        for r, p, t, v in M.activeActivity_rptv
-        if t in M.tech_annual and t not in M.tech_demand
-        if t not in M.tech_uncap
-    )
+def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+    r"""
+    This constraint ensures that the capacity of a given process is sufficient
+    to support its activity across all time periods and time slices. The calculation
+    on the left hand side of the equality is the maximum amount of energy a process
+    can produce in the timeslice :code:`(s,d)`. Note that the curtailment variable
+    shown below only applies to technologies that are members of the curtailment set.
+    Curtailment is necessary to track explicitly in scenarios that include a high
+    renewable target. Without it, the model can generate more activity than is used
+    to meet demand, and have all activity (including the portion curtailed) count
+    towards the target. Tracking activity and curtailment separately prevents this
+    possibility.
 
-    return capacity_indices
+    .. math::
+       :label: Capacity
 
+           \left (
+                   \text{CFP}_{r, p, s, d, t, v}
+             \cdot \text{C2A}_{r, t}
+             \cdot \text{SEG}_{s, d}
+           \right )
+           \cdot \textbf{CAP}_{r, t, v}
+           =
+           \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+           +
+           \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
-def RegionalExchangeCapacityConstraintIndices(M: 'TemoaModel'):
-    indices = set(
-        (r_e, r_i, p, t, v)
-        for r_e, p, i in M.exportRegions
-        for r_i, t, v, o in M.exportRegions[r_e, p, i]
-    )
+       \\
+       \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
+    """
+    # The expressions below are defined in-line to minimize the amount of
+    # expression cloning taking place with Pyomo.
 
-    return indices
+    if t in M.tech_annual:
+        # Annual demand technology
+        useful_activity = sum(
+            (
+                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in M.commodity_demand
+                else value(M.SegFrac[p, s, d])
+            )
+            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        useful_activity = sum(
+            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+
+    if t in M.tech_curtailment:
+        # If technologies are present in the curtailment set, then enough
+        # capacity must be available to cover both activity and curtailment.
+        return get_capacity_factor(M, r, p, s, d, t, v) * value(M.CapacityToActivity[r, t]) * value(
+            M.SegFrac[p, s, d]
+        ) * M.V_Capacity[r, p, t, v] == useful_activity + sum(
+            M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
+            for S_i in M.processInputs[r, p, t, v]
+            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        )
+    else:
+        return (
+            get_capacity_factor(M, r, p, s, d, t, v)
+            * value(M.CapacityToActivity[r, t])
+            * value(M.SegFrac[p, s, d])
+            * M.V_Capacity[r, p, t, v]
+            >= useful_activity
+        )
 
 
 def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
@@ -299,223 +520,34 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
     return M.V_Capacity[r, p, t, v] == remaining_capacity
 
 
-def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
-    r"""
-    This constraint ensures that the capacity of a given process is sufficient
-    to support its activity across all time periods and time slices. The calculation
-    on the left hand side of the equality is the maximum amount of energy a process
-    can produce in the timeslice :code:`(s,d)`. Note that the curtailment variable
-    shown below only applies to technologies that are members of the curtailment set.
-    Curtailment is necessary to track explicitly in scenarios that include a high
-    renewable target. Without it, the model can generate more activity than is used
-    to meet demand, and have all activity (including the portion curtailed) count
-    towards the target. Tracking activity and curtailment separately prevents this
-    possibility.
-
-    .. math::
-       :label: Capacity
-
-           \left (
-                   \text{CFP}_{r, p, s, d, t, v}
-             \cdot \text{C2A}_{r, t}
-             \cdot \text{SEG}_{s, d}
-           \right )
-           \cdot \textbf{CAP}_{r, t, v}
-           =
-           \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-           +
-           \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
-
-       \\
-       \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
-    """
-    # The expressions below are defined in-line to minimize the amount of
-    # expression cloning taking place with Pyomo.
-
-    if t in M.tech_annual:
-        # Annual demand technology
-        useful_activity = sum(
-            (
-                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
-                if S_o in M.commodity_demand
-                else value(M.SegFrac[p, s, d])
-            )
-            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-    else:
-        useful_activity = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-
-    if t in M.tech_curtailment:
-        # If technologies are present in the curtailment set, then enough
-        # capacity must be available to cover both activity and curtailment.
-        return get_capacity_factor(M, r, p, s, d, t, v) * value(M.CapacityToActivity[r, t]) * value(
-            M.SegFrac[p, s, d]
-        ) * M.V_Capacity[r, p, t, v] == useful_activity + sum(
-            M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-        )
-    else:
-        return (
-            get_capacity_factor(M, r, p, s, d, t, v)
-            * value(M.CapacityToActivity[r, t])
-            * value(M.SegFrac[p, s, d])
-            * M.V_Capacity[r, p, t, v]
-            >= useful_activity
-        )
-
-
-def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
-    r"""
-    Similar to Capacity_Constraint, but for technologies belonging to the
-    :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
-    across different timeslices within a year, so we do not need to ensure
-    that installed capacity is sufficient across all timeslices, thus saving
-    some computational effort. Instead, annual output is sufficient to calculate
-    capacity. Hourly capacity factors cannot be defined to annual technologies
-    but annual capacity factors can be set using LimitAnnualCapacityFactor,
-    which will be implicitly accounted for here.
-
-    .. math::
-        :label: CapacityAnnual
-
-            \text{C2A}_{r, t}
-            \cdot \textbf{CAP}_{r, t, v}
-        =
-            \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
-
-        \\
-        \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
-    """
-    activity_rptv = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-    )
-
-    return value(M.CapacityToActivity[r, t]) * M.V_Capacity[r, p, t, v] >= activity_rptv
-
-
-def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
-    r"""
-
-    The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
-    but is also used in the Limit constraint calculations.
-
-    .. math::
-        :label: CapacityAvailable
-
-        \textbf{CAPAVL}_{r, p, t} = \sum_{v, p_i \leq p} \textbf{CAP}_{r, p, t, v}
-
-        \\
-        \forall p \in \text{P}^o, r \in R, t \in T
-    """
-    cap_avail = sum(M.V_Capacity[r, p, t, S_v] for S_v in M.processVintages[r, p, t])
-
-    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
-    return expr
-
-
-def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
-    r"""
-    Get the annualised retirement rate for a process in a given period.
-    Used to output retirement (including end of life, EOL) and to model end of
-    life flows and emissions. Assumes that retirement from the beginning of each period
-    is evenly distributed over that model period :math:`\frac{1}{\text{LEN}_p}`
-    for the accounting of retirement flows (in the same way we assume capacity is
-    deployed evenly over the model period for construction inputs and embodied emissions).
-    The factor :math:`\frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}}`
-    adjusts the average survival during a period to the survival at the beginning
-    of that period.
-
-    .. math::
-        :label: Annual Retirement
-
-            \textbf{ART}_{r,p,t,v} =
-            \begin{cases}
-                \frac{1}{\text{LEN}_p} \cdot
-                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
-                & \text{if EOL} \\
-                \frac{1}{\text{LEN}_p} \cdot
-                \left(
-                \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
-                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
-                \right)
-                & \text{otherwise} \\
-            \end{cases}
-
-            \\\text{where EOL when } p \leq v + LTP_{r,t,v} < p + LEN_p
-    """
-
-    ## Get the capacity at the start of this period
-    if p == v + value(M.LifetimeProcess[r, t, v]):
-        # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
-        if p == M.time_optimize.first():
-            # Must be existing capacity. Apply survival curve to existing cap
-            cap_begin = M.ExistingCapacity[r, t, v] * M.LifetimeSurvivalCurve[r, p, t, v]
-        else:
-            # Get previous capacity and continue survival curve
-            p_prev = M.time_optimize.prev(p)
-            cap_begin = (
-                M.V_Capacity[r, p_prev, t, v]
-                * value(M.LifetimeSurvivalCurve[r, p, t, v])
-                / value(M.ProcessLifeFrac[r, p_prev, t, v])
-            )
-    else:
-        # The capacity at the beginning of the period
-        cap_begin = (
-            M.V_Capacity[r, p, t, v]
-            * value(M.LifetimeSurvivalCurve[r, p, t, v])
-            / value(M.ProcessLifeFrac[r, p, t, v])
-        )
-
-    ## Get the capacity at the end of this period
-    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
-        # EOL so capacity ends on zero
-        cap_end = 0
-    else:
-        # Mid-life period, ending capacity is beginning capacity of next period
-        p_next = M.time_future.next(p)
-
-        if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
-            # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
-            cap_end = (
-                cap_begin
-                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
-                / value(M.LifetimeSurvivalCurve[r, p, t, v])
-            )
-        else:
-            # Get the next period's beginning capacity
-            cap_end = (
-                M.V_Capacity[r, p_next, t, v]
-                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
-                / value(M.ProcessLifeFrac[r, p_next, t, v])
-            )
-
-    annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
-    return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
-
-
-def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
-    if M.isCapacityFactorProcess[r, p, t, v]:
-        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
-    else:
-        return value(M.CapacityFactorTech[r, p, s, d, t])
+# ============================================================================
+# PRE-COMPUTATION FUNCTIONS
+# ============================================================================
 
 
 def create_capacity_and_retirement_sets(M: 'TemoaModel'):
     """
-    Creates sets and dictionaries related to technology capacity, retirement,
-    and end-of-life material flows.
+    Creates and populates component-specific Python sets and dictionaries on the model object.
+
+    This function is called once during model initialization and is responsible for
+    creating the sparse indices related to technology capacity, retirement, and
+    construction/end-of-life material flows. These data structures are then
+    used by other functions in this module to build Pyomo components.
+
+    Populates:
+        - M.retirementPeriods: dict mapping (r, t, v) to a set of periods `p`
+          where retirement can occur.
+        - M.capacityConsumptionTechs: dict mapping (r, v, i) to a set of techs `t`
+          that consume commodity `i` for construction.
+        - M.retirementProductionProcesses: dict mapping (r, p, o) to a set of `(t, v)`
+          processes that produce commodity `o` at end-of-life.
+        - M.newCapacity_rtv: set of (r, t, v) for new capacity investments.
+        - M.activeCapacityAvailable_rpt: set of (r, p, t) where capacity is active.
+        - M.activeCapacityAvailable_rptv: set of (r, p, t, v) where vintage capacity is active.
     """
+
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')
-    # Retirement periods
+    # Calculate retirement periods based on lifetime and survival curves
     for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
         lifetime = value(M.LifetimeProcess[r, t, v])
         for p in M.time_optimize:
@@ -528,16 +560,17 @@ def create_capacity_and_retirement_sets(M: 'TemoaModel'):
             if t not in M.tech_uncap and any((is_natural_eol, is_early_retire, is_survival_curve)):
                 M.retirementPeriods.setdefault((r, t, v), set()).add(p)
 
-    # Construction and End-of-life flows
+    # Link construction materials to technologies
     for r, i, t, v in M.ConstructionInput.sparse_iterkeys():
         M.capacityConsumptionTechs.setdefault((r, v, i), set()).add(t)
 
+    # Link end-of-life materials to retiring technologies
     for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys():
         if (r, t, v) in M.retirementPeriods:
             for p in M.retirementPeriods[r, t, v]:
                 M.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
 
-    # Active capacity sets
+    # Create active capacity index sets from the now-populated processVintages
     M.newCapacity_rtv = set(
         (r, t, v)
         for r, p, t in M.processVintages
