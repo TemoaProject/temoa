@@ -1,3 +1,15 @@
+# temoa/components/limits.py
+"""
+Defines the various limit-related components of the Temoa model.
+
+This module contains a wide variety of constraints that enforce
+limits on the energy system. These include, but are not limited to:
+- Input/Output splits for technologies like refineries.
+- Growth and degrowth rates for capacity deployment.
+- Shares of capacity or activity for technology groups (e.g., for RPS policies).
+- Absolute limits on capacity, new investment, or emissions.
+"""
+
 import sys
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -12,6 +24,10 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def LimitTechInputSplitConstraintIndices(M: 'TemoaModel'):
@@ -151,6 +167,11 @@ def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
         for p in M.time_optimize
     )
     return indices
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULES
+# ============================================================================
 
 
 # @deprecated('Deprecated. Use LimitActivityGroupShare instead') # doesn't play well with pyomo
@@ -1239,9 +1260,24 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     return expr
 
 
+# ============================================================================
+# PRE-COMPUTATION FUNCTION
+# ============================================================================
+
+
 def create_limit_vintage_sets(M: 'TemoaModel'):
     """
-    Populates vintage sets for technologies constrained by input/output split limits.
+    Populates vintage-specific dictionaries for input/output split limit constraints.
+
+    This function iterates through active processes and identifies which vintages are
+    subject to split constraints, populating dictionaries that are then used by
+    the index set functions below.
+
+    Populates:
+        - M.inputSplitVintages: dict mapping (r, p, i, t, op) to a set of vintages `v`.
+        - M.inputSplitAnnualVintages: dict for annual-specific input splits.
+        - M.outputSplitVintages: dict mapping (r, p, t, o, op) to a set of vintages `v`.
+        - M.outputSplitAnnualVintages: dict for annual-specific output splits.
     """
     logger.debug('Creating vintage sets for split limits.')
     # Assuming M.processVintages is already populated
