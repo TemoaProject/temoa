@@ -23,12 +23,15 @@ from pyomo.environ import (
     minimize,
 )
 
-from temoa._internal.temoa_initialize import CreateSparseDicts
-
-# ============================================================================
-# Temoa Constraint Functions
-# Core model constraints and business logic rules
-# ============================================================================
+from temoa._internal.precompute import (
+    _create_capacity_and_retirement_sets,
+    _create_commodity_balance_and_flow_sets,
+    _create_geography_sets,
+    _create_limit_vintage_sets,
+    _create_operational_vintage_sets,
+    _create_technology_and_commodity_sets,
+    _populate_core_dictionaries,
+)
 from temoa.components import (
     capacity,
     commodities,
@@ -44,11 +47,6 @@ from temoa.components import (
     technology,
     time,
 )
-
-# ============================================================================
-# Validation Functions
-# Input validation and data integrity checks
-# ============================================================================
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
@@ -61,6 +59,42 @@ from temoa.model_checking.validators import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def CreateSparseDicts(M: 'TemoaModel'):
+    """
+    Creates and populates all sparse dictionaries and sets required for the model
+    by calling component-specific precomputation functions.
+    """
+    # Initialize a set to track technologies used in the Efficiency table
+    M.used_techs = set()
+
+    # Call the decomposed functions in logical order
+    # 1. Populate core relationships from Efficiency table
+    _populate_core_dictionaries(M)
+
+    # 2. Classify technologies and commodities
+    _create_technology_and_commodity_sets(M)
+
+    # 3. Create sets for specific components
+    _create_operational_vintage_sets(M)  # For operations, storage, ramping
+    _create_limit_vintage_sets(M)  # For limits
+    _create_geography_sets(M)  # For geography/exchange
+    _create_capacity_and_retirement_sets(M)  # For capacity
+
+    # 4. Create final aggregated sets for constraints
+    _create_commodity_balance_and_flow_sets(M)  # For flows and commodities
+
+    # Final check for unused technologies
+    unused_techs = M.tech_all - M.used_techs
+    if unused_techs:
+        for tech in sorted(unused_techs):
+            logger.warning(
+                f"Notice: '{tech}' is specified as a technology but is not "
+                'utilized in the Efficiency parameter.'
+            )
+
+    logger.debug('Completed creation of SparseDicts')
 
 
 class TemoaModel(AbstractModel):

@@ -166,7 +166,7 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
     inp = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
         for t in M.tech_group_members[g]
-        for (_t, v) in M.processReservePeriods[r, p]
+        for (_t, v) in M.processReservePeriods.get((r, p), [])
         if _t == t
         for s in M.TimeSeason[p]
         for d in M.time_of_day
