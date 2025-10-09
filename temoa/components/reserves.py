@@ -1,3 +1,13 @@
+# temoa/components/reserves.py
+"""
+Defines the reserve margin components of the Temoa model.
+
+This module is responsible for ensuring the energy system maintains a sufficient
+planning reserve margin to ensure reliability. It supports both a 'static'
+(based on installed capacity) and a 'dynamic' (based on available generation
+in a time slice) formulation for calculating available reserves.
+"""
+
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -9,6 +19,10 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
+
+# ============================================================================
+# PYOMO INDEX SET FUNCTIONS
+# ============================================================================
 
 
 def ReserveMarginIndices(M: 'TemoaModel'):
@@ -22,6 +36,11 @@ def ReserveMarginIndices(M: 'TemoaModel'):
     )
 
     return indices
+
+
+# ============================================================================
+# HELPER FUNCTIONS FOR CONSTRAINT LOGIC
+# ============================================================================
 
 
 def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
@@ -205,6 +224,11 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
         )
 
     return available
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULE
+# ============================================================================
 
 
 def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
