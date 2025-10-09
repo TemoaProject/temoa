@@ -32,7 +32,6 @@ from temoa.components import (
     geography,
     limits,
     operations,
-    ramping,
     reserves,
     storage,
     technology,
@@ -913,28 +912,30 @@ class TemoaModel(AbstractModel):
             M.LimitStorageFractionConstraint_rpsdtv, rule=storage.LimitStorageFraction_Constraint
         )
 
-        M.RampUpDayConstraint_rpsdtv = Set(dimen=6, initialize=ramping.RampUpDayConstraintIndices)
+        M.RampUpDayConstraint_rpsdtv = Set(
+            dimen=6, initialize=operations.RampUpDayConstraintIndices
+        )
         M.RampUpDayConstraint = Constraint(
-            M.RampUpDayConstraint_rpsdtv, rule=ramping.RampUpDay_Constraint
+            M.RampUpDayConstraint_rpsdtv, rule=operations.RampUpDay_Constraint
         )
         M.RampDownDayConstraint_rpsdtv = Set(
-            dimen=6, initialize=ramping.RampDownDayConstraintIndices
+            dimen=6, initialize=operations.RampDownDayConstraintIndices
         )
         M.RampDownDayConstraint = Constraint(
-            M.RampDownDayConstraint_rpsdtv, rule=ramping.RampDownDay_Constraint
+            M.RampDownDayConstraint_rpsdtv, rule=operations.RampDownDay_Constraint
         )
 
         M.RampUpSeasonConstraint_rpsstv = Set(
-            dimen=6, initialize=ramping.RampUpSeasonConstraintIndices
+            dimen=6, initialize=operations.RampUpSeasonConstraintIndices
         )
         M.RampUpSeasonConstraint = Constraint(
-            M.RampUpSeasonConstraint_rpsstv, rule=ramping.RampUpSeason_Constraint
+            M.RampUpSeasonConstraint_rpsstv, rule=operations.RampUpSeason_Constraint
         )
         M.RampDownSeasonConstraint_rpsstv = Set(
-            dimen=6, initialize=ramping.RampDownSeasonConstraintIndices
+            dimen=6, initialize=operations.RampDownSeasonConstraintIndices
         )
         M.RampDownSeasonConstraint = Constraint(
-            M.RampDownSeasonConstraint_rpsstv, rule=ramping.RampDownSeason_Constraint
+            M.RampDownSeasonConstraint_rpsstv, rule=operations.RampDownSeason_Constraint
         )
 
         M.ReserveMargin_rpsd = Set(dimen=4, initialize=reserves.ReserveMarginIndices)
