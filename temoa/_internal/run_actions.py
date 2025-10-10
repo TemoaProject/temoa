@@ -27,31 +27,32 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-import definitions
 import sqlite3
 import sys
 from logging import getLogger
 from pathlib import Path
-from sys import stderr as SE, version_info
+from sys import stderr as SE
+from sys import version_info
 from time import time
 from typing import Tuple
 
 from pyomo.environ import (
-    DataPortal,
-    Suffix,
-    Var,
     Constraint,
-    value,
-    UnknownSolver,
+    DataPortal,
     SolverFactory,
+    Suffix,
+    UnknownSolver,
+    Var,
     check_optimal_termination,
+    value,
 )
 from pyomo.opt import SolverResults
 
+import definitions
+from temoa._internal.table_writer import TableWriter
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
 from temoa.data_processing.DB_to_Excel import make_excel
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_model import TemoaModel
 
 logger = getLogger(__name__)
 
@@ -160,14 +161,24 @@ def build_instance(
             # Check for warnings in log file to notify user. Ugly but it works
             log_file = os.path.join(definitions.get_OUTPUT_PATH(), 'log.log')
             with open(log_file, 'r') as f:
-                warnings_found = any("| WARNING |" in line or "| ERROR |" in line or "| CRITICAL |" in line for line in f)
+                warnings_found = any(
+                    '| WARNING |' in line or '| ERROR |' in line or '| CRITICAL |' in line
+                    for line in f
+                )
                 if warnings_found:
-                    SE.write('\r[%8.2f] Instance created with warnings. Check log file.\n' % (time() - hack))
+                    SE.write(
+                        '\r[%8.2f] Instance created with warnings. Check log file.\n'
+                        % (time() - hack)
+                    )
                 else:
-                    SE.write('\r[%8.2f] Instance created.       \n' % (time() - hack)) # needs spaces to clear previous line
+                    SE.write(
+                        '\r[%8.2f] Instance created.       \n' % (time() - hack)
+                    )  # needs spaces to clear previous line
             SE.flush()
-        except:
-            SE.write('\r[%8.2f] Instance created.       \n' % (time() - hack)) # needs spaces to clear previous line
+        except Exception:
+            SE.write(
+                '\r[%8.2f] Instance created.       \n' % (time() - hack)
+            )  # needs spaces to clear previous line
             SE.flush()
     logger.info('Finished creating model instance from data')
 
@@ -259,10 +270,10 @@ def solve_instance(
 
         elif solver_name == 'gurobi':
             # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-            optimizer.options["Method"] = 2 # barrier
-            optimizer.options["Crossover"] = 0 # non basic solution, ie no crossover
-            optimizer.options["BarConvTol"] = 1.e-5
-            optimizer.options["FeasibilityTol"] = 1.e-6
+            optimizer.options['Method'] = 2  # barrier
+            optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
+            optimizer.options['BarConvTol'] = 1.0e-5
+            optimizer.options['FeasibilityTol'] = 1.0e-6
             # optimizer.options["BarOrder"] = 0 # if solve times seem unusually long, try 0 or 1
 
         elif solver_name == 'appsi_highs':
@@ -331,7 +342,6 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
     """
     soln = result['Solution']
 
-    lesser_responses = ('feasible', 'globallyOptimal', 'locallyOptimal')
     logger.info('The solver reported status as: %s', soln.Status)
     if check_optimal_termination(results=result):
         return True, ''
@@ -351,9 +361,20 @@ def handle_results(
 
     table_writer = TableWriter(config=config)
     if config.save_duals:
-        table_writer.write_results(M=instance, results_with_duals=results, save_storage_levels=config.save_storage_levels, append=append, iteration=iteration)
+        table_writer.write_results(
+            M=instance,
+            results_with_duals=results,
+            save_storage_levels=config.save_storage_levels,
+            append=append,
+            iteration=iteration,
+        )
     else:
-        table_writer.write_results(M=instance, append=append, save_storage_levels=config.save_storage_levels, iteration=iteration)
+        table_writer.write_results(
+            M=instance,
+            append=append,
+            save_storage_levels=config.save_storage_levels,
+            iteration=iteration,
+        )
 
     if not config.silent:
         SE.write(

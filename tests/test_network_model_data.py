@@ -31,8 +31,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from temoa.temoa_model.model_checking import network_model_data
-from temoa.temoa_model.model_checking.commodity_network import CommodityNetwork
+from temoa.model_checking import network_model_data
+from temoa.model_checking.commodity_network import CommodityNetwork
 
 # a couple of test cases with diagrams in the flow...
 params = [
@@ -51,14 +51,14 @@ params = [
     {
         'name': 'basic',
         'data': [
-            [], # retirement techs
-            [], # survival curve techs
+            [],  # retirement techs
+            [],  # survival curve techs
             [
                 (2020,),
                 (2025,),
             ],  # periods
             [(t,) for t in ['s1', 'p1', 'p2', 'p3', 'd1', 'd2']],  # all commodities
-            [], # waste commodities
+            [],  # waste commodities
             [
                 (t,)
                 for t in [
@@ -100,14 +100,14 @@ params = [
     {
         'name': 'bad linked tech',
         'data': [
-            [], # retirement techs
-            [], # survival curve techs
+            [],  # retirement techs
+            [],  # survival curve techs
             [
                 (2020,),
                 (2025,),
             ],  # periods
             [(t,) for t in ['s1', 'p3', 'd1', 'd2']],  # all commodities
-            [], # waste commodities
+            [],  # waste commodities
             [
                 (t,)
                 for t in [
@@ -148,14 +148,14 @@ params = [
         #
         'name': 'good linked tech',
         'data': [
-            [], # retirement techs
-            [], # survival curve techs
+            [],  # retirement techs
+            [],  # survival curve techs
             [
                 (2020,),
                 (2025,),
             ],  # periods
             [(t,) for t in ['s1', 'd1', 'd2', 's2']],  # all commodities
-            [], # waste commodities
+            [],  # waste commodities
             [(t,) for t in ['s1', 's2']],  # sources
             [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],  # demands
             [
@@ -201,12 +201,12 @@ def test_build_from_db(mock_db_connection):
     """test a couple values in the load"""
     conn, expected = mock_db_connection
     network_data = network_model_data._build_from_db(conn)
-    assert (
-        len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands']
-    ), 'demand count failed'
-    assert (
-        len(network_data.available_techs['R1', 2020]) == expected['techs']
-    ), '6 techs are available'
+    assert len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands'], (
+        'demand count failed'
+    )
+    assert len(network_data.available_techs['R1', 2020]) == expected['techs'], (
+        '6 techs are available'
+    )
 
 
 @pytest.mark.parametrize(

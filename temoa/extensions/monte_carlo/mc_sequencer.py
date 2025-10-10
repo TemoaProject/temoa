@@ -27,6 +27,7 @@ Created on:  11/9/24
 A sequencer for Monte Carlo Runs
 .
 """
+
 import logging
 import queue
 import sqlite3
@@ -40,12 +41,12 @@ from pathlib import Path
 from pyomo.dataportal import DataPortal
 
 from definitions import PROJECT_ROOT, get_OUTPUT_PATH
+from temoa._internal.data_brick import DataBrick
+from temoa._internal.hybrid_loader import HybridLoader
+from temoa._internal.table_writer import TableWriter
+from temoa.core.config import TemoaConfig
 from temoa.extensions.monte_carlo.mc_run import MCRunFactory
 from temoa.extensions.monte_carlo.mc_worker import MCWorker
-from temoa.temoa_model.data_brick import DataBrick
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
 
 logger = getLogger(__name__)
 

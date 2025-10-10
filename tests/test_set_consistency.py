@@ -37,7 +37,8 @@ import pytest
 from pyomo import environ as pyo
 
 from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_sequencer import TemoaMode, TemoaSequencer
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.modes import TemoaMode
 
 params = [
     ('utopia', 'config_utopia.toml', 'utopia_sets.json'),
@@ -118,9 +119,9 @@ def test_set_consistency(data_name, config_file, set_file, tmp_path):
             print(f'{k}: {cached_sets[k]}')
 
     assert not missing_in_model, f'one or more cached set not in model: {missing_in_model}'
-    assert (
-        not overage_in_model and not shortage_in_model
-    ), f'The {data_name} run-produced sets did not match cached values'
+    assert not overage_in_model and not shortage_in_model, (
+        f'The {data_name} run-produced sets did not match cached values'
+    )
     if cache_extra_sets:
         assert False, 'Cache has extra sets'
     if model_extra_sets:

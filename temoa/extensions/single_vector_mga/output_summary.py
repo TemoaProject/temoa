@@ -26,12 +26,13 @@ Created on:  6/26/24
 
 A tabular summation of the results from an SVMGA run
 """
+
 import sqlite3
 from sqlite3 import Connection
 
 import tabulate
 
-from temoa.temoa_model.temoa_config import TemoaConfig
+from temoa.core.config import TemoaConfig
 
 
 def summarize(config: TemoaConfig, orig_cost: float, option_cost: float) -> None:

@@ -31,12 +31,27 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import deprecated
-from pyomo.environ import NonNegativeReals, value
+from pyomo.environ import NonNegativeReals
 
 if TYPE_CHECKING:
-    from temoa.temoa_model.temoa_model import TemoaModel
+    from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
+
+
+# ============================================================================
+# Public API - Functions intended for external import
+# ============================================================================
+__all__ = [
+    'no_slash_or_pipe',
+    'region_check',
+    'region_group_check',
+    'validate_0to1',
+    'validate_Efficiency',
+    'validate_linked_tech',
+    'validate_ReserveMargin',
+    'validate_tech_sets',
+]
 
 
 def validate_linked_tech(M: 'TemoaModel') -> bool:
@@ -327,10 +342,10 @@ def validate_tech_sets(M: 'TemoaModel'):
             check_no_intersection(M.tech_annual, M.tech_curtailment),
             check_no_intersection(M.tech_curtailment, M.tech_flex),
             check_no_intersection(M.tech_all, M.tech_group_names),
-            check_no_intersection(M.tech_uncap, M.tech_reserve)
+            check_no_intersection(M.tech_uncap, M.tech_reserve),
         )
     ):
-        raise ValueError("Technology sets failed to validate. Check log file for details.")
+        raise ValueError('Technology sets failed to validate. Check log file for details.')
 
 
 def check_no_intersection(set_one, set_two):

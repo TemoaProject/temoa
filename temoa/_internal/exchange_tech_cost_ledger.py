@@ -29,13 +29,14 @@ for the need is that in many cases, the costs need to be apportioned by use rati
 separately gather all of the costs and then use a usage ratio to generate entries when asked for
 
 """
+
 from collections import defaultdict
-from enum import unique, Enum
+from enum import Enum, unique
 from typing import Union
 
 from pyomo.common.numeric_types import value
 
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.core.model import TemoaModel
 from tests.utilities.namespace_mock import Namespace
 
 

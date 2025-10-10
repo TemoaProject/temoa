@@ -27,6 +27,7 @@ Created on:  5/5/24
 Class to contain Workers that execute solves in separate processes
 
 """
+
 import logging.handlers
 from datetime import datetime
 from logging import getLogger
@@ -35,7 +36,7 @@ from pathlib import Path
 
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.core.model import TemoaModel
 
 verbose = False  # for T/S or monitoring...
 

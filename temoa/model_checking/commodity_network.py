@@ -30,7 +30,7 @@ from collections import defaultdict
 from itertools import chain
 from logging import getLogger
 
-from temoa.temoa_model.model_checking.network_model_data import NetworkModelData, Tech
+from temoa.model_checking.network_model_data import NetworkModelData, Tech
 
 logger = getLogger(__name__)
 
@@ -217,7 +217,8 @@ class CommodityNetwork:
             # dev note:  send a copy of connections...
             # it is consumed by the function.  (easier than managing it in the recursion)
             discovered_sources, demand_side_connections = _visited_dfs(
-                self.model_data.demand_commodities[self.region, self.period] | self.model_data.waste_commodities[self.region, self.period],
+                self.model_data.demand_commodities[self.region, self.period]
+                | self.model_data.waste_commodities[self.region, self.period],
                 self.model_data.source_commodities[self.region, self.period],
                 self.connections.copy(),
             )

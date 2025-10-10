@@ -26,6 +26,7 @@ Created on:  4/15/24
 
 The purpose of this module is to perform top-level control over an MGA model run
 """
+
 import logging
 import queue
 import sqlite3
@@ -42,18 +43,18 @@ from pyomo.contrib.solver.results import Results
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
-from definitions import get_OUTPUT_PATH, PROJECT_ROOT
+from definitions import PROJECT_ROOT, get_OUTPUT_PATH
+from temoa._internal.hybrid_loader import HybridLoader
+from temoa._internal.run_actions import build_instance
+from temoa._internal.table_writer import TableWriter
+from temoa.components.costs import TotalCost_rule
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
 from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
 from temoa.extensions.modeling_to_generate_alternatives.worker import Worker
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.model_checking.pricing_check import price_checker
-from temoa.temoa_model.run_actions import build_instance
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_model import TemoaModel
-from temoa.temoa_model.temoa_rules import TotalCost_rule
+from temoa.model_checking.pricing_check import price_checker
 
 logger = getLogger(__name__)
 
@@ -226,7 +227,7 @@ class MgaSequencer:
         s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
         if not s_path.exists():
             s_path.mkdir()
-        for i in range(num_workers):
+        for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
                 results_queue=result_queue,

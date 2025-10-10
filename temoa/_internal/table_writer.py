@@ -1,6 +1,7 @@
 """
 tool for writing outputs to database tables
 """
+
 import sqlite3
 import sys
 from collections import defaultdict
@@ -12,26 +13,25 @@ from typing import TYPE_CHECKING
 from pyomo.opt import SolverResults
 
 from definitions import PROJECT_ROOT
-from temoa.extensions.monte_carlo.mc_run import ChangeRecord
-from temoa.temoa_model.data_brick import DataBrick
-from temoa.temoa_model.exchange_tech_cost_ledger import CostType
-from temoa.temoa_model.table_data_puller import (
-    poll_capacity_results,
-    poll_flow_results,
-    FI,
-    FlowType,
+from temoa._internal.data_brick import DataBrick
+from temoa._internal.exchange_tech_cost_ledger import CostType
+from temoa._internal.table_data_puller import (
     EI,
-    SLI,
-    _marks,
+    FI,
     CapData,
-    poll_objective,
-    poll_storage_level_results,
+    FlowType,
+    _marks,
+    poll_capacity_results,
     poll_cost_results,
     poll_emissions,
+    poll_flow_results,
+    poll_objective,
+    poll_storage_level_results,
 )
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
+from temoa.core.modes import TemoaMode
+from temoa.extensions.monte_carlo.mc_run import ChangeRecord
 
 if TYPE_CHECKING:
     pass
@@ -243,8 +243,10 @@ class TableWriter:
         data = []
         for sli, storage_level in storage_levels.items():
             sector = self.tech_sectors[sli.t]
-            data.append((scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level))
-        
+            data.append(
+                (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
+            )
+
         qry = f'INSERT INTO OutputStorageLevel VALUES {_marks(9)}'
         self.con.executemany(qry, data)
         self.con.commit()
@@ -282,9 +284,9 @@ class TableWriter:
             val = self.emission_register[ei]
             if abs(val) < self.epsilon:
                 continue
-            if hasattr(ei, 'p'): # emissions from flows
+            if hasattr(ei, 'p'):  # emissions from flows
                 entry = (scenario, ei.r, sector, ei.p, ei.e, ei.t, ei.v, val)
-            else: # embodied emissions
+            else:  # embodied emissions
                 entry = (scenario, ei.r, sector, ei.v, ei.e, ei.t, ei.v, val)
             data.append(entry)
         qry = f'INSERT INTO OutputEmission VALUES {_marks(8)}'
@@ -358,7 +360,7 @@ class TableWriter:
             FlowType.OUT: 'OutputFlowOut',
             FlowType.IN: 'OutputFlowIn',
             FlowType.CURTAIL: 'OutputCurtailment',
-            FlowType.FLEX: 'OutputCurtailment', # devnote: should flex have its own table?
+            FlowType.FLEX: 'OutputCurtailment',  # devnote: should flex have its own table?
         }
 
         for flow_type, table_name in table_associations.items():

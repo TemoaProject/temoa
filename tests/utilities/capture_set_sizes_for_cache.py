@@ -34,7 +34,7 @@ from pathlib import Path
 import pyomo.environ as pyo
 
 from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa._internal.temoa_sequencer import TemoaSequencer
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ Created on:  2/2/24
 import pytest
 from pyomo.environ import Any, ConcreteModel, Param, Set
 
-from temoa.temoa_model.model_checking.pricing_check import check_tech_uncap
+from temoa.model_checking.pricing_check import check_tech_uncap
 
 
 @pytest.fixture

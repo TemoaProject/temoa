@@ -2,6 +2,7 @@
 A quick & dirty graph of the commodity network for troubleshooting purposes.  Future
 development may enhance this quite a bit.... lots of opportunity!
 """
+
 import logging
 from pathlib import Path
 from typing import Iterable
@@ -9,8 +10,8 @@ from typing import Iterable
 import gravis as gv
 import networkx as nx
 
-from temoa.temoa_model.model_checking.network_model_data import NetworkModelData, Tech
-from temoa.temoa_model.temoa_config import TemoaConfig
+from temoa.core.config import TemoaConfig
+from temoa.model_checking.network_model_data import NetworkModelData, Tech
 
 """
 Tools for Energy Model Optimization and Analysis (Temoa):
@@ -87,12 +88,15 @@ def generate_graph(
         (tech.ic, tech.name, tech.oc) for tech in network_data.available_techs[region, period]
     }
     cap_edges = {
-        (tech.ic, tech.name, tech.oc) for tech in network_data.available_techs[region, period]
-        if tech.name in ('Construction','EndOfLife')
+        (tech.ic, tech.name, tech.oc)
+        for tech in network_data.available_techs[region, period]
+        if tech.name in ('Construction', 'EndOfLife')
     }
     exc_edges = {
-        (tech.ic, tech.name, tech.oc) for tech in network_data.available_techs[region, period]
-        if tech.ic in network_data.exchange_commodities or tech.oc in network_data.exchange_commodities
+        (tech.ic, tech.name, tech.oc)
+        for tech in network_data.available_techs[region, period]
+        if tech.ic in network_data.exchange_commodities
+        or tech.oc in network_data.exchange_commodities
     }
     # troll through the tech_data and label things of low importance
     for edge in all_edges:
@@ -142,7 +146,7 @@ def generate_graph(
                         # This is just an exchange tech loop. Ignore.
                         # These are labelled in the graph as {base_tech} ({other region})
                         # so we split on ' (' to compare the base techs
-                        raise ValueError("Just an exchange tech")
+                        raise ValueError('Just an exchange tech')
                     res += f'{node} --> '
                     last_node = node
             except ValueError:
@@ -156,7 +160,7 @@ def generate_graph(
                 period,
                 res,
             )
-        
+
     except nx.NetworkXError as e:
         logger.warning('NetworkX exception encountered: %s.  Loop evaluation NOT performed.', e)
     if config.plot_commodity_network:
@@ -221,8 +225,15 @@ def make_nx_graph(connections, edge_colors, edge_weights, layer_map) -> nx.Multi
     :return: a nx MultiDiGraph
     """
     dg = nx.MultiDiGraph()  # networkx multi(edge) directed graph
-    layer_colors = {1: 'limegreen', 2: 'violet', 3: 'darkorange', 4: 'darkgreen', 5: 'darkblue', 6: 'darkred'}
-    node_size = {1: 50, 2: 15, 3: 30, 4:20, 5:20, 6:30}
+    layer_colors = {
+        1: 'limegreen',
+        2: 'violet',
+        3: 'darkorange',
+        4: 'darkgreen',
+        5: 'darkblue',
+        6: 'darkred',
+    }
+    node_size = {1: 50, 2: 15, 3: 30, 4: 20, 5: 20, 6: 30}
     for ic, tech, oc in connections:
         dg.add_node(
             ic,

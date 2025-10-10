@@ -3,7 +3,7 @@ This file is intended as a QA tool for calculating costs associated with unit-si
 of storage capacity
 """
 
-from temoa.temoa_model.temoa_rules import *
+from temoa._internal.temoa_rules import *
 
 # Written by:  J. F. Hyink
 # jeff@westernspark.us

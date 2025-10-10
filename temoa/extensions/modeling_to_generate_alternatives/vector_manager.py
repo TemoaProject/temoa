@@ -26,11 +26,12 @@ Created on:  4/15/24
 
 An ABC to serve as a framework for future Vector Managers
 """
+
 import sqlite3
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Iterable
+from collections.abc import Iterable, Iterator
 
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.core.model import TemoaModel
 
 
 class VectorManager(ABC):

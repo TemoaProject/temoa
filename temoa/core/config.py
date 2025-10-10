@@ -24,7 +24,7 @@ from logging import getLogger
 from pathlib import Path
 from sys import stderr as SE
 
-from temoa.temoa_model.temoa_mode import TemoaMode
+from temoa.core.modes import TemoaMode
 
 logger = getLogger(__name__)
 
@@ -47,8 +47,8 @@ class TemoaConfig:
         save_duals: bool = False,
         save_storage_levels: bool = False,
         save_lp_file: bool = False,
-        time_sequencing: str = None,
-        reserve_margin: str = None,
+        time_sequencing: str | None = None,
+        reserve_margin: str | None = None,
         MGA: dict | None = None,
         SVMGA: dict | None = None,
         myopic: dict | None = None,
@@ -63,8 +63,8 @@ class TemoaConfig:
     ):
         if '-' in scenario:
             raise ValueError(
-                'Scenario name must not contain "-".  Dashes are used internally to indicate iterative '
-                'runs.  Please rename scenario'
+                'Scenario name must not contain "-".  Dashes are used internally to indicate'
+                'iterative runs.  Please rename scenario'
             )
         self.scenario = scenario
         # capture the operating mode
@@ -75,13 +75,13 @@ class TemoaConfig:
             case str():
                 try:
                     self.scenario_mode = TemoaMode[scenario_mode.upper()]
-                except KeyError:
+                except KeyError as err:
                     raise AttributeError(
                         f'The mode selection received by TemoaConfig: '
                         f'{scenario_mode} is invalid.\nPossible choices are '
                         f'{list(TemoaMode.__members__.keys())} (case '
                         f'insensitive).'
-                    )
+                    ) from err
             case _:
                 raise AttributeError(
                     f'The mode selection received by TemoaConfig: '

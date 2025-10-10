@@ -35,15 +35,15 @@ from sqlite3 import Connection
 from sys import stderr as SE
 
 import definitions
+from temoa._internal import run_actions
+from temoa._internal.hybrid_loader import HybridLoader
+from temoa._internal.table_writer import TableWriter
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
 from temoa.data_processing.DB_to_Excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper
-from temoa.temoa_model import run_actions
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.model_checking.pricing_check import price_checker
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
-from temoa.temoa_model.temoa_model import TemoaModel
+from temoa.model_checking.pricing_check import price_checker
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +281,9 @@ class MyopicSequencer:
             last_base_year = idx.base_year  # update
 
             # delete anything in the OutputObjective table, it is nonsensical...
-            self.output_con.execute(f'DELETE FROM OutputObjective WHERE scenario == "{self.config.scenario}"')
+            self.output_con.execute(
+                f'DELETE FROM OutputObjective WHERE scenario == "{self.config.scenario}"'
+            )
             self.output_con.commit()
 
             # 11.  Compact the db...  lots of writes/deletes leads to bloat
@@ -475,9 +477,11 @@ class MyopicSequencer:
 
         # check that we have enough periods to do myopic run
         # 2 iterations, excluding end year, will be via shortened depth, if reqd.
-        if len(future_periods) < self.view_depth+1:
+        if len(future_periods) < self.view_depth + 1:
             logger.error(
-                'Not enough future years to run myopic mode. Need %d including end year. Got %d.', self.view_depth+1, len(future_periods)
+                'Not enough future years to run myopic mode. Need %d including end year. Got %d.',
+                self.view_depth + 1,
+                len(future_periods),
             )
             sys.exit(-1)
         self.optimization_periods = future_periods.copy()

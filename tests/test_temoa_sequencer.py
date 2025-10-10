@@ -31,8 +31,8 @@ from pathlib import Path
 import pytest
 
 from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.modes import TemoaMode
 
 params = [
     {'name': 'build-only', 'mode': TemoaMode.BUILD_ONLY},
