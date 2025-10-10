@@ -4,30 +4,18 @@
 Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
-Copyright (C) 2015,  NC State University
+SPDX-License-Identifier: MIT
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import logging
 
-from pyomo.core import BuildCheck
+from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
     Any,
     BuildAction,
+    Constraint,
     Integers,
     NonNegativeReals,
     Objective,
@@ -35,13 +23,24 @@ from pyomo.environ import (
     minimize,
 )
 
-from temoa._internal.temoa_initialize import *
-from temoa._internal.temoa_rules import *
+from temoa.components import (
+    capacity,
+    commodities,
+    costs,
+    emissions,
+    flows,
+    geography,
+    limits,
+    operations,
+    reserves,
+    storage,
+    technology,
+    time,
+)
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
     region_group_check,
-    # validate_CapacityFactorProcess,
     validate_0to1,
     validate_Efficiency,
     validate_linked_tech,
@@ -51,8 +50,41 @@ from temoa.model_checking.validators import (
 
 logger = logging.getLogger(__name__)
 
-# disable linter rule that complains about star imports for this file
-# ruff: noqa: F405
+
+def CreateSparseDicts(M: 'TemoaModel'):
+    """
+    Creates and populates all sparse dictionaries and sets required for the model
+    by calling component-specific precomputation functions.
+    """
+    # Initialize a set to track technologies used in the Efficiency table
+    M.used_techs = set()
+
+    # Call the decomposed functions in logical order
+    # 1. Populate core relationships from Efficiency table
+    technology.populate_core_dictionaries(M)
+
+    # 2. Classify technologies and commodities
+    commodities.create_technology_and_commodity_sets(M)
+
+    # 3. Create sets for specific components
+    operations.create_operational_vintage_sets(M)  # For operations, storage, ramping
+    limits.create_limit_vintage_sets(M)  # For limits
+    geography.create_geography_sets(M)  # For geography/exchange
+    capacity.create_capacity_and_retirement_sets(M)  # For capacity
+
+    # 4. Create final aggregated sets for constraints
+    flows.create_commodity_balance_and_flow_sets(M)  # For flows and commodities
+
+    # Final check for unused technologies
+    unused_techs = M.tech_all - M.used_techs
+    if unused_techs:
+        for tech in sorted(unused_techs):
+            logger.warning(
+                f"Notice: '{tech}' is specified as a technology but is not "
+                'utilized in the Efficiency parameter.'
+            )
+
+    logger.debug('Completed creation of SparseDicts')
 
 
 class TemoaModel(AbstractModel):
@@ -170,13 +202,15 @@ class TemoaModel(AbstractModel):
         # Define time periods
         M.time_exist = Set(ordered=True)
         M.time_future = Set(ordered=True)
-        M.time_optimize = Set(ordered=True, initialize=init_set_time_optimize, within=M.time_future)
+        M.time_optimize = Set(
+            ordered=True, initialize=time.init_set_time_optimize, within=M.time_future
+        )
         # Define time period vintages to track capacity installation
-        M.vintage_exist = Set(ordered=True, initialize=init_set_vintage_exist)
-        M.vintage_optimize = Set(ordered=True, initialize=init_set_vintage_optimize)
+        M.vintage_exist = Set(ordered=True, initialize=time.init_set_vintage_exist)
+        M.vintage_optimize = Set(ordered=True, initialize=time.init_set_vintage_optimize)
         M.vintage_all = Set(initialize=M.time_exist | M.time_optimize)
         # Perform some basic validation on the specified time periods.
-        M.validate_time = BuildAction(rule=validate_time)
+        M.validate_time = BuildAction(rule=time.validate_time)
 
         # Define the model time slices
         M.time_season = Set(ordered=True, validate=no_slash_or_pipe)
@@ -184,7 +218,8 @@ class TemoaModel(AbstractModel):
         M.TimeSeason = Set(M.time_optimize, within=M.time_season, ordered=True)
         M.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
-        # This is just to get the TimeStorageSeason table sequentially. There must be a better way but this works for now
+        # This is just to get the TimeStorageSeason table sequentially.
+        # There must be a better way but this works for now
         M.ordered_season_sequential = Set(
             dimen=3, within=M.time_optimize * M.time_season_sequential * M.time_season, ordered=True
         )
@@ -193,7 +228,7 @@ class TemoaModel(AbstractModel):
         M.regions = Set(validate=region_check)
         # RegionalIndices is the set of all the possible combinations of interregional exchanges
         # plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
-        M.regionalIndices = Set(initialize=CreateRegionalIndices)
+        M.regionalIndices = Set(initialize=geography.CreateRegionalIndices)
         M.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
@@ -229,7 +264,8 @@ class TemoaModel(AbstractModel):
         M.tech_exist = Set()
         """techs with existing capacity, want to keep these for accounting reasons"""
 
-        # the below is a convenience for domain checking in params below that should not accept uncap techs...
+        # the below is a convenience for domain checking in params below that should not accept
+        # uncap techs...
         M.tech_with_capacity = Set(initialize=M.tech_all - M.tech_uncap)
         """techs eligible for capacitization"""
         # Define techs for which economic retirement is an option
@@ -282,20 +318,22 @@ class TemoaModel(AbstractModel):
         M.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
-        M.PeriodLength = Param(M.time_optimize, initialize=ParamPeriodLength)
+        M.PeriodLength = Param(M.time_optimize, initialize=time.ParamPeriodLength)
         M.SegFrac = Param(M.time_optimize, M.time_season, M.time_of_day)
-        M.validate_SegFrac = BuildAction(rule=validate_SegFrac)
+        M.validate_SegFrac = BuildAction(rule=time.validate_SegFrac)
         M.TimeSequencing = Set()  # How do states carry between time segments?
         M.TimeNext = Set(
             ordered=True
         )  # This is just to get data from the table. Hidden feature and usually not used
-        M.validate_TimeNext = BuildAction(rule=validate_TimeNext)
+        M.validate_TimeNext = BuildAction(rule=time.validate_TimeNext)
 
         # Define demand- and resource-related parameters
-        # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.  This does not
-        #            cause any problems, so let it be for now.
+        # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.
+        #            This does not cause any problems, so let it be for now.
         #            Doesn't seem to be much point in the table. Just clones SegFrac
-        # M.DemandDefaultDistribution = Param(M.time_optimize, M.time_season, M.time_of_day, mutable=True)
+        # M.DemandDefaultDistribution = Param(
+        #     M.time_optimize, M.time_season, M.time_of_day, mutable=True
+        # )
         M.DemandSpecificDistribution = Param(
             M.regions,
             M.time_optimize,
@@ -310,7 +348,8 @@ class TemoaModel(AbstractModel):
         M.Demand = Param(M.DemandConstraint_rpc)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        # LimitResource IS implemented but sums cumulatively for a technology rather than resource commodity
+        # LimitResource IS implemented but sums cumulatively for a technology rather than
+        # resource commodity
         # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
         # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
@@ -319,7 +358,8 @@ class TemoaModel(AbstractModel):
 
         M.ExistingCapacity = Param(M.regionalIndices, M.tech_exist, M.vintage_exist)
 
-        # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
+        # Dev Note:  The below is temporarily useful for passing down to validator to find
+        # set violations
         #            Uncomment this assignment, and comment out the orig below it...
         # M.Efficiency = Param(
         #     Any, Any, Any, Any, Any,
@@ -343,7 +383,7 @@ class TemoaModel(AbstractModel):
             within=NonNegativeReals,
             validate=validate_Efficiency,
         )
-        M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
+        M.validate_UsedEfficiencyIndices = BuildAction(rule=technology.CheckEfficiencyIndices)
 
         M.EfficiencyVariable = Param(
             M.regionalIndices,
@@ -362,27 +402,30 @@ class TemoaModel(AbstractModel):
             M.regionalIndices, M.tech_all, default=TemoaModel.default_lifetime_tech
         )
 
-        M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
-        M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
+        M.LifetimeProcess_rtv = Set(dimen=3, initialize=technology.LifetimeProcessIndices)
+        M.LifetimeProcess = Param(
+            M.LifetimeProcess_rtv, default=technology.get_default_process_lifetime
+        )
 
         M.LifetimeSurvivalCurve = Param(
             M.regionalIndices,
             Integers,
             M.tech_all,
             M.vintage_all,
-            default=get_default_survival,
+            default=technology.get_default_survival,
             validate=validate_0to1,
             mutable=True,
         )
-        M.Create_SurvivalCurve = BuildAction(rule=CreateSurvivalCurve)
+        M.Create_SurvivalCurve = BuildAction(rule=technology.CreateSurvivalCurve)
 
-        M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
+        M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=costs.LifetimeLoanProcessIndices)
 
-        # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a supporting
-        #            table in the database.  It is just a "passthrough" now to the default LoanLifetimeTech.
-        #            It is already stitched in to the model, so will leave it for now.  Table may be revived.
+        # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a
+        #            supporting table in the database.  It is just a "passthrough" now to the
+        #            default LoanLifetimeTech. It is already stitched in to the model,
+        #            so will leave it for now.  Table may be revived.
 
-        M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
+        M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=costs.get_loan_life)
 
         M.LimitTechInputSplit = Param(
             M.regions,
@@ -431,20 +474,22 @@ class TemoaModel(AbstractModel):
 
         # Set up representation of time
         M.DaysPerPeriod = Param()
-        M.SegFracPerSeason = Param(M.time_optimize, M.time_season, initialize=SegFracPerSeason_rule)
+        M.SegFracPerSeason = Param(
+            M.time_optimize, M.time_season, initialize=time.SegFracPerSeason_rule
+        )
         M.TimeSeasonSequential = Param(
             M.time_optimize, M.time_season_sequential, M.time_season, mutable=True
         )
-        M.validate_SeasonSequential = BuildAction(rule=CreateTimeSeasonSequential)
-        M.Create_TimeSequence = BuildAction(rule=CreateTimeSequence)
+        M.validate_SeasonSequential = BuildAction(rule=time.CreateTimeSeasonSequential)
+        M.Create_TimeSequence = BuildAction(rule=time.CreateTimeSequence)
 
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         M.Create_SparseDicts = BuildAction(rule=CreateSparseDicts)
-        M.initialize_Demands = BuildAction(rule=CreateDemands)
+        M.initialize_Demands = BuildAction(rule=commodities.CreateDemands)
 
-        M.CapacityFactor_rpsdt = Set(dimen=5, initialize=CapacityFactorTechIndices)
+        M.CapacityFactor_rpsdt = Set(dimen=5, initialize=capacity.CapacityFactorTechIndices)
         M.CapacityFactorTech = Param(M.CapacityFactor_rpsdt, default=1, validate=validate_0to1)
 
         # Dev note:  using a default function below alleviates need to make this set.
@@ -458,27 +503,29 @@ class TemoaModel(AbstractModel):
             M.vintage_all,
             # validate=validate_CapacityFactorProcess, # opting for a quicker validation, just 0->1
             validate=validate_0to1,
-            default=get_default_capacity_factor,  # surprisingly slow but only called if a value is missing
+            default=capacity.get_default_capacity_factor,  # slow but only called if a value is missing
         )
 
-        M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
-        M.initialize_CapacityFactors = BuildAction(rule=CheckCapacityFactorProcess)
-        M.initialize_EfficiencyVariable = BuildAction(rule=CheckEfficiencyVariable)
+        M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=capacity.CapacityConstraintIndices)
+        M.initialize_CapacityFactors = BuildAction(rule=capacity.CheckCapacityFactorProcess)
+        M.initialize_EfficiencyVariable = BuildAction(rule=technology.CheckEfficiencyVariable)
 
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so
         #            let it go for now
-        M.CostFixed_rptv = Set(dimen=4, initialize=CostFixedIndices)
+        M.CostFixed_rptv = Set(dimen=4, initialize=costs.CostFixedIndices)
         M.CostFixed = Param(M.CostFixed_rptv)
 
         M.CostInvest_rtv = Set(within=M.regionalIndices * M.tech_all * M.time_optimize)
         M.CostInvest = Param(M.CostInvest_rtv)
 
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
-        M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
-        M.LoanAnnualize = Param(M.CostInvest_rtv, initialize=ParamLoanAnnualize_rule)
+        M.LoanRate = Param(
+            M.CostInvest_rtv, domain=NonNegativeReals, default=costs.get_default_loan_rate
+        )
+        M.LoanAnnualize = Param(M.CostInvest_rtv, initialize=costs.ParamLoanAnnualize_rule)
 
-        M.CostVariable_rptv = Set(dimen=4, initialize=CostVariableIndices)
+        M.CostVariable_rptv = Set(dimen=4, initialize=costs.CostVariableIndices)
         M.CostVariable = Param(M.CostVariable_rptv)
 
         M.CostEmission_rpe = Set(within=M.regions * M.time_optimize * M.commodity_emissions)
@@ -488,8 +535,10 @@ class TemoaModel(AbstractModel):
         # M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         # M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
 
-        M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
-        M.ProcessLifeFrac = Param(M.ProcessLifeFrac_rptv, initialize=ParamProcessLifeFraction_rule)
+        M.ProcessLifeFrac_rptv = Set(dimen=4, initialize=technology.ModelProcessLifeIndices)
+        M.ProcessLifeFrac = Param(
+            M.ProcessLifeFrac_rptv, initialize=technology.ParamProcessLifeFraction_rule
+        )
 
         M.LimitCapacityConstraint_rpt = Set(
             within=M.regionalGlobalIndices * M.time_optimize * M.tech_or_group * M.operator
@@ -556,7 +605,7 @@ class TemoaModel(AbstractModel):
             within=M.regionalGlobalIndices * M.time_optimize * M.commodity_emissions * M.operator
         )
         M.LimitEmission = Param(M.LimitEmissionConstraint_rpe)
-        M.EmissionActivity_reitvo = Set(dimen=6, initialize=EmissionActivityIndices)
+        M.EmissionActivity_reitvo = Set(dimen=6, initialize=emissions.EmissionActivityIndices)
         M.EmissionActivity = Param(M.EmissionActivity_reitvo)
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -613,9 +662,9 @@ class TemoaModel(AbstractModel):
         # M.LimitActivityGroupShare = Param(M.TwoGroupShareIndices)
 
         # This set works for all storage-related constraints
-        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=StorageConstraintIndices)
+        M.StorageConstraints_rpsdtv = Set(dimen=6, initialize=storage.StorageConstraintIndices)
         M.SeasonalStorageConstraints_rpsdtv = Set(
-            dimen=6, initialize=SeasonalStorageConstraintIndices
+            dimen=6, initialize=storage.SeasonalStorageConstraintIndices
         )
         M.LimitStorageFractionConstraint_rpsdtv = Set(
             within=(M.StorageConstraints_rpsdtv | M.SeasonalStorageConstraints_rpsdtv) * M.operator
@@ -676,46 +725,52 @@ class TemoaModel(AbstractModel):
         M.progress_marker_3 = BuildAction(['Starting to build Variables'], rule=progress_check)
 
         # Define base decision variables
-        M.FlowVar_rpsditvo = Set(dimen=8, initialize=FlowVariableIndices)
+        M.FlowVar_rpsditvo = Set(dimen=8, initialize=flows.FlowVariableIndices)
         M.V_FlowOut = Var(M.FlowVar_rpsditvo, domain=NonNegativeReals)
 
-        M.FlowVarAnnual_rpitvo = Set(dimen=6, initialize=FlowVariableAnnualIndices)
+        M.FlowVarAnnual_rpitvo = Set(dimen=6, initialize=flows.FlowVariableAnnualIndices)
         M.V_FlowOutAnnual = Var(M.FlowVarAnnual_rpitvo, domain=NonNegativeReals)
 
-        M.FlexVar_rpsditvo = Set(dimen=8, initialize=FlexVariablelIndices)
+        M.FlexVar_rpsditvo = Set(dimen=8, initialize=flows.FlexVariablelIndices)
         M.V_Flex = Var(M.FlexVar_rpsditvo, domain=NonNegativeReals)
 
-        M.FlexVarAnnual_rpitvo = Set(dimen=6, initialize=FlexVariableAnnualIndices)
+        M.FlexVarAnnual_rpitvo = Set(dimen=6, initialize=flows.FlexVariableAnnualIndices)
         M.V_FlexAnnual = Var(M.FlexVarAnnual_rpitvo, domain=NonNegativeReals)
 
-        M.CurtailmentVar_rpsditvo = Set(dimen=8, initialize=CurtailmentVariableIndices)
+        M.CurtailmentVar_rpsditvo = Set(dimen=8, initialize=flows.CurtailmentVariableIndices)
         M.V_Curtailment = Var(M.CurtailmentVar_rpsditvo, domain=NonNegativeReals, initialize=0)
 
-        M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=FlowInStorageVariableIndices)
+        M.FlowInStorage_rpsditvo = Set(dimen=8, initialize=flows.FlowInStorageVariableIndices)
         M.V_FlowIn = Var(M.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageLevelVariableIndices)
+        M.StorageLevel_rpsdtv = Set(dimen=6, initialize=storage.StorageLevelVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
-        M.SeasonalStorageLevel_rpstv = Set(dimen=5, initialize=SeasonalStorageLevelVariableIndices)
+        M.SeasonalStorageLevel_rpstv = Set(
+            dimen=5, initialize=storage.SeasonalStorageLevelVariableIndices
+        )
         M.V_SeasonalStorageLevel = Var(M.SeasonalStorageLevel_rpstv, domain=NonNegativeReals)
 
         # Derived decision variables
-        M.CapacityVar_rptv = Set(dimen=4, initialize=CostFixedIndices)
+        M.CapacityVar_rptv = Set(dimen=4, initialize=costs.CostFixedIndices)
         M.V_Capacity = Var(M.CapacityVar_rptv, domain=NonNegativeReals)
 
-        M.NewCapacityVar_rtv = Set(dimen=3, initialize=CapacityVariableIndices)
+        M.NewCapacityVar_rtv = Set(dimen=3, initialize=capacity.CapacityVariableIndices)
         M.V_NewCapacity = Var(M.NewCapacityVar_rtv, domain=NonNegativeReals, initialize=0)
 
-        M.RetiredCapacityVar_rptv = Set(dimen=4, initialize=RetiredCapacityVariableIndices)
+        M.RetiredCapacityVar_rptv = Set(dimen=4, initialize=capacity.RetiredCapacityVariableIndices)
         M.V_RetiredCapacity = Var(M.RetiredCapacityVar_rptv, domain=NonNegativeReals, initialize=0)
 
-        M.AnnualRetirementVar_rptv = Set(dimen=4, initialize=AnnualRetirementVariableIndices)
+        M.AnnualRetirementVar_rptv = Set(
+            dimen=4, initialize=capacity.AnnualRetirementVariableIndices
+        )
         M.V_AnnualRetirement = Var(
             M.AnnualRetirementVar_rptv, domain=NonNegativeReals, initialize=0
         )
 
-        M.CapacityAvailableVar_rpt = Set(dimen=3, initialize=CapacityAvailableVariableIndices)
+        M.CapacityAvailableVar_rpt = Set(
+            dimen=3, initialize=capacity.CapacityAvailableVariableIndices
+        )
         M.V_CapacityAvailableByPeriodAndTech = Var(
             M.CapacityAvailableVar_rpt, domain=NonNegativeReals, initialize=0
         )
@@ -725,7 +780,7 @@ class TemoaModel(AbstractModel):
         #             (minimize total cost)            #
         ################################################
 
-        M.TotalCost = Objective(rule=TotalCost_rule, sense=minimize)
+        M.TotalCost = Objective(rule=costs.TotalCost_rule, sense=minimize)
 
         ################################################
         #                   Constraints                #
@@ -742,15 +797,19 @@ class TemoaModel(AbstractModel):
         M.progress_marker_4 = BuildAction(['Starting to build Constraints'], rule=progress_check)
 
         # Declare constraints to calculate derived decision variables
-        M.CapacityConstraint = Constraint(M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
+        M.CapacityConstraint = Constraint(
+            M.CapacityConstraint_rpsdtv, rule=capacity.Capacity_Constraint
+        )
 
-        M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)
+        M.CapacityAnnualConstraint_rptv = Set(
+            dimen=4, initialize=capacity.CapacityAnnualConstraintIndices
+        )
         M.CapacityAnnualConstraint = Constraint(
-            M.CapacityAnnualConstraint_rptv, rule=CapacityAnnual_Constraint
+            M.CapacityAnnualConstraint_rptv, rule=capacity.CapacityAnnual_Constraint
         )
 
         M.CapacityAvailableByPeriodAndTechConstraint = Constraint(
-            M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
+            M.CapacityAvailableVar_rpt, rule=capacity.CapacityAvailableByPeriodAndTech_Constraint
         )
 
         # devnote: I think this constraint is redundant
@@ -761,41 +820,42 @@ class TemoaModel(AbstractModel):
             ['Starting AnnualRetirementConstraint'], rule=progress_check
         )
         M.AnnualRetirementConstraint = Constraint(
-            M.AnnualRetirementVar_rptv, rule=AnnualRetirement_Constraint
+            M.AnnualRetirementVar_rptv, rule=capacity.AnnualRetirement_Constraint
         )
         M.progress_marker_4b = BuildAction(
             ['Starting AdjustedCapacityConstraint'], rule=progress_check
         )
         M.AdjustedCapacityConstraint = Constraint(
-            M.CostFixed_rptv, rule=AdjustedCapacity_Constraint
+            M.CostFixed_rptv, rule=capacity.AdjustedCapacity_Constraint
         )
         M.progress_marker_5 = BuildAction(['Finished Capacity Constraints'], rule=progress_check)
 
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
-        M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=Demand_Constraint)
+        M.DemandConstraint = Constraint(M.DemandConstraint_rpc, rule=commodities.Demand_Constraint)
 
         # devnote: testing a workaround
         M.DemandActivityConstraint_rpsdtv_dem = Set(
-            dimen=7, initialize=DemandActivityConstraintIndices
+            dimen=7, initialize=commodities.DemandActivityConstraintIndices
         )
         M.DemandActivityConstraint = Constraint(
-            M.DemandActivityConstraint_rpsdtv_dem, rule=DemandActivity_Constraint
+            M.DemandActivityConstraint_rpsdtv_dem, rule=commodities.DemandActivity_Constraint
         )
 
         M.CommodityBalanceConstraint_rpsdc = Set(
-            dimen=5, initialize=CommodityBalanceConstraintIndices
+            dimen=5, initialize=commodities.CommodityBalanceConstraintIndices
         )
         M.CommodityBalanceConstraint = Constraint(
-            M.CommodityBalanceConstraint_rpsdc, rule=CommodityBalance_Constraint
+            M.CommodityBalanceConstraint_rpsdc, rule=commodities.CommodityBalance_Constraint
         )
 
         M.AnnualCommodityBalanceConstraint_rpc = Set(
-            dimen=3, initialize=AnnualCommodityBalanceConstraintIndices
+            dimen=3, initialize=commodities.AnnualCommodityBalanceConstraintIndices
         )
         M.AnnualCommodityBalanceConstraint = Constraint(
-            M.AnnualCommodityBalanceConstraint_rpc, rule=AnnualCommodityBalance_Constraint
+            M.AnnualCommodityBalanceConstraint_rpc,
+            rule=commodities.AnnualCommodityBalance_Constraint,
         )
 
         # M.ResourceExtractionConstraint = Constraint(
@@ -803,126 +863,144 @@ class TemoaModel(AbstractModel):
         # )
 
         M.BaseloadDiurnalConstraint_rpsdtv = Set(
-            dimen=6, initialize=BaseloadDiurnalConstraintIndices
+            dimen=6, initialize=operations.BaseloadDiurnalConstraintIndices
         )
         M.BaseloadDiurnalConstraint = Constraint(
-            M.BaseloadDiurnalConstraint_rpsdtv, rule=BaseloadDiurnal_Constraint
+            M.BaseloadDiurnalConstraint_rpsdtv, rule=operations.BaseloadDiurnal_Constraint
         )
 
         M.RegionalExchangeCapacityConstraint_rrptv = Set(
-            dimen=5, initialize=RegionalExchangeCapacityConstraintIndices
+            dimen=5, initialize=capacity.RegionalExchangeCapacityConstraintIndices
         )
         M.RegionalExchangeCapacityConstraint = Constraint(
-            M.RegionalExchangeCapacityConstraint_rrptv, rule=RegionalExchangeCapacity_Constraint
+            M.RegionalExchangeCapacityConstraint_rrptv,
+            rule=geography.RegionalExchangeCapacity_Constraint,
         )
 
         M.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
 
         M.StorageEnergyConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageEnergy_Constraint
+            M.StorageConstraints_rpsdtv, rule=storage.StorageEnergy_Constraint
         )
 
         M.StorageEnergyUpperBoundConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageEnergyUpperBound_Constraint
+            M.StorageConstraints_rpsdtv, rule=storage.StorageEnergyUpperBound_Constraint
         )
 
         M.SeasonalStorageEnergyConstraint = Constraint(
-            M.SeasonalStorageLevel_rpstv, rule=SeasonalStorageEnergy_Constraint
+            M.SeasonalStorageLevel_rpstv, rule=storage.SeasonalStorageEnergy_Constraint
         )
 
         M.SeasonalStorageEnergyUpperBoundConstraint = Constraint(
-            M.SeasonalStorageConstraints_rpsdtv, rule=SeasonalStorageEnergyUpperBound_Constraint
+            M.SeasonalStorageConstraints_rpsdtv,
+            rule=storage.SeasonalStorageEnergyUpperBound_Constraint,
         )
 
         M.StorageChargeRateConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageChargeRate_Constraint
+            M.StorageConstraints_rpsdtv, rule=storage.StorageChargeRate_Constraint
         )
 
         M.StorageDischargeRateConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageDischargeRate_Constraint
+            M.StorageConstraints_rpsdtv, rule=storage.StorageDischargeRate_Constraint
         )
 
         M.StorageThroughputConstraint = Constraint(
-            M.StorageConstraints_rpsdtv, rule=StorageThroughput_Constraint
+            M.StorageConstraints_rpsdtv, rule=storage.StorageThroughput_Constraint
         )
 
         M.LimitStorageFractionConstraint = Constraint(
-            M.LimitStorageFractionConstraint_rpsdtv, rule=LimitStorageFraction_Constraint
+            M.LimitStorageFractionConstraint_rpsdtv, rule=storage.LimitStorageFraction_Constraint
         )
 
-        M.RampUpDayConstraint_rpsdtv = Set(dimen=6, initialize=RampUpDayConstraintIndices)
-        M.RampUpDayConstraint = Constraint(M.RampUpDayConstraint_rpsdtv, rule=RampUpDay_Constraint)
-        M.RampDownDayConstraint_rpsdtv = Set(dimen=6, initialize=RampDownDayConstraintIndices)
+        M.RampUpDayConstraint_rpsdtv = Set(
+            dimen=6, initialize=operations.RampUpDayConstraintIndices
+        )
+        M.RampUpDayConstraint = Constraint(
+            M.RampUpDayConstraint_rpsdtv, rule=operations.RampUpDay_Constraint
+        )
+        M.RampDownDayConstraint_rpsdtv = Set(
+            dimen=6, initialize=operations.RampDownDayConstraintIndices
+        )
         M.RampDownDayConstraint = Constraint(
-            M.RampDownDayConstraint_rpsdtv, rule=RampDownDay_Constraint
+            M.RampDownDayConstraint_rpsdtv, rule=operations.RampDownDay_Constraint
         )
 
-        M.RampUpSeasonConstraint_rpsstv = Set(dimen=6, initialize=RampUpSeasonConstraintIndices)
+        M.RampUpSeasonConstraint_rpsstv = Set(
+            dimen=6, initialize=operations.RampUpSeasonConstraintIndices
+        )
         M.RampUpSeasonConstraint = Constraint(
-            M.RampUpSeasonConstraint_rpsstv, rule=RampUpSeason_Constraint
+            M.RampUpSeasonConstraint_rpsstv, rule=operations.RampUpSeason_Constraint
         )
-        M.RampDownSeasonConstraint_rpsstv = Set(dimen=6, initialize=RampDownSeasonConstraintIndices)
+        M.RampDownSeasonConstraint_rpsstv = Set(
+            dimen=6, initialize=operations.RampDownSeasonConstraintIndices
+        )
         M.RampDownSeasonConstraint = Constraint(
-            M.RampDownSeasonConstraint_rpsstv, rule=RampDownSeason_Constraint
+            M.RampDownSeasonConstraint_rpsstv, rule=operations.RampDownSeason_Constraint
         )
 
-        M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
+        M.ReserveMargin_rpsd = Set(dimen=4, initialize=reserves.ReserveMarginIndices)
         M.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)
-        M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)
+        M.ReserveMarginConstraint = Constraint(
+            M.ReserveMargin_rpsd, rule=reserves.ReserveMargin_Constraint
+        )
 
         M.LimitEmissionConstraint = Constraint(
-            M.LimitEmissionConstraint_rpe, rule=LimitEmission_Constraint
+            M.LimitEmissionConstraint_rpe, rule=limits.LimitEmission_Constraint
         )
         M.progress_marker_7 = BuildAction(
             ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
         )
 
-        M.LimitGrowthCapacityConstraint_rpt = Set(dimen=4, initialize=LimitGrowthCapacityIndices)
+        M.LimitGrowthCapacityConstraint_rpt = Set(
+            dimen=4, initialize=limits.LimitGrowthCapacityIndices
+        )
         M.LimitGrowthCapacityConstraint = Constraint(
-            M.LimitGrowthCapacityConstraint_rpt, rule=LimitGrowthCapacityConstraint_rule
+            M.LimitGrowthCapacityConstraint_rpt, rule=limits.LimitGrowthCapacityConstraint_rule
         )
         M.LimitDegrowthCapacityConstraint_rpt = Set(
-            dimen=4, initialize=LimitDegrowthCapacityIndices
+            dimen=4, initialize=limits.LimitDegrowthCapacityIndices
         )
         M.LimitDegrowthCapacityConstraint = Constraint(
-            M.LimitDegrowthCapacityConstraint_rpt, rule=LimitDegrowthCapacityConstraint_rule
+            M.LimitDegrowthCapacityConstraint_rpt, rule=limits.LimitDegrowthCapacityConstraint_rule
         )
 
         M.LimitGrowthNewCapacityConstraint_rpt = Set(
-            dimen=4, initialize=LimitGrowthNewCapacityIndices
+            dimen=4, initialize=limits.LimitGrowthNewCapacityIndices
         )
         M.LimitGrowthNewCapacityConstraint = Constraint(
-            M.LimitGrowthNewCapacityConstraint_rpt, rule=LimitGrowthNewCapacityConstraint_rule
+            M.LimitGrowthNewCapacityConstraint_rpt,
+            rule=limits.LimitGrowthNewCapacityConstraint_rule,
         )
         M.LimitDegrowthNewCapacityConstraint_rpt = Set(
-            dimen=4, initialize=LimitDegrowthNewCapacityIndices
+            dimen=4, initialize=limits.LimitDegrowthNewCapacityIndices
         )
         M.LimitDegrowthNewCapacityConstraint = Constraint(
-            M.LimitDegrowthNewCapacityConstraint_rpt, rule=LimitDegrowthNewCapacityConstraint_rule
+            M.LimitDegrowthNewCapacityConstraint_rpt,
+            rule=limits.LimitDegrowthNewCapacityConstraint_rule,
         )
 
         M.LimitGrowthNewCapacityDeltaConstraint_rpt = Set(
-            dimen=4, initialize=LimitGrowthNewCapacityDeltaIndices
+            dimen=4, initialize=limits.LimitGrowthNewCapacityDeltaIndices
         )
         M.LimitGrowthNewCapacityDeltaConstraint = Constraint(
             M.LimitGrowthNewCapacityDeltaConstraint_rpt,
-            rule=LimitGrowthNewCapacityDeltaConstraint_rule,
+            rule=limits.LimitGrowthNewCapacityDeltaConstraint_rule,
         )
         M.LimitDegrowthNewCapacityDeltaConstraint_rpt = Set(
-            dimen=4, initialize=LimitDegrowthNewCapacityDeltaIndices
+            dimen=4, initialize=limits.LimitDegrowthNewCapacityDeltaIndices
         )
         M.LimitDegrowthNewCapacityDeltaConstraint = Constraint(
             M.LimitDegrowthNewCapacityDeltaConstraint_rpt,
-            rule=LimitDegrowthNewCapacityDeltaConstraint_rule,
+            rule=limits.LimitDegrowthNewCapacityDeltaConstraint_rule,
         )
 
         M.LimitActivityConstraint = Constraint(
-            M.LimitActivityConstraint_rpt, rule=LimitActivity_Constraint
+            M.LimitActivityConstraint_rpt, rule=limits.LimitActivity_Constraint
         )
 
         M.LimitSeasonalCapacityFactorConstraint = Constraint(
             M.LimitSeasonalCapacityFactorConstraint_rpst,
-            rule=LimitSeasonalCapacityFactor_Constraint,
+            rule=limits.LimitSeasonalCapacityFactor_Constraint,
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -931,11 +1009,11 @@ class TemoaModel(AbstractModel):
         # )
 
         M.LimitCapacityConstraint = Constraint(
-            M.LimitCapacityConstraint_rpt, rule=LimitCapacity_Constraint
+            M.LimitCapacityConstraint_rpt, rule=limits.LimitCapacity_Constraint
         )
 
         M.LimitNewCapacityConstraint = Constraint(
-            M.LimitNewCapacityConstraint_rpt, rule=LimitNewCapacity_Constraint
+            M.LimitNewCapacityConstraint_rpt, rule=limits.LimitNewCapacity_Constraint
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -948,20 +1026,21 @@ class TemoaModel(AbstractModel):
         # )
 
         M.LimitCapacityShareConstraint = Constraint(
-            M.LimitCapacityShareConstraint_rpgg, rule=LimitCapacityShare_Constraint
+            M.LimitCapacityShareConstraint_rpgg, rule=limits.LimitCapacityShare_Constraint
         )
 
         M.LimitActivityShareConstraint = Constraint(
-            M.LimitActivityShareConstraint_rpgg, rule=LimitActivityShare_Constraint
+            M.LimitActivityShareConstraint_rpgg, rule=limits.LimitActivityShare_Constraint
         )
 
         M.LimitNewCapacityShareConstraint = Constraint(
-            M.LimitNewCapacityShareConstraint_rpgg, rule=LimitNewCapacityShare_Constraint
+            M.LimitNewCapacityShareConstraint_rpgg, rule=limits.LimitNewCapacityShare_Constraint
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
         # M.LimitNewCapacityGroupShareConstraint = Constraint(
-        #     M.LimitNewCapacityGroupShareConstraint_rpgg, rule=LimitNewCapacityGroupShare_Constraint
+        #     M.LimitNewCapacityGroupShareConstraint_rpgg,
+        #     rule=LimitNewCapacityGroupShare_Constraint
         # )
 
         # M.LimitActivityGroupShareConstraint = Constraint(
@@ -973,70 +1052,75 @@ class TemoaModel(AbstractModel):
         )
 
         M.LimitResourceConstraint = Constraint(
-            M.LimitResourceConstraint_rt, rule=LimitResource_Constraint
+            M.LimitResourceConstraint_rt, rule=limits.LimitResource_Constraint
         )
 
         M.LimitAnnualCapacityFactorConstraint = Constraint(
-            M.LimitAnnualCapacityFactorConstraint_rpto, rule=LimitAnnualCapacityFactor_Constraint
+            M.LimitAnnualCapacityFactorConstraint_rpto,
+            rule=limits.LimitAnnualCapacityFactor_Constraint,
         )
 
         ## Tech input splits
         M.LimitTechInputSplitConstraint_rpsditv = Set(
-            dimen=8, initialize=LimitTechInputSplitConstraintIndices
+            dimen=8, initialize=limits.LimitTechInputSplitConstraintIndices
         )
         M.LimitTechInputSplitConstraint = Constraint(
-            M.LimitTechInputSplitConstraint_rpsditv, rule=LimitTechInputSplit_Constraint
+            M.LimitTechInputSplitConstraint_rpsditv, rule=limits.LimitTechInputSplit_Constraint
         )
 
         M.LimitTechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=6, initialize=LimitTechInputSplitAnnualConstraintIndices
+            dimen=6, initialize=limits.LimitTechInputSplitAnnualConstraintIndices
         )
         M.LimitTechInputSplitAnnualConstraint = Constraint(
-            M.LimitTechInputSplitAnnualConstraint_rpitv, rule=LimitTechInputSplitAnnual_Constraint
+            M.LimitTechInputSplitAnnualConstraint_rpitv,
+            rule=limits.LimitTechInputSplitAnnual_Constraint,
         )
 
         M.LimitTechInputSplitAverageConstraint_rpitv = Set(
-            dimen=6, initialize=LimitTechInputSplitAverageConstraintIndices
+            dimen=6, initialize=limits.LimitTechInputSplitAverageConstraintIndices
         )
         M.LimitTechInputSplitAverageConstraint = Constraint(
-            M.LimitTechInputSplitAverageConstraint_rpitv, rule=LimitTechInputSplitAverage_Constraint
+            M.LimitTechInputSplitAverageConstraint_rpitv,
+            rule=limits.LimitTechInputSplitAverage_Constraint,
         )
 
         ## Tech output splits
         M.LimitTechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=8, initialize=LimitTechOutputSplitConstraintIndices
+            dimen=8, initialize=limits.LimitTechOutputSplitConstraintIndices
         )
         M.LimitTechOutputSplitConstraint = Constraint(
-            M.LimitTechOutputSplitConstraint_rpsdtvo, rule=LimitTechOutputSplit_Constraint
+            M.LimitTechOutputSplitConstraint_rpsdtvo, rule=limits.LimitTechOutputSplit_Constraint
         )
 
         M.LimitTechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=6, initialize=LimitTechOutputSplitAnnualConstraintIndices
+            dimen=6, initialize=limits.LimitTechOutputSplitAnnualConstraintIndices
         )
         M.LimitTechOutputSplitAnnualConstraint = Constraint(
-            M.LimitTechOutputSplitAnnualConstraint_rptvo, rule=LimitTechOutputSplitAnnual_Constraint
+            M.LimitTechOutputSplitAnnualConstraint_rptvo,
+            rule=limits.LimitTechOutputSplitAnnual_Constraint,
         )
 
         M.LimitTechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=6, initialize=LimitTechOutputSplitAverageConstraintIndices
+            dimen=6, initialize=limits.LimitTechOutputSplitAverageConstraintIndices
         )
         M.LimitTechOutputSplitAverageConstraint = Constraint(
             M.LimitTechOutputSplitAverageConstraint_rptvo,
-            rule=LimitTechOutputSplitAverage_Constraint,
+            rule=limits.LimitTechOutputSplitAverage_Constraint,
         )
 
         M.RenewablePortfolioStandardConstraint = Constraint(
-            M.RenewablePortfolioStandardConstraint_rpg, rule=RenewablePortfolioStandard_Constraint
+            M.RenewablePortfolioStandardConstraint_rpg,
+            rule=limits.RenewablePortfolioStandard_Constraint,
         )
 
         M.LinkedEmissionsTechConstraint_rpsdtve = Set(
-            dimen=7, initialize=LinkedTechConstraintIndices
+            dimen=7, initialize=emissions.LinkedTechConstraintIndices
         )
         # the validation requires that the set above be built first:
         M.validate_LinkedTech_lifetimes = BuildCheck(rule=validate_linked_tech)
 
         M.LinkedEmissionsTechConstraint = Constraint(
-            M.LinkedEmissionsTechConstraint_rpsdtve, rule=LinkedEmissionsTech_Constraint
+            M.LinkedEmissionsTechConstraint_rpsdtve, rule=emissions.LinkedEmissionsTech_Constraint
         )
 
         M.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)
