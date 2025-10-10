@@ -18,7 +18,7 @@ from pyomo.environ import Constraint, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
-from temoa.components.utils import get_variable_efficiency, operator_expression
+from temoa.components.utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -259,7 +259,7 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     )
 
     resource_lim = value(M.LimitResource[r, t, op])
-    expr = operator_expression(activity, op, resource_lim)
+    expr = operator_expression(activity, Operator(op), resource_lim)
     return expr
 
 
@@ -326,7 +326,7 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
 
     share_lim = value(M.LimitActivityShare[r, p, g1, g2, op])
-    expr = operator_expression(sub_activity, op, share_lim * super_activity)
+    expr = operator_expression(sub_activity, Operator(op), share_lim * super_activity)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -366,7 +366,7 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
     share_lim = value(M.LimitCapacityShare[r, p, g1, g2, op])
 
-    expr = operator_expression(sub_capacity, op, share_lim * super_capacity)
+    expr = operator_expression(sub_capacity, Operator(op), share_lim * super_capacity)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
@@ -397,7 +397,7 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     )
 
     share_lim = value(M.LimitNewCapacityShare[r, p, g1, g2, op])
-    expr = operator_expression(sub_new_cap, op, share_lim * super_new_cap)
+    expr = operator_expression(sub_new_cap, Operator(op), share_lim * super_new_cap)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
@@ -452,7 +452,7 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
         for _r in regions
     )
     annual_cf = value(M.LimitAnnualCapacityFactor[r, p, t, o, op])
-    expr = operator_expression(activity_rpt, op, annual_cf * possible_activity_rpt)
+    expr = operator_expression(activity_rpt, Operator(op), annual_cf * possible_activity_rpt)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -511,7 +511,7 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
         for _r in regions
     )
     seasonal_cf = value(M.LimitSeasonalCapacityFactor[r, p, s, t, op])
-    expr = operator_expression(activity_rpst, op, seasonal_cf * possible_activity_rpst)
+    expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -537,7 +537,9 @@ def LimitTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v, op):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = operator_expression(inp, op, value(M.LimitTechInputSplit[r, p, i, t, op]) * total_inp)
+    expr = operator_expression(
+        inp, Operator(op), value(M.LimitTechInputSplit[r, p, i, t, op]) * total_inp
+    )
     return expr
 
 
@@ -560,12 +562,12 @@ def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     )
 
     expr = operator_expression(
-        inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+        inp, Operator(op), value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
     )
     return expr
 
 
-def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
+def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op: str):
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. Under this constraint, only the technologies with variable
@@ -592,7 +594,7 @@ def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     )
 
     expr = operator_expression(
-        inp, op, value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+        inp, Operator(op), value(M.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
     )
     return expr
 
@@ -642,7 +644,9 @@ def LimitTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o, op):
         for S_o in M.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    expr = operator_expression(out, op, value(M.LimitTechOutputSplit[r, p, t, o, op]) * total_out)
+    expr = operator_expression(
+        out, Operator(op), value(M.LimitTechOutputSplit[r, p, t, o, op]) * total_out
+    )
     return expr
 
 
@@ -671,7 +675,7 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     )
 
     expr = operator_expression(
-        out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+        out, Operator(op), value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
     )
     return expr
 
@@ -701,7 +705,7 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     )
 
     expr = operator_expression(
-        out, op, value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+        out, Operator(op), value(M.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
     )
     return expr
 
@@ -793,7 +797,7 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
         # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
         # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
     )
-    expr = operator_expression(lhs, op, emission_limit)
+    expr = operator_expression(lhs, Operator(op), emission_limit)
 
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -905,9 +909,9 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
         capacity_prev = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p_prev)
 
     if degrowth:
-        expr = operator_expression(capacity_prev, op, SEED + capacity * RATE)
+        expr = operator_expression(capacity_prev, Operator(op), SEED + capacity * RATE)
     else:
-        expr = operator_expression(capacity, op, SEED + capacity_prev * RATE)
+        expr = operator_expression(capacity, Operator(op), SEED + capacity_prev * RATE)
 
     # Check if any variables are actually included before returning
     if isinstance(expr, bool):
@@ -1014,9 +1018,9 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
         new_cap_prev = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
 
     if degrowth:
-        expr = operator_expression(new_cap_prev, op, SEED + new_cap * RATE)
+        expr = operator_expression(new_cap_prev, Operator(op), SEED + new_cap * RATE)
     else:
-        expr = operator_expression(new_cap, op, SEED + new_cap_prev * RATE)
+        expr = operator_expression(new_cap, Operator(op), SEED + new_cap_prev * RATE)
 
     # Check if any variables are actually included before returning
     if isinstance(expr, bool):
@@ -1148,9 +1152,9 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     nc_delta = new_cap - new_cap_prev
 
     if degrowth:
-        expr = operator_expression(nc_delta_prev, op, SEED + nc_delta * RATE)
+        expr = operator_expression(nc_delta_prev, Operator(op), SEED + nc_delta * RATE)
     else:
-        expr = operator_expression(nc_delta, op, SEED + nc_delta_prev * RATE)
+        expr = operator_expression(nc_delta, Operator(op), SEED + nc_delta_prev * RATE)
 
     # Check if any variables are actually included before returning
     if isinstance(expr, bool):
@@ -1209,7 +1213,7 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     )
 
     act_lim = value(M.LimitActivity[r, p, t, op])
-    expr = operator_expression(activity, op, act_lim)
+    expr = operator_expression(activity, Operator(op), act_lim)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -1233,7 +1237,7 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     techs = technology.gather_group_techs(M, t)
     cap_lim = value(M.LimitNewCapacity[r, p, t, op])
     new_cap = sum(M.V_NewCapacity[_r, _t, p] for _t in techs for _r in regions)
-    expr = operator_expression(new_cap, op, cap_lim)
+    expr = operator_expression(new_cap, Operator(op), cap_lim)
     return expr
 
 
@@ -1256,7 +1260,7 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     capacity = sum(
         M.V_CapacityAvailableByPeriodAndTech[_r, p, _t] for _t in techs for _r in regions
     )
-    expr = operator_expression(capacity, op, cap_lim)
+    expr = operator_expression(capacity, Operator(op), cap_lim)
     return expr
 
 

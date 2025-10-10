@@ -6,6 +6,7 @@ These helpers are used by various components to perform common tasks like
 building Pyomo expressions from strings or calculating time-variable efficiencies.
 """
 
+from enum import Enum
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -19,37 +20,21 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-def operator_expression(lhs: Expression | None, operator: str | None, rhs: Expression | None):
-    """Returns an expression, applying a configured operator"""
-    if any((lhs is None, operator is None, rhs is None)):
-        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
-            lhs, operator, rhs
-        )
-        logger.error(msg)
-        raise ValueError(msg)
-    try:
-        match operator:
-            case 'e':
-                expr = lhs == rhs
-            case 'le':
-                expr = lhs <= rhs
-            case 'ge':
-                expr = lhs >= rhs
-            case _:
-                msg = (
-                    'Tried to build a constraint using a bad operator. Allowed operators are "e","le", or "ge". Got "{}": {} {} {}'
-                ).format(operator, lhs, operator, rhs)
-                logger.error(msg)
-                raise ValueError(msg)
-    except Exception as e:
-        print(e)
-        msg = ('Tried to build a constraint using a bad expression or operator: {} {} {}').format(
-            lhs, operator, rhs
-        )
-        logger.error(msg)
-        raise ValueError(msg) from e
+class Operator(str, Enum):
+    EQUAL = 'e'
+    LESS_EQUAL = 'le'
+    GREATER_EQUAL = 'ge'
 
-    return expr
+
+def operator_expression(lhs: Expression, operator: Operator, rhs: Expression):
+    match operator:
+        case Operator.EQUAL:
+            return lhs == rhs
+        case Operator.LESS_EQUAL:
+            return lhs <= rhs
+        case Operator.GREATER_EQUAL:
+            return lhs >= rhs
+    raise ValueError(f'Invalid operator: {operator!r}')
 
 
 def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o) -> float:
