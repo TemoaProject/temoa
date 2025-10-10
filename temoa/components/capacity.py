@@ -99,8 +99,8 @@ def CreateCapacityFactors(M: 'TemoaModel'):
 
     if unspecified_cfs:
         # CFP._constructed = False
-        for r, s, d, t, v in unspecified_cfs:
-            CFP[r, s, d, t, v] = M.CapacityFactorTech[r, s, d, t]
+        for r, p, s, d, t, v in unspecified_cfs:
+            CFP[r, p, s, d, t, v] = M.CapacityFactorTech[r, p, s, d, t]
         logger.debug(
             'Created Capacity Factors for %d processes without an explicit specification',
             len(unspecified_cfs),
