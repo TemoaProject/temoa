@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from .utils import get_variable_efficiency, operator_expression
+from .utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -487,6 +487,6 @@ def LimitStorageFraction_Constraint(M: 'TemoaModel', r, p, s, d, t, v, op):
             M.TimeSeasonSequential[p, s_seq, s]
         )
 
-    expr = operator_expression(energy_level, op, energy_limit)
+    expr = operator_expression(energy_level, Operator(op), energy_limit)
 
     return expr
