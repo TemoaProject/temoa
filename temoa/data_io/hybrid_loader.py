@@ -226,18 +226,57 @@ class HybridLoader:
         :param myopic_index: the MyopicIndex for myopic run.  None for other modes
         :return:
         """
-        # the general plan:
-        # 0. determine if source trace needs to be done, and do it
-        # 1. build the efficiency table
-        # 2. iterate through the model elements that are directly read from data
-        # 3. use SQL query to get the full table
-        # 4. (OPTIONALLY) filter it, as needed for myopic
-        # 5. load it into the data dictionary
         logger.info('Loading data dictionary')
 
-        data: dict[str, list | dict] = dict()
+        # ---------------------------------------------------------------------
+        # Preamble: Setup, source tracing, and loading critical index sets
+        # ---------------------------------------------------------------------
+        if myopic_index is not None:
+            if not isinstance(myopic_index, MyopicIndex):
+                raise ValueError(f'received an illegal entry for the myopic index: {myopic_index}')
+            if self.config.scenario_mode != TemoaMode.MYOPIC:
+                raise RuntimeError('Myopic Index passed, but mode is not Myopic.')
+        elif myopic_index is None and self.config.scenario_mode == TemoaMode.MYOPIC:
+            raise RuntimeError('Mode is myopic, but no MyopicIndex specified.')
 
+        if self.config.source_trace or self.config.scenario_mode == TemoaMode.MYOPIC:
+            use_raw_data = False
+            self._source_trace(myopic_index=myopic_index)
+        else:
+            use_raw_data = True
+
+        self._build_efficiency_dataset(use_raw_data=use_raw_data, myopic_index=myopic_index)
+        mi = myopic_index  # convenience
+
+        data: dict[str, list | dict] = {}
         cur = self.con.cursor()
+
+        M = TemoaModel()
+
+        # Load critical time sets first, as they are used to index other components
+        if mi:
+            raw_exist = cur.execute(
+                'SELECT period FROM main.TimePeriod WHERE period < ? ORDER BY sequence',
+                (mi.base_year,),
+            ).fetchall()
+            raw_future = cur.execute(
+                'SELECT period FROM main.TimePeriod WHERE flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
+                (mi.base_year, mi.last_year),
+            ).fetchall()
+        else:
+            raw_exist = cur.execute(
+                "SELECT period FROM main.TimePeriod WHERE flag = 'e' ORDER BY sequence"
+            ).fetchall()
+            raw_future = cur.execute(
+                "SELECT period FROM main.TimePeriod WHERE flag = 'f' ORDER BY sequence"
+            ).fetchall()
+        self._load_component_data(data, M.time_exist, raw_exist)
+        self._load_component_data(data, M.time_future, raw_future)
+        time_optimize = [p[0] for p in raw_future[0:-1]]
+
+        # ---------------------------------------------------------------------
+        # Manifest-driven loading for migrated components
+        # ---------------------------------------------------------------------
 
         # Run the manifest-based loader first for migrated components
         for item in self.manifest:
@@ -247,28 +286,71 @@ class HybridLoader:
 
             # 1. Get raw data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
+            if not raw_data:
+                continue
 
-            # 2. TODO: Validate/filter data (not needed for M.regions)
+            # 2. Validate/filter data
+            filtered_data = self._filter_data(raw_data, item, use_raw_data)
 
             # 3. Load into the data dictionary
-            self._load_component_data(data, item.component, raw_data)
+            self._load_component_data(data, item.component, filtered_data)
+
+        # ---------------------------------------------------------------------
+        # Legacy loader for components pending migration
+        # ---------------------------------------------------------------------
 
         # Call the legacy loader and pass it the data dictionary to populate.
         # As we migrate components to the manifest, they will be removed from the legacy method.
-        self._create_data_dict_legacy(myopic_index=myopic_index, data=data)
+        self._create_data_dict_legacy(
+            myopic_index=mi, data=data, use_raw_data=use_raw_data, time_optimize=time_optimize
+        )
 
         return data
 
     def _fetch_data(self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None) -> list[tuple]:
         """Fetches data for a component based on its manifest item."""
-        base_query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
+        query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
+        params = []
+
+        # Combine WHERE clauses
+        where_clauses = []
+        if item.where_clause:
+            where_clauses.append(f'({item.where_clause})')
         if item.is_period_filtered and mi:
-            return cur.execute(
-                base_query + ' WHERE period >= ? AND period <= ?',
-                (mi.base_year, mi.last_demand_year),
-            ).fetchall()
-        else:
-            return cur.execute(base_query).fetchall()
+            where_clauses.append('period >= ? AND period <= ?')
+            params.extend([mi.base_year, mi.last_demand_year])
+
+        if where_clauses:
+            query += ' WHERE ' + ' AND '.join(where_clauses)
+
+        try:
+            return cur.execute(query, params).fetchall()
+        except OperationalError as e:
+            # This can happen if a column doesn't exist (e.g., unlim_cap)
+            if item.is_table_required is False:
+                logger.info(
+                    f'Could not load optional component {item.component.name}, likely due to older schema. Skipping. Error: {e}'
+                )
+                return []
+            else:
+                raise e
+
+    def _filter_data(
+        self, values: Sequence[tuple], item: LoadItem, use_raw_data: bool
+    ) -> Sequence[tuple]:
+        """Applies validation filters to a list of data tuples."""
+        if use_raw_data or not item.validator_name:
+            return values
+
+        validator = getattr(self, item.validator_name, None)
+        if validator is None:
+            # This can happen if source tracing isn't run, which is valid.
+            # In that case, no filtering should occur.
+            return values
+
+        return element_checker.filter_elements(
+            values=values, validation=validator, value_locations=item.validation_map
+        )
 
     def _load_component_data(
         self, data: dict, component: Set | Param, values: Sequence[tuple]
@@ -284,35 +366,17 @@ class HybridLoader:
         elif isinstance(component, Param):
             data[component.name] = {t[:-1]: t[-1] for t in values}
 
-    def _create_data_dict_legacy(self, myopic_index: MyopicIndex | None, data: dict) -> None:
+    def _create_data_dict_legacy(
+        self,
+        myopic_index: MyopicIndex | None,
+        data: dict,
+        use_raw_data: bool,
+        time_optimize: list[int],
+    ) -> None:
         """
         The original, monolithic data loading method. This will be incrementally
         refactored until it is empty. It now populates a dictionary passed to it.
         """
-
-        # some logic checking...
-        if myopic_index is not None:
-            if not isinstance(myopic_index, MyopicIndex):
-                raise ValueError(f'received an illegal entry for the myopic index: {myopic_index}')
-            if self.config.scenario_mode != TemoaMode.MYOPIC:
-                raise RuntimeError(
-                    'Myopic Index passed to data dictionary build, but mode is not Myopic.... '
-                    'Likely code error.'
-                )
-        elif myopic_index is None and self.config.scenario_mode == TemoaMode.MYOPIC:
-            raise RuntimeError(
-                'Mode is myopic, but no MyopicIndex specified in data portal build.... Likely code '
-                'error.'
-            )
-
-        if self.config.source_trace or self.config.scenario_mode == TemoaMode.MYOPIC:
-            use_raw_data = False
-            self._source_trace(myopic_index=myopic_index)
-        else:
-            use_raw_data = True
-
-        # build the Efficiency Dataset
-        self._build_efficiency_dataset(use_raw_data=use_raw_data, myopic_index=myopic_index)
 
         mi = myopic_index  # convenience
 
@@ -384,32 +448,6 @@ class HybridLoader:
         cur = self.con.cursor()
 
         #   === TIME SETS ===
-
-        # time_exist
-        if mi:
-            raw = cur.execute(
-                'SELECT period FROM main.TimePeriod WHERE period < ? ORDER BY sequence',
-                (mi.base_year,),
-            ).fetchall()
-        else:
-            raw = cur.execute(
-                "SELECT period FROM main.TimePeriod WHERE flag = 'e' ORDER BY sequence"
-            ).fetchall()
-        load_element(M.time_exist, raw)
-
-        # time_future
-        if mi:
-            raw = cur.execute(
-                'SELECT period FROM main.TimePeriod WHERE '
-                'flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
-                (mi.base_year, mi.last_year),
-            ).fetchall()
-        else:
-            raw = cur.execute(
-                "SELECT period FROM main.TimePeriod WHERE flag = 'f' ORDER BY sequence"
-            ).fetchall()
-        load_element(M.time_future, raw)
-        time_optimize = [p[0] for p in raw[0:-1]]
 
         # time_of_day
         if self.table_exists('TimeOfDay'):
@@ -502,53 +540,7 @@ class HybridLoader:
         # raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'r'").fetchall()
         # load_element(M.tech_resource, raw, self.viable_techs)
 
-        # tech_production
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag LIKE 'p%'").fetchall()
-        load_element(M.tech_production, raw, self.viable_techs)
-
-        # tech_uncap
-        try:
-            raw = cur.execute('SELECT tech FROM main.Technology WHERE unlim_cap > 0').fetchall()
-            load_element(M.tech_uncap, raw, self.viable_techs)
-        except OperationalError:
-            logger.info(
-                'The current database does not support non-capacity techs and should be upgraded.'
-            )
-
-        # tech_baseload
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'pb'").fetchall()
-        load_element(M.tech_baseload, raw, self.viable_techs)
-
-        # tech_storage
-        raw = cur.execute("SELECT tech FROM main.Technology WHERE flag = 'ps'").fetchall()
-        load_element(M.tech_storage, raw, self.viable_techs)
-
-        # tech_seasonal_storage
-        raw = cur.execute(
-            "SELECT tech FROM main.Technology WHERE flag = 'ps' AND seas_stor > 0"
-        ).fetchall()
-        load_element(M.tech_seasonal_storage, raw, self.viable_techs)
-
-        # tech_reserve
-        raw = cur.execute('SELECT tech FROM Technology WHERE reserve > 0').fetchall()
-        load_element(M.tech_reserve, raw, self.viable_techs)
-
-        # tech_curtailment
-        raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
-        load_element(M.tech_curtailment, raw, self.viable_techs)
-
-        # tech_flex
-        raw = cur.execute('SELECT tech FROM Technology WHERE flex > 0').fetchall()
-        load_element(M.tech_flex, raw, self.viable_techs)
-
-        # tech_exchange
-        raw = cur.execute('SELECT tech FROM Technology WHERE exchange > 0').fetchall()
-        load_element(M.tech_exchange, raw, self.viable_techs)
-
         # groups & tech_groups (supports RPS and general tech grouping)
-        if self.table_exists('TechGroup'):
-            raw = cur.execute('SELECT group_name FROM main.TechGroup').fetchall()
-            load_element(M.tech_group_names, raw)
 
         if self.table_exists('TechGroupMember'):
             raw = cur.execute('SELECT group_name, tech FROM main.TechGroupMember').fetchall()
@@ -561,51 +553,9 @@ class HybridLoader:
                     element_validator=validator,
                 )
 
-        # tech_annual
-        raw = cur.execute('SELECT tech FROM Technology WHERE annual > 0').fetchall()
-        load_element(M.tech_annual, raw, self.viable_techs)
-
-        # tech_retirement
-        raw = cur.execute('SELECT tech FROM Technology WHERE retire > 0').fetchall()
-        load_element(M.tech_retirement, raw, self.viable_techs)
-
         #  === COMMODITIES ===
 
-        # commodity_demand
-        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 'd'").fetchall()
-        load_element(M.commodity_demand, raw, self.viable_comms)
-
-        # commodity_emissions
-        # currently NOT validated against anything... shouldn't be a problem ?
-        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 'e'").fetchall()
-        load_element(M.commodity_emissions, raw)
-
-        # commodity_physical
-        raw = cur.execute(
-            "SELECT name FROM main.Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'"
-        ).fetchall()
-        # The model enforces 0 symmetric difference between the physical commodities
-        # and the input commodities, so we need to include only the viable INPUTS
-        load_element(M.commodity_physical, raw, self.viable_input_comms)
-
-        # commodity_source
-        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag = 's'").fetchall()
-        load_element(M.commodity_source, raw, self.viable_input_comms)
-
-        # commodity_annual
-        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag LIKE '%a%'").fetchall()
-        load_element(M.commodity_annual, raw, self.viable_input_comms)
-
-        # commodity_waste
-        raw = cur.execute("SELECT name FROM main.Commodity WHERE flag LIKE '%w%'").fetchall()
-        load_element(M.commodity_waste, raw, self.viable_output_comms)
-
         #  === OPERATORS ===
-
-        # operator
-        if self.table_exists('Operator'):
-            raw = cur.execute('SELECT operator FROM main.Operator').fetchall()
-            load_element(M.operator, raw)
 
         #  === PARAMS ===
 
@@ -734,47 +684,6 @@ class HybridLoader:
                 qry='SELECT region, period, season, tod, demand_name, dsd FROM main.DemandSpecificDistribution',
             )
             load_element(M.DemandSpecificDistribution, raw)
-
-        # Demand
-        raw = self.raw_check_mi_period(
-            mi, cur=cur, qry='SELECT region, period, commodity, demand FROM main.Demand'
-        )
-        load_element(M.Demand, raw)
-
-        # CapacityToActivity
-        if self.table_exists('CapacityToActivity'):
-            raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity').fetchall()
-            load_element(M.CapacityToActivity, raw, self.viable_rt, (0, 1))
-
-        # CapacityFactorTech
-        if self.table_exists('CapacityFactorTech'):
-            raw = self.raw_check_mi_period(
-                mi=mi,
-                cur=cur,
-                qry='SELECT region, period, season, tod, tech, factor FROM main.CapacityFactorTech',
-            )
-            load_element(M.CapacityFactorTech, raw, self.viable_rt, (0, 4))
-
-        # CapacityFactorProcess
-        if self.table_exists('CapacityFactorProcess'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, season, tod, tech, vintage, factor FROM main.CapacityFactorProcess',
-            )
-            load_element(M.CapacityFactorProcess, raw, self.viable_rtv, (0, 4, 5))
-
-        # LifetimeTech
-        if self.table_exists('LifetimeTech'):
-            raw = cur.execute('SELECT region, tech, lifetime FROM main.LifetimeTech').fetchall()
-            load_element(M.LifetimeTech, raw, self.viable_rt, val_loc=(0, 1))
-
-        # LifetimeProcess
-        if self.table_exists('LifetimeProcess'):
-            raw = cur.execute(
-                'SELECT region, tech, vintage, lifetime FROM main.LifetimeProcess'
-            ).fetchall()
-            load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
         # LifetimeSurvivalCurve
         if self.table_exists('LifetimeSurvivalCurve'):

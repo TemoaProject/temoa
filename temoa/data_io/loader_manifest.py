@@ -14,7 +14,8 @@ class LoadItem:
     component: Set | Param
     table: str
     columns: list[str]
-    validator: Optional[ViableSet] = None
+    validator_name: Optional[str] = None
     validation_map: tuple[int, ...] = field(default_factory=tuple)
+    where_clause: Optional[str] = None
     is_period_filtered: bool = True
     is_table_required: bool = True
