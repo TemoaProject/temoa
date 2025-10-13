@@ -42,6 +42,50 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             custom_loader_name='_load_seg_frac',
             is_table_required=False,
         ),
+        # Singleton value with a fallback
+        LoadItem(
+            component=M.DaysPerPeriod,
+            table='MetaData',
+            columns=['value'],
+            where_clause="element == 'days_per_period'",
+            custom_loader_name='_load_days_per_period',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.GlobalDiscountRate,
+            table='MetaDataReal',
+            columns=['value'],
+            where_clause="element = 'global_discount_rate'",
+            custom_loader_name='_load_global_discount_rate',
+            is_period_filtered=False,
+            is_table_required=False,  # The table is optional
+        ),
+        LoadItem(
+            component=M.DefaultLoanRate,
+            table='MetaDataReal',
+            columns=['value'],
+            where_clause="element = 'default_loan_rate'",
+            custom_loader_name='_load_default_loan_rate',
+            is_period_filtered=False,
+            is_table_required=False,  # The table is optional
+        ),
+        LoadItem(
+            component=M.TimeSeasonSequential,
+            table='TimeSeasonSequential',
+            columns=['period', 'seas_seq', 'season', 'num_days'],
+            custom_loader_name='_load_time_season_sequential',
+            # Myopic filtering is handled by the fetcher's default behavior
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.ExistingCapacity,
+            table='ExistingCapacity',
+            columns=['region', 'tech', 'vintage', 'capacity'],
+            custom_loader_name='_load_existing_capacity',
+            is_period_filtered=False,  # Custom loader handles all logic
+            is_table_required=False,
+        ),
         # === REGION SETS ===
         LoadItem(
             component=M.regions,

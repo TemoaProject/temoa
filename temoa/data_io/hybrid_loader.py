@@ -384,6 +384,24 @@ class HybridLoader:
         elif isinstance(component, Param):
             data[component.name] = {t[:-1]: t[-1] for t in values}
 
+    def _load_days_per_period(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for the singleton DaysPerPeriod, with a fallback."""
+        M = TemoaModel()
+        value = 365  # Default value
+
+        if filtered_data:
+            value = int(filtered_data[0][0])
+        else:
+            logger.info(
+                'No value found for days_per_period in the MetaData table. '
+                'Assuming this is an annual database (365 days per period).'
+            )
+
+        # Singleton parameters are stored in the dictionary with a key of None
+        data[M.DaysPerPeriod.name] = {None: value}
+
     def _load_time_season(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
     ):
@@ -576,6 +594,31 @@ class HybridLoader:
                     oc,
                 )
 
+    def _load_global_discount_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for the singleton GlobalDiscountRate."""
+        M = TemoaModel()
+        if filtered_data:
+            # Singleton parameters are stored in the dictionary with a key of None
+            data[M.GlobalDiscountRate.name] = {None: float(filtered_data[0][0])}
+        else:
+            # This is a critical parameter. If MetaDataReal exists but the value isn't there, it's an error.
+            # The fetcher handles the case where the table itself doesn't exist.
+            raise ValueError(
+                "Missing required parameter: Could not find 'global_discount_rate' in the MetaDataReal table."
+            )
+
+    def _load_default_loan_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for the optional singleton DefaultLoanRate."""
+        M = TemoaModel()
+        if filtered_data:
+            # Singleton parameters are stored in the dictionary with a key of None
+            data[M.DefaultLoanRate.name] = {None: float(filtered_data[0][0])}
+        # If not found, we load nothing. The model has other ways to get loan rates.
+
     def _load_linked_techs(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
     ):
@@ -600,6 +643,72 @@ class HybridLoader:
                         entry,
                     )
                     sys.exit(-1)
+
+    def _load_time_season_sequential(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Custom loader for TimeSeasonSequential that also populates the
+        ordered_season_sequential and time_season_sequential sets.
+        """
+        M = TemoaModel()
+
+        # Load the main parameter
+        self._load_component_data(data, M.TimeSeasonSequential, filtered_data)
+
+        if filtered_data:
+            # Derive and load the ordered_season_sequential set: (period, seas_seq, season)
+            ordered_set_data = [row[0:3] for row in filtered_data]
+            self._load_component_data(data, M.ordered_season_sequential, ordered_set_data)
+
+            # Derive and load the time_season_sequential set: (seas_seq,)
+            # Sort for deterministic behavior
+            seq_set_data = sorted(list(set((row[1],) for row in filtered_data)))
+            self._load_component_data(data, M.time_season_sequential, seq_set_data)
+
+    def _load_existing_capacity(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Custom loader for ExistingCapacity.
+        Handles a simple query for standard runs and a more complex UNION query for
+        myopic runs to correctly account for capacity built in previous steps.
+        Also populates the `tech_exist` set.
+        """
+        M = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        rows_to_load = []
+        if mi:
+            # Myopic mode: Union of original existing capacity and capacity built in prior periods.
+            # 1. Get previous period to query OutputBuiltCapacity table
+            prev_period_result = cur.execute(
+                'SELECT MAX(period) FROM main.TimePeriod WHERE period < ?', (mi.base_year,)
+            ).fetchone()
+            previous_period = prev_period_result[0] if prev_period_result else -1
+
+            # 2. Fetch data
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, capacity FROM main.OutputBuiltCapacity '
+                ' WHERE vintage <= ? AND scenario = ? '
+                'UNION '
+                'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity',
+                (previous_period, self.config.scenario),
+            ).fetchall()
+        else:
+            # Standard mode: Just load the ExistingCapacity table
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
+            ).fetchall()
+
+        # Load the main parameter
+        self._load_component_data(data, M.ExistingCapacity, rows_to_load)
+
+        # Populate the associated `tech_exist` set from the loaded data
+        if rows_to_load:
+            tech_exist_data = sorted(list({(row[1],) for row in rows_to_load}))
+            self._load_component_data(data, M.tech_exist, tech_exist_data)
 
     def _create_data_dict_legacy(
         self,
@@ -726,18 +835,6 @@ class HybridLoader:
             # load as a singleton...
             data[M.MyopicDiscountingYear.name] = {None: int(p0[0])}
 
-        # days_per_season
-        raw = cur.execute(
-            "SELECT value from MetaData WHERE element == 'days_per_period'"
-        ).fetchall()
-        if not raw:
-            logger.info(
-                'No value found for days_per_period in the MetaData table. '
-                'Assuming this is an annual database (365 days per period)'
-            )
-            raw = [(365,)]
-        data[M.DaysPerPeriod.name] = {None: int(raw[0][0])}
-
         #  === REGION SETS ===
 
         # region-groups  (these are the R1+R2, R1+R4+R6 type region labels) AND regular region names
@@ -777,68 +874,9 @@ class HybridLoader:
                 )
 
         # Efficiency
-        self._load_component_data(data, M.Efficiency, self.efficiency_values)
-
-        # ExistingCapacity
-        if self.table_exists('ExistingCapacity'):
-            if mi:
-                # In order to get accurate capacity at start of this interval, we want to
-                # 1.  Only look at the previous period in the net capacity table (things that had some capacity)
-                # 2.  Omit any techs that are "unlimited capacity" to keep them out of capacity variables
-                # 3.  add in everything from the original ExistingCapacity table
-
-                # get previous period
-                raw = cur.execute(
-                    'SELECT MAX(period) FROM main.TimePeriod WHERE period < ?', (mi.base_year,)
-                ).fetchone()
-                previous_period = raw[0]
-                # noinspection SqlUnused
-                raw = cur.execute(
-                    'SELECT region, tech, vintage, capacity FROM main.OutputBuiltCapacity '
-                    ' WHERE vintage <= ? '
-                    ' AND scenario = ? '
-                    'UNION '
-                    '  SELECT region, tech, vintage, capacity FROM main.ExistingCapacity ',
-                    (previous_period, self.config.scenario),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, tech, vintage, capacity FROM main.ExistingCapacity'
-                ).fetchall()
-            # devnote: We want full existing capacity history for end of life flows and growth constraints
-            # load_element(M.ExistingCapacity, raw, self.viable_rtv, (0, 1, 2))
-            load_element(M.ExistingCapacity, raw)
-            load_element(
-                M.tech_exist, list({(row[1],) for row in raw})
-            )  # need to keep these for accounting purposes
-
-        # GlobalDiscountRate
-        if self.table_exists('MetaDataReal'):
-            raw = cur.execute(
-                "SELECT value FROM main.MetaDataReal WHERE element = 'global_discount_rate'"
-            ).fetchall()
-            # do this separately as it is non-indexed, so we need to make a mapping with None
-            data[M.GlobalDiscountRate.name] = {None: raw[0][0]}
-
-        # SegFrac
-
-        # TimeSeason
-
-        if self.table_exists('TimeSeasonSequential'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT period, seas_seq, season, num_days FROM main.TimeSeasonSequential ORDER BY period, sequence'
-                ).fetchall()
-            load_element(M.TimeSeasonSequential, raw)
-            if raw:
-                load_element(M.ordered_season_sequential, [(row[0:3]) for row in raw])
-                load_element(M.time_season_sequential, list(set((row[1],) for row in raw)))
+        self._load_component_data(
+            data, M.Efficiency, self.efficiency_values
+        )  # This can be migrated later if needed
 
         # DemandSpecificDistribution
         if self.table_exists('DemandSpecificDistribution'):
@@ -963,14 +1001,6 @@ class HybridLoader:
         else:
             raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
         load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
-
-        # DefaultLoanRate
-        if self.table_exists('MetaDataReal'):
-            raw = cur.execute(
-                "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
-            ).fetchall()
-            # do this separately as it is non-indexed, so we need to make a mapping with None
-            data[M.DefaultLoanRate.name] = {None: raw[0][0]}
 
         # LoanRate
         if self.table_exists('LoanRate'):
