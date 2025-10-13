@@ -248,9 +248,9 @@ for old_name, new_name in direct_transfer_tables:
     con_new.executemany(query, data)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
-# Need these
+# Need all valid time periods to check for defined lifetimes
 time_all = sorted(cur.execute('SELECT period FROM TimePeriod').fetchall())
-time_all = [p[0] for p in time_all[0:-1]]
+time_all = [p[0] for p in time_all[0:-1]] # Exclude horizon end
 
 # get lifetimes. Major headache but needs to be done
 lifetime_process = dict()
@@ -264,6 +264,9 @@ for rtl in data:
 data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
 for rtvl in data:
     lifetime_process[rtvl[0:3]] = rtvl[3]
+
+# Planning periods to add to period indices (less horizon end)
+time_optimize = sorted(cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall())[0:-1]
 
 # add period indexing to seasonal tables
 print('\n --- Adding period index to some tables ---')
