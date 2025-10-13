@@ -294,7 +294,7 @@ class HybridLoader:
             if item.custom_loader_name:
                 # For special cases, delegate the entire loading process
                 loader_func = getattr(self, item.custom_loader_name)
-                loader_func(data, filtered_data)
+                loader_func(data, raw_data, filtered_data)
             else:
                 if len(filtered_data) < len(raw_data):
                     # This replicates the warning from the original load_element function
@@ -377,7 +377,9 @@ class HybridLoader:
         elif isinstance(component, Param):
             data[component.name] = {t[:-1]: t[-1] for t in values}
 
-    def _load_ramping_up(self, data: dict, filtered_data: Sequence[tuple]):
+    def _load_ramping_up(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
         """Custom loader for RampUpHourly and its associated index set."""
         M = TemoaModel()
         self._load_component_data(data, M.RampUpHourly, filtered_data)
@@ -391,7 +393,9 @@ class HybridLoader:
             )
             self._load_component_data(data, M.tech_upramping, tech_filtered)
 
-    def _load_ramping_down(self, data: dict, filtered_data: Sequence[tuple]):
+    def _load_ramping_down(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
         """Custom loader for RampDownHourly and its associated index set."""
         M = TemoaModel()
         self._load_component_data(data, M.RampDownHourly, filtered_data)
@@ -405,7 +409,9 @@ class HybridLoader:
             )
             self._load_component_data(data, M.tech_downramping, tech_filtered)
 
-    def _load_rps_requirement(self, data: dict, filtered_data: Sequence[tuple]):
+    def _load_rps_requirement(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
         """Custom loader for RenewablePortfolioStandard to handle deprecation warning."""
         M = TemoaModel()
         self._load_component_data(data, M.RenewablePortfolioStandard, filtered_data)
@@ -417,6 +423,116 @@ class HybridLoader:
                 'constructing a new super group for all relevant generators. The constraint '
                 'has been applied for now but this feature will be removed in the future.'
             )
+
+    def _load_limit_tech_input_split(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LimitTechInputSplit to provide detailed warnings."""
+        item = self.manifest_map['LimitTechInputSplit']
+        self._load_component_data(data, item.component, filtered_data)
+
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            # Sort for deterministic error logging
+            for entry in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                region, period, ic, tech, _, _ = entry
+                logger.warning(
+                    'Technology Input Split requirement in region %s, period %d for tech %s with input '
+                    'commodity %s has been removed because the tech path with that input is '
+                    'invalid/not available/orphan. Review other warnings for this technology.',
+                    region,
+                    period,
+                    tech,
+                    ic,
+                )
+
+    def _load_limit_tech_input_split_annual(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LimitTechInputSplitAnnual to provide detailed warnings."""
+        item = self.manifest_map['LimitTechInputSplitAnnual']
+        self._load_component_data(data, item.component, filtered_data)
+
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for entry in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                region, period, ic, tech, _, _ = entry
+                logger.warning(
+                    'Technology Input Split Annual requirement in region %s, period %d for tech %s with input '
+                    'commodity %s has been removed because the tech path with that input is '
+                    'invalid/not available/orphan. Review other warnings for this technology.',
+                    region,
+                    period,
+                    tech,
+                    ic,
+                )
+
+    def _load_limit_tech_output_split(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LimitTechOutputSplit to provide detailed warnings."""
+        item = self.manifest_map['LimitTechOutputSplit']
+        self._load_component_data(data, item.component, filtered_data)
+
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for entry in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
+                region, period, tech, oc, _, _ = entry
+                logger.warning(
+                    'Technology Output Split requirement in region %s, period %d for tech %s with output '
+                    'commodity %s has been removed because the tech path with that output is '
+                    'invalid/not available/orphan. Review other warnings for this technology.',
+                    region,
+                    period,
+                    tech,
+                    oc,
+                )
+
+    def _load_limit_tech_output_split_annual(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LimitTechOutputSplitAnnual to provide detailed warnings."""
+        item = self.manifest_map['LimitTechOutputSplitAnnual']
+        self._load_component_data(data, item.component, filtered_data)
+
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for entry in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
+                region, period, tech, oc, _, _ = entry
+                logger.warning(
+                    'Technology Output Split Annual requirement in region %s, period %d for tech %s with output '
+                    'commodity %s has been removed because the tech path with that output is '
+                    'invalid/not available/orphan. Review other warnings for this technology.',
+                    region,
+                    period,
+                    tech,
+                    oc,
+                )
+
+    def _load_linked_techs(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LinkedTechs to provide critical error checking."""
+        item = self.manifest_map['LinkedTechs']
+        self._load_component_data(data, item.component, filtered_data)
+
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            # This check is critical. If a linked tech pair is invalid, but one of the
+            # techs is still considered viable, it's a modeling error that could lead
+            # to incorrect independent operation. The commodity network analysis
+            # should prevent this, so this serves as a safeguard.
+            valid_techs = self.viable_techs.members if self.viable_techs else set()
+            for entry in missing:
+                primary_tech = entry[1]
+                driven_tech = entry[3]
+                if primary_tech in valid_techs or driven_tech in valid_techs:
+                    logger.error(
+                        'A LinkedTech entry %s was invalidated, but one of its component technologies '
+                        'remains viable. This could lead to incorrect model behavior. Halting execution.',
+                        entry,
+                    )
+                    sys.exit(-1)
 
     def _create_data_dict_legacy(
         self,
@@ -604,12 +720,6 @@ class HybridLoader:
                     element=row[1],
                     element_validator=validator,
                 )
-
-        #  === COMMODITIES ===
-
-        #  === OPERATORS ===
-
-        #  === PARAMS ===
 
         # Efficiency
         self._load_component_data(data, M.Efficiency, self.efficiency_values)
