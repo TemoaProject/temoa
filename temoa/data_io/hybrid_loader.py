@@ -1,34 +1,3 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  1/21/24
-
-A module to build/load a Data Portal for myopic run using both SQL to pull data
-and python to filter results
-
-"""
-
 import sys
 import time
 from collections import defaultdict
@@ -42,6 +11,8 @@ from pyomo.dataportal import DataPortal
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
+from temoa.data_io.component_manifest import build_manifest
+from temoa.data_io.loader_manifest import LoadItem
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
@@ -85,6 +56,11 @@ class HybridLoader:
         self.debugging = False  # for T/S, will print to screen the data load values
         self.con = db_connection
         self.config = config
+
+        # Build the data loading manifest
+        M = TemoaModel()
+        self.manifest = build_manifest(M)
+        self.manifest_map = {item.component.name: item for item in self.manifest}
 
         self.manager: CommodityNetworkManager | None = None
 
@@ -259,6 +235,61 @@ class HybridLoader:
         # 5. load it into the data dictionary
         logger.info('Loading data dictionary')
 
+        data: dict[str, list | dict] = dict()
+
+        cur = self.con.cursor()
+
+        # Run the manifest-based loader first for migrated components
+        for item in self.manifest:
+            if item.is_table_required and not self.table_exists(item.table):
+                logger.info(f"Skipping {item.component.name}: table '{item.table}' not found.")
+                continue
+
+            # 1. Get raw data from the database
+            raw_data = self._fetch_data(cur, item, myopic_index)
+
+            # 2. TODO: Validate/filter data (not needed for M.regions)
+
+            # 3. Load into the data dictionary
+            self._load_component_data(data, item.component, raw_data)
+
+        # Call the legacy loader and pass it the data dictionary to populate.
+        # As we migrate components to the manifest, they will be removed from the legacy method.
+        self._create_data_dict_legacy(myopic_index=myopic_index, data=data)
+
+        return data
+
+    def _fetch_data(self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None) -> list[tuple]:
+        """Fetches data for a component based on its manifest item."""
+        base_query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
+        if item.is_period_filtered and mi:
+            return cur.execute(
+                base_query + ' WHERE period >= ? AND period <= ?',
+                (mi.base_year, mi.last_demand_year),
+            ).fetchall()
+        else:
+            return cur.execute(base_query).fetchall()
+
+    def _load_component_data(
+        self, data: dict, component: Set | Param, values: Sequence[tuple]
+    ) -> None:
+        """Loads a sequence of values into the data dictionary for the given component."""
+        if not values:
+            return
+        if isinstance(component, Set):
+            if len(values[0]) == 1:  # A simple set of single values
+                data[component.name] = [t[0] for t in values]
+            else:  # A set of tuples
+                data[component.name] = list(values)
+        elif isinstance(component, Param):
+            data[component.name] = {t[:-1]: t[-1] for t in values}
+
+    def _create_data_dict_legacy(self, myopic_index: MyopicIndex | None, data: dict) -> None:
+        """
+        The original, monolithic data loading method. This will be incrementally
+        refactored until it is empty. It now populates a dictionary passed to it.
+        """
+
         # some logic checking...
         if myopic_index is not None:
             if not isinstance(myopic_index, MyopicIndex):
@@ -284,9 +315,6 @@ class HybridLoader:
         self._build_efficiency_dataset(use_raw_data=use_raw_data, myopic_index=myopic_index)
 
         mi = myopic_index  # convenience
-
-        # housekeeping
-        data: dict[str, list | dict] = dict()
 
         def load_element(
             c: Set | Param,
@@ -450,10 +478,6 @@ class HybridLoader:
         data[M.DaysPerPeriod.name] = {None: int(raw[0][0])}
 
         #  === REGION SETS ===
-
-        # regions
-        raw = cur.execute('SELECT region FROM main.Region').fetchall()
-        load_element(M.regions, raw)
 
         # region-groups  (these are the R1+R2, R1+R4+R6 type region labels) AND regular region names
         # currently, we just load all the indices from the tables that could employ them.
@@ -1199,8 +1223,6 @@ class HybridLoader:
         set_data = self.load_param_idx_sets(data=data)
         data.update(set_data)
         self.data = data
-
-        return data
 
     def tuple_values(self, raw, index_length):
         new_raw = []
