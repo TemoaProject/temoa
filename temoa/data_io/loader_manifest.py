@@ -1,10 +1,8 @@
 # temoa/data_io/loader_manifest.py
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Any
+from typing import Any, Optional
 
 from pyomo.core import Param, Set
-
-from temoa.model_checking.element_checker import ViableSet
 
 
 @dataclass
@@ -20,3 +18,4 @@ class LoadItem:
     is_period_filtered: bool = True
     is_table_required: bool = True
     custom_loader_name: Optional[str] = None
+    fallback_data: Optional[list[tuple[Any, ...]]] = None

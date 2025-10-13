@@ -18,6 +18,30 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
         A list of LoadItem objects describing the data to be loaded.
     """
     manifest = [
+        # === TIME SETS ===
+        LoadItem(
+            component=M.time_of_day,
+            table='TimeOfDay',
+            columns=['tod'],
+            is_period_filtered=False,
+            is_table_required=False,
+            fallback_data=[('D',)],
+        ),
+        LoadItem(
+            component=M.TimeSeason,
+            table='TimeSeason',
+            columns=['period', 'season'],
+            custom_loader_name='_load_time_season',
+            is_period_filtered=False,  # Custom loader handles myopic filtering
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.SegFrac,
+            table='TimeSegmentFraction',
+            columns=['period', 'season', 'tod', 'segfrac'],
+            custom_loader_name='_load_seg_frac',
+            is_table_required=False,
+        ),
         # === REGION SETS ===
         LoadItem(
             component=M.regions,

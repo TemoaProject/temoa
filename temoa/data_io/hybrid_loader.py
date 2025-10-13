@@ -251,6 +251,8 @@ class HybridLoader:
         data: dict[str, list | dict] = {}
         cur = self.con.cursor()
 
+        # Make the myopic index available to custom loaders before the manifest loop
+        self.myopic_index = mi
         M = TemoaModel()
 
         # Load critical time sets first, as they are used to index other components
@@ -286,7 +288,12 @@ class HybridLoader:
 
             # 1. Get raw data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
-            if not raw_data:
+            if not raw_data and item.is_table_required is False and item.fallback_data:
+                logger.warning(
+                    f"Table '{item.table}' not found or is empty. Using default values for {item.component.name}."
+                )
+                raw_data = item.fallback_data
+            elif not raw_data:
                 continue
 
             # 2. Validate/filter data
@@ -376,6 +383,66 @@ class HybridLoader:
                 data[component.name] = list(values)
         elif isinstance(component, Param):
             data[component.name] = {t[:-1]: t[-1] for t in values}
+
+    def _load_time_season(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Custom loader for the indexed TimeSeason set. Also populates the simple
+        time_season set as a side effect. Handles dynamic fallbacks.
+        The manifest entry for this loader should point to M.TimeSeason.
+        """
+        M = TemoaModel()
+        mi = self.myopic_index if hasattr(self, 'myopic_index') else None
+
+        # Step 1: Filter raw data or generate fallback data
+        rows_to_load = []
+        if not raw_data:  # Table doesn't exist, use fallback
+            logger.warning('No TimeSeason table found. Loading a single filler season "S".')
+            time_optimize = data.get('time_optimize', [])
+            if not time_optimize and 'time_future' in data:
+                time_optimize = data['time_future'][:-1]
+            rows_to_load = [(p, 'S') for p in time_optimize]
+        else:  # Table exists, filter for current scope
+            if mi:
+                # For myopic, only load data for the demand years in the current model instance.
+                # The model's constraints operate over `time_optimize`.
+                time_optimize = data.get('time_optimize', [])
+                if not time_optimize and 'time_future' in data:
+                    time_optimize = data['time_future'][:-1]
+                valid_periods = set(time_optimize)
+                rows_to_load = [row for row in raw_data if row[0] in valid_periods]
+            else:
+                rows_to_load = list(raw_data)
+
+        if not rows_to_load:
+            data.setdefault(M.time_season.name, [])
+            return
+
+        # Step 2: Populate the simple set `time_season`
+        unique_seasons = sorted(list(set((row[1],) for row in rows_to_load)))
+        self._load_component_data(data, M.time_season, unique_seasons)
+
+        # Step 3: Populate the indexed set `TimeSeason`
+        for period, season in rows_to_load:
+            data_store = data.get(M.TimeSeason.name, defaultdict(list))
+            data_store[period].append(season)
+            data[M.TimeSeason.name] = data_store
+
+    def _load_seg_frac(self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]):
+        """Custom loader for SegFrac to handle dynamic fallbacks."""
+        M = TemoaModel()
+        if filtered_data:
+            self._load_component_data(data, M.SegFrac, filtered_data)
+        else:
+            logger.warning('No TimeSegmentFraction table found. Generating default SegFrac values.')
+            time_optimize = data.get('time_optimize', [])
+            # In the new flow, data['time_optimize'] might not be set yet. Grab it directly.
+            if not time_optimize and 'time_future' in data:
+                time_optimize = data['time_future'][0:-1]
+
+            fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]
+            self._load_component_data(data, M.SegFrac, fallback)
 
     def _load_ramping_up(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
@@ -615,18 +682,6 @@ class HybridLoader:
         M: TemoaModel = TemoaModel()  # for typing purposes only
         cur = self.con.cursor()
 
-        #   === TIME SETS ===
-
-        # time_of_day
-        if self.table_exists('TimeOfDay'):
-            raw = cur.execute('SELECT tod FROM main.TimeOfDay ORDER BY sequence').fetchall()
-            load_element(M.time_of_day, raw)
-        else:
-            logger.warning(
-                'No TimeOfDay table found. Loading a single filler time of day "D" (assume this is an annual model)'
-            )
-            load_element(M.time_of_day, [('D',)])
-
         # TimeSequencing
         time_sequencing = self.config.time_sequencing
         match time_sequencing:
@@ -766,50 +821,8 @@ class HybridLoader:
             data[M.GlobalDiscountRate.name] = {None: raw[0][0]}
 
         # SegFrac
-        if self.table_exists('TimeSegmentFraction'):
-            raw = self.raw_check_mi_period(
-                mi=mi,
-                cur=cur,
-                qry='SELECT period, season, tod, segfrac FROM main.TimeSegmentFraction',
-            )
-        else:
-            logger.warning(
-                'No TimeSegmentFraction table found. Loading filler SegFrac ("S", "D") for one time segment per period'
-                ' (assume this is a periodic model)'
-            )
-            # if no segfrac table, assume this is a periodic model
-            if mi:
-                raw = [
-                    (p, 'S', 'D', 1)
-                    for p in time_optimize
-                    if mi.base_year <= p <= mi.last_demand_year
-                ]
-            else:
-                raw = [(p, 'S', 'D', 1) for p in time_optimize]
-        load_element(M.SegFrac, raw)
 
         # TimeSeason
-        if self.table_exists('TimeSeason'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT period, season FROM main.TimeSeason WHERE'
-                    ' period >= ? AND period <= ? ORDER BY period, sequence',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT period, season FROM main.TimeSeason ORDER BY period, sequence'
-                ).fetchall()
-            for row in raw:
-                load_indexed_set(M.TimeSeason, index_value=row[0], element=row[1])
-            load_element(M.time_season, list(set((row[1],) for row in raw)))
-        else:
-            for period in time_optimize:
-                load_indexed_set(M.TimeSeason, index_value=period, element='S')
-            logger.warning(
-                'No TimeSeason table found. Loading a single filler season "S" (assume this is an annual model)'
-            )
-            load_element(M.time_season, [('S',)])
 
         if self.table_exists('TimeSeasonSequential'):
             if mi:
