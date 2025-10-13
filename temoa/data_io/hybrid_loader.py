@@ -376,8 +376,14 @@ class HybridLoader:
         """
         network_data = network_model_data.build(self.con, myopic_index=myopic_index)
         cur = self.con.cursor()
-        periods = {p for (p,) in cur.execute("SELECT period FROM TimePeriod WHERE flag = 'f'")}
-        periods = sorted(periods)[:-1]  # Exclude the non-demand last period
+        periods = set(
+            [
+                p
+                for (p,) in cur.execute(
+                    "SELECT period FROM TimePeriod WHERE flag = 'f' ORDER BY period"
+                )
+            ][:-1]  # drop last period
+        )
 
         if myopic_index:
             periods = {
@@ -450,7 +456,7 @@ class HybridLoader:
         """
         M = TemoaModel()
         cur = self.con.cursor()
-        regions_and_groups = set()
+        regions_and_groups: set[str] = set()
 
         if self.table_exists('Region'):
             regions_and_groups.update(
