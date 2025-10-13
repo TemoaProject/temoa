@@ -19,12 +19,12 @@ Architecture:
     `HybridLoader` class.
 """
 
-import sys
 import time
 from collections import defaultdict
+from collections.abc import Sequence
 from logging import getLogger
 from sqlite3 import Connection, Cursor, OperationalError
-from typing import Any, Sequence
+from typing import Any
 
 from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
@@ -72,7 +72,7 @@ class HybridLoader:
     of what to load from the procedural logic of how to load it.
     """
 
-    def __init__(self, db_connection: Connection, config: TemoaConfig):
+    def __init__(self, db_connection: Connection, config: TemoaConfig) -> None:
         """
         Initializes the loader.
 
@@ -244,7 +244,9 @@ class HybridLoader:
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
                     logger.warning(
-                        f'{ignored_count} values for {item.component.name} failed to validate and were ignored.'
+                        '%d values for %s failed to validate and were ignored.',
+                        ignored_count,
+                        item.component.name,
                     )
                 self._load_component_data(data, item.component, filtered_data)
 
@@ -281,6 +283,11 @@ class HybridLoader:
         :param mi: The MyopicIndex for period filtering, if applicable.
         :return: A list of tuples containing the raw data.
         """
+        # If an item has a custom loader but no columns, it's a "meta-loader"
+        # that handles its own data acquisition. Do not attempt to query its table.
+        if item.custom_loader_name and not item.columns:
+            return []
+
         if not self.table_exists(item.table):
             if item.is_table_required:
                 raise FileNotFoundError(f"Required table '{item.table}' not found in the database.")
@@ -650,11 +657,12 @@ class HybridLoader:
             for entry in missing:
                 p_tech, d_tech = entry[1], entry[3]
                 if p_tech in valid_techs or d_tech in valid_techs:
-                    logger.error(
-                        f'A LinkedTech entry {entry} was invalidated, but one of its component technologies '
-                        f'remains viable. This could lead to incorrect model behavior. Halting execution.'
+                    msg = (
+                        'A LinkedTech entry %s was invalidated, but one of its component technologies '
+                        'remains viable. This could lead to incorrect model behavior.'
                     )
-                    sys.exit(-1)
+                    logger.error(msg, entry)
+                    raise RuntimeError(msg % (entry,))
 
     def _load_ramping_down(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
