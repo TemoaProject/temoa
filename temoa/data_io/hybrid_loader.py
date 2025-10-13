@@ -233,7 +233,9 @@ class HybridLoader:
                 # Standard loading path for non-custom components
                 if not raw_data and not item.is_table_required and item.fallback_data:
                     logger.warning(
-                        f"Table '{item.table}' not found or is empty. Using default values for {item.component.name}."
+                        "Table '%s' not found or is empty. Using default values for %s.",
+                        item.table,
+                        item.component.name,
                     )
                     raw_data = item.fallback_data
                     filtered_data = self._filter_data(raw_data, item, use_raw_data)
@@ -272,8 +274,6 @@ class HybridLoader:
 
     # =================================================================================
     # Core Engine Helpers
-    # =================================================================================
-
     def _fetch_data(self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None) -> list[tuple]:
         """
         Fetches data for a component based on its manifest item.
@@ -283,8 +283,7 @@ class HybridLoader:
         :param mi: The MyopicIndex for period filtering, if applicable.
         :return: A list of tuples containing the raw data.
         """
-        # If an item has a custom loader but no columns, it's a "meta-loader"
-        # that handles its own data acquisition. Do not attempt to query its table.
+        # If this is a custom loader and no columns are specified, no fetch is needed.
         if item.custom_loader_name and not item.columns:
             return []
 
@@ -311,11 +310,13 @@ class HybridLoader:
         except OperationalError as e:
             if not item.is_table_required:
                 logger.info(
-                    f'Could not load optional component {item.component.name}, likely due to older schema. Skipping. Error: {e}'
+                    'Could not load optional component %s, likely due to older schema. Skipping. Error: %s',
+                    item.component.name,
+                    e,
                 )
                 return []
             else:
-                raise e
+                raise
 
     def _filter_data(
         self, values: Sequence[tuple], item: LoadItem, use_raw_data: bool
@@ -357,7 +358,19 @@ class HybridLoader:
             else:
                 data[component.name] = list(values)
         elif isinstance(component, Param):
-            data[component.name] = {t[:-1]: t[-1] for t in values}
+            # A singleton/scalar Param is represented by a single tuple with one
+            # element, e.g., [(value,)]. The data dictionary needs to map this
+            # to {None: value}. An indexed Param has tuples with len > 1,
+            # e.g., [(key1, key2, value)], which map to {(key1, key2): value}.
+            if len(values[0]) == 1:
+                if len(values) > 1:
+                    logger.warning(
+                        "Component '%s' appears to be a scalar Param but has multiple values. Using only the first value.",
+                        component.name,
+                    )
+                data[component.name] = {None: values[0][0]}
+            else:  # Indexed Param
+                data[component.name] = {t[:-1]: t[-1] for t in values}
 
     def table_exists(self, table_name: str) -> bool:
         """
@@ -712,8 +725,12 @@ class HybridLoader:
             missing = set(raw_data) - set(filtered_data)
             for r, p, i, t, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
                 logger.warning(
-                    f'Tech Input Split in region {r}, period {p} for tech {t} with input {i} '
-                    f'was removed because the path is invalid/orphaned. Review other warnings.'
+                    'Tech Input Split in region %s, period %d for tech %s with input %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    i,
                 )
 
     def _load_limit_tech_input_split_annual(
@@ -726,8 +743,12 @@ class HybridLoader:
             missing = set(raw_data) - set(filtered_data)
             for r, p, i, t, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
                 logger.warning(
-                    f'Tech Input Split Annual in region {r}, period {p} for tech {t} with input {i} '
-                    f'was removed because the path is invalid/orphaned. Review other warnings.'
+                    'Tech Input Split Annual in region %s, period %d for tech %s with input %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    i,
                 )
 
     def _load_limit_tech_output_split(
@@ -740,8 +761,12 @@ class HybridLoader:
             missing = set(raw_data) - set(filtered_data)
             for r, p, t, o, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
                 logger.warning(
-                    f'Tech Output Split in region {r}, period {p} for tech {t} with output {o} '
-                    f'was removed because the path is invalid/orphaned. Review other warnings.'
+                    'Tech Output Split in region %s, period %d for tech %s with output %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    o,
                 )
 
     def _load_limit_tech_output_split_annual(
@@ -754,8 +779,12 @@ class HybridLoader:
             missing = set(raw_data) - set(filtered_data)
             for r, p, t, o, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
                 logger.warning(
-                    f'Tech Output Split Annual in region {r}, period {p} for tech {t} with output {o} '
-                    f'was removed because the path is invalid/orphaned. Review other warnings.'
+                    'Tech Output Split Annual in region %s, period %d for tech %s with output %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    o,
                 )
 
     # =================================================================================
