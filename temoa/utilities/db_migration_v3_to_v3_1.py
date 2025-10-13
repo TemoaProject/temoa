@@ -249,8 +249,8 @@ for old_name, new_name in direct_transfer_tables:
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
 # Need these
-time_future = cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
-time_optimize = [p[0] for p in time_future[0:-1]]
+time_all = sorted(cur.execute('SELECT period FROM TimePeriod').fetchall())
+time_all = [p[0] for p in time_all[0:-1]]
 
 # get lifetimes. Major headache but needs to be done
 lifetime_process = dict()
@@ -259,7 +259,7 @@ for rtv in data:
     lifetime_process[rtv] = TemoaModel.default_lifetime_tech
 data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
 for rtl in data:
-    for v in time_optimize:
+    for v in time_all:
         lifetime_process[*rtl[0:2], v] = rtl[2]
 data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
 for rtvl in data:
