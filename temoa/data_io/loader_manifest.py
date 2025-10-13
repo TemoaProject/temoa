@@ -1,6 +1,6 @@
 # temoa/data_io/loader_manifest.py
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Callable, Any
 
 from pyomo.core import Param, Set
 
@@ -19,3 +19,4 @@ class LoadItem:
     where_clause: Optional[str] = None
     is_period_filtered: bool = True
     is_table_required: bool = True
+    custom_loader_name: Optional[str] = None

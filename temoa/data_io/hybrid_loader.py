@@ -291,9 +291,20 @@ class HybridLoader:
 
             # 2. Validate/filter data
             filtered_data = self._filter_data(raw_data, item, use_raw_data)
+            if item.custom_loader_name:
+                # For special cases, delegate the entire loading process
+                loader_func = getattr(self, item.custom_loader_name)
+                loader_func(data, filtered_data)
+            else:
+                if len(filtered_data) < len(raw_data):
+                    # This replicates the warning from the original load_element function
+                    ignored_count = len(raw_data) - len(filtered_data)
+                    logger.warning(
+                        f'{ignored_count} values for {item.component.name} failed to validate and were ignored.'
+                    )
 
-            # 3. Load into the data dictionary
-            self._load_component_data(data, item.component, filtered_data)
+                # 3. Load into the data dictionary
+                self._load_component_data(data, item.component, filtered_data)
 
         # ---------------------------------------------------------------------
         # Legacy loader for components pending migration
@@ -365,6 +376,47 @@ class HybridLoader:
                 data[component.name] = list(values)
         elif isinstance(component, Param):
             data[component.name] = {t[:-1]: t[-1] for t in values}
+
+    def _load_ramping_up(self, data: dict, filtered_data: Sequence[tuple]):
+        """Custom loader for RampUpHourly and its associated index set."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RampUpHourly, filtered_data)
+
+        # Extract the unique technologies to populate the index set
+        if filtered_data:
+            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            # The validator for the subset must be run manually here.
+            tech_filtered = self._filter_data(
+                tech_data, self.manifest_map[M.tech_upramping.name], use_raw_data=False
+            )
+            self._load_component_data(data, M.tech_upramping, tech_filtered)
+
+    def _load_ramping_down(self, data: dict, filtered_data: Sequence[tuple]):
+        """Custom loader for RampDownHourly and its associated index set."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RampDownHourly, filtered_data)
+
+        # Extract the unique technologies to populate the index set
+        if filtered_data:
+            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            # The validator for the subset must be run manually here.
+            tech_filtered = self._filter_data(
+                tech_data, self.manifest_map[M.tech_downramping.name], use_raw_data=False
+            )
+            self._load_component_data(data, M.tech_downramping, tech_filtered)
+
+    def _load_rps_requirement(self, data: dict, filtered_data: Sequence[tuple]):
+        """Custom loader for RenewablePortfolioStandard to handle deprecation warning."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RenewablePortfolioStandard, filtered_data)
+
+        if filtered_data:
+            logger.warning(
+                'The RenewablePortfolioStandard constraint has been deprecated. Use the '
+                'LimitActivityShare constraint instead, using the same sub group and '
+                'constructing a new super group for all relevant generators. The constraint '
+                'has been applied for now but this feature will be removed in the future.'
+            )
 
     def _create_data_dict_legacy(
         self,
@@ -560,18 +612,7 @@ class HybridLoader:
         #  === PARAMS ===
 
         # Efficiency
-        # we have already computed/filtered this... no need for another data pull
-        raw = self.efficiency_values
-        load_element(M.Efficiency, raw)
-
-        # EfficiencyVariable
-        if self.table_exists('EfficiencyVariable'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, season, tod, input_comm, tech, vintage, output_comm, efficiency FROM main.EfficiencyVariable',
-            )
-            load_element(M.EfficiencyVariable, raw, self.viable_ritvo, (0, 4, 5, 6, 7))
+        self._load_component_data(data, M.Efficiency, self.efficiency_values)
 
         # ExistingCapacity
         if self.table_exists('ExistingCapacity'):
@@ -685,26 +726,12 @@ class HybridLoader:
             )
             load_element(M.DemandSpecificDistribution, raw)
 
-        # LifetimeSurvivalCurve
-        if self.table_exists('LifetimeSurvivalCurve'):
-            raw = cur.execute(
-                'SELECT region, period, tech, vintage, fraction FROM main.LifetimeSurvivalCurve'
-            ).fetchall()
-            load_element(M.LifetimeSurvivalCurve, raw, self.viable_rtv, val_loc=(0, 2, 3))
-
-        # LoanLifetimeProcess
-        if self.table_exists('LoanLifetimeProcess'):
-            raw = cur.execute(
-                'SELECT region, tech, vintage, lifetime FROM main.LoanLifetimeProcess'
-            ).fetchall()
-            load_element(M.LoanLifetimeProcess, raw, self.viable_rtv, (0, 1, 2))
-
-        # LimitTechInputSplit
+        # Special case logging for LimitTechInputSplit - to be refactored later
         if self.table_exists('LimitTechInputSplit'):
             raw = self.raw_check_mi_period(
                 mi,
-                cur=cur,
-                qry='SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplit',
+                cur,
+                'SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplit',
             )
             loaded = load_element(M.LimitTechInputSplit, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
@@ -725,12 +752,12 @@ class HybridLoader:
                         ic,
                     )
 
-        # LimitTechInputSplitAnnual
+        # Special case logging for LimitTechInputSplitAnnual - to be refactored later
         if self.table_exists('LimitTechInputSplitAnnual'):
             raw = self.raw_check_mi_period(
                 mi,
-                cur=cur,
-                qry='SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplitAnnual',
+                cur,
+                'SELECT region, period, input_comm, tech, operator, proportion FROM main.LimitTechInputSplitAnnual',
             )
             loaded = load_element(M.LimitTechInputSplitAnnual, raw, self.viable_rpit, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
@@ -751,12 +778,12 @@ class HybridLoader:
                         ic,
                     )
 
-        # LimitTechOutputSplit
+        # Special case logging for LimitTechOutputSplit - to be refactored later
         if self.table_exists('LimitTechOutputSplit'):
             raw = self.raw_check_mi_period(
                 mi,
-                cur=cur,
-                qry='SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplit',
+                cur,
+                'SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplit',
             )
             loaded = load_element(M.LimitTechOutputSplit, raw, self.viable_rpto, (0, 1, 2, 3))
             # raise warning regarding any deletions here...  similar to input split above
@@ -776,12 +803,12 @@ class HybridLoader:
                         oc,
                     )
 
-        # LimitTechOutputSplitAnnual
+        # Special case logging for LimitTechOutputSplitAnnual - to be refactored later
         if self.table_exists('LimitTechOutputSplitAnnual'):
             raw = self.raw_check_mi_period(
                 mi,
-                cur=cur,
-                qry='SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplitAnnual',
+                cur,
+                'SELECT region, period, tech, output_comm, operator, proportion FROM main.LimitTechOutputSplitAnnual',
             )
             loaded = load_element(M.LimitTechOutputSplitAnnual, raw, self.viable_rpto, (0, 1, 2, 3))
             # we need to see if anything was filtered out here and raise warning if so as it may have invalidated
@@ -802,28 +829,6 @@ class HybridLoader:
                         oc,
                     )
 
-        # RenewablePortfolioStandard
-        if self.table_exists('RPSRequirement'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech_group, requirement FROM main.RPSRequirement',
-            )
-            load_element(M.RenewablePortfolioStandard, raw)
-            if len(raw) > 0:
-                logger.warning(
-                    'The RenewablePortfolioStandard constraint has been deprecated. Use the '
-                    'LimitActivityShare constraint instead, using the same sub group and '
-                    'constructing a new super group for all relevant generators. The constraint '
-                    'has been applied for now but this feature will be removed in the future.'
-                )
-
-        # CostFixed
-        raw = self.raw_check_mi_period(
-            mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostFixed'
-        )
-        load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
-
         # CostInvest
         # exclude "existing" vintages by screening for base year and beyond.
         # the "viable_rtv" will filter anything beyond view
@@ -835,19 +840,6 @@ class HybridLoader:
         else:
             raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
         load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
-
-        # CostVariable
-        raw = self.raw_check_mi_period(
-            mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostVariable'
-        )
-        load_element(M.CostVariable, raw, self.viable_rtv, (0, 2, 3))
-
-        # CostEmissions (and supporting index set)
-        if self.table_exists('CostEmission'):
-            raw = self.raw_check_mi_period(
-                mi, cur=cur, qry='SELECT region, period, emis_comm, cost from main.CostEmission'
-            )
-            load_element(M.CostEmission, raw)
 
         # DefaultLoanRate
         if self.table_exists('MetaDataReal'):
@@ -870,180 +862,6 @@ class HybridLoader:
                 ).fetchall()
 
             load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
-
-        # LimitCapacity
-        if self.table_exists('LimitCapacity'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech_or_group, operator, capacity FROM main.LimitCapacity',
-            )
-            load_element(M.LimitCapacity, raw)  # , self.viable_rt, (0, 2))
-
-        # LimitNewCapacity
-        if self.table_exists('LimitNewCapacity'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech_or_group, operator, new_cap FROM main.LimitNewCapacity',
-            )
-            load_element(M.LimitNewCapacity, raw)
-
-        # LimitCapacityShare
-        if self.table_exists('LimitCapacityShare'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitCapacityShare',
-            )
-            load_element(M.LimitCapacityShare, raw)
-
-        # LimitNewCapacityShare
-        if self.table_exists('LimitNewCapacityShare'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitNewCapacityShare',
-            )
-            load_element(M.LimitNewCapacityShare, raw)
-
-        # LimitActivityShare
-        if self.table_exists('LimitActivityShare'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, sub_group, super_group, operator, share FROM main.LimitActivityShare',
-            )
-            load_element(M.LimitActivityShare, raw)
-
-        # LimitResource
-        if self.table_exists('LimitResource'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, cum_act FROM main.LimitResource'
-            ).fetchall()
-            load_element(M.LimitResource, raw)
-
-        # LimitActivity
-        if self.table_exists('LimitActivity'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech_or_group, operator, activity FROM main.LimitActivity',
-            )
-            load_element(M.LimitActivity, raw)
-
-        # LimitSeasonalCapacityFactor
-        if self.table_exists('LimitSeasonalCapacityFactor'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, season, tech, operator, factor FROM main.LimitSeasonalCapacityFactor',
-            )
-            load_element(M.LimitSeasonalCapacityFactor, raw, self.viable_rt, (0, 3))
-
-        # LimitAnnualCapacityFactor
-        if self.table_exists('LimitAnnualCapacityFactor'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech, output_comm, operator, factor FROM main.LimitAnnualCapacityFactor',
-            )
-            load_element(M.LimitAnnualCapacityFactor, raw, self.viable_rpto, (0, 1, 2, 3))
-
-        # LimitGrowthCapacity
-        if self.table_exists('LimitGrowthCapacity'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthCapacity'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthCapacity, raw)
-
-        # LimitDegrowthCapacity
-        if self.table_exists('LimitDegrowthCapacity'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthCapacity'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthCapacity, raw)
-
-        # LimitGrowthNewCapacity
-        if self.table_exists('LimitGrowthNewCapacity'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthNewCapacity'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthNewCapacity, raw)
-
-        # LimitDegrowthNewCapacity
-        if self.table_exists('LimitDegrowthNewCapacity'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthNewCapacity'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthNewCapacity, raw)
-
-        # LimitGrowthNewCapacityDelta
-        if self.table_exists('LimitGrowthNewCapacityDelta'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitGrowthNewCapacityDelta'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitGrowthNewCapacityDelta, raw)
-
-        # LimitDegrowthNewCapacityDelta
-        if self.table_exists('LimitDegrowthNewCapacityDelta'):
-            raw = cur.execute(
-                'SELECT region, tech_or_group, operator, rate, seed FROM main.LimitDegrowthNewCapacityDelta'
-            ).fetchall()
-            raw = self.tuple_values(raw, 3)
-            load_element(M.LimitDegrowthNewCapacityDelta, raw)
-
-        # LimitEmission
-        if self.table_exists('LimitEmission'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, emis_comm, operator, value FROM main.LimitEmission',
-            )
-            load_element(M.LimitEmission, raw)
-
-        # EmissionActivity
-        # The current emission constraint screens by valid inputs, so if it is NOT
-        # built in a particular region, this should still be OK
-        if self.table_exists('EmissionActivity'):
-            raw = cur.execute(
-                'SELECT region, emis_comm, input_comm, tech, vintage, output_comm, activity '
-                'FROM main.EmissionActivity '
-            ).fetchall()
-            load_element(M.EmissionActivity, raw, self.viable_ritvo, (0, 2, 3, 4, 5))
-
-        # EmissionEmbodied
-        if self.table_exists('EmissionEmbodied'):
-            raw = cur.execute(
-                'SELECT region, emis_comm, tech, vintage, value FROM main.EmissionEmbodied'
-            ).fetchall()
-            load_element(M.EmissionEmbodied, raw, self.viable_rtv, (0, 2, 3))
-
-        # EmissionEndOfLife
-        if self.table_exists('EmissionEndOfLife'):
-            raw = cur.execute(
-                'SELECT region, emis_comm, tech, vintage, value FROM main.EmissionEndOfLife'
-            ).fetchall()
-            load_element(M.EmissionEndOfLife, raw, self.viable_rtv, (0, 2, 3))
-
-        # ConstructionInput
-        if self.table_exists('ConstructionInput'):
-            raw = cur.execute(
-                'SELECT region, input_comm, tech, vintage, value FROM main.ConstructionInput'
-            ).fetchall()
-            load_element(M.ConstructionInput, raw, self.viable_rtv, (0, 2, 3))
-
-        # EndOfLifeOutput
-        if self.table_exists('EndOfLifeOutput'):
-            raw = cur.execute(
-                'SELECT region, tech, vintage, output_comm, value FROM main.EndOfLifeOutput'
-            ).fetchall()
-            load_element(M.EndOfLifeOutput, raw, self.viable_rtv, (0, 1, 2))
 
         # LinkedTechs
         # Note:  Both of the linked techs must be viable.  As this is non period/vintage
@@ -1071,57 +889,6 @@ class HybridLoader:
                         logger.error('Linked Tech item %s is not valid.  Check data', item)
                         print('problem loading linked tech.  See log file')
                         sys.exit(-1)
-
-        # RampUpHourly
-        if self.table_exists('RampUpHourly'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampUpHourly').fetchall()
-            load_element(M.RampUpHourly, raw, self.viable_rt, (0, 1))
-            raw = cur.execute('SELECT DISTINCT tech FROM main.RampUpHourly').fetchall()
-            load_element(M.tech_upramping, raw, self.viable_techs)
-
-        # RampDownHourly
-        if self.table_exists('RampDownHourly'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.RampDownHourly').fetchall()
-            load_element(M.RampDownHourly, raw, self.viable_rt, (0, 1))
-            raw = cur.execute('SELECT DISTINCT tech FROM main.RampDownHourly').fetchall()
-            load_element(M.tech_downramping, raw, self.viable_techs)
-
-        # CapacityCredit
-        if self.table_exists('CapacityCredit'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, tech, vintage, credit FROM main.CapacityCredit',
-            )
-            load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
-
-        # ReserveCapacityDerate
-        if self.table_exists('ReserveCapacityDerate'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, season, tech, vintage, factor FROM main.ReserveCapacityDerate',
-            )
-            load_element(M.ReserveCapacityDerate, raw, self.viable_rtv, (0, 3, 4))
-
-        # PlanningReserveMargin
-        if self.table_exists('PlanningReserveMargin'):
-            raw = cur.execute('SELECT region, margin FROM main.PlanningReserveMargin').fetchall()
-            load_element(M.PlanningReserveMargin, raw)
-
-        # StorageDuration
-        if self.table_exists('StorageDuration'):
-            raw = cur.execute('SELECT region, tech, duration FROM main.StorageDuration').fetchall()
-            load_element(M.StorageDuration, raw, self.viable_rt, (0, 1))
-
-        # StorageFraction
-        if self.table_exists('LimitStorageLevelFraction'):
-            raw = self.raw_check_mi_period(
-                mi,
-                cur=cur,
-                qry='SELECT region, period, season, tod, tech, vintage, operator, fraction FROM main.LimitStorageLevelFraction',
-            )
-            load_element(M.LimitStorageFraction, raw, self.viable_rtv, (0, 4, 5))
 
         # For T/S:  dump the size of all data elements into the log
         if self.debugging:
