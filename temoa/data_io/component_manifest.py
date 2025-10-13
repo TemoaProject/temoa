@@ -86,6 +86,14 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,  # Custom loader handles all logic
             is_table_required=False,
         ),
+        LoadItem(
+            component=M.regionalGlobalIndices,
+            table='meta_regional_groups',  # Placeholder table name
+            columns=['region_or_group'],  # Placeholder column name
+            custom_loader_name='_load_regional_global_indices',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         # === REGION SETS ===
         LoadItem(
             component=M.regions,

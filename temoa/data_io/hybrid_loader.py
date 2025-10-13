@@ -288,13 +288,6 @@ class HybridLoader:
 
             # 1. Get raw data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
-            if not raw_data and item.is_table_required is False and item.fallback_data:
-                logger.warning(
-                    f"Table '{item.table}' not found or is empty. Using default values for {item.component.name}."
-                )
-                raw_data = item.fallback_data
-            elif not raw_data:
-                continue
 
             # 2. Validate/filter data
             filtered_data = self._filter_data(raw_data, item, use_raw_data)
@@ -303,6 +296,16 @@ class HybridLoader:
                 loader_func = getattr(self, item.custom_loader_name)
                 loader_func(data, raw_data, filtered_data)
             else:
+                # Standard loading path for non-custom components
+                if not raw_data and item.is_table_required is False and item.fallback_data:
+                    logger.warning(
+                        f"Table '{item.table}' not found or is empty. Using default values for {item.component.name}."
+                    )
+                    raw_data = item.fallback_data
+                    filtered_data = self._filter_data(raw_data, item, use_raw_data)
+
+                if not filtered_data:
+                    continue
                 if len(filtered_data) < len(raw_data):
                     # This replicates the warning from the original load_element function
                     ignored_count = len(raw_data) - len(filtered_data)
@@ -322,6 +325,10 @@ class HybridLoader:
         self._create_data_dict_legacy(
             myopic_index=mi, data=data, use_raw_data=use_raw_data, time_optimize=time_optimize
         )
+        # Final enhancement: create index sets for parameters now that all data is loaded
+        set_data = self.load_param_idx_sets(data=data)
+        data.update(set_data)
+        self.data = data
 
         return data
 
@@ -666,6 +673,39 @@ class HybridLoader:
             seq_set_data = sorted(list(set((row[1],) for row in filtered_data)))
             self._load_component_data(data, M.time_season_sequential, seq_set_data)
 
+    def _load_regional_global_indices(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Custom loader that aggregates region and region-group names from all
+        tables where they might be defined (e.g., various Limit tables).
+        """
+        M = TemoaModel()
+        cur = self.con.cursor()
+        regions_and_groups = set()
+
+        # Start with the base regions from the Region table itself
+        if self.table_exists('Region'):
+            results = cur.execute('SELECT region FROM main.Region').fetchall()
+            regions_and_groups.update(t[0] for t in results)
+
+        # This dictionary is defined at the module level
+        for table, field_name in tables_with_regional_groups.items():
+            if self.table_exists(table):
+                # We use fetchall() which returns a list of tuples
+                results = cur.execute(f'SELECT {field_name} FROM main.{table}').fetchall()
+                # Extract the first element from each tuple and add to the set
+                regions_and_groups.update(t[0] for t in results)
+
+        if None in regions_and_groups:
+            raise ValueError(
+                'A table listed in tables_with_regional_groups has an empty entry for its region column.'
+            )
+
+        # Sort for deterministic behavior and format as a list of single-element tuples
+        list_of_groups = sorted((t,) for t in regions_and_groups)
+        self._load_component_data(data, M.regionalGlobalIndices, list_of_groups)
+
     def _load_existing_capacity(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
     ):
@@ -834,25 +874,6 @@ class HybridLoader:
             p0 = cur.execute("SELECT min(period) FROM TimePeriod WHERE flag == 'f'").fetchone()
             # load as a singleton...
             data[M.MyopicDiscountingYear.name] = {None: int(p0[0])}
-
-        #  === REGION SETS ===
-
-        # region-groups  (these are the R1+R2, R1+R4+R6 type region labels) AND regular region names
-        # currently, we just load all the indices from the tables that could employ them.
-        # the validator is used to ensure they are legit.  (see temoa_model)
-        regions_and_groups = set()
-        for table, field_name in tables_with_regional_groups.items():
-            if self.table_exists(table):
-                raw = cur.execute(f'SELECT {field_name} from main.{table}').fetchall()
-                regions_and_groups.update({t[0] for t in raw})
-                if None in regions_and_groups:
-                    raise ValueError('Table %s appears to have an empty entry for region.' % table)
-        # sort (for deterministic pyomo behavior)
-        list_of_groups = sorted((t,) for t in regions_and_groups)
-        load_element(M.regionalGlobalIndices, list_of_groups)
-
-        # region-exchanges
-        # auto-generated
 
         #  === TECH SETS ===
 
@@ -1042,16 +1063,6 @@ class HybridLoader:
                         logger.error('Linked Tech item %s is not valid.  Check data', item)
                         print('problem loading linked tech.  See log file')
                         sys.exit(-1)
-
-        # For T/S:  dump the size of all data elements into the log
-        if self.debugging:
-            temp = '\n'.join((f'{k} : {len(v)}' for k, v in data.items()))
-            logger.info(temp)
-
-        # capture the parameter indexing sets
-        set_data = self.load_param_idx_sets(data=data)
-        data.update(set_data)
-        self.data = data
 
     def tuple_values(self, raw, index_length):
         new_raw = []
