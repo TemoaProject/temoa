@@ -94,6 +94,14 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
         ),
+        LoadItem(
+            component=M.Efficiency,
+            table='meta_efficiency',  # Placeholder, custom loader does the work
+            columns=[],
+            custom_loader_name='_load_efficiency',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         # === REGION SETS ===
         LoadItem(
             component=M.regions,
@@ -210,6 +218,14 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
         ),
+        LoadItem(
+            component=M.tech_group_members,
+            table='TechGroupMember',
+            columns=['group_name', 'tech'],
+            custom_loader_name='_load_tech_group_members',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         # === COMMODITIES ===
         LoadItem(
             component=M.commodity_demand,
@@ -274,6 +290,32 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
         # === PARAMS ===
         LoadItem(
             component=M.Demand, table='Demand', columns=['region', 'period', 'commodity', 'demand']
+        ),
+        LoadItem(
+            component=M.DemandSpecificDistribution,
+            table='DemandSpecificDistribution',
+            columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.CostInvest,
+            table='CostInvest',
+            columns=['region', 'tech', 'vintage', 'cost'],
+            validator_name='viable_rtv',
+            validation_map=(0, 1, 2),
+            custom_loader_name='_load_cost_invest',
+            is_period_filtered=False,  # Custom loader handles this
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LoanRate,
+            table='LoanRate',
+            columns=['region', 'tech', 'vintage', 'rate'],
+            validator_name='viable_rtv',
+            validation_map=(0, 1, 2),
+            custom_loader_name='_load_loan_rate',
+            is_period_filtered=False,  # Custom loader handles this
+            is_table_required=False,
         ),
         LoadItem(
             component=M.CapacityToActivity,

@@ -325,12 +325,27 @@ class HybridLoader:
         self._create_data_dict_legacy(
             myopic_index=mi, data=data, use_raw_data=use_raw_data, time_optimize=time_optimize
         )
+
+        # Load simple config-based or myopic-specific values directly
+        self._load_component_data(data, M.TimeSequencing, [(self.config.time_sequencing,)])
+        self._load_component_data(data, M.ReserveMarginMethod, [(self.config.reserve_margin,)])
+        if mi:
+            p0_result = cur.execute(
+                "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
+            ).fetchone()
+            if p0_result:
+                data[M.MyopicDiscountingYear.name] = {None: int(p0_result[0])}
+
         # Final enhancement: create index sets for parameters now that all data is loaded
         set_data = self.load_param_idx_sets(data=data)
         data.update(set_data)
         self.data = data
 
         return data
+
+    def _create_data_dict_legacy(self, *args, **kwargs):
+        """This method is now obsolete and will be removed."""
+        pass
 
     def _fetch_data(self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None) -> list[tuple]:
         """Fetches data for a component based on its manifest item."""
@@ -579,6 +594,56 @@ class HybridLoader:
                     tech,
                     oc,
                 )
+
+    def _load_efficiency(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for the main Efficiency parameter, which is pre-calculated."""
+        M = TemoaModel()
+        self._load_component_data(data, M.Efficiency, self.efficiency_values)
+
+    def _load_tech_group_members(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for the indexed set tech_group_members."""
+        M = TemoaModel()
+        validator = self.viable_techs.members if self.viable_techs else None
+        for row in filtered_data:
+            group_name, tech = row
+            if validator is None or tech in validator:
+                data_store = data.get(M.tech_group_members.name, defaultdict(list))
+                data_store[group_name].append(tech)
+                data[M.tech_group_members.name] = data_store
+
+    def _load_cost_invest(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for CostInvest to handle myopic period filtering."""
+        M = TemoaModel()
+        mi = self.myopic_index
+
+        # In myopic mode, only consider costs for vintages >= base_year
+        if mi:
+            data_to_load = [row for row in filtered_data if row[2] >= mi.base_year]
+        else:
+            data_to_load = list(filtered_data)
+
+        self._load_component_data(data, M.CostInvest, data_to_load)
+
+    def _load_loan_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Custom loader for LoanRate to handle myopic period filtering."""
+        M = TemoaModel()
+        mi = self.myopic_index
+
+        # In myopic mode, only consider rates for vintages >= base_year
+        if mi:
+            data_to_load = [row for row in filtered_data if row[2] >= mi.base_year]
+        else:
+            data_to_load = list(filtered_data)
+
+        self._load_component_data(data, M.LoanRate, data_to_load)
 
     def _load_limit_tech_output_split_annual(
         self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
