@@ -1,4 +1,20 @@
 # temoa/data_io/component_manifest.py
+"""
+Defines the data loading manifest for the Temoa model.
+
+This module contains a single function, `build_manifest`, which constructs a
+list of `LoadItem` objects. This list serves as the declarative configuration
+for the `HybridLoader`, specifying every data component to be loaded from the
+database into the Pyomo model.
+
+The manifest is organized into logical groups that mirror the structure of the
+Temoa model itself (e.g., Time, Regions, Technologies, Costs, Constraints).
+This cohesive grouping makes it easier for developers to find and understand
+how specific parts of the model are populated with data.
+
+To add a new standard component to the model, a developer typically only needs
+to add a new `LoadItem` to this manifest.
+"""
 
 from temoa.core.model import TemoaModel
 from temoa.data_io.loader_manifest import LoadItem
@@ -9,107 +25,33 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
     Builds the manifest of all data components to be loaded into the Pyomo model.
 
     This declarative approach separates the configuration of what to load from the
-    procedural logic of how to load it.
+    procedural logic of how to load it. The manifest is ordered logically to
+    enhance readability and maintainability.
 
     Args:
         M: An instance of TemoaModel to link components.
 
     Returns:
-        A list of LoadItem objects describing the data to be loaded.
+        A list of LoadItem objects describing all data to be loaded.
     """
     manifest = [
-        # === TIME SETS ===
-        LoadItem(
-            component=M.time_of_day,
-            table='TimeOfDay',
-            columns=['tod'],
-            is_period_filtered=False,
-            is_table_required=False,
-            fallback_data=[('D',)],
-        ),
-        LoadItem(
-            component=M.TimeSeason,
-            table='TimeSeason',
-            columns=['period', 'season'],
-            custom_loader_name='_load_time_season',
-            is_period_filtered=False,  # Custom loader handles myopic filtering
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.SegFrac,
-            table='TimeSegmentFraction',
-            columns=['period', 'season', 'tod', 'segfrac'],
-            custom_loader_name='_load_seg_frac',
-            is_table_required=False,
-        ),
-        # Singleton value with a fallback
-        LoadItem(
-            component=M.DaysPerPeriod,
-            table='MetaData',
-            columns=['value'],
-            where_clause="element == 'days_per_period'",
-            custom_loader_name='_load_days_per_period',
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.GlobalDiscountRate,
-            table='MetaDataReal',
-            columns=['value'],
-            where_clause="element = 'global_discount_rate'",
-            custom_loader_name='_load_global_discount_rate',
-            is_period_filtered=False,
-            is_table_required=False,  # The table is optional
-        ),
-        LoadItem(
-            component=M.DefaultLoanRate,
-            table='MetaDataReal',
-            columns=['value'],
-            where_clause="element = 'default_loan_rate'",
-            custom_loader_name='_load_default_loan_rate',
-            is_period_filtered=False,
-            is_table_required=False,  # The table is optional
-        ),
-        LoadItem(
-            component=M.TimeSeasonSequential,
-            table='TimeSeasonSequential',
-            columns=['period', 'seas_seq', 'season', 'num_days'],
-            custom_loader_name='_load_time_season_sequential',
-            # Myopic filtering is handled by the fetcher's default behavior
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.ExistingCapacity,
-            table='ExistingCapacity',
-            columns=['region', 'tech', 'vintage', 'capacity'],
-            custom_loader_name='_load_existing_capacity',
-            is_period_filtered=False,  # Custom loader handles all logic
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.regionalGlobalIndices,
-            table='meta_regional_groups',  # Placeholder table name
-            columns=['region_or_group'],  # Placeholder column name
-            custom_loader_name='_load_regional_global_indices',
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.Efficiency,
-            table='meta_efficiency',  # Placeholder, custom loader does the work
-            columns=[],
-            custom_loader_name='_load_efficiency',
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        # === REGION SETS ===
+        # =========================================================================
+        # Core Model Structure (Regions, Techs, Commodities, Groups)
+        # =========================================================================
         LoadItem(
             component=M.regions,
             table='Region',
             columns=['region'],
             is_period_filtered=False,
         ),
-        # === TECH SETS ===
+        LoadItem(
+            component=M.regionalGlobalIndices,
+            table='meta_regional_groups',  # Placeholder, custom loader does the work
+            columns=['region_or_group'],
+            custom_loader_name='_load_regional_global_indices',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         LoadItem(
             component=M.tech_production,
             table='Technology',
@@ -127,7 +69,7 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             validator_name='viable_techs',
             validation_map=(0,),
             is_period_filtered=False,
-            is_table_required=False,  # unlim_cap is a newer column
+            is_table_required=False,
         ),
         LoadItem(
             component=M.tech_baseload,
@@ -210,7 +152,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             validation_map=(0,),
             is_period_filtered=False,
         ),
-        # Tech Groups
         LoadItem(
             component=M.tech_group_names,
             table='TechGroup',
@@ -226,7 +167,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
         ),
-        # === COMMODITIES ===
         LoadItem(
             component=M.commodity_demand,
             table='Commodity',
@@ -279,7 +219,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             validation_map=(0,),
             is_period_filtered=False,
         ),
-        # === OPERATORS ===
         LoadItem(
             component=M.operator,
             table='Operator',
@@ -287,14 +226,48 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
         ),
-        # === PARAMS ===
+        # =========================================================================
+        # Time-Related Components
+        # =========================================================================
         LoadItem(
-            component=M.Demand, table='Demand', columns=['region', 'period', 'commodity', 'demand']
+            component=M.time_of_day,
+            table='TimeOfDay',
+            columns=['tod'],
+            is_period_filtered=False,
+            is_table_required=False,
+            fallback_data=[('D',)],
         ),
         LoadItem(
-            component=M.DemandSpecificDistribution,
-            table='DemandSpecificDistribution',
-            columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
+            component=M.TimeSeason,
+            table='TimeSeason',
+            columns=['period', 'season'],
+            custom_loader_name='_load_time_season',
+            is_period_filtered=False,  # Custom loader handles myopic filtering
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.TimeSeasonSequential,
+            table='TimeSeasonSequential',
+            columns=['period', 'seas_seq', 'season', 'num_days'],
+            custom_loader_name='_load_time_season_sequential',
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.SegFrac,
+            table='TimeSegmentFraction',
+            columns=['period', 'season', 'tod', 'segfrac'],
+            custom_loader_name='_load_seg_frac',
+            is_table_required=False,
+        ),
+        # =========================================================================
+        # Capacity and Cost Components
+        # =========================================================================
+        LoadItem(
+            component=M.ExistingCapacity,
+            table='ExistingCapacity',
+            columns=['region', 'tech', 'vintage', 'capacity'],
+            custom_loader_name='_load_existing_capacity',
+            is_period_filtered=False,  # Custom loader handles all logic
             is_table_required=False,
         ),
         LoadItem(
@@ -308,6 +281,26 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
+            component=M.CostFixed,
+            table='CostFixed',
+            columns=['region', 'period', 'tech', 'vintage', 'cost'],
+            validator_name='viable_rtv',
+            validation_map=(0, 2, 3),
+        ),
+        LoadItem(
+            component=M.CostVariable,
+            table='CostVariable',
+            columns=['region', 'period', 'tech', 'vintage', 'cost'],
+            validator_name='viable_rtv',
+            validation_map=(0, 2, 3),
+        ),
+        LoadItem(
+            component=M.CostEmission,
+            table='CostEmission',
+            columns=['region', 'period', 'emis_comm', 'cost'],
+            is_table_required=False,
+        ),
+        LoadItem(
             component=M.LoanRate,
             table='LoanRate',
             columns=['region', 'tech', 'vintage', 'rate'],
@@ -315,6 +308,74 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             validation_map=(0, 1, 2),
             custom_loader_name='_load_loan_rate',
             is_period_filtered=False,  # Custom loader handles this
+            is_table_required=False,
+        ),
+        # =========================================================================
+        # Singleton and Configuration-based Components
+        # =========================================================================
+        LoadItem(
+            component=M.DaysPerPeriod,
+            table='MetaData',
+            columns=['value'],
+            where_clause="element == 'days_per_period'",
+            custom_loader_name='_load_days_per_period',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.GlobalDiscountRate,
+            table='MetaDataReal',
+            columns=['value'],
+            where_clause="element = 'global_discount_rate'",
+            custom_loader_name='_load_global_discount_rate',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.DefaultLoanRate,
+            table='MetaDataReal',
+            columns=['value'],
+            where_clause="element = 'default_loan_rate'",
+            custom_loader_name='_load_default_loan_rate',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        # =========================================================================
+        # Operational Constraints and Parameters
+        # =========================================================================
+        LoadItem(
+            component=M.Efficiency,
+            table='meta_efficiency',  # Placeholder, custom loader does the work
+            columns=[],
+            custom_loader_name='_load_efficiency',
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.EfficiencyVariable,
+            table='EfficiencyVariable',
+            columns=[
+                'region',
+                'period',
+                'season',
+                'tod',
+                'input_comm',
+                'tech',
+                'vintage',
+                'output_comm',
+                'efficiency',
+            ],
+            validator_name='viable_ritvo',
+            validation_map=(0, 4, 5, 6, 7),
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.Demand, table='Demand', columns=['region', 'period', 'commodity', 'demand']
+        ),
+        LoadItem(
+            component=M.DemandSpecificDistribution,
+            table='DemandSpecificDistribution',
+            columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
             is_table_required=False,
         ),
         LoadItem(
@@ -361,24 +422,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
-            component=M.EfficiencyVariable,
-            table='EfficiencyVariable',
-            columns=[
-                'region',
-                'period',
-                'season',
-                'tod',
-                'input_comm',
-                'tech',
-                'vintage',
-                'output_comm',
-                'efficiency',
-            ],
-            validator_name='viable_ritvo',
-            validation_map=(0, 4, 5, 6, 7),
-            is_table_required=False,
-        ),
-        LoadItem(
             component=M.LifetimeSurvivalCurve,
             table='LifetimeSurvivalCurve',
             columns=['region', 'period', 'tech', 'vintage', 'fraction'],
@@ -397,145 +440,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
-            component=M.CostFixed,
-            table='CostFixed',
-            columns=['region', 'period', 'tech', 'vintage', 'cost'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
-        ),
-        LoadItem(
-            component=M.CostVariable,
-            table='CostVariable',
-            columns=['region', 'period', 'tech', 'vintage', 'cost'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
-        ),
-        LoadItem(
-            component=M.CostEmission,
-            table='CostEmission',
-            columns=['region', 'period', 'emis_comm', 'cost'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitCapacity,
-            table='LimitCapacity',
-            columns=['region', 'period', 'tech_or_group', 'operator', 'capacity'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitNewCapacity,
-            table='LimitNewCapacity',
-            columns=['region', 'period', 'tech_or_group', 'operator', 'new_cap'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitCapacityShare,
-            table='LimitCapacityShare',
-            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitNewCapacityShare,
-            table='LimitNewCapacityShare',
-            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitActivityShare,
-            table='LimitActivityShare',
-            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitResource,
-            table='LimitResource',
-            columns=['region', 'tech_or_group', 'operator', 'cum_act'],
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitActivity,
-            table='LimitActivity',
-            columns=['region', 'period', 'tech_or_group', 'operator', 'activity'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitSeasonalCapacityFactor,
-            table='LimitSeasonalCapacityFactor',
-            columns=['region', 'period', 'season', 'tech', 'operator', 'factor'],
-            validator_name='viable_rt',
-            validation_map=(0, 3),
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitAnnualCapacityFactor,
-            table='LimitAnnualCapacityFactor',
-            columns=['region', 'period', 'tech', 'output_comm', 'operator', 'factor'],
-            validator_name='viable_rpto',
-            validation_map=(0, 1, 2, 3),
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.LimitEmission,
-            table='LimitEmission',
-            columns=['region', 'period', 'emis_comm', 'operator', 'value'],
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.EmissionActivity,
-            table='EmissionActivity',
-            columns=[
-                'region',
-                'emis_comm',
-                'input_comm',
-                'tech',
-                'vintage',
-                'output_comm',
-                'activity',
-            ],
-            validator_name='viable_ritvo',
-            validation_map=(0, 2, 3, 4, 5),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.EmissionEmbodied,
-            table='EmissionEmbodied',
-            columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.EmissionEndOfLife,
-            table='EmissionEndOfLife',
-            columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.ConstructionInput,
-            table='ConstructionInput',
-            columns=['region', 'input_comm', 'tech', 'vintage', 'value'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=M.EndOfLifeOutput,
-            table='EndOfLifeOutput',
-            columns=['region', 'tech', 'vintage', 'output_comm', 'value'],
-            validator_name='viable_rtv',
-            validation_map=(0, 1, 2),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            # This is a composite loader. It will also populate M.tech_upramping
             component=M.RampUpHourly,
             table='RampUpHourly',
             columns=['region', 'tech', 'rate'],
@@ -546,7 +450,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
-            # This is a placeholder for validation info, used by the custom loader above
             component=M.tech_upramping,
             table='RampUpHourly',
             columns=['tech'],
@@ -555,7 +458,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
         ),
         LoadItem(
-            # This is a composite loader. It will also populate M.tech_downramping
             component=M.RampDownHourly,
             table='RampDownHourly',
             columns=['region', 'tech', 'rate'],
@@ -566,7 +468,6 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
-            # This is a placeholder for validation info, used by the custom loader above
             component=M.tech_downramping,
             table='RampDownHourly',
             columns=['tech'],
@@ -630,7 +531,127 @@ def build_manifest(M: TemoaModel) -> list[LoadItem]:
             validation_map=(0, 4, 5),
             is_table_required=False,
         ),
-        # === Constraints with Special Logging ===
+        LoadItem(
+            component=M.EmissionActivity,
+            table='EmissionActivity',
+            columns=[
+                'region',
+                'emis_comm',
+                'input_comm',
+                'tech',
+                'vintage',
+                'output_comm',
+                'activity',
+            ],
+            validator_name='viable_ritvo',
+            validation_map=(0, 2, 3, 4, 5),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.EmissionEmbodied,
+            table='EmissionEmbodied',
+            columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
+            validator_name='viable_rtv',
+            validation_map=(0, 2, 3),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.EmissionEndOfLife,
+            table='EmissionEndOfLife',
+            columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
+            validator_name='viable_rtv',
+            validation_map=(0, 2, 3),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.ConstructionInput,
+            table='ConstructionInput',
+            columns=['region', 'input_comm', 'tech', 'vintage', 'value'],
+            validator_name='viable_rtv',
+            validation_map=(0, 2, 3),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.EndOfLifeOutput,
+            table='EndOfLifeOutput',
+            columns=['region', 'tech', 'vintage', 'output_comm', 'value'],
+            validator_name='viable_rtv',
+            validation_map=(0, 1, 2),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        # =========================================================================
+        # Limit Constraints
+        # =========================================================================
+        LoadItem(
+            component=M.LimitCapacity,
+            table='LimitCapacity',
+            columns=['region', 'period', 'tech_or_group', 'operator', 'capacity'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitNewCapacity,
+            table='LimitNewCapacity',
+            columns=['region', 'period', 'tech_or_group', 'operator', 'new_cap'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitCapacityShare,
+            table='LimitCapacityShare',
+            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitNewCapacityShare,
+            table='LimitNewCapacityShare',
+            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitActivity,
+            table='LimitActivity',
+            columns=['region', 'period', 'tech_or_group', 'operator', 'activity'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitActivityShare,
+            table='LimitActivityShare',
+            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitResource,
+            table='LimitResource',
+            columns=['region', 'tech_or_group', 'operator', 'cum_act'],
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitSeasonalCapacityFactor,
+            table='LimitSeasonalCapacityFactor',
+            columns=['region', 'period', 'season', 'tech', 'operator', 'factor'],
+            validator_name='viable_rt',
+            validation_map=(0, 3),
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitAnnualCapacityFactor,
+            table='LimitAnnualCapacityFactor',
+            columns=['region', 'period', 'tech', 'output_comm', 'operator', 'factor'],
+            validator_name='viable_rpto',
+            validation_map=(0, 1, 2, 3),
+            is_table_required=False,
+        ),
+        LoadItem(
+            component=M.LimitEmission,
+            table='LimitEmission',
+            columns=['region', 'period', 'emis_comm', 'operator', 'value'],
+            is_table_required=False,
+        ),
         LoadItem(
             component=M.LimitTechInputSplit,
             table='LimitTechInputSplit',
