@@ -38,12 +38,12 @@ from pyomo.core import Constraint, Expression, Objective, value
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.run_actions import build_instance, handle_results, save_lp, solve_instance
 from temoa._internal.table_writer import TableWriter
 from temoa.components.costs import TotalCost_rule
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.single_vector_mga.output_summary import summarize
 from temoa.model_checking.pricing_check import price_checker
 

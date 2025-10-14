@@ -35,9 +35,9 @@ from pathlib import Path
 from pyomo.dataportal import DataPortal
 
 from definitions import PROJECT_ROOT
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.data_io.hybrid_loader import HybridLoader
 
 logger = getLogger(__name__)
 

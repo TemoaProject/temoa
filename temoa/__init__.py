@@ -10,7 +10,6 @@ New code should import directly from temoa.core and temoa._internal as appropria
 # Internal modules - for backward compatibility
 from temoa._internal.data_brick import DataBrick, data_brick_factory
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.run_actions import (
     build_instance,
     handle_results,
@@ -29,6 +28,7 @@ from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
+from temoa.data_io.hybrid_loader import HybridLoader
 
 # Version information
 from temoa.version_information import TEMOA_MAJOR, TEMOA_MINOR
