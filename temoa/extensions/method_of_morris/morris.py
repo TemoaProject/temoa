@@ -6,9 +6,9 @@ from pyomo.dataportal import DataPortal
 
 from definitions import PROJECT_ROOT
 from temoa._internal import run_actions
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
+from temoa.data_io.hybrid_loader import HybridLoader
 
 start_time = time.time()
 import sqlite3

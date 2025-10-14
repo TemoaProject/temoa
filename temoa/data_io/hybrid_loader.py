@@ -1,0 +1,827 @@
+# temoa/data_io/hybrid_loader.py
+"""
+Defines the main data loading engine for the Temoa model.
+
+The primary component of this module is the `HybridLoader` class, which is
+responsible for reading, validating, and formatting data from a Temoa SQLite
+database for use in a Pyomo model.
+
+Architecture:
+    The loader operates on a declarative, manifest-driven architecture. The
+    configuration for what data to load is defined externally in
+    `temoa.data_io.component_manifest.py`. This separation of concerns means
+    that adding new, standard model components often only requires a change to
+    the manifest, not this procedural code.
+
+    For components that require complex logic (e.g., conditional queries for
+    myopic mode, data aggregation, or dynamic fallbacks), the manifest directs
+    the engine to use specialized 'custom loader' methods within the
+    `HybridLoader` class.
+"""
+
+import time
+from collections import defaultdict
+from collections.abc import Sequence
+from logging import getLogger
+from sqlite3 import Connection, Cursor, OperationalError
+from typing import Any
+
+from pyomo.core import Param, Set
+from pyomo.dataportal import DataPortal
+
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
+from temoa.core.modes import TemoaMode
+from temoa.data_io.component_manifest import build_manifest
+from temoa.data_io.loader_manifest import LoadItem
+from temoa.extensions.myopic.myopic_index import MyopicIndex
+from temoa.model_checking import element_checker, network_model_data
+from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
+from temoa.model_checking.element_checker import ViableSet
+
+logger = getLogger(__name__)
+
+# A manifest of tables that may contain region groups, used by a custom loader.
+tables_with_regional_groups = {
+    'LimitAnnualCapacityFactor': 'region',
+    'LimitEmission': 'region',
+    'LimitSeasonalCapacityFactor': 'region',
+    'LimitCapacity': 'region',
+    'LimitActivity': 'region',
+    'LimitNewCapacity': 'region',
+    'LimitActivityShare': 'region',
+    'LimitCapacityShare': 'region',
+    'LimitNewCapacityShare': 'region',
+    'LimitResource': 'region',
+    'LimitGrowthCapacity': 'region',
+    'LimitDegrowthCapacity': 'region',
+    'LimitGrowthNewCapacity': 'region',
+    'LimitDegrowthNewCapacity': 'region',
+    'LimitGrowthNewCapacityDelta': 'region',
+    'LimitDegrowthNewCapacityDelta': 'region',
+}
+
+
+class HybridLoader:
+    """
+    Drives the loading of model data from a SQLite database into a format
+    suitable for Pyomo's DataPortal.
+
+    This loader is manifest-driven. The `component_manifest.py` file provides a
+    declarative list of all components to be loaded, separating the configuration
+    of what to load from the procedural logic of how to load it.
+    """
+
+    def __init__(self, db_connection: Connection, config: TemoaConfig) -> None:
+        """
+        Initializes the loader.
+
+        :param db_connection: An active SQLite database connection.
+        :param config: The Temoa configuration object.
+        """
+        self.debugging = False
+        self.con = db_connection
+        self.config = config
+        self.myopic_index: MyopicIndex | None = None
+
+        # Build the data loading manifest and a name-based map for quick lookup
+        M = TemoaModel()
+        self.manifest = build_manifest(M)
+        self.manifest_map = {item.component.name: item for item in self.manifest}
+
+        # --- Data containers and filters populated during loading ---
+        self.manager: CommodityNetworkManager | None = None
+        self.efficiency_values: list[tuple] = []
+        self.data: dict[str, Any] | None = None
+
+        # --- Viable sets for source-trace filtering ---
+        self.viable_techs: ViableSet | None = None
+        self.viable_comms: ViableSet | None = None
+        self.viable_input_comms: ViableSet | None = None
+        self.viable_output_comms: ViableSet | None = None
+        self.viable_vintages: ViableSet | None = None
+        self.viable_ritvo: ViableSet | None = None
+        self.viable_rpto: ViableSet | None = None
+        self.viable_rtv: ViableSet | None = None
+        self.viable_rt: ViableSet | None = None
+        self.viable_rpit: ViableSet | None = None
+        self.viable_rtt: ViableSet | None = None
+
+    def source_trace_only(self, myopic_index: MyopicIndex | None = None) -> None:
+        """
+        Runs only the source-trace analysis without a full data load.
+        This is primarily for the 'check' mode.
+
+        :param myopic_index: The MyopicIndex for the run, if applicable.
+        """
+        if myopic_index and not isinstance(myopic_index, MyopicIndex):
+            raise ValueError('myopic_index must be an instance of MyopicIndex')
+        self._source_trace(myopic_index)
+        self.manager = None  # Prevent use of stale data
+
+    def load_data_portal(self, myopic_index: MyopicIndex | None = None) -> DataPortal:
+        """
+        Main entry point to create and load a DataPortal object.
+
+        :param myopic_index: The MyopicIndex for the run, if applicable.
+        :return: A populated Pyomo DataPortal object.
+        """
+        tic = time.time()
+        data_dict = self.create_data_dict(myopic_index=myopic_index)
+
+        namespace = {None: data_dict}
+        dp = DataPortal(data_dict=namespace)
+
+        toc = time.time()
+        logger.debug('Data Portal Load time: %0.5f seconds', (toc - tic))
+        return dp
+
+    @staticmethod
+    def data_portal_from_data(data_source: dict) -> DataPortal:
+        """
+        Creates a DataPortal object from an existing data dictionary.
+        Useful for model runs where the data has been modified in memory.
+
+        :param data_source: The data dictionary to use.
+        :return: A new DataPortal object.
+        """
+        namespace = {None: data_source}
+        dp = DataPortal(data_dict=namespace)
+        return dp
+
+    # =================================================================================
+    # Main Data Loading Engine
+    # =================================================================================
+
+    def create_data_dict(self, myopic_index: MyopicIndex | None = None) -> dict[str, Any]:
+        """
+        The main manifest-driven engine for loading model data.
+
+        This method orchestrates the loading process:
+        1.  Performs setup (source tracing, critical time sets).
+        2.  Iterates through the manifest from `component_manifest.py`.
+        3.  For each component, it fetches, filters, and loads the data.
+        4.  Delegates to custom loader methods for special cases.
+        5.  Finalizes the data dictionary with derived index sets.
+
+        :param myopic_index: The MyopicIndex for myopic runs. None for other modes.
+        :return: A dictionary of model data suitable for a DataPortal.
+        """
+        logger.info('Loading data dictionary')
+
+        # ---------------------------------------------------------------------
+        # Preamble: Setup, source tracing, and loading critical index sets
+        # ---------------------------------------------------------------------
+        if myopic_index:
+            if not isinstance(myopic_index, MyopicIndex):
+                raise ValueError(f'Received illegal entry for myopic index: {myopic_index}')
+            if self.config.scenario_mode != TemoaMode.MYOPIC:
+                raise RuntimeError('Myopic Index passed, but mode is not Myopic.')
+        elif not myopic_index and self.config.scenario_mode == TemoaMode.MYOPIC:
+            raise RuntimeError('Mode is myopic, but no MyopicIndex specified.')
+
+        self.myopic_index = myopic_index
+
+        use_raw_data = not (
+            self.config.source_trace or self.config.scenario_mode == TemoaMode.MYOPIC
+        )
+        if not use_raw_data:
+            self._source_trace(myopic_index=myopic_index)
+
+        self._build_efficiency_dataset(use_raw_data=use_raw_data, myopic_index=myopic_index)
+
+        data: dict[str, Any] = {}
+        cur = self.con.cursor()
+        M = TemoaModel()
+
+        # Load critical time sets first, as they index other components
+        if myopic_index:
+            raw_exist = cur.execute(
+                'SELECT period FROM TimePeriod WHERE period < ? ORDER BY sequence',
+                (myopic_index.base_year,),
+            ).fetchall()
+            raw_future = cur.execute(
+                'SELECT period FROM TimePeriod WHERE flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
+                (myopic_index.base_year, myopic_index.last_year),
+            ).fetchall()
+        else:
+            raw_exist = cur.execute(
+                "SELECT period FROM TimePeriod WHERE flag = 'e' ORDER BY sequence"
+            ).fetchall()
+            raw_future = cur.execute(
+                "SELECT period FROM TimePeriod WHERE flag = 'f' ORDER BY sequence"
+            ).fetchall()
+        self._load_component_data(data, M.time_exist, raw_exist)
+        self._load_component_data(data, M.time_future, raw_future)
+        data['time_optimize'] = [p[0] for p in raw_future[:-1]]
+
+        # ---------------------------------------------------------------------
+        # Manifest-driven loading loop
+        # ---------------------------------------------------------------------
+        for item in self.manifest:
+            # 1. Fetch data from the database
+            raw_data = self._fetch_data(cur, item, myopic_index)
+
+            # 2. Validate/filter data
+            filtered_data = self._filter_data(raw_data, item, use_raw_data)
+
+            # 3. Load data using either a custom loader or the standard path
+            if item.custom_loader_name:
+                loader_func = getattr(self, item.custom_loader_name)
+                loader_func(data, raw_data, filtered_data)
+            else:
+                # Standard loading path for non-custom components
+                if not raw_data and not item.is_table_required and item.fallback_data:
+                    logger.warning(
+                        "Table '%s' not found or is empty. Using default values for %s.",
+                        item.table,
+                        item.component.name,
+                    )
+                    raw_data = item.fallback_data
+                    filtered_data = self._filter_data(raw_data, item, use_raw_data)
+
+                if not filtered_data:
+                    continue
+
+                if len(filtered_data) < len(raw_data):
+                    ignored_count = len(raw_data) - len(filtered_data)
+                    logger.warning(
+                        '%d values for %s failed to validate and were ignored.',
+                        ignored_count,
+                        item.component.name,
+                    )
+                self._load_component_data(data, item.component, filtered_data)
+
+        # ---------------------------------------------------------------------
+        # Finalization
+        # ---------------------------------------------------------------------
+        # Load simple config-based or myopic-specific values
+        self._load_component_data(data, M.TimeSequencing, [(self.config.time_sequencing,)])
+        self._load_component_data(data, M.ReserveMarginMethod, [(self.config.reserve_margin,)])
+        if myopic_index:
+            p0_result = cur.execute(
+                "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
+            ).fetchone()
+            if p0_result:
+                data[M.MyopicDiscountingYear.name] = {None: int(p0_result[0])}
+
+        # Create derived index sets for parameters now that all base data is loaded
+        set_data = self.load_param_idx_sets(data=data)
+        data.update(set_data)
+        self.data = data
+
+        return data
+
+    # =================================================================================
+    # Core Engine Helpers
+    def _fetch_data(self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None) -> list[tuple]:
+        """
+        Fetches data for a component based on its manifest item.
+
+        :param cur: The database cursor.
+        :param item: The LoadItem describing what to fetch.
+        :param mi: The MyopicIndex for period filtering, if applicable.
+        :return: A list of tuples containing the raw data.
+        """
+        # If this is a custom loader and no columns are specified, no fetch is needed.
+        if item.custom_loader_name and not item.columns:
+            return []
+
+        if not self.table_exists(item.table):
+            if item.is_table_required:
+                raise FileNotFoundError(f"Required table '{item.table}' not found in the database.")
+            return []
+
+        query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
+        params = []
+
+        where_clauses = []
+        if item.where_clause:
+            where_clauses.append(f'({item.where_clause})')
+        if item.is_period_filtered and mi:
+            where_clauses.append('period >= ? AND period <= ?')
+            params.extend([mi.base_year, mi.last_demand_year])
+
+        if where_clauses:
+            query += ' WHERE ' + ' AND '.join(where_clauses)
+
+        try:
+            return cur.execute(query, params).fetchall()
+        except OperationalError as e:
+            if not item.is_table_required:
+                logger.info(
+                    'Could not load optional component %s, likely due to older schema. Skipping. Error: %s',
+                    item.component.name,
+                    e,
+                )
+                return []
+            else:
+                raise
+
+    def _filter_data(
+        self, values: Sequence[tuple], item: LoadItem, use_raw_data: bool
+    ) -> Sequence[tuple]:
+        """
+        Applies validation filters to a list of data tuples.
+
+        :param values: The raw data tuples from the database.
+        :param item: The LoadItem describing the component.
+        :param use_raw_data: If True, skips filtering.
+        :return: A filtered sequence of data tuples.
+        """
+        if use_raw_data or not item.validator_name:
+            return values
+
+        validator = getattr(self, item.validator_name, None)
+        if validator is None:
+            return values
+
+        return element_checker.filter_elements(
+            values=values, validation=validator, value_locations=item.validation_map
+        )
+
+    def _load_component_data(
+        self, data: dict, component: Set | Param, values: Sequence[tuple]
+    ) -> None:
+        """
+        Loads a sequence of values into the data dictionary for a given Pyomo component.
+
+        :param data: The main data dictionary being built.
+        :param component: The Pyomo Set or Param to load.
+        :param values: The sequence of data tuples to load.
+        """
+        if not values:
+            return
+        if isinstance(component, Set):
+            if len(values[0]) == 1:
+                data[component.name] = [t[0] for t in values]
+            else:
+                data[component.name] = list(values)
+        elif isinstance(component, Param):
+            # A singleton/scalar Param is represented by a single tuple with one
+            # element, e.g., [(value,)]. The data dictionary needs to map this
+            # to {None: value}. An indexed Param has tuples with len > 1,
+            # e.g., [(key1, key2, value)], which map to {(key1, key2): value}.
+            if len(values[0]) == 1:
+                if len(values) > 1:
+                    logger.warning(
+                        "Component '%s' appears to be a scalar Param but has multiple values. Using only the first value.",
+                        component.name,
+                    )
+                data[component.name] = {None: values[0][0]}
+            else:  # Indexed Param
+                data[component.name] = {t[:-1]: t[-1] for t in values}
+
+    def table_exists(self, table_name: str) -> bool:
+        """
+        Checks if a table exists in the database schema.
+
+        :param table_name: The name of the table to check.
+        :return: True if the table exists, False otherwise.
+        """
+        table_name_check = (
+            self.con.cursor()
+            .execute("SELECT name FROM sqlite_master WHERE type='table' AND name= ?", (table_name,))
+            .fetchone()
+        )
+        return bool(table_name_check)
+
+    # =================================================================================
+    # Internal Setup Methods
+    # =================================================================================
+
+    def _source_trace(self, myopic_index: MyopicIndex | None = None) -> None:
+        """
+        Performs the source-trace analysis to identify viable components.
+        """
+        network_data = network_model_data.build(self.con, myopic_index=myopic_index)
+        cur = self.con.cursor()
+        periods = set(
+            [
+                p
+                for (p,) in cur.execute(
+                    "SELECT period FROM TimePeriod WHERE flag = 'f' ORDER BY period"
+                )
+            ][:-1]  # drop last period
+        )
+
+        if myopic_index:
+            periods = {
+                p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
+            }
+
+        self.manager = CommodityNetworkManager(periods=periods, network_data=network_data)
+        if not self.manager.analyze_network() and not self.config.silent:
+            print('\nWarning:  Orphaned processes detected.  See log file for details.')
+        self.manager.analyze_graphs(self.config)
+
+    def _build_efficiency_dataset(
+        self, use_raw_data: bool, myopic_index: MyopicIndex | None = None
+    ) -> None:
+        """
+        Builds the efficiency dataset, applying source-trace filters if necessary.
+        """
+        cur = self.con.cursor()
+        if myopic_index:
+            contents = cur.execute(
+                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, lifetime '
+                'FROM MyopicEfficiency WHERE vintage + lifetime > ?',
+                (myopic_index.base_year,),
+            ).fetchall()
+        else:
+            contents = cur.execute(
+                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, NULL FROM main.Efficiency'
+            ).fetchall()
+
+        if use_raw_data:
+            self.efficiency_values = sorted([row[:-1] for row in contents])
+            return
+
+        if not self.manager:
+            raise RuntimeError('Source trace manager not initialized for filtering.')
+
+        filts = self.manager.build_filters()
+        self.viable_ritvo = filts['ritvo']
+        self.viable_rtv = filts['rtv']
+        self.viable_rt = filts['rt']
+        self.viable_rpit = filts['rpit']
+        self.viable_rpto = filts['rpto']
+        self.viable_techs = filts['t']
+        self.viable_input_comms = filts['ic']
+        self.viable_output_comms = filts['oc']
+        self.viable_comms = ViableSet(elements=filts['ic'].members | filts['oc'].members)
+        rtt = {(r, t1, t2) for r, t1 in filts['rt'].members for t2 in filts['t'].members}
+        self.viable_rtt = ViableSet(
+            elements=rtt, exception_loc=0, exception_vals=ViableSet.REGION_REGEXES
+        )
+
+        efficiency_entries = {
+            row[:-1]
+            for row in contents
+            if (row[0], row[1], row[2], row[3], row[4]) in self.viable_ritvo.members
+        }
+        logger.debug('Polled %d elements from Efficiency tables', len(efficiency_entries))
+        self.efficiency_values = sorted(efficiency_entries)
+
+    # =================================================================================
+    # Custom Loaders (Grouped by Cohesion)
+    # =================================================================================
+
+    # --- Core Model Structure ---
+    def _load_regional_global_indices(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Aggregates region and group names from the Region table and all Limit tables.
+        """
+        M = TemoaModel()
+        cur = self.con.cursor()
+        regions_and_groups: set[str] = set()
+
+        if self.table_exists('Region'):
+            regions_and_groups.update(
+                t[0] for t in cur.execute('SELECT region FROM main.Region').fetchall()
+            )
+
+        for table, field_name in tables_with_regional_groups.items():
+            if self.table_exists(table):
+                regions_and_groups.update(
+                    t[0] for t in cur.execute(f'SELECT {field_name} FROM main.{table}').fetchall()
+                )
+
+        if None in regions_and_groups:
+            raise ValueError('A table has an empty entry for its region column.')
+
+        list_of_groups = sorted((t,) for t in regions_and_groups)
+        self._load_component_data(data, M.regionalGlobalIndices, list_of_groups)
+
+    def _load_tech_group_members(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Loads members into the indexed set `tech_group_members`."""
+        M = TemoaModel()
+        validator = self.viable_techs.members if self.viable_techs else None
+        for group_name, tech in filtered_data:
+            if validator is None or tech in validator:
+                store = data.get(M.tech_group_members.name, defaultdict(list))
+                store[group_name].append(tech)
+                data[M.tech_group_members.name] = store
+
+    # --- Time-Related Components ---
+    def _load_time_season(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Loads the indexed TimeSeason set and the simple time_season set,
+        with a dynamic fallback if the table is missing.
+        """
+        M = TemoaModel()
+        mi = self.myopic_index
+        time_optimize = data.get('time_optimize', [])
+
+        rows_to_load = []
+        if not raw_data:
+            logger.warning('No TimeSeason table found. Loading a single filler season "S".')
+            rows_to_load = [(p, 'S') for p in time_optimize]
+        elif mi:
+            valid_periods = set(time_optimize)
+            rows_to_load = [row for row in raw_data if row[0] in valid_periods]
+        else:
+            rows_to_load = list(raw_data)
+
+        if not rows_to_load:
+            data.setdefault(M.time_season.name, [])
+            return
+
+        unique_seasons = sorted(list(set((row[1],) for row in rows_to_load)))
+        self._load_component_data(data, M.time_season, unique_seasons)
+
+        for period, season in rows_to_load:
+            store = data.get(M.TimeSeason.name, defaultdict(list))
+            store[period].append(season)
+            data[M.TimeSeason.name] = store
+
+    def _load_time_season_sequential(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Composite loader for TimeSeasonSequential and its associated index sets.
+        """
+        M = TemoaModel()
+        self._load_component_data(data, M.TimeSeasonSequential, filtered_data)
+        if filtered_data:
+            ordered_data = [row[0:3] for row in filtered_data]
+            self._load_component_data(data, M.ordered_season_sequential, ordered_data)
+            seq_data = sorted(list(set((row[1],) for row in filtered_data)))
+            self._load_component_data(data, M.time_season_sequential, seq_data)
+
+    def _load_seg_frac(self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]):
+        """Handles dynamic fallbacks for SegFrac if its table is missing."""
+        M = TemoaModel()
+        if filtered_data:
+            self._load_component_data(data, M.SegFrac, filtered_data)
+        else:
+            logger.warning('No TimeSegmentFraction table found. Generating default SegFrac values.')
+            time_optimize = data.get('time_optimize', [])
+            fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]
+            self._load_component_data(data, M.SegFrac, fallback)
+
+    # --- Capacity and Cost Components ---
+    def _load_existing_capacity(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """
+        Handles different queries for myopic vs. standard runs and also
+        populates the `tech_exist` set.
+        """
+        M = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        rows_to_load = []
+        if mi:
+            prev_period_res = cur.execute(
+                'SELECT MAX(period) FROM TimePeriod WHERE period < ?', (mi.base_year,)
+            ).fetchone()
+            prev_period = prev_period_res[0] if prev_period_res else -1
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, capacity FROM OutputBuiltCapacity WHERE vintage <= ? AND scenario = ? '
+                'UNION SELECT region, tech, vintage, capacity FROM ExistingCapacity',
+                (prev_period, self.config.scenario),
+            ).fetchall()
+        elif self.table_exists('ExistingCapacity'):
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, capacity FROM ExistingCapacity'
+            ).fetchall()
+
+        self._load_component_data(data, M.ExistingCapacity, rows_to_load)
+        if rows_to_load:
+            tech_exist_data = sorted(list({(row[1],) for row in rows_to_load}))
+            self._load_component_data(data, M.tech_exist, tech_exist_data)
+
+    def _load_cost_invest(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Handles myopic period filtering for CostInvest."""
+        M = TemoaModel()
+        mi = self.myopic_index
+        data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]
+        self._load_component_data(data, M.CostInvest, data_to_load)
+
+    def _load_loan_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Handles myopic period filtering for LoanRate."""
+        M = TemoaModel()
+        mi = self.myopic_index
+        data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]
+        self._load_component_data(data, M.LoanRate, data_to_load)
+
+    # --- Singleton and Configuration-based Components ---
+    def _load_days_per_period(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Loads the singleton DaysPerPeriod, with a fallback."""
+        M = TemoaModel()
+        value = 365
+        if filtered_data:
+            value = int(filtered_data[0][0])
+        else:
+            logger.info('No value for days_per_period found. Assuming 365 days per period.')
+        data[M.DaysPerPeriod.name] = {None: value}
+
+    def _load_global_discount_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Loads the required singleton GlobalDiscountRate."""
+        M = TemoaModel()
+        if filtered_data:
+            data[M.GlobalDiscountRate.name] = {None: float(filtered_data[0][0])}
+        else:
+            raise ValueError(
+                "Missing required parameter: 'global_discount_rate' not found in MetaDataReal table."
+            )
+
+    def _load_default_loan_rate(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Loads the optional singleton DefaultLoanRate."""
+        M = TemoaModel()
+        if filtered_data:
+            data[M.DefaultLoanRate.name] = {None: float(filtered_data[0][0])}
+
+    # --- Operational Constraints and Parameters ---
+    def _load_efficiency(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Loads the main Efficiency parameter, which is pre-calculated."""
+        M = TemoaModel()
+        self._load_component_data(data, M.Efficiency, self.efficiency_values)
+
+    def _load_linked_techs(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Provides critical error checking for LinkedTechs."""
+        item = self.manifest_map['LinkedTechs']
+        self._load_component_data(data, item.component, filtered_data)
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            valid_techs = self.viable_techs.members if self.viable_techs else set()
+            for entry in missing:
+                p_tech, d_tech = entry[1], entry[3]
+                if p_tech in valid_techs or d_tech in valid_techs:
+                    msg = (
+                        'A LinkedTech entry %s was invalidated, but one of its component technologies '
+                        'remains viable. This could lead to incorrect model behavior.'
+                    )
+                    logger.error(msg, entry)
+                    raise RuntimeError(msg % (entry,))
+
+    def _load_ramping_down(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Composite loader for RampDownHourly and its index set `tech_downramping`."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RampDownHourly, filtered_data)
+        if filtered_data:
+            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            tech_filtered = self._filter_data(
+                tech_data, self.manifest_map[M.tech_downramping.name], use_raw_data=False
+            )
+            self._load_component_data(data, M.tech_downramping, tech_filtered)
+
+    def _load_ramping_up(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Composite loader for RampUpHourly and its index set `tech_upramping`."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RampUpHourly, filtered_data)
+        if filtered_data:
+            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            tech_filtered = self._filter_data(
+                tech_data, self.manifest_map[M.tech_upramping.name], use_raw_data=False
+            )
+            self._load_component_data(data, M.tech_upramping, tech_filtered)
+
+    def _load_rps_requirement(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Handles deprecation warning for RenewablePortfolioStandard."""
+        M = TemoaModel()
+        self._load_component_data(data, M.RenewablePortfolioStandard, filtered_data)
+        if filtered_data:
+            logger.warning(
+                'The RenewablePortfolioStandard constraint is deprecated. Use LimitActivityShare instead. '
+                'The constraint has been applied but this feature may be removed in the future.'
+            )
+
+    def _load_limit_tech_input_split(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Provides detailed warnings for filtered LimitTechInputSplit data."""
+        item = self.manifest_map['LimitTechInputSplit']
+        self._load_component_data(data, item.component, filtered_data)
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for r, p, i, t, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                logger.warning(
+                    'Tech Input Split in region %s, period %d for tech %s with input %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    i,
+                )
+
+    def _load_limit_tech_input_split_annual(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Provides detailed warnings for filtered LimitTechInputSplitAnnual data."""
+        item = self.manifest_map['LimitTechInputSplitAnnual']
+        self._load_component_data(data, item.component, filtered_data)
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for r, p, i, t, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[3], x[2])):
+                logger.warning(
+                    'Tech Input Split Annual in region %s, period %d for tech %s with input %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    i,
+                )
+
+    def _load_limit_tech_output_split(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Provides detailed warnings for filtered LimitTechOutputSplit data."""
+        item = self.manifest_map['LimitTechOutputSplit']
+        self._load_component_data(data, item.component, filtered_data)
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for r, p, t, o, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
+                logger.warning(
+                    'Tech Output Split in region %s, period %d for tech %s with output %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    o,
+                )
+
+    def _load_limit_tech_output_split_annual(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
+        """Provides detailed warnings for filtered LimitTechOutputSplitAnnual data."""
+        item = self.manifest_map['LimitTechOutputSplitAnnual']
+        self._load_component_data(data, item.component, filtered_data)
+        if len(filtered_data) < len(raw_data):
+            missing = set(raw_data) - set(filtered_data)
+            for r, p, t, o, _, _ in sorted(missing, key=lambda x: (x[0], x[1], x[2], x[3])):
+                logger.warning(
+                    'Tech Output Split Annual in region %s, period %d for tech %s with output %s '
+                    'was removed because the path is invalid/orphaned. Review other warnings.',
+                    r,
+                    p,
+                    t,
+                    o,
+                )
+
+    # =================================================================================
+    # Finalizer Method
+    # =================================================================================
+
+    def load_param_idx_sets(self, data: dict) -> dict:
+        """
+        Builds a dictionary of sparse sets used for indexing parameters.
+        This is a final data enhancement step that runs after all primary data
+        has been loaded.
+
+        :param data: The main data dictionary.
+        :return: A dictionary of the new index sets to be added.
+        """
+        M = TemoaModel()
+        param_idx_sets = {
+            M.CostInvest.name: M.CostInvest_rtv.name,
+            M.CostEmission.name: M.CostEmission_rpe.name,
+            M.Demand.name: M.DemandConstraint_rpc.name,
+            M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
+            M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
+            M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,
+            M.LimitActivityShare.name: M.LimitActivityShareConstraint_rpgg.name,
+            M.LimitAnnualCapacityFactor.name: M.LimitAnnualCapacityFactorConstraint_rpto.name,
+            M.LimitCapacity.name: M.LimitCapacityConstraint_rpt.name,
+            M.LimitCapacityShare.name: M.LimitCapacityShareConstraint_rpgg.name,
+            M.LimitNewCapacity.name: M.LimitNewCapacityConstraint_rpt.name,
+            M.LimitNewCapacityShare.name: M.LimitNewCapacityShareConstraint_rpgg.name,
+            M.LimitResource.name: M.LimitResourceConstraint_rt.name,
+            M.LimitStorageFraction.name: M.LimitStorageFractionConstraint_rpsdtv.name,
+            M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
+        }
+
+        res = {}
+        for p_name, s_name in param_idx_sets.items():
+            param_data = data.get(p_name)
+            if param_data:
+                res[s_name] = list(param_data.keys())
+        return res

@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
     	REFERENCES Operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, tech, operator),
+    PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS LimitCapacity
