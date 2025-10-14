@@ -42,9 +42,9 @@ from pyomo.dataportal import DataPortal
 
 from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.data_brick import DataBrick
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.monte_carlo.mc_run import MCRunFactory
 from temoa.extensions.monte_carlo.mc_worker import MCWorker
 

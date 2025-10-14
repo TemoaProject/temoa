@@ -48,9 +48,9 @@ from SALib.sample.morris import sample
 from SALib.util import compute_groups_matrix, read_param_file
 
 from definitions import PROJECT_ROOT, get_OUTPUT_PATH
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
 
 logger = logging.getLogger(__name__)

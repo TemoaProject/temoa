@@ -36,10 +36,10 @@ from sys import stderr as SE
 
 import definitions
 from temoa._internal import run_actions
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.data_processing.DB_to_Excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper

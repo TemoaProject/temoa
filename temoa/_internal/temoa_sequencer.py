@@ -36,7 +36,6 @@ from pathlib import Path
 
 import pyomo.opt
 
-from temoa._internal.hybrid_loader import HybridLoader
 from temoa._internal.run_actions import (
     build_instance,
     check_database_version,
@@ -48,6 +47,7 @@ from temoa._internal.run_actions import (
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_sequencer import MorrisSequencer
 from temoa.extensions.modeling_to_generate_alternatives.mga_sequencer import MgaSequencer
 from temoa.extensions.monte_carlo.mc_sequencer import MCSequencer
