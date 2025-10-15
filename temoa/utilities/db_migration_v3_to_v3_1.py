@@ -248,9 +248,10 @@ for old_name, new_name in direct_transfer_tables:
     con_new.executemany(query, data)
     print(f'Transfered {len(data)} rows from {old_name} to {new_name}')
 
-# Need these
-time_future = cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
-time_optimize = [p[0] for p in time_future[0:-1]]
+time_all = [
+    p[0] for p in cur.execute('SELECT period FROM TimePeriod').fetchall()
+]
+time_all = sorted(time_all)[0:-1] # Exclude horizon end
 
 # get lifetimes. Major headache but needs to be done
 lifetime_process = dict()
@@ -259,11 +260,17 @@ for rtv in data:
     lifetime_process[rtv] = TemoaModel.default_lifetime_tech
 data = cur.execute('SELECT region, tech, lifetime FROM LifetimeTech').fetchall()
 for rtl in data:
-    for v in time_optimize:
+    for v in time_all:
         lifetime_process[*rtl[0:2], v] = rtl[2]
 data = cur.execute('SELECT region, tech, vintage, lifetime FROM LifetimeProcess').fetchall()
 for rtvl in data:
     lifetime_process[rtvl[0:3]] = rtvl[3]
+
+# Planning periods to add to period indices
+time_optimize = [
+    p[0] for p in cur.execute('SELECT period FROM TimePeriod WHERE flag == "f"').fetchall()
+]
+time_optimize = sorted(time_optimize)[0:-1] # Exclude horizon end
 
 # add period indexing to seasonal tables
 print('\n --- Adding period index to some tables ---')
