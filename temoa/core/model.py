@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
@@ -22,6 +23,11 @@ from pyomo.environ import (
     Param,
     minimize,
 )
+
+if TYPE_CHECKING:
+    from pyomo.environ import AbstractModel as PyomoAbstractModel
+else:
+    PyomoAbstractModel = AbstractModel  # type: ignore[misc,assignment]
 
 from temoa.components import (
     capacity,
@@ -51,7 +57,7 @@ from temoa.model_checking.validators import (
 logger = logging.getLogger(__name__)
 
 
-def CreateSparseDicts(M: 'TemoaModel'):
+def CreateSparseDicts(M: 'TemoaModel') -> None:
     """
     Creates and populates all sparse dictionaries and sets required for the model
     by calling component-specific precomputation functions.
@@ -87,7 +93,7 @@ def CreateSparseDicts(M: 'TemoaModel'):
     logger.debug('Completed creation of SparseDicts')
 
 
-class TemoaModel(AbstractModel):
+class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
     """
     An instance of the abstract Temoa model
     """
@@ -95,7 +101,7 @@ class TemoaModel(AbstractModel):
     # this is used in several places outside this class, and this provides no-build access to it
     default_lifetime_tech = 40
 
-    def __init__(M, *args, **kwargs):
+    def __init__(M, *args: object, **kwargs: object) -> None:
         AbstractModel.__init__(M, *args, **kwargs)
 
         ################################################
@@ -104,9 +110,9 @@ class TemoaModel(AbstractModel):
         ################################################
 
         # Dev Note:  The triple-quotes UNDER the items below pop up as dox in most IDEs
-        M.processInputs = dict()
-        M.processOutputs = dict()
-        M.processLoans = dict()
+        M.processInputs: dict[object, object] = dict()
+        M.processOutputs: dict[object, object] = dict()
+        M.processLoans: dict[object, object] = dict()
         M.activeFlow_rpsditvo = None
         """a flow index for techs NOT in tech_annual"""
 
@@ -130,45 +136,53 @@ class TemoaModel(AbstractModel):
         M.activeCapacityAvailable_rptv = None
         M.groupRegionActiveFlow_rpt = None  # Set of valid group-region, period, tech indices
         M.commodityBalance_rpc = None  # Set of valid region-period-commodity indices to balance
-        M.commodityDStreamProcess = dict()  # The downstream process of a commodity during a period
-        M.commodityUStreamProcess = dict()  # The upstream process of a commodity during a period
-        M.capacityConsumptionTechs = (
+        M.commodityDStreamProcess: dict[object, object] = (
+            dict()
+        )  # The downstream process of a commodity during a period
+        M.commodityUStreamProcess: dict[object, object] = (
+            dict()
+        )  # The upstream process of a commodity during a period
+        M.capacityConsumptionTechs: dict[object, object] = (
             dict()
         )  # New capacity consuming a commodity during a period [r,p,c] -> t
-        M.retirementProductionProcesses = (
+        M.retirementProductionProcesses: dict[object, object] = (
             dict()
         )  # Retired capacity producing a commodity during a period [r,p,c] -> t,v
-        M.processInputsByOutput = dict()
-        M.processOutputsByInput = dict()
-        M.processTechs = dict()
-        M.processReservePeriods = dict()
-        M.processPeriods = dict()  # {(r, t, v): set(p)}
-        M.retirementPeriods = (
+        M.processInputsByOutput: dict[object, object] = dict()
+        M.processOutputsByInput: dict[object, object] = dict()
+        M.processTechs: dict[object, object] = dict()
+        M.processReservePeriods: dict[object, object] = dict()
+        M.processPeriods: dict[object, object] = dict()  # {(r, t, v): set(p)}
+        M.retirementPeriods: dict[object, object] = (
             dict()
         )  # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
-        M.processVintages = dict()
-        M.survivalCurvePeriods: dict[tuple, set] = (
+        M.processVintages: dict[object, object] = dict()
+        M.survivalCurvePeriods: dict[object, object] = (
             dict()
         )  # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
-        M.baseloadVintages = dict()
-        M.curtailmentVintages = dict()
-        M.storageVintages = dict()
-        M.rampUpVintages = dict()
-        M.rampDownVintages = dict()
-        M.inputSplitVintages = dict()
-        M.inputSplitAnnualVintages = dict()
-        M.outputSplitVintages = dict()
-        M.outputSplitAnnualVintages = dict()
+        M.baseloadVintages: dict[object, object] = dict()
+        M.curtailmentVintages: dict[object, object] = dict()
+        M.storageVintages: dict[object, object] = dict()
+        M.rampUpVintages: dict[object, object] = dict()
+        M.rampDownVintages: dict[object, object] = dict()
+        M.inputSplitVintages: dict[object, object] = dict()
+        M.inputSplitAnnualVintages: dict[object, object] = dict()
+        M.outputSplitVintages: dict[object, object] = dict()
+        M.outputSplitAnnualVintages: dict[object, object] = dict()
         # M.processByPeriodAndOutput = dict() # not currently used
-        M.exportRegions = dict()
-        M.importRegions = dict()
+        M.exportRegions: dict[object, object] = dict()
+        M.importRegions: dict[object, object] = dict()
 
         # These establish time sequencing
-        M.time_next = dict()  # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_sequential = dict()  # {(p, s_seq): (s_seq_next)} next virtual storage season
-        M.sequential_to_season = (
+        M.time_next: dict[object, object] = (
+            dict()
+        )  # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        M.time_next_sequential: dict[object, object] = (
+            dict()
+        )  # {(p, s_seq): (s_seq_next)} next virtual storage season
+        M.sequential_to_season: dict[object, object] = (
             dict()
         )  # {(p, s_seq): (s)} season matching this virtual storage season
 
@@ -177,16 +191,16 @@ class TemoaModel(AbstractModel):
         #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        M.isEfficiencyVariable: dict[tuple, bool] = (
+        M.isEfficiencyVariable: dict[object, bool] = (
             dict()
         )  # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
-        M.isCapacityFactorProcess: dict[tuple, bool] = (
+        M.isCapacityFactorProcess: dict[object, bool] = (
             dict()
         )  # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
-        M.isSeasonalStorage: dict[tuple, bool] = (
+        M.isSeasonalStorage: dict[object, bool] = (
             dict()
         )  # {t: bool} whether a storage tech is seasonal storage
-        M.isSurvivalCurveProcess: dict[tuple, bool] = (
+        M.isSurvivalCurveProcess: dict[object, bool] = (
             dict()
         )  # {(r, t, v): bool} whether a process uses survival curves.
 
@@ -1126,6 +1140,6 @@ class TemoaModel(AbstractModel):
         M.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)
 
 
-def progress_check(M, checkpoint: str):
+def progress_check(M: 'TemoaModel', checkpoint: str) -> None:
     """A quick widget which is called by BuildAction in order to log creation progress"""
     logger.debug('Model build progress: %s', checkpoint)
