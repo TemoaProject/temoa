@@ -53,3 +53,12 @@ repos:
         #                         review and re-stage the changes.
       - id: ruff-format
         name: ruff-format (formatter)
+
+  # # Type checking with mypy
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.13.0
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy (type checker)
+  #       # Only check files that are staged for commit
+  #       files: \.py$
