@@ -32,7 +32,7 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def get_default_loan_rate(M: 'TemoaModel', *_: Any) -> float:
+def get_default_loan_rate(M: TemoaModel, *_: Any) -> float:
     """get the default loan rate from the DefaultLoanRate param"""
     return M.DefaultLoanRate()
 
@@ -84,7 +84,7 @@ def fv_to_pv(rate: float, periods: int) -> float | Expression:
     return 1 / (1 + rate) ** periods
 
 
-def get_loan_life(M: 'TemoaModel', r: str, t: str, v: int) -> int:
+def get_loan_life(M: TemoaModel, r: str, t: str, v: int) -> int:
     return M.LifetimeProcess[r, t, v]
 
 
@@ -93,20 +93,20 @@ def get_loan_life(M: 'TemoaModel', r: str, t: str, v: int) -> int:
 # ============================================================================
 
 
-def CostFixedIndices(M: 'TemoaModel') -> set[tuple[str, int, str, int]]:
+def CostFixedIndices(M: TemoaModel) -> set[tuple[str, int, str, int]]:
     # we pull the unlimited capacity techs from this index.  They cannot have fixed costs
     if M.activeActivity_rptv:
         return {(r, p, t, v) for r, p, t, v in M.activeActivity_rptv if t not in M.tech_uncap}
     return set()
 
 
-def CostVariableIndices(M: 'TemoaModel') -> set[tuple[str, int, str, int]]:
+def CostVariableIndices(M: TemoaModel) -> set[tuple[str, int, str, int]]:
     if M.activeActivity_rptv:
         return M.activeActivity_rptv
     return set()
 
 
-def LifetimeLoanProcessIndices(M: 'TemoaModel') -> set[tuple[str, str, int]]:
+def LifetimeLoanProcessIndices(M: TemoaModel) -> set[tuple[str, str, int]]:
     """
     Based on the Efficiency parameter's indices and time_future parameter, this
     function returns the set of process indices that may be specified in the
@@ -114,7 +114,7 @@ def LifetimeLoanProcessIndices(M: 'TemoaModel') -> set[tuple[str, str, int]]:
     """
     min_period = min(M.vintage_optimize)
 
-    indices = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys() if v >= min_period)
+    indices = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys() if v >= min_period}
 
     return indices
 
@@ -184,7 +184,7 @@ def loan_cost(
 
 
 def loan_cost_survival_curve(
-    M: 'TemoaModel',
+    M: TemoaModel,
     r: str,
     t: str,
     v: int,
@@ -299,7 +299,7 @@ def fixed_or_variable_cost(
 # ============================================================================
 
 
-def PeriodCost_rule(M: 'TemoaModel', p: int) -> float | Any:
+def PeriodCost_rule(M: TemoaModel, p: int) -> float | Expression:
     P_0 = min(M.time_optimize)
     P_e = M.time_future.last()  # End point of modeled horizon
     GDR = value(M.GlobalDiscountRate)
@@ -500,7 +500,7 @@ def PeriodCost_rule(M: 'TemoaModel', p: int) -> float | Any:
 # ---------------------------------------------------------------
 # Define the Objective Function
 # ---------------------------------------------------------------
-def TotalCost_rule(M: 'TemoaModel') -> Any:
+def TotalCost_rule(M: TemoaModel) -> Expression:
     r"""
 
     Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
@@ -643,7 +643,7 @@ def TotalCost_rule(M: 'TemoaModel') -> Any:
 
 
 @deprecated(reason='vintage defaults are no longer available, so this should not be needed')
-def CreateCosts(M: 'TemoaModel') -> None:
+def CreateCosts(M: TemoaModel) -> None:
     """
     Steps to creating fixed and variable costs:
     1. Collect all possible cost indices (CostFixed, CostVariable)
@@ -687,7 +687,7 @@ def CreateCosts(M: 'TemoaModel') -> None:
     logger.debug('Finished creating Fixed and Variable costs')
 
 
-def ParamLoanAnnualize_rule(M: 'TemoaModel', r: str, t: str, v: int) -> float:
+def ParamLoanAnnualize_rule(M: TemoaModel, r: str, t: str, v: int) -> float:
     """Rule to calculate the annualized loan rate from the loan rate and lifetime."""
     dr = value(M.LoanRate[r, t, v])
     lln = value(M.LoanLifetimeProcess[r, t, v])
