@@ -56,7 +56,7 @@ ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commo
 ProcessOutputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
 TechClassification = dict[Technology, str]
 Sparsedict = dict[SparseIndex, set[SparseIndex]]
-
+SparseDict = Sparsedict
 # Model sets type definitions (avoiding naming conflicts with set import)
 TimesetTyped = set[Period]
 RegionsetTyped = set[Region]
@@ -98,17 +98,17 @@ class TemoaModelProtocol(Protocol):
     name: str
 
     # Time-related sets
-    time_exist: TimesetTyped
-    time_future: TimesetTyped
-    time_optimize: TimesetTyped
-    vintage_exist: VintagesetTyped
-    vintage_optimize: VintagesetTyped
-    time_season: set[Season]
-    time_of_day: set[TimeOfDay]
+    time_exist: PyomoSet
+    time_future: PyomoSet
+    time_optimize: PyomoSet
+    vintage_exist: PyomoSet
+    vintage_optimize: PyomoSet
+    time_season: PyomoSet
+    time_of_day: PyomoSet
 
     # Geography sets
-    regions: RegionsetTyped
-    regionalIndices: set[Region]
+    regions: PyomoSet
+    regionalIndices: PyomoSet
 
     # Technology sets
     tech_all: TechsetTyped
@@ -131,14 +131,14 @@ class TemoaModelProtocol(Protocol):
     CapacityToActivity: PyomoParam
 
     # Model variables
-    V_FlowOut: Any
-    V_Capacity: Any
-    V_NewCapacity: Any
+    V_FlowOut: PyomoVar
+    V_Capacity: PyomoVar
+    V_NewCapacity: PyomoVar
 
     # Model constraints
-    DemandConstraint: Any
-    CommodityBalanceConstraint: Any
-    CapacityConstraint: Any
+    DemandConstraint: PyomoConstraint
+    CommodityBalanceConstraint: PyomoConstraint
+    CapacityConstraint: PyomoConstraint
 
     # Internal data structures
     processInputs: ProcessInputs
@@ -172,9 +172,9 @@ if TYPE_CHECKING:
         time_of_day: PyomoSet
 
         # Geography sets
-        regions: RegionsetTyped
-        regionalIndices: set[Region]
-        regionalGlobalIndices: set[Region]
+        regions: PyomoSet
+        regionalIndices: PyomoSet
+        regionalGlobalIndices: PyomoSet
 
         # Technology sets
         tech_all: TechsetTyped
@@ -208,15 +208,15 @@ if TYPE_CHECKING:
         CostVariable: PyomoParam
 
         # Model variables
-        V_FlowOut: Any
-        V_Capacity: Any
-        V_NewCapacity: Any
-        V_RetiredCapacity: Any
+        V_FlowOut: PyomoVar
+        V_Capacity: PyomoVar
+        V_NewCapacity: PyomoVar
+        V_RetiredCapacity: PyomoVar
 
         # Model constraints
-        DemandConstraint: Any
-        CommodityBalanceConstraint: Any
-        CapacityConstraint: Any
+        DemandConstraint: PyomoConstraint
+        CommodityBalanceConstraint: PyomoConstraint
+        CapacityConstraint: PyomoConstraint
 
         # Internal tracking dictionaries
         processInputs: ProcessInputs
@@ -226,6 +226,11 @@ if TYPE_CHECKING:
         activeActivity_rptv: set[RegionPeriodTechVintage]
 
         def __init__(self, *args: object, **kwargs: object) -> None: ...
+
+
+else:
+    # Runtime alias for TemoaModel when not TYPE_CHECKING
+    TemoaModel = Any
 
 
 # Data structure types for model processing
@@ -255,6 +260,7 @@ __all__ = [
     'ProcessOutputs',
     'TechClassification',
     'Sparsedict',
+    'SparseDict',
     # Named tuples for indexing
     'EI',
     'FI',

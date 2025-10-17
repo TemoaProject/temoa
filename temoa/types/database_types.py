@@ -6,7 +6,7 @@ versioning used throughout the Temoa codebase.
 """
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Protocol
+from typing import Protocol
 
 # Type aliases for database schema elements
 TableName = str
@@ -33,7 +33,7 @@ class DatabaseSchema(Protocol):
     tables: Mapping[TableName, Sequence[ColumnName]]
     """Mapping of table names to their column names."""
 
-    def get_table_columns(self, table: TableName) -> list[ColumnName]:
+    def get_table_columns(self, table: TableName) -> Sequence[ColumnName]:
         """
         Get the list of columns for a given table.
 
@@ -135,16 +135,13 @@ class EmissionActivityRow(Protocol):
 
 
 # Query result types
-TechnologyQueryResult = list[dict[str, Any]]
+TechnologyQueryResult = Sequence[Mapping[str, object]]
 """Type alias for technology query results."""
-
-CommodityQueryResult = list[dict[str, Any]]
+CommodityQueryResult = Sequence[Mapping[str, object]]
 """Type alias for commodity query results."""
-
-EfficiencyQueryResult = list[dict[str, Any]]
+EfficiencyQueryResult = Sequence[Mapping[str, object]]
 """Type alias for efficiency query results."""
-
-GenericQueryResult = list[dict[str, Any]]
+GenericQueryResult = Sequence[Mapping[str, object]]
 """Type alias for generic query results."""
 
 

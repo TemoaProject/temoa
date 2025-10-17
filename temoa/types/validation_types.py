@@ -40,7 +40,7 @@ class ValidationError:
         severity: The severity level of the validation issue
         message: Human-readable description of the issue
         location: Optional location information (e.g., file, line, component)
-        context: Optional additional context about the issue
+        context: Optional additional context about the issue (e.g., {'variable': 'x', 'expected': 10, 'actual': 5})
     """
 
     severity: ValidationSeverity
@@ -142,6 +142,8 @@ class ValidationResult:
         Returns:
             ValidationResult indicating failure
         """
+        if not errors:
+            raise ValueError('Failure result must contain at least one error')
         return cls(
             errors=errors,
             warnings=warnings or [],
@@ -191,11 +193,11 @@ class ValidationResult:
 
     def has_errors(self) -> bool:
         """Check if this result contains any errors."""
-        return len(self.errors) > 0
+        return bool(self.errors)
 
     def has_warnings(self) -> bool:
         """Check if this result contains any warnings."""
-        return len(self.warnings) > 0
+        return bool(self.warnings)
 
     def error_count(self) -> int:
         """Get the number of errors in this result."""
