@@ -2956,12 +2956,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
 docs = [
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
@@ -2977,6 +2971,10 @@ plotting = [
 [package.dev-dependencies]
 dev = [
     { name = "gurobipy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "types-deprecated" },
 ]
 
@@ -2999,15 +2997,11 @@ requires-dist = [
     { name = "nx-vis-visualizer", specifier = ">=0.1.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.2" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "pyam-iamc", specifier = ">=2.2.4" },
     { name = "pydoe", specifier = ">=0.3.8" },
     { name = "pyomo", specifier = ">=6.8.0" },
     { name = "pytest", specifier = ">=8.3.2" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pyutilib", specifier = ">=6.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.2.0" },
     { name = "salib", specifier = ">=1.5.1" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
@@ -3020,11 +3014,15 @@ requires-dist = [
     { name = "tabulate", specifier = ">=0.9.0" },
     { name = "xlsxwriter", specifier = ">=3.2.0" },
 ]
-provides-extras = ["docs", "dev", "plotting"]
+provides-extras = ["docs", "plotting"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "gurobipy", specifier = ">=12.0.3" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff", specifier = ">=0.2.0" },
     { name = "types-deprecated", specifier = ">=1.2.15.20250304" },
 ]
 

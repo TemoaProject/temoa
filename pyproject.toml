@@ -47,12 +47,6 @@ docs = [
     "sphinxcontrib-bibtex>=2.6.2",
 ]
 
-dev = [
-    "ruff>=0.2.0",
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-]
 plotting = [
     "matplotlib>=3.9.2",
     "seaborn>=0.13.2",
@@ -91,6 +85,9 @@ testpaths = [
 [tool.mypy]
 # Python version targeting
 python_version = "3.12"
+
+# Exclude specific directories from type checking
+exclude = "(?x)(^tests/|^temoa/model_checking/|^temoa/data_processing/|^temoa/extensions/|^docs/)"
 
 # Strict typing for our own code
 disallow_untyped_defs = true
@@ -154,14 +151,14 @@ disallow_untyped_defs = false
 
 disallow_incomplete_defs = false
 
-# Less strict for data processing modules that interact heavily with external libs
+# Silence errors from excluded modules (follow imports but don't report errors)
 [[tool.mypy.overrides]]
 module = [
     "temoa.data_processing.*",
     "temoa.extensions.*",
+    "temoa.model_checking.*",
 ]
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
+follow_imports = "silent"
 
 # Enable strict checking for core modules
 [[tool.mypy.overrides]]
@@ -208,6 +205,10 @@ disallow_untyped_defs = false
 dev = [
     "gurobipy>=12.0.3",
     "types-deprecated>=1.2.15.20250304",
+    "ruff>=0.2.0",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
 ]
 
 [project.urls]

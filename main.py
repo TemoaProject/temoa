@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 @deprecated('currently deprecated functionality')
-def runModelUI(config_filename):
+def runModelUI(config_filename: str) -> None:
     """This function launches the model run from the Temoa GUI"""
     raise NotImplementedError
     # solver = TemoaSolver(model, config_filename)
@@ -162,7 +162,7 @@ def create_output_folder() -> Path:
     return output_path
 
 
-def setup_logging(output_path: Path, debug_level=False):
+def setup_logging(output_path: Path, debug_level: bool = False) -> None:
     # set up logger
     if debug_level:
         level = logging.DEBUG
