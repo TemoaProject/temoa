@@ -5,11 +5,11 @@ This module provides comprehensive type annotations for the core Temoa model,
 including the main TemoaModel class and its associated data structures.
 """
 
-from collections import namedtuple
 from enum import Enum, unique
 from typing import (
     TYPE_CHECKING,
     Any,
+    NamedTuple,
     Protocol,
     runtime_checkable,
 )
@@ -281,8 +281,46 @@ __all__ = [
 ]
 
 
-EI = namedtuple('EI', ['r', 'p', 't', 'v', 'e'])
-"""Emission Index"""
+class EI(NamedTuple):
+    """Emission Index"""
+
+    r: Region
+    p: Period
+    t: Technology
+    v: Vintage
+    e: Commodity
+
+
+class FI(NamedTuple):
+    """Flow Index"""
+
+    r: Region
+    p: Period
+    s: Season
+    d: TimeOfDay
+    i: Commodity
+    t: Technology
+    v: Vintage
+    o: Commodity
+
+
+class SLI(NamedTuple):
+    """Storage Level Index"""
+
+    r: Region
+    p: Period
+    s: Season
+    d: TimeOfDay
+    t: Technology
+    v: Vintage
+
+
+class CapData(NamedTuple):
+    """Capacity Data Container"""
+
+    built: Any
+    net: Any
+    retired: Any
 
 
 @unique
@@ -294,13 +332,3 @@ class FlowType(Enum):
     CURTAIL = 3
     FLEX = 4
     LOST = 5
-
-
-FI = namedtuple('FI', ['r', 'p', 's', 'd', 'i', 't', 'v', 'o'])
-"""Flow Index"""
-
-SLI = namedtuple('SLI', ['r', 'p', 's', 'd', 't', 'v'])
-"""Storage Level Index"""
-
-CapData = namedtuple('CapData', ['built', 'net', 'retired'])
-"""Small container to hold named dictionaries of capacity data for processing"""
