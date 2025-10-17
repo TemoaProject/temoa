@@ -3,7 +3,11 @@ This file is intended as a QA tool for calculating costs associated with unit-si
 of storage capacity
 """
 
-from temoa._internal.temoa_rules import *
+from pyomo.environ import value
+
+from temoa.components.costs import TotalCost_rule
+from temoa.components.storage import StorageEnergyUpperBound_Constraint
+from temoa.core.model import TemoaModel
 
 # Written by:  J. F. Hyink
 # jeff@westernspark.us
@@ -121,7 +125,7 @@ M.ProcessLifeFrac.construct(data={('A', 2020, 'battery', 2020): 1.0})
 M.V_StorageLevel.construct()
 M.SegFracPerSeason.construct()
 
-upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', 1, 'battery', 2020)
+upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', '1', 'battery', 2020)
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...
