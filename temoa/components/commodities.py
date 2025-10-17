@@ -19,6 +19,7 @@ from pyomo.environ import value
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
+from ..types import Commodity, Period, Region
 from .utils import get_variable_efficiency
 
 logger = getLogger(name=__name__)
@@ -29,7 +30,7 @@ logger = getLogger(name=__name__)
 
 
 def CommodityBalanceConstraintErrorCheck(
-    supplied: Any, demanded: Any, r: str, p: int, s: str, d: str, c: str
+    supplied: Any, demanded: Any, r: Region, p: Period, s: str, d: str, c: Commodity
 ) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
@@ -52,7 +53,7 @@ def CommodityBalanceConstraintErrorCheck(
 
 
 def AnnualCommodityBalanceConstraintErrorCheck(
-    supplied: Any, demanded: Any, r: str, p: int, c: str
+    supplied: Any, demanded: Any, r: Region, p: Period, c: Commodity
 ) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
@@ -74,7 +75,7 @@ def AnnualCommodityBalanceConstraintErrorCheck(
         raise Exception(msg.format(c, r, p, expr))
 
 
-def DemandConstraintErrorCheck(supply: Any, r: str, p: int, dem: str) -> None:
+def DemandConstraintErrorCheck(supply: Any, r: Region, p: Period, dem: Commodity) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem
     if isinstance(supply, int):
@@ -96,22 +97,24 @@ def DemandConstraintErrorCheck(supply: Any, r: str, p: int, dem: str) -> None:
 
 def DemandActivityConstraintIndices(
     M: 'TemoaModel',
-) -> set[tuple[str, int, str, str, str, int, str]]:
-    indices = set(
+) -> set[tuple[Region, Period, str, str, str, int, Commodity]]:
+    indices = {
         (r, p, s, d, t, v, dem)
         for r, p, dem in M.DemandConstraint_rpc
         for t, v in M.commodityUStreamProcess[r, p, dem]
         if t not in M.tech_annual
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
     return indices
 
 
-def CommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str]]:
+def CommodityBalanceConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, str, str, Commodity]]:
     # Generate indices only for those commodities that are produced by
     # technologies with varying output at the time slice level.
-    indices = set(
+    indices = {
         (r, p, s, d, c)
         for r, p, c in M.commodityBalance_rpc
         # r in this line includes interregional transfer combinations (not needed).
@@ -119,21 +122,23 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, st
         and c not in M.commodity_annual
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
 
-def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str]]:
+def AnnualCommodityBalanceConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Commodity]]:
     # Generate indices only for those commodities that are produced by
     # technologies with constant annual output.
-    indices = set(
+    indices = {
         (r, p, c)
         for r, p, c in M.commodityBalance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in M.regions  # this line ensures only the regions are included.
         and c in M.commodity_annual
-    )
+    }
 
     return indices
 
@@ -143,7 +148,7 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, i
 # ============================================================================
 
 
-def Demand_Constraint(M: 'TemoaModel', r: str, p: int, dem: str) -> Any:
+def Demand_Constraint(M: 'TemoaModel', r: Region, p: Period, dem: Commodity) -> Any:
     r"""
 
     The Demand constraint drives the model.  This constraint ensures that supply at
@@ -190,7 +195,7 @@ def Demand_Constraint(M: 'TemoaModel', r: str, p: int, dem: str) -> Any:
 
 # devnote: no longer needed
 def DemandActivity_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, dem: str
+    M: 'TemoaModel', r: Region, p: Period, s: str, d: str, t: str, v: int, dem: Commodity
 ) -> Any:
     r"""
 
@@ -233,7 +238,9 @@ def DemandActivity_Constraint(
     return expr
 
 
-def CommodityBalance_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str, c: str) -> Any:
+def CommodityBalance_Constraint(
+    M: 'TemoaModel', r: Region, p: Period, s: str, d: str, c: Commodity
+) -> Any:
     r"""
     Where the Demand constraint :eq:`Demand` ensures that end-use demands are met,
     the CommodityBalance constraint ensures that the endogenous system demands are
@@ -467,7 +474,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str,
     return expr
 
 
-def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r: str, p: int, c: str) -> Any:
+def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r: Region, p: Period, c: Commodity) -> Any:
     r"""
     Similar to CommodityBalance_Constraint but only balances the supply and demand of the commodity
     at the period level, summing all flows over the period but allowing imbalances at the time slice
@@ -657,7 +664,7 @@ def CreateDemands(M: 'TemoaModel') -> None:
     DSD_dem = iget(4)
 
     # Step 1: Check if any demand commodities are going unused
-    used_dems = set(dem for r, p, dem in M.Demand.sparse_iterkeys())
+    used_dems = {dem for r, p, dem in M.Demand.sparse_iterkeys()}
     unused_dems = sorted(M.commodity_demand.difference(used_dems))
     if unused_dems:
         for dem in unused_dems:
@@ -728,7 +735,7 @@ def CreateDemands(M: 'TemoaModel') -> None:
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    used_rp_dems = set((r, p, dem) for r, p, dem in M.Demand.sparse_iterkeys())
+    used_rp_dems = {(r, p, dem) for r, p, dem in M.Demand.sparse_iterkeys()}
     for r, p, dem in used_rp_dems:
         expected_key_length = len(M.TimeSeason[p]) * len(M.time_of_day)
         keys = [
@@ -738,12 +745,12 @@ def CreateDemands(M: 'TemoaModel') -> None:
         ]
         if len(keys) != expected_key_length:
             # this could be very slow but only calls when there's a problem
-            missing = set(
+            missing = {
                 (s, d)
                 for s in M.TimeSeason[p]
                 for d in M.time_of_day
                 if (r, p, s, d, dem) not in keys
-            )
+            }
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
                 (r, p, dem),

@@ -5,6 +5,7 @@ This module provides type definitions for solver results, status, and terminatio
 conditions used throughout the Temoa codebase.
 """
 
+from collections.abc import Mapping
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -33,30 +34,28 @@ class SolverStatusEnum(str, Enum):
     UNKNOWN = 'unknown'
 
 
-class TerminationConditionEnum(str, Enum):
+class TerminationConditionEnum(int, Enum):
     """
     Enumeration of possible solver termination conditions.
 
     These represent the specific reason why the solver terminated.
+    Updated to match Pyomo 6.9.2 integer-based enum values.
     """
 
-    OPTIMAL = 'optimal'
-    INFEASIBLE = 'infeasible'
-    UNBOUNDED = 'unbounded'
-    INFEASIBLE_OR_UNBOUNDED = 'infeasibleOrUnbounded'
-    MAX_TIME_LIMIT = 'maxTimeLimit'
-    MAX_ITERATIONS = 'maxIterations'
-    MAX_EVALUATIONS = 'maxEvaluations'
-    MIN_STEP_LENGTH = 'minStepLength'
-    MIN_FUNCTION_VALUE = 'minFunctionValue'
-    OTHER = 'other'
-    UNKNOWN = 'unknown'
-    SOLVER_FAILURE = 'solverFailure'
-    INTERNAL_SOLVER_ERROR = 'internalSolverError'
-    ERROR = 'error'
-    USER_INTERRUPT = 'userInterrupt'
-    RESOURCE_INTERRUPT = 'resourceInterrupt'
-    LICENSING_PROBLEMS = 'licensingProblems'
+    convergenceCriteriaSatisfied = 0
+    maxTimeLimit = 1
+    iterationLimit = 2
+    objectiveLimit = 3
+    minStepLength = 4
+    unbounded = 5
+    provenInfeasible = 6
+    locallyInfeasible = 7
+    infeasibleOrUnbounded = 8
+    error = 9
+    interrupted = 10
+    licensingProblems = 11
+    emptyModel = 12
+    unknown = 42
 
 
 class SolverResultsProtocol(Protocol):
@@ -67,7 +66,7 @@ class SolverResultsProtocol(Protocol):
     by Pyomo solvers, allowing for type-safe access to solver information.
     """
 
-    solver: Any
+    solver: object
     """Solver information and statistics."""
 
     def __getitem__(self, key: str) -> object:
@@ -85,7 +84,7 @@ SolverStatus = PyomoSolverStatus
 TerminationCondition = PyomoTerminationCondition
 """Type alias for Pyomo TerminationCondition enum."""
 
-SolverOptions = dict[str, Any]
+SolverOptions = Mapping[str, object]
 """Type alias for solver option dictionaries."""
 
 

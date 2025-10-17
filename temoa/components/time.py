@@ -12,7 +12,7 @@ It is responsible for:
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.environ import value
 
@@ -43,7 +43,9 @@ def validate_time(M: 'TemoaModel') -> None:
         if isinstance(year, int):
             continue
 
-        msg = f'Set "time_exist" requires integer-only elements.\n\n  Invalid element: "{year}"'
+        msg: str = (
+            f'Set "time_exist" requires integer-only elements.\n\n  Invalid element: "{year}"'
+        )
         logger.error(msg)
         raise Exception(msg)
 
@@ -69,8 +71,8 @@ def validate_time(M: 'TemoaModel') -> None:
 
     # Ensure that the time_exist < time_future
     if len(M.time_exist) > 0:
-        max_exist = max(M.time_exist)
-        min_horizon = min(M.time_future)
+        max_exist: int = max(M.time_exist)
+        min_horizon: int = min(M.time_future)
 
         if not (max_exist < min_horizon):
             msg = (
@@ -87,13 +89,17 @@ def validate_SegFrac(M: 'TemoaModel') -> None:
     """Ensure that the segment fractions adds up to 1"""
 
     for p in M.time_optimize:
-        expected_keys = {(p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day}
-        keys = {(_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p}
+        expected_keys: set[tuple[int, str, str]] = {
+            (p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day
+        }
+        keys: set[tuple[int, str, str]] = {
+            (_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p
+        }
 
         if expected_keys != keys:
-            extra = keys.difference(expected_keys)
-            missing = expected_keys.difference(keys)
-            msg = (
+            extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
+            missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
+            msg: str = (
                 'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
                 '\n\nIndices missing from TimeSegmentFraction:\n{}'
                 '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
@@ -101,25 +107,24 @@ def validate_SegFrac(M: 'TemoaModel') -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-        total = sum(M.SegFrac[k] for k in keys)
+        total: float = sum(M.SegFrac[k] for k in keys)
 
         if abs(float(total) - 1.0) > 0.001:
             # We can't explicitly test for "!= 1.0" because of incremental rounding
             # errors associated with the specification of SegFrac by time slice,
             # but we check to make sure it is within the specified tolerance.
 
-            def get_str_padding(obj: Any) -> int:
+            def get_str_padding(obj: object) -> int:
                 return len(str(obj))
 
-            key_padding = max(map(get_str_padding, keys))
+            key_padding: int = max(map(get_str_padding, keys))
 
-            fmt = '%%-%ds = %%s' % key_padding
             # Works out to something like "%-25s = %s"
 
-            items_list: list[tuple[tuple[Any, Any, Any], Any]] = sorted(
+            items_list: list[tuple[tuple[object, object, object], object]] = sorted(
                 [(k, M.SegFrac[k]) for k in keys]
             )
-            items = '\n   '.join(fmt % (str(k), v) for k, v in items_list)
+            items: str = '\n   '.join(f'{str(k):<{key_padding}} = {v}' for k, v in items_list)
 
             msg = (
                 'The values of TimeSegmentFraction do not sum to 1 for period {}. '
@@ -139,14 +144,16 @@ def validate_TimeNext(M: 'TemoaModel') -> None:
     if M.TimeSequencing.first() != 'manual':
         return
 
-    segfrac_psd = set(M.SegFrac.sparse_iterkeys())
-    time_next_psd = {(p, s, d) for p, s, d, s_next, d_next in M.TimeNext}
-    time_next_psd_next = {(p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext}
+    segfrac_psd: set[tuple[int, str, str]] = set(M.SegFrac.sparse_iterkeys())
+    time_next_psd: set[tuple[int, str, str]] = {(p, s, d) for p, s, d, s_next, d_next in M.TimeNext}
+    time_next_psd_next: set[tuple[int, str, str]] = {
+        (p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext
+    }
 
-    missing_psd = segfrac_psd.difference(time_next_psd)
-    missing_psd_next = segfrac_psd.difference(time_next_psd_next)
+    missing_psd: set[tuple[int, str, str]] = segfrac_psd.difference(time_next_psd)
+    missing_psd_next: set[tuple[int, str, str]] = segfrac_psd.difference(time_next_psd_next)
     if missing_psd or missing_psd_next:
-        msg = (
+        msg: str = (
             'Failed to build state sequence. '
             '\nThese states from TimeSegmentFraction were not given a next state:\n{}\n'
             '\nThese states from TimeSegmentFraction do not follow any state:\n{}'
@@ -182,8 +189,8 @@ def SegFracPerSeason_rule(M: 'TemoaModel', p: 'Period', s: 'Season') -> float:
 
 def ParamPeriodLength(M: 'TemoaModel', p: 'Period') -> int:
     """Rule to calculate the length of each optimization period in years."""
-    periods = sorted(M.time_future)
-    i = periods.index(p)
+    periods: list[int] = sorted(M.time_future)
+    i: int = periods.index(p)
     return periods[i + 1] - periods[i]
 
 
@@ -199,8 +206,8 @@ def loop_period_next_timeslice(
     # Loop state back to initial state of first season
     # Loop the period
     if s == M.TimeSeason[p].last() and d == M.time_of_day.last():
-        s_next = M.TimeSeason[p].first()
-        d_next = M.time_of_day.first()
+        s_next: str = M.TimeSeason[p].first()
+        d_next: str = M.time_of_day.first()
 
     # Last time slice of any season that is NOT the last season
     # Carry state to initial state of next season
@@ -223,7 +230,7 @@ def loop_season_next_timeslice(
     M: 'TemoaModel', p: 'Period', s: 'Season', d: 'TimeOfDay'
 ) -> tuple[str, str]:
     # We loop each season so never carrying state between seasons
-    s_next = s
+    s_next: str = s
 
     # Final time slice of any season
     # Loop state back to initial state of same season
@@ -251,7 +258,7 @@ def CreateTimeSequence(M: 'TemoaModel') -> None:
     # Establishing sequence of states
     match M.TimeSequencing.first():
         case 'consecutive_days':
-            msg = 'Running a consecutive days database.'
+            msg: str = 'Running a consecutive days database.'
             for p in M.time_optimize:
                 for s, d in M.TimeSeason[p] * M.time_of_day:
                     M.time_next[p, s, d] = loop_period_next_timeslice(M, p, s, d)
@@ -283,7 +290,9 @@ def CreateTimeSequence(M: 'TemoaModel') -> None:
 
     # Superimposed sequential seasons
     for p in M.time_optimize:
-        seasons = [(s_seq, s) for _p, s_seq, s in M.ordered_season_sequential if _p == p]
+        seasons: list[tuple[str, str]] = [
+            (s_seq, s) for _p, s_seq, s in M.ordered_season_sequential if _p == p
+        ]
         for i, (s_seq, s) in enumerate(seasons):
             M.sequential_to_season[p, s_seq] = s
             if (s_seq, s) == seasons[-1]:
@@ -330,10 +339,10 @@ def CreateTimeSeasonSequential(M: 'TemoaModel') -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-    sequential = {}
-    prev_n = 0
+    sequential: dict[tuple[int, str], float] = {}
+    prev_n: float = 0
     for p, s_seq, s in M.TimeSeasonSequential.sparse_iterkeys():
-        num_days = value(M.TimeSeasonSequential[p, s_seq, s])
+        num_days: float = value(M.TimeSeasonSequential[p, s_seq, s])
         if (
             M.TimeSequencing.first() == 'consecutive_days'
             and prev_n
@@ -354,7 +363,9 @@ def CreateTimeSeasonSequential(M: 'TemoaModel') -> None:
         sequential[p, s] += num_days
 
     # Check that TimeSeasonSequential num_days total to number of days in each period
-    count_total = {}  # {p: n} total days per period according to TimeSeasonSequential
+    count_total: dict[
+        int, float
+    ] = {}  # {p: n} total days per period according to TimeSeasonSequential
     for p in M.time_optimize:
         count_total[p] = sum(sequential[p, s] for _p, s in sequential if _p == p)
         if abs(count_total[p] - value(M.DaysPerPeriod)) >= 0.001:

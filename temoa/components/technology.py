@@ -12,7 +12,7 @@ This module is the foundation of the model, responsible for:
 
 from collections.abc import Iterable
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.environ import value
 
@@ -42,7 +42,9 @@ def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
 # ============================================================================
 
 
-def ModelProcessLifeIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any, Any]] | None:
+def ModelProcessLifeIndices(
+    M: 'TemoaModel',
+) -> set[tuple['Region', 'Period', 'Technology', 'Vintage']] | None:
     """
     Returns the set of sensical (region, period, tech, vintage) tuples.  The tuple indicates
     the periods in which a process is active, distinct from TechLifeFracIndices that
@@ -51,7 +53,7 @@ def ModelProcessLifeIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any, Any]] |
     return M.activeActivity_rptv
 
 
-def LifetimeProcessIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any]]:
+def LifetimeProcessIndices(M: 'TemoaModel') -> set[tuple['Region', 'Technology', 'Vintage']]:
     """
     Based on the Efficiency parameter's indices, this function returns the set of
     process indices that may be specified in the LifetimeProcess parameter.

@@ -28,20 +28,17 @@ class SolverStatus(Enum):
 class TerminationCondition(Enum):
     """Stub for Pyomo TerminationCondition enum."""
 
-    OPTIMAL = 'optimal'
-    INFEASIBLE = 'infeasible'
-    UNBOUNDED = 'unbounded'
-    INFEASIBLE_OR_UNBOUNDED = 'infeasibleOrUnbounded'
-    MAX_TIME_LIMIT = 'maxTimeLimit'
-    MAX_ITERATIONS = 'maxIterations'
-    MAX_EVALUATIONS = 'maxEvaluations'
-    MIN_STEP_LENGTH = 'minStepLength'
-    MIN_FUNCTION_VALUE = 'minFunctionValue'
-    OTHER = 'other'
-    UNKNOWN = 'unknown'
-    SOLVER_FAILURE = 'solverFailure'
-    INTERNAL_SOLVER_ERROR = 'internalSolverError'
-    ERROR = 'error'
-    USER_INTERRUPT = 'userInterrupt'
-    RESOURCE_INTERRUPT = 'resourceInterrupt'
-    LICENSING_PROBLEMS = 'licensingProblems'
+    convergenceCriteriaSatisfied = 0
+    maxTimeLimit = 1
+    iterationLimit = 2
+    objectiveLimit = 3
+    minStepLength = 4
+    unbounded = 5
+    provenInfeasible = 6
+    locallyInfeasible = 7
+    infeasibleOrUnbounded = 8
+    error = 9
+    interrupted = 10
+    licensingProblems = 11
+    emptyModel = 12
+    unknown = 42

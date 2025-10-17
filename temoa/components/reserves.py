@@ -9,7 +9,7 @@ in a time slice) formulation for calculating available reserves.
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
@@ -17,6 +17,7 @@ from .utils import get_variable_efficiency
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types import ExprLike
 
 logger = getLogger(__name__)
 
@@ -26,14 +27,14 @@ logger = getLogger(__name__)
 
 
 def ReserveMarginIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
-    indices = set(
+    indices = {
         (r, p, s, d)
         for r in M.PlanningReserveMargin.sparse_iterkeys()
         for p in M.time_optimize
         if (r, p) in M.processReservePeriods
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
@@ -43,7 +44,7 @@ def ReserveMarginIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
 # ============================================================================
 
 
-def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> Any:
+def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     r"""
     A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
     are calculated from availability of generation in each hour—like an operating reserve margin—\
@@ -152,7 +153,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> Any
     return available
 
 
-def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> Any:
+def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     r"""
 
     During each period :math:`p`, the sum of capacity values of all reserve
@@ -231,7 +232,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> Any:
 # ============================================================================
 
 
-def ReserveMargin_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> Any:
+def ReserveMargin_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     # Get available generation in this time slice depending on method specified in config file
     match M.ReserveMarginMethod.first():
         case 'static':

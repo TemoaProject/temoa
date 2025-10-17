@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import Constraint, value
 
+from ..types import Period, Region, Season, Technology, TimeOfDay, Vintage
 from .utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
@@ -26,28 +27,34 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-def StorageLevelVariableIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int]] | None:
+def StorageLevelVariableIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
     return M.storageLevelIndices_rpsdtv
 
 
 def SeasonalStorageLevelVariableIndices(
     M: 'TemoaModel',
-) -> set[tuple[str, int, str, str, int]] | None:
+) -> set[tuple[Region, Period, Season, Technology, Vintage]] | None:
     return M.seasonalStorageLevelIndices_rpstv
 
 
-def SeasonalStorageConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int]]:
+def SeasonalStorageConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     if M.seasonalStorageLevelIndices_rpstv:
-        indices = set(
+        indices = {
             (r, p, s, d, t, v)
             for r, p, s, t, v in M.seasonalStorageLevelIndices_rpstv
             for d in M.time_of_day
-        )
+        }
         return indices
     return set()
 
 
-def StorageConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int]] | None:
+def StorageConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
     return M.storageLevelIndices_rpsdtv
 
 
@@ -59,7 +66,7 @@ def StorageConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, s
 
 
 def StorageEnergy_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
     This constraint enforces the continuity of storage level between time slices.
@@ -102,6 +109,8 @@ def StorageEnergy_Constraint(
 
     stored_energy = charge - discharge
 
+    s_next: Season
+    d_next: TimeOfDay
     s_next, d_next = M.time_next[p, s, d]
 
     expr = (
@@ -113,7 +122,7 @@ def StorageEnergy_Constraint(
 
 
 def SeasonalStorageEnergy_Constraint(
-    M: 'TemoaModel', r: str, p: int, s_seq: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s_seq: str, t: Technology, v: Vintage
 ) -> Any:
     r"""
     This constraint enforces the continuity of state of charge between seasons for seasonal
@@ -154,7 +163,7 @@ def SeasonalStorageEnergy_Constraint(
         are each one day.
     """
 
-    s = M.sequential_to_season[p, s_seq]
+    s: Season = M.sequential_to_season[p, s_seq]
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s
@@ -173,8 +182,8 @@ def SeasonalStorageEnergy_Constraint(
         for S_i in M.processInputsByOutput[r, p, t, v, S_o]
     )
 
-    s_seq_next = M.time_next_sequential[p, s_seq]
-    s_next = M.sequential_to_season[p, s_seq_next]
+    s_seq_next: str = M.time_next_sequential[p, s_seq]
+    s_next: Season = M.sequential_to_season[p, s_seq_next]
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
     # be adjusted to the number of days in the sequential season
@@ -204,7 +213,7 @@ def SeasonalStorageEnergy_Constraint(
 
 
 def StorageEnergyUpperBound_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
     This constraint ensures that the amount of energy stored does not exceed
@@ -261,7 +270,7 @@ def StorageEnergyUpperBound_Constraint(
 
 
 def SeasonalStorageEnergyUpperBound_Constraint(
-    M: 'TemoaModel', r: str, p: int, s_seq: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s_seq: str, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity
@@ -315,7 +324,7 @@ def SeasonalStorageEnergyUpperBound_Constraint(
         Unadjusted energy upper bound constraint for seasonal storage.
     """
 
-    s = M.sequential_to_season[p, s_seq]
+    s: Season = M.sequential_to_season[p, s_seq]
 
     energy_capacity = (
         M.V_Capacity[r, p, t, v]
@@ -339,7 +348,7 @@ def SeasonalStorageEnergyUpperBound_Constraint(
 
 
 def StorageChargeRate_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
 
@@ -377,7 +386,7 @@ def StorageChargeRate_Constraint(
 
 
 def StorageDischargeRate_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
 
@@ -413,7 +422,7 @@ def StorageDischargeRate_Constraint(
 
 
 def StorageThroughput_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int
+    M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> Any:
     r"""
 
@@ -456,7 +465,14 @@ def StorageThroughput_Constraint(
 
 # A limit but more cohesive here than in limits.py
 def LimitStorageFraction_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, op: str
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+    op: str,
 ) -> Any:
     r"""
 
@@ -492,7 +508,7 @@ def LimitStorageFraction_Constraint(
     )
 
     if M.isSeasonalStorage[t]:
-        s_seq = s  # sequential season
+        s_seq: str = s  # sequential season
         s = M.sequential_to_season[p, s_seq]  # non-sequential season
 
     # adjust the storage level to the individual-day level

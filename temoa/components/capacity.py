@@ -153,11 +153,13 @@ def get_capacity_factor(
 
 def CapacityVariableIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any]] | None:
+) -> set[tuple[Region, Technology, Vintage]] | None:
     return M.newCapacity_rtv
 
 
-def RetiredCapacityVariableIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, Any]]:
+def RetiredCapacityVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
     return {
         (r, p, t, v)
         for r, p, t in M.processVintages
@@ -167,20 +169,22 @@ def RetiredCapacityVariableIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, An
     }
 
 
-def AnnualRetirementVariableIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, Any]]:
+def AnnualRetirementVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
     return {(r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]}
 
 
 def CapacityAvailableVariableIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any]] | None:
+) -> set[tuple[Region, Period, Technology]] | None:
     return M.activeCapacityAvailable_rpt
 
 
 def RegionalExchangeCapacityConstraintIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any, Any, Any]]:
-    indices: set[tuple[Any, Any, Any, Any, Any]] = set()
+) -> set[tuple[Region, Region, Period, Technology, Vintage]]:
+    indices: set[tuple[Region, Region, Period, Technology, Vintage]] = set()
     for r_e, p, i in M.exportRegions:
         for r_i, t, v, _o in M.exportRegions[r_e, p, i]:
             indices.add((r_e, r_i, p, t, v))
@@ -188,8 +192,10 @@ def RegionalExchangeCapacityConstraintIndices(
     return indices
 
 
-def CapacityAnnualConstraintIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, Any]]:
-    capacity_indices: set[tuple[Any, Any, Any, Any]] = set()
+def CapacityAnnualConstraintIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    capacity_indices: set[tuple[Region, Period, Technology, Vintage]] = set()
     if M.activeActivity_rptv:
         for r, p, t, v in M.activeActivity_rptv:
             if t in M.tech_annual and t not in M.tech_demand:
@@ -203,8 +209,8 @@ def CapacityAnnualConstraintIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, A
 
 def CapacityConstraintIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any, Any, Any, Any]]:
-    capacity_indices: set[tuple[Any, Any, Any, Any, Any, Any]] = set()
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
+    capacity_indices: set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] = set()
     if M.activeActivity_rptv:
         for r, p, t, v in M.activeActivity_rptv:
             if t not in M.tech_annual or t in M.tech_demand:
@@ -223,7 +229,7 @@ def CapacityConstraintIndices(
 def CapacityFactorProcessIndices(
     M: TemoaModel,
 ) -> set[tuple[str, str, str, str, int]]:
-    indices: set[tuple[Any, Any, Any, Any, Any]] = set()
+    indices: set[tuple[Region, Season, TimeOfDay, Technology, Vintage]] = set()
     for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
         for p in M.time_optimize:
             for s in M.TimeSeason[p]:
@@ -234,8 +240,8 @@ def CapacityFactorProcessIndices(
 
 def CapacityFactorTechIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any, Any, Any]]:
-    all_cfs: set[tuple[Any, Any, Any, Any, Any]] = set()
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology]]:
+    all_cfs: set[tuple[Region, Period, Season, TimeOfDay, Technology]] = set()
     if M.activeCapacityAvailable_rpt:
         for r, p, t in M.activeCapacityAvailable_rpt:
             for s in M.TimeSeason[p]:
@@ -248,7 +254,7 @@ def CapacityFactorTechIndices(
 
 def CapacityAvailableVariableIndicesVintage(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any, Any]] | None:
+) -> set[tuple[Region, Period, Technology, Vintage]] | None:
     return M.activeCapacityAvailable_rptv
 
 
