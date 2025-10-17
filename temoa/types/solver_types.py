@@ -9,9 +9,9 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from pyomo.opt import SolverResults as PyomoSolverResults
-    from pyomo.opt import SolverStatus as PyomoSolverStatus
-    from pyomo.opt import TerminationCondition as PyomoTerminationCondition
+    from .pyomo_opt_stubs import SolverResults as PyomoSolverResults
+    from .pyomo_opt_stubs import SolverStatus as PyomoSolverStatus
+    from .pyomo_opt_stubs import TerminationCondition as PyomoTerminationCondition
 else:
     # Runtime fallbacks
     PyomoSolverResults = Any
