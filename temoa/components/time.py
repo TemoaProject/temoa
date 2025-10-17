@@ -87,8 +87,8 @@ def validate_SegFrac(M: 'TemoaModel') -> None:
     """Ensure that the segment fractions adds up to 1"""
 
     for p in M.time_optimize:
-        expected_keys = set((p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day)
-        keys = set((_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p)
+        expected_keys = {(p, s, d) for s in M.TimeSeason[p] for d in M.time_of_day}
+        keys = {(_p, s, d) for _p, s, d in M.SegFrac.sparse_iterkeys() if _p == p}
 
         if expected_keys != keys:
             extra = keys.difference(expected_keys)
@@ -140,8 +140,8 @@ def validate_TimeNext(M: 'TemoaModel') -> None:
         return
 
     segfrac_psd = set(M.SegFrac.sparse_iterkeys())
-    time_next_psd = set((p, s, d) for p, s, d, s_next, d_next in M.TimeNext)
-    time_next_psd_next = set((p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext)
+    time_next_psd = {(p, s, d) for p, s, d, s_next, d_next in M.TimeNext}
+    time_next_psd_next = {(p, s_next, d_next) for p, s, d, s_next, d_next in M.TimeNext}
 
     missing_psd = segfrac_psd.difference(time_next_psd)
     missing_psd_next = segfrac_psd.difference(time_next_psd_next)
@@ -330,7 +330,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel') -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-    sequential = dict()
+    sequential = {}
     prev_n = 0
     for p, s_seq, s in M.TimeSeasonSequential.sparse_iterkeys():
         num_days = value(M.TimeSeasonSequential[p, s_seq, s])
@@ -354,7 +354,7 @@ def CreateTimeSeasonSequential(M: 'TemoaModel') -> None:
         sequential[p, s] += num_days
 
     # Check that TimeSeasonSequential num_days total to number of days in each period
-    count_total = dict()  # {p: n} total days per period according to TimeSeasonSequential
+    count_total = {}  # {p: n} total days per period according to TimeSeasonSequential
     for p in M.time_optimize:
         count_total[p] = sum(sequential[p, s] for _p, s in sequential if _p == p)
         if abs(count_total[p] - value(M.DaysPerPeriod)) >= 0.001:

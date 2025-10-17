@@ -110,9 +110,9 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         ################################################
 
         # Dev Note:  The triple-quotes UNDER the items below pop up as dox in most IDEs
-        M.processInputs: t.ProcessInputsDict = dict()
-        M.processOutputs: t.ProcessOutputsDict = dict()
-        M.processLoans: t.ProcessLoansDict = dict()
+        M.processInputs: t.ProcessInputsDict = {}
+        M.processOutputs: t.ProcessOutputsDict = {}
+        M.processLoans: t.ProcessLoansDict = {}
         M.activeFlow_rpsditvo: t.ActiveFlowSet = None
         """a flow index for techs NOT in tech_annual"""
 
@@ -128,7 +128,7 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         M.seasonalStorageLevelIndices_rpstv: t.SeasonalStorageLevelIndicesSet = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
-        M.activeRegionsForTech: t.ActiveRegionsForTechDict = dict()
+        M.activeRegionsForTech: t.ActiveRegionsForTechDict = {}
         """currently available regions by period and tech {(p, t) : r}"""
 
         M.newCapacity_rtv: t.NewCapacitySet = None
@@ -137,76 +137,48 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         M.groupRegionActiveFlow_rpt: t.GroupRegionActiveFlowSet = (
             None  # Set of valid group-region, period, tech indices
         )
-        M.commodityBalance_rpc: t.CommodityBalanceDict = (
-            dict()
-        )  # Set of valid region-period-commodity indices to balance
-        M.commodityDStreamProcess: t.CommodityStreamProcessDict = (
-            dict()
-        )  # The downstream process of a commodity during a period
-        M.commodityUStreamProcess: t.CommodityStreamProcessDict = (
-            dict()
-        )  # The upstream process of a commodity during a period
-        M.capacityConsumptionTechs: t.CapacityConsumptionTechsDict = (
-            dict()
-        )  # New capacity consuming a commodity during a period [r,p,c] -> t
-        M.retirementProductionProcesses: t.RetirementProductionProcessesDict = (
-            dict()
-        )  # Retired capacity producing a commodity during a period [r,p,c] -> t,v
-        M.processInputsByOutput: t.ProcessInputsByOutputDict = dict()
-        M.processOutputsByInput: t.ProcessOutputsByInputDict = dict()
-        M.processTechs: t.ProcessTechsDict = dict()
-        M.processReservePeriods: t.ProcessReservePeriodsDict = dict()
-        M.processPeriods: t.ProcessPeriodsDict = dict()  # {(r, t, v): set(p)}
-        M.retirementPeriods: t.RetirementPeriodsDict = (
-            dict()
-        )  # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
-        M.processVintages: t.ProcessVintagesDict = dict()
-        M.survivalCurvePeriods: t.SurvivalCurvePeriodsDict = (
-            dict()
-        )  # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
+        M.commodityBalance_rpc: t.CommodityBalanceDict = {}  # Set of valid region-period-commodity indices to balance
+        M.commodityDStreamProcess: t.CommodityStreamProcessDict = {}  # The downstream process of a commodity during a period
+        M.commodityUStreamProcess: t.CommodityStreamProcessDict = {}  # The upstream process of a commodity during a period
+        M.capacityConsumptionTechs: t.CapacityConsumptionTechsDict = {}  # New capacity consuming a commodity during a period [r,p,c] -> t
+        M.retirementProductionProcesses: t.RetirementProductionProcessesDict = {}  # Retired capacity producing a commodity during a period [r,p,c] -> t,v
+        M.processInputsByOutput: t.ProcessInputsByOutputDict = {}
+        M.processOutputsByInput: t.ProcessOutputsByInputDict = {}
+        M.processTechs: t.ProcessTechsDict = {}
+        M.processReservePeriods: t.ProcessReservePeriodsDict = {}
+        M.processPeriods: t.ProcessPeriodsDict = {}  # {(r, t, v): set(p)}
+        M.retirementPeriods: t.RetirementPeriodsDict = {}  # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
+        M.processVintages: t.ProcessVintagesDict = {}
+        M.survivalCurvePeriods: t.SurvivalCurvePeriodsDict = {}  # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
-        M.baseloadVintages: t.BaseloadVintagesDict = dict()
-        M.curtailmentVintages: t.CurtailmentVintagesDict = dict()
-        M.storageVintages: t.StorageVintagesDict = dict()
-        M.rampUpVintages: t.RampUpVintagesDict = dict()
-        M.rampDownVintages: t.RampDownVintagesDict = dict()
-        M.inputSplitVintages: t.InputSplitVintagesDict = dict()
-        M.inputSplitAnnualVintages: t.InputSplitAnnualVintagesDict = dict()
-        M.outputSplitVintages: t.OutputSplitVintagesDict = dict()
-        M.outputSplitAnnualVintages: t.OutputSplitAnnualVintagesDict = dict()
-        # M.processByPeriodAndOutput = dict() # not currently used
-        M.exportRegions: t.ExportRegionsDict = dict()
-        M.importRegions: t.ImportRegionsDict = dict()
+        M.baseloadVintages: t.BaseloadVintagesDict = {}
+        M.curtailmentVintages: t.CurtailmentVintagesDict = {}
+        M.storageVintages: t.StorageVintagesDict = {}
+        M.rampUpVintages: t.RampUpVintagesDict = {}
+        M.rampDownVintages: t.RampDownVintagesDict = {}
+        M.inputSplitVintages: t.InputSplitVintagesDict = {}
+        M.inputSplitAnnualVintages: t.InputSplitAnnualVintagesDict = {}
+        M.outputSplitVintages: t.OutputSplitVintagesDict = {}
+        M.outputSplitAnnualVintages: t.OutputSplitAnnualVintagesDict = {}
+        # M.processByPeriodAndOutput = {} # not currently used
+        M.exportRegions: t.ExportRegionsDict = {}
+        M.importRegions: t.ImportRegionsDict = {}
 
         # These establish time sequencing
-        M.time_next: t.TimeNextDict = (
-            dict()
-        )  # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_sequential: t.TimeNextSequentialDict = (
-            dict()
-        )  # {(p, s_seq): (s_seq_next)} next virtual storage season
-        M.sequential_to_season: t.SequentialToSeasonDict = (
-            dict()
-        )  # {(p, s_seq): (s)} season matching this virtual storage season
+        M.time_next: t.TimeNextDict = {}  # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        M.time_next_sequential: t.TimeNextSequentialDict = {}  # {(p, s_seq): (s_seq_next)} next virtual storage season
+        M.sequential_to_season: t.SequentialToSeasonDict = {}  # {(p, s_seq): (s)} season matching this virtual storage season
 
         ################################################
         #             Switching Sets                   #
         #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        M.isEfficiencyVariable: t.EfficiencyVariableDict = (
-            dict()
-        )  # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
-        M.isCapacityFactorProcess: t.CapacityFactorProcessDict = (
-            dict()
-        )  # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
-        M.isSeasonalStorage: t.SeasonalStorageDict = (
-            dict()
-        )  # {t: bool} whether a storage tech is seasonal storage
-        M.isSurvivalCurveProcess: t.SurvivalCurveProcessDict = (
-            dict()
-        )  # {(r, t, v): bool} whether a process uses survival curves.
+        M.isEfficiencyVariable: t.EfficiencyVariableDict = {}  # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
+        M.isCapacityFactorProcess: t.CapacityFactorProcessDict = {}  # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
+        M.isSeasonalStorage: t.SeasonalStorageDict = {}  # {t: bool} whether a storage tech is seasonal storage
+        M.isSurvivalCurveProcess: t.SurvivalCurveProcessDict = {}  # {(r, t, v): bool} whether a process uses survival curves.
 
         ################################################
         #                 Model Sets                   #

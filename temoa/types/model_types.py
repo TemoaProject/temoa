@@ -49,14 +49,12 @@ else:
     PyomoConstraint = Any  # AbstractModel.Constraint
     PyomoBuildAction = Any  # AbstractModel.BuildAction
     PyomoObjective = Any  # AbstractModel.Objective
-    PyomoModel = Any  # AbstractModel
 
 # Type aliases for model data structures
 ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
 ProcessOutputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
 TechClassification = dict[Technology, str]
-Sparsedict = dict[SparseIndex, set[SparseIndex]]
-SparseDict = Sparsedict
+SparseDict = dict[SparseIndex, set[SparseIndex]]
 # Model sets type definitions (avoiding naming conflicts with set import)
 TimesetTyped = set[Period]
 RegionsetTyped = set[Region]
@@ -111,17 +109,17 @@ class TemoaModelProtocol(Protocol):
     regionalIndices: PyomoSet
 
     # Technology sets
-    tech_all: TechsetTyped
-    tech_production: TechsetTyped
-    tech_storage: TechsetTyped
-    tech_reserve: TechsetTyped
-    tech_exchange: TechsetTyped
+    tech_all: PyomoSet
+    tech_production: PyomoSet
+    tech_storage: PyomoSet
+    tech_reserve: PyomoSet
+    tech_exchange: PyomoSet
 
     # Commodity sets
-    commodity_all: CommoditysetTyped
-    commodity_demand: CommoditysetTyped
-    commodity_physical: CommoditysetTyped
-    commodity_emissions: CommoditysetTyped
+    commodity_all: PyomoSet
+    commodity_demand: PyomoSet
+    commodity_physical: PyomoSet
+    commodity_emissions: PyomoSet
 
     # Model parameters
     GlobalDiscountRate: PyomoParam
@@ -177,23 +175,23 @@ if TYPE_CHECKING:
         regionalGlobalIndices: PyomoSet
 
         # Technology sets
-        tech_all: TechsetTyped
-        tech_production: TechsetTyped
-        tech_baseload: TechsetTyped
-        tech_annual: TechsetTyped
-        tech_storage: TechsetTyped
-        tech_reserve: TechsetTyped
-        tech_exchange: TechsetTyped
-        tech_uncap: TechsetTyped
-        tech_with_capacity: TechsetTyped
-        tech_retirement: TechsetTyped
+        tech_all: PyomoSet
+        tech_production: PyomoSet
+        tech_baseload: PyomoSet
+        tech_annual: PyomoSet
+        tech_storage: PyomoSet
+        tech_reserve: PyomoSet
+        tech_exchange: PyomoSet
+        tech_uncap: PyomoSet
+        tech_with_capacity: PyomoSet
+        tech_retirement: PyomoSet
 
         # Commodity sets
-        commodity_all: CommoditysetTyped
-        commodity_demand: CommoditysetTyped
-        commodity_physical: CommoditysetTyped
-        commodity_emissions: CommoditysetTyped
-        commodity_carrier: CommoditysetTyped
+        commodity_all: PyomoSet
+        commodity_demand: PyomoSet
+        commodity_physical: PyomoSet
+        commodity_emissions: PyomoSet
+        commodity_carrier: PyomoSet
 
         # Model parameters
         GlobalDiscountRate: PyomoParam
@@ -259,7 +257,6 @@ __all__ = [
     'ProcessInputs',
     'ProcessOutputs',
     'TechClassification',
-    'Sparsedict',
     'SparseDict',
     # Named tuples for indexing
     'EI',

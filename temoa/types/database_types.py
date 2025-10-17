@@ -41,7 +41,7 @@ class DatabaseSchema(Protocol):
             table: Name of the table
 
         Returns:
-            List of column names for the table
+            Sequence of column names for the table
         """
         ...
 
@@ -101,8 +101,8 @@ class CapacityFactorRow(Protocol):
     """Protocol for CapacityFactor table rows."""
 
     region: str
-    season_name: str
-    time_of_day_name: str
+    season: str
+    time_of_day: str
     tech: str
     vintage: int
     cf_process: float

@@ -376,7 +376,7 @@ def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
 
 
 def CheckEfficiencyVariable(M: 'TemoaModel') -> None:
-    count_rpitvo = dict()
+    count_rpitvo = {}
     # Pull non-variable efficiency by default
     for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
         if (r, t, v) not in M.processPeriods:
