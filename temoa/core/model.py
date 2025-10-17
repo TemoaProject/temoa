@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
-    Any,
     BuildAction,
     Constraint,
     Integers,
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
 else:
     PyomoAbstractModel = AbstractModel  # type: ignore[misc,assignment]
 
+from temoa import types as t
 from temoa.components import (
     capacity,
     commodities,
@@ -110,79 +110,83 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         ################################################
 
         # Dev Note:  The triple-quotes UNDER the items below pop up as dox in most IDEs
-        M.processInputs: dict[object, object] = dict()
-        M.processOutputs: dict[object, object] = dict()
-        M.processLoans: dict[object, object] = dict()
-        M.activeFlow_rpsditvo = None
+        M.processInputs: t.ProcessInputsDict = dict()
+        M.processOutputs: t.ProcessOutputsDict = dict()
+        M.processLoans: t.ProcessLoansDict = dict()
+        M.activeFlow_rpsditvo: t.ActiveFlowSet = None
         """a flow index for techs NOT in tech_annual"""
 
-        M.activeFlow_rpitvo = None
+        M.activeFlow_rpitvo: t.ActiveFlowAnnualSet = None
         """a flow index for techs in tech_annual only"""
 
-        M.activeFlex_rpsditvo = None
-        M.activeFlex_rpitvo = None
-        M.activeFlowInStorage_rpsditvo = None
-        M.activeCurtailment_rpsditvo = None
-        M.activeActivity_rptv = None
-        M.storageLevelIndices_rpsdtv = None
-        M.seasonalStorageLevelIndices_rpstv = None
+        M.activeFlex_rpsditvo: t.ActiveFlexSet = None
+        M.activeFlex_rpitvo: t.ActiveFlexAnnualSet = None
+        M.activeFlowInStorage_rpsditvo: t.ActiveFlowInStorageSet = None
+        M.activeCurtailment_rpsditvo: t.ActiveCurtailmentSet = None
+        M.activeActivity_rptv: t.ActiveActivitySet = None
+        M.storageLevelIndices_rpsdtv: t.StorageLevelIndicesSet = None
+        M.seasonalStorageLevelIndices_rpstv: t.SeasonalStorageLevelIndicesSet = None
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
-        M.activeRegionsForTech = None
+        M.activeRegionsForTech: t.ActiveRegionsForTechDict = dict()
         """currently available regions by period and tech {(p, t) : r}"""
 
-        M.newCapacity_rtv = None
-        M.activeCapacityAvailable_rpt = None
-        M.activeCapacityAvailable_rptv = None
-        M.groupRegionActiveFlow_rpt = None  # Set of valid group-region, period, tech indices
-        M.commodityBalance_rpc = None  # Set of valid region-period-commodity indices to balance
-        M.commodityDStreamProcess: dict[object, object] = (
+        M.newCapacity_rtv: t.NewCapacitySet = None
+        M.activeCapacityAvailable_rpt: t.ActiveCapacityAvailableSet = None
+        M.activeCapacityAvailable_rptv: t.ActiveCapacityAvailableVintageSet = None
+        M.groupRegionActiveFlow_rpt: t.GroupRegionActiveFlowSet = (
+            None  # Set of valid group-region, period, tech indices
+        )
+        M.commodityBalance_rpc: t.CommodityBalanceDict = (
+            dict()
+        )  # Set of valid region-period-commodity indices to balance
+        M.commodityDStreamProcess: t.CommodityStreamProcessDict = (
             dict()
         )  # The downstream process of a commodity during a period
-        M.commodityUStreamProcess: dict[object, object] = (
+        M.commodityUStreamProcess: t.CommodityStreamProcessDict = (
             dict()
         )  # The upstream process of a commodity during a period
-        M.capacityConsumptionTechs: dict[object, object] = (
+        M.capacityConsumptionTechs: t.CapacityConsumptionTechsDict = (
             dict()
         )  # New capacity consuming a commodity during a period [r,p,c] -> t
-        M.retirementProductionProcesses: dict[object, object] = (
+        M.retirementProductionProcesses: t.RetirementProductionProcessesDict = (
             dict()
         )  # Retired capacity producing a commodity during a period [r,p,c] -> t,v
-        M.processInputsByOutput: dict[object, object] = dict()
-        M.processOutputsByInput: dict[object, object] = dict()
-        M.processTechs: dict[object, object] = dict()
-        M.processReservePeriods: dict[object, object] = dict()
-        M.processPeriods: dict[object, object] = dict()  # {(r, t, v): set(p)}
-        M.retirementPeriods: dict[object, object] = (
+        M.processInputsByOutput: t.ProcessInputsByOutputDict = dict()
+        M.processOutputsByInput: t.ProcessOutputsByInputDict = dict()
+        M.processTechs: t.ProcessTechsDict = dict()
+        M.processReservePeriods: t.ProcessReservePeriodsDict = dict()
+        M.processPeriods: t.ProcessPeriodsDict = dict()  # {(r, t, v): set(p)}
+        M.retirementPeriods: t.RetirementPeriodsDict = (
             dict()
         )  # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
-        M.processVintages: dict[object, object] = dict()
-        M.survivalCurvePeriods: dict[object, object] = (
+        M.processVintages: t.ProcessVintagesDict = dict()
+        M.survivalCurvePeriods: t.SurvivalCurvePeriodsDict = (
             dict()
         )  # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
-        M.baseloadVintages: dict[object, object] = dict()
-        M.curtailmentVintages: dict[object, object] = dict()
-        M.storageVintages: dict[object, object] = dict()
-        M.rampUpVintages: dict[object, object] = dict()
-        M.rampDownVintages: dict[object, object] = dict()
-        M.inputSplitVintages: dict[object, object] = dict()
-        M.inputSplitAnnualVintages: dict[object, object] = dict()
-        M.outputSplitVintages: dict[object, object] = dict()
-        M.outputSplitAnnualVintages: dict[object, object] = dict()
+        M.baseloadVintages: t.BaseloadVintagesDict = dict()
+        M.curtailmentVintages: t.CurtailmentVintagesDict = dict()
+        M.storageVintages: t.StorageVintagesDict = dict()
+        M.rampUpVintages: t.RampUpVintagesDict = dict()
+        M.rampDownVintages: t.RampDownVintagesDict = dict()
+        M.inputSplitVintages: t.InputSplitVintagesDict = dict()
+        M.inputSplitAnnualVintages: t.InputSplitAnnualVintagesDict = dict()
+        M.outputSplitVintages: t.OutputSplitVintagesDict = dict()
+        M.outputSplitAnnualVintages: t.OutputSplitAnnualVintagesDict = dict()
         # M.processByPeriodAndOutput = dict() # not currently used
-        M.exportRegions: dict[object, object] = dict()
-        M.importRegions: dict[object, object] = dict()
+        M.exportRegions: t.ExportRegionsDict = dict()
+        M.importRegions: t.ImportRegionsDict = dict()
 
         # These establish time sequencing
-        M.time_next: dict[object, object] = (
+        M.time_next: t.TimeNextDict = (
             dict()
         )  # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        M.time_next_sequential: dict[object, object] = (
+        M.time_next_sequential: t.TimeNextSequentialDict = (
             dict()
         )  # {(p, s_seq): (s_seq_next)} next virtual storage season
-        M.sequential_to_season: dict[object, object] = (
+        M.sequential_to_season: t.SequentialToSeasonDict = (
             dict()
         )  # {(p, s_seq): (s)} season matching this virtual storage season
 
@@ -191,16 +195,16 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        M.isEfficiencyVariable: dict[object, bool] = (
+        M.isEfficiencyVariable: t.EfficiencyVariableDict = (
             dict()
         )  # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
-        M.isCapacityFactorProcess: dict[object, bool] = (
+        M.isCapacityFactorProcess: t.CapacityFactorProcessDict = (
             dict()
         )  # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
-        M.isSeasonalStorage: dict[object, bool] = (
+        M.isSeasonalStorage: t.SeasonalStorageDict = (
             dict()
         )  # {t: bool} whether a storage tech is seasonal storage
-        M.isSurvivalCurveProcess: dict[object, bool] = (
+        M.isSurvivalCurveProcess: t.SurvivalCurveProcessDict = (
             dict()
         )  # {(r, t, v): bool} whether a process uses survival curves.
 
@@ -596,23 +600,13 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
             M.LimitAnnualCapacityFactorConstraint_rpto, validate=validate_0to1
         )
 
-        M.LimitGrowthCapacity = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
-        )
-        M.LimitDegrowthCapacity = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
-        )
-        M.LimitGrowthNewCapacity = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
-        )
-        M.LimitDegrowthNewCapacity = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
-        )
-        M.LimitGrowthNewCapacityDelta = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
-        )
+        M.LimitGrowthCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator)
+        M.LimitDegrowthCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator)
+        M.LimitGrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator)
+        M.LimitDegrowthNewCapacity = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator)
+        M.LimitGrowthNewCapacityDelta = Param(M.regionalGlobalIndices, M.tech_or_group, M.operator)
         M.LimitDegrowthNewCapacityDelta = Param(
-            M.regionalGlobalIndices, M.tech_or_group, M.operator, domain=Any
+            M.regionalGlobalIndices, M.tech_or_group, M.operator
         )
 
         M.LimitEmissionConstraint_rpe = Set(
@@ -690,7 +684,7 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
 
-        M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions, within=Any)
+        M.LinkedTechs = Param(M.regionalIndices, M.tech_all, M.commodity_emissions)
 
         # Define parameters associated with electric sector operation
         M.ReserveMarginMethod = Set()  # How contributions to the reserve margin are calculated

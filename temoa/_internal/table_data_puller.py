@@ -519,7 +519,7 @@ def loan_costs_survival_curve(
         M,
         r,
         t,
-        v,  # type: ignore[arg-type]
+        v,
         capacity,
         invest_cost,
         loan_annualize=loan_ar,
@@ -534,7 +534,7 @@ def loan_costs_survival_curve(
         M,
         r,
         t,
-        v,  # type: ignore[arg-type]
+        v,
         capacity,
         invest_cost,
         loan_annualize=loan_ar,

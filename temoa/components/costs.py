@@ -13,7 +13,7 @@ This module is responsible for:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from deprecated import deprecated
 from pyomo.core import Expression, Var
@@ -32,7 +32,7 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def get_default_loan_rate(M: 'TemoaModel', *_):
+def get_default_loan_rate(M: 'TemoaModel', *_: Any) -> float:
     """get the default loan rate from the DefaultLoanRate param"""
     return M.DefaultLoanRate()
 
@@ -84,7 +84,7 @@ def fv_to_pv(rate: float, periods: int) -> float | Expression:
     return 1 / (1 + rate) ** periods
 
 
-def get_loan_life(M: 'TemoaModel', r, t, v):
+def get_loan_life(M: 'TemoaModel', r: str, t: str, v: int) -> int:
     return M.LifetimeProcess[r, t, v]
 
 
@@ -93,16 +93,20 @@ def get_loan_life(M: 'TemoaModel', r, t, v):
 # ============================================================================
 
 
-def CostFixedIndices(M: 'TemoaModel'):
+def CostFixedIndices(M: 'TemoaModel') -> set[tuple[str, int, str, int]]:
     # we pull the unlimited capacity techs from this index.  They cannot have fixed costs
-    return {(r, p, t, v) for r, p, t, v in M.activeActivity_rptv if t not in M.tech_uncap}
+    if M.activeActivity_rptv:
+        return {(r, p, t, v) for r, p, t, v in M.activeActivity_rptv if t not in M.tech_uncap}
+    return set()
 
 
-def CostVariableIndices(M: 'TemoaModel'):
-    return M.activeActivity_rptv
+def CostVariableIndices(M: 'TemoaModel') -> set[tuple[str, int, str, int]]:
+    if M.activeActivity_rptv:
+        return M.activeActivity_rptv
+    return set()
 
 
-def LifetimeLoanProcessIndices(M: 'TemoaModel'):
+def LifetimeLoanProcessIndices(M: 'TemoaModel') -> set[tuple[str, str, int]]:
     """
     Based on the Efficiency parameter's indices and time_future parameter, this
     function returns the set of process indices that may be specified in the
@@ -168,7 +172,7 @@ def loan_cost(
         res = (
             annuity
             * annuity_to_pv(
-                GDR, lifetime_loan_process
+                GDR, int(lifetime_loan_process)
             )  # PV of all loan payments, discounted to vintage year using GDR
             * pv_to_annuity(GDR, lifetime_process)  # reamortised over lifetime of process using GDR
             * annuity_to_pv(
@@ -183,7 +187,7 @@ def loan_cost_survival_curve(
     M: 'TemoaModel',
     r: str,
     t: str,
-    v: str,
+    v: int,
     capacity: float | Var,
     invest_cost: float,
     loan_annualize: float,
@@ -234,7 +238,7 @@ def loan_cost_survival_curve(
         res = (
             annuity
             * annuity_to_pv(
-                GDR, lifetime_loan_process
+                GDR, int(lifetime_loan_process)
             )  # PV of all loan payments, discounted to vintage year using GDR
             / sum(  # redistributed over survival curve within horizon
                 value(
@@ -284,9 +288,9 @@ def fixed_or_variable_cost(
         return (
             annual_cost
             * annuity_to_pv(
-                GDR, cost_years
+                GDR, int(cost_years)
             )  # PV of annual costs over this period, discounted to period p
-            * fv_to_pv(GDR, p - P_0)  # discounted from p to p_0
+            * fv_to_pv(GDR, int(p - P_0))  # discounted from p to p_0
         )
 
 
@@ -295,7 +299,7 @@ def fixed_or_variable_cost(
 # ============================================================================
 
 
-def PeriodCost_rule(M: 'TemoaModel', p):
+def PeriodCost_rule(M: 'TemoaModel', p: int) -> float | Any:
     P_0 = min(M.time_optimize)
     P_e = M.time_future.last()  # End point of modeled horizon
     GDR = value(M.GlobalDiscountRate)
@@ -496,7 +500,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 # ---------------------------------------------------------------
 # Define the Objective Function
 # ---------------------------------------------------------------
-def TotalCost_rule(M):
+def TotalCost_rule(M: 'TemoaModel') -> Any:
     r"""
 
     Using the :code:`FlowOut` and :code:`Capacity` variables, the Temoa objective
@@ -639,7 +643,7 @@ def TotalCost_rule(M):
 
 
 @deprecated(reason='vintage defaults are no longer available, so this should not be needed')
-def CreateCosts(M: 'TemoaModel'):
+def CreateCosts(M: 'TemoaModel') -> None:
     """
     Steps to creating fixed and variable costs:
     1. Collect all possible cost indices (CostFixed, CostVariable)
@@ -683,7 +687,7 @@ def CreateCosts(M: 'TemoaModel'):
     logger.debug('Finished creating Fixed and Variable costs')
 
 
-def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
+def ParamLoanAnnualize_rule(M: 'TemoaModel', r: str, t: str, v: int) -> float:
     """Rule to calculate the annualized loan rate from the loan rate and lifetime."""
     dr = value(M.LoanRate[r, t, v])
     lln = value(M.LoanLifetimeProcess[r, t, v])

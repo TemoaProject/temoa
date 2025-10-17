@@ -9,7 +9,7 @@ This module is responsible for:
     input to a downstream process (e.g., synthetic fuel production).
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import value
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-def EmissionActivityIndices(M: 'TemoaModel'):
+def EmissionActivityIndices(M: 'TemoaModel') -> set[tuple[str, str, str, str, int, str]]:
     indices = set(
         (r, e, i, t, v, o)
         for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
@@ -33,14 +33,14 @@ def EmissionActivityIndices(M: 'TemoaModel'):
     return indices
 
 
-def LinkedTechConstraintIndices(M: 'TemoaModel'):
+def LinkedTechConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int, str]]:
     linkedtech_indices = set(
         (r, p, s, d, t, v, e)
         for r, t, e in M.LinkedTechs.sparse_iterkeys()
         for p in M.time_optimize
         if (r, p, t) in M.processVintages
         for v in M.processVintages[r, p, t]
-        if (r, p, t, v) in M.activeActivity_rptv
+        if M.activeActivity_rptv and (r, p, t, v) in M.activeActivity_rptv
         for s in M.TimeSeason[p]
         for d in M.time_of_day
     )
@@ -53,7 +53,9 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
+def LinkedEmissionsTech_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, e: str
+) -> Any:
     r"""
     This constraint is necessary for carbon capture technologies that produce
     CO2 as an emissions commodity, but the CO2 also serves as a physical

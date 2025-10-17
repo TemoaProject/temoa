@@ -10,10 +10,14 @@ This module is responsible for:
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Set
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+
+from temoa.types import (
+    RegionPeriodSeasonTimeInputTechVintageOutput,
+)
 
 logger = getLogger(__name__)
 
@@ -23,27 +27,39 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def FlowVariableIndices(M: 'TemoaModel'):
+def FlowVariableIndices(
+    M: 'TemoaModel',
+) -> Set[RegionPeriodSeasonTimeInputTechVintageOutput] | None:
     return M.activeFlow_rpsditvo
 
 
-def FlowVariableAnnualIndices(M: 'TemoaModel'):
+def FlowVariableAnnualIndices(
+    M: 'TemoaModel',
+) -> Set[Any] | None:  # TODO: Define proper type for annual flows
     return M.activeFlow_rpitvo
 
 
-def FlexVariablelIndices(M: 'TemoaModel'):
+def FlexVariablelIndices(
+    M: 'TemoaModel',
+) -> Set[RegionPeriodSeasonTimeInputTechVintageOutput] | None:
     return M.activeFlex_rpsditvo
 
 
-def FlexVariableAnnualIndices(M: 'TemoaModel'):
+def FlexVariableAnnualIndices(
+    M: 'TemoaModel',
+) -> Set[Any] | None:  # TODO: Define proper type for annual flex flows
     return M.activeFlex_rpitvo
 
 
-def FlowInStorageVariableIndices(M: 'TemoaModel'):
+def FlowInStorageVariableIndices(
+    M: 'TemoaModel',
+) -> Set[RegionPeriodSeasonTimeInputTechVintageOutput] | None:
     return M.activeFlowInStorage_rpsditvo
 
 
-def CurtailmentVariableIndices(M: 'TemoaModel'):
+def CurtailmentVariableIndices(
+    M: 'TemoaModel',
+) -> Set[RegionPeriodSeasonTimeInputTechVintageOutput] | None:
     return M.activeCurtailment_rpsditvo
 
 
@@ -52,7 +68,7 @@ def CurtailmentVariableIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def create_commodity_balance_and_flow_sets(M: 'TemoaModel'):
+def create_commodity_balance_and_flow_sets(M: 'TemoaModel') -> None:
     """
     Creates aggregated sets for commodity balances and detailed index sets for active flows.
 
@@ -80,7 +96,7 @@ def create_commodity_balance_and_flow_sets(M: 'TemoaModel'):
     commodity_downstream = set(
         M.commodityDStreamProcess | M.capacityConsumptionTechs | M.exportRegions
     )
-    M.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)
+    M.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)  # type: ignore[assignment]
 
     # 2. Active Flow Indices (Time-Sliced)
     M.activeFlow_rpsditvo = set(

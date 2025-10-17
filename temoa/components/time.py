@@ -12,12 +12,13 @@ It is responsible for:
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types import Period, Season, TimeOfDay
 
 
 logger = getLogger(__name__)
@@ -29,7 +30,7 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def validate_time(M: 'TemoaModel'):
+def validate_time(M: 'TemoaModel') -> None:
     """
     We check for integer status here, rather than asking Pyomo to do this via
     a 'within=Integers' clause in the definition so that we can have a very
@@ -82,7 +83,7 @@ def validate_time(M: 'TemoaModel'):
         logger.debug('Finished validating time')
 
 
-def validate_SegFrac(M: 'TemoaModel'):
+def validate_SegFrac(M: 'TemoaModel') -> None:
     """Ensure that the segment fractions adds up to 1"""
 
     for p in M.time_optimize:
@@ -107,7 +108,7 @@ def validate_SegFrac(M: 'TemoaModel'):
             # errors associated with the specification of SegFrac by time slice,
             # but we check to make sure it is within the specified tolerance.
 
-            def get_str_padding(obj):
+            def get_str_padding(obj: Any) -> int:
                 return len(str(obj))
 
             key_padding = max(map(get_str_padding, keys))
@@ -115,8 +116,10 @@ def validate_SegFrac(M: 'TemoaModel'):
             fmt = '%%-%ds = %%s' % key_padding
             # Works out to something like "%-25s = %s"
 
-            items = sorted([(k, M.SegFrac[k]) for k in keys])
-            items = '\n   '.join(fmt % (str(k), v) for k, v in items)
+            items_list: list[tuple[tuple[Any, Any, Any], Any]] = sorted(
+                [(k, M.SegFrac[k]) for k in keys]
+            )
+            items = '\n   '.join(fmt % (str(k), v) for k, v in items_list)
 
             msg = (
                 'The values of TimeSegmentFraction do not sum to 1 for period {}. '
@@ -127,7 +130,7 @@ def validate_SegFrac(M: 'TemoaModel'):
             raise Exception(msg)
 
 
-def validate_TimeNext(M: 'TemoaModel'):
+def validate_TimeNext(M: 'TemoaModel') -> None:
     """
     If using this table, check that defined states are actually valid.
     TimeSegmentFraction is already compared to other tables so just compare to SegFrac.
@@ -157,27 +160,27 @@ def validate_TimeNext(M: 'TemoaModel'):
 # ============================================================================
 
 
-def init_set_time_optimize(M: 'TemoaModel'):
+def init_set_time_optimize(M: 'TemoaModel') -> list[int]:
     """Initializes the `time_optimize` set (all future years except the last)."""
     return sorted(M.time_future)[:-1]
 
 
-def init_set_vintage_exist(M: 'TemoaModel'):
+def init_set_vintage_exist(M: 'TemoaModel') -> list[int]:
     """Initializes the `vintage_exist` set."""
     return sorted(M.time_exist)
 
 
-def init_set_vintage_optimize(M: 'TemoaModel'):
+def init_set_vintage_optimize(M: 'TemoaModel') -> list[int]:
     """Initializes the `vintage_optimize` set."""
     return sorted(M.time_optimize)
 
 
-def SegFracPerSeason_rule(M: 'TemoaModel', p, s):
+def SegFracPerSeason_rule(M: 'TemoaModel', p: 'Period', s: 'Season') -> float:
     """Rule to calculate the total fraction of a period represented by a season."""
     return sum(value(M.SegFrac[p, s, d]) for d in M.time_of_day if (p, s, d) in M.SegFrac)
 
 
-def ParamPeriodLength(M: 'TemoaModel', p):
+def ParamPeriodLength(M: 'TemoaModel', p: 'Period') -> int:
     """Rule to calculate the length of each optimization period in years."""
     periods = sorted(M.time_future)
     i = periods.index(p)
@@ -189,7 +192,9 @@ def ParamPeriodLength(M: 'TemoaModel', p):
 # ============================================================================
 
 
-def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
+def loop_period_next_timeslice(
+    M: 'TemoaModel', p: 'Period', s: 'Season', d: 'TimeOfDay'
+) -> tuple[str, str]:
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
@@ -214,7 +219,9 @@ def loop_period_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
     return s_next, d_next
 
 
-def loop_season_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
+def loop_season_next_timeslice(
+    M: 'TemoaModel', p: 'Period', s: 'Season', d: 'TimeOfDay'
+) -> tuple[str, str]:
     # We loop each season so never carrying state between seasons
     s_next = s
 
@@ -238,7 +245,7 @@ def loop_season_next_timeslice(M: 'TemoaModel', p, s, d) -> tuple[str, str]:
 # ============================================================================
 
 
-def CreateTimeSequence(M: 'TemoaModel'):
+def CreateTimeSequence(M: 'TemoaModel') -> None:
     logger.debug('Creating sequence of time slices.')
 
     # Establishing sequence of states
@@ -287,7 +294,7 @@ def CreateTimeSequence(M: 'TemoaModel'):
     logger.debug('Created time sequence.')
 
 
-def CreateTimeSeasonSequential(M: 'TemoaModel'):
+def CreateTimeSeasonSequential(M: 'TemoaModel') -> None:
     if all(
         (
             not M.tech_seasonal_storage,

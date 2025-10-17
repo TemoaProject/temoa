@@ -10,13 +10,13 @@ load a single Pyomo component (a `Set` or `Param`) from the database.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 from pyomo.core import Param, Set
 
 
 @dataclass
-class LoadItem:
+class LoadItem:  # type: ignore[no-any-unimported]
     """
     Describes a single data component to load from the database.
 
@@ -40,7 +40,7 @@ class LoadItem:
             table is missing or returns no data.
     """
 
-    component: Set | Param
+    component: Set | Param  # type: ignore[no-any-unimported]
     table: str
     columns: list[str]
     validator_name: Optional[str] = None
@@ -49,4 +49,4 @@ class LoadItem:
     is_period_filtered: bool = True
     is_table_required: bool = True
     custom_loader_name: Optional[str] = None
-    fallback_data: Optional[list[tuple[Any, ...]]] = None
+    fallback_data: Optional[list[tuple[object, ...]]] = None

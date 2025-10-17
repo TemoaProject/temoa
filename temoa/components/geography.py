@@ -11,7 +11,7 @@ including:
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 from deprecated import deprecated
 from pyomo.environ import value
@@ -41,7 +41,7 @@ def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
 # ============================================================================
 
 
-def CreateRegionalIndices(M: 'TemoaModel'):
+def CreateRegionalIndices(M: 'TemoaModel') -> list[str]:
     """Create the set of all regions and all region-region pairs"""
     regional_indices = set()
     for r_i in M.regions:
@@ -58,7 +58,7 @@ def CreateRegionalIndices(M: 'TemoaModel'):
 
 
 @deprecated('No longer used.  See the region_group_check in validators.py')
-def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
+def RegionalGlobalInitializedIndices(M: 'TemoaModel') -> set[str]:
     from itertools import permutations
 
     indices = set()
@@ -77,7 +77,9 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
+def RegionalExchangeCapacity_Constraint(
+    M: 'TemoaModel', r_e: str, r_i: str, p: int, t: str, v: int
+) -> Any:
     r"""
 
     This constraint ensures that the process (t,v) connecting regions
@@ -104,7 +106,7 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
 # ============================================================================
 
 
-def create_geography_sets(M: 'TemoaModel'):
+def create_geography_sets(M: 'TemoaModel') -> None:
     """
     Populates dictionaries related to inter-regional commodity exchange.
 

@@ -12,7 +12,7 @@ limits on the energy system. These include, but are not limited to:
 
 import sys
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import Constraint, value
 
@@ -30,7 +30,9 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def LimitTechInputSplitConstraintIndices(M: 'TemoaModel'):
+def LimitTechInputSplitConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, str, str, str, int, str]]:
     indices = set(
         (r, p, s, d, i, t, v, op)
         for r, p, i, t, op in M.inputSplitVintages
@@ -52,7 +54,9 @@ def LimitTechInputSplitConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitTechInputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+def LimitTechInputSplitAnnualConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, str, int, str]]:
     indices = set(
         (r, p, i, t, v, op)
         for r, p, i, t, op in M.inputSplitAnnualVintages
@@ -63,7 +67,9 @@ def LimitTechInputSplitAnnualConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitTechInputSplitAverageConstraintIndices(M: 'TemoaModel'):
+def LimitTechInputSplitAverageConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, str, int, str]]:
     indices = set(
         (r, p, i, t, v, op)
         for r, p, i, t, op in M.inputSplitAnnualVintages
@@ -73,7 +79,9 @@ def LimitTechInputSplitAverageConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitTechOutputSplitConstraintIndices(M: 'TemoaModel'):
+def LimitTechOutputSplitConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, str, str, int, str, str]]:
     indices = set(
         (r, p, s, d, t, v, o, op)
         for r, p, t, o, op in M.outputSplitVintages
@@ -95,7 +103,9 @@ def LimitTechOutputSplitConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
+def LimitTechOutputSplitAnnualConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, int, str, str]]:
     indices = set(
         (r, p, t, v, o, op)
         for r, p, t, o, op in M.outputSplitAnnualVintages
@@ -105,7 +115,9 @@ def LimitTechOutputSplitAnnualConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
+def LimitTechOutputSplitAverageConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, int, str, str]]:
     indices = set(
         (r, p, t, v, o, op)
         for r, p, t, o, op in M.outputSplitAnnualVintages
@@ -115,7 +127,7 @@ def LimitTechOutputSplitAverageConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitGrowthCapacityIndices(M: 'TemoaModel'):
+def LimitGrowthCapacityIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitGrowthCapacity.sparse_iterkeys()
@@ -124,7 +136,7 @@ def LimitGrowthCapacityIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitDegrowthCapacityIndices(M: 'TemoaModel'):
+def LimitDegrowthCapacityIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitDegrowthCapacity.sparse_iterkeys()
@@ -133,7 +145,7 @@ def LimitDegrowthCapacityIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitGrowthNewCapacityIndices(M: 'TemoaModel'):
+def LimitGrowthNewCapacityIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitGrowthNewCapacity.sparse_iterkeys()
@@ -142,7 +154,7 @@ def LimitGrowthNewCapacityIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitDegrowthNewCapacityIndices(M: 'TemoaModel'):
+def LimitDegrowthNewCapacityIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitDegrowthNewCapacity.sparse_iterkeys()
@@ -151,7 +163,7 @@ def LimitDegrowthNewCapacityIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitGrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+def LimitGrowthNewCapacityDeltaIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitGrowthNewCapacityDelta.sparse_iterkeys()
@@ -160,7 +172,7 @@ def LimitGrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
     return indices
 
 
-def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
+def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
     indices = set(
         (r, p, t, op)
         for r, t, op in M.LimitDegrowthNewCapacityDelta.sparse_iterkeys()
@@ -175,7 +187,7 @@ def LimitDegrowthNewCapacityDeltaIndices(M: 'TemoaModel'):
 
 
 # @deprecated('Deprecated. Use LimitActivityGroupShare instead') # doesn't play well with pyomo
-def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
+def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r: str, p: int, g: str) -> Any:
     r"""
     Allows users to specify the share of electricity generation in a region
     coming from RPS-eligible technologies.
@@ -208,7 +220,7 @@ def RenewablePortfolioStandard_Constraint(M: 'TemoaModel', r, p, g):
     return expr
 
 
-def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
+def LimitResource_Constraint(M: 'TemoaModel', r: str, t: str, op: str) -> Any:
     r"""
 
     The LimitResource constraint sets a limit on the available resource of a
@@ -263,7 +275,9 @@ def LimitResource_Constraint(M: 'TemoaModel', r, t, op):
     return expr
 
 
-def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
+def LimitActivityShare_Constraint(
+    M: 'TemoaModel', r: str, p: int, g1: str, g2: str, op: str
+) -> Any:
     r"""
     Limits the activity of a given technology or group as a fraction of another
     technology or group, summed over a period. This can be used to set, for example,
@@ -341,7 +355,9 @@ def LimitActivityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     return expr
 
 
-def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
+def LimitCapacityShare_Constraint(
+    M: 'TemoaModel', r: str, p: int, g1: str, g2: str, op: str
+) -> Any:
     r"""
     The LimitCapacityShare constraint limits the available capacity of a given
     technology or technology group as a fraction of another technology or group.
@@ -372,7 +388,9 @@ def LimitCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     return expr
 
 
-def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
+def LimitNewCapacityShare_Constraint(
+    M: 'TemoaModel', r: str, p: int, g1: str, g2: str, op: str
+) -> Any:
     r"""
     The LimitNewCapacityShare constraint limits the share of new capacity
     of a given technology or group as a fraction of another technology or
@@ -403,7 +421,9 @@ def LimitNewCapacityShare_Constraint(M: 'TemoaModel', r, p, g1, g2, op):
     return expr
 
 
-def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
+def LimitAnnualCapacityFactor_Constraint(
+    M: 'TemoaModel', r: str, p: int, t: str, o: str, op: str
+) -> Any:
     r"""
     The LimitAnnualCapacityFactor sets an upper bound on the annual capacity factor
     from a specific technology. The first portion of the constraint pertains to
@@ -459,7 +479,9 @@ def LimitAnnualCapacityFactor_Constraint(M: 'TemoaModel', r, p, t, o, op):
     return expr
 
 
-def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
+def LimitSeasonalCapacityFactor_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, t: str, op: str
+) -> Any:
     r"""
     The LimitSeasonalCapacityFactor sets an upper bound on the seasonal capacity factor
     from a specific technology. The first portion of the constraint pertains to
@@ -518,7 +540,9 @@ def LimitSeasonalCapacityFactor_Constraint(M: 'TemoaModel', r, p, s, t, op):
     return expr
 
 
-def LimitTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v, op):
+def LimitTechInputSplit_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, d: str, i: str, t: str, v: int, op: str
+) -> Any:
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
@@ -543,7 +567,9 @@ def LimitTechInputSplit_Constraint(M: 'TemoaModel', r, p, s, d, i, t, v, op):
     return expr
 
 
-def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
+def LimitTechInputSplitAnnual_Constraint(
+    M: 'TemoaModel', r: str, p: int, i: str, t: str, v: int, op: str
+) -> Any:
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
@@ -567,7 +593,9 @@ def LimitTechInputSplitAnnual_Constraint(M: 'TemoaModel', r, p, i, t, v, op):
     return expr
 
 
-def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op: str):
+def LimitTechInputSplitAverage_Constraint(
+    M: 'TemoaModel', r: str, p: int, i: str, t: str, v: int, op: str
+) -> Any:
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. Under this constraint, only the technologies with variable
@@ -599,7 +627,9 @@ def LimitTechInputSplitAverage_Constraint(M: 'TemoaModel', r, p, i, t, v, op: st
     return expr
 
 
-def LimitTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o, op):
+def LimitTechOutputSplit_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, o: str, op: str
+) -> Any:
     r"""
 
     Some processes take a single input and make multiple outputs, and the user would like to
@@ -650,7 +680,9 @@ def LimitTechOutputSplit_Constraint(M: 'TemoaModel', r, p, s, d, t, v, o, op):
     return expr
 
 
-def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
+def LimitTechOutputSplitAnnual_Constraint(
+    M: 'TemoaModel', r: str, p: int, t: str, v: int, o: str, op: str
+) -> Any:
     r"""
     This constraint operates similarly to LimitTechOutputSplit_Constraint.
     However, under this function, only the technologies with constant annual
@@ -680,7 +712,9 @@ def LimitTechOutputSplitAnnual_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     return expr
 
 
-def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
+def LimitTechOutputSplitAverage_Constraint(
+    M: 'TemoaModel', r: str, p: int, t: str, v: int, o: str, op: str
+) -> Any:
     r"""
     Allows users to limit shares of commodity outputs from a process.
     Under this constraint, only the technologies with variable
@@ -710,7 +744,7 @@ def LimitTechOutputSplitAverage_Constraint(M: 'TemoaModel', r, p, t, v, o, op):
     return expr
 
 
-def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
+def LimitEmission_Constraint(M: 'TemoaModel', r: str, p: int, e: str, op: str) -> Any:
     r"""
 
     A modeler can track emissions through use of the :code:`commodity_emissions`
@@ -809,17 +843,19 @@ def LimitEmission_Constraint(M: 'TemoaModel', r, p, e, op):
     return expr
 
 
-def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthCapacityConstraint_rule(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""Constrain ramp up rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, False)
 
 
-def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthCapacityConstraint_rule(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""Constrain ramp down rate of available capacity"""
     return LimitGrowthCapacity(M, r, p, t, op, True)
 
 
-def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthCapacity(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str, degrowth: bool = False
+) -> Any:
     r"""
     Constrain the change of capacity available between periods.
     Forces the model to ramp up and down the availability of new technologies
@@ -919,17 +955,21 @@ def LimitGrowthCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
     return expr
 
 
-def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthNewCapacityConstraint_rule(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""Constrain ramp up rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, False)
 
 
-def LimitDegrowthNewCapacityConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthNewCapacityConstraint_rule(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str
+) -> Any:
     r"""Constrain ramp down rate of new capacity deployment"""
     return LimitGrowthNewCapacity(M, r, p, t, op, True)
 
 
-def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthNewCapacity(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str, degrowth: bool = False
+) -> Any:
     r"""
     Constrain the change of new capacity deployed between periods.
     Forces the model to ramp up and down the deployment of new technologies
@@ -1028,17 +1068,23 @@ def LimitGrowthNewCapacity(M: 'TemoaModel', r, p, t, op, degrowth: bool = False)
     return expr
 
 
-def LimitGrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitGrowthNewCapacityDeltaConstraint_rule(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str
+) -> Any:
     r"""Constrain ramp up rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, False)
 
 
-def LimitDegrowthNewCapacityDeltaConstraint_rule(M: 'TemoaModel', r, p, t, op):
+def LimitDegrowthNewCapacityDeltaConstraint_rule(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str
+) -> Any:
     r"""Constrain ramp down rate of change in new capacity deployment"""
     return LimitGrowthNewCapacityDelta(M, r, p, t, op, True)
 
 
-def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = False):
+def LimitGrowthNewCapacityDelta(
+    M: 'TemoaModel', r: str, p: int, t: str, op: str, degrowth: bool = False
+) -> Any:
     r"""
     Constrain the acceleration of new capacity deployed between periods.
     Forces the model to ramp up and down the change in deployment of new technologies
@@ -1162,7 +1208,7 @@ def LimitGrowthNewCapacityDelta(M: 'TemoaModel', r, p, t, op, degrowth: bool = F
     return expr
 
 
-def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
+def LimitActivity_Constraint(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""
 
     Sets a limit on the activity from a specific technology.
@@ -1220,7 +1266,7 @@ def LimitActivity_Constraint(M: 'TemoaModel', r, p, t, op):
     return expr
 
 
-def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
+def LimitNewCapacity_Constraint(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""
     The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
     given technology or group in a given year. Note that the indices for these constraints are region,
@@ -1241,7 +1287,7 @@ def LimitNewCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
     return expr
 
 
-def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
+def LimitCapacity_Constraint(M: 'TemoaModel', r: str, p: int, t: str, op: str) -> Any:
     r"""
 
     The LimitCapacity constraint sets a limit on the available capacity of a
@@ -1269,7 +1315,7 @@ def LimitCapacity_Constraint(M: 'TemoaModel', r, p, t, op):
 # ============================================================================
 
 
-def create_limit_vintage_sets(M: 'TemoaModel'):
+def create_limit_vintage_sets(M: 'TemoaModel') -> None:
     """
     Populates vintage-specific dictionaries for input/output split limit constraints.
 

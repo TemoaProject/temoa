@@ -12,7 +12,7 @@ import sys
 from itertools import product as cross_product
 from logging import getLogger
 from operator import itemgetter as iget
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import value
 
@@ -28,7 +28,9 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def CommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, s, d, c):
+def CommodityBalanceConstraintErrorCheck(
+    supplied: Any, demanded: Any, r: str, p: int, s: str, d: str, c: str
+) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
     if isinstance(supplied, int) or isinstance(demanded, int):
@@ -49,7 +51,9 @@ def CommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, s, d, c):
         raise Exception(msg.format(c, r, p, s, d, expr))
 
 
-def AnnualCommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, c):
+def AnnualCommodityBalanceConstraintErrorCheck(
+    supplied: Any, demanded: Any, r: str, p: int, c: str
+) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
     if isinstance(supplied, int) or isinstance(demanded, int):
@@ -70,7 +74,7 @@ def AnnualCommodityBalanceConstraintErrorCheck(supplied, demanded, r, p, c):
         raise Exception(msg.format(c, r, p, expr))
 
 
-def DemandConstraintErrorCheck(supply, r, p, dem):
+def DemandConstraintErrorCheck(supply: Any, r: str, p: int, dem: str) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem
     if isinstance(supply, int):
@@ -90,7 +94,9 @@ def DemandConstraintErrorCheck(supply, r, p, dem):
 # ============================================================================
 
 
-def DemandActivityConstraintIndices(M: 'TemoaModel'):
+def DemandActivityConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[str, int, str, str, str, int, str]]:
     indices = set(
         (r, p, s, d, t, v, dem)
         for r, p, dem in M.DemandConstraint_rpc
@@ -102,7 +108,7 @@ def DemandActivityConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
+def CommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str]]:
     # Generate indices only for those commodities that are produced by
     # technologies with varying output at the time slice level.
     indices = set(
@@ -118,7 +124,7 @@ def CommodityBalanceConstraintIndices(M: 'TemoaModel'):
     return indices
 
 
-def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
+def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str]]:
     # Generate indices only for those commodities that are produced by
     # technologies with constant annual output.
     indices = set(
@@ -137,7 +143,7 @@ def AnnualCommodityBalanceConstraintIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def Demand_Constraint(M: 'TemoaModel', r, p, dem):
+def Demand_Constraint(M: 'TemoaModel', r: str, p: int, dem: str) -> Any:
     r"""
 
     The Demand constraint drives the model.  This constraint ensures that supply at
@@ -183,7 +189,9 @@ def Demand_Constraint(M: 'TemoaModel', r, p, dem):
 
 
 # devnote: no longer needed
-def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem):
+def DemandActivity_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, dem: str
+) -> Any:
     r"""
 
     For end-use demands, it is unreasonable to let the model arbitrarily shift the
@@ -225,7 +233,7 @@ def DemandActivity_Constraint(M: 'TemoaModel', r, p, s, d, t, v, dem):
     return expr
 
 
-def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
+def CommodityBalance_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str, c: str) -> Any:
     r"""
     Where the Demand constraint :eq:`Demand` ensures that end-use demands are met,
     the CommodityBalance constraint ensures that the endogenous system demands are
@@ -459,7 +467,7 @@ def CommodityBalance_Constraint(M: 'TemoaModel', r, p, s, d, c):
     return expr
 
 
-def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
+def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r: str, p: int, c: str) -> Any:
     r"""
     Similar to CommodityBalance_Constraint but only balances the supply and demand of the commodity
     at the period level, summing all flows over the period but allowing imbalances at the time slice
@@ -604,7 +612,7 @@ def AnnualCommodityBalance_Constraint(M: 'TemoaModel', r, p, c):
 # ============================================================================
 
 
-def create_technology_and_commodity_sets(M: 'TemoaModel'):
+def create_technology_and_commodity_sets(M: 'TemoaModel') -> None:
     """
     Populates technology and commodity subset definitions based on their roles
     (e.g., demand, flexible) identified from the Efficiency parameter.
@@ -625,7 +633,7 @@ def create_technology_and_commodity_sets(M: 'TemoaModel'):
             M.tech_demand.add(t)
 
 
-def CreateDemands(M: 'TemoaModel'):
+def CreateDemands(M: 'TemoaModel') -> None:
     """
     Steps to create the demand distributions
     1. Use Demand keys to ensure that all demands in commodity_demand are used
@@ -746,7 +754,7 @@ def CreateDemands(M: 'TemoaModel'):
             # We can't explicitly test for "!= 1.0" because of incremental rounding
             # errors associated with the specification of demand shares by time slice,
             # but we check to make sure it is within the specified tolerance.
-            def get_str_padding(obj):
+            def get_str_padding(obj: Any) -> int:
                 return len(str(obj))
 
             key_padding = max(map(get_str_padding, keys))
@@ -754,9 +762,8 @@ def CreateDemands(M: 'TemoaModel'):
             fmt = '%%-%ds = %%s' % key_padding
             # Works out to something like "%-25s = %s"
 
-            items = sorted((k, value(DSD[k])) for k in keys)
-            items = '\n   '.join(fmt % (str(k), v) for k, v in items)
-
+            items_list: list[tuple[Any, Any]] = sorted([(k, value(DSD[k])) for k in keys])
+            items = '\n   '.join(fmt % (str(k), v) for k, v in items_list)
             msg = (
                 'The values of the DemandSpecificDistribution parameter do not '
                 'sum to 1 for {}. The DemandSpecificDistribution specifies how end-use '
