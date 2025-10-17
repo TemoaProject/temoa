@@ -162,14 +162,14 @@ if TYPE_CHECKING:
         default_lifetime_tech: int
 
         # Time-related sets
-        time_exist: TimesetTyped
-        time_future: TimesetTyped
-        time_optimize: TimesetTyped
-        vintage_exist: VintagesetTyped
-        vintage_optimize: VintagesetTyped
-        vintage_all: VintagesetTyped
-        time_season: set[Season]
-        time_of_day: set[TimeOfDay]
+        time_exist: PyomoSet
+        time_future: PyomoSet
+        time_optimize: PyomoSet
+        vintage_exist: PyomoSet
+        vintage_optimize: PyomoSet
+        vintage_all: PyomoSet
+        time_season: PyomoSet
+        time_of_day: PyomoSet
 
         # Geography sets
         regions: RegionsetTyped
@@ -243,7 +243,8 @@ class ModelData:
 
 
 # Export types for easy importing
-__all__ = [  # ruff: noqa: RUF022
+# ruff: noqa: RUF022
+__all__ = [
     # Protocols
     'TemoaModelProtocol',
     # Core classes

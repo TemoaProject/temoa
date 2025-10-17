@@ -5,6 +5,7 @@ This module provides type definitions for database tables, columns, and schema
 versioning used throughout the Temoa codebase.
 """
 
+from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 
 # Type aliases for database schema elements
@@ -29,7 +30,7 @@ class DatabaseSchema(Protocol):
     version: SchemaVersion
     """Schema version as (major, minor) tuple."""
 
-    tables: dict[TableName, list[ColumnName]]
+    tables: Mapping[TableName, Sequence[ColumnName]]
     """Mapping of table names to their column names."""
 
     def get_table_columns(self, table: TableName) -> list[ColumnName]:
@@ -148,6 +149,7 @@ GenericQueryResult = list[dict[str, Any]]
 
 
 # Export all types
+# ruff: noqa: RUF022
 __all__ = [
     'TableName',
     'ColumnName',

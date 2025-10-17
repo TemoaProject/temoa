@@ -28,7 +28,7 @@ class ValidationSeverity(str, Enum):
     """Informational message about model structure."""
 
 
-@dataclass
+@dataclass(slots=True)
 class ValidationError:
     """
     Represents a validation error or warning.
@@ -56,7 +56,7 @@ class ValidationError:
         return ' '.join(parts)
 
 
-@dataclass
+@dataclass(slots=True)
 class ValidationWarning:
     """
     Represents a validation warning.
@@ -91,7 +91,7 @@ class ValidationWarning:
         return ' '.join(parts)
 
 
-@dataclass
+@dataclass(slots=True)
 class ValidationResult:
     """
     Represents the complete result of a validation operation.
@@ -226,6 +226,7 @@ class ValidationResult:
 
 
 # Export all types
+# ruff: noqa: RUF022
 __all__ = [
     'ValidationSeverity',
     'ValidationError',

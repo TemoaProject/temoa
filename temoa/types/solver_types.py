@@ -70,7 +70,7 @@ class SolverResultsProtocol(Protocol):
     solver: Any
     """Solver information and statistics."""
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> object:
         """Access result components by key (e.g., 'Solution', 'Problem')."""
         ...
 
@@ -90,6 +90,7 @@ SolverOptions = dict[str, Any]
 
 
 # Export all types
+# ruff: noqa: RUF022
 __all__ = [
     'SolverStatusEnum',
     'TerminationConditionEnum',

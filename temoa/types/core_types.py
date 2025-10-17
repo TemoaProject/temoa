@@ -6,6 +6,7 @@ and fundamental data structures.
 """
 
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 # Core type aliases for commonly used dimensions
@@ -59,6 +60,7 @@ SolverName = str
 """Type alias for solver names (e.g., 'gurobi', 'cplex', 'glpk', 'cbc')."""
 
 
+@dataclass(slots=True)
 class ScenarioConfig:
     """
     Structured configuration for scenario-specific settings.
@@ -89,6 +91,7 @@ class ScenarioConfig:
     """Whether to save storage level information."""
 
 
+@dataclass(slots=True)
 class SolverConfig:
     """
     Configuration for solver-specific settings.
@@ -100,16 +103,17 @@ class SolverConfig:
     solver_name: SolverName
     """Name of the solver."""
 
-    options: dict[str, Any]
+    options: dict[str, Any] = field(default_factory=dict)
     """Solver-specific options dictionary."""
 
-    time_limit: float | None
+    time_limit: float | None = None
     """Maximum time limit for solving (in seconds)."""
 
-    mip_gap: float | None
+    mip_gap: float | None = None
     """MIP gap tolerance for mixed-integer problems."""
 
 
+@dataclass(slots=True)
 class OutputConfig:
     """
     Configuration for output format and content settings.
@@ -135,5 +139,5 @@ class OutputConfig:
 
 
 # Constraint rule types
-ConstraintRule = Callable[..., Any]
-IndexsetRule = Callable[..., set[Any]]
+ConstraintRule = Callable[..., object]
+IndexsetRule = Callable[..., set[object]]
