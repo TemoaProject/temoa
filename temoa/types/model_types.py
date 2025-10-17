@@ -30,15 +30,10 @@ from . import (
     Vintage,
 )
 
-if TYPE_CHECKING:
-    from pyomo.core.base.constraint import Constraint as PyomoConstraint
-    from pyomo.core.base.objective import Objective as PyomoObjective
-    from pyomo.core.base.var import Var as PyomoVar
-    from pyomo.environ import AbstractModel
-
 # Import Pyomo stub types
 if TYPE_CHECKING:
     from .pyomo_stubs import (
+        AbstractModel,
         PyomoBuildAction,
         PyomoConstraint,
         PyomoObjective,
@@ -54,6 +49,7 @@ else:
     PyomoConstraint = Any  # AbstractModel.Constraint
     PyomoBuildAction = Any  # AbstractModel.BuildAction
     PyomoObjective = Any  # AbstractModel.Objective
+    PyomoModel = Any  # AbstractModel
 
 # Type aliases for model data structures
 ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
@@ -155,7 +151,7 @@ class TemoaModelProtocol(Protocol):
 
 if TYPE_CHECKING:
 
-    class TemoaModel(AbstractModel):  # type: ignore
+    class TemoaModel(AbstractModel):
         """
         Type stub for the main TemoaModel class.
 
@@ -258,6 +254,19 @@ __all__ = [
     'ProcessOutputs',
     'TechClassification',
     'Sparsedict',
+    # Named tuples for indexing
+    'EI',
+    'FI',
+    'SLI',
+    'CapData',
+    # Enums
+    'FlowType',
+    # Typed set aliases
+    'TimesetTyped',
+    'RegionsetTyped',
+    'TechsetTyped',
+    'CommoditysetTyped',
+    'VintagesetTyped',
     # Pyomo type aliases
     'PyomoSet',
     'PyomoParam',

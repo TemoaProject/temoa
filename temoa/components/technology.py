@@ -10,8 +10,9 @@ This module is the foundation of the model, responsible for:
 -  Validating model inputs related to technologies, efficiencies, and commodities.
 """
 
+from collections.abc import Iterable
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 from pyomo.environ import value
 
