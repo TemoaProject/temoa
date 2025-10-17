@@ -18,6 +18,7 @@ from .core_types import (
     IndexsetRule,
     InputCommodity,
     OutputCommodity,
+    OutputConfig,
     Parameterdict,
     ParameterValue,
     Period,
@@ -28,8 +29,11 @@ from .core_types import (
     QueryResult,
     Region,
     Regionset,
+    ScenarioConfig,
     ScenarioName,
     Season,
+    SolverConfig,
+    SolverName,
     SparseIndex,
     Stringset,
     Technology,
@@ -37,6 +41,23 @@ from .core_types import (
     TimeOfDay,
     Vintage,
     Vintageset,
+)
+from .database_types import (
+    CapacityFactorRow,
+    ColumnName,
+    CommodityQueryResult,
+    CommodityRow,
+    DatabaseSchema,
+    DemandRow,
+    EfficiencyQueryResult,
+    EfficiencyRow,
+    EmissionActivityRow,
+    GenericQueryResult,
+    SchemaVersion,
+    TableName,
+    TechnologyQueryResult,
+    TechnologyRow,
+    TimePeriodsRow,
 )
 from .dict_types import (
     ActiveRegionsForTechDict,
@@ -152,6 +173,21 @@ from .set_types import (
     SeasonalStorageLevelIndicesset,
     StorageLevelIndicesSet,
     StorageLevelIndicesset,
+)
+from .solver_types import (
+    SolverOptions,
+    SolverResults,
+    SolverResultsProtocol,
+    SolverStatus,
+    SolverStatusEnum,
+    TerminationCondition,
+    TerminationConditionEnum,
+)
+from .validation_types import (
+    ValidationError,
+    ValidationResult,
+    ValidationSeverity,
+    ValidationWarning,
 )
 
 # DataFrame types for data processing
@@ -339,6 +375,10 @@ __all__ = [
     # Configuration types
     'ScenarioName',
     'Configdict',
+    'ScenarioConfig',
+    'SolverConfig',
+    'OutputConfig',
+    'SolverName',
     # Constraint and rule types
     'ConstraintRule',
     'IndexsetRule',
@@ -355,4 +395,33 @@ __all__ = [
     'Series',
     'PandasIndex',
     'PandasDtype',
+    # Solver types
+    'SolverResults',
+    'SolverStatus',
+    'TerminationCondition',
+    'SolverStatusEnum',
+    'TerminationConditionEnum',
+    'SolverResultsProtocol',
+    'SolverOptions',
+    # Database types
+    'TableName',
+    'ColumnName',
+    'SchemaVersion',
+    'DatabaseSchema',
+    'TechnologyRow',
+    'CommodityRow',
+    'TimePeriodsRow',
+    'EfficiencyRow',
+    'CapacityFactorRow',
+    'DemandRow',
+    'EmissionActivityRow',
+    'TechnologyQueryResult',
+    'CommodityQueryResult',
+    'EfficiencyQueryResult',
+    'GenericQueryResult',
+    # Validation types
+    'ValidationSeverity',
+    'ValidationError',
+    'ValidationWarning',
+    'ValidationResult',
 ]

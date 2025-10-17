@@ -54,6 +54,86 @@ PyomoIndexset = Any  # Pyomo set objects used for indexing
 ScenarioName = str
 Configdict = dict[str, Any]
 
+# Enhanced Configuration Types
+SolverName = str
+"""Type alias for solver names (e.g., 'gurobi', 'cplex', 'glpk', 'cbc')."""
+
+
+class ScenarioConfig:
+    """
+    Structured configuration for scenario-specific settings.
+
+    This type represents configuration options that are specific to a particular
+    scenario run, including solver settings, output options, and analysis modes.
+    """
+
+    scenario: str
+    """Name of the scenario."""
+
+    input_database: str
+    """Path to the input database file."""
+
+    output_database: str
+    """Path to the output database file."""
+
+    solver_name: SolverName
+    """Name of the solver to use."""
+
+    save_excel: bool
+    """Whether to save results to Excel format."""
+
+    save_duals: bool
+    """Whether to save dual variables."""
+
+    save_storage_levels: bool
+    """Whether to save storage level information."""
+
+
+class SolverConfig:
+    """
+    Configuration for solver-specific settings.
+
+    This type represents solver options and parameters that control
+    the optimization process.
+    """
+
+    solver_name: SolverName
+    """Name of the solver."""
+
+    options: dict[str, Any]
+    """Solver-specific options dictionary."""
+
+    time_limit: float | None
+    """Maximum time limit for solving (in seconds)."""
+
+    mip_gap: float | None
+    """MIP gap tolerance for mixed-integer problems."""
+
+
+class OutputConfig:
+    """
+    Configuration for output format and content settings.
+
+    This type represents options that control what results are saved
+    and in what format.
+    """
+
+    save_excel: bool
+    """Whether to save results to Excel format."""
+
+    save_duals: bool
+    """Whether to save dual variables."""
+
+    save_storage_levels: bool
+    """Whether to save storage level information."""
+
+    save_lp_file: bool
+    """Whether to save the LP file."""
+
+    output_path: str
+    """Path where output files should be saved."""
+
+
 # Constraint rule types
 ConstraintRule = Callable[..., Any]
 IndexsetRule = Callable[..., set[Any]]

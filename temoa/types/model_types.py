@@ -243,7 +243,7 @@ class ModelData:
 
 
 # Export types for easy importing
-__all__ = [
+__all__ = [  # ruff: noqa: RUF022
     # Protocols
     'TemoaModelProtocol',
     # Core classes
