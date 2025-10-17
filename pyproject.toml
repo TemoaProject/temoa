@@ -102,7 +102,7 @@ warn_unreachable = true
 strict_equality = true
 
 # Handle external dependencies gracefully
-ignore_missing_imports = true
+ignore_missing_imports = false
 
 # Be explicit about Any usage
 disallow_any_generics = true
