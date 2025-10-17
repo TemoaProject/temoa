@@ -22,25 +22,14 @@ from pyomo.environ import (
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
-
-    from ..types import (
+    from temoa.types import (
         Period,
         Region,
-        RegionPeriodTechVintage,
         Season,
         Technology,
         TimeOfDay,
         Vintage,
     )
-else:
-    # Runtime fallback for non-TYPE_CHECKING contexts
-    Region = Any
-    Period = Any
-    Season = Any
-    TimeOfDay = Any
-    Technology = Any
-    Vintage = Any
-    RegionPeriodTechVintage = Any
 
 
 logger = getLogger(name=__name__)
