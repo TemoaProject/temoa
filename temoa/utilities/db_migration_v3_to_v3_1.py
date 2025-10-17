@@ -45,7 +45,7 @@ con_new = sqlite3.connect(new_db_path)
 cur = con_new.cursor()
 
 # bring in the new schema and execute
-with open(schema_file, 'r') as src:
+with open(schema_file) as src:
     sql_script = src.read()
 con_new.executescript(sql_script)
 
@@ -164,7 +164,8 @@ for old_name, new_name in direct_transfer_tables:
     all_good = all_good and column_check(old_name, new_name)
 for old_name, new_name in period_added_tables:
     all_good = all_good and column_check(old_name, new_name)
-if not all_good: sys.exit(-1) #noqa: E701
+if not all_good:
+    sys.exit(1)
 
 
 # Collapse Max/Min constraint tables
@@ -286,14 +287,14 @@ for old_name, new_name in period_added_tables:
         for r, t in data[['region','tech']].drop_duplicates().values:
             periods[r, t] = [
                 p for p in time_optimize
-                if any((
+                if any(
                     v <= p < v+lifetime_process[r, t, v]
                     for v in [
                         t[0] for t in con_old.execute(
                             f'SELECT vintage FROM Efficiency WHERE region == "{r}" AND tech == "{t}"'
                         ).fetchall()
                     ]
-                ))
+                )
             ]
         data['periods'] = [
             periods[r, t]
@@ -330,17 +331,17 @@ for old_name, new_name in period_added_tables:
 
 
 print('\n --- Making some final changes ---')
-n_del = len(con_new.execute((
+n_del = len(con_new.execute(
     "SELECT * FROM DemandSpecificDistribution "
     "WHERE (region, period, demand_name) "
     "NOT IN (SELECT region, period, commodity FROM Demand)"
-)).fetchall())
+).fetchall())
 if n_del > 0:
-    con_new.execute((
+    con_new.execute(
         "DELETE FROM DemandSpecificDistribution "
         "WHERE (region, period, demand_name) "
         "NOT IN (SELECT region, period, commodity FROM Demand)"
-    ))
+    )
     print(f"{n_del} extraneous rows removed from DemandSpecificDistribution after adding period index")
 
 # TimeSeason unique seasons to SeasonLabel

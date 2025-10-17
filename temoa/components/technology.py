@@ -41,13 +41,13 @@ def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
 # ============================================================================
 
 
-def ModelProcessLifeIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any, Any]]:
+def ModelProcessLifeIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any, Any]] | None:
     """
     Returns the set of sensical (region, period, tech, vintage) tuples.  The tuple indicates
     the periods in which a process is active, distinct from TechLifeFracIndices that
     returns indices only for processes that EOL mid-period.
     """
-    return M.activeActivity_rptv  # type: ignore[return-value]
+    return M.activeActivity_rptv
 
 
 def LifetimeProcessIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any]]:
@@ -55,7 +55,7 @@ def LifetimeProcessIndices(M: 'TemoaModel') -> set[tuple[Any, Any, Any]]:
     Based on the Efficiency parameter's indices, this function returns the set of
     process indices that may be specified in the LifetimeProcess parameter.
     """
-    indices = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    indices = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
 
     return indices
 
@@ -331,11 +331,11 @@ def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
     """
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
-    c_physical = set(i for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_physical = c_physical | set(i for r, i, t, v in M.ConstructionInput.sparse_iterkeys())
-    techs = set(t for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_outputs = set(o for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_outputs = c_outputs | set(o for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys())
+    c_physical = {i for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_physical = c_physical | {i for r, i, t, v in M.ConstructionInput.sparse_iterkeys()}
+    techs = {t for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_outputs = {o for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_outputs = c_outputs | {o for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys()}
 
     symdiff = c_physical.symmetric_difference(M.commodity_physical)
     if symdiff:
@@ -344,7 +344,7 @@ def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
             'the following elements to the Set commodity_physical.'
             '\n\n    Element(s): {}'
         )
-        symdiff_str: set[str] = set(str(i) for i in symdiff)
+        symdiff_str: set[str] = {str(i) for i in symdiff}
         f_msg = msg.format(', '.join(symdiff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
@@ -356,7 +356,7 @@ def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
             'the following technology(ies) to the tech_resource or '
             'tech_production Sets.\n\n    Technology(ies): {}'
         )
-        symdiff_str2: set[str] = set(str(i) for i in symdiff)
+        symdiff_str2: set[str] = {str(i) for i in symdiff}
         f_msg = msg.format(', '.join(symdiff_str2))
         logger.error(f_msg)
         raise ValueError(f_msg)

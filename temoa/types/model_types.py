@@ -10,25 +10,22 @@ from enum import Enum, unique
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Protocol,
-    Set,
-    Tuple,
     runtime_checkable,
 )
 
 from . import (
     Commodity,
-    CommoditySet,
+    Commodityset,
     Period,
     Region,
     RegionPeriodSeasonTimeInputTechVintageOutput,
     RegionPeriodTechVintage,
-    RegionSet,
+    Regionset,
     Season,
     SparseIndex,
     Technology,
-    TechSet,
+    Techset,
     TimeOfDay,
     Vintage,
 )
@@ -51,7 +48,7 @@ if TYPE_CHECKING:
     )
 else:
     # Runtime fallback for non-TYPE_CHECKING contexts
-    PyomoSet = Any  # AbstractModel.Set
+    PyomoSet = Any  # AbstractModel.set
     PyomoParam = Any  # AbstractModel.Param
     PyomoVar = Any  # AbstractModel.Var
     PyomoConstraint = Any  # AbstractModel.Constraint
@@ -59,17 +56,17 @@ else:
     PyomoObjective = Any  # AbstractModel.Objective
 
 # Type aliases for model data structures
-ProcessInputs = Dict[Tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
-ProcessOutputs = Dict[Tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
-TechClassification = Dict[Technology, str]
-SparseDict = Dict[SparseIndex, Set[SparseIndex]]
+ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
+ProcessOutputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
+TechClassification = dict[Technology, str]
+Sparsedict = dict[SparseIndex, set[SparseIndex]]
 
-# Model sets type definitions (avoiding naming conflicts with Set import)
-TimeSetTyped = Set[Period]
-RegionSetTyped = Set[Region]
-TechSetTyped = Set[Technology]
-CommoditySetTyped = Set[Commodity]
-VintageSetTyped = Set[Vintage]
+# Model sets type definitions (avoiding naming conflicts with set import)
+TimesetTyped = set[Period]
+RegionsetTyped = set[Region]
+TechsetTyped = set[Technology]
+CommoditysetTyped = set[Commodity]
+VintagesetTyped = set[Vintage]
 
 # Model parameters type definitions
 EfficiencyParam = PyomoParam  # Multi-dimensional efficiency parameter
@@ -105,30 +102,30 @@ class TemoaModelProtocol(Protocol):
     name: str
 
     # Time-related sets
-    time_exist: TimeSetTyped
-    time_future: TimeSetTyped
-    time_optimize: TimeSetTyped
-    vintage_exist: VintageSetTyped
-    vintage_optimize: VintageSetTyped
-    time_season: Set[Season]
-    time_of_day: Set[TimeOfDay]
+    time_exist: TimesetTyped
+    time_future: TimesetTyped
+    time_optimize: TimesetTyped
+    vintage_exist: VintagesetTyped
+    vintage_optimize: VintagesetTyped
+    time_season: set[Season]
+    time_of_day: set[TimeOfDay]
 
     # Geography sets
-    regions: RegionSetTyped
-    regionalIndices: Set[Region]
+    regions: RegionsetTyped
+    regionalIndices: set[Region]
 
     # Technology sets
-    tech_all: TechSetTyped
-    tech_production: TechSetTyped
-    tech_storage: TechSetTyped
-    tech_reserve: TechSetTyped
-    tech_exchange: TechSetTyped
+    tech_all: TechsetTyped
+    tech_production: TechsetTyped
+    tech_storage: TechsetTyped
+    tech_reserve: TechsetTyped
+    tech_exchange: TechsetTyped
 
     # Commodity sets
-    commodity_all: CommoditySetTyped
-    commodity_demand: CommoditySetTyped
-    commodity_physical: CommoditySetTyped
-    commodity_emissions: CommoditySetTyped
+    commodity_all: CommoditysetTyped
+    commodity_demand: CommoditysetTyped
+    commodity_physical: CommoditysetTyped
+    commodity_emissions: CommoditysetTyped
 
     # Model parameters
     GlobalDiscountRate: PyomoParam
@@ -150,10 +147,10 @@ class TemoaModelProtocol(Protocol):
     # Internal data structures
     processInputs: ProcessInputs
     processOutputs: ProcessOutputs
-    activeFlow_rpsditvo: Set[RegionPeriodSeasonTimeInputTechVintageOutput]
-    activeActivity_rptv: Set[RegionPeriodTechVintage]
+    activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput]
+    activeActivity_rptv: set[RegionPeriodTechVintage]
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
+    def __init__(self, *args: object, **kwargs: object) -> None: ...
 
 
 if TYPE_CHECKING:
@@ -169,38 +166,38 @@ if TYPE_CHECKING:
         default_lifetime_tech: int
 
         # Time-related sets
-        time_exist: TimeSetTyped
-        time_future: TimeSetTyped
-        time_optimize: TimeSetTyped
-        vintage_exist: VintageSetTyped
-        vintage_optimize: VintageSetTyped
-        vintage_all: VintageSetTyped
-        time_season: Set[Season]
-        time_of_day: Set[TimeOfDay]
+        time_exist: TimesetTyped
+        time_future: TimesetTyped
+        time_optimize: TimesetTyped
+        vintage_exist: VintagesetTyped
+        vintage_optimize: VintagesetTyped
+        vintage_all: VintagesetTyped
+        time_season: set[Season]
+        time_of_day: set[TimeOfDay]
 
         # Geography sets
-        regions: RegionSetTyped
-        regionalIndices: Set[Region]
-        regionalGlobalIndices: Set[Region]
+        regions: RegionsetTyped
+        regionalIndices: set[Region]
+        regionalGlobalIndices: set[Region]
 
         # Technology sets
-        tech_all: TechSetTyped
-        tech_production: TechSetTyped
-        tech_baseload: TechSetTyped
-        tech_annual: TechSetTyped
-        tech_storage: TechSetTyped
-        tech_reserve: TechSetTyped
-        tech_exchange: TechSetTyped
-        tech_uncap: TechSetTyped
-        tech_with_capacity: TechSetTyped
-        tech_retirement: TechSetTyped
+        tech_all: TechsetTyped
+        tech_production: TechsetTyped
+        tech_baseload: TechsetTyped
+        tech_annual: TechsetTyped
+        tech_storage: TechsetTyped
+        tech_reserve: TechsetTyped
+        tech_exchange: TechsetTyped
+        tech_uncap: TechsetTyped
+        tech_with_capacity: TechsetTyped
+        tech_retirement: TechsetTyped
 
         # Commodity sets
-        commodity_all: CommoditySetTyped
-        commodity_demand: CommoditySetTyped
-        commodity_physical: CommoditySetTyped
-        commodity_emissions: CommoditySetTyped
-        commodity_carrier: CommoditySetTyped
+        commodity_all: CommoditysetTyped
+        commodity_demand: CommoditysetTyped
+        commodity_physical: CommoditysetTyped
+        commodity_emissions: CommoditysetTyped
+        commodity_carrier: CommoditysetTyped
 
         # Model parameters
         GlobalDiscountRate: PyomoParam
@@ -228,11 +225,11 @@ if TYPE_CHECKING:
         # Internal tracking dictionaries
         processInputs: ProcessInputs
         processOutputs: ProcessOutputs
-        used_techs: TechSet
-        activeFlow_rpsditvo: Set[RegionPeriodSeasonTimeInputTechVintageOutput]
-        activeActivity_rptv: Set[RegionPeriodTechVintage]
+        used_techs: Techset
+        activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput]
+        activeActivity_rptv: set[RegionPeriodTechVintage]
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None: ...
+        def __init__(self, *args: object, **kwargs: object) -> None: ...
 
 
 # Data structure types for model processing
@@ -241,11 +238,11 @@ class ModelData:
 
     def __init__(
         self,
-        regions: RegionSet,
-        periods: Set[Period],
-        technologies: TechSet,
-        commodities: CommoditySet,
-        **kwargs: Any,
+        regions: Regionset,
+        periods: set[Period],
+        technologies: Techset,
+        commodities: Commodityset,
+        **kwargs: object,
     ) -> None: ...
 
 
@@ -260,7 +257,7 @@ __all__ = [
     'ProcessInputs',
     'ProcessOutputs',
     'TechClassification',
-    'SparseDict',
+    'Sparsedict',
     # Pyomo type aliases
     'PyomoSet',
     'PyomoParam',

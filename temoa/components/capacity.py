@@ -52,7 +52,7 @@ logger = getLogger(name=__name__)
 
 
 def CheckCapacityFactorProcess(M: TemoaModel) -> None:
-    count_rptv: dict[tuple[Any, Any, Any, Any], int] = dict()
+    count_rptv: dict[tuple[Any, Any, Any, Any], int] = {}
     # Pull CapacityFactorTech by default
     for r, p, _s, _d, t in M.CapacityFactor_rpsdt:
         for v in M.processVintages[r, p, t]:
@@ -97,14 +97,14 @@ def CreateCapacityFactors(M: TemoaModel) -> None:
     CFP = M.CapacityFactorProcess
 
     # Step 1
-    processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    processes = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
 
-    all_cfs = set(
+    all_cfs = {
         (r, p, s, d, t, v)
         for (r, t, v) in processes
         for p in M.processPeriods[r, t, v]
         for s, d in cross_product(M.TimeSeason[p], M.time_of_day)
-    )
+    }
 
     # Step 2
     unspecified_cfs = all_cfs.difference(CFP.sparse_iterkeys())
@@ -164,30 +164,28 @@ def get_capacity_factor(
 
 def CapacityVariableIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any]]:
-    return M.newCapacity_rtv  # type: ignore[return-value]
+) -> set[tuple[Any, Any, Any]] | None:
+    return M.newCapacity_rtv
 
 
 def RetiredCapacityVariableIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, Any]]:
-    return set(
+    return {
         (r, p, t, v)
         for r, p, t in M.processVintages
         if t in M.tech_retirement and t not in M.tech_uncap
         for v in M.processVintages[r, p, t]
         if v < p <= v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[p])
-    )
+    }
 
 
 def AnnualRetirementVariableIndices(M: TemoaModel) -> set[tuple[Any, Any, Any, Any]]:
-    return set(
-        (r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]
-    )
+    return {(r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]}
 
 
 def CapacityAvailableVariableIndices(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any]]:
-    return M.activeCapacityAvailable_rpt  # type: ignore[return-value]
+) -> set[tuple[Any, Any, Any]] | None:
+    return M.activeCapacityAvailable_rpt
 
 
 def RegionalExchangeCapacityConstraintIndices(
@@ -261,8 +259,8 @@ def CapacityFactorTechIndices(
 
 def CapacityAvailableVariableIndicesVintage(
     M: TemoaModel,
-) -> set[tuple[Any, Any, Any, Any]]:
-    return M.activeCapacityAvailable_rptv  # type: ignore[return-value]
+) -> set[tuple[Any, Any, Any, Any]] | None:
+    return M.activeCapacityAvailable_rptv
 
 
 # ============================================================================
@@ -622,20 +620,20 @@ def create_capacity_and_retirement_sets(M: TemoaModel) -> None:
                 M.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
 
     # Create active capacity index sets from the now-populated processVintages
-    M.newCapacity_rtv = set(
+    M.newCapacity_rtv = {
         (r, t, v)
         for r, p, t in M.processVintages
         for v in M.processVintages[r, p, t]
         if t not in M.tech_uncap and v in M.time_optimize
-    )
-    M.activeCapacityAvailable_rpt = set(
+    }
+    M.activeCapacityAvailable_rpt = {
         (r, p, t)
         for r, p, t in M.processVintages
         if M.processVintages[r, p, t] and t not in M.tech_uncap
-    )
-    M.activeCapacityAvailable_rptv = set(
+    }
+    M.activeCapacityAvailable_rptv = {
         (r, p, t, v)
         for r, p, t in M.processVintages
         for v in M.processVintages[r, p, t]
         if t not in M.tech_uncap
-    )
+    }

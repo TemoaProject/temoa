@@ -5,15 +5,11 @@ This module provides comprehensive type annotations for the Temoa codebase,
 including core model types, data structures, and interfaces.
 """
 
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
     Optional,
-    Set,
-    Tuple,
-    Union,
 )
 
 # Core type aliases for commonly used dimensions
@@ -29,21 +25,21 @@ OutputCommodity = str
 Process = str
 
 # Index tuples for different dimensions
-RegionPeriod = Tuple[Region, Period]
-RegionPeriodTech = Tuple[Region, Period, Technology]
-RegionPeriodTechVintage = Tuple[Region, Period, Technology, Vintage]
-RegionPeriodSeasonTimeInputTechVintageOutput = Tuple[
+RegionPeriod = tuple[Region, Period]
+RegionPeriodTech = tuple[Region, Period, Technology]
+RegionPeriodTechVintage = tuple[Region, Period, Technology, Vintage]
+RegionPeriodSeasonTimeInputTechVintageOutput = tuple[
     Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity
 ]
 
 # Type aliases for common data structures
-SparseIndex = Union[
-    RegionPeriod,
-    RegionPeriodTech,
-    RegionPeriodTechVintage,
-    RegionPeriodSeasonTimeInputTechVintageOutput,
-    Tuple[Any, ...],
-]
+SparseIndex = (
+    RegionPeriod
+    | RegionPeriodTech
+    | RegionPeriodTechVintage
+    | RegionPeriodSeasonTimeInputTechVintageOutput
+    | tuple[Any, ...]
+)
 
 # Database-related types
 DatabaseConnection = Any  # sqlite3.Connection or similar
@@ -51,146 +47,222 @@ DatabaseCursor = Any  # sqlite3.Cursor or similar
 QueryResult = list[tuple[Any, ...]]
 
 # Model parameter types
-ParameterValue = Union[int, float, str, bool]
-ParameterDict = Dict[SparseIndex, ParameterValue]
+ParameterValue = int | float | str | bool
+Parameterdict = dict[SparseIndex, ParameterValue]
 
-# Set types
-StringSet = Set[str]
-TechSet = Set[Technology]
-CommoditySet = Set[Commodity]
-RegionSet = Set[Region]
-PeriodSet = Set[Period]
-VintageSet = Set[Vintage]
+# set types
+Stringset = set[str]
+Techset = set[Technology]
+Commodityset = set[Commodity]
+Regionset = set[Region]
+Periodset = set[Period]
+Vintageset = set[Vintage]
 
 # Core index types (11 types)
-RegionTech = Tuple[Region, Technology]
-RegionTechVintage = Tuple[Region, Technology, Vintage]
-RegionPeriodCommodity = Tuple[Region, Period, Commodity]
-PeriodSeasonTimeOfDay = Tuple[Period, Season, TimeOfDay]
-RegionPeriodSeasonTimeOfDay = Tuple[Region, Period, Season, TimeOfDay]
-RegionPeriodSeasonTimeOfDayTech = Tuple[Region, Period, Season, TimeOfDay, Technology]
-RegionPeriodSeasonTimeOfDayTechVintage = Tuple[
+RegionTech = tuple[Region, Technology]
+RegionTechVintage = tuple[Region, Technology, Vintage]
+RegionPeriodCommodity = tuple[Region, Period, Commodity]
+PeriodSeasonTimeOfDay = tuple[Period, Season, TimeOfDay]
+RegionPeriodSeasonTimeOfDay = tuple[Region, Period, Season, TimeOfDay]
+RegionPeriodSeasonTimeOfDayTech = tuple[Region, Period, Season, TimeOfDay, Technology]
+RegionPeriodSeasonTimeOfDayTechVintage = tuple[
     Region, Period, Season, TimeOfDay, Technology, Vintage
 ]
-RegionPeriodSeasonTimeOfDayCommodity = Tuple[Region, Period, Season, TimeOfDay, Commodity]
-RegionPeriodCommodityInputTechVintageOutput = Tuple[
+RegionPeriodSeasonTimeOfDayCommodity = tuple[Region, Period, Season, TimeOfDay, Commodity]
+RegionPeriodCommodityInputTechVintageOutput = tuple[
     Region, Period, Commodity, Technology, Vintage, Commodity
 ]
-RegionPeriodSeasonTimeOfDayCommodityTechVintageOutput = Tuple[
+RegionPeriodSeasonTimeOfDayCommodityTechVintageOutput = tuple[
     Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity
 ]
-PeriodSeasonSequential = Tuple[Period, Season]
+PeriodSeasonSequential = tuple[Period, Season]
 
 # Process-related dictionary types (13 types)
-ProcessInputsDict = Dict[Tuple[Region, Period, Technology, Vintage], Set[Commodity]]
-ProcessOutputsDict = Dict[Tuple[Region, Period, Technology, Vintage], Set[Commodity]]
-ProcessLoansDict = Dict[Tuple[Region, Technology, Vintage], float]
-ProcessInputsByOutputDict = Dict[
-    Tuple[Region, Period, Technology, Vintage, Commodity], Set[Commodity]
+ProcessInputsdict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
+ProcessOutputsdict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
+ProcessLoansdict = dict[tuple[Region, Technology, Vintage], float]
+ProcessInputsByOutputdict = dict[
+    tuple[Region, Period, Technology, Vintage, Commodity], set[Commodity]
 ]
-ProcessOutputsByInputDict = Dict[
-    Tuple[Region, Period, Technology, Vintage, Commodity], Set[Commodity]
+ProcessOutputsByInputdict = dict[
+    tuple[Region, Period, Technology, Vintage, Commodity], set[Commodity]
 ]
-ProcessTechsDict = Dict[Tuple[Region, Period, Commodity], Set[Technology]]
-ProcessReservePeriodsDict = Dict[Tuple[Region, Period], Set[Tuple[Technology, Vintage]]]
-ProcessPeriodsDict = Dict[Tuple[Region, Technology, Vintage], Set[Period]]
-RetirementPeriodsDict = Dict[Tuple[Region, Technology, Vintage], Set[Period]]
-ProcessVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-SurvivalCurvePeriodsDict = Dict[Tuple[Region, Technology, Vintage], Set[Period]]
-CapacityConsumptionTechsDict = Dict[Tuple[Region, Period, Commodity], Set[Technology]]
-RetirementProductionProcessesDict = Dict[
-    Tuple[Region, Period, Commodity], Set[Tuple[Technology, Vintage]]
+ProcessTechsdict = dict[tuple[Region, Period, Commodity], set[Technology]]
+ProcessReservePeriodsdict = dict[tuple[Region, Period], set[tuple[Technology, Vintage]]]
+ProcessPeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
+RetirementPeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
+ProcessVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+SurvivalCurvePeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
+CapacityConsumptionTechsdict = dict[tuple[Region, Period, Commodity], set[Technology]]
+RetirementProductionProcessesdict = dict[
+    tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]
 ]
+
+# Capitalized aliases for compatibility
+ProcessInputsDict = ProcessInputsdict
+ProcessOutputsDict = ProcessOutputsdict
+ProcessLoansDict = ProcessLoansdict
+ProcessInputsByOutputDict = ProcessInputsByOutputdict
+ProcessOutputsByInputDict = ProcessOutputsByInputdict
+ProcessTechsDict = ProcessTechsdict
+ProcessReservePeriodsDict = ProcessReservePeriodsdict
+ProcessPeriodsDict = ProcessPeriodsdict
+RetirementPeriodsDict = RetirementPeriodsdict
+ProcessVintagesDict = ProcessVintagesdict
+SurvivalCurvePeriodsDict = SurvivalCurvePeriodsdict
+CapacityConsumptionTechsDict = CapacityConsumptionTechsdict
+RetirementProductionProcessesDict = RetirementProductionProcessesdict
 
 # Commodity flow dictionary types (2 types)
-CommodityStreamProcessDict = Dict[Tuple[Region, Period, Commodity], Set[Tuple[Technology, Vintage]]]
-CommodityBalanceDict = Dict[Tuple[Region, Period, Commodity], Any]
+CommodityStreamProcessdict = dict[tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]]
+CommodityBalancedict = dict[tuple[Region, Period, Commodity], Any]
+
+# Capitalized aliases for compatibility
+CommodityStreamProcessDict = CommodityStreamProcessdict
+CommodityBalanceDict = CommodityBalancedict
 
 # Technology classification dictionary types (9 types)
-BaseloadVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-CurtailmentVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-StorageVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-RampUpVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-RampDownVintagesDict = Dict[Tuple[Region, Period, Technology], Set[Vintage]]
-InputSplitVintagesDict = Dict[Tuple[Region, Period, Commodity, Technology, str], Set[Vintage]]
-InputSplitAnnualVintagesDict = Dict[Tuple[Region, Period, Commodity, Technology, str], Set[Vintage]]
-OutputSplitVintagesDict = Dict[Tuple[Region, Period, Technology, Commodity, str], Set[Vintage]]
-OutputSplitAnnualVintagesDict = Dict[
-    Tuple[Region, Period, Technology, Commodity, str], Set[Vintage]
+BaseloadVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+CurtailmentVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+StorageVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+RampUpVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+RampDownVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
+InputSplitVintagesdict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
+InputSplitAnnualVintagesdict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
+OutputSplitVintagesdict = dict[tuple[Region, Period, Technology, Commodity, str], set[Vintage]]
+OutputSplitAnnualVintagesdict = dict[
+    tuple[Region, Period, Technology, Commodity, str], set[Vintage]
 ]
+
+# Capitalized aliases for compatibility
+BaseloadVintagesDict = BaseloadVintagesdict
+CurtailmentVintagesDict = CurtailmentVintagesdict
+StorageVintagesDict = StorageVintagesdict
+RampUpVintagesDict = RampUpVintagesdict
+RampDownVintagesDict = RampDownVintagesdict
+InputSplitVintagesDict = InputSplitVintagesdict
+InputSplitAnnualVintagesDict = InputSplitAnnualVintagesdict
+OutputSplitVintagesDict = OutputSplitVintagesdict
+OutputSplitAnnualVintagesDict = OutputSplitAnnualVintagesdict
 
 # Time sequencing dictionary types (3 types)
-TimeNextDict = Dict[Tuple[Period, Season, TimeOfDay], Tuple[Season, TimeOfDay]]
-TimeNextSequentialDict = Dict[Tuple[Period, Season], Season]
-SequentialToSeasonDict = Dict[Tuple[Period, Season], Season]
+TimeNextdict = dict[tuple[Period, Season, TimeOfDay], tuple[Season, TimeOfDay]]
+TimeNextSequentialdict = dict[tuple[Period, Season], Season]
+SequentialToSeasondict = dict[tuple[Period, Season], Season]
+
+# Capitalized aliases for compatibility
+TimeNextDict = TimeNextdict
+TimeNextSequentialDict = TimeNextSequentialdict
+SequentialToSeasonDict = SequentialToSeasondict
 
 # Geography/exchange dictionary types (3 types)
-ExportRegionsDict = Dict[
-    Tuple[Region, Period, Commodity], Set[Tuple[Region, Technology, Vintage, Commodity]]
+ExportRegionsdict = dict[
+    tuple[Region, Period, Commodity], set[tuple[Region, Technology, Vintage, Commodity]]
 ]
-ImportRegionsDict = Dict[
-    Tuple[Region, Period, Commodity], Set[Tuple[Region, Technology, Vintage, Commodity]]
+ImportRegionsdict = dict[
+    tuple[Region, Period, Commodity], set[tuple[Region, Technology, Vintage, Commodity]]
 ]
-ActiveRegionsForTechDict = Dict[Tuple[Period, Technology], Set[Region]]
+ActiveRegionsForTechdict = dict[tuple[Period, Technology], set[Region]]
+
+# Capitalized aliases for compatibility
+ExportRegionsDict = ExportRegionsdict
+ImportRegionsDict = ImportRegionsdict
+ActiveRegionsForTechDict = ActiveRegionsForTechdict
 
 # Switching/boolean flag dictionary types (4 types)
-EfficiencyVariableDict = Dict[
-    Tuple[Region, Period, Commodity, Technology, Vintage, Commodity], bool
+EfficiencyVariabledict = dict[
+    tuple[Region, Period, Commodity, Technology, Vintage, Commodity], bool
 ]
-CapacityFactorProcessDict = Dict[Tuple[Region, Period, Technology, Vintage], bool]
-SeasonalStorageDict = Dict[Technology, bool]
-SurvivalCurveProcessDict = Dict[Tuple[Region, Technology, Vintage], bool]
+CapacityFactorProcessdict = dict[tuple[Region, Period, Technology, Vintage], bool]
+SeasonalStoragedict = dict[Technology, bool]
+SurvivalCurveProcessdict = dict[tuple[Region, Technology, Vintage], bool]
 
-# Set types for sparse indexing (13 types)
-ActiveFlowSet = Optional[
-    Set[Tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
+# Capitalized aliases for compatibility
+EfficiencyVariableDict = EfficiencyVariabledict
+CapacityFactorProcessDict = CapacityFactorProcessdict
+SeasonalStorageDict = SeasonalStoragedict
+SurvivalCurveProcessDict = SurvivalCurveProcessdict
+
+# set types for sparse indexing (13 types)
+ActiveFlowset = Optional[
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveFlowAnnualSet = Optional[
-    Set[Tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
+ActiveFlowAnnualset = Optional[
+    set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveFlexSet = Optional[
-    Set[Tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
+ActiveFlexset = Optional[
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveFlexAnnualSet = Optional[
-    Set[Tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
+ActiveFlexAnnualset = Optional[
+    set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveFlowInStorageSet = Optional[
-    Set[Tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
+ActiveFlowInStorageset = Optional[
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveCurtailmentSet = Optional[
-    Set[Tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
+ActiveCurtailmentset = Optional[
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
 ]
-ActiveActivitySet = Optional[Set[Tuple[Region, Period, Technology, Vintage]]]
-StorageLevelIndicesSet = Optional[
-    Set[Tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]
+ActiveActivityset = Optional[set[tuple[Region, Period, Technology, Vintage]]]
+StorageLevelIndicesset = Optional[
+    set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]
 ]
-SeasonalStorageLevelIndicesSet = Optional[Set[Tuple[Region, Period, Season, Technology, Vintage]]]
-NewCapacitySet = Optional[Set[Tuple[Region, Technology, Vintage]]]
-ActiveCapacityAvailableSet = Optional[Set[Tuple[Region, Period, Technology]]]
-ActiveCapacityAvailableVintageSet = Optional[Set[Tuple[Region, Period, Technology, Vintage]]]
-GroupRegionActiveFlowSet = Optional[Set[Tuple[Region, Period, Technology]]]
+SeasonalStorageLevelIndicesset = Optional[set[tuple[Region, Period, Season, Technology, Vintage]]]
+NewCapacityset = Optional[set[tuple[Region, Technology, Vintage]]]
+ActiveCapacityAvailableset = Optional[set[tuple[Region, Period, Technology]]]
+ActiveCapacityAvailableVintageset = Optional[set[tuple[Region, Period, Technology, Vintage]]]
+GroupRegionActiveFlowset = Optional[set[tuple[Region, Period, Technology]]]
+
+# Capitalized aliases for compatibility
+ActiveFlowSet = ActiveFlowset
+ActiveFlowAnnualSet = ActiveFlowAnnualset
+ActiveFlexSet = ActiveFlexset
+ActiveFlexAnnualSet = ActiveFlexAnnualset
+ActiveFlowInStorageSet = ActiveFlowInStorageset
+ActiveCurtailmentSet = ActiveCurtailmentset
+ActiveActivitySet = ActiveActivityset
+StorageLevelIndicesSet = StorageLevelIndicesset
+SeasonalStorageLevelIndicesSet = SeasonalStorageLevelIndicesset
+NewCapacitySet = NewCapacityset
+ActiveCapacityAvailableSet = ActiveCapacityAvailableset
+ActiveCapacityAvailableVintageSet = ActiveCapacityAvailableVintageset
+GroupRegionActiveFlowSet = GroupRegionActiveFlowset
 
 # Pyomo domain types (2 types)
 PyomoDomain = Any  # Pyomo domain objects (NonNegativeReals, Integers, etc.)
-PyomoIndexSet = Any  # Pyomo Set objects used for indexing
+PyomoIndexset = Any  # Pyomo set objects used for indexing
 
 # DataFrame types for data processing
-if TYPE_CHECKING:
-    from .pandas_stubs import DataFrame as PandasDataFrame
 
-    TemoaDataFrame = PandasDataFrame
+if TYPE_CHECKING:
+    from .pandas_stubs import (
+        DataFrame,
+        PandasDtype,
+        PandasIndex,
+        Series,
+    )
+
+    TemoaDataFrame = DataFrame
+
+    from numpy.typing import NDArray
+
+    NumpyArray = NDArray[Any]
+
 else:
+    DataFrame = Any
+    Series = Any
+    PandasIndex = Any
+    PandasDtype = Any
     TemoaDataFrame = Any  # pd.DataFrame at runtime
 
-NumpyArray = Any  # np.ndarray at runtime
+    NumpyArray = Any  # np.ndarray at runtime
 
 # Configuration types
 ScenarioName = str
-ConfigDict = Dict[str, Any]
+Configdict = dict[str, Any]
 
 # Constraint rule types
 ConstraintRule = Callable[..., Any]
-IndexSetRule = Callable[..., Set[Any]]
+IndexsetRule = Callable[..., set[Any]]
 
 # Export types for easy importing
 __all__ = [
@@ -224,71 +296,71 @@ __all__ = [
     'RegionPeriodSeasonTimeOfDayCommodityTechVintageOutput',
     'PeriodSeasonSequential',
     # Process-related dictionary types
-    'ProcessInputsDict',
-    'ProcessOutputsDict',
-    'ProcessLoansDict',
-    'ProcessInputsByOutputDict',
-    'ProcessOutputsByInputDict',
-    'ProcessTechsDict',
-    'ProcessReservePeriodsDict',
-    'ProcessPeriodsDict',
-    'RetirementPeriodsDict',
-    'ProcessVintagesDict',
-    'SurvivalCurvePeriodsDict',
-    'CapacityConsumptionTechsDict',
-    'RetirementProductionProcessesDict',
+    'ProcessInputsdict',
+    'ProcessOutputsdict',
+    'ProcessLoansdict',
+    'ProcessInputsByOutputdict',
+    'ProcessOutputsByInputdict',
+    'ProcessTechsdict',
+    'ProcessReservePeriodsdict',
+    'ProcessPeriodsdict',
+    'RetirementPeriodsdict',
+    'ProcessVintagesdict',
+    'SurvivalCurvePeriodsdict',
+    'CapacityConsumptionTechsdict',
+    'RetirementProductionProcessesdict',
     # Commodity flow dictionary types
-    'CommodityStreamProcessDict',
-    'CommodityBalanceDict',
+    'CommodityStreamProcessdict',
+    'CommodityBalancedict',
     # Technology classification dictionary types
-    'BaseloadVintagesDict',
-    'CurtailmentVintagesDict',
-    'StorageVintagesDict',
-    'RampUpVintagesDict',
-    'RampDownVintagesDict',
-    'InputSplitVintagesDict',
-    'InputSplitAnnualVintagesDict',
-    'OutputSplitVintagesDict',
-    'OutputSplitAnnualVintagesDict',
+    'BaseloadVintagesdict',
+    'CurtailmentVintagesdict',
+    'StorageVintagesdict',
+    'RampUpVintagesdict',
+    'RampDownVintagesdict',
+    'InputSplitVintagesdict',
+    'InputSplitAnnualVintagesdict',
+    'OutputSplitVintagesdict',
+    'OutputSplitAnnualVintagesdict',
     # Time sequencing dictionary types
-    'TimeNextDict',
-    'TimeNextSequentialDict',
-    'SequentialToSeasonDict',
+    'TimeNextdict',
+    'TimeNextSequentialdict',
+    'SequentialToSeasondict',
     # Geography/exchange dictionary types
-    'ExportRegionsDict',
-    'ImportRegionsDict',
-    'ActiveRegionsForTechDict',
+    'ExportRegionsdict',
+    'ImportRegionsdict',
+    'ActiveRegionsForTechdict',
     # Switching/boolean flag dictionary types
-    'EfficiencyVariableDict',
-    'CapacityFactorProcessDict',
-    'SeasonalStorageDict',
-    'SurvivalCurveProcessDict',
-    # Set types for sparse indexing
-    'ActiveFlowSet',
-    'ActiveFlowAnnualSet',
-    'ActiveFlexSet',
-    'ActiveFlexAnnualSet',
-    'ActiveFlowInStorageSet',
-    'ActiveCurtailmentSet',
-    'ActiveActivitySet',
-    'StorageLevelIndicesSet',
-    'SeasonalStorageLevelIndicesSet',
-    'NewCapacitySet',
-    'ActiveCapacityAvailableSet',
-    'ActiveCapacityAvailableVintageSet',
-    'GroupRegionActiveFlowSet',
+    'EfficiencyVariabledict',
+    'CapacityFactorProcessdict',
+    'SeasonalStoragedict',
+    'SurvivalCurveProcessdict',
+    # set types for sparse indexing
+    'ActiveFlowset',
+    'ActiveFlowAnnualset',
+    'ActiveFlexset',
+    'ActiveFlexAnnualset',
+    'ActiveFlowInStorageset',
+    'ActiveCurtailmentset',
+    'ActiveActivityset',
+    'StorageLevelIndicesset',
+    'SeasonalStorageLevelIndicesset',
+    'NewCapacityset',
+    'ActiveCapacityAvailableset',
+    'ActiveCapacityAvailableVintageset',
+    'GroupRegionActiveFlowset',
     # Pyomo domain types
     'PyomoDomain',
-    'PyomoIndexSet',
+    'PyomoIndexset',
     # Data structure types
     'ParameterValue',
-    'ParameterDict',
-    'StringSet',
-    'TechSet',
-    'CommoditySet',
-    'RegionSet',
-    'PeriodSet',
-    'VintageSet',
+    'Parameterdict',
+    'Stringset',
+    'Techset',
+    'Commodityset',
+    'Regionset',
+    'Periodset',
+    'Vintageset',
     # Database types
     'DatabaseConnection',
     'DatabaseCursor',
@@ -298,10 +370,10 @@ __all__ = [
     'NumpyArray',
     # Configuration types
     'ScenarioName',
-    'ConfigDict',
+    'Configdict',
     # Constraint and rule types
     'ConstraintRule',
-    'IndexSetRule',
+    'IndexsetRule',
     # Pyomo stub types (for type checking)
     'PyomoSet',
     'PyomoParam',

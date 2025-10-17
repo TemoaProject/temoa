@@ -184,14 +184,6 @@ module = ["temoa.components.*", "temoa._internal.*"]
 disallow_any_explicit = false
 disallow_any_unimported = false
 
-# Use custom stub files for external dependencies
-[[tool.mypy.overrides]]
-module = [
-    "pyomo.*",
-    "pandas.*",
-]
-ignore_missing_imports = true
-
 # Follow custom imports for our stub files
 [[tool.mypy.overrides]]
 module = [

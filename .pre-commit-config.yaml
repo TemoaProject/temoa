@@ -39,6 +39,10 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=1024"]
       - id: debug-statements
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.0
+    hooks:
+      - id: pyupgrade
     # Python Linting & Formatting with Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
