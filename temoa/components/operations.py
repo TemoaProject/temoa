@@ -11,10 +11,11 @@ of technologies across time slices, including:
 """
 
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
+from temoa.types import ExprLike
 from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
 from temoa.types.index_types import RegionPeriodSeasonTimeOfDayTechVintage
 
@@ -128,7 +129,7 @@ def BaseloadDiurnal_Constraint(
     d: TimeOfDay,
     t: Technology,
     v: Vintage,
-) -> Any:
+) -> ExprLike:
     r"""
 
     Some electric generators cannot ramp output over a short period of time (e.g.,
@@ -246,7 +247,7 @@ def RampUpDay_Constraint(
     d: TimeOfDay,
     t: Technology,
     v: Vintage,
-) -> Any:
+) -> ExprLike:
     r"""
     One of two constraints built from the RampUpHourly table, along with the
     RampUpSeason_Constraint. RampUpDay constrains ramp rates between time slices
@@ -355,7 +356,7 @@ def RampDownDay_Constraint(
     d: TimeOfDay,
     t: Technology,
     v: Vintage,
-) -> Any:
+) -> ExprLike:
     r"""
 
     Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
@@ -438,7 +439,7 @@ def RampUpSeason_Constraint(
     s_next: Season,
     t: Technology,
     v: Vintage,
-) -> Any:
+) -> ExprLike:
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary
     of sequential seasons. Same as RampUpDay but only applies to the boundary
@@ -505,7 +506,7 @@ def RampDownSeason_Constraint(
     s_next: Season,
     t: Technology,
     v: Vintage,
-) -> Any:
+) -> ExprLike:
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary
     of sequential seasons. Same as RampDownDay but only applies to the boundary

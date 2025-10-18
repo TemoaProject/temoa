@@ -206,8 +206,8 @@ def loop_period_next_timeslice(
     # Loop state back to initial state of first season
     # Loop the period
     if s == M.TimeSeason[p].last() and d == M.time_of_day.last():
-        s_next: str = M.TimeSeason[p].first()
-        d_next: str = M.time_of_day.first()
+        s_next: 'Season' = M.TimeSeason[p].first()
+        d_next: 'TimeOfDay' = M.time_of_day.first()
 
     # Last time slice of any season that is NOT the last season
     # Carry state to initial state of next season

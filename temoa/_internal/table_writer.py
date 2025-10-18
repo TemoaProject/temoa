@@ -8,7 +8,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pyomo.opt import SolverResults
 
@@ -106,10 +106,10 @@ class TableWriter:
     def write_results(
         self,
         M: TemoaModel,
-        results_with_duals: Optional[SolverResults] = None,
+        results_with_duals: SolverResults | None = None,
         save_storage_levels: bool = False,
         append: bool = False,
-        iteration: Optional[int] = None,
+        iteration: int | None = None,
     ) -> None:
         """
         Write results to output database
@@ -274,7 +274,7 @@ class TableWriter:
 
     def write_emissions(self, iteration: int | None = None) -> None:
         """Write the emission table to the DB"""
-        if not self.tech_sectors:
+        if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
         if self.emission_register is None:
             raise RuntimeError('emission register not available... code error')
@@ -653,7 +653,7 @@ class TableWriter:
         A utility to execute a sql script on the current db connection
         :return:
         """
-        with open(script_file, 'r') as table_script:
+        with open(script_file) as table_script:
             sql_commands = table_script.read()
         logger.debug('Executing sql from file: %s ', script_file)
 

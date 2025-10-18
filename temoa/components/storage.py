@@ -11,11 +11,11 @@ including:
     device's power capacity.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from ..types import Period, Region, Season, Technology, TimeOfDay, Vintage
+from ..types import ExprLike, Period, Region, Season, Technology, TimeOfDay, Vintage
 from .utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ def StorageConstraintIndices(
 
 def StorageEnergy_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
     This constraint enforces the continuity of storage level between time slices.
     storage level in the next time slice (:math:`s_{next}, d_{next}`) is equal to
@@ -123,7 +123,7 @@ def StorageEnergy_Constraint(
 
 def SeasonalStorageEnergy_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s_seq: str, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
     This constraint enforces the continuity of state of charge between seasons for seasonal
     storage. Sequential season storage level increases by the matched season's net charge
@@ -214,7 +214,7 @@ def SeasonalStorageEnergy_Constraint(
 
 def StorageEnergyUpperBound_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
     This constraint ensures that the amount of energy stored does not exceed
     the upper bound set by the energy capacity of the storage device, as calculated
@@ -271,7 +271,7 @@ def StorageEnergyUpperBound_Constraint(
 
 def SeasonalStorageEnergyUpperBound_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s_seq: str, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity
     of seasonal storage, summing the real storage level with the superimposed sequential
@@ -349,7 +349,7 @@ def SeasonalStorageEnergyUpperBound_Constraint(
 
 def StorageChargeRate_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
 
     This constraint ensures that the charge rate of the storage unit is
@@ -387,7 +387,7 @@ def StorageChargeRate_Constraint(
 
 def StorageDischargeRate_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
 
     This constraint ensures that the discharge rate of the storage unit
@@ -423,7 +423,7 @@ def StorageDischargeRate_Constraint(
 
 def StorageThroughput_Constraint(
     M: 'TemoaModel', r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+) -> ExprLike:
     r"""
 
     It is not enough to only limit the charge and discharge rate separately. We also
@@ -473,7 +473,7 @@ def LimitStorageFraction_Constraint(
     t: Technology,
     v: Vintage,
     op: str,
-) -> Any:
+) -> ExprLike:
     r"""
 
     This constraint is used if the users wishes to force a specific storage charge level

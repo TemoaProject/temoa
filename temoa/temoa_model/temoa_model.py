@@ -25,6 +25,7 @@ from pyomo.environ import (
 
 if TYPE_CHECKING:
     from pyomo.environ import AbstractModel as PyomoAbstractModel
+
 else:
     PyomoAbstractModel = AbstractModel  # type: ignore[misc,assignment]
 
@@ -93,7 +94,7 @@ def CreateSparseDicts(M: 'TemoaModel') -> None:
     logger.debug('Completed creation of SparseDicts')
 
 
-class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
+class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
     """
     An instance of the abstract Temoa model
     """
@@ -102,7 +103,7 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
     default_lifetime_tech = 40
 
     def __init__(M, *args: object, **kwargs: object) -> None:
-        AbstractModel.__init__(M, *args, **kwargs)
+        PyomoAbstractModel.__init__(M, *args, **kwargs)
 
         ################################################
         #       Internally used Data Containers        #
@@ -113,29 +114,29 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         M.processInputs: t.ProcessInputsDict = {}
         M.processOutputs: t.ProcessOutputsDict = {}
         M.processLoans: t.ProcessLoansDict = {}
-        M.activeFlow_rpsditvo: t.ActiveFlowSet = None
+        M.activeFlow_rpsditvo: t.ActiveFlowSet = set()
         """a flow index for techs NOT in tech_annual"""
 
-        M.activeFlow_rpitvo: t.ActiveFlowAnnualSet = None
+        M.activeFlow_rpitvo: t.ActiveFlowAnnualSet = set()
         """a flow index for techs in tech_annual only"""
 
-        M.activeFlex_rpsditvo: t.ActiveFlexSet = None
-        M.activeFlex_rpitvo: t.ActiveFlexAnnualSet = None
-        M.activeFlowInStorage_rpsditvo: t.ActiveFlowInStorageSet = None
-        M.activeCurtailment_rpsditvo: t.ActiveCurtailmentSet = None
-        M.activeActivity_rptv: t.ActiveActivitySet = None
-        M.storageLevelIndices_rpsdtv: t.StorageLevelIndicesSet = None
-        M.seasonalStorageLevelIndices_rpstv: t.SeasonalStorageLevelIndicesSet = None
+        M.activeFlex_rpsditvo: t.ActiveFlexSet = set()
+        M.activeFlex_rpitvo: t.ActiveFlexAnnualSet = set()
+        M.activeFlowInStorage_rpsditvo: t.ActiveFlowInStorageSet = set()
+        M.activeCurtailment_rpsditvo: t.ActiveCurtailmentSet = set()
+        M.activeActivity_rptv: t.ActiveActivitySet = set()
+        M.storageLevelIndices_rpsdtv: t.StorageLevelIndicesSet = set()
+        M.seasonalStorageLevelIndices_rpstv: t.SeasonalStorageLevelIndicesSet = set()
         """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
 
         M.activeRegionsForTech: t.ActiveRegionsForTechDict = {}
         """currently available regions by period and tech {(p, t) : r}"""
 
-        M.newCapacity_rtv: t.NewCapacitySet = None
-        M.activeCapacityAvailable_rpt: t.ActiveCapacityAvailableSet = None
-        M.activeCapacityAvailable_rptv: t.ActiveCapacityAvailableVintageSet = None
+        M.newCapacity_rtv: t.NewCapacitySet = set()
+        M.activeCapacityAvailable_rpt: t.ActiveCapacityAvailableSet = set()
+        M.activeCapacityAvailable_rptv: t.ActiveCapacityAvailableVintageSet = set()
         M.groupRegionActiveFlow_rpt: t.GroupRegionActiveFlowSet = (
-            None  # Set of valid group-region, period, tech indices
+            set()  # Set of valid group-region, period, tech indices
         )
         M.commodityBalance_rpc: t.CommodityBalanceDict = {}  # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess: t.CommodityStreamProcessDict = {}  # The downstream process of a commodity during a period
@@ -1106,6 +1107,6 @@ class TemoaModel(AbstractModel):  # type: ignore[no-any-unimported]
         M.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)
 
 
-def progress_check(M: 'TemoaModel', checkpoint: str) -> None:
+def progress_check(M: TemoaModel, checkpoint: str) -> None:
     """A quick widget which is called by BuildAction in order to log creation progress"""
     logger.debug('Model build progress: %s', checkpoint)

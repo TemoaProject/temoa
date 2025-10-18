@@ -103,7 +103,7 @@ class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
     default_lifetime_tech = 40
 
     def __init__(M, *args: object, **kwargs: object) -> None:
-        AbstractModel.__init__(M, *args, **kwargs)
+        PyomoAbstractModel.__init__(M, *args, **kwargs)
 
         ################################################
         #       Internally used Data Containers        #

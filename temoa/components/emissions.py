@@ -11,8 +11,9 @@ This module is responsible for:
 
 from typing import TYPE_CHECKING
 
-from pyomo.core import Expression
 from pyomo.environ import value
+
+from temoa.types import ExprLike
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -56,7 +57,7 @@ def LinkedTechConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str
 
 def LinkedEmissionsTech_Constraint(
     M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, e: str
-) -> Expression:
+) -> ExprLike:
     r"""
     This constraint is necessary for carbon capture technologies that produce
     CO2 as an emissions commodity, but the CO2 also serves as a physical

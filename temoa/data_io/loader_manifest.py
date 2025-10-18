@@ -12,12 +12,12 @@ load a single Pyomo component (a `Set` or `Param`) from the database.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pyomo.core import Param, Set
 
-    ComponentType: TypeAlias = Set | Param
+    type ComponentType = Set | Param
 else:
     ComponentType = Any
 
