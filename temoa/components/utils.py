@@ -13,8 +13,19 @@ from typing import TYPE_CHECKING
 from pyomo.core import Expression
 from pyomo.environ import value
 
+from temoa.types import ExprLike
+
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types import (
+        Commodity,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
 
 
 logger = getLogger(__name__)
@@ -26,7 +37,7 @@ class Operator(str, Enum):
     GREATER_EQUAL = 'ge'
 
 
-def operator_expression(lhs: Expression, operator: Operator, rhs: Expression):
+def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) -> ExprLike:
     match operator:
         case Operator.EQUAL:
             return lhs == rhs
@@ -37,7 +48,17 @@ def operator_expression(lhs: Expression, operator: Operator, rhs: Expression):
     raise ValueError(f'Invalid operator: {operator!r}')
 
 
-def get_variable_efficiency(M: 'TemoaModel', r, p, s, d, i, t, v, o) -> float:
+def get_variable_efficiency(
+    M: 'TemoaModel',
+    r: 'Region',
+    p: 'Period',
+    s: 'Season',
+    d: 'TimeOfDay',
+    i: 'Commodity',
+    t: 'Technology',
+    v: 'Vintage',
+    o: 'Commodity',
+) -> float:
     """
     Calculates the effective efficiency for a process in a specific time slice.
 

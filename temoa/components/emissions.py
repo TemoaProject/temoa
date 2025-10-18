@@ -11,7 +11,10 @@ This module is responsible for:
 
 from typing import TYPE_CHECKING
 
+from pyomo.core import quicksum
 from pyomo.environ import value
+
+from temoa.types import ExprLike
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -22,28 +25,28 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-def EmissionActivityIndices(M: 'TemoaModel'):
-    indices = set(
+def EmissionActivityIndices(M: 'TemoaModel') -> set[tuple[str, str, str, str, int, str]]:
+    indices = {
         (r, e, i, t, v, o)
         for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
         for e in M.commodity_emissions
         if r in M.regions  # omit any exchange/groups
-    )
+    }
 
     return indices
 
 
-def LinkedTechConstraintIndices(M: 'TemoaModel'):
-    linkedtech_indices = set(
+def LinkedTechConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int, str]]:
+    linkedtech_indices = {
         (r, p, s, d, t, v, e)
         for r, t, e in M.LinkedTechs.sparse_iterkeys()
         for p in M.time_optimize
         if (r, p, t) in M.processVintages
         for v in M.processVintages[r, p, t]
-        if (r, p, t, v) in M.activeActivity_rptv
+        if M.activeActivity_rptv and (r, p, t, v) in M.activeActivity_rptv
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return linkedtech_indices
 
@@ -53,7 +56,9 @@ def LinkedTechConstraintIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
+def LinkedEmissionsTech_Constraint(
+    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, e: str
+) -> ExprLike:
     r"""
     This constraint is necessary for carbon capture technologies that produce
     CO2 as an emissions commodity, but the CO2 also serves as a physical
@@ -78,7 +83,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     """
 
     if t in M.tech_annual:
-        primary_flow = sum(
+        primary_flow = quicksum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
                 if S_o in M.commodity_demand
@@ -90,14 +95,14 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
             for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
-        primary_flow = sum(
+        primary_flow = quicksum(
             M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
             * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
             for S_i in M.processInputs[r, p, t, v]
             for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
 
-    linked_t = M.LinkedTechs[r, t, e]
+    linked_t = value(M.LinkedTechs[r, t, e])
 
     # linked_flow = sum(
     #     M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
@@ -106,7 +111,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
     # )
 
     if linked_t in M.tech_annual:
-        linked_flow = sum(
+        linked_flow = quicksum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
                 if S_o in M.commodity_demand
@@ -117,7 +122,7 @@ def LinkedEmissionsTech_Constraint(M: 'TemoaModel', r, p, s, d, t, v, e):
             for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
         )
     else:
-        linked_flow = sum(
+        linked_flow = quicksum(
             M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
             for S_i in M.processInputs[r, p, linked_t, v]
             for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
