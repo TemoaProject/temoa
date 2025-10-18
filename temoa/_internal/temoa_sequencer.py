@@ -73,8 +73,8 @@ class TemoaSequencer:
         output_path: str | Path,
         mode_override: TemoaMode | None = None,
         silent: bool = False,
-        **kwargs,
-    ):
+        **kwargs: object,
+    ) -> None:
         """
         Create a new Sequencer
         :param config_file: Optional path to config file.  If not provided, it will be read
@@ -100,8 +100,7 @@ class TemoaSequencer:
             logger.error('Output directory does not exist: %s', self.output_path)
             raise FileNotFoundError(f'Invalid output directory: {self.output_path}')
 
-        self.temoa_mode: TemoaMode = TemoaMode.BUILD_ONLY  # placeholder, over-written in start()
-        self.mode_override: TemoaMode = mode_override
+        self.mode_override: TemoaMode | None = mode_override
 
         # for feedback to user
         self.silent = silent
@@ -140,7 +139,7 @@ class TemoaSequencer:
             self.temoa_mode = self.config.scenario_mode
         # check it...
         if not isinstance(self.temoa_mode, TemoaMode):
-            logger.error(
+            logger.error(  # type: ignore[unreachable]
                 'Temoa Mode not set properly.  Override: %s, Config File: %s',
                 self.mode_override,
                 self.config.scenario_mode,
@@ -197,6 +196,7 @@ class TemoaSequencer:
                 if not good_prices and not self.config.silent:
                     print('Warning: Cost anomalies discovered. Check log file for details.')
                 con.close()
+                return None
 
             case TemoaMode.PERFECT_FORESIGHT:
                 con = sqlite3.connect(self.config.input_database)
@@ -236,11 +236,13 @@ class TemoaSequencer:
                     sys.exit(-1)
                 handle_results(self.pf_solved_instance, self.pf_results, self.config)
                 con.close()
+                return None
 
             case TemoaMode.MYOPIC:
                 # create a myopic sequencer and shift control to it
                 myopic_sequencer = MyopicSequencer(config=self.config)
                 myopic_sequencer.start()
+                return None
 
             case TemoaMode.MGA:
                 if self.config.solver_name == 'appsi_highs':
@@ -250,14 +252,17 @@ class TemoaSequencer:
                     )
                 mga_sequencer = MgaSequencer(config=self.config)
                 mga_sequencer.start()
+                return None
 
             case TemoaMode.SVMGA:
                 sv_mga_sequencer = SvMgaSequencer(config=self.config)
                 sv_mga_sequencer.start()
+                return None
 
             case TemoaMode.METHOD_OF_MORRIS:
                 mm_sequencer = MorrisSequencer(config=self.config)
                 mm_sequencer.start()
+                return None
 
             case TemoaMode.MONTE_CARLO:
                 if self.config.solver_name == 'appsi_highs':
@@ -282,6 +287,7 @@ class TemoaSequencer:
                     logger.warning('Save duals disabled for MONTE_CARLO')
                 mc_sequencer = MCSequencer(config=self.config)
                 mc_sequencer.start()
+                return None
 
             case _:
                 raise NotImplementedError('not yet built')

@@ -1,29 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  12/5/24
-
 Objective of this module is to build a lightweight container to hold a selection of model results from a
 Worker process with the intent to send this back via multiprocessing queue in lieu of sending the entire
 model back (which is giant and slow).  It will probably be a "superset" of data elements required to report
@@ -31,9 +6,8 @@ for MC and MGA right now, and maybe others
 
 """
 
+from temoa._internal.exchange_tech_cost_ledger import CostType
 from temoa._internal.table_data_puller import (
-    EI,
-    CapData,
     poll_capacity_results,
     poll_cost_results,
     poll_emissions,
@@ -41,6 +15,7 @@ from temoa._internal.table_data_puller import (
     poll_objective,
 )
 from temoa.core.model import TemoaModel
+from temoa.types.model_types import EI, FI, CapData, FlowType
 
 
 class DataBrick:
@@ -50,14 +25,14 @@ class DataBrick:
 
     def __init__(
         self,
-        name,
-        emission_costs,
-        emission_flows,
-        capacity_data,
-        flow_data,
-        obj_data,
-        regular_costs,
-        exchange_costs,
+        name: str,
+        emission_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
+        emission_flows: dict[EI, float],
+        capacity_data: CapData,
+        flow_data: dict[FI, dict[FlowType, float]],
+        obj_data: list[tuple[str, float]],
+        regular_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
+        exchange_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
     ):
         self._name = name
         self._emission_costs = emission_costs
@@ -81,23 +56,23 @@ class DataBrick:
         return self._capacity_data
 
     @property
-    def flow_data(self) -> dict:
+    def flow_data(self) -> dict[FI, dict[FlowType, float]]:
         return self._flow_data
 
     @property
-    def obj_data(self) -> list:
+    def obj_data(self) -> list[tuple[str, float]]:
         return self._obj_data
 
     @property
-    def cost_data(self):
+    def cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
         return self._regular_costs
 
     @property
-    def exchange_cost_data(self):
+    def exchange_cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
         return self._exchange_costs
 
     @property
-    def emission_cost_data(self):
+    def emission_cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
         return self._emission_costs
 
 
