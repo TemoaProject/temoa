@@ -86,6 +86,9 @@ testpaths = [
 # Python version targeting
 python_version = "3.12"
 
+# Tell mypy to also look for stubs in this directory
+mypy_path = "stubs"
+
 # Exclude specific directories from type checking
 exclude = "(?x)(^tests/|^temoa/model_checking/|^temoa/data_processing/|^temoa/extensions/|^docs/)"
 
@@ -187,8 +190,8 @@ disallow_any_unimported = false
 # Follow custom imports for our stub files
 [[tool.mypy.overrides]]
 module = [
-    "temoa.types.pyomo_stubs",
     "temoa.types.pandas_stubs",
+    "stubs.*",
 ]
 disallow_any_explicit = false
 disallow_untyped_defs = false
@@ -201,6 +204,7 @@ dev = [
     "pre-commit",
     "pytest",
     "pytest-cov",
+    "pandas-stubs>=2.3.2.250926",
 ]
 
 [project.urls]

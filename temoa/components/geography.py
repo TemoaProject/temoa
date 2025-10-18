@@ -31,12 +31,13 @@ logger = getLogger(name=__name__)
 
 
 def gather_group_regions(M: 'TemoaModel', region: Region) -> Iterable[Region]:
+    regions: list[Region]
     if region == 'global':
-        regions = M.regions
+        regions = list(M.regions)
     elif '+' in region:
         regions = region.split('+')
     else:
-        regions = (region,)
+        regions = [region]
     return regions
 
 

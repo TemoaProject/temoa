@@ -32,23 +32,23 @@ from . import (
 
 # Import Pyomo stub types
 if TYPE_CHECKING:
-    from .pyomo_stubs import (
+    from pyomo.core import (
         AbstractModel,
-        PyomoBuildAction,
-        PyomoConstraint,
-        PyomoObjective,
-        PyomoParam,
-        PyomoSet,
-        PyomoVar,
+        BuildAction,
+        Constraint,
+        Objective,
+        Param,
+        Set,
+        Var,
     )
 else:
     # Runtime fallback for non-TYPE_CHECKING contexts
-    PyomoSet = Any  # AbstractModel.set
-    PyomoParam = Any  # AbstractModel.Param
-    PyomoVar = Any  # AbstractModel.Var
-    PyomoConstraint = Any  # AbstractModel.Constraint
-    PyomoBuildAction = Any  # AbstractModel.BuildAction
-    PyomoObjective = Any  # AbstractModel.Objective
+    Set = Any  # AbstractModel.set
+    Param = Any  # AbstractModel.Param
+    Var = Any  # AbstractModel.Var
+    Constraint = Any  # AbstractModel.Constraint
+    BuildAction = Any  # AbstractModel.BuildAction
+    Objective = Any  # AbstractModel.Objective
 
 # Type aliases for model data structures
 ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
@@ -63,21 +63,21 @@ CommoditysetTyped = set[Commodity]
 VintagesetTyped = set[Vintage]
 
 # Model parameters type definitions
-EfficiencyParam = PyomoParam  # Multi-dimensional efficiency parameter
-CostParam = PyomoParam  # Cost parameters (investment, fixed, variable)
-CapacityParam = PyomoParam  # Capacity-related parameters
-EmissionParam = PyomoParam  # Emission parameters
+EfficiencyParam = Param  # Multi-dimensional efficiency parameter
+CostParam = Param  # Cost parameters (investment, fixed, variable)
+CapacityParam = Param  # Capacity-related parameters
+EmissionParam = Param  # Emission parameters
 
 # Model variables type definitions
 if TYPE_CHECKING:
-    FlowVar = PyomoVar  # Flow variables
-    CapacityVar = PyomoVar  # Capacity variables
-    CostVar = PyomoVar  # Cost variables
+    FlowVar = Var  # Flow variables
+    CapacityVar = Var  # Capacity variables
+    CostVar = Var  # Cost variables
 
     # Model constraints type definitions
-    FlowConstraint = PyomoConstraint  # Flow balance constraints
-    CapacityConstraint = PyomoConstraint  # Capacity constraints
-    CostConstraint = PyomoConstraint  # Cost accounting constraints
+    FlowConstraint = Constraint  # Flow balance constraints
+    CapacityConstraint = Constraint  # Capacity constraints
+    CostConstraint = Constraint  # Cost accounting constraints
 else:
     # Runtime fallback
     FlowVar = Any  # Flow variables
@@ -96,47 +96,47 @@ class TemoaModelProtocol(Protocol):
     name: str
 
     # Time-related sets
-    time_exist: PyomoSet
-    time_future: PyomoSet
-    time_optimize: PyomoSet
-    vintage_exist: PyomoSet
-    vintage_optimize: PyomoSet
-    time_season: PyomoSet
-    time_of_day: PyomoSet
+    time_exist: Set
+    time_future: Set
+    time_optimize: Set
+    vintage_exist: Set
+    vintage_optimize: Set
+    time_season: Set
+    time_of_day: Set
 
     # Geography sets
-    regions: PyomoSet
-    regionalIndices: PyomoSet
+    regions: Set
+    regionalIndices: Set
 
     # Technology sets
-    tech_all: PyomoSet
-    tech_production: PyomoSet
-    tech_storage: PyomoSet
-    tech_reserve: PyomoSet
-    tech_exchange: PyomoSet
+    tech_all: Set
+    tech_production: Set
+    tech_storage: Set
+    tech_reserve: Set
+    tech_exchange: Set
 
     # Commodity sets
-    commodity_all: PyomoSet
-    commodity_demand: PyomoSet
-    commodity_physical: PyomoSet
-    commodity_emissions: PyomoSet
+    commodity_all: Set
+    commodity_demand: Set
+    commodity_physical: Set
+    commodity_emissions: Set
 
     # Model parameters
-    GlobalDiscountRate: PyomoParam
-    Demand: PyomoParam
-    Efficiency: PyomoParam
-    ExistingCapacity: PyomoParam
-    CapacityToActivity: PyomoParam
+    GlobalDiscountRate: Param
+    Demand: Param
+    Efficiency: Param
+    ExistingCapacity: Param
+    CapacityToActivity: Param
 
     # Model variables
-    V_FlowOut: PyomoVar
-    V_Capacity: PyomoVar
-    V_NewCapacity: PyomoVar
+    V_FlowOut: Var
+    V_Capacity: Var
+    V_NewCapacity: Var
 
     # Model constraints
-    DemandConstraint: PyomoConstraint
-    CommodityBalanceConstraint: PyomoConstraint
-    CapacityConstraint: PyomoConstraint
+    DemandConstraint: Constraint
+    CommodityBalanceConstraint: Constraint
+    CapacityConstraint: Constraint
 
     # Internal data structures
     processInputs: ProcessInputs
@@ -160,61 +160,61 @@ if TYPE_CHECKING:
         default_lifetime_tech: int
 
         # Time-related sets
-        time_exist: PyomoSet
-        time_future: PyomoSet
-        time_optimize: PyomoSet
-        vintage_exist: PyomoSet
-        vintage_optimize: PyomoSet
-        vintage_all: PyomoSet
-        time_season: PyomoSet
-        time_of_day: PyomoSet
+        time_exist: Set
+        time_future: Set
+        time_optimize: Set
+        vintage_exist: Set
+        vintage_optimize: Set
+        vintage_all: Set
+        time_season: Set
+        time_of_day: Set
 
         # Geography sets
-        regions: PyomoSet
-        regionalIndices: PyomoSet
-        regionalGlobalIndices: PyomoSet
+        regions: Set
+        regionalIndices: Set
+        regionalGlobalIndices: Set
 
         # Technology sets
-        tech_all: PyomoSet
-        tech_production: PyomoSet
-        tech_baseload: PyomoSet
-        tech_annual: PyomoSet
-        tech_storage: PyomoSet
-        tech_reserve: PyomoSet
-        tech_exchange: PyomoSet
-        tech_uncap: PyomoSet
-        tech_with_capacity: PyomoSet
-        tech_retirement: PyomoSet
+        tech_all: Set
+        tech_production: Set
+        tech_baseload: Set
+        tech_annual: Set
+        tech_storage: Set
+        tech_reserve: Set
+        tech_exchange: Set
+        tech_uncap: Set
+        tech_with_capacity: Set
+        tech_retirement: Set
 
         # Commodity sets
-        commodity_all: PyomoSet
-        commodity_demand: PyomoSet
-        commodity_physical: PyomoSet
-        commodity_emissions: PyomoSet
-        commodity_carrier: PyomoSet
+        commodity_all: Set
+        commodity_demand: Set
+        commodity_physical: Set
+        commodity_emissions: Set
+        commodity_carrier: Set
 
         # Model parameters
-        GlobalDiscountRate: PyomoParam
-        PeriodLength: PyomoParam
-        SegFrac: PyomoParam
-        Demand: PyomoParam
-        Efficiency: PyomoParam
-        ExistingCapacity: PyomoParam
-        CapacityToActivity: PyomoParam
-        CostInvest: PyomoParam
-        CostFixed: PyomoParam
-        CostVariable: PyomoParam
+        GlobalDiscountRate: Param
+        PeriodLength: Param
+        SegFrac: Param
+        Demand: Param
+        Efficiency: Param
+        ExistingCapacity: Param
+        CapacityToActivity: Param
+        CostInvest: Param
+        CostFixed: Param
+        CostVariable: Param
 
         # Model variables
-        V_FlowOut: PyomoVar
-        V_Capacity: PyomoVar
-        V_NewCapacity: PyomoVar
-        V_RetiredCapacity: PyomoVar
+        V_FlowOut: Var
+        V_Capacity: Var
+        V_NewCapacity: Var
+        V_RetiredCapacity: Var
 
         # Model constraints
-        DemandConstraint: PyomoConstraint
-        CommodityBalanceConstraint: PyomoConstraint
-        CapacityConstraint: PyomoConstraint
+        DemandConstraint: Constraint
+        CommodityBalanceConstraint: Constraint
+        CapacityConstraint: Constraint
 
         # Internal tracking dictionaries
         processInputs: ProcessInputs
@@ -272,12 +272,10 @@ __all__ = [
     'CommoditysetTyped',
     'VintagesetTyped',
     # Pyomo type aliases
-    'PyomoSet',
-    'PyomoParam',
-    'PyomoVar',
-    'PyomoConstraint',
-    'PyomoBuildAction',
-    'PyomoObjective',
+    'Set',
+    'Param',
+    'Var',
+    'Constraint',
     # Parameter types
     'EfficiencyParam',
     'CostParam',

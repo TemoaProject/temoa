@@ -10,9 +10,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from .pyomo_opt_stubs import SolverResults as PyomoSolverResults
-    from .pyomo_opt_stubs import SolverStatus as PyomoSolverStatus
-    from .pyomo_opt_stubs import TerminationCondition as PyomoTerminationCondition
+    from pyomo.opt.results import SolverResults, SolverStatus, TerminationCondition
 else:
     # Runtime fallbacks
     PyomoSolverResults = Any
@@ -75,13 +73,13 @@ class SolverResultsProtocol(Protocol):
 
 
 # Type aliases for solver-related types
-SolverResults = PyomoSolverResults
+SolverResults = SolverResults
 """Type alias for Pyomo SolverResults objects."""
 
-SolverStatus = PyomoSolverStatus
+SolverStatus = SolverStatus
 """Type alias for Pyomo SolverStatus enum."""
 
-TerminationCondition = PyomoTerminationCondition
+TerminationCondition = TerminationCondition
 """Type alias for Pyomo TerminationCondition enum."""
 
 SolverOptions = Mapping[str, object]

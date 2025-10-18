@@ -24,7 +24,6 @@ from collections import defaultdict
 from collections.abc import Sequence
 from logging import getLogger
 from sqlite3 import Connection, Cursor, OperationalError
-from typing import Dict, List, Optional, Tuple
 
 from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
@@ -92,7 +91,7 @@ class HybridLoader:
         # --- Data containers and filters populated during loading ---
         self.manager: CommodityNetworkManager | None = None
         self.efficiency_values: list[tuple[object, ...]] = []
-        self.data: Dict[str, object] | None = None
+        self.data: dict[str, object] | None = None
 
         # --- Viable sets for source-trace filtering ---
         self.viable_techs: ViableSet | None = None
@@ -107,7 +106,7 @@ class HybridLoader:
         self.viable_rpit: ViableSet | None = None
         self.viable_rtt: ViableSet | None = None
 
-    def source_trace_only(self, myopic_index: Optional[MyopicIndex] = None) -> None:
+    def source_trace_only(self, myopic_index: MyopicIndex | None = None) -> None:
         """
         Runs only the source-trace analysis without a full data load.
         This is primarily for the 'check' mode.
@@ -119,7 +118,7 @@ class HybridLoader:
         self._source_trace(myopic_index)
         self.manager = None  # Prevent use of stale data
 
-    def load_data_portal(self, myopic_index: Optional[MyopicIndex] = None) -> DataPortal:  # type: ignore[no-any-unimported]
+    def load_data_portal(self, myopic_index: MyopicIndex | None = None) -> DataPortal:  # type: ignore[no-any-unimported]
         """
         Main entry point to create and load a DataPortal object.
 
@@ -137,7 +136,7 @@ class HybridLoader:
         return dp
 
     @staticmethod
-    def data_portal_from_data(data_source: Dict[str, object]) -> DataPortal:  # type: ignore[no-any-unimported]
+    def data_portal_from_data(data_source: dict[str, object]) -> DataPortal:  # type: ignore[no-any-unimported]
         """
         Creates a DataPortal object from an existing data dictionary.
         Useful for model runs where the data has been modified in memory.
@@ -153,7 +152,7 @@ class HybridLoader:
     # Main Data Loading Engine
     # =================================================================================
 
-    def create_data_dict(self, myopic_index: Optional[MyopicIndex] = None) -> Dict[str, object]:
+    def create_data_dict(self, myopic_index: MyopicIndex | None = None) -> dict[str, object]:
         """
         The main manifest-driven engine for loading model data.
 
@@ -190,7 +189,7 @@ class HybridLoader:
 
         self._build_efficiency_dataset(use_raw_data=use_raw_data, myopic_index=myopic_index)
 
-        data: Dict[str, object] = {}
+        data: dict[str, object] = {}
         cur = self.con.cursor()
         M = TemoaModel()
 
@@ -275,8 +274,8 @@ class HybridLoader:
     # =================================================================================
     # Core Engine Helpers
     def _fetch_data(
-        self, cur: Cursor, item: LoadItem, mi: Optional[MyopicIndex]
-    ) -> List[Tuple[object, ...]]:
+        self, cur: Cursor, item: LoadItem, mi: MyopicIndex | None
+    ) -> list[tuple[object, ...]]:
         """
         Fetches data for a component based on its manifest item.
 
@@ -342,9 +341,9 @@ class HybridLoader:
             values=values, validation=validator, value_locations=item.validation_map
         )
 
-    def _load_component_data(  # type: ignore[no-any-unimported]
+    def _load_component_data(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         component: Set | Param,
         values: Sequence[tuple[object, ...]],
     ) -> None:
@@ -475,7 +474,7 @@ class HybridLoader:
     # --- Core Model Structure ---
     def _load_regional_global_indices(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -505,7 +504,7 @@ class HybridLoader:
 
     def _load_tech_group_members(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -521,7 +520,7 @@ class HybridLoader:
     # --- Time-Related Components ---
     def _load_time_season(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -547,7 +546,7 @@ class HybridLoader:
             data.setdefault(M.time_season.name, [])
             return
 
-        unique_seasons = sorted(list(set((row[1],) for row in rows_to_load)))
+        unique_seasons = sorted(list({(row[1],) for row in rows_to_load}))
         self._load_component_data(data, M.time_season, unique_seasons)
 
         for period, season in rows_to_load:
@@ -557,7 +556,7 @@ class HybridLoader:
 
     def _load_time_season_sequential(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -569,12 +568,12 @@ class HybridLoader:
         if filtered_data:
             ordered_data = [row[0:3] for row in filtered_data]
             self._load_component_data(data, M.ordered_season_sequential, ordered_data)
-            seq_data = sorted(list(set((row[1],) for row in filtered_data)))
+            seq_data = sorted(list({(row[1],) for row in filtered_data}))
             self._load_component_data(data, M.time_season_sequential, seq_data)
 
     def _load_seg_frac(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -591,7 +590,7 @@ class HybridLoader:
     # --- Capacity and Cost Components ---
     def _load_existing_capacity(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -626,7 +625,7 @@ class HybridLoader:
 
     def _load_cost_invest(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -638,7 +637,7 @@ class HybridLoader:
 
     def _load_loan_rate(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -651,7 +650,7 @@ class HybridLoader:
     # --- Singleton and Configuration-based Components ---
     def _load_days_per_period(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -666,7 +665,7 @@ class HybridLoader:
 
     def _load_global_discount_rate(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -681,7 +680,7 @@ class HybridLoader:
 
     def _load_default_loan_rate(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -693,7 +692,7 @@ class HybridLoader:
     # --- Operational Constraints and Parameters ---
     def _load_efficiency(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -703,7 +702,7 @@ class HybridLoader:
 
     def _load_linked_techs(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -725,7 +724,7 @@ class HybridLoader:
 
     def _load_ramping_down(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -741,7 +740,7 @@ class HybridLoader:
 
     def _load_ramping_up(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -757,7 +756,7 @@ class HybridLoader:
 
     def _load_rps_requirement(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -772,7 +771,7 @@ class HybridLoader:
 
     def _load_limit_tech_input_split(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -793,7 +792,7 @@ class HybridLoader:
 
     def _load_limit_tech_input_split_annual(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -814,7 +813,7 @@ class HybridLoader:
 
     def _load_limit_tech_output_split(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -835,7 +834,7 @@ class HybridLoader:
 
     def _load_limit_tech_output_split_annual(
         self,
-        data: Dict[str, object],
+        data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
@@ -858,7 +857,7 @@ class HybridLoader:
     # Finalizer Method
     # =================================================================================
 
-    def load_param_idx_sets(self, data: Dict[str, object]) -> Dict[str, object]:
+    def load_param_idx_sets(self, data: dict[str, object]) -> dict[str, object]:
         """
         Builds a dictionary of sparse sets used for indexing parameters.
         This is a final data enhancement step that runs after all primary data
@@ -886,9 +885,9 @@ class HybridLoader:
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
         }
 
-        res: Dict[str, object] = {}
+        res: dict[str, object] = {}
         for p_name, s_name in param_idx_sets.items():
             param_data = data.get(p_name)
-            if param_data:
-                res[s_name] = list(param_data.keys())  # type: ignore[attr-defined]
+            if isinstance(param_data, dict):
+                res[s_name] = list(param_data.keys())
         return res

@@ -348,7 +348,7 @@ def poll_cost_results(
                 period=v,
                 tech=t,
                 vintage=v,
-                cost=model_loan_cost,
+                cost=value(model_loan_cost),
                 cost_type=CostType.D_INVEST,
             )
             exchange_costs.add_cost_record(
@@ -356,13 +356,16 @@ def poll_cost_results(
                 period=v,
                 tech=t,
                 vintage=v,
-                cost=undiscounted_cost,
+                cost=value(undiscounted_cost),
                 cost_type=CostType.INVEST,
             )
         else:
             # enter it into the entries table with period of cost = vintage (p=v)
             entries[r, v, t, v].update(
-                {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
+                {
+                    CostType.D_INVEST: value(model_loan_cost),
+                    CostType.INVEST: value(undiscounted_cost),
+                }
             )
 
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
@@ -382,7 +385,7 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=model_fixed_cost,
+                cost=value(model_fixed_cost),
                 cost_type=CostType.D_FIXED,
             )
             exchange_costs.add_cost_record(
@@ -390,12 +393,15 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=undiscounted_fixed_cost,
+                cost=value(undiscounted_fixed_cost),
                 cost_type=CostType.FIXED,
             )
         else:
             entries[r, p, t, v].update(
-                {CostType.D_FIXED: model_fixed_cost, CostType.FIXED: undiscounted_fixed_cost}
+                {
+                    CostType.D_FIXED: value(model_fixed_cost),
+                    CostType.FIXED: value(undiscounted_fixed_cost),
+                }
             )
 
     for r, p, t, v in M.CostVariable.sparse_iterkeys():
@@ -428,7 +434,7 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=model_var_cost,
+                cost=value(model_var_cost),
                 cost_type=CostType.D_VARIABLE,
             )
             exchange_costs.add_cost_record(
@@ -436,12 +442,15 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=undiscounted_var_cost,
+                cost=value(undiscounted_var_cost),
                 cost_type=CostType.VARIABLE,
             )
         else:
             entries[r, p, t, v].update(
-                {CostType.D_VARIABLE: model_var_cost, CostType.VARIABLE: undiscounted_var_cost}
+                {
+                    CostType.D_VARIABLE: value(model_var_cost),
+                    CostType.VARIABLE: value(undiscounted_var_cost),
+                }
             )
     exchange_entries = exchange_costs.get_entries()
     return entries, exchange_entries
@@ -465,7 +474,7 @@ def loan_costs(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=loan_life)
+    loan_ar = value(costs.pv_to_annuity(rate=loan_rate, periods=loan_life))
     model_ic = costs.loan_cost(
         capacity,
         invest_cost,
@@ -482,7 +491,7 @@ def loan_costs(
     undiscounted_cost = costs.loan_cost(
         capacity,
         invest_cost,
-        loan_annualize=loan_ar,
+        loan_annualize=value(loan_ar),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
         P_0=p_0,
@@ -490,7 +499,7 @@ def loan_costs(
         GDR=global_discount_rate,
         vintage=vintage,
     )
-    return model_ic, undiscounted_cost
+    return value(model_ic), value(undiscounted_cost)
 
 
 def loan_costs_survival_curve(
@@ -514,7 +523,7 @@ def loan_costs_survival_curve(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=loan_life)
+    loan_ar = value(costs.pv_to_annuity(rate=loan_rate, periods=loan_life))
     model_ic = costs.loan_cost_survival_curve(
         M,
         r,
@@ -537,13 +546,13 @@ def loan_costs_survival_curve(
         v,
         capacity,
         invest_cost,
-        loan_annualize=loan_ar,
+        loan_annualize=value(loan_ar),
         lifetime_loan_process=loan_life,
         P_0=p_0,
         P_e=p_e,
         GDR=global_discount_rate,
     )
-    return model_ic, undiscounted_cost
+    return value(model_ic), value(undiscounted_cost)
 
 
 def poll_emissions(
@@ -621,7 +630,7 @@ def poll_emissions(
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.p, ei.t, ei.v] += discounted_emiss_cost
+        d_costs[ei.r, ei.p, ei.t, ei.v] += value(discounted_emiss_cost)
 
     ###########################
     #   Embodied Emissions
@@ -663,7 +672,7 @@ def poll_emissions(
             p=ei.v,
         )
         ud_costs[ei.r, ei.v, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.v, ei.t, ei.v] += discounted_emiss_cost
+        d_costs[ei.r, ei.v, ei.t, ei.v] += value(discounted_emiss_cost)
 
     ###########################
     #   End of life Emissions
@@ -708,7 +717,7 @@ def poll_emissions(
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.p, ei.t, ei.v] += discounted_emiss_cost
+        d_costs[ei.r, ei.p, ei.t, ei.v] += value(discounted_emiss_cost)
 
     # finally, now that all costs are added up for each rptv, put in cost dict
     costs_dict: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)

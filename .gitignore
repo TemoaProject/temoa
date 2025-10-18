@@ -9,6 +9,7 @@
 !notebooks/
 !output_files/
 !.github/
+!stubs/
 
 # unignore files
 !.gitignore

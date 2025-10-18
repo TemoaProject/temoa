@@ -13,7 +13,6 @@ of technologies across time slices, including:
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
-from pyomo.core import Set
 from pyomo.environ import Constraint, value
 
 from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
@@ -75,7 +74,7 @@ def RampUpSeasonConstraintIndices(
     M: 'TemoaModel',
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip  # dont need this constraint
+        return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
     indices = {
@@ -98,7 +97,7 @@ def RampDownSeasonConstraintIndices(
     M: 'TemoaModel',
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip  # dont need this constraint
+        return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
     indices = {

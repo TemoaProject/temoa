@@ -371,8 +371,8 @@ def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
             'following elements to the commodity_demand Set.'
             '\n\n    Element(s): {}'
         )
-        diff = (str(i) for i in diff)
-        f_msg = msg.format(', '.join(diff))
+        diff_str = (str(i) for i in diff)
+        f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
