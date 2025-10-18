@@ -118,7 +118,7 @@ def poll_flow_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[Flo
     :param epsilon: epsilon (default 1e-5)
     :return: nested dictionary of FlowIndex, FlowType : value
     """
-    dd = functools.partial(defaultdict, float)  # type: ignore
+    dd: functools.partial[dict[FlowType, float]] = functools.partial(defaultdict, float)
     res: dict[FI, dict[FlowType, float]] = defaultdict(dd)
 
     # ---- NON-annual ----
@@ -276,7 +276,7 @@ def poll_objective(M: TemoaModel) -> list[tuple[str, float]]:
         logger.warning('Multiple active objectives found.  All will be logged in db')
     res = []
     for obj in active_objs:
-        obj_name, obj_value = obj.getname(fully_qualified=True), value(obj)
+        obj_name, obj_value = obj.getname(fully_qualified=True), float(value(obj))
         res.append((obj_name, obj_value))
     return res
 
@@ -294,8 +294,11 @@ def poll_cost_results(
     :param epsilon: epsilon (default 1e-5)
     :return: tuple of cost_dict, exchange_cost_dict (for exchange techs)
     """
-    if not p_0:
-        p_0 = min(M.time_optimize)
+    p_0_true: int
+    if p_0 is None:
+        p_0_true = min(M.time_optimize)
+    else:
+        p_0_true = p_0
 
     p_e = M.time_future.last()
 
@@ -324,7 +327,7 @@ def poll_cost_results(
                 loan_life=loan_life,
                 capacity=cap,
                 invest_cost=value(M.CostInvest[r, t, v]),
-                p_0=p_0,
+                p_0=p_0_true,
                 p_e=p_e,
                 global_discount_rate=GDR,
                 vintage=v,
@@ -336,7 +339,7 @@ def poll_cost_results(
                 capacity=cap,
                 invest_cost=value(M.CostInvest[r, t, v]),
                 process_life=value(M.LifetimeProcess[r, t, v]),
-                p_0=p_0,
+                p_0=p_0_true,
                 p_e=p_e,
                 global_discount_rate=GDR,
                 vintage=v,
@@ -348,7 +351,7 @@ def poll_cost_results(
                 period=v,
                 tech=t,
                 vintage=v,
-                cost=value(model_loan_cost),
+                cost=model_loan_cost,
                 cost_type=CostType.D_INVEST,
             )
             exchange_costs.add_cost_record(
@@ -356,16 +359,13 @@ def poll_cost_results(
                 period=v,
                 tech=t,
                 vintage=v,
-                cost=value(undiscounted_cost),
+                cost=undiscounted_cost,
                 cost_type=CostType.INVEST,
             )
         else:
             # enter it into the entries table with period of cost = vintage (p=v)
             entries[r, v, t, v].update(
-                {
-                    CostType.D_INVEST: value(model_loan_cost),
-                    CostType.INVEST: value(undiscounted_cost),
-                }
+                {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
 
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
@@ -377,7 +377,12 @@ def poll_cost_results(
         undiscounted_fixed_cost = cap * fixed_cost * value(M.PeriodLength[p])
 
         model_fixed_cost = costs.fixed_or_variable_cost(
-            cap, fixed_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
+            cap,
+            fixed_cost,
+            value(M.PeriodLength[p]),
+            GDR=GDR,
+            P_0=float(p_0) if p_0 is not None else 0.0,
+            p=p,
         )
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -385,7 +390,7 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=value(model_fixed_cost),
+                cost=float(value(model_fixed_cost)),
                 cost_type=CostType.D_FIXED,
             )
             exchange_costs.add_cost_record(
@@ -393,14 +398,14 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=value(undiscounted_fixed_cost),
+                cost=float(value(undiscounted_fixed_cost)),
                 cost_type=CostType.FIXED,
             )
         else:
             entries[r, p, t, v].update(
                 {
-                    CostType.D_FIXED: value(model_fixed_cost),
-                    CostType.FIXED: value(undiscounted_fixed_cost),
+                    CostType.D_FIXED: float(value(model_fixed_cost)),
+                    CostType.FIXED: float(value(undiscounted_fixed_cost)),
                 }
             )
 
@@ -426,7 +431,12 @@ def poll_cost_results(
         undiscounted_var_cost = activity * var_cost * value(M.PeriodLength[p])
 
         model_var_cost = costs.fixed_or_variable_cost(
-            activity, var_cost, value(M.PeriodLength[p]), GDR=GDR, P_0=p_0, p=p
+            activity,
+            var_cost,
+            value(M.PeriodLength[p]),
+            GDR=GDR,
+            P_0=float(p_0) if p_0 is not None else 0.0,
+            p=p,
         )
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -434,7 +444,7 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=value(model_var_cost),
+                cost=float(value(model_var_cost)),
                 cost_type=CostType.D_VARIABLE,
             )
             exchange_costs.add_cost_record(
@@ -442,14 +452,14 @@ def poll_cost_results(
                 period=p,
                 tech=t,
                 vintage=v,
-                cost=value(undiscounted_var_cost),
+                cost=float(value(undiscounted_var_cost)),
                 cost_type=CostType.VARIABLE,
             )
         else:
             entries[r, p, t, v].update(
                 {
-                    CostType.D_VARIABLE: value(model_var_cost),
-                    CostType.VARIABLE: value(undiscounted_var_cost),
+                    CostType.D_VARIABLE: float(value(model_var_cost)),
+                    CostType.VARIABLE: float(value(undiscounted_var_cost)),
                 }
             )
     exchange_entries = exchange_costs.get_entries()
@@ -458,7 +468,7 @@ def poll_cost_results(
 
 def loan_costs(
     loan_rate: float,  # this is referred to as LoanRate in parameters
-    loan_life: int,
+    loan_life: float,
     capacity: float,
     invest_cost: float,
     process_life: int,
@@ -466,7 +476,7 @@ def loan_costs(
     p_e: int,
     global_discount_rate: float,
     vintage: int,
-    **kwargs: float,
+    **kwargs: object,
 ) -> tuple[float, float]:
     """
     Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
@@ -474,11 +484,11 @@ def loan_costs(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = value(costs.pv_to_annuity(rate=loan_rate, periods=loan_life))
+    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=int(loan_life))
     model_ic = costs.loan_cost(
         capacity,
         invest_cost,
-        loan_annualize=loan_ar,
+        loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
         P_0=p_0,
@@ -491,7 +501,7 @@ def loan_costs(
     undiscounted_cost = costs.loan_cost(
         capacity,
         invest_cost,
-        loan_annualize=value(loan_ar),
+        loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
         P_0=p_0,
@@ -499,7 +509,7 @@ def loan_costs(
         GDR=global_discount_rate,
         vintage=vintage,
     )
-    return value(model_ic), value(undiscounted_cost)
+    return float(value(model_ic)), float(value(undiscounted_cost))
 
 
 def loan_costs_survival_curve(
@@ -508,14 +518,14 @@ def loan_costs_survival_curve(
     t: str,
     v: int,
     loan_rate: float,  # this is referred to as LoanRate in parameters
-    loan_life: int,
+    loan_life: float,
     capacity: float,
     invest_cost: float,
     p_0: int,
     p_e: int,
     global_discount_rate: float,
     vintage: int,
-    **kwargs: float,
+    **kwargs: object,
 ) -> tuple[float, float]:
     """
     Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
@@ -523,7 +533,7 @@ def loan_costs_survival_curve(
     """
     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
     #            model uses for these costs
-    loan_ar = value(costs.pv_to_annuity(rate=loan_rate, periods=loan_life))
+    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=int(loan_life))
     model_ic = costs.loan_cost_survival_curve(
         M,
         r,
@@ -531,7 +541,7 @@ def loan_costs_survival_curve(
         v,
         capacity,
         invest_cost,
-        loan_annualize=loan_ar,
+        loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         P_0=p_0,
         P_e=p_e,
@@ -546,17 +556,17 @@ def loan_costs_survival_curve(
         v,
         capacity,
         invest_cost,
-        loan_annualize=value(loan_ar),
+        loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         P_0=p_0,
         P_e=p_e,
         GDR=global_discount_rate,
     )
-    return value(model_ic), value(undiscounted_cost)
+    return float(value(model_ic)), float(value(undiscounted_cost))
 
 
 def poll_emissions(
-    M: 'TemoaModel', p_0: int | None = None, epsilon: float = 1e-5
+    M: TemoaModel, p_0: int | None = None, epsilon: float = 1e-5
 ) -> tuple[dict[tuple[str, int, str, int], dict[CostType, float]], dict[EI, float]]:
     """
     Gather all emission flows, cost them and provide a tuple of costs and flows
@@ -568,8 +578,11 @@ def poll_emissions(
 
     # UPDATE:  older versions brought forward had some accounting errors here for flex/curtailed emissions
     #          see the note on emissions in the Cost function in temoa_rules
+    p_0_true: int
     if p_0 is None:
-        p_0 = min(M.time_optimize)
+        p_0_true = min(M.time_optimize)
+    else:
+        p_0_true = p_0
 
     GDR = value(M.GlobalDiscountRate)
 
@@ -626,11 +639,11 @@ def poll_emissions(
             cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
             cost_years=M.PeriodLength[ei.p],
             GDR=GDR,
-            P_0=p_0,
+            P_0=p_0_true,
             p=ei.p,
         )
-        ud_costs[ei.r, ei.p, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.p, ei.t, ei.v] += value(discounted_emiss_cost)
+        ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
+        d_costs[ei.r, ei.p, ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     ###########################
     #   Embodied Emissions
@@ -668,11 +681,11 @@ def poll_emissions(
                 ei.v
             ],  # treat as fixed cost distributed over construction period
             GDR=GDR,
-            P_0=p_0,
+            P_0=p_0_true,
             p=ei.v,
         )
-        ud_costs[ei.r, ei.v, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.v, ei.t, ei.v] += value(discounted_emiss_cost)
+        ud_costs[ei.r, ei.v, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
+        d_costs[ei.r, ei.v, ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     ###########################
     #   End of life Emissions
@@ -713,11 +726,11 @@ def poll_emissions(
                 ei.p
             ],  # treat as fixed cost distributed over retirement period
             GDR=GDR,
-            P_0=p_0,
+            P_0=p_0_true,
             p=ei.p,
         )
-        ud_costs[ei.r, ei.p, ei.t, ei.v] += undiscounted_emiss_cost
-        d_costs[ei.r, ei.p, ei.t, ei.v] += value(discounted_emiss_cost)
+        ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
+        d_costs[ei.r, ei.p, ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     # finally, now that all costs are added up for each rptv, put in cost dict
     costs_dict: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)

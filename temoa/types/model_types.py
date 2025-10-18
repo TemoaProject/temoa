@@ -231,6 +231,59 @@ else:
     TemoaModel = Any
 
 
+class EI(NamedTuple):
+    """Emission Index"""
+
+    r: Region
+    p: Period
+    t: Technology
+    v: Vintage
+    e: Commodity
+
+
+class FI(NamedTuple):
+    """Flow Index"""
+
+    r: Region
+    p: Period
+    s: Season
+    d: TimeOfDay
+    i: Commodity
+    t: Technology
+    v: Vintage
+    o: Commodity
+
+
+class SLI(NamedTuple):
+    """Storage Level Index"""
+
+    r: Region
+    p: Period
+    s: Season
+    d: TimeOfDay
+    t: Technology
+    v: Vintage
+
+
+class CapData(NamedTuple):
+    """Capacity Data Container"""
+
+    built: Any
+    net: Any
+    retired: Any
+
+
+@unique
+class FlowType(Enum):
+    """Types of flow tracked"""
+
+    IN = 1
+    OUT = 2
+    CURTAIL = 3
+    FLEX = 4
+    LOST = 5
+
+
 # Data structure types for model processing
 class ModelData:
     """Container for model data and metadata."""
@@ -290,56 +343,3 @@ __all__ = [
     'CapacityConstraint',
     'CostConstraint',
 ]
-
-
-class EI(NamedTuple):
-    """Emission Index"""
-
-    r: Region
-    p: Period
-    t: Technology
-    v: Vintage
-    e: Commodity
-
-
-class FI(NamedTuple):
-    """Flow Index"""
-
-    r: Region
-    p: Period
-    s: Season
-    d: TimeOfDay
-    i: Commodity
-    t: Technology
-    v: Vintage
-    o: Commodity
-
-
-class SLI(NamedTuple):
-    """Storage Level Index"""
-
-    r: Region
-    p: Period
-    s: Season
-    d: TimeOfDay
-    t: Technology
-    v: Vintage
-
-
-class CapData(NamedTuple):
-    """Capacity Data Container"""
-
-    built: Any
-    net: Any
-    retired: Any
-
-
-@unique
-class FlowType(Enum):
-    """Types of flow tracked"""
-
-    IN = 1
-    OUT = 2
-    CURTAIL = 3
-    FLEX = 4
-    LOST = 5
