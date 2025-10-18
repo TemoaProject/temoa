@@ -24,6 +24,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from logging import getLogger
 from sqlite3 import Connection, Cursor, OperationalError
+from typing import cast
 
 from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
@@ -118,7 +119,7 @@ class HybridLoader:
         self._source_trace(myopic_index)
         self.manager = None  # Prevent use of stale data
 
-    def load_data_portal(self, myopic_index: MyopicIndex | None = None) -> DataPortal:  # type: ignore[no-any-unimported]
+    def load_data_portal(self, myopic_index: MyopicIndex | None = None) -> DataPortal:
         """
         Main entry point to create and load a DataPortal object.
 
@@ -136,7 +137,7 @@ class HybridLoader:
         return dp
 
     @staticmethod
-    def data_portal_from_data(data_source: dict[str, object]) -> DataPortal:  # type: ignore[no-any-unimported]
+    def data_portal_from_data(data_source: dict[str, object]) -> DataPortal:
         """
         Creates a DataPortal object from an existing data dictionary.
         Useful for model runs where the data has been modified in memory.
@@ -530,14 +531,14 @@ class HybridLoader:
         """
         M = TemoaModel()
         mi = self.myopic_index
-        time_optimize = data.get('time_optimize', [])
+        time_optimize = cast(list[int], data.get('time_optimize', []))
 
         rows_to_load: list[tuple[object, ...]] = []
         if not raw_data:
             logger.warning('No TimeSeason table found. Loading a single filler season "S".')
-            rows_to_load = [(p, 'S') for p in time_optimize]  # type: ignore[attr-defined]
+            rows_to_load = [(p, 'S') for p in time_optimize]
         elif mi:
-            valid_periods = set(time_optimize)  # type: ignore[call-overload]
+            valid_periods = set(time_optimize)
             rows_to_load = [row for row in raw_data if row[0] in valid_periods]
         else:
             rows_to_load = list(raw_data)
@@ -568,7 +569,7 @@ class HybridLoader:
         if filtered_data:
             ordered_data = [row[0:3] for row in filtered_data]
             self._load_component_data(data, M.ordered_season_sequential, ordered_data)
-            seq_data = sorted(list({(row[1],) for row in filtered_data}))
+            seq_data = sorted({(row[1],) for row in filtered_data})
             self._load_component_data(data, M.time_season_sequential, seq_data)
 
     def _load_seg_frac(
@@ -631,8 +632,10 @@ class HybridLoader:
     ) -> None:
         """Handles myopic period filtering for CostInvest."""
         M = TemoaModel()
-        mi = self.myopic_index
-        data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]  # type: ignore[operator]
+        base_year = self.myopic_index.base_year if self.myopic_index else None
+        data_to_load = [
+            row for row in filtered_data if base_year is None or cast(int, row[2]) >= base_year
+        ]
         self._load_component_data(data, M.CostInvest, data_to_load)
 
     def _load_loan_rate(
@@ -656,12 +659,12 @@ class HybridLoader:
     ) -> None:
         """Loads the singleton DaysPerPeriod, with a fallback."""
         M = TemoaModel()
-        value = 365
+        days = 365
         if filtered_data:
-            value = int(filtered_data[0][0])  # type: ignore[call-overload]
+            days = cast(int, filtered_data[0][0])
         else:
             logger.info('No value for days_per_period found. Assuming 365 days per period.')
-        data[M.DaysPerPeriod.name] = {None: value}
+        data[M.DaysPerPeriod.name] = {None: days}
 
     def _load_global_discount_rate(
         self,
@@ -672,7 +675,7 @@ class HybridLoader:
         """Loads the required singleton GlobalDiscountRate."""
         M = TemoaModel()
         if filtered_data:
-            data[M.GlobalDiscountRate.name] = {None: float(filtered_data[0][0])}  # type: ignore[arg-type]
+            data[M.GlobalDiscountRate.name] = {None: cast(float, filtered_data[0][0])}
         else:
             raise ValueError(
                 "Missing required parameter: 'global_discount_rate' not found in MetaDataReal table."
@@ -687,7 +690,7 @@ class HybridLoader:
         """Loads the optional singleton DefaultLoanRate."""
         M = TemoaModel()
         if filtered_data:
-            data[M.DefaultLoanRate.name] = {None: float(filtered_data[0][0])}  # type: ignore[arg-type]
+            data[M.DefaultLoanRate.name] = {None: cast(float, filtered_data[0][0])}
 
     # --- Operational Constraints and Parameters ---
     def _load_efficiency(

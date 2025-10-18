@@ -201,7 +201,7 @@ def ParamPeriodLength(M: 'TemoaModel', p: 'Period') -> int:
 
 def loop_period_next_timeslice(
     M: 'TemoaModel', p: 'Period', s: 'Season', d: 'TimeOfDay'
-) -> tuple[str, str]:
+) -> tuple['Season', 'TimeOfDay']:
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
