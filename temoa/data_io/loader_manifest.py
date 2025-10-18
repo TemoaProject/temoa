@@ -9,10 +9,17 @@ load a single Pyomo component (a `Set` or `Param`) from the database.
 
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from __future__ import annotations
 
-from pyomo.core import Param, Set
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pyomo.core import Param, Set
+
+    type ComponentType = Set | Param
+else:
+    ComponentType = Any
 
 
 @dataclass
@@ -40,13 +47,13 @@ class LoadItem:
             table is missing or returns no data.
     """
 
-    component: Set | Param
+    component: ComponentType
     table: str
     columns: list[str]
-    validator_name: Optional[str] = None
+    validator_name: str | None = None
     validation_map: tuple[int, ...] = field(default_factory=tuple)
-    where_clause: Optional[str] = None
+    where_clause: str | None = None
     is_period_filtered: bool = True
     is_table_required: bool = True
-    custom_loader_name: Optional[str] = None
-    fallback_data: Optional[list[tuple[Any, ...]]] = None
+    custom_loader_name: str | None = None
+    fallback_data: list[tuple[object, ...]] | None = None
