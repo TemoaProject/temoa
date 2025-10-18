@@ -1,0 +1,19 @@
+from pyomo.core.base import Transformation as Transformation
+
+class AbstractTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...
+
+class ConcreteTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...
+
+class IsomorphicTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...
+
+class LinearTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...
+
+class NonIsomorphicTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...
+
+class NonlinearTransformation(Transformation):
+    def __init__(self, **kwds) -> None: ...

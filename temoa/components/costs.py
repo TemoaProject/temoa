@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from deprecated import deprecated
 from pyomo.core import Expression, Var
+from pyomo.core.base.component import ComponentData
 from pyomo.environ import quicksum, value
 
 if TYPE_CHECKING:
@@ -34,7 +35,7 @@ logger = getLogger(name=__name__)
 
 def get_default_loan_rate(M: TemoaModel, *_: Any) -> float:
     """get the default loan rate from the DefaultLoanRate param"""
-    return M.DefaultLoanRate()
+    return value(M.DefaultLoanRate)
 
 
 def annuity_to_pv(rate: float, periods: int) -> float | Expression:
@@ -85,7 +86,7 @@ def fv_to_pv(rate: float, periods: int) -> float | Expression:
 
 
 def get_loan_life(M: TemoaModel, r: str, t: str, v: int) -> int:
-    return M.LifetimeProcess[r, t, v]
+    return value(M.LifetimeProcess[r, t, v])
 
 
 # ============================================================================
@@ -126,7 +127,7 @@ def LifetimeLoanProcessIndices(M: TemoaModel) -> set[tuple[str, str, int]]:
 
 
 def loan_cost(
-    capacity: float | Var,
+    capacity: float | Var | ComponentData,
     invest_cost: float,
     loan_annualize: float,
     lifetime_loan_process: float | int,
@@ -188,7 +189,7 @@ def loan_cost_survival_curve(
     r: str,
     t: str,
     v: int,
-    capacity: float | Var,
+    capacity: float | Var | ComponentData,
     invest_cost: float,
     loan_annualize: float,
     lifetime_loan_process: float | int,
@@ -259,9 +260,9 @@ def loan_cost_survival_curve(
 
 
 def fixed_or_variable_cost(
-    cap_or_flow: float | Var,
+    cap_or_flow: float | Var | ComponentData,
     cost_factor: float,
-    cost_years: float,
+    cost_years: float | ComponentData,
     GDR: float | None,
     P_0: float,
     p: int,
@@ -458,9 +459,9 @@ def PeriodCost_rule(M: TemoaModel, p: int) -> float | Expression:
             * value(M.EmissionEmbodied[r, e, t, v])
             / value(M.PeriodLength[p]),
             cost_factor=value(M.CostEmission[r, p, e]),
-            cost_years=M.PeriodLength[
-                v
-            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=value(
+                M.PeriodLength[v]
+            ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -475,9 +476,9 @@ def PeriodCost_rule(M: TemoaModel, p: int) -> float | Expression:
         fixed_or_variable_cost(
             cap_or_flow=M.V_AnnualRetirement[r, p, t, v] * value(M.EmissionEndOfLife[r, e, t, v]),
             cost_factor=value(M.CostEmission[r, p, e]),
-            cost_years=M.PeriodLength[
-                p
-            ],  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=value(
+                M.PeriodLength[p]
+            ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             GDR=GDR,
             P_0=P_0,
             p=p,
@@ -682,8 +683,8 @@ def CreateCosts(M: TemoaModel) -> None:
             if (r, t, v) in M.CostVariableVintageDefault:
                 CV[r, p, t, v] = M.CostVariableVintageDefault[r, t, v]
     # CV._constructed = True
-    logger.debug('Created M.CostFixed with size: %d', len(M.CostFixed))
-    logger.debug('Created M.CostVariable with size: %d', len(M.CostVariable))
+    logger.debug('Created M.CostFixed with size: %d', len(value(M.CostFixed)))
+    logger.debug('Created M.CostVariable with size: %d', len(value(M.CostVariable)))
     logger.debug('Finished creating Fixed and Variable costs')
 
 

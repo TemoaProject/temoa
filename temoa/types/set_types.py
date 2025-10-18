@@ -38,6 +38,9 @@ ActiveCapacityAvailableset = Optional[set[tuple[Region, Period, Technology]]]
 ActiveCapacityAvailableVintageset = Optional[set[tuple[Region, Period, Technology, Vintage]]]
 GroupRegionActiveFlowset = Optional[set[tuple[Region, Period, Technology]]]
 
+CommodityBalancedSet = set[tuple[Region, Period, Commodity]]
+
+
 # Capitalized aliases for compatibility
 ActiveFlowSet = ActiveFlowset
 ActiveFlowAnnualSet = ActiveFlowAnnualset

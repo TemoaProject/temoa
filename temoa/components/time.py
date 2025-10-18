@@ -107,7 +107,7 @@ def validate_SegFrac(M: 'TemoaModel') -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-        total: float = sum(M.SegFrac[k] for k in keys)
+        total: float = sum(value(M.SegFrac[k]) for k in keys)
 
         if abs(float(total) - 1.0) > 0.001:
             # We can't explicitly test for "!= 1.0" because of incremental rounding

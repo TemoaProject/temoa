@@ -1,0 +1,6 @@
+from pyomo.common.collections import ComponentMap as ComponentMap
+from pyomo.common.modeling import unique_component_name as unique_component_name
+from pyomo.core.base.reference import Reference as Reference
+
+def rename_components(model, component_list, prefix): ...
+def iter_component(obj): ...

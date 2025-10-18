@@ -23,6 +23,8 @@ from pyomo.environ import (
     minimize,
 )
 
+from temoa.types.core_types import Technology
+
 if TYPE_CHECKING:
     from pyomo.environ import AbstractModel as PyomoAbstractModel
 
@@ -63,8 +65,6 @@ def CreateSparseDicts(M: 'TemoaModel') -> None:
     Creates and populates all sparse dictionaries and sets required for the model
     by calling component-specific precomputation functions.
     """
-    # Initialize a set to track technologies used in the Efficiency table
-    M.used_techs = set()
 
     # Call the decomposed functions in logical order
     # 1. Populate core relationships from Efficiency table
@@ -94,7 +94,7 @@ def CreateSparseDicts(M: 'TemoaModel') -> None:
     logger.debug('Completed creation of SparseDicts')
 
 
-class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
+class TemoaModel(PyomoAbstractModel):
     """
     An instance of the abstract Temoa model
     """
@@ -138,7 +138,9 @@ class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
         M.groupRegionActiveFlow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
-        M.commodityBalance_rpc: t.CommodityBalanceDict = {}  # Set of valid region-period-commodity indices to balance
+        M.commodityBalance_rpc: t.CommodityBalancedSet = (
+            set()
+        )  # Set of valid region-period-commodity indices to balance
         M.commodityDStreamProcess: t.CommodityStreamProcessDict = {}  # The downstream process of a commodity during a period
         M.commodityUStreamProcess: t.CommodityStreamProcessDict = {}  # The upstream process of a commodity during a period
         M.capacityConsumptionTechs: t.CapacityConsumptionTechsDict = {}  # New capacity consuming a commodity during a period [r,p,c] -> t
@@ -223,7 +225,7 @@ class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
         M.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
-        # M.tech_resource = Set() # not actually used by anything
+        # M.tech_resource = Set() # not actually used by
         M.tech_production = Set()
         M.tech_all = Set(
             initialize=M.tech_production, validate=no_slash_or_pipe
@@ -254,6 +256,9 @@ class TemoaModel(PyomoAbstractModel):  # type: ignore[no-any-unimported]
 
         M.tech_exist = Set()
         """techs with existing capacity, want to keep these for accounting reasons"""
+
+        M.used_techs: set[Technology] = set()
+        """ track techs used in Efficiency table used in CreateSparseDicts """
 
         # the below is a convenience for domain checking in params below that should not accept
         # uncap techs...

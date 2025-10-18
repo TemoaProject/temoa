@@ -16,16 +16,16 @@ from typing import (
 
 from . import (
     Commodity,
-    Commodityset,
+    CommoditySet,
     Period,
     Region,
     RegionPeriodSeasonTimeInputTechVintageOutput,
     RegionPeriodTechVintage,
-    Regionset,
+    RegionSet,
     Season,
     SparseIndex,
     Technology,
-    Techset,
+    TechSet,
     TimeOfDay,
     Vintage,
 )
@@ -219,7 +219,7 @@ if TYPE_CHECKING:
         # Internal tracking dictionaries
         processInputs: ProcessInputs
         processOutputs: ProcessOutputs
-        used_techs: Techset
+        used_techs: TechSet
         activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput]
         activeActivity_rptv: set[RegionPeriodTechVintage]
 
@@ -290,10 +290,10 @@ class ModelData:
 
     def __init__(
         self,
-        regions: Regionset,
+        regions: RegionSet,
         periods: set[Period],
-        technologies: Techset,
-        commodities: Commodityset,
+        technologies: TechSet,
+        commodities: CommoditySet,
         **kwargs: object,
     ) -> None: ...
 

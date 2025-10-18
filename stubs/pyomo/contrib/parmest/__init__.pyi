@@ -1,0 +1,2 @@
+from pyomo.common.deprecation import moved_module as moved_module
+from pyomo.common.deprecation import relocated_module_attribute as relocated_module_attribute

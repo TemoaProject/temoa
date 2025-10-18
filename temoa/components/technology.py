@@ -29,12 +29,11 @@ logger = getLogger(__name__)
 
 def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
     if t_or_g in M.tech_group_names:
-        techs = M.tech_group_members[t_or_g]
+        return M.tech_group_members[t_or_g]
     elif '+' in t_or_g:
-        techs = t_or_g.split('+')
+        return t_or_g.split('+')
     else:
-        techs = (t_or_g,)
-    return techs
+        return (t_or_g,)
 
 
 # ============================================================================
@@ -90,7 +89,7 @@ def get_default_process_lifetime(
     :param v: vintage
     :return: the final lifetime value
     """
-    return M.LifetimeTech[r, t]
+    return value(M.LifetimeTech[r, t])
 
 
 def ParamProcessLifeFraction_rule(

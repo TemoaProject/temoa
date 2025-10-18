@@ -952,7 +952,7 @@ def LimitGrowthCapacity(
             logger.warning(msg)
 
     # sum available capacity in this period
-    capacity = sum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p)
+    capacity = quicksum(CapRPT[_r, _p, _t] for _r, _p, _t in cap_rpt if _p == p)
 
     if p == M.time_optimize.first():
         # First future period. Grab available capacity in last existing period
@@ -1069,7 +1069,7 @@ def LimitGrowthNewCapacity(
             logger.warning(msg)
 
     # sum new capacity in this period
-    new_cap = sum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+    new_cap = quicksum(NewCapRTV[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
 
     if p == M.time_optimize.first():
         # First future period. Grab last existing vintage

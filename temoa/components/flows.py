@@ -98,7 +98,7 @@ def create_commodity_balance_and_flow_sets(M: 'TemoaModel') -> None:
     commodity_downstream = set(
         M.commodityDStreamProcess | M.capacityConsumptionTechs | M.exportRegions
     )
-    M.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)  # type: ignore[assignment]
+    M.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)
 
     # 2. Active Flow Indices (Time-Sliced)
     M.activeFlow_rpsditvo = {

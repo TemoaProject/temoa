@@ -11,6 +11,7 @@ This module is responsible for:
 
 from typing import TYPE_CHECKING
 
+from pyomo.core import quicksum
 from pyomo.environ import value
 
 from temoa.types import ExprLike
@@ -82,7 +83,7 @@ def LinkedEmissionsTech_Constraint(
     """
 
     if t in M.tech_annual:
-        primary_flow = sum(
+        primary_flow = quicksum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
                 if S_o in M.commodity_demand
@@ -94,14 +95,14 @@ def LinkedEmissionsTech_Constraint(
             for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
-        primary_flow = sum(
+        primary_flow = quicksum(
             M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
             * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
             for S_i in M.processInputs[r, p, t, v]
             for S_o in M.processOutputsByInput[r, p, t, v, S_i]
         )
 
-    linked_t = M.LinkedTechs[r, t, e]
+    linked_t = value(M.LinkedTechs[r, t, e])
 
     # linked_flow = sum(
     #     M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
@@ -110,7 +111,7 @@ def LinkedEmissionsTech_Constraint(
     # )
 
     if linked_t in M.tech_annual:
-        linked_flow = sum(
+        linked_flow = quicksum(
             (
                 value(M.DemandSpecificDistribution[r, p, s, d, S_o])
                 if S_o in M.commodity_demand
@@ -121,7 +122,7 @@ def LinkedEmissionsTech_Constraint(
             for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
         )
     else:
-        linked_flow = sum(
+        linked_flow = quicksum(
             M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
             for S_i in M.processInputs[r, p, linked_t, v]
             for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]

@@ -378,7 +378,7 @@ def poll_cost_results(
 
         model_fixed_cost = costs.fixed_or_variable_cost(
             cap,
-            fixed_cost,
+            value(fixed_cost),
             value(M.PeriodLength[p]),
             GDR=GDR,
             P_0=float(p_0) if p_0 is not None else 0.0,
@@ -636,7 +636,7 @@ def poll_emissions(
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=flows[ei],
-            cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
+            cost_factor=value(M.CostEmission[ei.r, ei.p, ei.e]),
             cost_years=M.PeriodLength[ei.p],
             GDR=GDR,
             P_0=p_0_true,
@@ -676,7 +676,7 @@ def poll_emissions(
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=embodied_flows[ei],
-            cost_factor=M.CostEmission[ei.r, ei.v, ei.e],
+            cost_factor=value(M.CostEmission[ei.r, ei.v, ei.e]),
             cost_years=M.PeriodLength[
                 ei.v
             ],  # treat as fixed cost distributed over construction period
@@ -721,7 +721,7 @@ def poll_emissions(
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=eol_flows[ei],
-            cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
+            cost_factor=value(M.CostEmission[ei.r, ei.p, ei.e]),
             cost_years=M.PeriodLength[
                 ei.p
             ],  # treat as fixed cost distributed over retirement period

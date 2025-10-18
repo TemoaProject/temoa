@@ -16,9 +16,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from deprecated import deprecated
-from pyomo.environ import (
-    value,
-)
+from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -134,7 +132,7 @@ def get_default_capacity_factor(
     :param v: vintage
     :return: the capacity factor
     """
-    return M.CapacityFactorTech[r, p, s, d, t]
+    return value(M.CapacityFactorTech[r, p, s, d, t])
 
 
 def get_capacity_factor(

@@ -10,6 +10,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pyomo.core import value
 from pyomo.opt import SolverResults
 
 from definitions import PROJECT_ROOT
@@ -130,7 +131,7 @@ class TableWriter:
             p_0 = M.MyopicDiscountingYear
         else:
             p_0 = None  # min year will be used in poll
-        e_costs, e_flows = poll_emissions(M=M, p_0=p_0)
+        e_costs, e_flows = poll_emissions(M=M, p_0=value(p_0))
 
         self.emission_register = e_flows
         self.write_emissions(iteration=iteration)
@@ -547,7 +548,7 @@ class TableWriter:
         else:
             p_0 = min(M.time_optimize)
 
-        entries, exchange_entries = poll_cost_results(M, p_0, self.epsilon)
+        entries, exchange_entries = poll_cost_results(M, value(p_0), self.epsilon)
 
         # write to table
         self._insert_cost_results(entries, exchange_entries, emission_entries, iteration)

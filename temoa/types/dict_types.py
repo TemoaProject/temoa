@@ -5,8 +5,6 @@ This module contains dictionary type definitions used throughout
 the Temoa model for various data structures and mappings.
 """
 
-from typing import Any
-
 from .core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 # Process-related dictionary types
@@ -47,11 +45,10 @@ RetirementProductionProcessesDict = RetirementProductionProcessesdict
 
 # Commodity flow dictionary types
 CommodityStreamProcessdict = dict[tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]]
-CommodityBalancedict = dict[tuple[Region, Period, Commodity], Any]
+
 
 # Capitalized aliases for compatibility
 CommodityStreamProcessDict = CommodityStreamProcessdict
-CommodityBalanceDict = CommodityBalancedict
 
 # Technology classification dictionary types
 BaseloadVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]

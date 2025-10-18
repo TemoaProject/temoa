@@ -2,17 +2,18 @@
 
 
 # Define public API for this module
+# ruff: noqa: RUF022
 __all__ = [
     # Core types
     'Commodity',
-    'Commodityset',
+    'CommoditySet',
     'Period',
     'Region',
-    'Regionset',
+    'RegionSet',
     'Season',
     'SparseIndex',
     'Technology',
-    'Techset',
+    'TechSet',
     'TimeOfDay',
     'Vintage',
     # Dictionary types
@@ -20,7 +21,6 @@ __all__ = [
     'BaseloadVintagesDict',
     'CapacityConsumptionTechsDict',
     'CapacityFactorProcessDict',
-    'CommodityBalanceDict',
     'CommodityStreamProcessDict',
     'CurtailmentVintagesDict',
     'EfficiencyVariableDict',
@@ -54,6 +54,7 @@ __all__ = [
     'RegionPeriodSeasonTimeInputTechVintageOutput',
     'RegionPeriodTechVintage',
     # Set types
+    'CommodityBalancedSet',
     'ActiveActivitySet',
     'ActiveCapacityAvailableSet',
     'ActiveCapacityAvailableVintageSet',
@@ -72,27 +73,28 @@ __all__ = [
 ]
 
 # Core type aliases for commonly used dimensions
+# ruff: noqa: RUF022
 from .core_types import (
     Commodity,
-    Commodityset,
+    CommoditySet,
     Period,
     Region,
-    Regionset,
+    RegionSet,
     Season,
     SparseIndex,
     Technology,
-    Techset,
+    TechSet,
     TimeOfDay,
     Vintage,
 )
 
 # Dictionary types used by the model
+# ruff: noqa: RUF022
 from .dict_types import (
     ActiveRegionsForTechDict,
     BaseloadVintagesDict,
     CapacityConsumptionTechsDict,
     CapacityFactorProcessDict,
-    CommodityBalanceDict,
     CommodityStreamProcessDict,
     CurtailmentVintagesDict,
     EfficiencyVariableDict,
@@ -125,12 +127,14 @@ from .dict_types import (
 )
 
 # Index tuple types
+# ruff: noqa: RUF022
 from .index_types import (
     RegionPeriodSeasonTimeInputTechVintageOutput,
     RegionPeriodTechVintage,
 )
 
 # Set types for sparse indexing
+# ruff: noqa: RUF022
 from .set_types import (
     ActiveActivitySet,
     ActiveCapacityAvailableSet,
@@ -141,6 +145,7 @@ from .set_types import (
     ActiveFlowAnnualSet,
     ActiveFlowInStorageSet,
     ActiveFlowSet,
+    CommodityBalancedSet,
     GroupRegionActiveFlowSet,
     NewCapacitySet,
     SeasonalStorageLevelIndicesSet,

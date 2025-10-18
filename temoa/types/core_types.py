@@ -40,16 +40,16 @@ ParameterValue = int | float | str | bool
 Parameterdict = dict[SparseIndex, ParameterValue]
 
 # Basic set types
-Stringset = set[str]
-Techset = set[Technology]
-Commodityset = set[Commodity]
-Regionset = set[Region]
-Periodset = set[Period]
-Vintageset = set[Vintage]
+StringSet = set[str]
+TechSet = set[Technology]
+CommoditySet = set[Commodity]
+RegionSet = set[Region]
+PeriodSet = set[Period]
+VintageSet = set[Vintage]
 
 # Pyomo domain types
 PyomoDomain = Any  # Pyomo domain objects (NonNegativeReals, Integers, etc.)
-PyomoIndexset = Any  # Pyomo set objects used for indexing
+PyomoIndexSet = Any  # Pyomo set objects used for indexing
 
 # Configuration types
 ScenarioName = str
