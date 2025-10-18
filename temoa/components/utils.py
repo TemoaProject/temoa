@@ -8,14 +8,23 @@ building Pyomo expressions from strings or calculating time-variable efficiencie
 
 from enum import Enum
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyomo.core import Expression
 from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
-    from temoa.types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
+    from temoa.types import (
+        Commodity,
+        ExprLike,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
 
 
 logger = getLogger(__name__)
@@ -27,7 +36,7 @@ class Operator(str, Enum):
     GREATER_EQUAL = 'ge'
 
 
-def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) -> Any:
+def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) -> ExprLike:
     match operator:
         case Operator.EQUAL:
             return lhs == rhs
