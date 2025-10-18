@@ -1,0 +1,6 @@
+from pyomo.common.cmake_builder import build_cmake_project as build_cmake_project
+
+def build_pynumero(user_args=[], parallel=None): ...
+
+class PyNumeroBuilder:
+    def __call__(self, parallel): ...

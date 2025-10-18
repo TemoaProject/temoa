@@ -1,0 +1,9 @@
+from pyomo.core.expr.numvalue import value as value
+from pyomo.opt.base import SolverFactory as SolverFactory
+from pyomo.solvers.plugins.solvers.cplex_direct import CPLEXDirect as CPLEXDirect
+from pyomo.solvers.plugins.solvers.persistent_solver import PersistentSolver as PersistentSolver
+
+class CPLEXPersistent(PersistentSolver, CPLEXDirect):
+    def __init__(self, **kwds) -> None: ...
+    def update_var(self, var) -> None: ...
+    def write(self, filename, filetype: str = '') -> None: ...

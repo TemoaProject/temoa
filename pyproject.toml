@@ -38,6 +38,18 @@ dependencies = [
     "gravis>=0.1.0",
 ]
 
+
+[dependency-groups]
+dev = [
+    "gurobipy>=12.0.3",
+    "types-deprecated>=1.2.15.20250304",
+    "ruff>=0.2.0",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "pandas-stubs>=2.3.2.250926",
+]
+
 [project.optional-dependencies]
 docs = [
     "sphinx>=7.4.7",
@@ -47,12 +59,6 @@ docs = [
     "sphinxcontrib-bibtex>=2.6.2",
 ]
 
-dev = [
-    "ruff>=0.2.0",
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-]
 plotting = [
     "matplotlib>=3.9.2",
     "seaborn>=0.13.2",
@@ -65,6 +71,7 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 indent-width = 4
+exclude = ["stubs"]
 
 [tool.ruff.format]
 quote-style = "single"
@@ -88,10 +95,85 @@ testpaths = [
     "tests",
 ]
 
-[dependency-groups]
-dev = [
-    "gurobipy>=12.0.3",
+[tool.mypy]
+# Python version targeting
+python_version = "3.12"
+
+# Tell mypy to also look for stubs in this directory
+mypy_path = "stubs"
+
+# Exclude specific directories from type checking will try to add them back gradually
+exclude = "(?x)(^tests/|^temoa/model_checking/|^temoa/data_processing/|^temoa/extensions/|^temoa/utilities/|^docs/)"
+
+# Strict typing for our own code
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Handle external dependencies gracefully
+ignore_missing_imports = false
+
+# Be explicit about Any usage
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_any_expr = false # temporarily false to ease transition
+disallow_any_decorated = true
+disallow_any_explicit = true
+
+# Module-specific overrides for external dependencies
+[[tool.mypy.overrides]]
+module = [
+    "pyomo.*",
 ]
+ignore_missing_imports = true
+
+# Less strict for test files initially
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+disallow_incomplete_defs = false
+
+# Silence errors from excluded modules (follow imports but don't report errors)
+[[tool.mypy.overrides]]
+module = [
+    "temoa.data_processing.*",
+    "temoa.extensions.*",
+    "temoa.model_checking.*",
+]
+follow_imports = "silent"
+
+# Enable strict checking for core modules
+[[tool.mypy.overrides]]
+module = [
+    "temoa.core.*",
+    "temoa.components.*",
+    "temoa._internal.*",
+    "temoa.data_io.*",
+    "temoa.model_checking.*",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+# Less strict for type definitions (allow Any for stubs)
+[[tool.mypy.overrides]]
+module = "temoa.types.*"
+disallow_any_explicit = false
+
+# Relax Any restrictions for Pyomo-related code
+[[tool.mypy.overrides]]
+module = ["temoa.components.*", "temoa._internal.*"]
+disallow_any_explicit = false
+disallow_any_unimported = false
+
 
 [project.urls]
 Homepage = "https://temoaproject.org"

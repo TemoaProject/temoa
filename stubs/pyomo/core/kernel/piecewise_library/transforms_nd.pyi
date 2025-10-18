@@ -1,0 +1,43 @@
+from _typeshed import Incomplete
+from pyomo.core.kernel.block import block as block
+from pyomo.core.kernel.constraint import constraint_list as constraint_list
+from pyomo.core.kernel.constraint import constraint_tuple as constraint_tuple
+from pyomo.core.kernel.constraint import linear_constraint as linear_constraint
+from pyomo.core.kernel.expression import expression as expression
+from pyomo.core.kernel.expression import expression_tuple as expression_tuple
+from pyomo.core.kernel.set_types import IntegerSet as IntegerSet
+from pyomo.core.kernel.variable import variable as variable
+from pyomo.core.kernel.variable import variable_dict as variable_dict
+from pyomo.core.kernel.variable import variable_tuple as variable_tuple
+
+logger: Incomplete
+registered_transforms: Incomplete
+
+def piecewise_nd(tri, values, input=None, output=None, bound: str = 'eq', repn: str = 'cc'): ...
+
+class PiecewiseLinearFunctionND:
+    def __init__(self, tri, values, validate: bool = True, **kwds) -> None: ...
+    @property
+    def triangulation(self): ...
+    @property
+    def values(self): ...
+    def __call__(self, x): ...
+
+class TransformedPiecewiseLinearFunctionND(block):
+    def __init__(self, f, input=None, output=None, bound: str = 'eq') -> None: ...
+    @property
+    def input(self): ...
+    @property
+    def output(self): ...
+    @property
+    def bound(self): ...
+    @property
+    def triangulation(self): ...
+    @property
+    def values(self): ...
+    def __call__(self, x): ...
+
+class piecewise_nd_cc(TransformedPiecewiseLinearFunctionND):
+    v: Incomplete
+    c: Incomplete
+    def __init__(self, *args, **kwds) -> None: ...

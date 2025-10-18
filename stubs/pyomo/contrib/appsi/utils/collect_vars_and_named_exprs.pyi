@@ -1,0 +1,13 @@
+from _typeshed import Incomplete
+from pyomo.core.expr.visitor import ExpressionValueVisitor as ExpressionValueVisitor
+from pyomo.core.expr.visitor import nonpyomo_leaf_types as nonpyomo_leaf_types
+
+class _VarAndNamedExprCollector(ExpressionValueVisitor):
+    named_expressions: Incomplete
+    variables: Incomplete
+    fixed_vars: Incomplete
+    def __init__(self) -> None: ...
+    def visit(self, node, values) -> None: ...
+    def visiting_potential_leaf(self, node): ...
+
+def collect_vars_and_named_exprs(expr): ...

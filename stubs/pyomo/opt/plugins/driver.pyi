@@ -1,0 +1,6 @@
+from _typeshed import Incomplete
+
+logger: Incomplete
+
+def setup_test_parser(parser) -> None: ...
+def test_exec(options) -> None: ...

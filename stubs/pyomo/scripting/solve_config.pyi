@@ -1,0 +1,9 @@
+from pyomo.common.config import ConfigBlock as ConfigBlock
+from pyomo.common.config import ConfigList as ConfigList
+from pyomo.common.config import ConfigValue as ConfigValue
+
+class Default_Config:
+    def config_block(self, init: bool = False): ...
+
+def minlp_config_block(init: bool = False): ...
+def default_config_block(solver, init: bool = False): ...
