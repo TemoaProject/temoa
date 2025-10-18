@@ -1,6 +1,5 @@
 # Types module for TEMOA
 
-from typing import Union
 
 # Define public API for this module
 __all__ = [
@@ -150,7 +149,4 @@ from .set_types import (
 
 # Type alias for expressions that can be returned from reserve margin functions
 # This covers Pyomo expressions, boolean expressions, and Constraint.Skip
-ExprLike = Union[
-    float,  # Numeric expressions from calculations
-    bool,  # Boolean expressions from constraint comparisons
-]
+ExprLike = float | bool | object  # covers Pyomo expressions and Constraint.Skip
