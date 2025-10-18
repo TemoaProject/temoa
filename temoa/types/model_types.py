@@ -141,8 +141,8 @@ class TemoaModelProtocol(Protocol):
     # Internal data structures
     processInputs: ProcessInputs
     processOutputs: ProcessOutputs
-    activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput]
-    activeActivity_rptv: set[RegionPeriodTechVintage]
+    activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput] | None
+    activeActivity_rptv: set[RegionPeriodTechVintage] | None
 
     def __init__(self, *args: object, **kwargs: object) -> None: ...
 
