@@ -44,6 +44,7 @@ dev = [
     "gurobipy>=12.0.3",
     "types-deprecated>=1.2.15.20250304",
     "ruff>=0.2.0",
+    "mypy>=1.0.0",
     "pre-commit",
     "pytest",
     "pytest-cov",

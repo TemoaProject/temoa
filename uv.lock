@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 
 [[package]]
@@ -2984,6 +2984,7 @@ plotting = [
 [package.dev-dependencies]
 dev = [
     { name = "gurobipy" },
+    { name = "mypy" },
     { name = "pandas-stubs" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -3033,6 +3034,7 @@ provides-extras = ["docs", "plotting"]
 [package.metadata.requires-dev]
 dev = [
     { name = "gurobipy", specifier = ">=12.0.3" },
+    { name = "mypy", specifier = ">=1.0.0" },
     { name = "pandas-stubs", specifier = ">=2.3.2.250926" },
     { name = "pre-commit" },
     { name = "pytest" },
