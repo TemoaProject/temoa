@@ -351,7 +351,7 @@ class MgaSequencer:
             elapsed.total_seconds(),
             status.name,
         )
-        return status == pyo.TerminationCondition.optimal
+        return status == pyo.TerminationCondition.convergenceCriteriaSatisfied
 
     def process_solve_results(self, instance: TemoaModel):
         """write the results as required"""
