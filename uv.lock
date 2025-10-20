@@ -2943,7 +2943,6 @@ dependencies = [
     { name = "deprecated" },
     { name = "graphviz" },
     { name = "gravis" },
-    { name = "gurobipy" },
     { name = "highspy" },
     { name = "ipykernel" },
     { name = "ipython" },
@@ -2980,10 +2979,12 @@ plotting = [
     { name = "matplotlib" },
     { name = "seaborn" },
 ]
+solver = [
+    { name = "gurobipy" },
+]
 
 [package.dev-dependencies]
 dev = [
-    { name = "gurobipy" },
     { name = "mypy" },
     { name = "pandas-stubs" },
     { name = "pre-commit" },
@@ -2998,7 +2999,7 @@ requires-dist = [
     { name = "deprecated", specifier = ">=1.2.14" },
     { name = "graphviz", specifier = ">=0.20.3" },
     { name = "gravis", specifier = ">=0.1.0" },
-    { name = "gurobipy", specifier = ">=11.0.3" },
+    { name = "gurobipy", marker = "extra == 'solver'", specifier = ">=12.0.3,<13" },
     { name = "highspy", specifier = ">=1.7.2" },
     { name = "ipykernel" },
     { name = "ipython" },
@@ -3029,11 +3030,10 @@ requires-dist = [
     { name = "tabulate", specifier = ">=0.9.0" },
     { name = "xlsxwriter", specifier = ">=3.2.0" },
 ]
-provides-extras = ["docs", "plotting"]
+provides-extras = ["docs", "plotting", "solver"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "gurobipy", specifier = ">=12.0.3" },
     { name = "mypy", specifier = ">=1.0.0" },
     { name = "pandas-stubs", specifier = ">=2.3.2.250926" },
     { name = "pre-commit" },
