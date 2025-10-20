@@ -80,8 +80,6 @@ gravis==0.1.0
     # via temoa (pyproject.toml)
 greenlet==3.2.3
     # via sqlalchemy
-gurobipy==12.0.3
-    # via temoa (pyproject.toml)
 h11==0.16.0
     # via httpcore
 h2==4.2.0

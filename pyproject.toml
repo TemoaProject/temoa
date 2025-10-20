@@ -33,7 +33,6 @@ dependencies = [
     "networkx>=3.3",
     "highspy>=1.7.2",
     "scipy>=1.14.1",
-    "gurobipy>=11.0.3",
     "nx-vis-visualizer>=0.1.1",
     "gravis>=0.1.0",
 ]
@@ -41,7 +40,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "gurobipy>=12.0.3",
     "types-deprecated>=1.2.15.20250304",
     "ruff>=0.2.0",
     "mypy>=1.0.0",
@@ -63,6 +61,9 @@ docs = [
 plotting = [
     "matplotlib>=3.9.2",
     "seaborn>=0.13.2",
+]
+solver = [
+    "gurobipy>=12.0.3,<13",
 ]
 
 [build-system]
