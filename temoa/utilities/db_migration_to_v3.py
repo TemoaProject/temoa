@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  3/21/24
 
 Transition a legacy database to V3 compliant.
 
@@ -36,7 +12,6 @@ import sqlite3
 import sys
 from collections import defaultdict
 from pathlib import Path
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -66,7 +41,7 @@ con_new = sqlite3.connect(new_db_path)
 cur = con_new.cursor()
 
 # bring in the new schema and execute
-with open(schema_file, 'r') as src:
+with open(schema_file) as src:
     sql_script = src.read()
 con_new.executescript(sql_script)
 
@@ -153,8 +128,8 @@ for name_pair in direct_transfer_tables:
 
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
-    cols = str(old_columns[0:len(new_columns)])[1:-1].replace("'","")
-    
+    cols = str(old_columns[0 : len(new_columns)])[1:-1].replace("'", '')
+
     try:
         data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
@@ -182,8 +157,8 @@ for name_pair in units_added_tables:
 
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
-    cols = str(old_columns[0:len(new_columns)])[1:-1].replace("'","")
-    
+    cols = str(old_columns[0 : len(new_columns)])[1:-1].replace("'", '')
+
     try:
         data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
@@ -214,18 +189,18 @@ for name_pair in sequence_added_tables:
     old_name, new_name = name_pair
     if old_name == '':
         old_name = new_name
-        
+
     new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
-    cols = str(old_columns[0:len(new_columns)-1])[1:-1].replace("'","")
-    
+    cols = str(old_columns[0 : len(new_columns) - 1])[1:-1].replace("'", '')
+
     try:
         data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
         print(f'mandatory table: {old_name} not found.  Operation Failed')
         sys.exit(-1)
     count = 1
-    num_placeholders = len(new_columns)-1
+    num_placeholders = len(new_columns) - 1
     for row in data:
         placeholders = ','.join(['?' for _ in range(num_placeholders)])
         query = f'INSERT INTO {new_name} VALUES ({count}, {placeholders})'
@@ -239,23 +214,23 @@ print(
     '\n --- comparing RPS groups to a common set to see if they can be combined into 1 (except global) ---'
 )
 
-groups = defaultdict(set)
+groups: dict[str, set[str]] = defaultdict(set)
 
 # let's ensure all the non-global entries are consistent (same techs in each region)
 skip_rps = False
 try:
-    entries = con_old.execute('SELECT * FROM tech_rps').fetchall()
+    rps_entries = con_old.execute('SELECT * FROM tech_rps').fetchall()
 except sqlite3.OperationalError:
     print('source does not appear to include RPS techs...skipping')
     skip_rps = True
 if not skip_rps:
-    for region, tech, notes in entries:
+    for region, tech, _notes in rps_entries:
         groups[region].add(tech)
 
-    common = set()
-    for group, entries in groups.items():
+    common: set[str] = set()
+    for group, group_entries in groups.items():
         if group != 'global':
-            common |= set(entries)
+            common |= group_entries
 
     techs_common = True
     for group, techs in groups.items():
@@ -436,22 +411,22 @@ for row in data:
 
 print('\n --- Moving scalar data elements ---')
 try:
-    data = con_old.execute('SELECT * FROM MyopicBaseyear').fetchone()
+    myopic_result = con_old.execute('SELECT * FROM MyopicBaseyear').fetchone()
 except sqlite3.OperationalError:
-    data = None
-if data:
-    mby = data[0]
+    myopic_result = None
+if myopic_result:
+    mby = myopic_result[0]
     cur.execute("INSERT OR REPLACE INTO MetaData VALUES ('myopic_base_year', ? , '')", (mby,))
     print(f'transferred myopic base year: {mby}')
 else:
     print('no myopic base year discovered')
 
 try:
-    data = con_old.execute('SELECT * FROM GlobalDiscountRate').fetchone()
+    discount_result = con_old.execute('SELECT * FROM GlobalDiscountRate').fetchone()
 except sqlite3.OperationalError:
-    data = None
-if data:
-    rate = data[0]
+    discount_result = None
+if discount_result:
+    rate = discount_result[0]
     cur.execute(
         "INSERT OR REPLACE INTO MetaDataReal VALUES ('global_discount_rate', ?, '')", (rate,)
     )

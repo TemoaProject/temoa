@@ -1,0 +1,6 @@
+from _typeshed import Incomplete
+
+class Experiment:
+    model: Incomplete
+    def __init__(self, model=None) -> None: ...
+    def get_labeled_model(self): ...

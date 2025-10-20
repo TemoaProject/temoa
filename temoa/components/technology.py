@@ -10,16 +10,15 @@ This module is the foundation of the model, responsible for:
 -  Validating model inputs related to technologies, efficiencies, and commodities.
 """
 
+from collections.abc import Iterable
+from logging import getLogger
 from typing import TYPE_CHECKING
+
+from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
-
-
-from logging import getLogger
-from typing import Iterable
-
-from pyomo.environ import value
+    from temoa.types import Period, Region, Technology, Vintage
 
 logger = getLogger(__name__)
 
@@ -30,12 +29,11 @@ logger = getLogger(__name__)
 
 def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
     if t_or_g in M.tech_group_names:
-        techs = M.tech_group_members[t_or_g]
+        return M.tech_group_members[t_or_g]
     elif '+' in t_or_g:
-        techs = t_or_g.split('+')
+        return t_or_g.split('+')
     else:
-        techs = (t_or_g,)
-    return techs
+        return (t_or_g,)
 
 
 # ============================================================================
@@ -43,7 +41,9 @@ def gather_group_techs(M: 'TemoaModel', t_or_g: str) -> Iterable[str]:
 # ============================================================================
 
 
-def ModelProcessLifeIndices(M: 'TemoaModel'):
+def ModelProcessLifeIndices(
+    M: 'TemoaModel',
+) -> set[tuple['Region', 'Period', 'Technology', 'Vintage']] | None:
     """
     Returns the set of sensical (region, period, tech, vintage) tuples.  The tuple indicates
     the periods in which a process is active, distinct from TechLifeFracIndices that
@@ -52,17 +52,19 @@ def ModelProcessLifeIndices(M: 'TemoaModel'):
     return M.activeActivity_rptv
 
 
-def LifetimeProcessIndices(M: 'TemoaModel'):
+def LifetimeProcessIndices(M: 'TemoaModel') -> set[tuple['Region', 'Technology', 'Vintage']]:
     """
     Based on the Efficiency parameter's indices, this function returns the set of
     process indices that may be specified in the LifetimeProcess parameter.
     """
-    indices = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    indices = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
 
     return indices
 
 
-def get_default_survival(M: 'TemoaModel', r, p, t, v):
+def get_default_survival(
+    M: 'TemoaModel', r: 'Region', p: 'Period', t: 'Technology', v: 'Vintage'
+) -> float:
     """
     Getting LifetimeSurvivalCurve where it is not defined
     If this is a survival curve process, return 0 (likely beyond EOL)
@@ -71,7 +73,9 @@ def get_default_survival(M: 'TemoaModel', r, p, t, v):
     return 0.0 if M.isSurvivalCurveProcess[r, t, v] else 1.0
 
 
-def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
+def get_default_process_lifetime(
+    M: 'TemoaModel', r: 'Region', t: 'Technology', v: 'Vintage'
+) -> int:
     """
     This initializer used to initialize the LifetimeProcess parameter from LifetimeTech where needed
 
@@ -85,10 +89,12 @@ def get_default_process_lifetime(M: 'TemoaModel', r, t, v):
     :param v: vintage
     :return: the final lifetime value
     """
-    return M.LifetimeTech[r, t]
+    return value(M.LifetimeTech[r, t])
 
 
-def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
+def ParamProcessLifeFraction_rule(
+    M: 'TemoaModel', r: 'Region', p: 'Period', t: 'Technology', v: 'Vintage'
+) -> float:
     r"""
     Get the effective capacity of a process :math:`<r, t, v>` in a period :math:`p`.
 
@@ -120,7 +126,7 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
 # ============================================================================
 
 
-def populate_core_dictionaries(M: 'TemoaModel'):
+def populate_core_dictionaries(M: 'TemoaModel') -> None:
     """
     Populates the core sparse dictionaries from the `Efficiency` parameter.
 
@@ -207,7 +213,7 @@ def populate_core_dictionaries(M: 'TemoaModel'):
             M.processPeriods[r, t, v].add(p)
 
 
-def CreateSurvivalCurve(M: 'TemoaModel'):
+def CreateSurvivalCurve(M: 'TemoaModel') -> None:
     rtv_interpolated = set()  # so we only need one warning
 
     for r, _, t, v, _ in M.Efficiency.sparse_iterkeys():
@@ -216,13 +222,13 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
     # Collect rptv indices into (r, t, v): p dictionary
     for r, p, t, v in M.LifetimeSurvivalCurve.sparse_iterkeys():
         if (r, t, v) not in M.survivalCurvePeriods:
-            M.survivalCurvePeriods[r, t, v] = list()
-        M.survivalCurvePeriods[r, t, v].append(p)
+            M.survivalCurvePeriods[r, t, v] = set()
+        M.survivalCurvePeriods[r, t, v].add(p)
         M.isSurvivalCurveProcess[r, t, v] = True
 
     # Go through all the periods for each (r, t, v) in order
     for r, t, v in M.survivalCurvePeriods:
-        periods_rtv = sorted(M.survivalCurvePeriods[r, t, v])
+        periods_rtv: list[int] = sorted(M.survivalCurvePeriods[r, t, v])
 
         p_first = periods_rtv[0]
         p_last = periods_rtv[-1]
@@ -236,12 +242,12 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
             raise ValueError(msg)
 
         if value(M.LifetimeSurvivalCurve[r, v, t, v]) != 1:
-            msg = (
-                'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. ',
-                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})',
+            msg_str = (
+                'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. '
+                f'Got {value(M.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
             )
-            logger.error(msg)
-            raise ValueError(msg)
+            logger.error(msg_str)
+            raise ValueError(msg_str)
 
         # Collect a list of processes that needed to be interpolated, for warning
         if periods_rtv != list(range(p_first, p_last + 1, 1)):
@@ -310,8 +316,7 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
                 logger.error(msg)
                 raise ValueError(msg)
 
-        M.survivalCurvePeriods[r, t, v].extend(between_periods)
-        M.survivalCurvePeriods[r, t, v] = set(M.survivalCurvePeriods[r, t, v])
+        M.survivalCurvePeriods[r, t, v].update(between_periods)
 
     if rtv_interpolated:
         msg = (
@@ -322,17 +327,17 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
         logger.info(msg)
 
 
-def CheckEfficiencyIndices(M: 'TemoaModel'):
+def CheckEfficiencyIndices(M: 'TemoaModel') -> None:
     """
     Ensure that there are no unused items in any of the Efficiency index sets.
     """
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
-    c_physical = set(i for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_physical = c_physical | set(i for r, i, t, v in M.ConstructionInput.sparse_iterkeys())
-    techs = set(t for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_outputs = set(o for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
-    c_outputs = c_outputs | set(o for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys())
+    c_physical = {i for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_physical = c_physical | {i for r, i, t, v in M.ConstructionInput.sparse_iterkeys()}
+    techs = {t for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_outputs = {o for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    c_outputs = c_outputs | {o for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys()}
 
     symdiff = c_physical.symmetric_difference(M.commodity_physical)
     if symdiff:
@@ -341,8 +346,8 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
             'the following elements to the Set commodity_physical.'
             '\n\n    Element(s): {}'
         )
-        symdiff = (str(i) for i in symdiff)
-        f_msg = msg.format(', '.join(symdiff))
+        symdiff_str: set[str] = {str(i) for i in symdiff}
+        f_msg = msg.format(', '.join(symdiff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
@@ -353,8 +358,8 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
             'the following technology(ies) to the tech_resource or '
             'tech_production Sets.\n\n    Technology(ies): {}'
         )
-        symdiff = (str(i) for i in symdiff)
-        f_msg = msg.format(', '.join(symdiff))
+        symdiff_str2: set[str] = {str(i) for i in symdiff}
+        f_msg = msg.format(', '.join(symdiff_str2))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
@@ -365,14 +370,14 @@ def CheckEfficiencyIndices(M: 'TemoaModel'):
             'following elements to the commodity_demand Set.'
             '\n\n    Element(s): {}'
         )
-        diff = (str(i) for i in diff)
-        f_msg = msg.format(', '.join(diff))
+        diff_str = (str(i) for i in diff)
+        f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
 
-def CheckEfficiencyVariable(M: 'TemoaModel'):
-    count_rpitvo = dict()
+def CheckEfficiencyVariable(M: 'TemoaModel') -> None:
+    count_rpitvo = {}
     # Pull non-variable efficiency by default
     for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
         if (r, t, v) not in M.processPeriods:

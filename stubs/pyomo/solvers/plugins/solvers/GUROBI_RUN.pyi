@@ -1,0 +1,6 @@
+from _typeshed import Incomplete
+
+GUROBI_VERSION: Incomplete
+
+def gurobi_run(model_file, warmstart_file, mipgap, options, suffixes): ...
+def write_result(result, soln_file) -> None: ...

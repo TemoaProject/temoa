@@ -17,6 +17,7 @@ from .utils import get_variable_efficiency
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types import ExprLike
 
 logger = getLogger(__name__)
 
@@ -25,15 +26,15 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def ReserveMarginIndices(M: 'TemoaModel'):
-    indices = set(
+def ReserveMarginIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
+    indices = {
         (r, p, s, d)
         for r in M.PlanningReserveMargin.sparse_iterkeys()
         for p in M.time_optimize
         if (r, p) in M.processReservePeriods
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
@@ -43,7 +44,7 @@ def ReserveMarginIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
+def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     r"""
     A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
     are calculated from availability of generation in each hour—like an operating reserve margin—\
@@ -152,7 +153,7 @@ def ReserveMarginDynamic(M: 'TemoaModel', r, p, s, d):
     return available
 
 
-def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
+def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     r"""
 
     During each period :math:`p`, the sum of capacity values of all reserve
@@ -231,7 +232,7 @@ def ReserveMarginStatic(M: 'TemoaModel', r, p, s, d):
 # ============================================================================
 
 
-def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
+def ReserveMargin_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
     # Get available generation in this time slice depending on method specified in config file
     match M.ReserveMarginMethod.first():
         case 'static':
@@ -262,7 +263,7 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r, p, s, d):
             if S_o in M.commodity_demand
             else value(M.SegFrac[p, s, d])
         )
-        * M.V_FlowOutAnnual[r, p, s, d, S_i, t, S_v, S_o]
+        * M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
         for (t, S_v) in M.processReservePeriods[r, p]
         if t in M.tech_annual
         for S_i in M.processInputs[r, p, t, S_v]

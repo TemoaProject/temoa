@@ -10,14 +10,18 @@ including:
 -  Defining constraints that govern inter-regional capacity and flows.
 """
 
+from collections.abc import Iterable
 from logging import getLogger
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from deprecated import deprecated
 from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+
+# Import type annotations
+from temoa.types import Period, Region, Technology, Vintage
 
 logger = getLogger(name=__name__)
 
@@ -26,13 +30,14 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
+def gather_group_regions(M: 'TemoaModel', region: Region) -> Iterable[Region]:
+    regions: list[Region]
     if region == 'global':
-        regions = M.regions
+        regions = list(M.regions)
     elif '+' in region:
         regions = region.split('+')
     else:
-        regions = (region,)
+        regions = [region]
     return regions
 
 
@@ -41,9 +46,9 @@ def gather_group_regions(M: 'TemoaModel', region: str) -> Iterable[str]:
 # ============================================================================
 
 
-def CreateRegionalIndices(M: 'TemoaModel'):
+def CreateRegionalIndices(M: 'TemoaModel') -> list[Region]:
     """Create the set of all regions and all region-region pairs"""
-    regional_indices = set()
+    regional_indices: set[Region] = set()
     for r_i in M.regions:
         if '-' in r_i:
             logger.error("Individual region names can not have '-' in their names: %s", str(r_i))
@@ -58,10 +63,10 @@ def CreateRegionalIndices(M: 'TemoaModel'):
 
 
 @deprecated('No longer used.  See the region_group_check in validators.py')
-def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
+def RegionalGlobalInitializedIndices(M: 'TemoaModel') -> set[Region]:
     from itertools import permutations
 
-    indices = set()
+    indices: set[Region] = set()
     for n in range(1, len(M.regions) + 1):
         regional_perms = permutations(M.regions, n)
         for i in regional_perms:
@@ -77,7 +82,9 @@ def RegionalGlobalInitializedIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
+def RegionalExchangeCapacity_Constraint(
+    M: 'TemoaModel', r_e: Region, r_i: Region, p: Period, t: Technology, v: Vintage
+) -> object:
     r"""
 
     This constraint ensures that the process (t,v) connecting regions
@@ -104,7 +111,7 @@ def RegionalExchangeCapacity_Constraint(M: 'TemoaModel', r_e, r_i, p, t, v):
 # ============================================================================
 
 
-def create_geography_sets(M: 'TemoaModel'):
+def create_geography_sets(M: 'TemoaModel') -> None:
     """
     Populates dictionaries related to inter-regional commodity exchange.
 
@@ -130,7 +137,7 @@ def create_geography_sets(M: 'TemoaModel'):
 
         region_from, region_to = r.split('-', 1)
 
-        lifetime = value(M.LifetimeProcess[r, t, v])
+        lifetime: float = value(M.LifetimeProcess[r, t, v])
         for p in M.time_optimize:
             if p >= v and v + lifetime > p:
                 M.exportRegions.setdefault((region_from, p, i), set()).add((region_to, t, v, o))

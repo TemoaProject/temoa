@@ -5,4 +5,4 @@ This module contains internal implementation details for the TEMOA energy system
 These modules are not part of the public API and may change without notice.
 """
 
-__all__ = []
+__all__: list[str] = []

@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/1/24
 
 The purpose of this module is to provide a ledger for all costs for exchange techs.  The main reason
 for the need is that in many cases, the costs need to be apportioned by use ratio so it is helpful to
@@ -32,12 +8,14 @@ separately gather all of the costs and then use a usage ratio to generate entrie
 
 from collections import defaultdict
 from enum import Enum, unique
-from typing import Union
+from typing import TYPE_CHECKING, Union, cast
 
 from pyomo.common.numeric_types import value
 
 from temoa.core.model import TemoaModel
-from tests.utilities.namespace_mock import Namespace
+
+if TYPE_CHECKING:
+    from tests.utilities.namespace_mock import Namespace
 
 
 @unique
@@ -54,11 +32,15 @@ class CostType(Enum):
 
 class ExchangeTechCostLedger:
     def __init__(self, M: Union[TemoaModel, 'Namespace']) -> None:
-        self.cost_records: dict[CostType, dict] = defaultdict(dict)
+        self.cost_records: dict[CostType, dict[tuple[str, str, str, int, int], float]] = (
+            defaultdict(dict)
+        )
         # could be a Namespace for testing purposes...  See the related test
         self.M = M
 
-    def add_cost_record(self, link: str, period, tech, vintage, cost: float, cost_type: CostType):
+    def add_cost_record(
+        self, link: str, period: int, tech: str, vintage: int, cost: float, cost_type: CostType
+    ) -> None:
         """
         add a cost associated with an exchange tech
         :return:
@@ -69,7 +51,9 @@ class ExchangeTechCostLedger:
         # add to the "seen" records for appropriate cost type
         self.cost_records[cost_type][r1, r2, tech, vintage, period] = cost
 
-    def get_use_ratio(self, exporter, importer, period, tech, vintage) -> float:
+    def get_use_ratio(
+        self, exporter: str, importer: str, period: int, tech: str, vintage: int
+    ) -> float:
         """
         use flow to calculate the use ratio for these 2 entities for cost apportioning purposes
         :param exporter:
@@ -79,7 +63,9 @@ class ExchangeTechCostLedger:
         :param vintage:
         :return: the proportion to assign to the IMPORTER, or 0.5 if no usage
         """
-        M = self.M
+        # Cast to TemoaModel for type checking - at runtime this will be either TemoaModel or Namespace
+        # Both have the same attributes, but mypy doesn't know about Namespace's dynamic attributes
+        M = cast(TemoaModel, self.M)
         # need to temporarily reconstitute the names
         rr1 = '-'.join([exporter, importer])
         rr2 = '-'.join([importer, exporter])
@@ -130,8 +116,8 @@ class ExchangeTechCostLedger:
             return act_dir1 / (act_dir1 + act_dir2)
         return 0.5
 
-    def get_entries(self) -> dict:
-        region_costs = defaultdict(dict)
+    def get_entries(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
+        region_costs: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)
         # iterate through each region pairing, pull the cost records and decide if/how to split each one
         for cost_type in self.cost_records:
             # make a copy, this will be destructive operation

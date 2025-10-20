@@ -13,15 +13,21 @@ from __future__ import annotations
 
 from itertools import product as cross_product
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from deprecated import deprecated
-from pyomo.environ import (
-    value,
-)
+from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types import (
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
 
 
 logger = getLogger(name=__name__)
@@ -32,8 +38,8 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def CheckCapacityFactorProcess(M: 'TemoaModel'):
-    count_rptv = dict()
+def CheckCapacityFactorProcess(M: TemoaModel) -> None:
+    count_rptv: dict[tuple[Any, Any, Any, Any], int] = {}
     # Pull CapacityFactorTech by default
     for r, p, _s, _d, t in M.CapacityFactor_rpsdt:
         for v in M.processVintages[r, p, t]:
@@ -67,7 +73,7 @@ def CheckCapacityFactorProcess(M: 'TemoaModel'):
 
 
 @deprecated('should not be needed.  We are pulling the default on-the-fly where used')
-def CreateCapacityFactors(M: 'TemoaModel'):
+def CreateCapacityFactors(M: TemoaModel) -> None:
     """
     Steps to creating capacity factors:
     1. Collect all possible processes
@@ -78,14 +84,14 @@ def CreateCapacityFactors(M: 'TemoaModel'):
     CFP = M.CapacityFactorProcess
 
     # Step 1
-    processes = set((r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys())
+    processes = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
 
-    all_cfs = set(
+    all_cfs = {
         (r, p, s, d, t, v)
         for (r, t, v) in processes
         for p in M.processPeriods[r, t, v]
         for s, d in cross_product(M.TimeSeason[p], M.time_of_day)
-    )
+    }
 
     # Step 2
     unspecified_cfs = all_cfs.difference(CFP.sparse_iterkeys())
@@ -108,7 +114,9 @@ def CreateCapacityFactors(M: 'TemoaModel'):
     # CFP._constructed = True
 
 
-def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
+def get_default_capacity_factor(
+    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+) -> float:
     """
     This initializer is used to fill the CapacityFactorProcess from the CapacityFactorTech where needed.
 
@@ -124,10 +132,12 @@ def get_default_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
     :param v: vintage
     :return: the capacity factor
     """
-    return M.CapacityFactorTech[r, p, s, d, t]
+    return value(M.CapacityFactorTech[r, p, s, d, t])
 
 
-def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
+def get_capacity_factor(
+    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+) -> float:
     if M.isCapacityFactorProcess[r, p, t, v]:
         return value(M.CapacityFactorProcess[r, p, s, d, t, v])
     else:
@@ -139,88 +149,110 @@ def get_capacity_factor(M: 'TemoaModel', r, p, s, d, t, v):
 # ============================================================================
 
 
-def CapacityVariableIndices(M: 'TemoaModel'):
+def CapacityVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Technology, Vintage]] | None:
     return M.newCapacity_rtv
 
 
-def RetiredCapacityVariableIndices(M: 'TemoaModel'):
-    return set(
+def RetiredCapacityVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    return {
         (r, p, t, v)
         for r, p, t in M.processVintages
         if t in M.tech_retirement and t not in M.tech_uncap
         for v in M.processVintages[r, p, t]
         if v < p <= v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[p])
-    )
+    }
 
 
-def AnnualRetirementVariableIndices(M: 'TemoaModel'):
-    return set(
-        (r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]
-    )
+def AnnualRetirementVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    return {(r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]}
 
 
-def CapacityAvailableVariableIndices(M: 'TemoaModel'):
+def CapacityAvailableVariableIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology]] | None:
     return M.activeCapacityAvailable_rpt
 
 
-def RegionalExchangeCapacityConstraintIndices(M: 'TemoaModel'):
-    indices = set(
-        (r_e, r_i, p, t, v)
-        for r_e, p, i in M.exportRegions
-        for r_i, t, v, o in M.exportRegions[r_e, p, i]
-    )
+def RegionalExchangeCapacityConstraintIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Region, Period, Technology, Vintage]]:
+    indices: set[tuple[Region, Region, Period, Technology, Vintage]] = set()
+    for r_e, p, i in M.exportRegions:
+        for r_i, t, v, _o in M.exportRegions[r_e, p, i]:
+            indices.add((r_e, r_i, p, t, v))
 
     return indices
 
 
-def CapacityAnnualConstraintIndices(M: 'TemoaModel'):
-    capacity_indices = set(
-        (r, p, t, v)
-        for r, p, t, v in M.activeActivity_rptv
-        if t in M.tech_annual and t not in M.tech_demand
-        if t not in M.tech_uncap
-    )
+def CapacityAnnualConstraintIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    capacity_indices: set[tuple[Region, Period, Technology, Vintage]] = set()
+    if M.activeActivity_rptv:
+        for r, p, t, v in M.activeActivity_rptv:
+            if t in M.tech_annual and t not in M.tech_demand:
+                if t not in M.tech_uncap:
+                    capacity_indices.add((r, p, t, v))
+    else:
+        return set()
 
     return capacity_indices
 
 
-def CapacityConstraintIndices(M: 'TemoaModel'):
-    capacity_indices = set(
-        (r, p, s, d, t, v)
-        for r, p, t, v in M.activeActivity_rptv
-        if (t not in M.tech_annual or t in M.tech_demand)
-        if t not in M.tech_uncap
-        if t not in M.tech_storage
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
+def CapacityConstraintIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
+    capacity_indices: set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] = set()
+    if M.activeActivity_rptv:
+        for r, p, t, v in M.activeActivity_rptv:
+            if t not in M.tech_annual or t in M.tech_demand:
+                if t not in M.tech_uncap:
+                    if t not in M.tech_storage:
+                        for s in M.TimeSeason[p]:
+                            for d in M.time_of_day:
+                                capacity_indices.add((r, p, s, d, t, v))
+    else:
+        return set()
 
     return capacity_indices
 
 
 @deprecated('switched over to validator... this set is typically VERY empty')
-def CapacityFactorProcessIndices(M: 'TemoaModel'):
-    indices = set(
-        (r, s, d, t, v)
-        for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
-        for p in M.time_optimize
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
+def CapacityFactorProcessIndices(
+    M: TemoaModel,
+) -> set[tuple[str, str, str, str, int]]:
+    indices: set[tuple[Region, Season, TimeOfDay, Technology, Vintage]] = set()
+    for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
+        for p in M.time_optimize:
+            for s in M.TimeSeason[p]:
+                for d in M.time_of_day:
+                    indices.add((r, s, d, t, v))
     return indices
 
 
-def CapacityFactorTechIndices(M: 'TemoaModel'):
-    all_cfs = set(
-        (r, p, s, d, t)
-        for r, p, t in M.activeCapacityAvailable_rpt
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-    )
+def CapacityFactorTechIndices(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology]]:
+    all_cfs: set[tuple[Region, Period, Season, TimeOfDay, Technology]] = set()
+    if M.activeCapacityAvailable_rpt:
+        for r, p, t in M.activeCapacityAvailable_rpt:
+            for s in M.TimeSeason[p]:
+                for d in M.time_of_day:
+                    all_cfs.add((r, p, s, d, t))
+    else:
+        return set()
     return all_cfs
 
 
-def CapacityAvailableVariableIndicesVintage(M: 'TemoaModel'):
+def CapacityAvailableVariableIndicesVintage(
+    M: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]] | None:
     return M.activeCapacityAvailable_rptv
 
 
@@ -229,7 +261,9 @@ def CapacityAvailableVariableIndicesVintage(M: 'TemoaModel'):
 # ============================================================================
 
 
-def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
+def AnnualRetirement_Constraint(
+    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> Any:
     r"""
     Get the annualised retirement rate for a process in a given period.
     Used to output retirement (including end of life, EOL) and to model end of
@@ -309,7 +343,9 @@ def AnnualRetirement_Constraint(M: 'TemoaModel', r, p, t, v):
     return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
 
 
-def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
+def CapacityAvailableByPeriodAndTech_Constraint(
+    M: TemoaModel, r: Region, p: Period, t: Technology
+) -> Any:
     r"""
 
     The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
@@ -329,7 +365,9 @@ def CapacityAvailableByPeriodAndTech_Constraint(M: 'TemoaModel', r, p, t):
     return expr
 
 
-def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
+def CapacityAnnual_Constraint(
+    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> Any:
     r"""
     Similar to Capacity_Constraint, but for technologies belonging to the
     :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
@@ -360,7 +398,9 @@ def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
     return value(M.CapacityToActivity[r, t]) * M.V_Capacity[r, p, t, v] >= activity_rptv
 
 
-def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def Capacity_Constraint(
+    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+) -> Any:
     r"""
     This constraint ensures that the capacity of a given process is sufficient
     to support its activity across all time periods and time slices. The calculation
@@ -432,7 +472,9 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
         )
 
 
-def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
+def AdjustedCapacity_Constraint(
+    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> Any:
     r"""
     This constraint updates the capacity of a process by taking into account retirements
     and end of life. For a given :code:`(r,p,t,v)` index, this constraint sets the capacity
@@ -525,7 +567,7 @@ def AdjustedCapacity_Constraint(M: 'TemoaModel', r, p, t, v):
 # ============================================================================
 
 
-def create_capacity_and_retirement_sets(M: 'TemoaModel'):
+def create_capacity_and_retirement_sets(M: TemoaModel) -> None:
     """
     Creates and populates component-specific Python sets and dictionaries on the model object.
 
@@ -571,20 +613,20 @@ def create_capacity_and_retirement_sets(M: 'TemoaModel'):
                 M.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
 
     # Create active capacity index sets from the now-populated processVintages
-    M.newCapacity_rtv = set(
+    M.newCapacity_rtv = {
         (r, t, v)
         for r, p, t in M.processVintages
         for v in M.processVintages[r, p, t]
         if t not in M.tech_uncap and v in M.time_optimize
-    )
-    M.activeCapacityAvailable_rpt = set(
+    }
+    M.activeCapacityAvailable_rpt = {
         (r, p, t)
         for r, p, t in M.processVintages
         if M.processVintages[r, p, t] and t not in M.tech_uncap
-    )
-    M.activeCapacityAvailable_rptv = set(
+    }
+    M.activeCapacityAvailable_rptv = {
         (r, p, t, v)
         for r, p, t in M.processVintages
         for v in M.processVintages[r, p, t]
         if t not in M.tech_uncap
-    )
+    }

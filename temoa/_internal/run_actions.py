@@ -34,7 +34,6 @@ from pathlib import Path
 from sys import stderr as SE
 from sys import version_info
 from time import time
-from typing import Tuple
 
 from pyomo.environ import (
     Constraint,
@@ -57,7 +56,7 @@ from temoa.data_processing.DB_to_Excel import make_excel
 logger = getLogger(__name__)
 
 
-def check_python_version(min_major, min_minor) -> bool:
+def check_python_version(min_major: int, min_minor: int) -> bool:
     if (min_major, min_minor) >= version_info:
         logger.error(
             'Model is being run with python %d.%d.  Expecting version %d.%d or later.  ',
@@ -70,7 +69,7 @@ def check_python_version(min_major, min_minor) -> bool:
     return True
 
 
-def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor) -> bool:
+def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor: int) -> bool:
     """
     check the db version
     :param config: TemoaConfig instance
@@ -130,10 +129,10 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
 
 def build_instance(
     loaded_portal: DataPortal,
-    model_name=None,
-    silent=False,
-    keep_lp_file=False,
-    lp_path: Path = None,
+    model_name: str | None = None,
+    silent: bool = False,
+    keep_lp_file: bool = False,
+    lp_path: Path | None = None,
 ) -> TemoaModel:
     """
     Build a Temoa Instance from data
@@ -160,7 +159,7 @@ def build_instance(
         try:
             # Check for warnings in log file to notify user. Ugly but it works
             log_file = os.path.join(definitions.get_OUTPUT_PATH(), 'log.log')
-            with open(log_file, 'r') as f:
+            with open(log_file) as f:
                 warnings_found = any(
                     '| WARNING |' in line or '| ERROR |' in line or '| CRITICAL |' in line
                     for line in f
@@ -183,7 +182,7 @@ def build_instance(
     logger.info('Finished creating model instance from data')
 
     # save LP if requested
-    if keep_lp_file:
+    if keep_lp_file and lp_path is not None:
         save_lp(instance, lp_path)
 
     # gather some stats...
@@ -212,8 +211,11 @@ def save_lp(instance: TemoaModel, lp_path: Path) -> None:
 
 
 def solve_instance(
-    instance: TemoaModel, solver_name, silent: bool = False, solver_suffixes=None
-) -> Tuple[TemoaModel, SolverResults]:
+    instance: TemoaModel,
+    solver_name: str,
+    silent: bool = False,
+    solver_suffixes: list[str] | None = None,
+) -> tuple[TemoaModel, SolverResults]:
     """
     Solve the instance and return a loaded instance
     :param solver_suffixes: iterable of string names for suffixes.  See pyomo dox.  right now, only
@@ -284,17 +286,17 @@ def solve_instance(
         #            supports some.  Perhaps in the future, this will be easier.  For now, we need a different
         #            solve command for highspy and no suffixes because it works so well.
         if solver_suffixes:
-            solver_suffixes = set(solver_suffixes)
+            solver_suffixes_set = set(solver_suffixes)
             legit_suffixes = {'dual', 'slack', 'rc'}
-            bad_apples = solver_suffixes - legit_suffixes
-            solver_suffixes &= legit_suffixes
+            bad_apples = solver_suffixes_set - legit_suffixes
+            solver_suffixes_set &= legit_suffixes
             if bad_apples:
                 logger.warning(
                     'Solver suffix %s is not in pyomo standards (see pyomo dox).  Removed',
                     bad_apples,
                 )
             # convert back to list...
-            solver_suffixes = list(solver_suffixes)
+            solver_suffixes = list(solver_suffixes_set)
         else:
             solver_suffixes = []
         result: SolverResults | None = None
@@ -343,15 +345,19 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
     soln = result['Solution']
 
     logger.info('The solver reported status as: %s', soln.Status)
-    if check_optimal_termination(results=result):
+    if check_optimal_termination(result):
         return True, ''
     else:
         return False, f'{soln.Status} was returned from solve'
 
 
 def handle_results(
-    instance: TemoaModel, results, config: TemoaConfig, append=False, iteration=None
-):
+    instance: TemoaModel,
+    results: SolverResults,
+    config: TemoaConfig,
+    append: bool = False,
+    iteration: int | None = None,
+) -> None:
     hack = time()
     if not config.silent:
         msg = '[        ] Calculating reporting variables and formatting results.'

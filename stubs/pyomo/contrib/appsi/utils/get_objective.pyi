@@ -1,0 +1,3 @@
+from pyomo.core.base.objective import Objective as Objective
+
+def get_objective(block): ...

@@ -13,8 +13,11 @@ of technologies across time slices, including:
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.core import Set
 from pyomo.environ import Constraint, value
+
+from temoa.types import ExprLike
+from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
+from temoa.types.index_types import RegionPeriodSeasonTimeOfDayTechVintage
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -26,48 +29,56 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def BaseloadDiurnalConstraintIndices(M: 'TemoaModel'):
-    indices = set(
+def BaseloadDiurnalConstraintIndices(
+    M: 'TemoaModel',
+) -> set[RegionPeriodSeasonTimeOfDayTechVintage]:
+    indices = {
         (r, p, s, d, t, v)
         for r, p, t in M.baseloadVintages
         for v in M.baseloadVintages[r, p, t]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
 
-def RampUpDayConstraintIndices(M: 'TemoaModel'):
-    indices = set(
+def RampUpDayConstraintIndices(
+    M: 'TemoaModel',
+) -> set[RegionPeriodSeasonTimeOfDayTechVintage]:
+    indices = {
         (r, p, s, d, t, v)
         for r, p, t in M.rampUpVintages
         for v in M.rampUpVintages[r, p, t]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
 
-def RampDownDayConstraintIndices(M: 'TemoaModel'):
-    indices = set(
+def RampDownDayConstraintIndices(
+    M: 'TemoaModel',
+) -> set[RegionPeriodSeasonTimeOfDayTechVintage]:
+    indices = {
         (r, p, s, d, t, v)
         for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
         for s in M.TimeSeason[p]
         for d in M.time_of_day
-    )
+    }
 
     return indices
 
 
-def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
+def RampUpSeasonConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip  # dont need this constraint
+        return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
-    indices = set(
+    indices = {
         (r, p, s, s_next, t, v)
         for r, p, t in M.rampUpVintages
         for v in M.rampUpVintages[r, p, t]
@@ -77,19 +88,20 @@ def RampUpSeasonConstraintIndices(M: 'TemoaModel'):
         for s_next in (
             M.sequential_to_season[p, s_seq_next],
         )  # next sequential season's matching season
-        if s_next
-        != M.time_next[p, s, M.time_of_day.last()][0]  # to avoid redundancy on RampDay constraint
-    )
+        if s_next != M.time_next[p, s, M.time_of_day.last()][0]
+    }
 
     return indices
 
 
-def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
+def RampDownSeasonConstraintIndices(
+    M: 'TemoaModel',
+) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
     if M.TimeSequencing.first() == 'consecutive_days':
-        return Set.Skip  # dont need this constraint
+        return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
-    indices = set(
+    indices = {
         (r, p, s, s_next, t, v)
         for r, p, t in M.rampDownVintages
         for v in M.rampDownVintages[r, p, t]
@@ -98,9 +110,8 @@ def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
         for s_next in (
             M.sequential_to_season[p, s_seq_next],
         )  # next sequential season's matching season
-        if s_next
-        != M.time_next[p, s, M.time_of_day.last()][0]  # to avoid redundancy on RampDay constraint
-    )
+        if s_next != M.time_next[p, s, M.time_of_day.last()][0]
+    }
 
     return indices
 
@@ -110,7 +121,15 @@ def RampDownSeasonConstraintIndices(M: 'TemoaModel'):
 # ============================================================================
 
 
-def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def BaseloadDiurnal_Constraint(
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
     r"""
 
     Some electric generators cannot ramp output over a short period of time (e.g.,
@@ -184,7 +203,7 @@ def BaseloadDiurnal_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 # ============================================================================
 
 
-def create_operational_vintage_sets(M: 'TemoaModel'):
+def create_operational_vintage_sets(M: 'TemoaModel') -> None:
     """
     Populates vintage-based dictionaries for technologies with special
     operational characteristics like curtailment, baseload, storage, ramping, and reserves.
@@ -220,7 +239,15 @@ def create_operational_vintage_sets(M: 'TemoaModel'):
         M.isSeasonalStorage[t] = t in M.tech_seasonal_storage
 
 
-def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampUpDay_Constraint(
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
     r"""
     One of two constraints built from the RampUpHourly table, along with the
     RampUpSeason_Constraint. RampUpDay constrains ramp rates between time slices
@@ -321,7 +348,15 @@ def RampUpDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+def RampDownDay_Constraint(
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
     r"""
 
     Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
@@ -396,7 +431,15 @@ def RampDownDay_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     return expr
 
 
-def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
+def RampUpSeason_Constraint(
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    s_next: Season,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary
     of sequential seasons. Same as RampUpDay but only applies to the boundary
@@ -455,7 +498,15 @@ def RampUpSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
     return expr
 
 
-def RampDownSeason_Constraint(M: 'TemoaModel', r, p, s, s_next, t, v):
+def RampDownSeason_Constraint(
+    M: 'TemoaModel',
+    r: Region,
+    p: Period,
+    s: Season,
+    s_next: Season,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary
     of sequential seasons. Same as RampDownDay but only applies to the boundary

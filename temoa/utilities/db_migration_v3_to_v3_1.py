@@ -1,27 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-Written by:  I. D. Elder
-iandavidelder@gmail.com
-Created on:  2025/03/14
-
 Transition a v3.0 database to a v3.1 database.
 """
 
@@ -33,11 +10,13 @@ from pathlib import Path
 
 import pandas as pd
 
+from temoa.core.model import TemoaModel
+
 # Just to get the default lifetime...
 this_dir = os.path.dirname(__file__)
 root_dir = os.path.abspath(os.path.join(this_dir, '../..'))
 sys.path.append(root_dir)
-from temoa.core.model import TemoaModel
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -66,7 +45,7 @@ con_new = sqlite3.connect(new_db_path)
 cur = con_new.cursor()
 
 # bring in the new schema and execute
-with open(schema_file, 'r') as src:
+with open(schema_file) as src:
     sql_script = src.read()
 con_new.executescript(sql_script)
 
@@ -185,7 +164,8 @@ for old_name, new_name in direct_transfer_tables:
     all_good = all_good and column_check(old_name, new_name)
 for old_name, new_name in period_added_tables:
     all_good = all_good and column_check(old_name, new_name)
-if not all_good: sys.exit(-1)
+if not all_good:
+    sys.exit(1)
 
 
 # Collapse Max/Min constraint tables
@@ -202,7 +182,7 @@ for old_name, (new_name, operator) in operator_added_tables.items():
         print('No data for: ' + old_name)
         continue
 
-    new_cols: tuple = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    new_cols: list[str] = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
     op_index = new_cols.index('operator')
     data = [(*row[0:op_index], operator, *row[op_index:len(new_cols)-1]) for row in data]
 
@@ -307,14 +287,14 @@ for old_name, new_name in period_added_tables:
         for r, t in data[['region','tech']].drop_duplicates().values:
             periods[r, t] = [
                 p for p in time_optimize
-                if any((
+                if any(
                     v <= p < v+lifetime_process[r, t, v]
                     for v in [
                         t[0] for t in con_old.execute(
                             f'SELECT vintage FROM Efficiency WHERE region == "{r}" AND tech == "{t}"'
                         ).fetchall()
                     ]
-                ))
+                )
             ]
         data['periods'] = [
             periods[r, t]
@@ -351,17 +331,17 @@ for old_name, new_name in period_added_tables:
 
 
 print('\n --- Making some final changes ---')
-n_del = len(con_new.execute((
+n_del = len(con_new.execute(
     "SELECT * FROM DemandSpecificDistribution "
     "WHERE (region, period, demand_name) "
     "NOT IN (SELECT region, period, commodity FROM Demand)"
-)).fetchall())
+).fetchall())
 if n_del > 0:
-    con_new.execute((
+    con_new.execute(
         "DELETE FROM DemandSpecificDistribution "
         "WHERE (region, period, demand_name) "
         "NOT IN (SELECT region, period, commodity FROM Demand)"
-    ))
+    )
     print(f"{n_del} extraneous rows removed from DemandSpecificDistribution after adding period index")
 
 # TimeSeason unique seasons to SeasonLabel

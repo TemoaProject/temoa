@@ -49,11 +49,11 @@ class TemoaConfig:
         save_lp_file: bool = False,
         time_sequencing: str | None = None,
         reserve_margin: str | None = None,
-        MGA: dict | None = None,
-        SVMGA: dict | None = None,
-        myopic: dict | None = None,
-        morris: dict | None = None,
-        monte_carlo: dict | None = None,
+        MGA: dict[str, object] | None = None,
+        SVMGA: dict[str, object] | None = None,
+        myopic: dict[str, object] | None = None,
+        morris: dict[str, object] | None = None,
+        monte_carlo: dict[str, object] | None = None,
         config_file: Path | None = None,
         silent: bool = False,
         stream_output: bool = False,
@@ -153,7 +153,7 @@ class TemoaConfig:
                     SE.write('Warning: ' + msg)
 
     @staticmethod
-    def build_config(config_file: Path, output_path: Path, silent=False) -> 'TemoaConfig':
+    def build_config(config_file: Path, output_path: Path, silent: bool = False) -> 'TemoaConfig':
         """
         build a Temoa Config from a config file
         :param silent: suppress warnings and confirmations
@@ -171,7 +171,7 @@ class TemoaConfig:
         logger.info('Mode:  %s', tc.scenario_mode.name)
         return tc
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         width = 25
         spacer = '\n' + '-' * width + '\n'
         msg = spacer
@@ -202,7 +202,7 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
         msg += '{:>{}s}: {}\n'.format('Planning reserve margin', width, self.reserve_margin)
 
-        if self.scenario_mode == TemoaMode.MYOPIC:
+        if self.scenario_mode == TemoaMode.MYOPIC and self.myopic_inputs is not None:
             msg += spacer
             msg += '{:>{}s}: {}\n'.format(
                 'Myopic view depth', width, self.myopic_inputs.get('view_depth')
@@ -211,7 +211,7 @@ class TemoaConfig:
                 'Myopic step size', width, self.myopic_inputs.get('step_size')
             )
 
-        if self.scenario_mode == TemoaMode.MGA:
+        if self.scenario_mode == TemoaMode.MGA and self.mga_inputs is not None:
             msg += spacer
             msg += '{:>{}s}: {}\n'.format(
                 'MGA Cost Epsilon', width, self.mga_inputs.get('cost_epsilon')
@@ -225,7 +225,7 @@ class TemoaConfig:
             msg += '{:>{}s}: {}\n'.format('MGA Axis:', width, self.mga_inputs.get('axis'))
             msg += '{:>{}s}: {}\n'.format('MGA Weighting', width, self.mga_inputs.get('weighting'))
 
-        if self.scenario_mode == TemoaMode.METHOD_OF_MORRIS:
+        if self.scenario_mode == TemoaMode.METHOD_OF_MORRIS and self.morris_inputs is not None:
             msg += spacer
             msg += '{:>{}s}: {}\n'.format(
                 'Morris Perturbation', width, self.morris_inputs.get('perturbation')
@@ -243,7 +243,7 @@ class TemoaConfig:
                 'Morris CPU Cores Requested', width, self.morris_inputs.get('cores')
             )
 
-        if self.scenario_mode == TemoaMode.SVMGA:
+        if self.scenario_mode == TemoaMode.SVMGA and self.svmga_inputs is not None:
             msg += spacer
             msg += '{:>{}s}: {}\n'.format(
                 'SVMGA Cost Epsilon', width, self.svmga_inputs.get('cost_epsilon')
