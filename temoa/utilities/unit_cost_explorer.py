@@ -31,6 +31,12 @@ factors that are used in calculation
 # indices
 rtv = ('A', 'battery', 2020)  # rtv
 rptv = ('A', 2020, 'battery', 2020)  # rptv
+M.time_future.construct([2020, 2025, 2030])  # needs to go 1 period beyond optimize horizon
+M.time_optimize.construct([2020, 2025])
+M.PeriodLength.construct()
+M.tech_all.construct(data=['battery'])
+M.regions.construct(data=['A'])
+M.regionalIndices.construct(data=['A'])
 
 # make SETS
 M.NewCapacityVar_rtv.construct(data=rtv)
@@ -38,20 +44,14 @@ M.CapacityVar_rptv.construct(data=rptv)
 M.CostInvest_rtv.construct(data=rtv)
 M.CostFixed_rptv.construct(data=rptv)
 M.LoanLifetimeProcess_rtv.construct(data=rtv)
-M.Loan_rtv.construct(data=rtv)
-M.LoanRate_rtv.construct(data=rtv)
+# M.Loan_rtv.construct(data=rtv)
+# M.LoanRate_rtv.construct(data=rtv)
 M.LifetimeProcess_rtv.construct(data=rtv)
-M.regionalIndices.construct(data=['A'])
 M.MyopicDiscountingYear.construct(data={None: 0})
-M.ModelProcessLife_rptv.construct(data=rptv)
+# M.ModelProcessLife_rptv.construct(data=rptv)
 
 
 # make PARAMS
-M.time_optimize.construct([2020, 2025])
-M.time_future.construct([2020, 2025, 2030])  # needs to go 1 period beyond optimize horizon
-M.PeriodLength.construct()
-M.tech_all.construct(data=['battery'])
-M.regions.construct(data=['A'])
 M.CostInvest.construct(data={rtv: 1300})  # US_9R_8D
 M.CostFixed.construct(data={rptv: 20})  # US_9R_8D
 M.LoanLifetimeProcess.construct(data={rtv: 10})
@@ -59,8 +59,9 @@ M.LoanRate.construct(data={rtv: 0.05})
 M.LoanAnnualize.construct()
 M.LifetimeTech.construct(data={('A', 'battery'): 20})
 M.LifetimeProcess.construct(data={rtv: 40})
-M.ModelProcessLife.construct(data={rptv: 20})
+# M.ModelProcessLife.construct(data={rptv: 20})
 M.GlobalDiscountRate.construct(data={None: 0.05})
+M.isSurvivalCurveProcess[rtv] = False
 
 # make/fix VARS
 M.V_NewCapacity.construct()
@@ -94,7 +95,9 @@ print(f'price_per_kwh: ${price_per_kwh: 0.2f}\n')
 print('building storage level constraint...')
 
 # More SETS
-M.TimeSeason.construct(data=['winter', 'summer'])
+M.time_season.construct(['winter', 'summer'])
+M.TimeSeason.construct(data={2020:{'winter', 'summer'}, 2025:{'winter', 'summer'}})
+M.DaysPerPeriod.construct(data={None: 365})
 tod_slices = 2
 M.time_of_day.construct(data=range(1, tod_slices + 1))
 M.tech_storage.construct(data=['battery'])
@@ -115,7 +118,7 @@ M.CapacityToActivity.construct(data={('A', 'battery'): 31.536})
 M.StorageDuration.construct(data={('A', 'battery'): 4})
 seasonal_fractions = {'winter': 0.4, 'summer': 0.6}
 M.SegFrac.construct(
-    data={(s, d): seasonal_fractions[s] / tod_slices for d in M.time_of_day for s in M.TimeSeason}
+    data={(p, s, d): seasonal_fractions[s] / tod_slices for d in M.time_of_day for p in M.time_optimize for s in M.TimeSeason[p] }
 )
 # QA the total
 print(f'quality check.  Total of all SegFrac: {sum(M.SegFrac.values()):0.3f}')
@@ -125,7 +128,8 @@ M.ProcessLifeFrac.construct(data={('A', 2020, 'battery', 2020): 1.0})
 M.V_StorageLevel.construct()
 M.SegFracPerSeason.construct()
 
-upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', '1', 'battery', 2020)
+M.isSeasonalStorage['battery'] = False
+upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', 1, 'battery', 2020)
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...
