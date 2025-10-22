@@ -19,7 +19,7 @@ from collections import defaultdict
 from logging import getLogger
 from typing import TypeAlias
 
-from temoa.model_checking.network_model_data import NetworkModelData, Tech
+from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
 from temoa.types.core_types import Commodity, Technology
 
 logger = getLogger(__name__)
@@ -96,7 +96,7 @@ class CommodityNetwork:
             self.tech_inputs[tech.name].add(tech.ic)
             self.tech_outputs[tech.name].add(tech.oc)
 
-    def reload(self, connections: set[Tech]) -> None:
+    def reload(self, connections: set[TechTuple]) -> None:
         """
         Reload the network model with a new set of connections.
 
@@ -284,7 +284,7 @@ class CommodityNetwork:
             for orphan in sorted(self.demand_orphans, key=lambda x: x[1]):
                 logger.info(f'Discovered orphaned process:   {orphan}')
 
-    def get_valid_tech(self) -> set[Tech]:
+    def get_valid_tech(self) -> set[TechTuple]:
         """Returns the set of Tech objects that are part of a valid connection."""
         return {
             tech
@@ -292,7 +292,7 @@ class CommodityNetwork:
             if (tech.ic, tech.name, tech.oc) in self.good_connections
         }
 
-    def get_demand_side_orphans(self) -> set[Tech]:
+    def get_demand_side_orphans(self) -> set[TechTuple]:
         """Returns Tech objects for demand-side orphans."""
         return {
             tech
@@ -300,7 +300,7 @@ class CommodityNetwork:
             if (tech.ic, tech.name, tech.oc) in self.demand_orphans
         }
 
-    def get_other_orphans(self) -> set[Tech]:
+    def get_other_orphans(self) -> set[TechTuple]:
         """Returns Tech objects for non-demand-side orphans."""
         return {
             tech

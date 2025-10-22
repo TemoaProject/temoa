@@ -13,7 +13,7 @@ import pytest
 
 # Assuming the refactored code is in this location
 from temoa.model_checking.commodity_network import CommodityNetwork
-from temoa.model_checking.network_model_data import Tech
+from temoa.model_checking.network_model_data import TechTuple
 
 # --- Test Case Definitions ---
 # Each tuple contains:
@@ -181,7 +181,7 @@ def test_network_analysis(
 
     # Convert the connections dict into a set of Tech namedtuples
     available_techs = {
-        Tech(ic=ic, oc=oc, name=tech, vintage=period, region=region)
+        TechTuple(ic=ic, oc=oc, name=tech, vintage=period, region=region)
         for oc, links in connections.items()
         for ic, tech in links
     }

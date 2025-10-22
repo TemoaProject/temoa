@@ -26,7 +26,7 @@ from temoa.types.core_types import ParameterValue
 
 
 # --- Type Definitions ---
-class Tech(NamedTuple):
+class TechTuple(NamedTuple):
     region: Region
     ic: Commodity
     name: Technology
@@ -34,7 +34,7 @@ class Tech(NamedTuple):
     oc: Commodity
 
 
-class LinkedTech(NamedTuple):
+class LinkedTechTuple(NamedTuple):
     region: Region
     driver: Technology
     emission: Commodity
@@ -88,10 +88,10 @@ class NetworkModelData:
         default_factory=lambda: defaultdict(set)
     )
     physical_commodities: set[Commodity] = field(default_factory=set)
-    available_techs: defaultdict[tuple[Region, Period], set[Tech]] = field(
+    available_techs: defaultdict[tuple[Region, Period], set[TechTuple]] = field(
         default_factory=lambda: defaultdict(set)
     )
-    available_linked_techs: set[LinkedTech] = field(default_factory=set)
+    available_linked_techs: set[LinkedTechTuple] = field(default_factory=set)
     tech_data: defaultdict[Technology, dict[str, TechAttributeValue]] = field(
         default_factory=lambda: defaultdict(dict)
     )
@@ -113,7 +113,7 @@ class NetworkModelData:
         """Update a data element for a tech."""
         self.tech_data[tech][element] = value
 
-    def get_driven_techs(self, region: Region, period: Period) -> set[Tech]:
+    def get_driven_techs(self, region: Region, period: Period) -> set[TechTuple]:
         """Identifies all linked techs by name from the linked tech names."""
         driven_tech_names = {lt.driven for lt in self.available_linked_techs}
         return {
@@ -160,16 +160,16 @@ def _build_from_model(M: TemoaModel, myopic_index: MyopicIndex | None = None) ->
     for r, p, d in M.Demand.sparse_iterkeys():
         dem_com[r, p].add(d)
 
-    techs: defaultdict[tuple[Region, Period], set[Tech]] = defaultdict(set)
+    techs: defaultdict[tuple[Region, Period], set[TechTuple]] = defaultdict(set)
     if M.activeFlow_rpsditvo is not None:
         for r, p, _s, _d, ic, tech, v, oc in M.activeFlow_rpsditvo:
-            techs[r, p].add(Tech(r, ic, tech, v, oc))
+            techs[r, p].add(TechTuple(r, ic, tech, v, oc))
     if M.activeFlow_rpitvo is not None:
         for r, p, ic, tech, v, oc in M.activeFlow_rpitvo:
-            techs[r, p].add(Tech(r, ic, tech, v, oc))
+            techs[r, p].add(TechTuple(r, ic, tech, v, oc))
 
     linked_techs = {
-        LinkedTech(r, driver, emission, driven)
+        LinkedTechTuple(r, driver, emission, driven)
         for r, driver, emission, driven in M.LinkedTechs.sparse_iterkeys()
     }
 
@@ -324,15 +324,15 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             if '-' in r:  # Inter-regional transfer
                 r1, r2 = r.split('-')
                 source_comm, dest_comm = f'{ic} ({r1})', f'{oc} ({r2})'
-                res.available_techs[r2, p].add(Tech(r2, source_comm, tech, v, oc))
-                res.available_techs[r1, p].add(Tech(r1, ic, tech, v, dest_comm))
-                res.available_techs[r, p].add(Tech(r, ic, tech, v, oc))
+                res.available_techs[r2, p].add(TechTuple(r2, source_comm, tech, v, oc))
+                res.available_techs[r1, p].add(TechTuple(r1, ic, tech, v, dest_comm))
+                res.available_techs[r, p].add(TechTuple(r, ic, tech, v, oc))
                 res.source_commodities[r2, p].add(source_comm)
                 res.demand_commodities[r1, p].add(dest_comm)
                 res.physical_commodities.update([source_comm, dest_comm])
                 res.exchange_commodities.update([source_comm, dest_comm])
             else:  # Standard technology
-                res.available_techs[r, p].add(Tech(r, ic, tech, v, oc))
+                res.available_techs[r, p].add(TechTuple(r, ic, tech, v, oc))
                 if ic in basic_data['source_commodities_all']:
                     res.source_commodities[r, p].add(ic)
                 if oc in basic_data['waste_commodities_all']:
@@ -347,7 +347,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
             if is_natural_eol or is_retireable or has_survival:
                 for eol_oc in lookup_data['eol'].get((r, tech, v), []):
-                    res.available_techs[r, p].add(Tech(r, tech, 'EndOfLife', v, eol_oc))
+                    res.available_techs[r, p].add(TechTuple(r, tech, 'EndOfLife', v, eol_oc))
                     res.source_commodities[r, p].add(tech)
                     res.capacity_commodities.add(tech)
                     if eol_oc in basic_data['waste_commodities_all']:
@@ -355,14 +355,14 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
-        res.available_techs[r, v].add(Tech(r, ic, 'Construction', v, tech))
+        res.available_techs[r, v].add(TechTuple(r, ic, 'Construction', v, tech))
         res.demand_commodities[r, v].add(tech)
         res.capacity_commodities.add(tech)
         living_techs.add(tech)
 
     # --- 4. Process Linked Techs and Other Metadata ---
     res.available_linked_techs = {
-        LinkedTech(r, driver, emiss, driven)
+        LinkedTechTuple(r, driver, emiss, driven)
         for r, driver, emiss, driven in lookup_data['linked']
         if driver in living_techs and driven in living_techs
     }
