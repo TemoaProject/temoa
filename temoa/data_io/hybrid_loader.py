@@ -37,7 +37,7 @@ from temoa.data_io.loader_manifest import LoadItem
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
-from temoa.model_checking.element_checker import ViableSet
+from temoa.model_checking.element_checker import ValidationPrimitive, ViableSet
 
 logger = getLogger(__name__)
 
@@ -338,8 +338,9 @@ class HybridLoader:
         if validator is None:
             return values
 
+        typed_values = cast(Sequence[tuple[ValidationPrimitive, ...]], values)
         return element_checker.filter_elements(
-            values=values, validation=validator, value_locations=item.validation_map
+            values=typed_values, validation=validator, value_locations=item.validation_map
         )
 
     def _load_component_data(
@@ -399,7 +400,10 @@ class HybridLoader:
         """
         Performs the source-trace analysis to identify viable components.
         """
-        network_data = network_model_data.build(self.con, myopic_index=myopic_index)
+        # The `build` function is a generic factory. Mypy cannot follow the
+        # dynamic dispatch to the correctly-typed `_build_from_db` function,
+        # so we ignore the resulting argument type error here.
+        network_data = network_model_data.build(self.con, myopic_index)  # type: ignore[arg-type]
         cur = self.con.cursor()
         periods = set(
             [
@@ -454,8 +458,15 @@ class HybridLoader:
         self.viable_techs = filts['t']
         self.viable_input_comms = filts['ic']
         self.viable_output_comms = filts['oc']
-        self.viable_comms = ViableSet(elements=filts['ic'].members | filts['oc'].members)
-        rtt = {(r, t1, t2) for r, t1 in filts['rt'].members for t2 in filts['t'].members}
+
+        # NOTE: Using member_tuples here is safer as it's unambiguously typed
+        ic_tuples = self.viable_input_comms.member_tuples
+        oc_tuples = self.viable_output_comms.member_tuples
+        self.viable_comms = ViableSet(elements=ic_tuples | oc_tuples)
+
+        rt_tuples = filts['rt'].member_tuples
+        t_tuples = filts['t'].member_tuples
+        rtt = {(r, t1, t2) for r, t1 in rt_tuples for (t2,) in t_tuples}
         self.viable_rtt = ViableSet(
             elements=rtt, exception_loc=0, exception_vals=ViableSet.REGION_REGEXES
         )

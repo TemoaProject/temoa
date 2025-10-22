@@ -140,7 +140,7 @@ def build(
     return builder(data, *args, **kwargs)
 
 
-def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:  # type: ignore[explicit-any]
+def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:
     """Selects the appropriate builder function based on the input data type."""
     if isinstance(data, (TemoaModel, ConcreteModel)):
         return _build_from_model
@@ -181,9 +181,6 @@ def _build_from_model(M: TemoaModel, myopic_index: MyopicIndex | None = None) ->
     )
     logger.debug('built network data: %s', res)
     return res
-
-
-# --- Database Builder Refactored ---
 
 
 def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
