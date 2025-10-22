@@ -105,7 +105,7 @@ python_version = "3.12"
 mypy_path = "stubs"
 
 # Exclude specific directories from type checking will try to add them back gradually
-exclude = "(?x)(^tests/|^temoa/model_checking/|^temoa/data_processing/|^temoa/extensions/|^temoa/utilities/|^docs/)"
+exclude = "(?x)(^tests/|^temoa/data_processing/|^temoa/extensions/|^temoa/utilities/|^docs/)"
 
 # Strict typing for our own code
 disallow_untyped_defs = true
