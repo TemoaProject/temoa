@@ -400,10 +400,7 @@ class HybridLoader:
         """
         Performs the source-trace analysis to identify viable components.
         """
-        # The `build` function is a generic factory. Mypy cannot follow the
-        # dynamic dispatch to the correctly-typed `_build_from_db` function,
-        # so we ignore the resulting argument type error here.
-        network_data = network_model_data.build(self.con, myopic_index)  # type: ignore[arg-type]
+        network_data = network_model_data.build(self.con, myopic_index)
         cur = self.con.cursor()
         periods = set(
             [

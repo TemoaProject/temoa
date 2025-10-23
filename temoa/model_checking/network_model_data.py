@@ -13,7 +13,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import NamedTuple, Self, TypeAlias, TypedDict
+from typing import NamedTuple, Self, TypedDict, overload
 
 import deprecated
 from pyomo.core.base import ConcreteModel
@@ -41,9 +41,9 @@ class LinkedTechTuple(NamedTuple):
     driven: Technology
 
 
-TechAttributeValue: TypeAlias = ParameterValue
-DbConnection: TypeAlias = sqlite3.Connection
-ModelBlock: TypeAlias = TemoaModel | ConcreteModel | Block
+type TechAttributeValue = ParameterValue
+type DbConnection = sqlite3.Connection
+type ModelBlock = TemoaModel | ConcreteModel | Block
 
 
 class BasicData(TypedDict):
@@ -132,15 +132,17 @@ class NetworkModelData:
 
 
 # --- Builder Factory ---
-def build(
-    data: ModelBlock | DbConnection, *args: ParameterValue, **kwargs: ParameterValue
-) -> NetworkModelData:
+@overload
+def build(data: DbConnection, myopic_index: MyopicIndex | None = ...) -> NetworkModelData: ...
+@overload
+def build(data: ModelBlock, *args: object, **kwargs: object) -> NetworkModelData: ...
+def build(data: ModelBlock | DbConnection, *args: object, **kwargs: object) -> NetworkModelData:
     """Factory function to dispatch to the correct builder based on data type."""
     builder = _get_builder(data)
     return builder(data, *args, **kwargs)
 
 
-def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:
+def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:  # type: ignore [explicit-any]
     """Selects the appropriate builder function based on the input data type."""
     if isinstance(data, (TemoaModel, ConcreteModel)):
         return _build_from_model
@@ -214,7 +216,7 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         c[0] for c in cur.execute("SELECT name FROM Commodity WHERE flag = 's'").fetchall()
     }
 
-    demand_commodities: defaultdict[tuple[str, Period], set[str]] = defaultdict(set)
+    demand_commodities: defaultdict[tuple[Region, Period], set[Commodity]] = defaultdict(set)
     for r, p, d in cur.execute('SELECT region, period, commodity FROM main.Demand').fetchall():
         demand_commodities[r, p].add(d)
 
@@ -309,7 +311,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
         }
 
-    living_techs: set[str] = set()
+    living_techs: set[Technology] = set()
 
     # --- 2. Process technologies ---
     for r, ic, tech, v, oc, lifetime in raw_techs:
