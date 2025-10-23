@@ -395,5 +395,5 @@ def validate_tech_split(
     return False
 
 
-def validate_0to1(M: 'TemoaModel', val: float, *args: Any) -> bool:
+def validate_0to1(M: 'TemoaModel', val: float, *args: object) -> bool:
     return 0.0 <= val <= 1.0

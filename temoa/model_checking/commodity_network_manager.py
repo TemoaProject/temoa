@@ -12,7 +12,7 @@ by other parts of the Temoa framework to ensure only valid data is used.
 from collections import defaultdict
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Any, TypeAlias
+from typing import Any
 
 from temoa.core.config import TemoaConfig
 from temoa.model_checking.commodity_graph import generate_graph
@@ -24,7 +24,7 @@ from temoa.types.core_types import Period, Region
 logger = getLogger(__name__)
 
 # Type alias for clarity in dictionary keys
-RegionPeriodKey: TypeAlias = tuple[Region, Period]
+type RegionPeriodKey = tuple[Region, Period]
 
 
 class CommodityNetworkManager:
@@ -32,7 +32,7 @@ class CommodityNetworkManager:
     Manages the iterative network analysis for all regions across a set of periods.
     """
 
-    def __init__(self, periods: Iterable[str | int], network_data: NetworkModelData):
+    def __init__(self, periods: Iterable[str | int], network_data: NetworkModelData) -> None:
         self.analyzed: bool = False
         self.periods: list[int] = sorted(map(int, periods))
         self.orig_data: NetworkModelData = network_data
@@ -135,7 +135,7 @@ class CommodityNetworkManager:
             raise RuntimeError('Cannot build filters before calling analyze_network().')
 
         # Use defaultdicts to easily collect unique elements
-        valid_elements: defaultdict[str, set[Any]] = defaultdict(set)
+        valid_elements: defaultdict[str, set[Any]] = defaultdict(set)  # type: ignore [explicit-any]
 
         for (_r, p), techs in self.filtered_data.available_techs.items():
             if not techs:

@@ -8,12 +8,11 @@ any extra validation information in one instance.
 import re
 from collections.abc import Iterable, Sequence
 from operator import itemgetter
-from typing import Self, TypeAlias
+from typing import Self, ClassVar
 
-# For clarity in type hints
-ValidationPrimitive: TypeAlias = str | int | float | None
-ValidationElement: TypeAlias = tuple[ValidationPrimitive, ...]
-InputElement: TypeAlias = ValidationPrimitive | ValidationElement
+type ValidationPrimitive = str | int | float | None
+type ValidationElement = tuple[ValidationPrimitive, ...]
+type InputElement = ValidationPrimitive | ValidationElement
 
 
 class ViableSet:
@@ -41,7 +40,7 @@ class ViableSet:
     """
 
     # Stored for reference; these are examples of common automatic approvals.
-    REGION_REGEXES: list[str] = [
+    REGION_REGEXES: ClassVar[list[str]] = [
         r'\+',  # any grouping with a plus sign
         r'^global\Z',  # the exact word 'global' with no leader/trailer
     ]
@@ -51,7 +50,7 @@ class ViableSet:
         elements: Iterable[InputElement],
         exception_loc: int | None = None,
         exception_vals: Iterable[str] | None = None,
-    ):
+    ) -> None:
         """
         Constructs a ViableSet instance.
 

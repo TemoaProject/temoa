@@ -17,7 +17,6 @@ commodities are nodes and technologies are edges.
 
 from collections import defaultdict
 from logging import getLogger
-from typing import TypeAlias
 
 from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
 from temoa.types.core_types import Commodity, Technology
@@ -25,13 +24,13 @@ from temoa.types.core_types import Commodity, Technology
 logger = getLogger(__name__)
 
 # Represents a technology link: (input_commodity, tech_name)
-TechLink: TypeAlias = tuple[Commodity, Technology]
+type TechLink = tuple[Commodity, Technology]
 # Represents a full connection: (input_commodity, tech_name, output_commodity)
-TechConnection: TypeAlias = tuple[Commodity, Technology, Commodity]
+type TechConnection = tuple[Commodity, Technology, Commodity]
 # Adjacency dict mapping: {output_comm: set of (input_comm, tech_name)}
-ForwardConnections: TypeAlias = dict[Commodity, set[TechLink]]
+type ForwardConnections = dict[Commodity, set[TechLink]]
 # Adjacency dict mapping: {input_comm: set of (output_comm, tech_name)}
-ReverseConnections: TypeAlias = dict[Commodity, set[TechLink]]
+type ReverseConnections = dict[Commodity, set[TechLink]]
 
 
 class CommodityNetwork:
@@ -43,7 +42,7 @@ class CommodityNetwork:
     findings across available vintages.
     """
 
-    def __init__(self, region: str, period: int, model_data: NetworkModelData):
+    def __init__(self, region: str, period: int, model_data: NetworkModelData) -> None:
         """
         Initializes and builds the network for a given region and period.
 
@@ -308,7 +307,7 @@ class CommodityNetwork:
             if (tech.ic, tech.name, tech.oc) in self.other_orphans
         }
 
-    def unsupported_demands(self) -> set[str]:
+    def unsupported_demands(self) -> set[Commodity]:
         """
         Finds demand commodities that are not supplied by any valid connection.
 
