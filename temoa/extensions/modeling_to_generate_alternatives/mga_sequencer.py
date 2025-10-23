@@ -39,7 +39,7 @@ from pathlib import Path
 from queue import Empty
 
 import pyomo.environ as pyo
-from pyomo.contrib.solver.results import Results
+from pyomo.contrib.solver.common.results import Results
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
