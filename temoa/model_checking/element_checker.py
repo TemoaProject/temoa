@@ -8,7 +8,7 @@ any extra validation information in one instance.
 import re
 from collections.abc import Iterable, Sequence
 from operator import itemgetter
-from typing import Self, ClassVar
+from typing import ClassVar, Self
 
 type ValidationPrimitive = str | int | float | None
 type ValidationElement = tuple[ValidationPrimitive, ...]

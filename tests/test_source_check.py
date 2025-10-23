@@ -152,7 +152,15 @@ TEST_CASES = [
 
 
 @pytest.mark.parametrize(
-    'test_id, start_nodes, end_nodes, connections, expected_good, expected_demand_orphans, expected_other_orphans',
+    (
+        'test_id',
+        'start_nodes',
+        'end_nodes',
+        'connections',
+        'expected_good',
+        'expected_demand_orphans',
+        'expected_other_orphans',
+    ),
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
@@ -177,7 +185,7 @@ def test_network_analysis(
     mock_model_data.demand_commodities = defaultdict(set, {(region, period): start_nodes})
     mock_model_data.source_commodities = defaultdict(set, {(region, period): end_nodes})
     mock_model_data.waste_commodities = defaultdict(set)  # Assume empty
-    mock_model_data.available_linked_techs = []  # Assume no linked techs
+    mock_model_data.available_linked_techs = set()  # Assume no linked techs
 
     # Convert the connections dict into a set of Tech namedtuples
     available_techs = {

@@ -28,7 +28,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import deprecated
 from pyomo.core import Set

@@ -118,7 +118,7 @@ class CommodityNetworkManager:
         # Identify regions to analyze (excluding exchange pseudo-regions)
         self.regions = {r for (r, p) in self.orig_data.available_techs if '-' not in r}
 
-        for region in sorted(list(self.regions)):
+        for region in sorted(self.regions):
             logger.info('Starting network analysis for region %s', region)
             self._analyze_region(region, data=self.filtered_data)
 
@@ -132,7 +132,7 @@ class CommodityNetworkManager:
         after the network analysis is complete.
         """
         if not self.analyzed or self.filtered_data is None:
-            raise RuntimeError('Cannot build filters before calling analyze_network().')
+            raise RuntimeError('analyze_network() must be called before build_filters().')
 
         # Use defaultdicts to easily collect unique elements
         valid_elements: defaultdict[str, set[Any]] = defaultdict(set)  # type: ignore [explicit-any]
@@ -190,7 +190,7 @@ class CommodityNetworkManager:
         Generates and saves visual graphs of the network for each region and period.
         """
         if not self.analyzed or self.regions is None:
-            raise RuntimeError('Cannot generate graphs before calling analyze_network().')
+            raise RuntimeError('analyze_network() must be called before analyze_graphs().')
         for region in self.regions:
             for period in self.periods:
                 generate_graph(

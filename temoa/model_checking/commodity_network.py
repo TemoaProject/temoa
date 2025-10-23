@@ -128,7 +128,7 @@ class CommodityNetwork:
 
         self.other_orphans.update(removed_connections)
         for r in removed_connections:
-            logger.debug(f'Removed {r} via by-name removal')
+            logger.debug('Removed %s via by-name removal', r)
 
     def prescreen_linked_tech(self) -> None:
         """
@@ -142,21 +142,27 @@ class CommodityNetwork:
 
                 if driver_exists and driven_exists:
                     logger.debug(
-                        f'Both {driver} and {driven} are available in region '
-                        f'{self.region}, period {self.period} to establish link'
+                        'Both %s and %s are available in region %s, period %s to establish link',
+                        driver,
+                        driven,
+                        self.region,
+                        self.period,
                     )
                     self.viable_linked_tech.add((driver, driven))
                 elif driver_exists and not driven_exists:
                     logger.info(
-                        f'No driven linked tech for driver {driver} in region '
-                        f'{self.region}, period {self.period}. Driver REMOVED.'
+                        'No driven linked tech for driver %s in region %s, period %s. Driver REMOVED.',
+                        driver,
+                        self.region,
+                        self.period,
                     )
                     self.remove_tech_by_name(driver)
                 elif not driver_exists and driven_exists:
                     logger.warning(
-                        f'Driven linked tech {driven} has no active driver in '
-                        f'region {self.region}, period {self.period}. '
-                        f'Driven tech REMOVED.'
+                        'Driven linked tech %s has no active driver in region %s, period %s. Driven tech REMOVED.',
+                        driven,
+                        self.region,
+                        self.period,
                     )
                     self.remove_tech_by_name(driven)
 
@@ -199,8 +205,11 @@ class CommodityNetwork:
 
             for driver, driven in sour_links:
                 logger.warning(
-                    f'Both members of link ({driver}, {driven}) are not valid. '
-                    f'Removing both in region {self.region}, period {self.period}.'
+                    'Both members of link (%s, %s) are not valid. Removing both in region %s, period %s.',
+                    driver,
+                    driven,
+                    self.region,
+                    self.period,
                 )
                 self.remove_tech_by_name(driver)
                 self.remove_tech_by_name(driven)
@@ -268,20 +277,23 @@ class CommodityNetwork:
         """Helper to log discovered orphaned processes."""
         if self.other_orphans:
             logger.info(
-                f"Source tracing revealed {len(self.other_orphans)} 'other' "
-                f'(non-demand) orphaned processes in region {self.region}, '
-                f'period {self.period}.'
+                "Source tracing revealed %s 'other' (non-demand) orphaned processes in region %s, period %s.",
+                len(self.other_orphans),
+                self.region,
+                self.period,
             )
             for orphan in sorted(self.other_orphans, key=lambda x: x[1]):
-                logger.info(f'Discovered orphaned process:   {orphan}')
+                logger.info('Discovered orphaned process:   %s', orphan)
 
         if self.demand_orphans:
             logger.info(
-                f'Source tracing revealed {len(self.demand_orphans)} demand-side '
-                f'orphaned processes in region {self.region}, period {self.period}.'
+                'Source tracing revealed %s demand-side orphaned processes in region %s, period %s.',
+                len(self.demand_orphans),
+                self.region,
+                self.period,
             )
             for orphan in sorted(self.demand_orphans, key=lambda x: x[1]):
-                logger.info(f'Discovered orphaned process:   {orphan}')
+                logger.info('Discovered orphaned process:   %s', orphan)
 
     def get_valid_tech(self) -> set[TechTuple]:
         """Returns the set of Tech objects that are part of a valid connection."""

@@ -123,7 +123,7 @@ test_scenarios = [
 # ==============================================================================
 # Fixtures
 # ==============================================================================
-@pytest.fixture()
+@pytest.fixture
 def mock_db_connection(request):
     """
     A robust mock of a database connection.
@@ -138,11 +138,12 @@ def mock_db_connection(request):
     mock_cursor = MagicMock(name='mock_cursor')
     mock_con.cursor.return_value = mock_cursor
 
-    def dispatcher(query, *args):
+    def dispatcher(query: str, *_: object) -> MagicMock:
         for key, data in db_data.items():
             if key in query:
                 execute_mock = MagicMock(name=f'execute_mock_for_{key}')
                 execute_mock.fetchall.return_value = data
+                execute_mock.fetchone.return_value = data[0] if data else None
                 return execute_mock
         raise ValueError(f'Mock database received unexpected query: {query}')
 
