@@ -1,4 +1,3 @@
-from itertools import chain
 from unittest.mock import MagicMock
 
 import pytest
@@ -157,7 +156,7 @@ def mock_db_connection(request):
 @pytest.mark.parametrize(
     'mock_db_connection', test_scenarios, indirect=True, ids=[d['name'] for d in test_scenarios]
 )
-def test_network_build_and_analysis(mock_db_connection):
+def test_network_build_and_analysis(mock_db_connection) -> None:
     """Tests both data model construction and network analysis in one go."""
     conn, expected = mock_db_connection
 
@@ -165,7 +164,9 @@ def test_network_build_and_analysis(mock_db_connection):
     network_data = network_model_data._build_from_db(conn)
 
     # --- 2. Test initial data loading ---
-    assert len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands_count']
+    assert (
+        sum(len(s) for s in network_data.demand_commodities.values()) == expected['demands_count']
+    )
     assert len(network_data.available_techs[('R1', 2020)]) == expected['techs_count']
 
     # --- 3. Perform network analysis ---
