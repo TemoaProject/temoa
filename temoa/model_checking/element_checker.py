@@ -64,6 +64,8 @@ class ViableSet:
         self._exception_loc: int | None = None
         self._exceptions: frozenset[str] = frozenset()
         self.non_excepted_items: set[ValidationElement] | None = set()
+        # Cache for compiled regex patterns
+        self._compiled_val_exceptions: list[re.Pattern[str]] = []
 
         if exception_loc is not None and exception_vals is not None:
             self.set_val_exceptions(exception_loc, exception_vals)
@@ -126,6 +128,7 @@ class ViableSet:
         self._exception_loc = exception_loc
         # Use a frozenset for immutability and performance
         self._exceptions = frozenset(exception_vals)
+        self._compiled_val_exceptions = [re.compile(p) for p in self._exceptions]
         self._update_internals()
         return self
 
@@ -193,7 +196,10 @@ def filter_elements(
             'The number of value_locations must match the dimensionality of the validation set.'
         )
 
-    exception_regexes = [re.compile(p) for p in validation.val_exceptions]
+    # Use the cached compiled regexes. Fall back to compiling for backward compatibility.
+    exception_regexes = getattr(
+        validation, '_compiled_val_exceptions', [re.compile(p) for p in validation.val_exceptions]
+    )
 
     # Pre-build itemgetters for performance
     full_element_getter = itemgetter(*value_locations)
