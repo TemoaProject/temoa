@@ -37,7 +37,7 @@ class CommodityNetworkManager:
         self.periods: list[int] = sorted(map(int, periods))
         self.orig_data: NetworkModelData = network_data
         self.filtered_data: NetworkModelData | None = None
-        self.regions: set[str] | None = None
+        self.regions: set[Region] | None = None
 
         # Store a deep copy of the original connections for graphing purposes
         self.orig_tech = {k: v.copy() for k, v in network_data.available_techs.items()}

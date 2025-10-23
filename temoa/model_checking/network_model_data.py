@@ -17,7 +17,6 @@ from typing import NamedTuple, Self, TypedDict, overload
 
 import deprecated
 from pyomo.core.base import ConcreteModel
-from pyomo.core.base.block import Block
 
 from temoa.core.model import TemoaModel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
@@ -43,7 +42,7 @@ class LinkedTechTuple(NamedTuple):
 
 type TechAttributeValue = ParameterValue
 type DbConnection = sqlite3.Connection
-type ModelBlock = TemoaModel | ConcreteModel | Block
+type ModelBlock = TemoaModel | ConcreteModel
 
 
 class BasicData(TypedDict):

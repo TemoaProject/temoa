@@ -19,7 +19,7 @@ from collections import defaultdict
 from logging import getLogger
 
 from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
-from temoa.types.core_types import Commodity, Technology
+from temoa.types.core_types import Commodity, Period, Region, Technology
 
 logger = getLogger(__name__)
 
@@ -42,7 +42,7 @@ class CommodityNetwork:
     findings across available vintages.
     """
 
-    def __init__(self, region: str, period: int, model_data: NetworkModelData) -> None:
+    def __init__(self, region: Region, period: Period, model_data: NetworkModelData) -> None:
         """
         Initializes and builds the network for a given region and period.
 
@@ -75,10 +75,10 @@ class CommodityNetwork:
         self.other_orphans: set[TechConnection] = set()
 
         # Internal state for the analysis
-        self.tech_inputs: dict[str, set[str]] = defaultdict(set)
-        self.tech_outputs: dict[str, set[str]] = defaultdict(set)
+        self.tech_inputs: dict[Technology, set[Commodity]] = defaultdict(set)
+        self.tech_outputs: dict[Technology, set[Commodity]] = defaultdict(set)
         self.connections: ForwardConnections = defaultdict(set)
-        self.viable_linked_tech: set[tuple[str, str]] = set()
+        self.viable_linked_tech: set[TechLink] = set()
 
         self._load_connections()
         self.prescreen_linked_tech()
@@ -110,7 +110,7 @@ class CommodityNetwork:
         self.viable_linked_tech.clear()
         self._load_connections()
 
-    def remove_tech_by_name(self, tech_name: str) -> None:
+    def remove_tech_by_name(self, tech_name: Technology) -> None:
         """Remove all connections associated with a given technology name."""
         self.tech_inputs.pop(tech_name, None)
         self.tech_outputs.pop(tech_name, None)
@@ -229,10 +229,10 @@ class CommodityNetwork:
 
     def _trace_backward_from_demands(
         self,
-        start_nodes: set[str],
-        end_nodes: set[str],
+        start_nodes: set[Commodity],
+        end_nodes: set[Commodity],
         connections: ForwardConnections,
-    ) -> tuple[set[str], ReverseConnections]:
+    ) -> tuple[set[Commodity], ReverseConnections]:
         """Iterative DFS tracing backward from demand nodes."""
         stack = list(start_nodes)
         visited_nodes = set()
@@ -255,7 +255,7 @@ class CommodityNetwork:
         return discovered_sources, reachable_subgraph
 
     def _trace_forward_from_sources(
-        self, start_nodes: set[str], connections: ReverseConnections
+        self, start_nodes: set[Commodity], connections: ReverseConnections
     ) -> set[TechConnection]:
         """Iterative DFS tracing forward from discovered source nodes."""
         stack = list(start_nodes)
