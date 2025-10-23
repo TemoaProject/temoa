@@ -115,9 +115,9 @@ def price_checker(M: 'TemoaModel') -> bool:
                 missing_techs[t].add((r, v))
         for t in missing_techs:
             # get set of fixed cost for all {rtv} if the tech matches
-            compaprable_fc = sorted(filter(lambda x: x[1] == t, base_year_fixed_cost_rtv))
+            comparable_fc = sorted(filter(lambda x: x[1] == t, base_year_fixed_cost_rtv))
             err = None
-            if compaprable_fc:
+            if comparable_fc:
                 err = (
                     f'Check 1b:\ntech {t} has Fixed Cost in some vintage/regions for '
                     f'the base (vintage) year, but not all:\n'
@@ -126,7 +126,7 @@ def price_checker(M: 'TemoaModel') -> bool:
                 for r, v in sorted(missing_techs[t]):
                     err += f'      ({r}, {v})\n'
                 err += '    available (r, v):\n'
-                for r, tt, v in compaprable_fc:
+                for r, tt, v in comparable_fc:
                     err += f'       ({r}, {v}): {M.CostFixed[r, v, tt, v]}\n'
             if err:
                 logger.warning(err)
