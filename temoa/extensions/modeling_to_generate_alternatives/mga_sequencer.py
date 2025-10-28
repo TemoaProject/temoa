@@ -46,7 +46,7 @@ from pyomo.opt import check_optimal_termination
 from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
-from temoa.components.costs import TotalCost_rule
+from temoa.components.costs import total_cost_rule
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
@@ -192,7 +192,7 @@ class MgaSequencer:
         logger.info('Completed initial solve with total cost:  %0.2f', tot_cost)
         logger.info('Relaxing cost by fraction:  %0.3f', self.cost_epsilon)
         # get hook on the expression generator for total cost...
-        cost_expression = TotalCost_rule(instance)
+        cost_expression = total_cost_rule(instance)
         instance.cost_cap = pyo.Constraint(
             expr=cost_expression <= (1 + self.cost_epsilon) * tot_cost
         )

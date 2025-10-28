@@ -5,8 +5,8 @@ of storage capacity
 
 from pyomo.environ import value
 
-from temoa.components.costs import TotalCost_rule
-from temoa.components.storage import StorageEnergyUpperBound_Constraint
+from temoa.components.costs import total_cost_rule
+from temoa.components.storage import storage_energy_upper_bound_constraint
 from temoa.core.model import TemoaModel
 
 # Written by:  J. F. Hyink
@@ -71,7 +71,7 @@ M.V_Capacity.construct()
 M.V_Capacity[rptv].set_value(1)
 
 # run the total cost rule on our "model":
-tot_cost_expr = TotalCost_rule(M)
+tot_cost_expr = total_cost_rule(M)
 total_cost = value(tot_cost_expr)
 print()
 print(f'Total cost for building 1 capacity unit of storage:  ${total_cost:0.2f} [$M]')
@@ -96,7 +96,7 @@ print('building storage level constraint...')
 
 # More SETS
 M.time_season.construct(['winter', 'summer'])
-M.TimeSeason.construct(data={2020:{'winter', 'summer'}, 2025:{'winter', 'summer'}})
+M.TimeSeason.construct(data={2020: {'winter', 'summer'}, 2025: {'winter', 'summer'}})
 M.DaysPerPeriod.construct(data={None: 365})
 tod_slices = 2
 M.time_of_day.construct(data=range(1, tod_slices + 1))
@@ -118,7 +118,12 @@ M.CapacityToActivity.construct(data={('A', 'battery'): 31.536})
 M.StorageDuration.construct(data={('A', 'battery'): 4})
 seasonal_fractions = {'winter': 0.4, 'summer': 0.6}
 M.SegFrac.construct(
-    data={(p, s, d): seasonal_fractions[s] / tod_slices for d in M.time_of_day for p in M.time_optimize for s in M.TimeSeason[p] }
+    data={
+        (p, s, d): seasonal_fractions[s] / tod_slices
+        for d in M.time_of_day
+        for p in M.time_optimize
+        for s in M.TimeSeason[p]
+    }
 )
 # QA the total
 print(f'quality check.  Total of all SegFrac: {sum(M.SegFrac.values()):0.3f}')
@@ -129,7 +134,7 @@ M.V_StorageLevel.construct()
 M.SegFracPerSeason.construct()
 
 M.isSeasonalStorage['battery'] = False
-upper_limit = StorageEnergyUpperBound_Constraint(M, 'A', 2020, 'winter', 1, 'battery', 2020)
+upper_limit = storage_energy_upper_bound_constraint(M, 'A', 2020, 'winter', 1, 'battery', 2020)
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...

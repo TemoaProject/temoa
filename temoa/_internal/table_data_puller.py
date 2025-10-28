@@ -384,8 +384,8 @@ def poll_cost_results(
             cap,
             value(fixed_cost),
             value(model.PeriodLength[p]),
-            GDR=global_discount_rate,
-            P_0=float(p_0) if p_0 is not None else 0.0,
+            global_discount_rate=global_discount_rate,
+            p_0=float(p_0) if p_0 is not None else 0.0,
             p=p,
         )
         if '-' in r:
@@ -438,8 +438,8 @@ def poll_cost_results(
             activity,
             var_cost,
             value(model.PeriodLength[p]),
-            GDR=global_discount_rate,
-            P_0=float(p_0) if p_0 is not None else 0.0,
+            global_discount_rate=global_discount_rate,
+            p_0=float(p_0) if p_0 is not None else 0.0,
             p=p,
         )
         if '-' in r:
@@ -495,9 +495,9 @@ def loan_costs(
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
         vintage=vintage,
     )
     # Override the GDR to get the undiscounted value
@@ -508,9 +508,9 @@ def loan_costs(
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
         vintage=vintage,
     )
     return float(value(model_ic)), float(value(undiscounted_cost))
@@ -547,9 +547,9 @@ def loan_costs_survival_curve(
         invest_cost,
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
     )
     # Override the GDR to get the undiscounted value
     global_discount_rate = 0
@@ -562,9 +562,9 @@ def loan_costs_survival_curve(
         invest_cost,
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
     )
     return float(value(model_ic)), float(value(undiscounted_cost))
 
@@ -644,8 +644,8 @@ def poll_emissions(
             cap_or_flow=flows[ei],
             cost_factor=value(model.CostEmission[ei.r, ei.p, ei.e]),
             cost_years=model.PeriodLength[ei.p],
-            GDR=global_discount_rate,
-            P_0=p_0_true,
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
@@ -690,8 +690,8 @@ def poll_emissions(
             cost_years=model.PeriodLength[
                 ei.v
             ],  # treat as fixed cost distributed over construction period
-            GDR=global_discount_rate,
-            P_0=p_0_true,
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.v,
         )
         ud_costs[ei.r, ei.v, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
@@ -735,8 +735,8 @@ def poll_emissions(
             cost_years=model.PeriodLength[
                 ei.p
             ],  # treat as fixed cost distributed over retirement period
-            GDR=global_discount_rate,
-            P_0=p_0_true,
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))

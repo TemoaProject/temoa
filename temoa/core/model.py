@@ -223,7 +223,7 @@ class TemoaModel(PyomoAbstractModel):
         self.regions = Set(validate=region_check)
         # RegionalIndices is the set of all the possible combinations of interregional exchanges
         # plus original region indices. If tech_exchange is empty, RegionalIndices =regions.
-        self.regionalIndices = Set(initialize=geography.CreateRegionalIndices)
+        self.regionalIndices = Set(initialize=geography.create_regional_indices)
         self.regionalGlobalIndices = Set(validate=region_group_check)
 
         # Define technology-related sets
@@ -317,14 +317,14 @@ class TemoaModel(PyomoAbstractModel):
         self.GlobalDiscountRate = Param(default=0.05)
 
         # Define time-related parameters
-        self.PeriodLength = Param(self.time_optimize, initialize=time.ParamPeriodLength)
+        self.PeriodLength = Param(self.time_optimize, initialize=time.param_period_length)
         self.SegFrac = Param(self.time_optimize, self.time_season, self.time_of_day)
-        self.validate_SegFrac = BuildAction(rule=time.validate_SegFrac)
+        self.validate_SegFrac = BuildAction(rule=time.validate_segment_fraction)
         self.TimeSequencing = Set()  # How do states carry between time segments?
         self.TimeNext = Set(
             ordered=True
         )  # This is just to get data from the table. Hidden feature and usually not used
-        self.validate_TimeNext = BuildAction(rule=time.validate_TimeNext)
+        self.validate_TimeNext = BuildAction(rule=time.validate_time_next)
 
         # Define demand- and resource-related parameters
         # Dev Note:  There does not appear to be a DB table supporting DemandDefaultDistro.
@@ -387,7 +387,7 @@ class TemoaModel(PyomoAbstractModel):
             within=NonNegativeReals,
             validate=validate_Efficiency,
         )
-        self.validate_UsedEfficiencyIndices = BuildAction(rule=technology.CheckEfficiencyIndices)
+        self.validate_UsedEfficiencyIndices = BuildAction(rule=technology.check_efficiency_indices)
 
         self.EfficiencyVariable = Param(
             self.regionalIndices,
@@ -406,7 +406,7 @@ class TemoaModel(PyomoAbstractModel):
             self.regionalIndices, self.tech_all, default=TemoaModel.default_lifetime_tech
         )
 
-        self.LifetimeProcess_rtv = Set(dimen=3, initialize=technology.LifetimeProcessIndices)
+        self.LifetimeProcess_rtv = Set(dimen=3, initialize=technology.lifetime_process_indices)
         self.LifetimeProcess = Param(
             self.LifetimeProcess_rtv, default=technology.get_default_process_lifetime
         )
@@ -420,9 +420,9 @@ class TemoaModel(PyomoAbstractModel):
             validate=validate_0to1,
             mutable=True,
         )
-        self.Create_SurvivalCurve = BuildAction(rule=technology.CreateSurvivalCurve)
+        self.Create_SurvivalCurve = BuildAction(rule=technology.create_survival_curve)
 
-        self.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=costs.LifetimeLoanProcessIndices)
+        self.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=costs.lifetime_loan_process_indices)
 
         # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a
         #            supporting table in the database.  It is just a "passthrough" now to the
@@ -479,21 +479,21 @@ class TemoaModel(PyomoAbstractModel):
         # Set up representation of time
         self.DaysPerPeriod = Param()
         self.SegFracPerSeason = Param(
-            self.time_optimize, self.time_season, initialize=time.SegFracPerSeason_rule
+            self.time_optimize, self.time_season, initialize=time.seg_frac_per_season_rule
         )
         self.TimeSeasonSequential = Param(
             self.time_optimize, self.time_season_sequential, self.time_season, mutable=True
         )
-        self.validate_SeasonSequential = BuildAction(rule=time.CreateTimeSeasonSequential)
-        self.Create_TimeSequence = BuildAction(rule=time.CreateTimeSequence)
+        self.validate_SeasonSequential = BuildAction(rule=time.create_time_season_sequential)
+        self.Create_TimeSequence = BuildAction(rule=time.create_time_sequence)
 
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
         self.Create_SparseDicts = BuildAction(rule=create_sparse_dicts)
-        self.initialize_Demands = BuildAction(rule=commodities.CreateDemands)
+        self.initialize_Demands = BuildAction(rule=commodities.create_demands)
 
-        self.CapacityFactor_rpsdt = Set(dimen=5, initialize=capacity.CapacityFactorTechIndices)
+        self.CapacityFactor_rpsdt = Set(dimen=5, initialize=capacity.capacity_factor_tech_indices)
         self.CapacityFactorTech = Param(
             self.CapacityFactor_rpsdt, default=1, validate=validate_0to1
         )
@@ -512,14 +512,16 @@ class TemoaModel(PyomoAbstractModel):
             default=capacity.get_default_capacity_factor,  # slow but only called if a value is missing
         )
 
-        self.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=capacity.CapacityConstraintIndices)
-        self.initialize_CapacityFactors = BuildAction(rule=capacity.CheckCapacityFactorProcess)
-        self.initialize_EfficiencyVariable = BuildAction(rule=technology.CheckEfficiencyVariable)
+        self.CapacityConstraint_rpsdtv = Set(
+            dimen=6, initialize=capacity.capacity_constraint_indices
+        )
+        self.initialize_CapacityFactors = BuildAction(rule=capacity.check_capacity_factor_process)
+        self.initialize_EfficiencyVariable = BuildAction(rule=technology.check_efficiency_variable)
 
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so
         #            let it go for now
-        self.CostFixed_rptv = Set(dimen=4, initialize=costs.CostFixedIndices)
+        self.CostFixed_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
         self.CostFixed = Param(self.CostFixed_rptv)
 
         self.CostInvest_rtv = Set(within=self.regionalIndices * self.tech_all * self.time_optimize)
@@ -529,9 +531,9 @@ class TemoaModel(PyomoAbstractModel):
         self.LoanRate = Param(
             self.CostInvest_rtv, domain=NonNegativeReals, default=costs.get_default_loan_rate
         )
-        self.LoanAnnualize = Param(self.CostInvest_rtv, initialize=costs.ParamLoanAnnualize_rule)
+        self.LoanAnnualize = Param(self.CostInvest_rtv, initialize=costs.param_loan_annualize_rule)
 
-        self.CostVariable_rptv = Set(dimen=4, initialize=costs.CostVariableIndices)
+        self.CostVariable_rptv = Set(dimen=4, initialize=costs.cost_variable_indices)
         self.CostVariable = Param(self.CostVariable_rptv)
 
         self.CostEmission_rpe = Set(
@@ -543,9 +545,9 @@ class TemoaModel(PyomoAbstractModel):
         # M.ModelProcessLife_rptv = Set(dimen=4, initialize=ModelProcessLifeIndices)
         # M.ModelProcessLife = Param(M.ModelProcessLife_rptv, initialize=ParamModelProcessLife_rule)
 
-        self.ProcessLifeFrac_rptv = Set(dimen=4, initialize=technology.ModelProcessLifeIndices)
+        self.ProcessLifeFrac_rptv = Set(dimen=4, initialize=technology.model_process_life_indices)
         self.ProcessLifeFrac = Param(
-            self.ProcessLifeFrac_rptv, initialize=technology.ParamProcessLifeFraction_rule
+            self.ProcessLifeFrac_rptv, initialize=technology.param_process_life_fraction_rule
         )
 
         self.LimitCapacityConstraint_rpt = Set(
@@ -625,7 +627,7 @@ class TemoaModel(PyomoAbstractModel):
             * self.operator
         )
         self.LimitEmission = Param(self.LimitEmissionConstraint_rpe)
-        self.EmissionActivity_reitvo = Set(dimen=6, initialize=emissions.EmissionActivityIndices)
+        self.EmissionActivity_reitvo = Set(dimen=6, initialize=emissions.emission_activity_indices)
         self.EmissionActivity = Param(self.EmissionActivity_reitvo)
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -682,9 +684,9 @@ class TemoaModel(PyomoAbstractModel):
         # M.LimitActivityGroupShare = Param(M.TwoGroupShareIndices)
 
         # This set works for all storage-related constraints
-        self.StorageConstraints_rpsdtv = Set(dimen=6, initialize=storage.StorageConstraintIndices)
+        self.StorageConstraints_rpsdtv = Set(dimen=6, initialize=storage.storage_constraint_indices)
         self.SeasonalStorageConstraints_rpsdtv = Set(
-            dimen=6, initialize=storage.SeasonalStorageConstraintIndices
+            dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
         self.LimitStorageFractionConstraint_rpsdtv = Set(
             within=(self.StorageConstraints_rpsdtv | self.SeasonalStorageConstraints_rpsdtv)
@@ -749,57 +751,59 @@ class TemoaModel(PyomoAbstractModel):
         self.progress_marker_3 = BuildAction(['Starting to build Variables'], rule=progress_check)
 
         # Define base decision variables
-        self.FlowVar_rpsditvo = Set(dimen=8, initialize=flows.FlowVariableIndices)
+        self.FlowVar_rpsditvo = Set(dimen=8, initialize=flows.flow_variable_indices)
         self.V_FlowOut = Var(self.FlowVar_rpsditvo, domain=NonNegativeReals)
 
-        self.FlowVarAnnual_rpitvo = Set(dimen=6, initialize=flows.FlowVariableAnnualIndices)
+        self.FlowVarAnnual_rpitvo = Set(dimen=6, initialize=flows.flow_variable_annual_indices)
         self.V_FlowOutAnnual = Var(self.FlowVarAnnual_rpitvo, domain=NonNegativeReals)
 
-        self.FlexVar_rpsditvo = Set(dimen=8, initialize=flows.FlexVariablelIndices)
+        self.FlexVar_rpsditvo = Set(dimen=8, initialize=flows.flex_variable_indices)
         self.V_Flex = Var(self.FlexVar_rpsditvo, domain=NonNegativeReals)
 
-        self.FlexVarAnnual_rpitvo = Set(dimen=6, initialize=flows.FlexVariableAnnualIndices)
+        self.FlexVarAnnual_rpitvo = Set(dimen=6, initialize=flows.flex_variable_annual_indices)
         self.V_FlexAnnual = Var(self.FlexVarAnnual_rpitvo, domain=NonNegativeReals)
 
-        self.CurtailmentVar_rpsditvo = Set(dimen=8, initialize=flows.CurtailmentVariableIndices)
+        self.CurtailmentVar_rpsditvo = Set(dimen=8, initialize=flows.curtailment_variable_indices)
         self.V_Curtailment = Var(
             self.CurtailmentVar_rpsditvo, domain=NonNegativeReals, initialize=0
         )
 
-        self.FlowInStorage_rpsditvo = Set(dimen=8, initialize=flows.FlowInStorageVariableIndices)
+        self.FlowInStorage_rpsditvo = Set(
+            dimen=8, initialize=flows.flow_in_storage_variable_indices
+        )
         self.V_FlowIn = Var(self.FlowInStorage_rpsditvo, domain=NonNegativeReals)
 
-        self.StorageLevel_rpsdtv = Set(dimen=6, initialize=storage.StorageLevelVariableIndices)
+        self.StorageLevel_rpsdtv = Set(dimen=6, initialize=storage.storage_level_variable_indices)
         self.V_StorageLevel = Var(self.StorageLevel_rpsdtv, domain=NonNegativeReals)
 
         self.SeasonalStorageLevel_rpstv = Set(
-            dimen=5, initialize=storage.SeasonalStorageLevelVariableIndices
+            dimen=5, initialize=storage.seasonal_storage_level_variable_indices
         )
         self.V_SeasonalStorageLevel = Var(self.SeasonalStorageLevel_rpstv, domain=NonNegativeReals)
 
         # Derived decision variables
-        self.CapacityVar_rptv = Set(dimen=4, initialize=costs.CostFixedIndices)
+        self.CapacityVar_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
         self.V_Capacity = Var(self.CapacityVar_rptv, domain=NonNegativeReals)
 
-        self.NewCapacityVar_rtv = Set(dimen=3, initialize=capacity.CapacityVariableIndices)
+        self.NewCapacityVar_rtv = Set(dimen=3, initialize=capacity.capacity_variable_indices)
         self.V_NewCapacity = Var(self.NewCapacityVar_rtv, domain=NonNegativeReals, initialize=0)
 
         self.RetiredCapacityVar_rptv = Set(
-            dimen=4, initialize=capacity.RetiredCapacityVariableIndices
+            dimen=4, initialize=capacity.retired_capacity_variable_indices
         )
         self.V_RetiredCapacity = Var(
             self.RetiredCapacityVar_rptv, domain=NonNegativeReals, initialize=0
         )
 
         self.AnnualRetirementVar_rptv = Set(
-            dimen=4, initialize=capacity.AnnualRetirementVariableIndices
+            dimen=4, initialize=capacity.annual_retirement_variable_indices
         )
         self.V_AnnualRetirement = Var(
             self.AnnualRetirementVar_rptv, domain=NonNegativeReals, initialize=0
         )
 
         self.CapacityAvailableVar_rpt = Set(
-            dimen=3, initialize=capacity.CapacityAvailableVariableIndices
+            dimen=3, initialize=capacity.capacity_available_variable_indices
         )
         self.V_CapacityAvailableByPeriodAndTech = Var(
             self.CapacityAvailableVar_rpt, domain=NonNegativeReals, initialize=0
@@ -810,7 +814,7 @@ class TemoaModel(PyomoAbstractModel):
         #             (minimize total cost)            #
         ################################################
 
-        self.TotalCost = Objective(rule=costs.TotalCost_rule, sense=minimize)
+        self.TotalCost = Objective(rule=costs.total_cost_rule, sense=minimize)
 
         ################################################
         #                   Constraints                #
@@ -828,19 +832,19 @@ class TemoaModel(PyomoAbstractModel):
 
         # Declare constraints to calculate derived decision variables
         self.CapacityConstraint = Constraint(
-            self.CapacityConstraint_rpsdtv, rule=capacity.Capacity_Constraint
+            self.CapacityConstraint_rpsdtv, rule=capacity.capacity_constraint
         )
 
         self.CapacityAnnualConstraint_rptv = Set(
-            dimen=4, initialize=capacity.CapacityAnnualConstraintIndices
+            dimen=4, initialize=capacity.capacity_annual_constraint_indices
         )
         self.CapacityAnnualConstraint = Constraint(
-            self.CapacityAnnualConstraint_rptv, rule=capacity.CapacityAnnual_Constraint
+            self.CapacityAnnualConstraint_rptv, rule=capacity.capacity_annual_constraint
         )
 
         self.CapacityAvailableByPeriodAndTechConstraint = Constraint(
             self.CapacityAvailableVar_rpt,
-            rule=capacity.CapacityAvailableByPeriodAndTech_Constraint,
+            rule=capacity.capacity_available_by_period_and_tech_constraint,
         )
 
         # devnote: I think this constraint is redundant
@@ -851,13 +855,13 @@ class TemoaModel(PyomoAbstractModel):
             ['Starting AnnualRetirementConstraint'], rule=progress_check
         )
         self.AnnualRetirementConstraint = Constraint(
-            self.AnnualRetirementVar_rptv, rule=capacity.AnnualRetirement_Constraint
+            self.AnnualRetirementVar_rptv, rule=capacity.annual_retirement_constraint
         )
         self.progress_marker_4b = BuildAction(
             ['Starting AdjustedCapacityConstraint'], rule=progress_check
         )
         self.AdjustedCapacityConstraint = Constraint(
-            self.CostFixed_rptv, rule=capacity.AdjustedCapacity_Constraint
+            self.CostFixed_rptv, rule=capacity.adjusted_capacity_constraint
         )
         self.progress_marker_5 = BuildAction(['Finished Capacity Constraints'], rule=progress_check)
 
@@ -865,30 +869,30 @@ class TemoaModel(PyomoAbstractModel):
         # In driving order, starting with the need to meet end-use demands
 
         self.DemandConstraint = Constraint(
-            self.DemandConstraint_rpc, rule=commodities.Demand_Constraint
+            self.DemandConstraint_rpc, rule=commodities.demand_constraint
         )
 
         # devnote: testing a workaround
         self.DemandActivityConstraint_rpsdtv_dem = Set(
-            dimen=7, initialize=commodities.DemandActivityConstraintIndices
+            dimen=7, initialize=commodities.demand_activity_constraint_indices
         )
         self.DemandActivityConstraint = Constraint(
-            self.DemandActivityConstraint_rpsdtv_dem, rule=commodities.DemandActivity_Constraint
+            self.DemandActivityConstraint_rpsdtv_dem, rule=commodities.demand_activity_constraint
         )
 
         self.CommodityBalanceConstraint_rpsdc = Set(
-            dimen=5, initialize=commodities.CommodityBalanceConstraintIndices
+            dimen=5, initialize=commodities.commodity_balance_constraint_indices
         )
         self.CommodityBalanceConstraint = Constraint(
-            self.CommodityBalanceConstraint_rpsdc, rule=commodities.CommodityBalance_Constraint
+            self.CommodityBalanceConstraint_rpsdc, rule=commodities.commodity_balance_constraint
         )
 
         self.AnnualCommodityBalanceConstraint_rpc = Set(
-            dimen=3, initialize=commodities.AnnualCommodityBalanceConstraintIndices
+            dimen=3, initialize=commodities.annual_commodity_balance_constraint_indices
         )
         self.AnnualCommodityBalanceConstraint = Constraint(
             self.AnnualCommodityBalanceConstraint_rpc,
-            rule=commodities.AnnualCommodityBalance_Constraint,
+            rule=commodities.annual_commodity_balance_constraint,
         )
 
         # M.ResourceExtractionConstraint = Constraint(
@@ -896,146 +900,147 @@ class TemoaModel(PyomoAbstractModel):
         # )
 
         self.BaseloadDiurnalConstraint_rpsdtv = Set(
-            dimen=6, initialize=operations.BaseloadDiurnalConstraintIndices
+            dimen=6, initialize=operations.baseload_diurnal_constraint_indices
         )
         self.BaseloadDiurnalConstraint = Constraint(
-            self.BaseloadDiurnalConstraint_rpsdtv, rule=operations.BaseloadDiurnal_Constraint
+            self.BaseloadDiurnalConstraint_rpsdtv, rule=operations.baseload_diurnal_constraint
         )
 
         self.RegionalExchangeCapacityConstraint_rrptv = Set(
-            dimen=5, initialize=capacity.RegionalExchangeCapacityConstraintIndices
+            dimen=5, initialize=capacity.regional_exchange_capacity_constraint_indices
         )
         self.RegionalExchangeCapacityConstraint = Constraint(
             self.RegionalExchangeCapacityConstraint_rrptv,
-            rule=geography.RegionalExchangeCapacity_Constraint,
+            rule=geography.regional_exchange_capacity_constraint,
         )
 
         self.progress_marker_6 = BuildAction(['Starting Storage Constraints'], rule=progress_check)
 
         self.StorageEnergyConstraint = Constraint(
-            self.StorageConstraints_rpsdtv, rule=storage.StorageEnergy_Constraint
+            self.StorageConstraints_rpsdtv, rule=storage.storage_energy_constraint
         )
 
         self.StorageEnergyUpperBoundConstraint = Constraint(
-            self.StorageConstraints_rpsdtv, rule=storage.StorageEnergyUpperBound_Constraint
+            self.StorageConstraints_rpsdtv, rule=storage.storage_energy_upper_bound_constraint
         )
 
         self.SeasonalStorageEnergyConstraint = Constraint(
-            self.SeasonalStorageLevel_rpstv, rule=storage.SeasonalStorageEnergy_Constraint
+            self.SeasonalStorageLevel_rpstv, rule=storage.seasonal_storage_energy_constraint
         )
 
         self.SeasonalStorageEnergyUpperBoundConstraint = Constraint(
             self.SeasonalStorageConstraints_rpsdtv,
-            rule=storage.SeasonalStorageEnergyUpperBound_Constraint,
+            rule=storage.seasonal_storage_energy_upper_bound_constraint,
         )
 
         self.StorageChargeRateConstraint = Constraint(
-            self.StorageConstraints_rpsdtv, rule=storage.StorageChargeRate_Constraint
+            self.StorageConstraints_rpsdtv, rule=storage.storage_charge_rate_constraint
         )
 
         self.StorageDischargeRateConstraint = Constraint(
-            self.StorageConstraints_rpsdtv, rule=storage.StorageDischargeRate_Constraint
+            self.StorageConstraints_rpsdtv, rule=storage.storage_discharge_rate_constraint
         )
 
         self.StorageThroughputConstraint = Constraint(
-            self.StorageConstraints_rpsdtv, rule=storage.StorageThroughput_Constraint
+            self.StorageConstraints_rpsdtv, rule=storage.storage_throughput_constraint
         )
 
         self.LimitStorageFractionConstraint = Constraint(
             self.LimitStorageFractionConstraint_rpsdtv,
-            rule=storage.LimitStorageFraction_Constraint,
+            rule=storage.limit_storage_fraction_constraint,
         )
 
         self.RampUpDayConstraint_rpsdtv = Set(
-            dimen=6, initialize=operations.RampUpDayConstraintIndices
+            dimen=6, initialize=operations.ramp_up_day_constraint_indices
         )
         self.RampUpDayConstraint = Constraint(
-            self.RampUpDayConstraint_rpsdtv, rule=operations.RampUpDay_Constraint
+            self.RampUpDayConstraint_rpsdtv, rule=operations.ramp_up_day_constraint
         )
         self.RampDownDayConstraint_rpsdtv = Set(
-            dimen=6, initialize=operations.RampDownDayConstraintIndices
+            dimen=6, initialize=operations.ramp_down_day_constraint_indices
         )
         self.RampDownDayConstraint = Constraint(
-            self.RampDownDayConstraint_rpsdtv, rule=operations.RampDownDay_Constraint
+            self.RampDownDayConstraint_rpsdtv, rule=operations.ramp_down_day_constraint
         )
 
         self.RampUpSeasonConstraint_rpsstv = Set(
-            dimen=6, initialize=operations.RampUpSeasonConstraintIndices
+            dimen=6, initialize=operations.ramp_up_season_constraint_indices
         )
         self.RampUpSeasonConstraint = Constraint(
-            self.RampUpSeasonConstraint_rpsstv, rule=operations.RampUpSeason_Constraint
+            self.RampUpSeasonConstraint_rpsstv, rule=operations.ramp_up_season_constraint
         )
         self.RampDownSeasonConstraint_rpsstv = Set(
-            dimen=6, initialize=operations.RampDownSeasonConstraintIndices
+            dimen=6, initialize=operations.ramp_down_season_constraint_indices
         )
         self.RampDownSeasonConstraint = Constraint(
-            self.RampDownSeasonConstraint_rpsstv, rule=operations.RampDownSeason_Constraint
+            self.RampDownSeasonConstraint_rpsstv, rule=operations.ramp_down_season_constraint
         )
 
-        self.ReserveMargin_rpsd = Set(dimen=4, initialize=reserves.ReserveMarginIndices)
+        self.ReserveMargin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
         self.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)
         self.ReserveMarginConstraint = Constraint(
-            self.ReserveMargin_rpsd, rule=reserves.ReserveMargin_Constraint
+            self.ReserveMargin_rpsd, rule=reserves.reserve_margin_constraint
         )
 
         self.LimitEmissionConstraint = Constraint(
-            self.LimitEmissionConstraint_rpe, rule=limits.LimitEmission_Constraint
+            self.LimitEmissionConstraint_rpe, rule=limits.limit_emission_constraint
         )
         self.progress_marker_7 = BuildAction(
             ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
         )
 
         self.LimitGrowthCapacityConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitGrowthCapacityIndices
+            dimen=4, initialize=limits.limit_growth_capacity_indices
         )
         self.LimitGrowthCapacityConstraint = Constraint(
-            self.LimitGrowthCapacityConstraint_rpt, rule=limits.LimitGrowthCapacityConstraint_rule
+            self.LimitGrowthCapacityConstraint_rpt,
+            rule=limits.limit_growth_capacity_constraint_rule,
         )
         self.LimitDegrowthCapacityConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitDegrowthCapacityIndices
+            dimen=4, initialize=limits.limit_degrowth_capacity_indices
         )
         self.LimitDegrowthCapacityConstraint = Constraint(
             self.LimitDegrowthCapacityConstraint_rpt,
-            rule=limits.LimitDegrowthCapacityConstraint_rule,
+            rule=limits.limit_degrowth_capacity_constraint_rule,
         )
 
         self.LimitGrowthNewCapacityConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitGrowthNewCapacityIndices
+            dimen=4, initialize=limits.limit_growth_new_capacity_indices
         )
         self.LimitGrowthNewCapacityConstraint = Constraint(
             self.LimitGrowthNewCapacityConstraint_rpt,
-            rule=limits.LimitGrowthNewCapacityConstraint_rule,
+            rule=limits.limit_growth_new_capacity_constraint_rule,
         )
         self.LimitDegrowthNewCapacityConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitDegrowthNewCapacityIndices
+            dimen=4, initialize=limits.limit_degrowth_new_capacity_indices
         )
         self.LimitDegrowthNewCapacityConstraint = Constraint(
             self.LimitDegrowthNewCapacityConstraint_rpt,
-            rule=limits.LimitDegrowthNewCapacityConstraint_rule,
+            rule=limits.limit_degrowth_new_capacity_constraint_rule,
         )
 
         self.LimitGrowthNewCapacityDeltaConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitGrowthNewCapacityDeltaIndices
+            dimen=4, initialize=limits.limit_growth_new_capacity_delta_indices
         )
         self.LimitGrowthNewCapacityDeltaConstraint = Constraint(
             self.LimitGrowthNewCapacityDeltaConstraint_rpt,
-            rule=limits.LimitGrowthNewCapacityDeltaConstraint_rule,
+            rule=limits.limit_growth_new_capacity_delta_constraint_rule,
         )
         self.LimitDegrowthNewCapacityDeltaConstraint_rpt = Set(
-            dimen=4, initialize=limits.LimitDegrowthNewCapacityDeltaIndices
+            dimen=4, initialize=limits.limit_degrowth_new_capacity_delta_indices
         )
         self.LimitDegrowthNewCapacityDeltaConstraint = Constraint(
             self.LimitDegrowthNewCapacityDeltaConstraint_rpt,
-            rule=limits.LimitDegrowthNewCapacityDeltaConstraint_rule,
+            rule=limits.limit_degrowth_new_capacity_delta_constraint_rule,
         )
 
         self.LimitActivityConstraint = Constraint(
-            self.LimitActivityConstraint_rpt, rule=limits.LimitActivity_Constraint
+            self.LimitActivityConstraint_rpt, rule=limits.limit_activity_constraint
         )
 
         self.LimitSeasonalCapacityFactorConstraint = Constraint(
             self.LimitSeasonalCapacityFactorConstraint_rpst,
-            rule=limits.LimitSeasonalCapacityFactor_Constraint,
+            rule=limits.limit_seasonal_capacity_factor_constraint,
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -1044,11 +1049,11 @@ class TemoaModel(PyomoAbstractModel):
         # )
 
         self.LimitCapacityConstraint = Constraint(
-            self.LimitCapacityConstraint_rpt, rule=limits.LimitCapacity_Constraint
+            self.LimitCapacityConstraint_rpt, rule=limits.limit_capacity_constraint
         )
 
         self.LimitNewCapacityConstraint = Constraint(
-            self.LimitNewCapacityConstraint_rpt, rule=limits.LimitNewCapacity_Constraint
+            self.LimitNewCapacityConstraint_rpt, rule=limits.limit_new_capacity_constraint
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -1061,15 +1066,16 @@ class TemoaModel(PyomoAbstractModel):
         # )
 
         self.LimitCapacityShareConstraint = Constraint(
-            self.LimitCapacityShareConstraint_rpgg, rule=limits.LimitCapacityShare_Constraint
+            self.LimitCapacityShareConstraint_rpgg, rule=limits.limit_capacity_share_constraint
         )
 
         self.LimitActivityShareConstraint = Constraint(
-            self.LimitActivityShareConstraint_rpgg, rule=limits.LimitActivityShare_Constraint
+            self.LimitActivityShareConstraint_rpgg, rule=limits.limit_activity_share_constraint
         )
 
         self.LimitNewCapacityShareConstraint = Constraint(
-            self.LimitNewCapacityShareConstraint_rpgg, rule=limits.LimitNewCapacityShare_Constraint
+            self.LimitNewCapacityShareConstraint_rpgg,
+            rule=limits.limit_new_capacity_share_constraint,
         )
 
         # devnote: deprecated when generalising tech/group columns in Limit tables
@@ -1087,77 +1093,78 @@ class TemoaModel(PyomoAbstractModel):
         )
 
         self.LimitResourceConstraint = Constraint(
-            self.LimitResourceConstraint_rt, rule=limits.LimitResource_Constraint
+            self.LimitResourceConstraint_rt, rule=limits.limit_resource_constraint
         )
 
         self.LimitAnnualCapacityFactorConstraint = Constraint(
             self.LimitAnnualCapacityFactorConstraint_rpto,
-            rule=limits.LimitAnnualCapacityFactor_Constraint,
+            rule=limits.limit_annual_capacity_factor_constraint,
         )
 
         ## Tech input splits
         self.LimitTechInputSplitConstraint_rpsditv = Set(
-            dimen=8, initialize=limits.LimitTechInputSplitConstraintIndices
+            dimen=8, initialize=limits.limit_tech_input_split_constraint_indices
         )
         self.LimitTechInputSplitConstraint = Constraint(
-            self.LimitTechInputSplitConstraint_rpsditv, rule=limits.LimitTechInputSplit_Constraint
+            self.LimitTechInputSplitConstraint_rpsditv,
+            rule=limits.limit_tech_input_split_constraint,
         )
 
         self.LimitTechInputSplitAnnualConstraint_rpitv = Set(
-            dimen=6, initialize=limits.LimitTechInputSplitAnnualConstraintIndices
+            dimen=6, initialize=limits.limit_tech_input_split_annual_constraint_indices
         )
         self.LimitTechInputSplitAnnualConstraint = Constraint(
             self.LimitTechInputSplitAnnualConstraint_rpitv,
-            rule=limits.LimitTechInputSplitAnnual_Constraint,
+            rule=limits.limit_tech_input_split_annual_constraint,
         )
 
         self.LimitTechInputSplitAverageConstraint_rpitv = Set(
-            dimen=6, initialize=limits.LimitTechInputSplitAverageConstraintIndices
+            dimen=6, initialize=limits.limit_tech_input_split_average_constraint_indices
         )
         self.LimitTechInputSplitAverageConstraint = Constraint(
             self.LimitTechInputSplitAverageConstraint_rpitv,
-            rule=limits.LimitTechInputSplitAverage_Constraint,
+            rule=limits.limit_tech_input_split_average_constraint,
         )
 
         ## Tech output splits
         self.LimitTechOutputSplitConstraint_rpsdtvo = Set(
-            dimen=8, initialize=limits.LimitTechOutputSplitConstraintIndices
+            dimen=8, initialize=limits.limit_tech_output_split_constraint_indices
         )
         self.LimitTechOutputSplitConstraint = Constraint(
             self.LimitTechOutputSplitConstraint_rpsdtvo,
-            rule=limits.LimitTechOutputSplit_Constraint,
+            rule=limits.limit_tech_output_split_constraint,
         )
 
         self.LimitTechOutputSplitAnnualConstraint_rptvo = Set(
-            dimen=6, initialize=limits.LimitTechOutputSplitAnnualConstraintIndices
+            dimen=6, initialize=limits.limit_tech_output_split_annual_constraint_indices
         )
         self.LimitTechOutputSplitAnnualConstraint = Constraint(
             self.LimitTechOutputSplitAnnualConstraint_rptvo,
-            rule=limits.LimitTechOutputSplitAnnual_Constraint,
+            rule=limits.limit_tech_output_split_annual_constraint,
         )
 
         self.LimitTechOutputSplitAverageConstraint_rptvo = Set(
-            dimen=6, initialize=limits.LimitTechOutputSplitAverageConstraintIndices
+            dimen=6, initialize=limits.limit_tech_output_split_average_constraint_indices
         )
         self.LimitTechOutputSplitAverageConstraint = Constraint(
             self.LimitTechOutputSplitAverageConstraint_rptvo,
-            rule=limits.LimitTechOutputSplitAverage_Constraint,
+            rule=limits.limit_tech_output_split_average_constraint,
         )
 
         self.RenewablePortfolioStandardConstraint = Constraint(
             self.RenewablePortfolioStandardConstraint_rpg,
-            rule=limits.RenewablePortfolioStandard_Constraint,
+            rule=limits.renewable_portfolio_standard_constraint,
         )
 
         self.LinkedEmissionsTechConstraint_rpsdtve = Set(
-            dimen=7, initialize=emissions.LinkedTechConstraintIndices
+            dimen=7, initialize=emissions.linked_tech_constraint_indices
         )
         # the validation requires that the set above be built first:
         self.validate_LinkedTech_lifetimes = BuildCheck(rule=validate_linked_tech)
 
         self.LinkedEmissionsTechConstraint = Constraint(
             self.LinkedEmissionsTechConstraint_rpsdtve,
-            rule=emissions.LinkedEmissionsTech_Constraint,
+            rule=emissions.linked_emissions_tech_constraint,
         )
 
         self.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)

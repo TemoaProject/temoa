@@ -9,7 +9,6 @@ import sys
 from collections import deque
 from pathlib import Path
 from sqlite3 import Connection
-import sys
 
 import definitions
 from temoa._internal import run_actions

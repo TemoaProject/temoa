@@ -9,12 +9,15 @@ This module is responsible for:
     input to a downstream process (e.g., synthetic fuel production).
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from pyomo.core import quicksum
 from pyomo.environ import value
 
 from temoa.types import ExprLike
+from temoa.types.core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -25,27 +28,31 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-def EmissionActivityIndices(M: 'TemoaModel') -> set[tuple[str, str, str, str, int, str]]:
+def emission_activity_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Commodity, Commodity, Technology, Vintage, Commodity]]:
     indices = {
         (r, e, i, t, v, o)
-        for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
-        for e in M.commodity_emissions
-        if r in M.regions  # omit any exchange/groups
+        for r, i, t, v, o in model.Efficiency.sparse_iterkeys()
+        for e in model.commodity_emissions
+        if r in model.regions  # omit any exchange/groups
     }
 
     return indices
 
 
-def LinkedTechConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str, str, int, str]]:
+def linked_tech_constraint_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, Commodity]]:
     linkedtech_indices = {
         (r, p, s, d, t, v, e)
-        for r, t, e in M.LinkedTechs.sparse_iterkeys()
-        for p in M.time_optimize
-        if (r, p, t) in M.processVintages
-        for v in M.processVintages[r, p, t]
-        if M.activeActivity_rptv and (r, p, t, v) in M.activeActivity_rptv
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
+        for r, t, e in model.LinkedTechs.sparse_iterkeys()
+        for p in model.time_optimize
+        if (r, p, t) in model.processVintages
+        for v in model.processVintages[r, p, t]
+        if model.activeActivity_rptv and (r, p, t, v) in model.activeActivity_rptv
+        for s in model.TimeSeason[p]
+        for d in model.time_of_day
     }
 
     return linkedtech_indices
@@ -56,8 +63,15 @@ def LinkedTechConstraintIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str
 # ============================================================================
 
 
-def LinkedEmissionsTech_Constraint(
-    M: 'TemoaModel', r: str, p: int, s: str, d: str, t: str, v: int, e: str
+def linked_emissions_tech_constraint(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+    e: Commodity,
 ) -> ExprLike:
     r"""
     This constraint is necessary for carbon capture technologies that produce
@@ -82,27 +96,27 @@ def LinkedEmissionsTech_Constraint(
     of the primary and linked technologies should be specified and identical.
     """
 
-    if t in M.tech_annual:
+    if t in model.tech_annual:
         primary_flow = quicksum(
             (
-                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
-                if S_o in M.commodity_demand
-                else value(M.SegFrac[p, s, d])
+                value(model.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in model.commodity_demand
+                else value(model.SegFrac[p, s, d])
             )
-            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+            * model.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            * value(model.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
         primary_flow = quicksum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            * value(M.EmissionActivity[r, e, S_i, t, v, S_o])
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            * value(model.EmissionActivity[r, e, S_i, t, v, S_o])
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
 
-    linked_t = value(M.LinkedTechs[r, t, e])
+    linked_t = value(model.LinkedTechs[r, t, e])
 
     # linked_flow = sum(
     #     M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
@@ -110,22 +124,22 @@ def LinkedEmissionsTech_Constraint(
     #     for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
     # )
 
-    if linked_t in M.tech_annual:
+    if linked_t in model.tech_annual:
         linked_flow = quicksum(
             (
-                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
-                if S_o in M.commodity_demand
-                else value(M.SegFrac[p, s, d])
+                value(model.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in model.commodity_demand
+                else value(model.SegFrac[p, s, d])
             )
-            * M.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
-            for S_i in M.processInputs[r, p, linked_t, v]
-            for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
+            * model.V_FlowOutAnnual[r, p, S_i, linked_t, v, S_o]
+            for S_i in model.processInputs[r, p, linked_t, v]
+            for S_o in model.processOutputsByInput[r, p, linked_t, v, S_i]
         )
     else:
         linked_flow = quicksum(
-            M.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
-            for S_i in M.processInputs[r, p, linked_t, v]
-            for S_o in M.processOutputsByInput[r, p, linked_t, v, S_i]
+            model.V_FlowOut[r, p, s, d, S_i, linked_t, v, S_o]
+            for S_i in model.processInputs[r, p, linked_t, v]
+            for S_o in model.processOutputsByInput[r, p, linked_t, v, S_i]
         )
 
     return -primary_flow == linked_flow

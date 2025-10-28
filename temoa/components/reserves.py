@@ -8,10 +8,14 @@ planning reserve margin to ensure reliability. It supports both a 'static'
 in a time slice) formulation for calculating available reserves.
 """
 
+from __future__ import annotations
+
 from logging import getLogger
 from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
+
+from temoa.types.core_types import Period, Region, Season, TimeOfDay
 
 from .utils import get_variable_efficiency
 
@@ -26,14 +30,14 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def ReserveMarginIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
+def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Season, TimeOfDay]]:
     indices = {
         (r, p, s, d)
-        for r in M.PlanningReserveMargin.sparse_iterkeys()
-        for p in M.time_optimize
-        if (r, p) in M.processReservePeriods
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
+        for r in model.PlanningReserveMargin.sparse_iterkeys()
+        for p in model.time_optimize
+        if (r, p) in model.processReservePeriods
+        for s in model.TimeSeason[p]
+        for d in model.time_of_day
     }
 
     return indices
@@ -44,7 +48,9 @@ def ReserveMarginIndices(M: 'TemoaModel') -> set[tuple[str, int, str, str]]:
 # ============================================================================
 
 
-def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
+def reserve_margin_dynamic(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
+) -> ExprLike:
     r"""
     A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
     are calculated from availability of generation in each hour—like an operating reserve margin—\
@@ -85,38 +91,38 @@ def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Ex
             &\qquad \qquad \forall \{r, p, s, d\} \in \
             \Theta_{\text{ReserveMargin}} \text{ and } \forall r_i \in R
     """
-    if (not M.tech_reserve) or (
-        (r, p) not in M.processReservePeriods
+    if (not model.tech_reserve) or (
+        (r, p) not in model.processReservePeriods
     ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
         return Constraint.Skip
 
     # Everything but storage and exchange techs
     # Derated available generation
     available = sum(
-        M.V_Capacity[r, p, t, v]
-        * value(M.ReserveCapacityDerate[r, p, s, t, v])
-        * value(M.CapacityFactorProcess[r, p, s, d, t, v])
-        * value(M.CapacityToActivity[r, t])
-        * value(M.SegFrac[p, s, d])
-        for (t, v) in M.processReservePeriods[r, p]
-        if t not in M.tech_uncap and t not in M.tech_storage
+        model.V_Capacity[r, p, t, v]
+        * value(model.ReserveCapacityDerate[r, p, s, t, v])
+        * value(model.CapacityFactorProcess[r, p, s, d, t, v])
+        * value(model.CapacityToActivity[r, t])
+        * value(model.SegFrac[p, s, d])
+        for (t, v) in model.processReservePeriods[r, p]
+        if t not in model.tech_uncap and t not in model.tech_storage
     )
 
     # Storage
     # Derated net output flow
     available += sum(
-        M.V_FlowOut[r, p, s, d, i, t, v, o] * value(M.ReserveCapacityDerate[r, p, s, t, v])
-        for (t, v) in M.processReservePeriods[r, p]
-        if t in M.tech_storage
-        for i in M.processInputs[r, p, t, v]
-        for o in M.processOutputsByInput[r, p, t, v, i]
+        model.V_FlowOut[r, p, s, d, i, t, v, o] * value(model.ReserveCapacityDerate[r, p, s, t, v])
+        for (t, v) in model.processReservePeriods[r, p]
+        if t in model.tech_storage
+        for i in model.processInputs[r, p, t, v]
+        for o in model.processOutputsByInput[r, p, t, v, i]
     )
     available -= sum(
-        M.V_FlowIn[r, p, s, d, i, t, v, o] * value(M.ReserveCapacityDerate[r, p, s, t, v])
-        for (t, v) in M.processReservePeriods[r, p]
-        if t in M.tech_storage
-        for i in M.processInputs[r, p, t, v]
-        for o in M.processOutputsByInput[r, p, t, v, i]
+        model.V_FlowIn[r, p, s, d, i, t, v, o] * value(model.ReserveCapacityDerate[r, p, s, t, v])
+        for (t, v) in model.processReservePeriods[r, p]
+        if t in model.tech_storage
+        for i in model.processInputs[r, p, t, v]
+        for o in model.processOutputsByInput[r, p, t, v, i]
     )
 
     # The above code does not consider exchange techs, e.g. electricity
@@ -127,10 +133,13 @@ def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Ex
 
     # First, determine the amount of firm capacity each exchange tech
     # contributes.
-    for r1r2 in M.regionalIndices:
+    for r1r2 in model.regionalIndices:
         if '-' not in r1r2:
             continue
-        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
+        if (
+            r1r2,
+            p,
+        ) not in model.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
         r1, r2 = r1r2.split('-')
 
@@ -141,19 +150,21 @@ def ReserveMarginDynamic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Ex
 
         # add the available output of the exchange tech.
         available += sum(
-            M.V_Capacity[r1r2, p, t, v]
-            * value(M.ReserveCapacityDerate[r, p, s, t, v])
-            * value(M.CapacityFactorProcess[r, p, s, d, t, v])
-            * value(M.CapacityToActivity[r1r2, t])
-            * value(M.SegFrac[p, s, d])
-            for (t, v) in M.processReservePeriods[r1r2, p]
-            for t in M.tech_reserve
+            model.V_Capacity[r1r2, p, t, v]
+            * value(model.ReserveCapacityDerate[r, p, s, t, v])
+            * value(model.CapacityFactorProcess[r, p, s, d, t, v])
+            * value(model.CapacityToActivity[r1r2, t])
+            * value(model.SegFrac[p, s, d])
+            for (t, v) in model.processReservePeriods[r1r2, p]
+            for t in model.tech_reserve
         )
 
     return available
 
 
-def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
+def reserve_margin_static(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
+) -> ExprLike:
     r"""
 
     During each period :math:`p`, the sum of capacity values of all reserve
@@ -180,18 +191,18 @@ def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Exp
             \\
             &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall r_i \in R
     """
-    if (not M.tech_reserve) or (
-        (r, p) not in M.processReservePeriods
+    if (not model.tech_reserve) or (
+        (r, p) not in model.processReservePeriods
     ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
         return Constraint.Skip
 
     available = sum(
-        value(M.CapacityCredit[r, p, t, v])
-        * M.V_Capacity[r, p, t, v]
-        * value(M.CapacityToActivity[r, t])
-        * value(M.SegFrac[p, s, d])
-        for (t, v) in M.processReservePeriods[r, p]
-        if t not in M.tech_uncap
+        value(model.CapacityCredit[r, p, t, v])
+        * model.V_Capacity[r, p, t, v]
+        * value(model.CapacityToActivity[r, t])
+        * value(model.SegFrac[p, s, d])
+        for (t, v) in model.processReservePeriods[r, p]
+        if t not in model.tech_uncap
     )
 
     # The above code does not consider exchange techs, e.g. electricity
@@ -202,10 +213,13 @@ def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Exp
 
     # First, determine the amount of firm capacity each exchange tech
     # contributes.
-    for r1r2 in M.regionalIndices:
+    for r1r2 in model.regionalIndices:
         if '-' not in r1r2:
             continue
-        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
+        if (
+            r1r2,
+            p,
+        ) not in model.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
         r1, r2 = r1r2.split('-')
 
@@ -216,12 +230,12 @@ def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Exp
 
         # add the available capacity of the exchange tech.
         available += sum(
-            value(M.CapacityCredit[r1r2, p, t, v])
-            * M.V_Capacity[r1r2, p, t, v]
-            * value(M.CapacityToActivity[r1r2, t])
-            * value(M.SegFrac[p, s, d])
-            for (t, v) in M.processReservePeriods[r1r2, p]
-            for t in M.tech_reserve
+            value(model.CapacityCredit[r1r2, p, t, v])
+            * model.V_Capacity[r1r2, p, t, v]
+            * value(model.CapacityToActivity[r1r2, t])
+            * value(model.SegFrac[p, s, d])
+            for (t, v) in model.processReservePeriods[r1r2, p]
+            for t in model.tech_reserve
         )
 
     return available
@@ -232,15 +246,17 @@ def ReserveMarginStatic(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'Exp
 # ============================================================================
 
 
-def ReserveMargin_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str) -> 'ExprLike':
+def reserve_margin_constraint(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
+) -> ExprLike:
     # Get available generation in this time slice depending on method specified in config file
-    match M.ReserveMarginMethod.first():
+    match model.ReserveMarginMethod.first():
         case 'static':
-            available = ReserveMarginStatic(M, r, p, s, d)
+            available = reserve_margin_static(model, r, p, s, d)
         case 'dynamic':
-            available = ReserveMarginDynamic(M, r, p, s, d)
+            available = reserve_margin_dynamic(model, r, p, s, d)
         case _:
-            msg = f"Invalid reserve margin parameter '{M.ReserveMarginMethod.first()}'. Check the config file."
+            msg = f"Invalid reserve margin parameter '{model.ReserveMarginMethod.first()}'. Check the config file."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -248,66 +264,69 @@ def ReserveMargin_Constraint(M: 'TemoaModel', r: str, p: int, s: str, d: str) ->
     # generation instead as a proxy for electricity demand.
     # Non-annual generation
     total_generation = sum(
-        M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
-        for (t, S_v) in M.processReservePeriods[r, p]
-        if t not in M.tech_annual
-        for S_i in M.processInputs[r, p, t, S_v]
-        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+        model.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in model.processReservePeriods[r, p]
+        if t not in model.tech_annual
+        for S_i in model.processInputs[r, p, t, S_v]
+        for S_o in model.processOutputsByInput[r, p, t, S_v, S_i]
     )
 
     # Generators might serve demands directly
     # Annual generation
     total_generation += sum(
         (
-            value(M.DemandSpecificDistribution[r, p, s, d, S_o])
-            if S_o in M.commodity_demand
-            else value(M.SegFrac[p, s, d])
+            value(model.DemandSpecificDistribution[r, p, s, d, S_o])
+            if S_o in model.commodity_demand
+            else value(model.SegFrac[p, s, d])
         )
-        * M.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
-        for (t, S_v) in M.processReservePeriods[r, p]
-        if t in M.tech_annual
-        for S_i in M.processInputs[r, p, t, S_v]
-        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+        * model.V_FlowOutAnnual[r, p, S_i, t, S_v, S_o]
+        for (t, S_v) in model.processReservePeriods[r, p]
+        if t in model.tech_annual
+        for S_i in model.processInputs[r, p, t, S_v]
+        for S_o in model.processOutputsByInput[r, p, t, S_v, S_i]
     )
 
     # We must take into account flows into storage technologies.
     # Flows into storage technologies need to be subtracted from the
     # load calculation.
     total_generation -= sum(
-        M.V_FlowIn[r, p, s, d, S_i, t, S_v, S_o]
-        for (t, S_v) in M.processReservePeriods[r, p]
-        if t in M.tech_storage
-        for S_i in M.processInputs[r, p, t, S_v]
-        for S_o in M.processOutputsByInput[r, p, t, S_v, S_i]
+        model.V_FlowIn[r, p, s, d, S_i, t, S_v, S_o]
+        for (t, S_v) in model.processReservePeriods[r, p]
+        if t in model.tech_storage
+        for S_i in model.processInputs[r, p, t, S_v]
+        for S_o in model.processOutputsByInput[r, p, t, S_v, S_i]
     )
 
     # Electricity imports and exports via exchange techs are accounted
     # for below:
-    for r1r2 in M.regionalIndices:  # ensure the region is of the form r1-r2
+    for r1r2 in model.regionalIndices:  # ensure the region is of the form r1-r2
         if '-' not in r1r2:
             continue
-        if (r1r2, p) not in M.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
+        if (
+            r1r2,
+            p,
+        ) not in model.processReservePeriods:  # ensure r1r2 is a valid reserve provider in p
             continue
         r1, r2 = r1r2.split('-')
         # First, determine the exports, and subtract this value from the
         # total generation.
         if r1 == r:
             total_generation -= sum(
-                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
-                / get_variable_efficiency(M, r1r2, p, s, d, S_i, t, S_v, S_o)
-                for (t, S_v) in M.processReservePeriods[r1r2, p]
-                for S_i in M.processInputs[r1r2, p, t, S_v]
-                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
+                model.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                / get_variable_efficiency(model, r1r2, p, s, d, S_i, t, S_v, S_o)
+                for (t, S_v) in model.processReservePeriods[r1r2, p]
+                for S_i in model.processInputs[r1r2, p, t, S_v]
+                for S_o in model.processOutputsByInput[r1r2, p, t, S_v, S_i]
             )
         # Second, determine the imports, and add this value from the
         # total generation.
         elif r2 == r:
             total_generation += sum(
-                M.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
-                for (t, S_v) in M.processReservePeriods[r1r2, p]
-                for S_i in M.processInputs[r1r2, p, t, S_v]
-                for S_o in M.processOutputsByInput[r1r2, p, t, S_v, S_i]
+                model.V_FlowOut[r1r2, p, s, d, S_i, t, S_v, S_o]
+                for (t, S_v) in model.processReservePeriods[r1r2, p]
+                for S_i in model.processInputs[r1r2, p, t, S_v]
+                for S_o in model.processOutputsByInput[r1r2, p, t, S_v, S_i]
             )
 
-    requirement = total_generation * (1 + value(M.PlanningReserveMargin[r]))
+    requirement = total_generation * (1 + value(model.PlanningReserveMargin[r]))
     return available >= requirement
