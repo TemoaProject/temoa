@@ -195,7 +195,7 @@ indent: integer, number of tabs with which to indent all Dot node lines
     # Step 3: create each node, and place string representation in a set to
     #         guarantee uniqueness
     q = '"%s"'  # enforce quoting for all nodes
-    gviz = set(nfmt_attr.format(q % n, a) for n, a in nodes if a)
+    gviz = {nfmt_attr.format(q % n, a) for n, a in nodes if a}
     gviz.update(nfmt_noa.format(q % n) for n, a in nodes if not a)
 
     # Step 4: return a sorted version of nodes, as a single string
@@ -231,7 +231,7 @@ indent: integer, number of tabs with which to indent all Dot edge lines
 
     # Step 3: add each edge to a set (to guarantee unique entries only)
     q = '"%s"'  # enforce quoting for all tokens
-    gviz = set(efmt_attr.format(q % i, q % t, a) for i, t, a in edges if a)
+    gviz = {efmt_attr.format(q % i, q % t, a) for i, t, a in edges if a}
     gviz.update(efmt_noa.format(q % i, q % t) for i, t, a in edges if not a)
 
     # Step 4: return a sorted version of the edges, as a single string

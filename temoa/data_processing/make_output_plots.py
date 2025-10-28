@@ -4,10 +4,13 @@ import sys
 import matplotlib
 
 matplotlib.use('Agg')
-from matplotlib import pyplot as plt, cm as cmx, colors
-import random
-import os
 import argparse
+import os
+import random
+
+from matplotlib import cm as cmx
+from matplotlib import colors
+from matplotlib import pyplot as plt
 
 
 class OutputPlotGenerator:
@@ -234,7 +237,7 @@ class OutputPlotGenerator:
         ]
 
     def color_distance(self, c1, c2):
-        return sum([abs(x[0] - x[1]) for x in zip(c1, c2)])
+        return sum([abs(x[0] - x[1]) for x in zip(c1, c2, strict=False)])
 
     def get_cmap(self, N):
         """Returns a function that maps each index in 0, 1, ... N-1 to a distinct
@@ -251,7 +254,7 @@ class OutputPlotGenerator:
     def generate_new_color(self, existing_colors, pastel_factor=0.5):
         max_distance = None
         best_color = None
-        for i in range(0, 100):
+        for _ in range(0, 100):
             color = self.get_random_color(pastel_factor=pastel_factor)
             if not existing_colors:
                 return color
@@ -270,7 +273,6 @@ class OutputPlotGenerator:
         data.pop(xvar, 0)
         stackedBars = data.keys()
         colorMapForBars = dict()
-        colors = []
         plt.figure()
 
         cmap = self.get_cmap(len(stackedBars))
@@ -307,8 +309,6 @@ class OutputPlotGenerator:
         techs = plot_var.keys()
         random.seed(10)
         color_map = dict()
-        colors = []
-        width = 1.5
         plt.figure()
 
         cmap = self.get_cmap(len(techs))
@@ -317,7 +317,6 @@ class OutputPlotGenerator:
             # color_map[plot_var.keys()[i]]=colors[i]
             color_map[plot_var.keys()[i]] = cmap(i)
 
-        b = [0] * len(periods)
         for tech in techs:
             h = plt.plot(periods, plot_var[tech], color=color_map[tech], linestyle='--', marker='o')
             handles.append(h)

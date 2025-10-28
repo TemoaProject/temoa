@@ -1,3 +1,12 @@
+"""
+Utility class for interacting with a Temoa scenario database (SQLite).
+
+This module provides the DatabaseUtil class to abstract the database connection
+and querying process. It offers methods to retrieve specific data slices
+such as technologies, commodities, capacity, and flows for given scenarios,
+periods, and regions.
+"""
+
 import os
 import re
 import sqlite3
@@ -6,7 +15,22 @@ import deprecated
 import pandas as pd
 
 
-class DatabaseUtil(object):
+class DatabaseUtil:
+    """
+    A utility to connect to and query a Temoa SQLite database.
+
+    This class provides methods to extract data from the database, handling
+    connection management and query construction. It can be used as a context
+    manager to ensure database connections are closed properly.
+
+    Args:
+        database_path (str or Path): The file path to the SQLite database.
+        scenario (Optional[str]): The specific scenario to query within the database.
+
+    Raises:
+        ValueError: If the database path does not exist or if connecting fails.
+    """
+
     def __init__(self, databasePath, scenario=None):
         self.database = os.path.abspath(databasePath)
         self.scenario = scenario
@@ -20,8 +44,8 @@ class DatabaseUtil(object):
                 self.con.text_factory = (
                     str  # this ensures data is explored with the correct UTF-8 encoding
                 )
-            except Exception:
-                raise ValueError('Unable to connect to database')
+            except sqlite3.Error as e:
+                raise ValueError(f'Unable to connect to database: {e}') from e
         elif self.database.endswith('.dat'):
             raise ValueError('Reading .dat files is no longer supported')
 
@@ -82,7 +106,7 @@ class DatabaseUtil(object):
         )
         return result[['input_comm', 'tech', 'output_comm']]
 
-    def getTimePeridosForFlags(self, flags=[]):
+    def getTimePeridosForFlags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -101,7 +125,7 @@ class DatabaseUtil(object):
 
         return result
 
-    def getTechnologiesForFlags(self, flags=[]):
+    def getTechnologiesForFlags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -136,7 +160,7 @@ class DatabaseUtil(object):
             else:
                 inp_tech = "'" + inp_tech + "'"
 
-        if region == None:
+        if region is None:
             self.cur.execute(
                 'SELECT input_comm, tech, output_comm FROM Efficiency WHERE input_comm is '
                 + inp_comm
@@ -174,7 +198,7 @@ class DatabaseUtil(object):
         result = pd.DataFrame(self.cur.fetchall(), columns=['tech'])
         return result
 
-    def getCommoditiesForFlags(self, flags=[]):
+    def getCommoditiesForFlags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -337,34 +361,34 @@ class DatabaseUtil(object):
 
         query = (
             "SELECT OF.input_comm, OF.output_comm, OF.vintage, OF.region,\
-	SUM(OF.vflow_in) vflow_in, SUM(OFO.vflow_out) vflow_out, OC.capacity \
-FROM (SELECT region, scenario, sector, period, input_comm, tech, vintage, output_comm, sum(flow) AS vflow_in \
- FROM OutputFlowIn GROUP BY region, scenario, sector, period, input_comm, tech, vintage, output_comm) AS OF \
-INNER JOIN (SELECT region, scenario, sector, period, input_comm, tech, vintage, output_comm, sum(flow) AS vflow_out \
- FROM OutputFlowOut GROUP BY region, scenario, sector, period, input_comm, tech, vintage, output_comm) AS OFO \
-ON  \
-    OF.region = OFO.region AND \
-	OF.scenario = OFO.scenario AND \
-	OF.period = OFO.period AND \
-	OF.tech = OFO.tech AND \
-	OF.input_comm = OFO.input_comm AND \
-	OF.vintage = OFO.vintage AND \
-	OF.output_comm = OFO.output_comm \
-INNER JOIN \
-	OutputNetCapacity OC \
-ON \
-	OF.region = OC.region AND \
-	OF.scenario = OC.scenario AND \
-	OF.tech = OC.tech AND \
-	OF.vintage = OC.vintage \
-WHERE \
-	OF.period ='"
+            SUM(OF.vflow_in) vflow_in, SUM(OFO.vflow_out) vflow_out, OC.capacity \
+            FROM (SELECT region, scenario, sector, period, input_comm, tech, vintage, output_comm, sum(flow) AS vflow_in \
+            FROM OutputFlowIn GROUP BY region, scenario, sector, period, input_comm, tech, vintage, output_comm) AS OF \
+            INNER JOIN (SELECT region, scenario, sector, period, input_comm, tech, vintage, output_comm, sum(flow) AS vflow_out \
+            FROM OutputFlowOut GROUP BY region, scenario, sector, period, input_comm, tech, vintage, output_comm) AS OFO \
+            ON  \
+            OF.region = OFO.region AND \
+            OF.scenario = OFO.scenario AND \
+            OF.period = OFO.period AND \
+            OF.tech = OFO.tech AND \
+            OF.input_comm = OFO.input_comm AND \
+            OF.vintage = OFO.vintage AND \
+            OF.output_comm = OFO.output_comm \
+            INNER JOIN \
+            OutputNetCapacity OC \
+            ON \
+            OF.region = OC.region AND \
+            OF.scenario = OC.scenario AND \
+            OF.tech = OC.tech AND \
+            OF.vintage = OC.vintage \
+            WHERE \
+            OF.period ='"
             + str(period)
             + "' AND \
-	OF.tech is '"
+            OF.tech is '"
             + tech
             + "' AND \
-	OF.scenario is '"
+            OF.scenario is '"
             + self.scenario
             + "'"
         )

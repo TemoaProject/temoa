@@ -51,7 +51,7 @@ import definitions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
-from temoa.data_processing.DB_to_Excel import make_excel
+from temoa.data_processing.db_to_excel import make_excel
 
 logger = getLogger(__name__)
 

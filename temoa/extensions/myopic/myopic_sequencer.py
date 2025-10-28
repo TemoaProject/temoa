@@ -1,29 +1,6 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  1/15/24
-
+This module provides the MyopicSequencer class, which orchestrates the
+process of solving a sequence of myopic optimization problems.
 """
 
 import logging
@@ -40,7 +17,7 @@ from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
-from temoa.data_processing.DB_to_Excel import make_excel
+from temoa.data_processing.db_to_excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper
 from temoa.model_checking.pricing_check import price_checker
@@ -508,7 +485,7 @@ class MyopicSequencer:
         A utility to execute a sql script on the current db connection
         :return:
         """
-        with open(script_file, 'r') as table_script:
+        with open(script_file) as table_script:
             sql_commands = table_script.read()
         logger.debug('Executing sql from file: %s on connection: %s', script_file, self.output_con)
         self.cursor.executescript(sql_commands)
@@ -527,15 +504,15 @@ class MyopicSequencer:
                     f'DELETE FROM {table} WHERE scenario = ? OR scenario like ?',
                     (scenario_name, f'{scenario_name}-%'),
                 )
-            except sqlite3.OperationalError:
-                SE.write(f'no scenario ref in table {table}\n')
-                raise sqlite3.OperationalError
+            except sqlite3.OperationalError as e:
+                SE.write(f'Could not clear scenario from table {table}.\n')
+                raise sqlite3.OperationalError from e
         for table in self.tables_without_scenario_reference:
             try:
                 self.cursor.execute(f'DELETE FROM {table} WHERE 1')
-            except sqlite3.OperationalError:
+            except sqlite3.OperationalError as e:
                 SE.write(f'Failed to clear table {table}.\n')
-                raise sqlite3.OperationalError
+                raise sqlite3.OperationalError from e
         self.output_con.commit()
 
     def clear_results_after(self, period):
@@ -559,9 +536,9 @@ class MyopicSequencer:
                     f'DELETE FROM {table} WHERE period >= (?) and scenario = (?)',
                     (period, self.config.scenario),
                 )
-            except sqlite3.OperationalError:
-                SE.write(f'Failed trying to clear periods from table {table}\n')
-                raise sqlite3.OperationalError
+            except sqlite3.OperationalError as e:
+                SE.write(f'Failed to clear periods from table {table}.\n')
+                raise sqlite3.OperationalError from e
 
         # special case... new capacity has vintage only...
         self.cursor.execute(

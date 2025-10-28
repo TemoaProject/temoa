@@ -2,17 +2,17 @@ import os
 import sys
 from subprocess import call
 
-from DatabaseUtil import DatabaseUtil
-from GraphVizFormats import (
-    results_dot_fmt,
-    tech_results_dot_fmt,
+from database_util import DatabaseUtil
+from graphviz_formats import (
     commodity_dot_fmt,
     quick_run_dot_fmt,
+    results_dot_fmt,
+    tech_results_dot_fmt,
 )
-from GraphVizUtil import create_text_nodes, create_text_edges, getColorConfig, processInput
+from graphviz_util import create_text_edges, create_text_nodes, getColorConfig, processInput
 
 
-class GraphvizDiagramGenerator(object):
+class GraphvizDiagramGenerator:
     def __init__(self, dbFile, scenario=None, region=None, outDir='.', verbose=1):
         self.dbFile = dbFile
         self.qName = os.path.splitext(os.path.basename(self.dbFile))[0]
@@ -91,10 +91,6 @@ class GraphvizDiagramGenerator(object):
         # if (os.path.exists(outputName + '.' + outputFormat)):
         # self.__log__('CreateMainResultsDiagram: graph already exists at path, returning')
         # return self.outDir, outputName + '.' + outputFormat
-
-        time_exist = self.dbUtil.getTimePeridosForFlags(flags=['e'])
-        time_future = self.dbUtil.getTimePeridosForFlags(flags=['f'])
-        time_optimize = set(sorted(time_future)[:-1])
 
         tech_all = self.dbUtil.getTechnologiesForFlags(flags=['r', 'p', 'pb', 'ps'])
 
@@ -220,7 +216,7 @@ class GraphvizDiagramGenerator(object):
         if not os.path.exists(os.path.join(self.outDir, self.folder['tech'])):
             os.makedirs(os.path.join(self.outDir, self.folder['tech']))
 
-        outputName = os.path.join(self.folder['tech'], 'results_%s_%s' % (tech, period))
+        outputName = os.path.join(self.folder['tech'], f'results_{tech}_{period}')
         if self.region:
             outputName += '_' + self.region
         outputName = os.path.join(self.outDir, outputName)
@@ -293,7 +289,7 @@ class GraphvizDiagramGenerator(object):
         if not os.path.exists(os.path.join(self.outDir, self.folder['comm'])):
             os.makedirs(os.path.join(self.outDir, self.folder['comm']))
 
-        outputName = os.path.join(self.folder['comm'], 'rc_%s_%s' % (comm, period))
+        outputName = os.path.join(self.folder['comm'], f'rc_{comm}_{period}')
         if self.region:
             outputName += '_' + self.region
         outputName = os.path.join(self.outDir, outputName)
@@ -318,7 +314,7 @@ class GraphvizDiagramGenerator(object):
 
         self.__log__('CreateCommodityPartialResults: database fetched successfully')
 
-        period_results_url_fmt = '../results/results%%s.%s' % outputFormat
+        # period_results_url_fmt = '../results/results%%s.%s' % outputFormat
         # node_attr_fmt = 'href="../results/results_%%s_%%s.%s"' % outputFormat
         # rc_node_fmt = 'color="%s", href="%s", shape="circle", fillcolor="%s", fontcolor="black"'
 
