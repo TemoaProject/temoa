@@ -25,12 +25,14 @@ from temoa.types.core_types import ParameterValue
 
 
 # --- Type Definitions ---
-class TechTuple(NamedTuple):
+class EdgeTuple(NamedTuple):
     region: Region
-    ic: Commodity
-    name: Technology
+    input_comm: Commodity
+    tech: Technology
     vintage: Vintage
-    oc: Commodity
+    output_comm: Commodity
+    lifetime: int | None = None
+    sector: str | None = None
 
 
 class LinkedTechTuple(NamedTuple):
@@ -87,7 +89,7 @@ class NetworkModelData:
         default_factory=lambda: defaultdict(set)
     )
     physical_commodities: set[Commodity] = field(default_factory=set)
-    available_techs: defaultdict[tuple[Region, Period], set[TechTuple]] = field(
+    available_techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = field(
         default_factory=lambda: defaultdict(set)
     )
     available_linked_techs: set[LinkedTechTuple] = field(default_factory=set)
@@ -112,19 +114,20 @@ class NetworkModelData:
         """Update a data element for a tech."""
         self.tech_data[tech][element] = value
 
-    def get_driven_techs(self, region: Region, period: Period) -> set[TechTuple]:
+    def get_driven_techs(self, region: Region, period: Period) -> set[EdgeTuple]:
         """Identifies all linked techs by name from the linked tech names."""
         driven_tech_names = {lt.driven for lt in self.available_linked_techs}
         return {
-            tech
-            for tech in self.available_techs.get((region, period), set())
-            if tech.name in driven_tech_names
+            efficiencyTuple
+            for efficiencyTuple in self.available_techs.get((region, period), set())
+            if efficiencyTuple.tech in driven_tech_names
         }
 
     def __str__(self) -> str:
         return (
-            f'all commodities: {len(self.physical_commodities)}, demand commodities: {len(self.demand_commodities)}, '
-            f'source commodities: {len(self.source_commodities)}, '
+            f'physical commodities: {len(self.physical_commodities)}, '
+            f'demand commodities: {len({c for s in self.demand_commodities.values() for c in s})}, '
+            f'source commodities: {len({c for s in self.source_commodities.values() for c in s})}, '
             f'available techs: {len(tuple(chain(*self.available_techs.values())))}, '
             f'linked techs: {len(self.available_linked_techs)}'
         )
@@ -141,7 +144,7 @@ def build(data: ModelBlock | DbConnection, *args: object, **kwargs: object) -> N
     return builder(data, *args, **kwargs)
 
 
-def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:  # type: ignore [explicit-any]
+def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:
     """Selects the appropriate builder function based on the input data type."""
     if isinstance(data, (TemoaModel, ConcreteModel)):
         return _build_from_model
@@ -161,13 +164,13 @@ def _build_from_model(M: TemoaModel, myopic_index: MyopicIndex | None = None) ->
     for r, p, d in M.Demand.sparse_iterkeys():
         dem_com[r, p].add(d)
 
-    techs: defaultdict[tuple[Region, Period], set[TechTuple]] = defaultdict(set)
+    techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = defaultdict(set)
     if M.activeFlow_rpsditvo is not None:
         for r, p, _s, _d, ic, tech, v, oc in M.activeFlow_rpsditvo:
-            techs[r, p].add(TechTuple(r, ic, tech, v, oc))
+            techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
     if M.activeFlow_rpitvo is not None:
         for r, p, ic, tech, v, oc in M.activeFlow_rpitvo:
-            techs[r, p].add(TechTuple(r, ic, tech, v, oc))
+            techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
 
     linked_techs = {
         LinkedTechTuple(r, driver, emission, driven)
@@ -233,19 +236,46 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
 
 def _fetch_all_tech_definitions(
     cur: sqlite3.Cursor, myopic_index: MyopicIndex | None
-) -> list[tuple[Region, Commodity, Technology, Vintage, Commodity, int]]:
+) -> list[
+    tuple[Region, Commodity, Technology, Vintage, Commodity, int]
+    | tuple[Region, Commodity, Technology, Vintage, Commodity, int, str]
+]:
     """Fetches the main block of technology efficiency and lifetime data."""
     default_lifetime = TemoaModel.default_lifetime_tech
     table = 'MyopicEfficiency' if myopic_index else 'Efficiency'
-    query = f"""
-        SELECT
-            eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
-            COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
-        FROM main.{table} AS eff
-        LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
-        LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
-        JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
-    """
+
+    # Check if Technology table has sector column
+    try:
+        cur.execute('SELECT sector FROM Technology LIMIT 1')
+        has_sector = True
+    except sqlite3.OperationalError:
+        has_sector = False
+    except (sqlite3.DatabaseError, AttributeError):
+        # For atypical cursors/mocks without schema
+        has_sector = False
+
+    if has_sector:
+        query = f"""
+            SELECT
+                eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime,
+                COALESCE(tech_dim.sector, 'Other') AS sector
+            FROM main.{table} AS eff
+            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            LEFT JOIN main.Technology AS tech_dim ON eff.tech = tech_dim.tech
+            JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
+        """
+    else:
+        query = f"""
+            SELECT
+                eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM main.{table} AS eff
+            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
+        """
     cursor = cur.execute(query, (default_lifetime,))
     return cursor.fetchall()
 
@@ -313,24 +343,71 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
     living_techs: set[Technology] = set()
 
     # --- 2. Process technologies ---
-    for r, ic, tech, v, oc, lifetime in raw_techs:
+    for tech_data in raw_techs:
+        logger.debug(tech_data)
+        if len(tech_data) == 7:  # Has sector
+            r, ic, tech, v, oc, lifetime, sector = tech_data
+        else:  # No sector
+            r, ic, tech, v, oc, lifetime = tech_data
+            sector = None
+
         for p in periods:
             if not (v <= p < v + lifetime):
                 continue
 
             living_techs.add(tech)
-            if '-' in r:  # Inter-regional transfer
-                r1, r2 = r.split('-')
+            if '-' in r and r.count('-') == 1:  # Inter-regional transfer
+                r1, r2 = r.split('-', 1)
                 source_comm, dest_comm = f'{ic} ({r1})', f'{oc} ({r2})'
-                res.available_techs[r2, p].add(TechTuple(r2, source_comm, tech, v, oc))
-                res.available_techs[r1, p].add(TechTuple(r1, ic, tech, v, dest_comm))
-                res.available_techs[r, p].add(TechTuple(r, ic, tech, v, oc))
+                res.available_techs[r2, p].add(
+                    EdgeTuple(
+                        region=r2,
+                        input_comm=source_comm,
+                        tech=tech,
+                        vintage=v,
+                        output_comm=oc,
+                        lifetime=lifetime,
+                        sector=sector,
+                    )
+                )
+                res.available_techs[r1, p].add(
+                    EdgeTuple(
+                        region=r1,
+                        input_comm=ic,
+                        tech=tech,
+                        vintage=v,
+                        output_comm=dest_comm,
+                        lifetime=lifetime,
+                        sector=sector,
+                    )
+                )
+                res.available_techs[r, p].add(
+                    EdgeTuple(
+                        region=r,
+                        input_comm=ic,
+                        tech=tech,
+                        vintage=v,
+                        output_comm=oc,
+                        lifetime=lifetime,
+                        sector=sector,
+                    )
+                )
                 res.source_commodities[r2, p].add(source_comm)
                 res.demand_commodities[r1, p].add(dest_comm)
                 res.physical_commodities.update([source_comm, dest_comm])
                 res.exchange_commodities.update([source_comm, dest_comm])
             else:  # Standard technology
-                res.available_techs[r, p].add(TechTuple(r, ic, tech, v, oc))
+                res.available_techs[r, p].add(
+                    EdgeTuple(
+                        region=r,
+                        input_comm=ic,
+                        tech=tech,
+                        vintage=v,
+                        output_comm=oc,
+                        lifetime=lifetime,
+                        sector=sector,
+                    )
+                )
                 if ic in basic_data['source_commodities_all']:
                     res.source_commodities[r, p].add(ic)
                 if oc in basic_data['waste_commodities_all']:
@@ -345,7 +422,17 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
             if is_natural_eol or is_retireable or has_survival:
                 for eol_oc in lookup_data['eol'].get((r, tech, v), []):
-                    res.available_techs[r, p].add(TechTuple(r, tech, 'EndOfLife', v, eol_oc))
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=tech,
+                            tech='EndOfLife',
+                            vintage=v,
+                            output_comm=eol_oc,
+                            lifetime=lifetime,
+                            sector='Other',
+                        )
+                    )
                     res.source_commodities[r, p].add(tech)
                     res.capacity_commodities.add(tech)
                     if eol_oc in basic_data['waste_commodities_all']:
@@ -353,7 +440,18 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
-        res.available_techs[r, v].add(TechTuple(r, ic, 'Construction', v, tech))
+        construction_lifetime = basic_data['period_length'].get(v, 1)
+        res.available_techs[r, v].add(
+            EdgeTuple(
+                region=r,
+                input_comm=ic,
+                tech='Construction',
+                vintage=v,
+                output_comm=tech,
+                lifetime=construction_lifetime,
+                sector='Other',
+            )
+        )
         res.demand_commodities[r, v].add(tech)
         res.capacity_commodities.add(tech)
         living_techs.add(tech)

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12"
 
 [[package]]
@@ -569,18 +569,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f8/b3/3ac91e9be6b761a4b30d66ff165e54439dcd48b83f4e20d644867215f6ca/graphviz-0.21.tar.gz", hash = "sha256:20743e7183be82aaaa8ad6c93f8893c923bd6658a04c32ee115edb3c8a835f78", size = 200434, upload-time = "2025-06-15T09:35:05.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl", hash = "sha256:54f33de9f4f911d7e84e4191749cac8cc5653f815b06738c54db9a15ab8b1e42", size = 47300, upload-time = "2025-06-15T09:35:04.433Z" },
-]
-
-[[package]]
-name = "gravis"
-version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "setuptools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/73/76/10b6264a45fffb565b9ad26b9fbc4ba91c2ca700f8dbfba84dcdebf5cbdd/gravis-0.1.0.tar.gz", hash = "sha256:a36342602aa7da3bbd674c970439717926a8f7ca0678aa82cc5d756e8c2a529b", size = 648634, upload-time = "2021-12-08T21:43:19.456Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/fb/6a1659424cfab2d8df49f3f02ca11bf7ca303775681f105239b556c9146c/gravis-0.1.0-py3-none-any.whl", hash = "sha256:ccfb4dbba13c7570f1f33b35ab5d536868acf5ce8a0c427fd898340cf4e414f4", size = 659146, upload-time = "2021-12-08T21:43:15.348Z" },
 ]
 
 [[package]]
@@ -1690,18 +1678,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/22/8a/ccdf201457ed8ac6245187850aff4ca56a79edbea4829f4e9f14d46fa9a5/numpy-2.3.1-cp313-cp313t-win32.whl", hash = "sha256:6269b9edfe32912584ec496d91b00b6d34282ca1d07eb10e82dfc780907d6c2e", size = 6440678, upload-time = "2025-06-21T12:24:21.596Z" },
     { url = "https://files.pythonhosted.org/packages/f1/7e/7f431d8bd8eb7e03d79294aed238b1b0b174b3148570d03a8a8a8f6a0da9/numpy-2.3.1-cp313-cp313t-win_amd64.whl", hash = "sha256:2a809637460e88a113e186e87f228d74ae2852a2e0c44de275263376f17b5bdc", size = 12870697, upload-time = "2025-06-21T12:24:40.644Z" },
     { url = "https://files.pythonhosted.org/packages/d4/ca/af82bf0fad4c3e573c6930ed743b5308492ff19917c7caaf2f9b6f9e2e98/numpy-2.3.1-cp313-cp313t-win_arm64.whl", hash = "sha256:eccb9a159db9aed60800187bc47a6d3451553f0e1b08b068d8b277ddfbb9b244", size = 10260376, upload-time = "2025-06-21T12:24:56.884Z" },
-]
-
-[[package]]
-name = "nx-vis-visualizer"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "networkx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/f5/9ed4f232274c23786a241db69d21dd5f17f55eb3cd7f024fe9b1289f34b6/nx_vis_visualizer-0.2.0.tar.gz", hash = "sha256:96b04a21473d1079c98eb49411d9557e76edf152a0565502d42718779ee6dfe7", size = 17849, upload-time = "2025-06-12T00:29:20.942Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/5e/ef8786748d6b015d70941979adf611600df3e999667ec6955903338347f7/nx_vis_visualizer-0.2.0-py3-none-any.whl", hash = "sha256:d334366863f0a5acd6fcce604e2ef16d555f7472e2b5ea7d889e1afa77362168", size = 12072, upload-time = "2025-06-12T00:29:19.765Z" },
 ]
 
 [[package]]
@@ -2942,7 +2918,6 @@ source = { editable = "." }
 dependencies = [
     { name = "deprecated" },
     { name = "graphviz" },
-    { name = "gravis" },
     { name = "highspy" },
     { name = "ipykernel" },
     { name = "ipython" },
@@ -2952,7 +2927,6 @@ dependencies = [
     { name = "matplotlib" },
     { name = "networkx" },
     { name = "numpy" },
-    { name = "nx-vis-visualizer" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pyam-iamc" },
@@ -2992,13 +2966,13 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-deprecated" },
+    { name = "types-networkx" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "deprecated", specifier = ">=1.2.14" },
     { name = "graphviz", specifier = ">=0.20.3" },
-    { name = "gravis", specifier = ">=0.1.0" },
     { name = "gurobipy", marker = "extra == 'solver'", specifier = ">=12.0.3,<13" },
     { name = "highspy", specifier = ">=1.7.2" },
     { name = "ipykernel" },
@@ -3010,7 +2984,6 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'plotting'", specifier = ">=3.9.2" },
     { name = "networkx", specifier = ">=3.3" },
     { name = "numpy", specifier = ">=2.1.0" },
-    { name = "nx-vis-visualizer", specifier = ">=0.1.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.2" },
     { name = "pyam-iamc", specifier = ">=2.2.4" },
@@ -3041,6 +3014,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff", specifier = ">=0.2.0" },
     { name = "types-deprecated", specifier = ">=1.2.15.20250304" },
+    { name = "types-networkx", specifier = ">=3.5.0.20251001" },
 ]
 
 [[package]]
@@ -3140,6 +3114,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0e/67/eeefaaabb03b288aad85483d410452c8bbcbf8b2bd876b0e467ebd97415b/types_deprecated-1.2.15.20250304.tar.gz", hash = "sha256:c329030553029de5cc6cb30f269c11f4e00e598c4241290179f63cda7d33f719", size = 8015, upload-time = "2025-03-04T02:48:17.894Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/e3/c18aa72ab84e0bc127a3a94e93be1a6ac2cb281371d3a45376ab7cfdd31c/types_deprecated-1.2.15.20250304-py3-none-any.whl", hash = "sha256:86a65aa550ea8acf49f27e226b8953288cd851de887970fbbdf2239c116c3107", size = 8553, upload-time = "2025-03-04T02:48:16.666Z" },
+]
+
+[[package]]
+name = "types-networkx"
+version = "3.5.0.20251001"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/5b/d903d119f6159e0c9291c53db0e92ea33cb725331f75069d1b45b83b4405/types_networkx-3.5.0.20251001.tar.gz", hash = "sha256:8e3c5c491ba5870d75e175751d70ddeac81df43caf2a64bae161e181f5e8ea7a", size = 71748, upload-time = "2025-10-01T03:04:26.155Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/41/cdd9498383b30290cce9de6dbed75fa75d6dc06fe4b47d6da6de4b156aa0/types_networkx-3.5.0.20251001-py3-none-any.whl", hash = "sha256:4bb9dd0378a52ca57d68f8215f8662e736d800a8ff892b457646eccd828a0230", size = 160095, upload-time = "2025-10-01T03:04:24.821Z" },
 ]
 
 [[package]]
