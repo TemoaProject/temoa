@@ -1,3 +1,4 @@
+import sqlite3
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,6 +23,7 @@ test_scenarios = [
             'FROM SurvivalCurve': [],
             'FROM TimePeriod': [(2020,), (2025,)],
             # Unique keys for each Commodity query
+            'FROM main.Commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%p%'": [
                 ('s1',),
                 ('p1',),
@@ -32,6 +34,14 @@ test_scenarios = [
             ],
             "Commodity WHERE flag LIKE '%w%'": [],
             "Commodity WHERE flag = 's'": [('s1',)],
+            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+                ('s1',),
+                ('p1',),
+                ('p2',),
+                ('p3',),
+                ('d1',),
+                ('d2',),
+            ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             # Unique keys for Efficiency and optional tables
             'FROM main.Efficiency': [
@@ -63,9 +73,16 @@ test_scenarios = [
             'Technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
             'FROM TimePeriod': [(2020,), (2025,)],
+            'FROM main.Commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%w%'": [],
             "Commodity WHERE flag = 's'": [('s1',)],
+            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+                ('s1',),
+                ('p3',),
+                ('d1',),
+                ('d2',),
+            ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             'FROM main.Efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
@@ -93,9 +110,16 @@ test_scenarios = [
             'Technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
             'FROM TimePeriod': [(2020,), (2025,)],
+            'FROM main.Commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
             "Commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
             "Commodity WHERE flag LIKE '%w%'": [],
             "Commodity WHERE flag = 's'": [('s1',), ('s2',)],
+            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+                ('s1',),
+                ('d1',),
+                ('d2',),
+                ('s2',),
+            ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             'FROM main.Efficiency': [
                 ('R1', 's1', 't4', 2000, 'd2', 100),
@@ -138,13 +162,15 @@ def mock_db_connection(request):
     mock_con.cursor.return_value = mock_cursor
 
     def dispatcher(query: str, *_: object) -> MagicMock:
-        for key, data in db_data.items():
+        if 'sector FROM Technology' in query:
+            raise sqlite3.OperationalError('no such column: sector')
+        for key, data in sorted(db_data.items(), key=lambda kv: -len(kv[0])):
             if key in query:
-                execute_mock = MagicMock(name=f'execute_mock_for_{key}')
-                execute_mock.fetchall.return_value = data
-                execute_mock.fetchone.return_value = data[0] if data else None
-                return execute_mock
-        raise ValueError(f'Mock database received unexpected query: {query}')
+                m = MagicMock(name=f'execute_mock_for_{key}')
+                m.fetchall.return_value = data
+                m.fetchone.return_value = data[0] if data else None
+                return m
+        raise AssertionError('Unexpected SQL: ' + query)
 
     mock_cursor.execute.side_effect = dispatcher
     return mock_con, request.param['expected']
@@ -203,3 +229,170 @@ def test_clone(mock_db_connection):
     assert network_data.available_techs != clone.available_techs, (
         'Modifying clone should not affect original'
     )
+
+
+def test_sector_handling_with_sectors() -> None:
+    """Test that sectors are properly handled when they exist in the database."""
+    # Mock database with sector column
+    mock_con = MagicMock(name='mock_connection')
+    mock_cursor = MagicMock(name='mock_cursor')
+    mock_con.cursor.return_value = mock_cursor
+
+    # Mock the sector column check to return True
+    sector_check_mock = MagicMock()
+    sector_check_mock.fetchall.return_value = [('Other',)]
+    sector_check_mock.fetchone.return_value = ('Other',)
+
+    # Mock efficiency data with sectors
+    efficiency_mock = MagicMock()
+    efficiency_mock.fetchall.return_value = [
+        ('R1', 's1', 't1', 2000, 'p1', 100, 'supply'),
+        ('R1', 'p1', 't2', 2000, 'd1', 100, 'demand'),
+    ]
+
+    def dispatcher(query: str, *_: object) -> MagicMock:
+        if 'sector FROM Technology' in query:
+            return sector_check_mock
+        elif 'FROM main.Efficiency' in query:
+            return efficiency_mock
+        elif 'Technology WHERE retire==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM SurvivalCurve' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM TimePeriod' in query:
+            m = MagicMock()
+            m.fetchall.return_value = [(2020,), (2025,)]
+            return m
+        elif "Commodity WHERE flag LIKE '%p%'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
+            return m
+        elif "Commodity WHERE flag LIKE '%w%'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif "Commodity WHERE flag = 's'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('s1',)]
+            return m
+        elif 'FROM main.Demand' in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('R1', 2020, 'd1')]
+            return m
+        elif 'FROM EndOfLifeOutput' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM ConstructionInput' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM main.LinkedTech' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM CostVariable' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        raise AssertionError('Mock database received unexpected query: ' + query)
+
+    mock_cursor.execute.side_effect = dispatcher
+
+    # Build network data
+    network_data = network_model_data._build_from_db(mock_con)
+
+    # Verify sectors are included in EfficiencyTuple
+    techs = list(network_data.available_techs[('R1', 2020)])
+    assert len(techs) == 2
+    # Fields: region, ic, tech, vintage, oc, lifetime, sector
+    assert all(len(tech) == 7 for tech in techs)
+    assert any(tech.sector == 'supply' for tech in techs)
+    assert any(tech.sector == 'demand' for tech in techs)
+
+
+def test_sector_handling_without_sectors() -> None:
+    """Test that sectors are handled gracefully when they don't exist in the database."""
+    # Mock database without sector column
+    mock_con = MagicMock(name='mock_connection')
+    mock_cursor = MagicMock(name='mock_cursor')
+    mock_con.cursor.return_value = mock_cursor
+
+    # Mock the sector column check to raise OperationalError (column doesn't exist)
+    def dispatcher(query: str, *_: object) -> MagicMock:
+        if 'sector FROM Technology' in query:
+            # Simulate column not existing
+            raise sqlite3.OperationalError('no such column: sector')
+        elif 'FROM main.Efficiency' in query:
+            # Return data without sector column
+            mock = MagicMock()
+            mock.fetchall.return_value = [
+                ('R1', 's1', 't1', 2000, 'p1', 100),
+                ('R1', 'p1', 't2', 2000, 'd1', 100),
+            ]
+            return mock
+        elif 'FROM main.Commodity' in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
+            return m
+        elif 'Technology WHERE retire==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM SurvivalCurve' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM TimePeriod' in query:
+            m = MagicMock()
+            m.fetchall.return_value = [(2020,), (2025,)]
+            return m
+        elif "Commodity WHERE flag LIKE '%p%'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
+            return m
+        elif "Commodity WHERE flag LIKE '%w%'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif "Commodity WHERE flag = 's'" in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('s1',)]
+            return m
+        elif 'FROM main.Demand' in query:
+            m = MagicMock()
+            m.fetchall.return_value = [('R1', 2020, 'd1')]
+            return m
+        elif 'FROM EndOfLifeOutput' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM ConstructionInput' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM main.LinkedTech' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM CostVariable' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        raise ValueError(f'Mock database received unexpected query: {query}')
+
+    mock_cursor.execute.side_effect = dispatcher
+
+    # Build network data
+    network_data = network_model_data._build_from_db(mock_con)
+
+    # Verify sectors default to None
+    techs = list(network_data.available_techs[('R1', 2020)])
+    assert len(techs) == 2
+    # Fields: region, ic, tech, vintage, oc, lifetime, sector (sector None here)
+    assert all(len(tech) == 7 for tech in techs)
+    assert all(tech.sector is None for tech in techs)
