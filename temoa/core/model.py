@@ -51,9 +51,9 @@ from temoa.model_checking.validators import (
     region_check,
     region_group_check,
     validate_0to1,
-    validate_Efficiency,
+    validate_efficiency,
     validate_linked_tech,
-    validate_ReserveMargin,
+    validate_reserve_margin,
     validate_tech_sets,
 )
 
@@ -385,7 +385,7 @@ class TemoaModel(PyomoAbstractModel):
             self.vintage_all,
             self.commodity_carrier,
             within=NonNegativeReals,
-            validate=validate_Efficiency,
+            validate=validate_efficiency,
         )
         self.validate_UsedEfficiencyIndices = BuildAction(rule=technology.check_efficiency_indices)
 
@@ -977,7 +977,7 @@ class TemoaModel(PyomoAbstractModel):
         )
 
         self.ReserveMargin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
-        self.validate_ReserveMargin = BuildAction(rule=validate_ReserveMargin)
+        self.validate_ReserveMargin = BuildAction(rule=validate_reserve_margin)
         self.ReserveMarginConstraint = Constraint(
             self.ReserveMargin_rpsd, rule=reserves.reserve_margin_constraint
         )

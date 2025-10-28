@@ -155,30 +155,32 @@ def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelD
 
 # --- Builder Implementations ---
 @deprecated.deprecated('no longer supported... build from db connection instead')
-def _build_from_model(M: TemoaModel, myopic_index: MyopicIndex | None = None) -> NetworkModelData:
+def _build_from_model(
+    model: TemoaModel, myopic_index: MyopicIndex | None = None
+) -> NetworkModelData:
     """Build a NetworkModelData from a TemoaModel."""
     if myopic_index is not None:
         raise NotImplementedError('Cannot build network data from model using a MyopicIndex')
 
     dem_com = defaultdict(set)
-    for r, p, d in M.Demand.sparse_iterkeys():
+    for r, p, d in model.Demand.sparse_iterkeys():
         dem_com[r, p].add(d)
 
     techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = defaultdict(set)
-    if M.activeFlow_rpsditvo is not None:
-        for r, p, _s, _d, ic, tech, v, oc in M.activeFlow_rpsditvo:
+    if model.activeFlow_rpsditvo is not None:
+        for r, p, _s, _d, ic, tech, v, oc in model.activeFlow_rpsditvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
-    if M.activeFlow_rpitvo is not None:
-        for r, p, ic, tech, v, oc in M.activeFlow_rpitvo:
+    if model.activeFlow_rpitvo is not None:
+        for r, p, ic, tech, v, oc in model.activeFlow_rpitvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
 
     linked_techs = {
         LinkedTechTuple(r, driver, emission, driven)
-        for r, driver, emission, driven in M.LinkedTechs.sparse_iterkeys()
+        for r, driver, emission, driven in model.LinkedTechs.sparse_iterkeys()
     }
 
     res = NetworkModelData(
-        physical_commodities=set(M.commodity_all),
+        physical_commodities=set(model.commodity_all),
         demand_commodities=dem_com,
         available_techs=techs,
         available_linked_techs=linked_techs,

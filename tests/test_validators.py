@@ -108,4 +108,4 @@ params = [
 
 @pytest.mark.parametrize('value, expected', params)
 def test_no_slash(value, expected):
-    assert no_slash_or_pipe(M=None, element=value) == expected
+    assert no_slash_or_pipe(model=None, element=value) == expected
