@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Union, cast
 from pyomo.common.numeric_types import value
 
 from temoa.core.model import TemoaModel
+from temoa.types.core_types import Period, Technology, Vintage
 
 if TYPE_CHECKING:
     from tests.utilities.namespace_mock import Namespace
@@ -31,15 +32,21 @@ class CostType(Enum):
 
 
 class ExchangeTechCostLedger:
-    def __init__(self, M: Union[TemoaModel, 'Namespace']) -> None:
+    def __init__(self, model: Union[TemoaModel, 'Namespace']) -> None:
         self.cost_records: dict[CostType, dict[tuple[str, str, str, int, int], float]] = (
             defaultdict(dict)
         )
         # could be a Namespace for testing purposes...  See the related test
-        self.M = M
+        self.M = model
 
     def add_cost_record(
-        self, link: str, period: int, tech: str, vintage: int, cost: float, cost_type: CostType
+        self,
+        link: str,
+        period: Period,
+        tech: Technology,
+        vintage: Vintage,
+        cost: float,
+        cost_type: CostType,
     ) -> None:
         """
         add a cost associated with an exchange tech
@@ -52,7 +59,7 @@ class ExchangeTechCostLedger:
         self.cost_records[cost_type][r1, r2, tech, vintage, period] = cost
 
     def get_use_ratio(
-        self, exporter: str, importer: str, period: int, tech: str, vintage: int
+        self, exporter: str, importer: str, period: Period, tech: Technology, vintage: Vintage
     ) -> float:
         """
         use flow to calculate the use ratio for these 2 entities for cost apportioning purposes
@@ -65,50 +72,50 @@ class ExchangeTechCostLedger:
         """
         # Cast to TemoaModel for type checking - at runtime this will be either TemoaModel or Namespace
         # Both have the same attributes, but mypy doesn't know about Namespace's dynamic attributes
-        M = cast(TemoaModel, self.M)
+        model = cast(TemoaModel, self.M)
         # need to temporarily reconstitute the names
         rr1 = '-'.join([exporter, importer])
         rr2 = '-'.join([importer, exporter])
         if any(
             (
-                period >= vintage + value(M.LifetimeProcess[rr1, tech, vintage]),
-                period >= vintage + value(M.LifetimeProcess[rr2, tech, vintage]),
+                period >= vintage + value(model.LifetimeProcess[rr1, tech, vintage]),
+                period >= vintage + value(model.LifetimeProcess[rr2, tech, vintage]),
                 period < vintage,
             )
         ):
             raise ValueError('received a bogus cost for an illegal period.')
-        if tech not in M.tech_annual:
+        if tech not in model.tech_annual:
             act_dir1 = value(
                 sum(
-                    M.V_FlowOut[rr1, period, s, d, S_i, tech, vintage, S_o]
-                    for s in M.TimeSeason[period]
-                    for d in M.time_of_day
-                    for S_i in M.processInputs[rr1, period, tech, vintage]
-                    for S_o in M.processOutputsByInput[rr1, period, tech, vintage, S_i]
+                    model.V_FlowOut[rr1, period, s, d, S_i, tech, vintage, S_o]
+                    for s in model.TimeSeason[period]
+                    for d in model.time_of_day
+                    for S_i in model.processInputs[rr1, period, tech, vintage]
+                    for S_o in model.processOutputsByInput[rr1, period, tech, vintage, S_i]
                 )
             )
             act_dir2 = value(
                 sum(
-                    M.V_FlowOut[rr2, period, s, d, S_i, tech, vintage, S_o]
-                    for s in M.TimeSeason[period]
-                    for d in M.time_of_day
-                    for S_i in M.processInputs[rr2, period, tech, vintage]
-                    for S_o in M.processOutputsByInput[rr2, period, tech, vintage, S_i]
+                    model.V_FlowOut[rr2, period, s, d, S_i, tech, vintage, S_o]
+                    for s in model.TimeSeason[period]
+                    for d in model.time_of_day
+                    for S_i in model.processInputs[rr2, period, tech, vintage]
+                    for S_o in model.processOutputsByInput[rr2, period, tech, vintage, S_i]
                 )
             )
         else:
             act_dir1 = value(
                 sum(
-                    M.V_FlowOutAnnual[rr1, period, S_i, tech, vintage, S_o]
-                    for S_i in M.processInputs[rr1, period, tech, vintage]
-                    for S_o in M.processOutputsByInput[rr1, period, tech, vintage, S_i]
+                    model.V_FlowOutAnnual[rr1, period, S_i, tech, vintage, S_o]
+                    for S_i in model.processInputs[rr1, period, tech, vintage]
+                    for S_o in model.processOutputsByInput[rr1, period, tech, vintage, S_i]
                 )
             )
             act_dir2 = value(
                 sum(
-                    M.V_FlowOutAnnual[rr2, period, S_i, tech, vintage, S_o]
-                    for S_i in M.processInputs[rr2, period, tech, vintage]
-                    for S_o in M.processOutputsByInput[rr2, period, tech, vintage, S_i]
+                    model.V_FlowOutAnnual[rr2, period, S_i, tech, vintage, S_o]
+                    for S_i in model.processInputs[rr2, period, tech, vintage]
+                    for S_o in model.processOutputsByInput[rr2, period, tech, vintage, S_i]
                 )
             )
 

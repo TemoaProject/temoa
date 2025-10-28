@@ -44,7 +44,7 @@ def evaluate(param_names, param_values, data: dict, k):
     if not status:
         raise RuntimeError('Bad solve during Method of Morris')
     table_writer = TableWriter(config)
-    table_writer.write_results(M=mdl)
+    table_writer.write_results(model=mdl)
 
     con = sqlite3.connect(db_file)
     cur = con.cursor()
@@ -175,13 +175,13 @@ num_vars = problem['num_vars']
 groups, unique_group_names = compute_groups_matrix(problem['groups'])
 number_of_groups = len(unique_group_names)
 print(
-    '{0:<30} {1:>10} {2:>10} {3:>15} {4:>10}'.format(
+    '{:<30} {:>10} {:>10} {:>15} {:>10}'.format(
         'Parameter', 'Mu_Star', 'Mu', 'Mu_Star_Conf', 'Sigma'
     )
 )
 for j in list(range(number_of_groups)):
     print(
-        '{0:30} {1:10.3f} {2:10.3f} {3:15.3f} {4:10.3f}'.format(
+        '{:30} {:10.3f} {:10.3f} {:15.3f} {:10.3f}'.format(
             Si_OF['names'][j],
             Si_OF['mu_star'][j],
             Si_OF['mu'][j],

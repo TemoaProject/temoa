@@ -364,7 +364,7 @@ class MgaSequencer:
         if idx in self.seen_instance_indices:
             raise ValueError('Instance index already seen.  Likely coding error')
         self.seen_instance_indices.add(idx)
-        self.writer.write_capacity_tables(M=instance, iteration=idx)
+        self.writer.write_capacity_tables(model=instance, iteration=idx)
         self.writer.write_summary_flow(instance, iteration=idx)
 
     def __del__(self):

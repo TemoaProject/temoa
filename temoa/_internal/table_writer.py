@@ -106,7 +106,7 @@ class TableWriter:
 
     def write_results(
         self,
-        M: TemoaModel,
+        model: TemoaModel,
         results_with_duals: SolverResults | None = None,
         save_storage_levels: bool = False,
         append: bool = False,
@@ -124,30 +124,30 @@ class TableWriter:
             self.clear_scenario()
         if not self.tech_sectors:
             self._set_tech_sectors()
-        self.write_objective(M, iteration=iteration)
-        self.write_capacity_tables(M, iteration=iteration)
+        self.write_objective(model, iteration=iteration)
+        self.write_capacity_tables(model, iteration=iteration)
         # analyze the emissions to get the costs and flows
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = M.MyopicDiscountingYear
+            p_0 = model.MyopicDiscountingYear
         else:
             p_0 = None  # min year will be used in poll
-        e_costs, e_flows = poll_emissions(M=M, p_0=value(p_0))
+        e_costs, e_flows = poll_emissions(model=model, p_0=value(p_0))
 
         self.emission_register = e_flows
         self.write_emissions(iteration=iteration)
-        self.write_costs(M, emission_entries=e_costs, iteration=iteration)
-        self.flow_register = self.calculate_flows(M)
-        self.check_flow_balance(M)
+        self.write_costs(model, emission_entries=e_costs, iteration=iteration)
+        self.flow_register = self.calculate_flows(model)
+        self.check_flow_balance(model)
         self.write_flow_tables(iteration=iteration)
         if results_with_duals:  # write the duals
             self.write_dual_variables(results_with_duals, iteration=iteration)
         if save_storage_levels:
-            self.write_storage_level(M, iteration=iteration)
+            self.write_storage_level(model, iteration=iteration)
         # catch-all
         self.con.commit()
         self.con.execute('VACUUM')
 
-    def write_mm_results(self, M: TemoaModel, iteration: int) -> None:
+    def write_mm_results(self, model: TemoaModel, iteration: int) -> None:
         """
         tailored writer function for Method of Morris which:
         (a) appends data (so scenario needs to be cleared elsewhere
@@ -159,9 +159,9 @@ class TableWriter:
         """
         if not self.tech_sectors:
             self._set_tech_sectors()
-        self.write_objective(M, iteration=iteration)
+        self.write_objective(model, iteration=iteration)
         # analyze the emissions to get the costs and flows
-        e_costs, e_flows = poll_emissions(M=M)
+        e_costs, e_flows = poll_emissions(model=model)
         self.emission_register = e_flows
         self.write_emissions(iteration=iteration)
         self.con.commit()
@@ -230,10 +230,10 @@ class TableWriter:
                 pass
         self.con.commit()
 
-    def write_storage_level(self, M: TemoaModel, iteration: int | None = None) -> None:
+    def write_storage_level(self, model: TemoaModel, iteration: int | None = None) -> None:
         """Write the storage level table to the DB"""
 
-        storage_levels = poll_storage_level_results(M=M)
+        storage_levels = poll_storage_level_results(model=model)
 
         scenario_name = (
             self.config.scenario + f'-{iteration}'
@@ -254,9 +254,9 @@ class TableWriter:
         self.con.executemany(qry, data)
         self.con.commit()
 
-    def write_objective(self, M: TemoaModel, iteration: int | None = None) -> None:
+    def write_objective(self, model: TemoaModel, iteration: int | None = None) -> None:
         """Write the value of all ACTIVE objectives to the DB"""
-        obj_vals = poll_objective(M=M)
+        obj_vals = poll_objective(model=model)
         self._insert_objective_results(obj_vals, iteration=iteration)
 
     def _insert_objective_results(
@@ -352,9 +352,9 @@ class TableWriter:
         self.con.executemany(qry, data_ret)
         self.con.commit()
 
-    def write_capacity_tables(self, M: TemoaModel, iteration: int | None = None) -> None:
+    def write_capacity_tables(self, model: TemoaModel, iteration: int | None = None) -> None:
         """Write the capacity tables to the DB"""
-        cap_data = poll_capacity_results(M=M)
+        cap_data = poll_capacity_results(model=model)
         self._insert_capacity_results(cap_data=cap_data, iteration=iteration)
 
     def write_flow_tables(self, iteration: int | None = None) -> None:
@@ -395,7 +395,7 @@ class TableWriter:
 
         self.con.commit()
 
-    def write_summary_flow(self, M: TemoaModel, iteration: int | None = None) -> None:
+    def write_summary_flow(self, model: TemoaModel, iteration: int | None = None) -> None:
         """
         This is normally called from MGA (other?)
         iterative solves where capturing the annual summary of flow out is desired vs. flows by season, tod for
@@ -404,7 +404,7 @@ class TableWriter:
         :param M: The solved model
         :return: None
         """
-        flow_data = self.calculate_flows(M=M)
+        flow_data = self.calculate_flows(model=model)
         self._insert_summary_flow_results(flow_data=flow_data, iteration=iteration)
 
     def _insert_summary_flow_results(
@@ -461,7 +461,7 @@ class TableWriter:
     # def poll_summary_flow_results( M:TemoaModel) -> dict:
     #     flow_data = self.calculate_flows(M)
 
-    def check_flow_balance(self, M: TemoaModel) -> bool:
+    def check_flow_balance(self, model: TemoaModel) -> bool:
         """
         An easy sanity check to ensure that the flow tables are balanced, except for storage
         and construction/end of life flows
@@ -470,7 +470,7 @@ class TableWriter:
         all_good = True
         deltas = defaultdict(float)
         for fi in flows:
-            if fi.t in M.tech_storage:
+            if fi.t in model.tech_storage:
                 continue
             if fi.i == 'EndOfLifeOutput':
                 continue
@@ -485,8 +485,8 @@ class TableWriter:
             flost = flows[fi][FlowType.LOST]
             # some identifiers
             tech = fi.t
-            flex_tech = fi.t in M.tech_flex
-            annual_tech = fi.t in M.tech_annual
+            flex_tech = fi.t in model.tech_flex
+            annual_tech = fi.t in model.tech_annual
 
             #  ----- flow balance equation -----
             deltas[fi] = fin - fout - flost - fflex
@@ -523,13 +523,13 @@ class TableWriter:
                 )
         return all_good
 
-    def calculate_flows(self, M: TemoaModel) -> dict[FI, dict[FlowType, float]]:
+    def calculate_flows(self, model: TemoaModel) -> dict[FI, dict[FlowType, float]]:
         """Gather all flows by Flow Index and Type"""
-        return poll_flow_results(M, self.epsilon)
+        return poll_flow_results(model, self.epsilon)
 
     def write_costs(
         self,
-        M: TemoaModel,
+        model: TemoaModel,
         emission_entries: dict[tuple[str, int, str, int], dict[CostType, float]] | None = None,
         iteration: int | None = None,
     ) -> None:
@@ -544,11 +544,11 @@ class TableWriter:
         # P_0 is usually the first optimization year, but if running myopic, we could assign it via
         # table entry.  Perhaps in future it is just always the first optimization year of the 1st iter.
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = M.MyopicDiscountingYear
+            p_0 = model.MyopicDiscountingYear
         else:
-            p_0 = min(M.time_optimize)
+            p_0 = min(model.time_optimize)
 
-        entries, exchange_entries = poll_cost_results(M, value(p_0), self.epsilon)
+        entries, exchange_entries = poll_cost_results(model, value(p_0), self.epsilon)
 
         # write to table
         self._insert_cost_results(entries, exchange_entries, emission_entries, iteration)

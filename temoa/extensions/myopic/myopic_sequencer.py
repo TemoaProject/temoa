@@ -9,7 +9,7 @@ import sys
 from collections import deque
 from pathlib import Path
 from sqlite3 import Connection
-from sys import stderr as SE
+import sys
 
 import definitions
 from temoa._internal import run_actions
@@ -131,7 +131,7 @@ class MyopicSequencer:
                 'to the same db or make a copy to preserve the original and point both input/output\n'
                 'to the copy.'
             )
-            SE.write(msg)
+            sys.stderr.write(msg)
             logger.error('Run aborted.  I/O database pointers are different')
             sys.exit(-1)
 
@@ -249,7 +249,7 @@ class MyopicSequencer:
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'report')
             # write results by appending.  We have already cleared necessary items
-            self.table_writer.write_results(M=model, append=True)
+            self.table_writer.write_results(model=model, append=True)
             # handle side-case for writing duals
             if self.config.save_duals:
                 self.table_writer.write_dual_variables(results=results, iteration=idx.base_year)
@@ -505,13 +505,13 @@ class MyopicSequencer:
                     (scenario_name, f'{scenario_name}-%'),
                 )
             except sqlite3.OperationalError as e:
-                SE.write(f'Could not clear scenario from table {table}.\n')
+                sys.stderr.write(f'Could not clear scenario from table {table}.\n')
                 raise sqlite3.OperationalError from e
         for table in self.tables_without_scenario_reference:
             try:
                 self.cursor.execute(f'DELETE FROM {table} WHERE 1')
             except sqlite3.OperationalError as e:
-                SE.write(f'Failed to clear table {table}.\n')
+                sys.stderr.write(f'Failed to clear table {table}.\n')
                 raise sqlite3.OperationalError from e
         self.output_con.commit()
 
@@ -537,7 +537,7 @@ class MyopicSequencer:
                     (period, self.config.scenario),
                 )
             except sqlite3.OperationalError as e:
-                SE.write(f'Failed to clear periods from table {table}.\n')
+                sys.stderr.write(f'Failed to clear periods from table {table}.\n')
                 raise sqlite3.OperationalError from e
 
         # special case... new capacity has vintage only...

@@ -99,7 +99,7 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
     if not status:
         raise RuntimeError('Bad solve during Method of Morris')
     table_writer = TableWriter(config)
-    table_writer.write_mm_results(M=mdl, iteration=i)
+    table_writer.write_mm_results(model=mdl, iteration=i)
     con = sqlite3.connect(config.input_database)
     cur = con.cursor()
     scenario_name = config.scenario + f'-{i}'
