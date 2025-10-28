@@ -1,7 +1,7 @@
 import argparse
 
 
-def processInput(args):
+def process_input(args):
     parser = argparse.ArgumentParser(description='Generate Output Plot')
     parser.add_argument(
         '-i',
@@ -118,7 +118,7 @@ def processInput(args):
     return vars(options)
 
 
-def getColorConfig(grey_flag):
+def get_color_config(grey_flag):
     grey_flag = not (grey_flag)
     kwargs = dict(
         tech_color='darkseagreen' if grey_flag else 'black',
@@ -161,7 +161,7 @@ def getColorConfig(grey_flag):
     return kwargs
 
 
-def _getLen(key):
+def _get_len(key):
     def wrapped(obj):
         return len(obj[key])
 
@@ -185,7 +185,7 @@ indent: integer, number of tabs with which to indent all Dot node lines
     assert len(nodes) == sum(1 for a, b in nodes)
 
     # Step 1: for alignment, get max item length in node list
-    maxl = max(map(_getLen(0), nodes)) + 2  # account for two extra quotes
+    maxl = max(map(_get_len(0), nodes)) + 2  # account for two extra quotes
 
     # Step 2: prepare a text format based on max node size that pads all
     #         lines with attributes
@@ -221,7 +221,7 @@ indent: integer, number of tabs with which to indent all Dot edge lines
 
     # Step 1: for alignment, get max length of items on left and right side of
     # graph operator token ('->')
-    maxl, maxr = max(map(_getLen(0), edges)), max(map(_getLen(1), edges))
+    maxl, maxr = max(map(_get_len(0), edges)), max(map(_get_len(1), edges))
     maxl += 2  # account for additional two quotes
     maxr += 2  # account for additional two quotes
 

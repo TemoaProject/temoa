@@ -31,13 +31,13 @@ class DatabaseUtil:
         ValueError: If the database path does not exist or if connecting fails.
     """
 
-    def __init__(self, databasePath, scenario=None):
-        self.database = os.path.abspath(databasePath)
+    def __init__(self, database_path, scenario=None):
+        self.database = os.path.abspath(database_path)
         self.scenario = scenario
         if not os.path.exists(self.database):
             raise ValueError("The database file path doesn't exist")
 
-        if self.isDataBaseFile(self.database):
+        if self.is_database_file(self.database):
             try:
                 self.con = sqlite3.connect(self.database)
                 self.cur = self.con.cursor()
@@ -56,14 +56,14 @@ class DatabaseUtil:
             self.con.close()
 
     @staticmethod
-    def isDataBaseFile(file):
+    def is_database_file(file):
         if file.endswith('.db') or file.endswith('.sqlite') or file.endswith('.sqlite3'):
             return True
         else:
             return False
 
     @deprecated.deprecated('reading from .dat files no longer supported')
-    def readFromDatFile(self, inp_comm, inp_tech):
+    def read_from_dat_file(self, inp_comm, inp_tech):
         if self.cur is not None:
             raise ValueError('Invalid Operation For Database file')
         if inp_comm is None and inp_tech is None:
@@ -106,7 +106,7 @@ class DatabaseUtil:
         )
         return result[['input_comm', 'tech', 'output_comm']]
 
-    def getTimePeridosForFlags(self, flags=None):
+    def get_time_peridos_for_flags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -125,7 +125,7 @@ class DatabaseUtil:
 
         return result
 
-    def getTechnologiesForFlags(self, flags=None):
+    def get_technologies_for_flags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -144,7 +144,7 @@ class DatabaseUtil:
         return result
 
     # TODO: Merge this with next function (getExistingTechnologiesForCommodity)
-    def getCommoditiesAndTech(self, inp_comm, inp_tech, region):
+    def get_commodities_and_tech(self, inp_comm, inp_tech, region):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         if inp_comm is None and inp_tech is None:
@@ -183,7 +183,7 @@ class DatabaseUtil:
             )
         return pd.DataFrame(self.cur.fetchall(), columns=['input_comm', 'tech', 'output_comm'])
 
-    def getExistingTechnologiesForCommodity(self, comm, region, comm_type='input'):
+    def get_existing_technologies_for_commodity(self, comm, region, comm_type='input'):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -198,7 +198,7 @@ class DatabaseUtil:
         result = pd.DataFrame(self.cur.fetchall(), columns=['tech'])
         return result
 
-    def getCommoditiesForFlags(self, flags=None):
+    def get_commodities_for_flags(self, flags=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -217,7 +217,7 @@ class DatabaseUtil:
         return result
 
     # comm_type can be 'input' or 'output'
-    def getCommoditiesByTechnology(self, region, comm_type='input'):
+    def get_commodities_by_technology(self, region, comm_type='input'):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         query = ''
@@ -236,7 +236,7 @@ class DatabaseUtil:
 
         return result
 
-    def getCapacityForTechAndPeriod(self, tech=None, period=None, region=None):
+    def get_capacity_for_tech_and_period(self, tech=None, period=None, region=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         if self.scenario is None or self.scenario == '':
@@ -286,7 +286,7 @@ class DatabaseUtil:
         else:
             return result.groupby(by='tech').sum().reset_index()
 
-    def getOutputFlowForPeriod(self, period, region, comm_type='input', commodity=None):
+    def get_output_flow_for_period(self, period, region, comm_type='input', commodity=None):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         if self.scenario is None or self.scenario == '':
@@ -332,7 +332,7 @@ class DatabaseUtil:
         result = pd.DataFrame(self.cur.fetchall(), columns=columns)
         return result
 
-    def getEmissionsActivityForPeriod(self, period, region):
+    def get_emissions_activity_for_period(self, period, region):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         if self.scenario is None or self.scenario == '':
@@ -353,7 +353,7 @@ class DatabaseUtil:
         result = pd.DataFrame(self.cur.fetchall(), columns=['emis_comm', 'tech', 'emis_activity'])
         return result
 
-    def getCommodityWiseInputAndOutputFlow(self, tech, period, region):
+    def get_commodity_wise_input_and_output_flow(self, tech, period, region):
         if self.cur is None:
             raise ValueError('Invalid Operation For dat file')
         if self.scenario is None or self.scenario == '':

@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 
 
 class OutputPlotGenerator:
-    def __init__(self, path_to_db, region, scenario, super_categories=False):
+    def __init__(self, path_to_db, region, scenario, super_categories=False) -> None:
         self.db_path = os.path.abspath(path_to_db)
         if region == 'global':
             self.region = '%'
@@ -31,7 +31,7 @@ class OutputPlotGenerator:
         )
         # self.extractFromDatabase()
 
-    def extractFromDatabase(self, mode):
+    def extract_from_database(self, mode) -> None:
         """
         Based on the type of the plot being generated, extract data from the corresponding table from database
         """
@@ -73,11 +73,11 @@ class OutputPlotGenerator:
         self.tech_categories = [[str(word) for word in t] for t in self.tech_categories]
         con.close()
 
-    def getSectors(self, type):
+    def get_sectors(self, type):
         """
         Based on the type of the plot being generated, returns a list of sectors available in the database
         """
-        self.extractFromDatabase(type)
+        self.extract_from_database(type)
         sectors = set()
 
         data = None
@@ -96,14 +96,14 @@ class OutputPlotGenerator:
         res.insert(0, 'all')
         return res
 
-    def processData(self, inputData, sector, super_categories=False):
+    def process_data(self, input_data, sector, super_categories=False):
         """
         Processes data for a particular sector to make it ready for plotting purposes
         """
         periods = set()
         techs = set()
 
-        for row in inputData:
+        for row in input_data:
             row[0] = str(row[0])
             row[1] = int(row[1])
             row[2] = str(row[2])
@@ -111,10 +111,10 @@ class OutputPlotGenerator:
 
         tech_dict = dict(self.tech_categories)
         if super_categories:
-            for row in inputData:
+            for row in input_data:
                 row[2] = tech_dict.get(row[2], row[2])
 
-        for row in inputData:
+        for row in input_data:
             if row[0] == sector or sector == 'all':
                 periods.add(row[1])  # Reminder: indexing starts at 0
                 techs.add(row[2])
@@ -128,7 +128,7 @@ class OutputPlotGenerator:
             if tech == 'None' or tech == '':
                 continue
             output_values[tech] = [0] * len(periods)  # this just creates a blank table
-        for row in inputData:
+        for row in input_data:
             if row[2] == 'None' or row[2] == '':
                 continue
             if row[0] == sector or sector == 'all':
@@ -137,7 +137,7 @@ class OutputPlotGenerator:
         output_values['periods'] = periods
         return output_values
 
-    def handleOutputPath(self, plot_type, sector, super_categories, output_dir):
+    def handle_output_path(self, plot_type, sector, super_categories, output_dir):
         outfile = plot_type + '_' + sector  # +'_'+str(int(time.time()*1000))+'.png'
         if super_categories:
             outfile += '_merged'
@@ -152,70 +152,70 @@ class OutputPlotGenerator:
         self.output_file_name = self.output_file_name.replace(' ', '')
         return outfile2
 
-    def generatePlotForCapacity(self, sector, super_categories=False, output_dir='.'):
+    def generate_plot_for_capacity(self, sector, super_categories=False, output_dir='.'):
         """
         Generates Plot for Capacity of a given sector
         """
 
-        outfile2 = self.handleOutputPath('capacity', sector, super_categories, output_dir)
+        outfile2 = self.handle_output_path('capacity', sector, super_categories, output_dir)
         if os.path.exists(self.output_file_name):
             print('not generating new capacity plot')
             return outfile2
 
-        sectors = self.getSectors(1)
+        sectors = self.get_sectors(1)
 
         if sector not in sectors:
             return ''
 
-        output_values = self.processData(self.capacity_output, sector, super_categories)
+        output_values = self.process_data(self.capacity_output, sector, super_categories)
 
         if self.region == '%':
             title = 'Capacity Plot for ' + sector + ' across all regions'
         else:
             title = 'Capacity Plot for ' + sector + ' sector in region ' + self.region
 
-        self.makeStackedBarPlot(output_values, 'Years', 'Capacity ', 'periods', title)
+        self.make_stacked_bar_plot(output_values, 'Years', 'Capacity ', 'periods', title)
 
         return outfile2
 
-    def generatePlotForOutputFlow(self, sector, super_categories=False, output_dir='.'):
+    def generate_plot_for_output_flow(self, sector, super_categories=False, output_dir='.'):
         """
         Generates Plot for Output Flow of a given sector
         """
-        outfile2 = self.handleOutputPath('flow', sector, super_categories, output_dir)
+        outfile2 = self.handle_output_path('flow', sector, super_categories, output_dir)
         if os.path.exists(self.output_file_name):
             print('not generating new flow plot')
             return outfile2
 
-        sectors = self.getSectors(2)
+        sectors = self.get_sectors(2)
         if sector not in sectors:
             return ''
 
-        output_values = self.processData(self.output_vflow, sector, super_categories)
+        output_values = self.process_data(self.output_vflow, sector, super_categories)
 
         if self.region == '%':
             title = 'Output Flow Plot for ' + sector + ' across all regions'
         else:
             title = 'Output Flow Plot for ' + sector + ' sector in region ' + self.region
 
-        self.makeStackedBarPlot(output_values, 'Years', 'Activity ', 'periods', title)
+        self.make_stacked_bar_plot(output_values, 'Years', 'Activity ', 'periods', title)
 
         return outfile2
 
-    def generatePlotForEmissions(self, sector, super_categories=False, output_dir='.'):
+    def generate_plot_for_emissions(self, sector, super_categories=False, output_dir='.'):
         """
         Generates Plot for Emissions of a given sector
         """
-        outfile2 = self.handleOutputPath('emissions', sector, super_categories, output_dir)
+        outfile2 = self.handle_output_path('emissions', sector, super_categories, output_dir)
         if os.path.exists(self.output_file_name):
             print('not generating new emissions plot')
             return outfile2
 
-        sectors = self.getSectors(3)
+        sectors = self.get_sectors(3)
         if sector not in sectors:
             return ''
 
-        output_values = self.processData(self.output_emissions, sector, super_categories)
+        output_values = self.process_data(self.output_emissions, sector, super_categories)
 
         if self.region == '%':
             title = 'Emissions Plot for ' + sector + ' across all regions'
@@ -239,10 +239,10 @@ class OutputPlotGenerator:
     def color_distance(self, c1, c2):
         return sum([abs(x[0] - x[1]) for x in zip(c1, c2, strict=False)])
 
-    def get_cmap(self, N):
+    def get_cmap(self, size):
         """Returns a function that maps each index in 0, 1, ... N-1 to a distinct
         RGB color."""
-        color_norm = colors.Normalize(vmin=0, vmax=N - 1)
+        color_norm = colors.Normalize(vmin=0, vmax=size - 1)
         # More colormaps: https://matplotlib.org/examples/color/colormaps_reference.html
         scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='viridis')
 
@@ -264,30 +264,30 @@ class OutputPlotGenerator:
                 best_color = color
         return best_color
 
-    def makeStackedBarPlot(self, data, xlabel, ylabel, xvar, title):
+    def make_stacked_bar_plot(self, data, xlabel, ylabel, xvar, title):
         random.seed(10)
 
         handles = list()
         xaxis = data[xvar]
         data.pop('c', 0)
         data.pop(xvar, 0)
-        stackedBars = data.keys()
-        colorMapForBars = dict()
+        stacked_bars = data.keys()
+        color_map_for_bars = dict()
         plt.figure()
 
-        cmap = self.get_cmap(len(stackedBars))
-        for i in range(0, len(stackedBars)):
+        cmap = self.get_cmap(len(stacked_bars))
+        for i in range(0, len(stacked_bars)):
             # colors.append(self.generate_new_color(colors,pastel_factor = 0.9))
             # colorMapForBars[data.keys()[i]]=colors[i]
-            colorMapForBars[list(data.keys())[i]] = cmap(i)
+            color_map_for_bars[list(data.keys())[i]] = cmap(i)
 
         width = min([xaxis[i + 1] - xaxis[i] for i in range(0, len(xaxis) - 1)]) / 2.0
         b = [0] * len(xaxis)
 
         # plt.figure()
 
-        for bar in stackedBars:
-            h = plt.bar(xaxis, data[bar], width, bottom=b, color=colorMapForBars[bar])
+        for bar in stacked_bars:
+            h = plt.bar(xaxis, data[bar], width, bottom=b, color=color_map_for_bars[bar])
             handles.append(h)
             b = [b[j] + data[bar][j] for j in range(0, len(b))]
 
@@ -297,7 +297,7 @@ class OutputPlotGenerator:
         plt.xticks([i for i in xaxis], [str(i) for i in xaxis])
         plt.title(title)
         lgd = plt.legend(
-            [h[0] for h in handles], stackedBars, bbox_to_anchor=(1.2, 1), fontsize=7.5
+            [h[0] for h in handles], stacked_bars, bbox_to_anchor=(1.2, 1), fontsize=7.5
         )
         # plt.show()
         plt.savefig(self.output_file_name, bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -332,7 +332,7 @@ class OutputPlotGenerator:
 
 
 # Function used for command line purposes. Parses arguments and then calls relevent functions.
-def GeneratePlot(args):
+def generate_plot(args):
     parser = argparse.ArgumentParser(description='Generate Output Plot')
     parser.add_argument(
         '-i',
@@ -398,15 +398,15 @@ def GeneratePlot(args):
     )
     error = ''
     if options.type == 'capacity':
-        error = result.generatePlotForCapacity(
+        error = result.generate_plot_for_capacity(
             options.sector, options.super_categories, options.output_dir
         )
     elif options.type == 'flow':
-        error = result.generatePlotForOutputFlow(
+        error = result.generate_plot_for_output_flow(
             options.sector, options.super_categories, options.output_dir
         )
     elif options.type == 'emissions':
-        error = result.generatePlotForEmissions(
+        error = result.generate_plot_for_emissions(
             options.sector, options.super_categories, options.output_dir
         )
 
@@ -420,4 +420,4 @@ def GeneratePlot(args):
 
 
 if __name__ == '__main__':
-    GeneratePlot(sys.argv[1:])
+    generate_plot(sys.argv[1:])
