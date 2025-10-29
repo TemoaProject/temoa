@@ -1,32 +1,3 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  3/11/24
-
-"""
-
-from itertools import chain
 from unittest.mock import MagicMock
 
 import pytest
@@ -34,145 +5,111 @@ import pytest
 from temoa.model_checking import network_model_data
 from temoa.model_checking.commodity_network import CommodityNetwork
 
-# a couple of test cases with diagrams in the flow...
-params = [
-    # let's model this basic faulty network as a trial:
-    #     - t4(2) -> p3
-    #   /
-    # s1 -> t1 -> p1 -> t2 -> d1
-    #                        /
-    #             p2 -> t3  -
-    #
-    #             p2 -> t5 -> d2
-    # the above should produce:
-    # 2 valid techs, t1, t2
-    # 2 supply-side orphans (both instances of t4 of differing vintage)
-    # 1 demand-side orphan: t3
+# ==============================================================================
+# Test Scenarios
+# ==============================================================================
+# Each scenario defines the mock database data and the expected outcomes.
+# The `db_data` dictionary keys are specific, unique fragments of SQL queries.
+# This makes the mock robust against changes in the order of execution,
+# ensuring backwards compatibility with older versions of the code.
+# ==============================================================================
+test_scenarios = [
+    # Scenario 1: A basic network with several orphan technologies.
     {
         'name': 'basic',
-        'data': [
-            [],  # retirement techs
-            [],  # survival curve techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [(t,) for t in ['s1', 'p1', 'p2', 'p3', 'd1', 'd2']],  # all commodities
-            [],  # waste commodities
-            [
-                (t,)
-                for t in [
-                    's1',
-                ]
-            ],  # sources
-            [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],  # demands
-            [
+        'db_data': {
+            'Technology WHERE retire==1': [],
+            'FROM SurvivalCurve': [],
+            'FROM TimePeriod': [(2020,), (2025,)],
+            # Unique keys for each Commodity query
+            "Commodity WHERE flag LIKE '%p%'": [
+                ('s1',),
+                ('p1',),
+                ('p2',),
+                ('p3',),
+                ('d1',),
+                ('d2',),
+            ],
+            "Commodity WHERE flag LIKE '%w%'": [],
+            "Commodity WHERE flag = 's'": [('s1',)],
+            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            # Unique keys for Efficiency and optional tables
+            'FROM main.Efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
                 ('R1', 's1', 't4', 1990, 'p3', 100),
                 ('R1', 's1', 't1', 2000, 'p1', 100),
                 ('R1', 'p1', 't2', 2000, 'd1', 100),
                 ('R1', 'p2', 't3', 2000, 'd1', 100),
                 ('R1', 'p2', 't5', 2000, 'd2', 100),
-            ],  # techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [],  # no linked techs
-            [],  # no negative cost techs
-        ],
-        'res': {
-            'demands': 2,
-            'techs': 6,
+            ],
+            'FROM EndOfLifeOutput': [],
+            'FROM ConstructionInput': [],
+            'FROM main.LinkedTech': [],
+            'FROM CostVariable': [],
+        },
+        'expected': {
+            'demands_count': 2,
+            'techs_count': 6,
             'valid_techs': 2,
             'demand_orphans': 2,
             'other_orphans': 2,
             'unsupported_demands': {'d2'},
         },
     },
-    #  p1 -> driven -> d2
-    #        |
-    #     - t4 -> p3
-    #   /
-    # s1 -> t1 -> d1
-    #
-    # bad link tech set.  t4 should be other orphan and the linked "driven" should be a demand side orphan
+    # Scenario 2: A network with a misconfigured linked technology.
     {
         'name': 'bad linked tech',
-        'data': [
-            [],  # retirement techs
-            [],  # survival curve techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [(t,) for t in ['s1', 'p3', 'd1', 'd2']],  # all commodities
-            [],  # waste commodities
-            [
-                (t,)
-                for t in [
-                    's1',
-                ]
-            ],  # sources
-            [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],  # demands
-            [
+        'db_data': {
+            'Technology WHERE retire==1': [],
+            'FROM SurvivalCurve': [],
+            'FROM TimePeriod': [(2020,), (2025,)],
+            "Commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
+            "Commodity WHERE flag LIKE '%w%'": [],
+            "Commodity WHERE flag = 's'": [('s1',)],
+            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            'FROM main.Efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
                 ('R1', 'p1', 'driven', 1990, 'd2', 100),
                 ('R1', 's1', 't1', 2000, 'd1', 100),
-            ],  # techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [('R1', 't4', 'nox', 'driven')],  # t4 drives 'driven' with 'nox' emission
-            [],  # no negative cost techs
-        ],
-        'res': {
-            'demands': 2,
-            'techs': 3,
+            ],
+            'FROM EndOfLifeOutput': [],
+            'FROM ConstructionInput': [],
+            'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
+            'FROM CostVariable': [],
+        },
+        'expected': {
+            'demands_count': 2,
+            'techs_count': 3,
             'valid_techs': 1,
             'demand_orphans': 0,
-            'other_orphans': 2,  # driven and t4 will both be culled as "other orphans" because t4 is a supply-orphan
+            'other_orphans': 2,
             'unsupported_demands': {'d2'},
         },
     },
+    # Scenario 3: A network with a correctly configured linked technology.
     {
-        # iteration with a "good linked tech"
-        # system should give a synthetic link from t4's input to driven
-        #  s2 -> driven -> d2
-        #        |
-        #     - t4 -> d2
-        #   /
-        # s1 -> t1 -> d1
-        #
-        #
         'name': 'good linked tech',
-        'data': [
-            [],  # retirement techs
-            [],  # survival curve techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [(t,) for t in ['s1', 'd1', 'd2', 's2']],  # all commodities
-            [],  # waste commodities
-            [(t,) for t in ['s1', 's2']],  # sources
-            [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],  # demands
-            [
+        'db_data': {
+            'Technology WHERE retire==1': [],
+            'FROM SurvivalCurve': [],
+            'FROM TimePeriod': [(2020,), (2025,)],
+            "Commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
+            "Commodity WHERE flag LIKE '%w%'": [],
+            "Commodity WHERE flag = 's'": [('s1',), ('s2',)],
+            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            'FROM main.Efficiency': [
                 ('R1', 's1', 't4', 2000, 'd2', 100),
                 ('R1', 's2', 'driven', 1990, 'd2', 100),
                 ('R1', 's1', 't1', 2000, 'd1', 100),
-            ],  # techs
-            [
-                (2020,),
-                (2025,),
-            ],  # periods
-            [('R1', 't4', 'nox', 'driven')],  # t4 drives 'driven' with 'nox' emission
-            [],  # no negative cost techs
-        ],
-        'res': {
-            'demands': 2,
-            'techs': 3,
+            ],
+            'FROM EndOfLifeOutput': [],
+            'FROM ConstructionInput': [],
+            'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
+            'FROM CostVariable': [],
+        },
+        'expected': {
+            'demands_count': 2,
+            'techs_count': 3,
             'valid_techs': 3,
             'demand_orphans': 0,
             'other_orphans': 0,
@@ -182,63 +119,87 @@ params = [
 ]
 
 
-# we need a small fixture to simulate the database here
-@pytest.fixture()
+# ==============================================================================
+# Fixtures
+# ==============================================================================
+@pytest.fixture
 def mock_db_connection(request):
-    mock_con = MagicMock()
-    mock_cursor = MagicMock()
+    """
+    A robust mock of a database connection.
+
+    This fixture uses a "dispatcher" function as a side_effect. The dispatcher
+    inspects the SQL query and returns the corresponding data from the
+    test scenario's `db_data` dictionary. This makes the test independent
+    of the order of SQL calls in the code being tested.
+    """
+    db_data = request.param['db_data']
+    mock_con = MagicMock(name='mock_connection')
+    mock_cursor = MagicMock(name='mock_cursor')
     mock_con.cursor.return_value = mock_cursor
-    mock_execute = MagicMock()
-    mock_cursor.execute.return_value = mock_execute
-    mock_execute.fetchall.side_effect = request.param['data']
-    return mock_con, request.param['res']
+
+    def dispatcher(query: str, *_: object) -> MagicMock:
+        for key, data in db_data.items():
+            if key in query:
+                execute_mock = MagicMock(name=f'execute_mock_for_{key}')
+                execute_mock.fetchall.return_value = data
+                execute_mock.fetchone.return_value = data[0] if data else None
+                return execute_mock
+        raise ValueError(f'Mock database received unexpected query: {query}')
+
+    mock_cursor.execute.side_effect = dispatcher
+    return mock_con, request.param['expected']
 
 
+# ==============================================================================
+# Tests
+# ==============================================================================
 @pytest.mark.parametrize(
-    'mock_db_connection', params, indirect=True, ids=[d['name'] for d in params]
+    'mock_db_connection', test_scenarios, indirect=True, ids=[d['name'] for d in test_scenarios]
 )
-def test_build_from_db(mock_db_connection):
-    """test a couple values in the load"""
+def test_network_build_and_analysis(mock_db_connection) -> None:
+    """Tests both data model construction and network analysis in one go."""
     conn, expected = mock_db_connection
-    network_data = network_model_data._build_from_db(conn)
-    assert len(tuple(chain(*network_data.demand_commodities.values()))) == expected['demands'], (
-        'demand count failed'
-    )
-    assert len(network_data.available_techs['R1', 2020]) == expected['techs'], (
-        '6 techs are available'
-    )
 
-
-@pytest.mark.parametrize(
-    'mock_db_connection', params, indirect=True, ids=[d['name'] for d in params]
-)
-def test_source_trace(mock_db_connection):
-    """analyze the network and check results"""
-    conn, expected = mock_db_connection
+    # --- 1. Build the data object ---
     network_data = network_model_data._build_from_db(conn)
+
+    # --- 2. Test initial data loading ---
+    assert (
+        sum(len(s) for s in network_data.demand_commodities.values()) == expected['demands_count']
+    )
+    assert len(network_data.available_techs[('R1', 2020)]) == expected['techs_count']
+
+    # --- 3. Perform network analysis ---
     cn = CommodityNetwork(region='R1', period=2020, model_data=network_data)
     cn.analyze_network()
 
-    # test the outputs
-    assert len(cn.get_valid_tech()) == expected['valid_techs'], 'should have this many valid techs'
-    assert len(cn.get_demand_side_orphans()) == expected['demand_orphans'], 'demand orphans'
-    assert len(cn.get_other_orphans()) == expected['other_orphans'], 'other orphans'
-    assert cn.unsupported_demands() == expected['unsupported_demands'], 'unsupported demands'
+    # --- 4. Test analysis results ---
+    assert len(cn.get_valid_tech()) == expected['valid_techs'], 'Incorrect number of valid techs'
+    assert len(cn.get_demand_side_orphans()) == expected['demand_orphans'], (
+        'Incorrect number of demand orphans'
+    )
+    assert len(cn.get_other_orphans()) == expected['other_orphans'], (
+        'Incorrect number of other orphans'
+    )
+    assert cn.unsupported_demands() == expected['unsupported_demands'], (
+        'Incorrect set of unsupported demands'
+    )
 
 
-@pytest.mark.parametrize(
-    'mock_db_connection',
-    [
-        params[0],
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize('mock_db_connection', [test_scenarios[0]], indirect=True)
 def test_clone(mock_db_connection):
-    """quick test to ensure cloning is working OK"""
-    conn, expected = mock_db_connection
+    """Verifies that the clone() method creates a deep enough copy."""
+    conn, _ = mock_db_connection
     network_data = network_model_data._build_from_db(conn)
+
     clone = network_data.clone()
-    assert clone is not network_data, 'should be different objects'
-    assert network_data.available_techs == clone.available_techs, 'should be a direct copy'
-    clone.available_techs.pop(('R1', 2020))  # remove a known region-period
-    assert network_data.available_techs != clone.available_techs, 'should be different now'
+
+    assert clone is not network_data, 'Clone should be a new object'
+    assert network_data.available_techs == clone.available_techs, (
+        'Data should be identical after cloning'
+    )
+
+    clone.available_techs.pop(('R1', 2020))
+    assert network_data.available_techs != clone.available_techs, (
+        'Modifying clone should not affect original'
+    )

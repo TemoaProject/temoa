@@ -31,7 +31,10 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import deprecated
+from pyomo.core import Set
 from pyomo.environ import NonNegativeReals
+
+from temoa.types.core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -106,7 +109,7 @@ def validate_linked_tech(M: 'TemoaModel') -> bool:
     return True
 
 
-def no_slash_or_pipe(M: 'TemoaModel', element) -> bool:
+def no_slash_or_pipe(M: 'TemoaModel', element: object) -> bool:
     """
     No slash character in element
     :param M:
@@ -122,7 +125,7 @@ def no_slash_or_pipe(M: 'TemoaModel', element) -> bool:
     return True
 
 
-def region_check(M: 'TemoaModel', region) -> bool:
+def region_check(M: 'TemoaModel', region: Region) -> bool:
     """
     Validate the region name (letters + numbers only + underscore)
     """
@@ -139,7 +142,7 @@ def region_check(M: 'TemoaModel', region) -> bool:
     return False
 
 
-def linked_region_check(M: 'TemoaModel', region_pair) -> bool:
+def linked_region_check(M: 'TemoaModel', region_pair: str) -> bool:
     """
     Validate a pair of regions (r-r format where r ∈ M.R )
     """
@@ -154,7 +157,7 @@ def linked_region_check(M: 'TemoaModel', region_pair) -> bool:
     return False
 
 
-def region_group_check(M: 'TemoaModel', rg) -> bool:
+def region_group_check(M: 'TemoaModel', rg: str) -> bool:
     """
     Validate the region-group name (region or regions separated by '+')
     """
@@ -175,7 +178,7 @@ def region_group_check(M: 'TemoaModel', rg) -> bool:
 
 
 @deprecated.deprecated('needs to be updated if re-instated to accommodate group restructuring')
-def tech_groups_set_check(M: 'TemoaModel', rg, g, t) -> bool:
+def tech_groups_set_check(M: 'TemoaModel', rg: str, g: str, t: str) -> bool:
     """
     Validate this entry to the tech_groups set
     :param M: the model
@@ -193,7 +196,7 @@ def tech_groups_set_check(M: 'TemoaModel', rg, g, t) -> bool:
 #        the buildAction approach
 
 
-def activity_param_check(M: 'TemoaModel', val, rg, p, t) -> bool:
+def activity_param_check(M: 'TemoaModel', val: float, rg: str, p: Period, t: Technology) -> bool:
     """
     Validate the index and the value for an entry into an activity param indexed with region-groups
     :param M: the model
@@ -213,7 +216,9 @@ def activity_param_check(M: 'TemoaModel', val, rg, p, t) -> bool:
     )
 
 
-def capacity_param_check(M: 'TemoaModel', val, rg, p, t, carrier) -> bool:
+def capacity_param_check(
+    M: 'TemoaModel', val: float, rg: str, p: Period, t: Technology, carrier: Commodity
+) -> bool:
     """
     validate entries to capacity params
     :param M: the model
@@ -235,7 +240,7 @@ def capacity_param_check(M: 'TemoaModel', val, rg, p, t, carrier) -> bool:
     )
 
 
-def activity_group_param_check(M: 'TemoaModel', val, rg, p, g) -> bool:
+def activity_group_param_check(M: 'TemoaModel', val: float, rg: str, p: Period, g: str) -> bool:
     """
     validate entries into capacity groups
     :param M: the model
@@ -255,7 +260,9 @@ def activity_group_param_check(M: 'TemoaModel', val, rg, p, g) -> bool:
     )
 
 
-def emission_limit_param_check(M: 'TemoaModel', val, rg, p, e) -> bool:
+def emission_limit_param_check(
+    M: 'TemoaModel', val: float, rg: str, p: Period, e: Commodity
+) -> bool:
     """
     validate entries into EmissionLimit param
     :param M: the model
@@ -268,7 +275,16 @@ def emission_limit_param_check(M: 'TemoaModel', val, rg, p, e) -> bool:
     return all((region_group_check(M, rg), p in M.time_optimize, e in M.commodity_emissions))
 
 
-def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, p, s, d, t, v) -> bool:
+def validate_CapacityFactorProcess(
+    M: 'TemoaModel',
+    val: float,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> bool:
     """
     validate the rsdtv index
     :param val: the parameter value
@@ -296,7 +312,9 @@ def validate_CapacityFactorProcess(M: 'TemoaModel', val, r, p, s, d, t, v) -> bo
     )
 
 
-def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
+def validate_Efficiency(
+    M: 'TemoaModel', val: float, r: Region, si: Commodity, t: Technology, v: Vintage, so: Commodity
+) -> bool:
     """Handy for troubleshooting problematic entries"""
 
     if all(
@@ -320,7 +338,7 @@ def validate_Efficiency(M: 'TemoaModel', val, r, si, t, v, so) -> bool:
     return False
 
 
-def validate_ReserveMargin(M: 'TemoaModel'):
+def validate_ReserveMargin(M: 'TemoaModel') -> None:
     for r in M.PlanningReserveMargin.sparse_iterkeys():
         if all((r, p) not in M.processReservePeriods for p in M.time_optimize):
             logger.warning(
@@ -329,7 +347,7 @@ def validate_ReserveMargin(M: 'TemoaModel'):
             )
 
 
-def validate_tech_sets(M: 'TemoaModel'):
+def validate_tech_sets(M: 'TemoaModel') -> None:
     """
     Check tech sets for any forbidden intersections
     """
@@ -348,7 +366,7 @@ def validate_tech_sets(M: 'TemoaModel'):
         raise ValueError('Technology sets failed to validate. Check log file for details.')
 
 
-def check_no_intersection(set_one, set_two):
+def check_no_intersection(set_one: Set, set_two: Set) -> bool:
     violations = set_one & set_two
     if violations:
         msg = f'The following are in both {set_one} and {set_two}, which is not permitted:\n{list(violations)}'
@@ -358,7 +376,9 @@ def check_no_intersection(set_one, set_two):
 
 
 # Seems unused
-def validate_tech_split(M: 'TemoaModel', val, r, p, c, t):
+def validate_tech_split(
+    M: 'TemoaModel', val: float, r: Region, p: Period, c: Commodity, t: Technology
+) -> bool:
     if all(
         (
             r in M.regions,
@@ -375,5 +395,5 @@ def validate_tech_split(M: 'TemoaModel', val, r, p, c, t):
     return False
 
 
-def validate_0to1(M: 'TemoaModel', val, *args):
+def validate_0to1(M: 'TemoaModel', val: float, *args: object) -> bool:
     return 0.0 <= val <= 1.0

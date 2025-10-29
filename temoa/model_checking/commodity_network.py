@@ -1,173 +1,146 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
+This module provides the CommodityNetwork class, a tool for analyzing and
+validating the structure of an energy system model for a specific region
+and time period within the Temoa framework.
 
-Copyright (C) 2015,  NC State University
+The primary purpose is to perform a "source trace" analysis to ensure that all
+technologies supplying a demand are fully connected back to a designated source
+commodity (e.g., crude oil, natural gas, solar radiation). This process
+identifies two types of modeling errors:
+1.  Demand-Side Orphans: Technologies that are part of a chain serving a demand
+    but are not connected to a valid source.
+2.  Other Orphans: Technologies that are not connected to any demand chain at all.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  3/11/24
-
+The analysis is performed using a depth first search on a directed graph where
+commodities are nodes and technologies are edges.
 """
 
 from collections import defaultdict
-from itertools import chain
 from logging import getLogger
 
-from temoa.model_checking.network_model_data import NetworkModelData, Tech
+from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
+from temoa.types.core_types import Commodity, Period, Region, Technology
 
 logger = getLogger(__name__)
+
+# Represents a technology link: (input_commodity, tech_name)
+type TechLink = tuple[Commodity, Technology]
+# Represents a full connection: (input_commodity, tech_name, output_commodity)
+type TechConnection = tuple[Commodity, Technology, Commodity]
+# Adjacency dict mapping: {output_comm: set of (input_comm, tech_name)}
+type ForwardConnections = dict[Commodity, set[TechLink]]
+# Adjacency dict mapping: {input_comm: set of (output_comm, tech_name)}
+type ReverseConnections = dict[Commodity, set[TechLink]]
 
 
 class CommodityNetwork:
     """
-    class to hold the network for a particular region/period.  Note that the commodity network here is blind
-    to vintage.  Determining whether a connection is valid/invalid is independent of vintage or how many
-    vintages are represented.  It is the responsibility of the commodity network manager to use these
-    determinations correctly across available vintages
+    Holds and analyzes the commodity-technology network for a specific region and period.
+
+    This class is blind to vintage; it determines network validity based on connections
+    independent of vintage. It is the responsibility of the manager to apply these
+    findings across available vintages.
     """
 
-    def __init__(self, region, period: int, model_data: NetworkModelData):
+    def __init__(self, region: Region, period: Period, model_data: NetworkModelData) -> None:
         """
-        make the network
-        :param region: region
-        :param period: period
-        :param model_data: a NetworkModelData object
+        Initializes and builds the network for a given region and period.
+
+        :param region: The region to analyze.
+        :param period: The period to analyze.
+        :param model_data: A NetworkModelData object containing all model connections.
         """
-        # check the marking of source commodities first, as the db may not be configured for source check...
-        self.model_data = model_data
-        if not self.model_data.source_commodities:
-            logger.error(
-                'No source commodities discovered when initializing Commodity Network.  '
-                'Have source commodities been identified in commodities '
-                "table with 's'?"
-            )
-            raise ValueError(
-                'Attempted to do source trace with no source commodities marked.  '
-                'Have source commodities been identified in commodities '
-                "table with 's'?"
-            )
-        self.demand_orphans: set[tuple] = set()
-        self.other_orphans: set[tuple] = set()
-        self.good_connections: set[tuple] = set()
         self.region = region
         self.period = period
-        # the cataloguing of inputs/outputs by tech is needed for implicit links like via emissions in LinkedTech
-        self.tech_inputs: dict[str, set[str]] = defaultdict(set)
-        self.tech_outputs: dict[str, set[str]] = defaultdict(set)
-        self.connections: dict[str, set[tuple[str, str]]] = defaultdict(set)
-        """All connections in the model {oc: {(ic, tech), ...}}"""
+        self.model_data = model_data
 
-        self.viable_linked_tech: set[tuple[str, str]] = set()  # name-name pairings
+        if not self.model_data.source_commodities:
+            msg = (
+                "No source commodities found. Have they been marked with 's' "
+                'in the commodities table?'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
-        self.orig_connex: set[tuple] = set()
-
-        # devnote: changing this from error to info as a power sector model might have
-        # transmission-only nodes (exchange techs only, no demands)
         if not self.model_data.demand_commodities[self.region, self.period]:
             msg = (
-                f'No demand commodities discovered in region {self.region} period {self.period}. Ignore this '
-                'if this was intentional.'
+                f'No demand commodities discovered in region {self.region} '
+                f'period {self.period}. Ignore this if this was intentional.'
             )
             logger.info(msg)
-        # dev note:  This code was originally designed/tested to run on tuples of (ic, tech_name, oc)
-        #            since the implementation of Tech named tuple, we could switch over to that soon,
-        #            but it will be work to re-work the tests.  The networks are smaller this way
-        #            because of reduced redundant links for multi-vintages, but we will have to
-        #            filter the Tech tuples for output generation against the names...
 
-        # scan techs for this r, p
-        for tech in self.model_data.available_techs[self.region, self.period]:
-            self.connections[tech.oc].add((tech.ic, tech.name))
-            self.tech_inputs[tech.name].add(tech.ic)
-            self.tech_outputs[tech.name].add(tech.oc)
+        # Final results of the analysis
+        self.good_connections: set[TechConnection] = set()
+        self.demand_orphans: set[TechConnection] = set()
+        self.other_orphans: set[TechConnection] = set()
 
-        # make synthetic connection between linked techs
+        # Internal state for the analysis
+        self.tech_inputs: dict[Technology, set[Commodity]] = defaultdict(set)
+        self.tech_outputs: dict[Technology, set[Commodity]] = defaultdict(set)
+        self.connections: ForwardConnections = defaultdict(set)
+        self.viable_linked_tech: set[TechLink] = set()
+
+        self._load_connections()
         self.prescreen_linked_tech()
 
-    def remove_tech_by_name(self, tech_name: str) -> None:
-        """
-        Remove a tech by name from the network
-        :param tech_name: The string name of the tech
-        :return:
-        """
-        # remove from data sources
-        self.tech_inputs.pop(tech_name, None)
-        self.tech_outputs.pop(tech_name, None)
-
-        removed = set()
-        for oc, s in self.connections.items():
-            removals = set()
-            for ic, name in s:
-                if name == tech_name:  # we found a reference
-                    removals.add((ic, name))
-                    removed.add((ic, tech_name, oc))
-            s -= removals  # take out all the removals from the connection
-        # add every removed tech to the orphan list, so it can be processed by the manager
-        for r in removed:
-            self.other_orphans.add(r)
-            logger.debug('removed %s with a by-name removal', r)
-
-    def reload(self, connections: set[Tech]):
-        """
-        reload the network model with a new set of connections and clear existing ones
-        :param connections: a set of connections (Techs) to evaluate
-        :return: None
-        """
+    def _load_connections(self) -> None:
+        """Populate internal connection structures from model_data."""
         self.tech_inputs.clear()
         self.tech_outputs.clear()
         self.connections.clear()
-        self.orig_connex.clear()
-        # reload 'em
-        for tech in connections:
+
+        techs = self.model_data.available_techs[self.region, self.period]
+        for tech in techs:
             self.connections[tech.oc].add((tech.ic, tech.name))
             self.tech_inputs[tech.name].add(tech.ic)
             self.tech_outputs[tech.name].add(tech.oc)
 
-    def get_valid_tech(self) -> set[Tech]:
-        return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.good_connections
-        }
+    def reload(self, connections: set[TechTuple]) -> None:
+        """
+        Reload the network model with a new set of connections.
 
-    def get_demand_side_orphans(self) -> set[Tech]:
-        return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.demand_orphans
-        }
+        :param connections: A set of connections (Tech objects) to evaluate.
+        """
+        # Overwrite the model data's available techs for this region/period
+        self.model_data.available_techs[self.region, self.period] = connections
+        # Clear all existing state and reload
+        self.good_connections.clear()
+        self.demand_orphans.clear()
+        self.other_orphans.clear()
+        self.viable_linked_tech.clear()
+        self._load_connections()
 
-    def get_other_orphans(self) -> set[Tech]:
-        return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.other_orphans
-        }
+    def remove_tech_by_name(self, tech_name: Technology) -> None:
+        """Remove all connections associated with a given technology name."""
+        self.tech_inputs.pop(tech_name, None)
+        self.tech_outputs.pop(tech_name, None)
 
-    def prescreen_linked_tech(self):
-        """Screen the linked tech to ensure both members of the available link are available.  If not, remove strays"""
+        removed_connections: set[TechConnection] = set()
+        # Use list() to avoid issues with modifying the dict during iteration
+        for oc, links in list(self.connections.items()):
+            removals = {link for link in links if link[1] == tech_name}
+            if removals:
+                links -= removals
+                for ic, name in removals:
+                    removed_connections.add((ic, name, oc))
+            if not links:
+                self.connections.pop(oc, None)
 
-        for r, driver, emission, driven in self.model_data.available_linked_techs:
+        self.other_orphans.update(removed_connections)
+        for r in removed_connections:
+            logger.debug('Removed %s via by-name removal', r)
+
+    def prescreen_linked_tech(self) -> None:
+        """
+        Screen linked techs to ensure both members of a pair are available.
+        If not, the stray member is removed from the network analysis.
+        """
+        for r, driver, _, driven in self.model_data.available_linked_techs:
             if r == self.region:
-                # check that the driver & driven techs both exist...  we only check by NAME for LinkedTech
-                if driver in self.tech_outputs and driven in self.tech_outputs:  # we're gtg.
+                driver_exists = driver in self.tech_outputs
+                driven_exists = driven in self.tech_outputs
+
+                if driver_exists and driven_exists:
                     logger.debug(
                         'Both %s and %s are available in region %s, period %s to establish link',
                         driver,
@@ -176,230 +149,182 @@ class CommodityNetwork:
                         self.period,
                     )
                     self.viable_linked_tech.add((driver, driven))
-
-                # else, document errors in linkage...
-                elif driver not in self.tech_outputs and driven not in self.tech_outputs:
-                    # neither tech is present, not a problem
-                    logger.debug(
-                        'Note (no action reqd.):  Neither linked tech %s nor %s are active in region %s, period %s',
-                        driver,
-                        driven,
-                        self.region,
-                        self.period,
-                    )
-                elif driver in self.tech_outputs and driven not in self.tech_outputs:
+                elif driver_exists and not driven_exists:
                     logger.info(
-                        'No driven linked tech available for driver %s in region %s, period %d.  '
-                        'Driver REMOVED.',
+                        'No driven linked tech for driver %s in region %s, period %s. Driver REMOVED.',
                         driver,
                         self.region,
                         self.period,
                     )
                     self.remove_tech_by_name(driver)
-                else:  # ... only the driven tech is present
+                elif not driver_exists and driven_exists:
                     logger.warning(
-                        'Driven linked tech %s is not connected to an active or available '
-                        'driver in region %s, period %d.  Driven tech REMOVED.',
+                        'Driven linked tech %s has no active driver in region %s, period %s. Driven tech REMOVED.',
                         driven,
                         self.region,
                         self.period,
                     )
                     self.remove_tech_by_name(driven)
 
-    def analyze_network(self):
-        # Due to fact that each "scan" is static, we may discover that only 1 member of a linked tech
-        # is viable.  IF that happens, we need to remove the partner and go again.  In a bizarre situation,
-        # this may be an iterative process, so we might as well do it till done...
-        done = False
-        demand_side_connections = set()
-        while not done:
-            done = True  # assume the best!
-            # dev note:  send a copy of connections...
-            # it is consumed by the function.  (easier than managing it in the recursion)
-            discovered_sources, demand_side_connections = _visited_dfs(
+    def analyze_network(self) -> None:
+        """
+        Analyzes the network to find valid and orphaned connections.
+
+        This process may be iterative if linked technologies are found to be invalid,
+        as removing one requires removing its partner and re-running the analysis.
+        """
+        while True:
+            demand_nodes = (
                 self.model_data.demand_commodities[self.region, self.period]
-                | self.model_data.waste_commodities[self.region, self.period],
-                self.model_data.source_commodities[self.region, self.period],
-                self.connections.copy(),
+                | self.model_data.waste_commodities[self.region, self.period]
             )
-            self.good_connections = _mark_good_connections(
-                good_ic=discovered_sources, connections=demand_side_connections.copy()
+            source_nodes = self.model_data.source_commodities[self.region, self.period]
+
+            (
+                discovered_sources,
+                reverse_connex,
+            ) = self._trace_backward_from_demands(
+                start_nodes=demand_nodes,
+                end_nodes=source_nodes,
+                connections=self.connections,
             )
-            observed_tech = {tech for (ic, tech, oc) in self.good_connections}
-            sour_links = set()
-            for link in self.viable_linked_tech:
-                if not all((link[0] in observed_tech, link[1] in observed_tech)):
-                    sour_links.add(link)
-                    self.remove_tech_by_name(link[0])
-                    self.remove_tech_by_name(link[1])
-                    done = False
-                    logger.warning(
-                        'Both members of link %s are not valid in the network.  Both members REMOVED in region %s, period %s',
-                        link,
-                        self.region,
-                        self.period,
-                    )
+
+            self.good_connections = self._trace_forward_from_sources(
+                start_nodes=discovered_sources, connections=reverse_connex
+            )
+
+            observed_tech_names = {tech for _, tech, _ in self.good_connections}
+            sour_links = {
+                link
+                for link in self.viable_linked_tech
+                if not (link[0] in observed_tech_names and link[1] in observed_tech_names)
+            }
+
+            if not sour_links:
+                break  # Analysis is stable, exit loop.
+
+            for driver, driven in sour_links:
+                logger.warning(
+                    'Both members of link (%s, %s) are not valid. Removing both in region %s, period %s.',
+                    driver,
+                    driven,
+                    self.region,
+                    self.period,
+                )
+                self.remove_tech_by_name(driver)
+                self.remove_tech_by_name(driven)
             self.viable_linked_tech -= sour_links
 
-        logger.debug(
-            'Got %d good technologies (possibly multi-vintage) from %d techs in region %s, period %d',
-            len(self.good_connections),
-            len(tuple(chain(*self.connections.values()))),
-            self.region,
-            self.period,
-        )
-
-        # Sort out the demand-side and supply-side orphans
-        # Now we should have:
-        # 1.  The original connections
-        # 2.  The demand-side connections from the first search (all things backward from Demands)
-        # 3.  The "good" connections that have full linkage from source back to demand
-
-        # So we can infer (these are set operations):
-        # 4.  demand-side orphans = demand_side_connections - good_connections
-        # 5.  other orphans = original_connections - demand_side_connections - good_connections
-
-        # flat lists are easier for comparison, so...
-        self.orig_connex: set[tuple] = {
-            (ic, tech, oc) for oc in self.connections for (ic, tech) in self.connections[oc]
+        all_connections = {
+            (ic, name, oc) for oc, links in self.connections.items() for ic, name in links
         }
-        # dev note:  recall, the demand connex are inventoried by IC for use in the 2nd search, so we need to poll by IC...
-        demand_connex: set[tuple] = {
-            (ic, tech, oc)
-            for ic in demand_side_connections
-            for (oc, tech) in demand_side_connections[ic]
+        demand_reachable_connections = {
+            (ic, name, oc) for ic, links in reverse_connex.items() for oc, name in links
         }
 
-        self.demand_orphans = demand_connex - self.good_connections
-        # we may already have some removed things in "other orphans" so add to it...
-        self.other_orphans |= self.orig_connex - demand_connex - self.good_connections
+        self.demand_orphans = demand_reachable_connections - self.good_connections
+        self.other_orphans |= all_connections - demand_reachable_connections
 
+        self._log_orphans()
+
+    def _trace_backward_from_demands(
+        self,
+        start_nodes: set[Commodity],
+        end_nodes: set[Commodity],
+        connections: ForwardConnections,
+    ) -> tuple[set[Commodity], ReverseConnections]:
+        """Iterative DFS tracing backward from demand nodes."""
+        stack = list(start_nodes)
+        visited_nodes = set()
+        discovered_sources = set()
+        reachable_subgraph: ReverseConnections = defaultdict(set)
+
+        while stack:
+            current_oc = stack.pop()
+            if current_oc in visited_nodes:
+                continue
+            visited_nodes.add(current_oc)
+
+            for ic, tech in connections.get(current_oc, set()):
+                reachable_subgraph[ic].add((current_oc, tech))
+                if ic in end_nodes:
+                    discovered_sources.add(ic)
+                if ic not in visited_nodes:
+                    stack.append(ic)
+
+        return discovered_sources, reachable_subgraph
+
+    def _trace_forward_from_sources(
+        self, start_nodes: set[Commodity], connections: ReverseConnections
+    ) -> set[TechConnection]:
+        """Iterative DFS tracing forward from discovered source nodes."""
+        stack = list(start_nodes)
+        visited_nodes = set(start_nodes)
+        good_connections: set[TechConnection] = set()
+
+        while stack:
+            current_ic = stack.pop()
+
+            for oc, tech in connections.get(current_ic, set()):
+                good_connections.add((current_ic, tech, oc))
+                if oc not in visited_nodes:
+                    visited_nodes.add(oc)
+                    stack.append(oc)
+
+        return good_connections
+
+    def _log_orphans(self) -> None:
+        """Helper to log discovered orphaned processes."""
         if self.other_orphans:
             logger.info(
-                'Source tracing revealed %d "other" (non-demand) orphaned processes in region %s, period %d.',
+                "Source tracing revealed %s 'other' (non-demand) orphaned processes in region %s, period %s.",
                 len(self.other_orphans),
                 self.region,
                 self.period,
             )
             for orphan in sorted(self.other_orphans, key=lambda x: x[1]):
-                logger.info(
-                    'Discovered orphaned process:   %s in region %s, period %d',
-                    orphan,
-                    self.region,
-                    self.period,
-                )
+                logger.info('Discovered orphaned process:   %s', orphan)
+
         if self.demand_orphans:
             logger.info(
-                'Source tracing revealed %d demand-side orphaned processes in region %s, period %d.',
+                'Source tracing revealed %s demand-side orphaned processes in region %s, period %s.',
                 len(self.demand_orphans),
                 self.region,
                 self.period,
             )
             for orphan in sorted(self.demand_orphans, key=lambda x: x[1]):
-                logger.info(
-                    'Discovered orphaned process:   %s in region %s, period %d',
-                    orphan,
-                    self.region,
-                    self.period,
-                )
+                logger.info('Discovered orphaned process:   %s', orphan)
 
-    def unsupported_demands(self) -> set[str]:
-        """
-        Look for demand commodities that are not connected via a "good connection"
-        :return: set of improperly supported demands
-        """
-        supported_demands = {t[2] for t in self.good_connections}
-        bad_demands = {
-            d
-            for d in self.model_data.demand_commodities[self.region, self.period]
-            if d not in supported_demands
+    def get_valid_tech(self) -> set[TechTuple]:
+        """Returns the set of Tech objects that are part of a valid connection."""
+        return {
+            tech
+            for tech in self.model_data.available_techs[self.region, self.period]
+            if (tech.ic, tech.name, tech.oc) in self.good_connections
         }
-        return bad_demands
 
+    def get_demand_side_orphans(self) -> set[TechTuple]:
+        """Returns Tech objects for demand-side orphans."""
+        return {
+            tech
+            for tech in self.model_data.available_techs[self.region, self.period]
+            if (tech.ic, tech.name, tech.oc) in self.demand_orphans
+        }
 
-def _mark_good_connections(
-    good_ic: set[str], connections: dict[str, set[tuple]], start: str | None = None
-) -> set[tuple]:
-    """
-    Now that we have ID'ed the good ic that have been discovered, we need to work back up
-    the chain of visited nodes to identify the good connections (this is the reverse of the
-    previous search where we looked backward from demand.  Here we look up from the Input Commodities
-    :param start: The current node to start from
-    :param good_ic: The set of Input Commodities that were discovered by the first search
-    :param connections:  The set of connections to analyze.  It is consumed by the function via pop()
-    :return:
-    """
+    def get_other_orphans(self) -> set[TechTuple]:
+        """Returns Tech objects for non-demand-side orphans."""
+        return {
+            tech
+            for tech in self.model_data.available_techs[self.region, self.period]
+            if (tech.ic, tech.name, tech.oc) in self.other_orphans
+        }
 
-    # end conditions...
-    if not good_ic and not start:  # nothing to discover
-        return set()
-    else:
-        good_connections = set()
+    def unsupported_demands(self) -> set[Commodity]:
+        """
+        Finds demand commodities that are not supplied by any valid connection.
 
-    if not start:
-        for start in good_ic:
-            good_connections |= _mark_good_connections(good_ic, connections, start=start)
-
-    # recurse...
-    for oc, tech in connections.pop(start, []):  # prevent re-expanding this later by popping
-        good_connections.add((start, tech, oc))
-        # explore all upstream
-        good_connections |= _mark_good_connections(
-            good_ic=good_ic, connections=connections, start=oc
-        )
-    return good_connections
-
-
-def _visited_dfs(
-    start_nodes: set[str],
-    end_nodes: set[str],
-    connections: dict[str, set[tuple]],
-    current_start=None,
-) -> tuple[set, dict[str, set[tuple]]]:
-    """
-    recursive depth-first search to identify discovered source nodes and connections from
-    a start point and set of connections
-    :param start_nodes: the set of demand commodities (oc ∈ demand)
-    :param end_nodes: source nodes, or ones traceable to source nodes
-    :param connections: the connections to explore {output: {(ic, tech)}}
-    :param current_start: the current node (ic) index
-    :return: the set of viable tech tuples (ic, tech, oc)
-    """
-    # setup...
-    discovered_sources = set()
-    visited = defaultdict(set)
-
-    # end conditions...
-    if not current_start and not start_nodes:  # no more starts, we're done
-        return set(), dict()
-    if not current_start:  # start from each node in the starts
-        for node in start_nodes:
-            ds, v = _visited_dfs(
-                start_nodes=start_nodes,
-                end_nodes=end_nodes,
-                connections=connections,
-                current_start=node,
-            )
-            discovered_sources.update(ds)
-            for k in v:
-                visited[k].update(v[k])
-        return discovered_sources, visited
-
-    # we have a start node, dig from here.
-    for ic, tech in connections.pop(current_start, []):  # we can pop, no need to re-explore
-        visited[ic].add((current_start, tech))
-        if ic in end_nodes:  # we have struck gold
-            # add the current ic to discoveries
-            discovered_sources.add(ic)
-        else:
-            # explore from here
-            ds, v = _visited_dfs(
-                start_nodes,
-                end_nodes,
-                connections,
-                current_start=ic,
-            )
-            discovered_sources.update(ds)
-            for k in v:
-                visited[k].update(v[k])
-    return discovered_sources, visited
+        :return: A set of unsupported demand commodity names.
+        """
+        supported_demands = {oc for (_, _, oc) in self.good_connections}
+        all_demands = self.model_data.demand_commodities[self.region, self.period]
+        return all_demands - supported_demands

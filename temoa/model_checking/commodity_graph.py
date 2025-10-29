@@ -4,14 +4,14 @@ development may enhance this quite a bit.... lots of opportunity!
 """
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import gravis as gv
 import networkx as nx
 
 from temoa.core.config import TemoaConfig
-from temoa.model_checking.network_model_data import NetworkModelData, Tech
+from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
 
 """
 Tools for Energy Model Optimization and Analysis (Temoa):
@@ -48,9 +48,9 @@ def generate_graph(
     region,
     period,
     network_data: NetworkModelData,
-    demand_orphans: Iterable[Tech],
-    other_orphans: Iterable[Tech],
-    driven_techs: Iterable[Tech],
+    demand_orphans: Iterable[TechTuple],
+    other_orphans: Iterable[TechTuple],
+    driven_techs: Iterable[TechTuple],
     config: TemoaConfig,
 ):
     """
