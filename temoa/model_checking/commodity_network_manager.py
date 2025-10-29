@@ -15,10 +15,10 @@ from logging import getLogger
 from typing import Any
 
 from temoa.core.config import TemoaConfig
-from temoa.model_checking.commodity_graph import generate_graph
+from temoa.model_checking.commodity_graph import visualize_graph
 from temoa.model_checking.commodity_network import CommodityNetwork
 from temoa.model_checking.element_checker import ViableSet
-from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
+from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
 from temoa.types.core_types import Period, Region
 
 logger = getLogger(__name__)
@@ -42,8 +42,8 @@ class CommodityNetworkManager:
         # Store a deep copy of the original connections for graphing purposes
         self.orig_tech = {k: v.copy() for k, v in network_data.available_techs.items()}
         # Final collections of all orphans found, organized by (region, period)
-        self.demand_orphans: dict[RegionPeriodKey, set[TechTuple]] = defaultdict(set)
-        self.other_orphans: dict[RegionPeriodKey, set[TechTuple]] = defaultdict(set)
+        self.demand_orphans: dict[RegionPeriodKey, set[EdgeTuple]] = defaultdict(set)
+        self.other_orphans: dict[RegionPeriodKey, set[EdgeTuple]] = defaultdict(set)
 
     def _analyze_region(self, region: Region, data: NetworkModelData) -> None:
         """
@@ -56,7 +56,7 @@ class CommodityNetworkManager:
         a stable, valid network.
         """
         for pass_num in range(1, 100):  # Safety break after 100 iterations
-            orphans_this_pass: set[TechTuple] = set()
+            orphans_this_pass: set[EdgeTuple] = set()
 
             for period in self.periods:
                 cn = CommodityNetwork(region=region, period=period, model_data=data)
@@ -116,9 +116,9 @@ class CommodityNetworkManager:
         """
         self.filtered_data = self.orig_data.clone()
         # Identify regions to analyze (excluding exchange pseudo-regions)
-        self.regions = {r for (r, p) in self.orig_data.available_techs if '-' not in r}
+        self.regions = set(sorted({r for (r, p) in self.orig_data.available_techs if '-' not in r}))
 
-        for region in sorted(self.regions):
+        for region in self.regions:
             logger.info('Starting network analysis for region %s', region)
             self._analyze_region(region, data=self.filtered_data)
 
@@ -135,23 +135,33 @@ class CommodityNetworkManager:
             raise RuntimeError('analyze_network() must be called before build_filters().')
 
         # Use defaultdicts to easily collect unique elements
-        valid_elements: defaultdict[str, set[Any]] = defaultdict(set)  # type: ignore [explicit-any]
+        valid_elements: defaultdict[str, set[Any]] = defaultdict(set)
 
-        for (_r, p), techs in self.filtered_data.available_techs.items():
-            if not techs:
+        for (_r, p), edge_tuples in self.filtered_data.available_techs.items():
+            if not edge_tuples:
                 continue
-            for tech in techs:
+            for edge_tuple in edge_tuples:
                 valid_elements['ritvo'].add(
-                    (tech.region, tech.ic, tech.name, tech.vintage, tech.oc)
+                    (
+                        edge_tuple.region,
+                        edge_tuple.input_comm,
+                        edge_tuple.tech,
+                        edge_tuple.vintage,
+                        edge_tuple.output_comm,
+                    )
                 )
-                valid_elements['rtv'].add((tech.region, tech.name, tech.vintage))
-                valid_elements['rt'].add((tech.region, tech.name))
-                valid_elements['rpit'].add((tech.region, p, tech.ic, tech.name))
-                valid_elements['rpto'].add((tech.region, p, tech.name, tech.oc))
-                valid_elements['t'].add(tech.name)
-                valid_elements['v'].add(tech.vintage)
-                valid_elements['ic'].add(tech.ic)
-                valid_elements['oc'].add(tech.oc)
+                valid_elements['rtv'].add((edge_tuple.region, edge_tuple.tech, edge_tuple.vintage))
+                valid_elements['rt'].add((edge_tuple.region, edge_tuple.tech))
+                valid_elements['rpit'].add(
+                    (edge_tuple.region, p, edge_tuple.input_comm, edge_tuple.tech)
+                )
+                valid_elements['rpto'].add(
+                    (edge_tuple.region, p, edge_tuple.tech, edge_tuple.output_comm)
+                )
+                valid_elements['t'].add(edge_tuple.tech)
+                valid_elements['v'].add(edge_tuple.vintage)
+                valid_elements['ic'].add(edge_tuple.input_comm)
+                valid_elements['oc'].add(edge_tuple.output_comm)
 
         return {
             'ritvo': ViableSet(
@@ -193,7 +203,7 @@ class CommodityNetworkManager:
             raise RuntimeError('analyze_network() must be called before analyze_graphs().')
         for region in self.regions:
             for period in self.periods:
-                generate_graph(
+                visualize_graph(
                     region,
                     period,
                     network_data=self.orig_data,

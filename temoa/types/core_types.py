@@ -13,6 +13,7 @@ from typing import Any
 Region = str
 Period = int
 Technology = str
+Sector = str
 Vintage = int
 Season = str
 TimeOfDay = str

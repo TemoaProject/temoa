@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>__HTML_PAGE_TITLE__</title>
+    <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+    <link href="graph_styles.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <div class="config-panel-wrapper" id="config-panel-wrapper">
+        <div class="config-panel-header">
+            <h3>Configuration & Legend</h3>
+            <button class="config-toggle-btn" aria-label="Toggle configuration panel" aria-expanded="true"
+                aria-controls="config-container-content"></button>
+        </div>
+        <div id="config-container-content">
+            <div class="legend-section">
+                <h4>Style Legend</h4>
+                <div id="style-legend-container" class="legend-container"></div>
+            </div>
+            <div class="legend-section">
+                <h4>Sector Legend</h4>
+                <div id="legend-container" class="legend-container"></div>
+            </div>
+            <a href="#" id="advanced-controls-toggle">Show Advanced Physics Controls</a>
+            <div id="vis-config-container" style="display: none;"></div>
+        </div>
+    </div>
+    <div class="view-toggle-panel" id="view-toggle-panel">
+        <button id="view-toggle-btn" aria-pressed="false"></button>
+    </div>
+    <div class="sector-toggles" id="sector-toggles">
+        <span class="sector-toggles-title">Filter Sectors:</span>
+    </div>
+    <div class="filter-panel">
+        <label for="search-input">Filter Nodes (regex):</label>
+        <input type="text" id="search-input" placeholder="e.g., ^IMP_ or ELEC$">
+        <button id="reset-view-btn">Reset View</button>
+    </div>
+    <div class="info-panel">
+        <strong>Tip:</strong> Double-click a node to isolate. Single-click to select. Use 'Reset View' to clear.
+    </div>
+    <div id="mynetwork"></div>
+
+    <!-- The dynamic data is safely embedded as JSON -->
+    <script type="application/json" id="graph-data">
+        __GRAPH_DATA_JSON__
+    </script>
+    <script type="text/javascript" src="graph_script.js"></script>
+</body>
+
+</html>

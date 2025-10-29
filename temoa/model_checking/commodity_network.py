@@ -18,7 +18,7 @@ commodities are nodes and technologies are edges.
 from collections import defaultdict
 from logging import getLogger
 
-from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
+from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
 from temoa.types.core_types import Commodity, Period, Region, Technology
 
 logger = getLogger(__name__)
@@ -89,13 +89,13 @@ class CommodityNetwork:
         self.tech_outputs.clear()
         self.connections.clear()
 
-        techs = self.model_data.available_techs[self.region, self.period]
-        for tech in techs:
-            self.connections[tech.oc].add((tech.ic, tech.name))
-            self.tech_inputs[tech.name].add(tech.ic)
-            self.tech_outputs[tech.name].add(tech.oc)
+        edge_tuples = self.model_data.available_techs[self.region, self.period]
+        for edge_tuple in edge_tuples:
+            self.connections[edge_tuple.output_comm].add((edge_tuple.input_comm, edge_tuple.tech))
+            self.tech_inputs[edge_tuple.tech].add(edge_tuple.input_comm)
+            self.tech_outputs[edge_tuple.tech].add(edge_tuple.output_comm)
 
-    def reload(self, connections: set[TechTuple]) -> None:
+    def reload(self, connections: set[EdgeTuple]) -> None:
         """
         Reload the network model with a new set of connections.
 
@@ -295,28 +295,31 @@ class CommodityNetwork:
             for orphan in sorted(self.demand_orphans, key=lambda x: x[1]):
                 logger.info('Discovered orphaned process:   %s', orphan)
 
-    def get_valid_tech(self) -> set[TechTuple]:
+    def get_valid_tech(self) -> set[EdgeTuple]:
         """Returns the set of Tech objects that are part of a valid connection."""
         return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.good_connections
+            edge_tuple
+            for edge_tuple in self.model_data.available_techs[self.region, self.period]
+            if (edge_tuple.input_comm, edge_tuple.tech, edge_tuple.output_comm)
+            in self.good_connections
         }
 
-    def get_demand_side_orphans(self) -> set[TechTuple]:
+    def get_demand_side_orphans(self) -> set[EdgeTuple]:
         """Returns Tech objects for demand-side orphans."""
         return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.demand_orphans
+            edge_tuple
+            for edge_tuple in self.model_data.available_techs[self.region, self.period]
+            if (edge_tuple.input_comm, edge_tuple.tech, edge_tuple.output_comm)
+            in self.demand_orphans
         }
 
-    def get_other_orphans(self) -> set[TechTuple]:
+    def get_other_orphans(self) -> set[EdgeTuple]:
         """Returns Tech objects for non-demand-side orphans."""
         return {
-            tech
-            for tech in self.model_data.available_techs[self.region, self.period]
-            if (tech.ic, tech.name, tech.oc) in self.other_orphans
+            edge_tuple
+            for edge_tuple in self.model_data.available_techs[self.region, self.period]
+            if (edge_tuple.input_comm, edge_tuple.tech, edge_tuple.output_comm)
+            in self.other_orphans
         }
 
     def unsupported_demands(self) -> set[Commodity]:

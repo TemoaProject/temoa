@@ -1,261 +1,310 @@
-"""
-A quick & dirty graph of the commodity network for troubleshooting purposes.  Future
-development may enhance this quite a bit.... lots of opportunity!
-"""
+from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from collections.abc import Iterable
-from pathlib import Path
+from typing import Any
 
-import gravis as gv
 import networkx as nx
 
 from temoa.core.config import TemoaConfig
-from temoa.model_checking.network_model_data import NetworkModelData, TechTuple
-
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  2/14/24
-
-"""
+from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
+from temoa.types.core_types import Period, Region
+from temoa.utilities.graph_utils import (
+    calculate_initial_positions,
+    calculate_tech_graph_positions,
+)
+from temoa.utilities.visualizer import make_nx_graph, nx_to_vis
 
 logger = logging.getLogger(__name__)
 
 
-def generate_graph(
-    region,
-    period,
+def generate_technology_graph(
+    all_edges: Iterable[EdgeTuple],
+    source_commodities: set[str],
+    demand_commodities: set[str],
+    sector_colors: dict[str, str],
+) -> nx.MultiDiGraph[str]:
+    """
+    Generates a technology-centric graph with a pre-computed initial layout.
+    """
+    tg: nx.MultiDiGraph[str] = nx.MultiDiGraph()
+    tech_positions = calculate_tech_graph_positions(all_edges)
+
+    # Pass 1: Aggregate information for each unique technology.
+    tech_info: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {'is_source': False, 'is_demand': False, 'sector': None}
+    )
+    for tech_tuple in all_edges:
+        info = tech_info[tech_tuple.tech]
+        if tech_tuple.input_comm in source_commodities:
+            info['is_source'] = True
+        if tech_tuple.output_comm in demand_commodities:
+            info['is_demand'] = True
+        # Use the sector from the first tuple we see for a given tech
+        if not info['sector']:
+            info['sector'] = tech_tuple.sector
+
+    # Pass 2: Create a single, correctly styled node for each unique technology.
+    for tech_name, info in tech_info.items():
+        pos_attrs = tech_positions.get(tech_name, {})
+        sector = info['sector']
+
+        color_obj: dict[str, str] = {}
+        if sector and (bg := sector_colors.get(sector)):
+            color_obj['background'] = bg
+        border_width = 1
+        title = f'Tech: {tech_name}'
+
+        # Apply styles based on the aggregated status
+        if info['is_source']:
+            color_obj['border'] = '#2ca02c'  # Green border
+            border_width = 4
+            title += '\nType: Source Technology'
+        if info['is_demand']:
+            color_obj['border'] = '#e377c2'  # Magenta/Pink border
+            border_width = 4
+            title += '\nType: Demand Technology'
+
+        node_attrs: dict[str, Any] = {
+            'label': tech_name,
+            'title': title + (f'\nSector: {sector}' if sector else ''),
+            'shape': 'box',
+            'color': color_obj,
+            'borderWidth': border_width,
+            **pos_attrs,
+        }
+        tg.add_node(tech_name, **node_attrs)
+
+    # Create edges representing commodity flows
+    commodity_map: defaultdict[str, dict[str, set[str]]] = defaultdict(
+        lambda: {'producers': set(), 'consumers': set()}
+    )
+    for tech_tuple in all_edges:
+        commodity_map[tech_tuple.output_comm]['producers'].add(tech_tuple.tech)
+        commodity_map[tech_tuple.input_comm]['consumers'].add(tech_tuple.tech)
+
+    for commodity, roles in commodity_map.items():
+        if commodity in source_commodities or commodity in demand_commodities:
+            continue
+        for producer in roles['producers']:
+            for consumer in roles['consumers']:
+                if producer != consumer:
+                    tg.add_edge(
+                        producer,
+                        consumer,
+                        label=commodity,
+                        title=f'Commodity Flow: {commodity}',
+                        arrows='to',
+                        color='#555555',
+                    )
+    return tg
+
+
+def generate_commodity_graph(
+    region: Region,
+    period: Period,
     network_data: NetworkModelData,
-    demand_orphans: Iterable[TechTuple],
-    other_orphans: Iterable[TechTuple],
-    driven_techs: Iterable[TechTuple],
+    demand_orphans: Iterable[EdgeTuple],
+    other_orphans: Iterable[EdgeTuple],
+    driven_techs: Iterable[EdgeTuple],
+) -> tuple[nx.MultiDiGraph[str], dict[str, str]]:
+    """
+    Generates the commodity-centric graph and its associated color scheme.
+    In this view, commodities are nodes and technologies are grouped into edges.
+    """
+    all_edge_tuples = (
+        set(network_data.available_techs.get((region, period), set()))
+        | set(demand_orphans)
+        | set(other_orphans)
+        | set(driven_techs)
+    )
+
+    # 1. Prepare sector-based mappings for coloring
+    unique_sectors = sorted({tech.sector for tech in all_edge_tuples if tech.sector})
+    color_palette = [
+        '#1f77b4',
+        '#ff7f0e',
+        '#2ca02c',
+        '#d62728',
+        '#9467bd',
+        '#8c564b',
+        '#e377c2',
+        '#7f7f7f',
+        '#bcbd22',
+        '#17becf',
+    ]
+    sector_colors = {
+        sector: color_palette[i % len(color_palette)] for i, sector in enumerate(unique_sectors)
+    }
+    default_color = '#A9A9A9'
+
+    commodity_sector_counts: defaultdict[str, defaultdict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+    for tech in all_edge_tuples:
+        if tech.sector:
+            commodity_sector_counts[tech.input_comm][tech.sector] += 1
+            commodity_sector_counts[tech.output_comm][tech.sector] += 1
+
+    commodity_to_primary_sector = {
+        comm: max(counts, key=lambda k: counts[k])
+        for comm, counts in commodity_sector_counts.items()
+        if counts
+    }
+
+    # 2. Define node layers (1: source, 2: intermediate, 3: sink)
+    layer_map: dict[str, int] = dict.fromkeys(
+        network_data.physical_commodities, 2
+    )  # all intermediates
+    for c in network_data.source_commodities.get((region, period), []):
+        layer_map[c] = 1
+    for c in network_data.demand_commodities.get((region, period), []):
+        layer_map[c] = 3
+
+    node_positions = calculate_initial_positions(
+        layer_map,
+        commodity_to_primary_sector,
+        unique_sectors,
+    )
+
+    # 3. Prepare edge attributes with sector-based coloring
+    edge_attributes_map: dict[tuple[str, str, str, str | None], dict[str, Any]] = {}
+    all_connections: set[tuple[str, str, str, str | None]] = {
+        (tech.input_comm, tech.tech, tech.output_comm, tech.sector) for tech in all_edge_tuples
+    }
+
+    driven_names = {t.tech for t in driven_techs}
+    other_orphan_names = {t.tech for t in other_orphans}
+    demand_orphan_names = {t.tech for t in demand_orphans}
+
+    driven_commodities: set[str] = set()
+    other_orphan_commodities: set[str] = set()
+    demand_orphan_commodities: set[str] = set()
+
+    for ic, tech_name, oc, sector in all_connections:
+        key = (ic, tech_name, oc, sector)
+        color = default_color
+        if sector:
+            color = sector_colors.get(sector, default_color)
+
+        attrs: dict[str, Any] = {
+            'color': color,
+            'value': 1,  # Default thickness
+        }
+
+        tech_data = network_data.tech_data.get(tech_name, {})
+        if tech_data.get('neg_cost', False):
+            attrs['value'] = 3
+
+        if tech_name in driven_names:
+            attrs.update({'color': '#1f77b4', 'value': 3, 'dashes': True})
+            driven_commodities.update({ic, oc})
+        elif tech_name in other_orphan_names:
+            attrs.update({'color': '#ff7f0e', 'value': 4, 'dashes': True})
+            other_orphan_commodities.update({ic, oc})
+        elif tech_name in demand_orphan_names:
+            attrs.update({'color': '#d62728', 'value': 6, 'dashes': True})
+            demand_orphan_commodities.update({ic, oc})
+
+        edge_attributes_map[key] = attrs
+
+    # 4. Create the NetworkX graph using the utility function
+    dg = make_nx_graph(
+        all_connections,
+        edge_attributes_map,
+        layer_map,
+        node_positions,
+        commodity_to_primary_sector,
+        driven_names,
+        other_orphan_names,
+        demand_orphan_names,
+        driven_commodities=driven_commodities,
+        other_orphan_commodities=other_orphan_commodities,
+        demand_orphan_commodities=demand_orphan_commodities,
+    )
+
+    return dg, sector_colors
+
+
+def visualize_graph(
+    region: Region,
+    period: Period,
+    network_data: NetworkModelData,
+    demand_orphans: Iterable[EdgeTuple],
+    other_orphans: Iterable[EdgeTuple],
+    driven_techs: Iterable[EdgeTuple],
     config: TemoaConfig,
-):
+) -> None:
     """
-    generate graph for region/period from network data
-    :param region: region of interest
-    :param period: period of interest
-    :param network_data: the data showing all edges to be graphed.  "orphans" will be added, if they aren't included
-    :param demand_orphans: container of orphans [orphanage ;)]
-    :param other_orphans: container of orphans
-    :param driven_techs: the "driven" techs in LinkedTech pairs
-    :param config:
-    :return:
+    Generates and saves an interactive HTML file with two graph views if
+    config.plot_commodity_network is True.
     """
-    layers = {}
-    for c in network_data.waste_commodities[region, period]:
-        layers[c] = 6
-    for c in network_data.physical_commodities:
-        layers[c] = 2  # physical
-    for c in network_data.source_commodities[region, period]:
-        layers[c] = 1
-    for c in network_data.demand_commodities[region, period]:
-        layers[c] = 3
-    for c in network_data.capacity_commodities:
-        layers[c] = 4
-    for c in network_data.exchange_commodities:
-        layers[c] = 5
-
-    edge_colors = {}
-    edge_weights = {}
-    # dev note:  the generators below do 2 things:  put the data in the format expected by the
-    #            graphing code and reduce redundant vintages to 1 representation
-    # Note that there is a heirarchy here and the latter loops may overwrite earlier color/weight
-    # decisions, so primary stuff goes last!
-    all_edges = {
-        (tech.ic, tech.name, tech.oc) for tech in network_data.available_techs[region, period]
-    }
-    cap_edges = {
-        (tech.ic, tech.name, tech.oc)
-        for tech in network_data.available_techs[region, period]
-        if tech.name in ('Construction', 'EndOfLife')
-    }
-    exc_edges = {
-        (tech.ic, tech.name, tech.oc)
-        for tech in network_data.available_techs[region, period]
-        if tech.ic in network_data.exchange_commodities
-        or tech.oc in network_data.exchange_commodities
-    }
-    # troll through the tech_data and label things of low importance
-    for edge in all_edges:
-        tech = edge[1]
-        characteristics = network_data.tech_data.get(tech, None)
-        if characteristics and characteristics.get('neg_cost', False):
-            edge_weights[edge] = 3
-            edge_colors[edge] = 'green'
-        # other growth here...
-    # label other things of higher importance (these will override)
-    for edge in ((tech.ic, tech.name, tech.oc) for tech in driven_techs):
-        edge_colors[edge] = 'blue'
-        edge_weights[edge] = 2
-        all_edges.add(edge)
-    for edge in ((tech.ic, tech.name, tech.oc) for tech in other_orphans):
-        edge_colors[edge] = 'yellow'
-        edge_weights[edge] = 3
-        all_edges.add(edge)
-    for edge in ((tech.ic, tech.name, tech.oc) for tech in demand_orphans):
-        edge_colors[edge] = 'red'
-        edge_weights[edge] = 5
-        all_edges.add(edge)
-    for edge in cap_edges:
-        edge_colors[edge] = 'darkgreen'
-        edge_weights[edge] = 2
-        all_edges.add(edge)
-    for edge in exc_edges:
-        edge_colors[edge] = 'darkblue'
-        edge_weights[edge] = 2
-        all_edges.add(edge)
-
-    dg = make_nx_graph(all_edges, edge_colors, edge_weights, layers)
-
-    # loop finder...
-    try:
-        cycles = nx.simple_cycles(G=dg)
-        for cycle in cycles:
-            cycle = list(cycle)
-            if len(cycle) < 2:  # a storage item--not reportable
-                continue
-            res = ''
-            first = cycle[0]
-            last_node = first
-            try:
-                for node in cycle:
-                    if node.split(' (')[0] == last_node.split(' (')[0]:
-                        # This is just an exchange tech loop. Ignore.
-                        # These are labelled in the graph as {base_tech} ({other region})
-                        # so we split on ' (' to compare the base techs
-                        raise ValueError('Just an exchange tech')
-                    res += f'{node} --> '
-                    last_node = node
-            except ValueError:
-                # This is just a trick to continue the outer loop instead of the inner loop
-                # this cycle wasn't really a cycle so just continue
-                continue
-            res += first
-            logger.info(
-                'Found cycle in region %s, period %d. No action needed if this is correct: %s',
-                region,
-                period,
-                res,
-            )
-
-    except nx.NetworkXError as e:
-        logger.warning('NetworkX exception encountered: %s.  Loop evaluation NOT performed.', e)
-    if config.plot_commodity_network:
-        filename_label = f'{region}_{period}'
-        _graph_connections(
-            directed_graph=dg,
-            file_label=filename_label,
-            output_path=config.output_path,
-        )
-
-
-def _graph_connections(
-    directed_graph: nx.MultiDiGraph | nx.DiGraph,
-    file_label: str,
-    output_path: Path,
-):
-    """
-    Make an HTML file containing the network graph
-    :param file_label: the name of the output file
-    :param output_path: the output directory
-    :return:
-    """
-    try:
-        fig = gv.d3(
-            directed_graph,
-            show_menu=True,
-            show_node_label=True,
-            node_label_data_source='label',
-            show_edge_label=True,
-            edge_label_data_source='label',
-            edge_curvature=0.4,
-            graph_height=1000,
-            zoom_factor=1.0,
-            node_drag_fix=True,
-            node_label_size_factor=0.5,
-            layout_algorithm_active=True,
-        )
-    except Exception as e:
-        logger.error('Failed to create a figure for the network graph: %s', e)
+    # 1. Check the configuration flag first. If false, do nothing.
+    if not config.plot_commodity_network:
+        logger.info("Skipping network graph generation because 'plot_commodity_network' is false.")
         return
-    filename = f'Commodity_Graph_{file_label}.html'
-    output_path = output_path / filename
+
+    # --- All generation logic now only runs if the flag is True ---
+
+    # 2. Generate the primary (commodity-centric) graph and its color legend
+    commodity_graph, sector_colors = generate_commodity_graph(
+        region, period, network_data, demand_orphans, other_orphans, driven_techs
+    )
+
+    # 3. Collect all technology tuples needed for the secondary graph
+    all_techs_for_period = (
+        set(network_data.available_techs.get((region, period), set()))
+        | set(demand_orphans)
+        | set(other_orphans)
+        | set(driven_techs)
+    )
+
+    # 4. Generate the secondary (technology-centric) graph
+    tech_graph = generate_technology_graph(
+        all_techs_for_period,
+        network_data.source_commodities.get((region, period), set()),
+        network_data.demand_commodities.get((region, period), set()),
+        sector_colors,
+    )
+
+    # 5. Define the style legend data
+    style_legend_map = [
+        # Styles for the Commodity View
+        {'label': 'Connected to Demand Orphan', 'borderColor': '#d62728', 'borderWidth': 4},
+        {'label': 'Connected to Other Orphan', 'borderColor': '#ff7f0e', 'borderWidth': 4},
+        {'label': 'Connected to Driven Tech', 'borderColor': '#1f77b4', 'borderWidth': 4},
+        # Styles for the Technology View
+        {'label': 'Source Technology', 'borderColor': '#2ca02c', 'borderWidth': 4},
+        {'label': 'Demand Technology', 'borderColor': '#e377c2', 'borderWidth': 4},
+    ]
+
+    # 6. Create the interactive HTML visualization
+    output_file = config.output_path / f'Network_Graph_{region}_{period}.html'
+    unique_sectors = sorted(sector_colors)
+
+    graph_path = nx_to_vis(
+        nx_graph=commodity_graph,
+        secondary_graph=tech_graph,
+        output_filename=output_file,
+        html_title=f'Network Graphs - {region} {period}',
+        sectors=unique_sectors,
+        color_legend_map=sector_colors,
+        style_legend_map=style_legend_map,
+        show_browser=False,
+    )
+
+    if graph_path:
+        logger.info('Generated network graphs at: %s', graph_path)
+    else:
+        logger.error('Failed to generate network graphs')
+
+    # 7. Perform cycle detection on the commodity graph
     try:
-        fig.export_html(output_path, overwrite=True)
-    except UnicodeEncodeError as e:
-        logger.warning(
-            'Failed to export the network graph into HTML.  Bad character in names of commodities or '
-            'tech?\n  Error message: %s',
-            e,
-        )
-    except Exception as e:
-        logger.error('Failed to export the network graph into HTML.  Error message: %s', e)
-
-
-def make_nx_graph(connections, edge_colors, edge_weights, layer_map) -> nx.MultiDiGraph:
-    """
-    Make a nx graph of the commodity network.  Additional info passed in to embed it within the nx data
-    :param connections: an iterable container of connections of format (input_comm, tech, output_comm)
-    :param edge_colors: An map of the layers.  1: source commodity, 2: physical commodity, 3: demand commodity
-    :param edge_weights: color map of edges (technologies).  Non-entries default to black
-    :param layer_map: weight map of edges (technologies).  Non-entries default to 1.0
-    :return: a nx MultiDiGraph
-    """
-    dg = nx.MultiDiGraph()  # networkx multi(edge) directed graph
-    layer_colors = {
-        1: 'limegreen',
-        2: 'violet',
-        3: 'darkorange',
-        4: 'darkgreen',
-        5: 'darkblue',
-        6: 'darkred',
-    }
-    node_size = {1: 50, 2: 15, 3: 30, 4: 20, 5: 20, 6: 30}
-    for ic, tech, oc in connections:
-        dg.add_node(
-            ic,
-            name=ic,
-            layer=layer_map[ic],
-            label=ic,
-            color=layer_colors[layer_map[ic]],
-            size=node_size[layer_map[ic]],
-        )
-        dg.add_node(
-            oc,
-            name=oc,
-            layer=layer_map[oc],
-            label=oc,
-            color=layer_colors[layer_map[oc]],
-            size=node_size[layer_map[oc]],
-        )
-        dg.add_edge(
-            ic,
-            oc,
-            label=tech,
-            color=edge_colors.get((ic, tech, oc), 'black'),
-            size=edge_weights.get((ic, tech, oc), 1),
-        )
-    return dg
+        for cycle in nx.simple_cycles(G=commodity_graph):
+            if len(cycle) < 2:
+                continue
+            cycle_str = ' -> '.join(cycle) + f' -> {cycle[0]}'
+            logger.warning('Cycle detected: %s', cycle_str)
+    except nx.NetworkXError as e:
+        logger.warning('NetworkXError during cycle detection: %s', e, exc_info=True)
