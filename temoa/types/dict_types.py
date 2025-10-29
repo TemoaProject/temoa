@@ -8,106 +8,65 @@ the Temoa model for various data structures and mappings.
 from .core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 # Process-related dictionary types
-ProcessInputsdict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
-ProcessOutputsdict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
-ProcessLoansdict = dict[tuple[Region, Technology, Vintage], float]
-ProcessInputsByOutputdict = dict[
+ProcessInputsDict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
+ProcessOutputsDict = dict[tuple[Region, Period, Technology, Vintage], set[Commodity]]
+ProcessLoansDict = dict[tuple[Region, Technology, Vintage], float]
+ProcessInputsByOutputDict = dict[
     tuple[Region, Period, Technology, Vintage, Commodity], set[Commodity]
 ]
-ProcessOutputsByInputdict = dict[
+ProcessOutputsByInputDict = dict[
     tuple[Region, Period, Technology, Vintage, Commodity], set[Commodity]
 ]
-ProcessTechsdict = dict[tuple[Region, Period, Commodity], set[Technology]]
-ProcessReservePeriodsdict = dict[tuple[Region, Period], set[tuple[Technology, Vintage]]]
-ProcessPeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
-RetirementPeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
-ProcessVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-SurvivalCurvePeriodsdict = dict[tuple[Region, Technology, Vintage], set[Period]]
-CapacityConsumptionTechsdict = dict[tuple[Region, Period, Commodity], set[Technology]]
-RetirementProductionProcessesdict = dict[
+ProcessTechsDict = dict[tuple[Region, Period, Commodity], set[Technology]]
+ProcessReservePeriodsDict = dict[tuple[Region, Period], set[tuple[Technology, Vintage]]]
+ProcessPeriodsDict = dict[tuple[Region, Technology, Vintage], set[Period]]
+RetirementPeriodsDict = dict[tuple[Region, Technology, Vintage], set[Period]]
+ProcessVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+SurvivalCurvePeriodsDict = dict[tuple[Region, Technology, Vintage], set[Period]]
+CapacityConsumptionTechsDict = dict[tuple[Region, Period, Commodity], set[Technology]]
+RetirementProductionProcessesDict = dict[
     tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]
 ]
 
-# Capitalized aliases for compatibility
-ProcessInputsDict = ProcessInputsdict
-ProcessOutputsDict = ProcessOutputsdict
-ProcessLoansDict = ProcessLoansdict
-ProcessInputsByOutputDict = ProcessInputsByOutputdict
-ProcessOutputsByInputDict = ProcessOutputsByInputdict
-ProcessTechsDict = ProcessTechsdict
-ProcessReservePeriodsDict = ProcessReservePeriodsdict
-ProcessPeriodsDict = ProcessPeriodsdict
-RetirementPeriodsDict = RetirementPeriodsdict
-ProcessVintagesDict = ProcessVintagesdict
-SurvivalCurvePeriodsDict = SurvivalCurvePeriodsdict
-CapacityConsumptionTechsDict = CapacityConsumptionTechsdict
-RetirementProductionProcessesDict = RetirementProductionProcessesdict
 
 # Commodity flow dictionary types
-CommodityStreamProcessdict = dict[tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]]
+CommodityStreamProcessDict = dict[tuple[Region, Period, Commodity], set[tuple[Technology, Vintage]]]
 
-
-# Capitalized aliases for compatibility
-CommodityStreamProcessDict = CommodityStreamProcessdict
 
 # Technology classification dictionary types
-BaseloadVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-CurtailmentVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-StorageVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-RampUpVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-RampDownVintagesdict = dict[tuple[Region, Period, Technology], set[Vintage]]
-InputSplitVintagesdict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
-InputSplitAnnualVintagesdict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
-OutputSplitVintagesdict = dict[tuple[Region, Period, Technology, Commodity, str], set[Vintage]]
-OutputSplitAnnualVintagesdict = dict[
+BaseloadVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+CurtailmentVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+StorageVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+RampUpVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+RampDownVintagesDict = dict[tuple[Region, Period, Technology], set[Vintage]]
+InputSplitVintagesDict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
+InputSplitAnnualVintagesDict = dict[tuple[Region, Period, Commodity, Technology, str], set[Vintage]]
+OutputSplitVintagesDict = dict[tuple[Region, Period, Technology, Commodity, str], set[Vintage]]
+OutputSplitAnnualVintagesDict = dict[
     tuple[Region, Period, Technology, Commodity, str], set[Vintage]
 ]
 
-# Capitalized aliases for compatibility
-BaseloadVintagesDict = BaseloadVintagesdict
-CurtailmentVintagesDict = CurtailmentVintagesdict
-StorageVintagesDict = StorageVintagesdict
-RampUpVintagesDict = RampUpVintagesdict
-RampDownVintagesDict = RampDownVintagesdict
-InputSplitVintagesDict = InputSplitVintagesdict
-InputSplitAnnualVintagesDict = InputSplitAnnualVintagesdict
-OutputSplitVintagesDict = OutputSplitVintagesdict
-OutputSplitAnnualVintagesDict = OutputSplitAnnualVintagesdict
 
 # Time sequencing dictionary types
-TimeNextdict = dict[tuple[Period, Season, TimeOfDay], tuple[Season, TimeOfDay]]
-TimeNextSequentialdict = dict[tuple[Period, Season], Season]
-SequentialToSeasondict = dict[tuple[Period, Season], Season]
+TimeNextDict = dict[tuple[Period, Season, TimeOfDay], tuple[Season, TimeOfDay]]
+TimeNextSequentialDict = dict[tuple[Period, Season], Season]
+SequentialToSeasonDict = dict[tuple[Period, Season], Season]
 
-# Capitalized aliases for compatibility
-TimeNextDict = TimeNextdict
-TimeNextSequentialDict = TimeNextSequentialdict
-SequentialToSeasonDict = SequentialToSeasondict
 
 # Geography/exchange dictionary types
-ExportRegionsdict = dict[
+ExportRegionsDict = dict[
     tuple[Region, Period, Commodity], set[tuple[Region, Technology, Vintage, Commodity]]
 ]
-ImportRegionsdict = dict[
+ImportRegionsDict = dict[
     tuple[Region, Period, Commodity], set[tuple[Region, Technology, Vintage, Commodity]]
 ]
-ActiveRegionsForTechdict = dict[tuple[Period, Technology], set[Region]]
+ActiveRegionsForTechDict = dict[tuple[Period, Technology], set[Region]]
 
-# Capitalized aliases for compatibility
-ExportRegionsDict = ExportRegionsdict
-ImportRegionsDict = ImportRegionsdict
-ActiveRegionsForTechDict = ActiveRegionsForTechdict
 
 # Switching/boolean flag dictionary types
-EfficiencyVariabledict = dict[
+EfficiencyVariableDict = dict[
     tuple[Region, Period, Commodity, Technology, Vintage, Commodity], bool
 ]
-CapacityFactorProcessdict = dict[tuple[Region, Period, Technology, Vintage], bool]
-SeasonalStoragedict = dict[Technology, bool]
-SurvivalCurveProcessdict = dict[tuple[Region, Technology, Vintage], bool]
-
-# Capitalized aliases for compatibility
-EfficiencyVariableDict = EfficiencyVariabledict
-CapacityFactorProcessDict = CapacityFactorProcessdict
-SeasonalStorageDict = SeasonalStoragedict
-SurvivalCurveProcessDict = SurvivalCurveProcessdict
+CapacityFactorProcessDict = dict[tuple[Region, Period, Technology, Vintage], bool]
+SeasonalStorageDict = dict[Technology, bool]
+SurvivalCurveProcessDict = dict[tuple[Region, Technology, Vintage], bool]

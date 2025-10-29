@@ -110,7 +110,6 @@ class TemoaModel(PyomoAbstractModel):
         #       (not formal model elements)            #
         ################################################
 
-        # Dev Note:  The triple-quotes UNDER the items below pop up as dox in most IDEs
         self.processInputs: t.ProcessInputsDict = {}
         self.processOutputs: t.ProcessOutputsDict = {}
         self.processLoans: t.ProcessLoansDict = {}
