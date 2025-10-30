@@ -858,7 +858,7 @@ def limit_emission_constraint(
         model.V_AnnualRetirement[reg, p, t, v] * value(model.EmissionEndOfLife[reg, e, t, v])
         for reg in regions
         for (S_r, S_e, t, v) in model.EmissionEndOfLife.sparse_iterkeys()
-        if (r, t, v) in model.retirementPeriods and p in model.retirementPeriods[r, t, v]
+        if (reg, t, v) in model.retirementPeriods and p in model.retirementPeriods[reg, t, v]
         if S_r == reg and S_e == e
     )
 
