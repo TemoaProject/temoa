@@ -36,7 +36,7 @@ jobs:
         with:
           version: "0.9.6"
           python-version: ${{ matrix.python-version }}
-          enable-cache: false
+          enable-cache: true
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
@@ -66,7 +66,7 @@ jobs:
         with:
           version: "0.9.6"
           python-version: ${{ matrix.python-version }}
-          enable-cache: false
+          enable-cache: true
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
