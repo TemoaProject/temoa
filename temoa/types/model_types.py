@@ -19,8 +19,6 @@ from . import (
     CommoditySet,
     Period,
     Region,
-    RegionPeriodSeasonTimeInputTechVintageOutput,
-    RegionPeriodTechVintage,
     RegionSet,
     Season,
     SparseIndex,
@@ -30,13 +28,10 @@ from . import (
     Vintage,
 )
 
-# Import Pyomo stub types
 if TYPE_CHECKING:
     from pyomo.core import (
         AbstractModel,
-        BuildAction,
         Constraint,
-        Objective,
         Param,
         Set,
         Var,
@@ -47,8 +42,6 @@ else:
     Param = Any  # AbstractModel.Param
     Var = Any  # AbstractModel.Var
     Constraint = Any  # AbstractModel.Constraint
-    BuildAction = Any  # AbstractModel.BuildAction
-    Objective = Any  # AbstractModel.Objective
 
 # Type aliases for model data structures
 ProcessInputs = dict[tuple[Region, Period, Commodity, Technology, Vintage, Commodity], float]
@@ -141,8 +134,11 @@ class TemoaModelProtocol(Protocol):
     # Internal data structures
     processInputs: ProcessInputs
     processOutputs: ProcessOutputs
-    activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput] | None
-    activeActivity_rptv: set[RegionPeriodTechVintage] | None
+    activeFlow_rpsditvo: (
+        set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
+        | None
+    )
+    activeActivity_rptv: set[tuple[Region, Period, Technology, Vintage]] | None
 
     def __init__(self, *args: object, **kwargs: object) -> None: ...
 
@@ -220,8 +216,10 @@ if TYPE_CHECKING:
         processInputs: ProcessInputs
         processOutputs: ProcessOutputs
         used_techs: TechSet
-        activeFlow_rpsditvo: set[RegionPeriodSeasonTimeInputTechVintageOutput]
-        activeActivity_rptv: set[RegionPeriodTechVintage]
+        activeFlow_rpsditvo: set[
+            tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]
+        ]
+        activeActivity_rptv: set[tuple[Region, Period, Technology, Vintage]]
 
         def __init__(self, *args: object, **kwargs: object) -> None: ...
 

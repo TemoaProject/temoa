@@ -19,10 +19,10 @@ in LICENSE.txt.  Users expanding this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import sys
 import tomllib
 from logging import getLogger
 from pathlib import Path
-from sys import stderr as SE
 
 from temoa.core.modes import TemoaMode
 
@@ -150,7 +150,7 @@ class TemoaConfig:
                 )
                 logger.warning(msg)
                 if not self.silent:
-                    SE.write('Warning: ' + msg)
+                    sys.stderr.write('Warning: ' + msg)
 
     @staticmethod
     def build_config(config_file: Path, output_path: Path, silent: bool = False) -> 'TemoaConfig':

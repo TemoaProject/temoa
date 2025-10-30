@@ -64,7 +64,7 @@ def rpetv(fi: FI, e: str) -> tuple[str, int, str, str, int]:
     return fi.r, fi.p, e, fi.t, fi.v
 
 
-def poll_capacity_results(M: TemoaModel, epsilon: float = 1e-5) -> CapData:
+def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     """
     Poll a solved model for capacity results.
     :param M: Solved Model
@@ -73,9 +73,9 @@ def poll_capacity_results(M: TemoaModel, epsilon: float = 1e-5) -> CapData:
     """
     # Built Capacity
     built = []
-    for r, t, v in M.V_NewCapacity.keys():
-        if v in M.time_optimize:
-            val = value(M.V_NewCapacity[r, t, v])
+    for r, t, v in model.V_NewCapacity.keys():
+        if v in model.time_optimize:
+            val = value(model.V_NewCapacity[r, t, v])
             if abs(val) < epsilon:
                 continue
             new_cap = (r, t, v, val)
@@ -83,8 +83,8 @@ def poll_capacity_results(M: TemoaModel, epsilon: float = 1e-5) -> CapData:
 
     # NetCapacity
     net = []
-    for r, p, t, v in M.V_Capacity.keys():
-        val = value(M.V_Capacity[r, p, t, v])
+    for r, p, t, v in model.V_Capacity.keys():
+        val = value(model.V_Capacity[r, p, t, v])
         if abs(val) < epsilon:
             continue
         new_net_cap = (r, p, t, v, val)
@@ -92,14 +92,14 @@ def poll_capacity_results(M: TemoaModel, epsilon: float = 1e-5) -> CapData:
 
     # Retired Capacity
     ret = []
-    for r, t, v in M.retirementPeriods:
-        lifetime = value(M.LifetimeProcess[r, t, v])
-        for p in M.retirementPeriods[r, t, v]:
+    for r, t, v in model.retirementPeriods:
+        lifetime = value(model.LifetimeProcess[r, t, v])
+        for p in model.retirementPeriods[r, t, v]:
             # We want to output period retirement, not annual retirement, so multiply by PeriodLength
-            eol = value(M.PeriodLength[p]) * value(M.V_AnnualRetirement[r, p, t, v])
+            eol = value(model.PeriodLength[p]) * value(model.V_AnnualRetirement[r, p, t, v])
             early = 0
-            if t in M.tech_retirement and v < p <= v + lifetime - value(M.PeriodLength[p]):
-                early = value(M.V_RetiredCapacity[r, p, t, v])
+            if t in model.tech_retirement and v < p <= v + lifetime - value(model.PeriodLength[p]):
+                early = value(model.V_RetiredCapacity[r, p, t, v])
                 eol -= early
             early = 0 if abs(early) < epsilon else early
             eol = 0 if abs(eol) < epsilon else eol
@@ -111,7 +111,7 @@ def poll_capacity_results(M: TemoaModel, epsilon: float = 1e-5) -> CapData:
     return CapData(built=built, net=net, retired=ret)
 
 
-def poll_flow_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[FlowType, float]]:
+def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[FlowType, float]]:
     """
     Poll a solved model for flow results.
     :param M: A solved Model
@@ -124,39 +124,39 @@ def poll_flow_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[Flo
     # ---- NON-annual ----
 
     # Storage, which has a unique v_flow_in (non-storage techs do not have this variable)
-    for key in M.V_FlowIn.keys():
+    for key in model.V_FlowIn.keys():
         fi = FI(*key)
-        flow = value(M.V_FlowIn[fi])
+        flow = value(model.V_FlowIn[fi])
         if abs(flow) < epsilon:
             continue
         res[fi][FlowType.IN] = flow
-        res[fi][FlowType.LOST] = (1 - get_variable_efficiency(M, *key)) * flow
+        res[fi][FlowType.LOST] = (1 - get_variable_efficiency(model, *key)) * flow
 
     # regular flows
-    for key in M.V_FlowOut.keys():
+    for key in model.V_FlowOut.keys():
         fi = FI(*key)
-        flow = value(M.V_FlowOut[fi])
+        flow = value(model.V_FlowOut[fi])
         if abs(flow) < epsilon:
             continue
         res[fi][FlowType.OUT] = flow
 
-        if fi.t not in M.tech_storage:  # we can get the flow in by out/eff...
-            flow = value(M.V_FlowOut[fi]) / get_variable_efficiency(M, *key)
+        if fi.t not in model.tech_storage:  # we can get the flow in by out/eff...
+            flow = value(model.V_FlowOut[fi]) / get_variable_efficiency(model, *key)
             res[fi][FlowType.IN] = flow
-            res[fi][FlowType.LOST] = (1 - get_variable_efficiency(M, *key)) * flow
+            res[fi][FlowType.LOST] = (1 - get_variable_efficiency(model, *key)) * flow
 
     # curtailment flows
-    for key in M.V_Curtailment.keys():
+    for key in model.V_Curtailment.keys():
         fi = FI(*key)
-        val = value(M.V_Curtailment[fi])
+        val = value(model.V_Curtailment[fi])
         if abs(val) < epsilon:
             continue
         res[fi][FlowType.CURTAIL] = val
 
     # flex techs.  This will subtract the flex from their output flow IOT make OUT the "net"
-    for key in M.V_Flex.keys():
+    for key in model.V_Flex.keys():
         fi = FI(*key)
-        flow = value(M.V_Flex[fi])
+        flow = value(model.V_Flex[fi])
         if abs(flow) < epsilon:
             continue
         res[fi][FlowType.FLEX] = flow
@@ -165,60 +165,64 @@ def poll_flow_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[Flo
     # ---- annual ----
 
     # basic annual flows
-    for r, p, i, t, v, o in M.V_FlowOutAnnual.keys():
+    for r, p, i, t, v, o in model.V_FlowOutAnnual.keys():
         # Make sure this isn't just a non-annual demand tech
-        if t not in M.tech_annual:
+        if t not in model.tech_annual:
             continue
-        for s in M.TimeSeason[p]:
-            for d in M.time_of_day:
-                if o in M.commodity_demand:
-                    distribution = value(M.DemandSpecificDistribution[r, p, s, d, o])
+        for s in model.TimeSeason[p]:
+            for d in model.time_of_day:
+                if o in model.commodity_demand:
+                    distribution = value(model.DemandSpecificDistribution[r, p, s, d, o])
                 else:
-                    distribution = value(M.SegFrac[p, s, d])
+                    distribution = value(model.SegFrac[p, s, d])
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * distribution
+                flow = value(model.V_FlowOutAnnual[r, p, i, t, v, o]) * distribution
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.OUT] = flow
-                res[fi][FlowType.IN] = flow / value(M.Efficiency[ritvo(fi)])
-                res[fi][FlowType.LOST] = (1 - value(M.Efficiency[ritvo(fi)])) * res[fi][FlowType.IN]
+                res[fi][FlowType.IN] = flow / value(model.Efficiency[ritvo(fi)])
+                res[fi][FlowType.LOST] = (1 - value(model.Efficiency[ritvo(fi)])) * res[fi][
+                    FlowType.IN
+                ]
 
     # flex annual
-    for r, p, i, t, v, o in M.V_FlexAnnual.keys():
-        for s in M.TimeSeason[p]:
-            for d in M.time_of_day:
+    for r, p, i, t, v, o in model.V_FlexAnnual.keys():
+        for s in model.TimeSeason[p]:
+            for d in model.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
-                flow = value(M.V_FlexAnnual[r, p, i, t, v, o]) * value(M.SegFrac[p, s, d])
+                flow = value(model.V_FlexAnnual[r, p, i, t, v, o]) * value(model.SegFrac[p, s, d])
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.FLEX] = flow
                 res[fi][FlowType.OUT] -= flow
 
     # construction flows
-    for r, i, t, v in M.ConstructionInput.sparse_iterkeys():
+    for r, i, t, v in model.ConstructionInput.sparse_iterkeys():
         annual = (
-            value(M.ConstructionInput[r, i, t, v])
-            * value(M.V_NewCapacity[r, t, v])
-            / value(M.PeriodLength[v])
+            value(model.ConstructionInput[r, i, t, v])
+            * value(model.V_NewCapacity[r, t, v])
+            / value(model.PeriodLength[v])
         )
-        for s in M.TimeSeason[v]:
-            for d in M.time_of_day:
+        for s in model.TimeSeason[v]:
+            for d in model.time_of_day:
                 fi = FI(r, v, s, d, i, t, v, 'ConstructionInput')
-                flow = annual * value(M.SegFrac[v, s, d])
+                flow = annual * value(model.SegFrac[v, s, d])
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.IN] = flow
 
     # end of life flows
-    for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys():
-        if (r, t, v) not in M.retirementPeriods:
+    for r, t, v, o in model.EndOfLifeOutput.sparse_iterkeys():
+        if (r, t, v) not in model.retirementPeriods:
             continue
-        for p in M.retirementPeriods[r, t, v]:
-            annual = value(M.EndOfLifeOutput[r, t, v, o]) * value(M.V_AnnualRetirement[r, p, t, v])
-            for s in M.TimeSeason[p]:
-                for d in M.time_of_day:
+        for p in model.retirementPeriods[r, t, v]:
+            annual = value(model.EndOfLifeOutput[r, t, v, o]) * value(
+                model.V_AnnualRetirement[r, p, t, v]
+            )
+            for s in model.TimeSeason[p]:
+                for d in model.time_of_day:
                     fi = FI(r, p, s, d, 'EndOfLifeOutput', t, v, o)
-                    flow = annual * value(M.SegFrac[p, s, d])
+                    flow = annual * value(model.SegFrac[p, s, d])
                     if abs(flow) < epsilon:
                         continue
                     res[fi][FlowType.OUT] = flow
@@ -226,7 +230,7 @@ def poll_flow_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict[Flo
     return res
 
 
-def poll_storage_level_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[SLI, float]:
+def poll_storage_level_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[SLI, float]:
     """
     Poll a solved model for flow results.
     :param M: A solved Model
@@ -236,29 +240,29 @@ def poll_storage_level_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[SLI
     res: dict[SLI, float] = defaultdict(float)
 
     # Storage level, the state variable for all but last time slice of each season
-    for r, p, s, d, t, v in M.StorageLevel_rpsdtv:
-        if t in M.tech_seasonal_storage:
+    for r, p, s, d, t, v in model.StorageLevel_rpsdtv:
+        if t in model.tech_seasonal_storage:
             continue
-        state = value(M.V_StorageLevel[r, p, s, d, t, v]) / (
-            value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+        state = value(model.V_StorageLevel[r, p, s, d, t, v]) / (
+            value(model.SegFracPerSeason[p, s]) * value(model.DaysPerPeriod)
         )
         sli = SLI(r, p, s, d, t, v)
         if abs(state) < epsilon:
             state = 0  # still want to know but decimals are ugly
         res[sli] = state
 
-    for r, p, s_seq, t, v in M.SeasonalStorageLevel_rpstv:
-        s = M.sequential_to_season[p, s_seq]
+    for r, p, s_seq, t, v in model.SeasonalStorageLevel_rpstv:
+        s = model.sequential_to_season[p, s_seq]
         # Ratio of days in virtual storage season to days in actual season
         # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
         # be adjusted to the number of days in the virtual storage season
-        days_adjust = value(M.TimeSeasonSequential[p, s_seq, s]) / (
-            value(M.SegFracPerSeason[p, s]) * value(M.DaysPerPeriod)
+        days_adjust = value(model.TimeSeasonSequential[p, s_seq, s]) / (
+            value(model.SegFracPerSeason[p, s]) * value(model.DaysPerPeriod)
         )
-        for d in M.time_of_day:
+        for d in model.time_of_day:
             state = (
-                value(M.V_SeasonalStorageLevel[r, p, s_seq, t, v])
-                + value(M.V_StorageLevel[r, p, s, d, t, v]) * days_adjust
+                value(model.V_SeasonalStorageLevel[r, p, s_seq, t, v])
+                + value(model.V_StorageLevel[r, p, s, d, t, v]) * days_adjust
             )
             sli = SLI(r, p, s_seq, d, t, v)
             if abs(state) < epsilon:
@@ -268,9 +272,9 @@ def poll_storage_level_results(M: TemoaModel, epsilon: float = 1e-5) -> dict[SLI
     return res
 
 
-def poll_objective(M: TemoaModel) -> list[tuple[str, float]]:
+def poll_objective(model: TemoaModel) -> list[tuple[str, float]]:
     """gather objective name, value tuples for all active objectives"""
-    objs: list[Objective] = list(M.component_data_objects(Objective))
+    objs: list[Objective] = list(model.component_data_objects(Objective))
     active_objs = [obj for obj in objs if obj.active]
     if len(active_objs) > 1:
         logger.warning('Multiple active objectives found.  All will be logged in db')
@@ -282,7 +286,7 @@ def poll_objective(M: TemoaModel) -> list[tuple[str, float]]:
 
 
 def poll_cost_results(
-    M: TemoaModel, p_0: int | None, epsilon: float = 1e-5
+    model: TemoaModel, p_0: int | None, epsilon: float = 1e-5
 ) -> tuple[
     dict[tuple[str, int, str, int], dict[CostType, float]],
     dict[tuple[str, int, str, int], dict[CostType, float]],
@@ -296,40 +300,40 @@ def poll_cost_results(
     """
     p_0_true: int
     if p_0 is None:
-        p_0_true = min(M.time_optimize)
+        p_0_true = min(model.time_optimize)
     else:
         p_0_true = p_0
 
-    p_e = M.time_future.last()
+    p_e = model.time_future.last()
 
     # conveniences...
-    GDR = value(M.GlobalDiscountRate)
+    global_discount_rate = value(model.GlobalDiscountRate)
     # MPL = M.ModelProcessLife
-    LLN = M.LoanLifetimeProcess
+    loan_lifetime_process = model.LoanLifetimeProcess
 
-    exchange_costs = ExchangeTechCostLedger(M)
+    exchange_costs = ExchangeTechCostLedger(model)
     entries: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)
-    for r, t, v in M.CostInvest.sparse_iterkeys():  # Returns only non-zero values
+    for r, t, v in model.CostInvest.sparse_iterkeys():  # Returns only non-zero values
         # gather details...
-        cap = value(M.V_NewCapacity[r, t, v])
+        cap = value(model.V_NewCapacity[r, t, v])
         if abs(cap) < epsilon:
             continue
-        loan_life = value(LLN[r, t, v])
-        loan_rate = value(M.LoanRate[r, t, v])
+        loan_life = value(loan_lifetime_process[r, t, v])
+        loan_rate = value(model.LoanRate[r, t, v])
 
-        if M.isSurvivalCurveProcess[r, t, v]:
+        if model.isSurvivalCurveProcess[r, t, v]:
             model_loan_cost, undiscounted_cost = loan_costs_survival_curve(
-                M=M,
+                model=model,
                 r=r,
                 t=t,
                 v=v,
                 loan_rate=loan_rate,
                 loan_life=loan_life,
                 capacity=cap,
-                invest_cost=value(M.CostInvest[r, t, v]),
+                invest_cost=value(model.CostInvest[r, t, v]),
                 p_0=p_0_true,
                 p_e=p_e,
-                global_discount_rate=GDR,
+                global_discount_rate=global_discount_rate,
                 vintage=v,
             )
         else:
@@ -337,11 +341,11 @@ def poll_cost_results(
                 loan_rate=loan_rate,
                 loan_life=loan_life,
                 capacity=cap,
-                invest_cost=value(M.CostInvest[r, t, v]),
-                process_life=value(M.LifetimeProcess[r, t, v]),
+                invest_cost=value(model.CostInvest[r, t, v]),
+                process_life=value(model.LifetimeProcess[r, t, v]),
                 p_0=p_0_true,
                 p_e=p_e,
-                global_discount_rate=GDR,
+                global_discount_rate=global_discount_rate,
                 vintage=v,
             )
         # screen for linked region...
@@ -368,20 +372,20 @@ def poll_cost_results(
                 {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
 
-    for r, p, t, v in M.CostFixed.sparse_iterkeys():
-        cap = value(M.V_Capacity[r, p, t, v])
+    for r, p, t, v in model.CostFixed.sparse_iterkeys():
+        cap = value(model.V_Capacity[r, p, t, v])
         if abs(cap) < epsilon:
             continue
 
-        fixed_cost = value(M.CostFixed[r, p, t, v])
-        undiscounted_fixed_cost = cap * fixed_cost * value(M.PeriodLength[p])
+        fixed_cost = value(model.CostFixed[r, p, t, v])
+        undiscounted_fixed_cost = cap * fixed_cost * value(model.PeriodLength[p])
 
         model_fixed_cost = costs.fixed_or_variable_cost(
             cap,
             value(fixed_cost),
-            value(M.PeriodLength[p]),
-            GDR=GDR,
-            P_0=float(p_0) if p_0 is not None else 0.0,
+            value(model.PeriodLength[p]),
+            global_discount_rate=global_discount_rate,
+            p_0=float(p_0_true),
             p=p,
         )
         if '-' in r:
@@ -409,33 +413,33 @@ def poll_cost_results(
                 }
             )
 
-    for r, p, t, v in M.CostVariable.sparse_iterkeys():
-        if t not in M.tech_annual:
+    for r, p, t, v in model.CostVariable.sparse_iterkeys():
+        if t not in model.tech_annual:
             activity = sum(
-                value(M.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o])
-                for S_i in M.processInputs[r, p, t, v]
-                for S_o in M.processOutputsByInput[r, p, t, v, S_i]
-                for S_s in M.TimeSeason[p]
-                for S_d in M.time_of_day
+                value(model.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o])
+                for S_i in model.processInputs[r, p, t, v]
+                for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+                for S_s in model.TimeSeason[p]
+                for S_d in model.time_of_day
             )
         else:
             activity = sum(
-                value(M.V_FlowOutAnnual[r, p, S_i, t, v, S_o])
-                for S_i in M.processInputs[r, p, t, v]
-                for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+                value(model.V_FlowOutAnnual[r, p, S_i, t, v, S_o])
+                for S_i in model.processInputs[r, p, t, v]
+                for S_o in model.processOutputsByInput[r, p, t, v, S_i]
             )
         if abs(activity) < epsilon:
             continue
 
-        var_cost = value(M.CostVariable[r, p, t, v])
-        undiscounted_var_cost = activity * var_cost * value(M.PeriodLength[p])
+        var_cost = value(model.CostVariable[r, p, t, v])
+        undiscounted_var_cost = activity * var_cost * value(model.PeriodLength[p])
 
         model_var_cost = costs.fixed_or_variable_cost(
             activity,
             var_cost,
-            value(M.PeriodLength[p]),
-            GDR=GDR,
-            P_0=float(p_0) if p_0 is not None else 0.0,
+            value(model.PeriodLength[p]),
+            global_discount_rate=global_discount_rate,
+            p_0=float(p_0_true),
             p=p,
         )
         if '-' in r:
@@ -491,9 +495,9 @@ def loan_costs(
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
         vintage=vintage,
     )
     # Override the GDR to get the undiscounted value
@@ -504,16 +508,16 @@ def loan_costs(
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
         lifetime_process=process_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
         vintage=vintage,
     )
     return float(value(model_ic)), float(value(undiscounted_cost))
 
 
 def loan_costs_survival_curve(
-    M: TemoaModel,
+    model: TemoaModel,
     r: str,
     t: str,
     v: int,
@@ -535,7 +539,7 @@ def loan_costs_survival_curve(
     #            model uses for these costs
     loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=int(loan_life))
     model_ic = costs.loan_cost_survival_curve(
-        M,
+        model,
         r,
         t,
         v,
@@ -543,14 +547,14 @@ def loan_costs_survival_curve(
         invest_cost,
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
     )
     # Override the GDR to get the undiscounted value
     global_discount_rate = 0
     undiscounted_cost = costs.loan_cost_survival_curve(
-        M,
+        model,
         r,
         t,
         v,
@@ -558,15 +562,15 @@ def loan_costs_survival_curve(
         invest_cost,
         loan_annualize=float(value(loan_ar)),
         lifetime_loan_process=loan_life,
-        P_0=p_0,
-        P_e=p_e,
-        GDR=global_discount_rate,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
     )
     return float(value(model_ic)), float(value(undiscounted_cost))
 
 
 def poll_emissions(
-    M: TemoaModel, p_0: int | None = None, epsilon: float = 1e-5
+    model: TemoaModel, p_0: int | None = None, epsilon: float = 1e-5
 ) -> tuple[dict[tuple[str, int, str, int], dict[CostType, float]], dict[EI, float]]:
     """
     Gather all emission flows, cost them and provide a tuple of costs and flows
@@ -580,11 +584,11 @@ def poll_emissions(
     #          see the note on emissions in the Cost function in temoa_rules
     p_0_true: int
     if p_0 is None:
-        p_0_true = min(M.time_optimize)
+        p_0_true = min(model.time_optimize)
     else:
         p_0_true = p_0
 
-    GDR = value(M.GlobalDiscountRate)
+    global_discount_rate = value(model.GlobalDiscountRate)
 
     ###########################
     #   Process Emissions
@@ -592,31 +596,33 @@ def poll_emissions(
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in M.EmissionActivity.sparse_iterkeys()
-        for p in M.time_optimize
-        if (r, p, t, v) in M.processInputs
+        for (r, e, i, t, v, o) in model.EmissionActivity.sparse_iterkeys()
+        for p in model.time_optimize
+        if (r, p, t, v) in model.processInputs
     ]
 
     # The "base set" can be expanded now to cover normal/annual indexing sets
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in M.TimeSeason[p]
-        for d in M.time_of_day
-        if t not in M.tech_annual
+        for s in model.TimeSeason[p]
+        for d in model.time_of_day
+        if t not in model.tech_annual
     ]
-    annual = [(r, p, e, i, t, v, o) for (r, p, e, i, t, v, o) in base if t in M.tech_annual]
+    annual = [(r, p, e, i, t, v, o) for (r, p, e, i, t, v, o) in base if t in model.tech_annual]
 
     flows: dict[EI, float] = defaultdict(float)
     # iterate through the normal and annual and accumulate flow values
     for r, p, e, s, d, i, t, v, o in normal:
         flows[EI(r, p, t, v, e)] += (
-            value(M.V_FlowOut[r, p, s, d, i, t, v, o]) * M.EmissionActivity[r, e, i, t, v, o]
+            value(model.V_FlowOut[r, p, s, d, i, t, v, o])
+            * model.EmissionActivity[r, e, i, t, v, o]
         )
 
     for r, p, e, i, t, v, o in annual:
         flows[EI(r, p, t, v, e)] += (
-            value(M.V_FlowOutAnnual[r, p, i, t, v, o]) * M.EmissionActivity[r, e, i, t, v, o]
+            value(model.V_FlowOutAnnual[r, p, i, t, v, o])
+            * model.EmissionActivity[r, e, i, t, v, o]
         )
 
     # gather costs
@@ -629,17 +635,17 @@ def poll_emissions(
             continue
         # screen to see if there is an associated cost
         cost_index = (ei.r, ei.p, ei.e)
-        if cost_index not in M.CostEmission:
+        if cost_index not in model.CostEmission:
             continue
         undiscounted_emiss_cost = (
-            flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * M.PeriodLength[ei.p]
+            flows[ei] * model.CostEmission[ei.r, ei.p, ei.e] * model.PeriodLength[ei.p]
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=flows[ei],
-            cost_factor=value(M.CostEmission[ei.r, ei.p, ei.e]),
-            cost_years=M.PeriodLength[ei.p],
-            GDR=GDR,
-            P_0=p_0_true,
+            cost_factor=value(model.CostEmission[ei.r, ei.p, ei.e]),
+            cost_years=model.PeriodLength[ei.p],
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
@@ -651,12 +657,16 @@ def poll_emissions(
 
     # iterate through embodied flows
     embodied_flows: dict[EI, float] = defaultdict(float)
-    for r, e, t, v in M.EmissionEmbodied.sparse_iterkeys():
+    for r, e, t, v in model.EmissionEmbodied.sparse_iterkeys():
         embodied_flows[EI(r, v, t, v, e)] += value(
-            M.V_NewCapacity[r, t, v] * M.EmissionEmbodied[r, e, t, v] / M.PeriodLength[v]
+            model.V_NewCapacity[r, t, v]
+            * model.EmissionEmbodied[r, e, t, v]
+            / model.PeriodLength[v]
         )  # for embodied costs
         flows[EI(r, v, t, v, e)] += value(
-            M.V_NewCapacity[r, t, v] * M.EmissionEmbodied[r, e, t, v] / M.PeriodLength[v]
+            model.V_NewCapacity[r, t, v]
+            * model.EmissionEmbodied[r, e, t, v]
+            / model.PeriodLength[v]
         )  # add embodied to process emissions
 
     # add embodied costs to process costs
@@ -667,21 +677,21 @@ def poll_emissions(
             continue
         # screen to see if there is an associated cost
         cost_index = (ei.r, ei.v, ei.e)
-        if cost_index not in M.CostEmission:
+        if cost_index not in model.CostEmission:
             continue
         undiscounted_emiss_cost = (
             embodied_flows[ei]
-            * M.CostEmission[ei.r, ei.v, ei.e]
-            * M.PeriodLength[ei.v]  # treat as fixed cost distributed over construction period
+            * model.CostEmission[ei.r, ei.v, ei.e]
+            * model.PeriodLength[ei.v]  # treat as fixed cost distributed over construction period
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=embodied_flows[ei],
-            cost_factor=value(M.CostEmission[ei.r, ei.v, ei.e]),
-            cost_years=M.PeriodLength[
+            cost_factor=value(model.CostEmission[ei.r, ei.v, ei.e]),
+            cost_years=model.PeriodLength[
                 ei.v
             ],  # treat as fixed cost distributed over construction period
-            GDR=GDR,
-            P_0=p_0_true,
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.v,
         )
         ud_costs[ei.r, ei.v, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
@@ -693,15 +703,15 @@ def poll_emissions(
 
     # iterate through end of life flows
     eol_flows: dict[EI, float] = defaultdict(float)
-    for r, e, t, v in M.EmissionEndOfLife.sparse_iterkeys():
-        if (r, t, v) not in M.retirementPeriods:
+    for r, e, t, v in model.EmissionEndOfLife.sparse_iterkeys():
+        if (r, t, v) not in model.retirementPeriods:
             continue
-        for p in M.retirementPeriods[r, t, v]:
+        for p in model.retirementPeriods[r, t, v]:
             eol_flows[EI(r, p, t, v, e)] += value(
-                M.V_AnnualRetirement[r, p, t, v] * M.EmissionEndOfLife[r, e, t, v]
+                model.V_AnnualRetirement[r, p, t, v] * model.EmissionEndOfLife[r, e, t, v]
             )  # for eol costs
             flows[EI(r, p, t, v, e)] += value(
-                M.V_AnnualRetirement[r, p, t, v] * M.EmissionEndOfLife[r, e, t, v]
+                model.V_AnnualRetirement[r, p, t, v] * model.EmissionEndOfLife[r, e, t, v]
             )  # add eol to process emissions
 
     # add embodied costs to process costs
@@ -712,21 +722,21 @@ def poll_emissions(
             continue
         # screen to see if there is an associated cost
         cost_index = (ei.r, ei.p, ei.e)
-        if cost_index not in M.CostEmission:
+        if cost_index not in model.CostEmission:
             continue
         undiscounted_emiss_cost = (
             eol_flows[ei]
-            * M.CostEmission[ei.r, ei.p, ei.e]
-            * M.PeriodLength[ei.p]  # treat as fixed cost distributed over retirement period
+            * model.CostEmission[ei.r, ei.p, ei.e]
+            * model.PeriodLength[ei.p]  # treat as fixed cost distributed over retirement period
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=eol_flows[ei],
-            cost_factor=value(M.CostEmission[ei.r, ei.p, ei.e]),
-            cost_years=M.PeriodLength[
+            cost_factor=value(model.CostEmission[ei.r, ei.p, ei.e]),
+            cost_years=model.PeriodLength[
                 ei.p
             ],  # treat as fixed cost distributed over retirement period
-            GDR=GDR,
-            P_0=p_0_true,
+            global_discount_rate=global_discount_rate,
+            p_0=p_0_true,
             p=ei.p,
         )
         ud_costs[ei.r, ei.p, ei.t, ei.v] += float(value(undiscounted_emiss_cost))

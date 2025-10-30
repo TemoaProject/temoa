@@ -6,6 +6,8 @@ These helpers are used by various components to perform common tasks like
 building Pyomo expressions from strings or calculating time-variable efficiencies.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -49,15 +51,15 @@ def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) ->
 
 
 def get_variable_efficiency(
-    M: 'TemoaModel',
-    r: 'Region',
-    p: 'Period',
-    s: 'Season',
-    d: 'TimeOfDay',
-    i: 'Commodity',
-    t: 'Technology',
-    v: 'Vintage',
-    o: 'Commodity',
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    i: Commodity,
+    t: Technology,
+    v: Vintage,
+    o: Commodity,
 ) -> float:
     """
     Calculates the effective efficiency for a process in a specific time slice.
@@ -72,9 +74,9 @@ def get_variable_efficiency(
     This dictionary-lookup approach is used for performance, as it is much faster
     than repeatedly checking the indices of a large Pyomo parameter during model build.
     """
-    if M.isEfficiencyVariable.get((r, p, i, t, v, o), False):
-        return value(M.Efficiency[r, i, t, v, o]) * value(
-            M.EfficiencyVariable[r, p, s, d, i, t, v, o]
+    if model.isEfficiencyVariable.get((r, p, i, t, v, o), False):
+        return value(model.Efficiency[r, i, t, v, o]) * value(
+            model.EfficiencyVariable[r, p, s, d, i, t, v, o]
         )
     else:
-        return value(M.Efficiency[r, i, t, v, o])
+        return value(model.Efficiency[r, i, t, v, o])

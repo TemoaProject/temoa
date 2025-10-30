@@ -13,10 +13,10 @@ strict digraph model {
 
 	subgraph unused_techs {
 		node [
-		  color     = "%(unused_color)s",
-		  fontcolor = "%(unusedfont_color)s",
-		  shape     = "box",
-		  fontcolor = "%(font_color)s"
+            color     = "%(unused_color)s",
+            fontcolor = "%(unusedfont_color)s",
+            shape     = "box",
+            fontcolor = "%(font_color)s"
 		] ;
 
 		%(dtechs)s
@@ -24,10 +24,10 @@ strict digraph model {
 
 	subgraph unused_energy_carriers {
 		node [
-		  color     = "%(unused_color)s",
-		  fontcolor = "%(unusedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(unused_color)s",
+            fontcolor = "%(unusedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		] ;
 
 		%(dcarriers)s
@@ -35,10 +35,10 @@ strict digraph model {
 
 	subgraph unused_emissions {
 		node [
-		  color     = "%(unused_color)s",
-		  fontcolor = "%(unusedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(unused_color)s",
+            fontcolor = "%(unusedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		]
 
 		%(demissions)s
@@ -46,11 +46,10 @@ strict digraph model {
 
 	subgraph in_use_techs {
 		node [
-		  color     = "%(tech_color)s",
-		  fontcolor = "%(usedfont_color)s",
-		  shape     = "box"
-		  fontcolor = "%(font_color)s"
-
+            color     = "%(tech_color)s",
+			fontcolor = "%(usedfont_color)s",
+			shape     = "box",
+			fontcolor = "%(font_color)s"
 		] ;
 
 		%(etechs)s
@@ -58,10 +57,10 @@ strict digraph model {
 
 	subgraph in_use_energy_carriers {
 		node [
-		  color     = "%(commodity_color)s",
-		  fontcolor = "%(usedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(commodity_color)s",
+            fontcolor = "%(usedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		] ;
 
 		%(ecarriers)s
@@ -69,10 +68,10 @@ strict digraph model {
 
 	subgraph in_use_emissions {
 		node [
-		  color     = "%(commodity_color)s",
-		  fontcolor = "%(usedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(commodity_color)s",
+            fontcolor = "%(usedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		] ;
 
 		%(eemissions)s
@@ -97,7 +96,7 @@ strict digraph model {
 			%(eflowso)s
 		}
 	}
-	
+
 	{rank = same; %(xnodes)s}
 }
 """
@@ -129,10 +128,10 @@ strict digraph model {
 
 	subgraph energy_carriers {
 		node [
-		  color     = "%(commodity_color)s",
-		  fontcolor = "%(usedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(commodity_color)s",
+            fontcolor = "%(usedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		] ;
 
 		%(enodes)s
@@ -178,10 +177,10 @@ strict digraph model {
 
 	subgraph energy_carriers {
 		node [
-		  color     = "%(commodity_color)s",
-		  fontcolor = "%(usedfont_color)s",
-		  shape     = "circle",
-		  fillcolor = "%(fill_color)s"
+            color     = "%(commodity_color)s",
+            fontcolor = "%(usedfont_color)s",
+            shape     = "circle",
+            fillcolor = "%(fill_color)s"
 		] ;
 
 		%(enodes)s
@@ -212,13 +211,13 @@ strict digraph result_commodity_%(inp_commodity)s {
 
 	node [ shape="box", style="filled", fontcolor="%(font_color)s" ] ;
 	edge [
-	  arrowhead  = "vee",
-	  fontsize   = "8",
-	  label      = "   ",
-	  labelfloat = "False",
-	  labelfontcolor = "lightgreen"
-	  len        = "2",
-	  weight     = "0.5",
+        arrowhead  = "vee",
+        fontsize   = "8",
+        label      = "   ",
+        labelfloat = "False",
+        labelfontcolor = "lightgreen"
+        len        = "2",
+        weight     = "0.5",
 	] ;
 
 	%(resource_node)s
@@ -282,7 +281,7 @@ strict digraph model {
 
 		%(oedges)s
 	}
-	
+
 	{rank = same; %(snodes)s}
 }
 """

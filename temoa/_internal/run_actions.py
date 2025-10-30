@@ -31,7 +31,6 @@ import sqlite3
 import sys
 from logging import getLogger
 from pathlib import Path
-from sys import stderr as SE
 from sys import version_info
 from time import time
 
@@ -51,7 +50,7 @@ import definitions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
-from temoa.data_processing.DB_to_Excel import make_excel
+from temoa.data_processing.db_to_excel import make_excel
 
 logger = getLogger(__name__)
 
@@ -104,7 +103,7 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
             logger.error(
                 'Database does not appear to have MetaData table with required versioning info.  See schema for v3+.'
             )
-            SE.write(
+            sys.stderr.write(
                 'Database does not appear to have MetaData table with required.  Is this version 3+ compatible?\n'
                 'If required, see dox on using the database migrator to move to v3.'
             )
@@ -151,8 +150,8 @@ def build_instance(
 
     hack = time()
     if not silent:
-        SE.write('[        ] Creating model instance.')
-        SE.flush()
+        sys.stderr.write('[        ] Creating model instance.')
+        sys.stderr.flush()
     logger.info('Started creating model instance from data')
     instance = model.create_instance(loaded_portal, name=model_name)
     if not silent:
@@ -165,20 +164,20 @@ def build_instance(
                     for line in f
                 )
                 if warnings_found:
-                    SE.write(
+                    sys.stderr.write(
                         '\r[%8.2f] Instance created with warnings. Check log file.\n'
                         % (time() - hack)
                     )
                 else:
-                    SE.write(
+                    sys.stderr.write(
                         '\r[%8.2f] Instance created.       \n' % (time() - hack)
                     )  # needs spaces to clear previous line
-            SE.flush()
+            sys.stderr.flush()
         except Exception:
-            SE.write(
+            sys.stderr.write(
                 '\r[%8.2f] Instance created.       \n' % (time() - hack)
             )  # needs spaces to clear previous line
-            SE.flush()
+            sys.stderr.flush()
     logger.info('Finished creating model instance from data')
 
     # save LP if requested
@@ -241,8 +240,8 @@ def solve_instance(
 
     hack = time()
     if not silent:
-        SE.write('[        ] Solving.')
-        SE.flush()
+        sys.stderr.write('[        ] Solving.')
+        sys.stderr.flush()
 
     logger.info(
         'Starting the solve process using %s solver on model %s', solver_name, instance.name
@@ -317,7 +316,7 @@ def solve_instance(
                 logger.error(
                     'Solver reported termination condition (if any): %s', result['Solution'].Status
                 )
-            SE.write('solver failure.  See log file.')
+            sys.stderr.write('solver failure.  See log file.')
             sys.exit(-1)
 
         if check_optimal_termination(result):
@@ -330,8 +329,8 @@ def solve_instance(
         logger.debug('Solver results: \n %s', result.solver)
 
     if not silent:
-        SE.write('\r[%8.2f] Model solved.\n' % (time() - hack))
-        SE.flush()
+        sys.stderr.write('\r[%8.2f] Model solved.\n' % (time() - hack))
+        sys.stderr.flush()
 
     return instance, result
 
@@ -362,13 +361,13 @@ def handle_results(
     if not config.silent:
         msg = '[        ] Calculating reporting variables and formatting results.'
         # yield 'Calculating reporting variables and formatting results.'
-        SE.write(msg)
-        SE.flush()
+        sys.stderr.write(msg)
+        sys.stderr.flush()
 
     table_writer = TableWriter(config=config)
     if config.save_duals:
         table_writer.write_results(
-            M=instance,
+            model=instance,
             results_with_duals=results,
             save_storage_levels=config.save_storage_levels,
             append=append,
@@ -376,17 +375,17 @@ def handle_results(
         )
     else:
         table_writer.write_results(
-            M=instance,
+            model=instance,
             append=append,
             save_storage_levels=config.save_storage_levels,
             iteration=iteration,
         )
 
     if not config.silent:
-        SE.write(
+        sys.stderr.write(
             '\r[%8.2f] Results processed.                                    \n' % (time() - hack)
         )
-        SE.flush()
+        sys.stderr.flush()
 
     if config.save_excel:
         scenario_name = (

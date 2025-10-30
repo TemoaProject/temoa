@@ -40,19 +40,19 @@ class TerminationConditionEnum(int, Enum):
     Updated to match Pyomo 6.9.2 integer-based enum values.
     """
 
-    convergenceCriteriaSatisfied = 0
-    maxTimeLimit = 1
-    iterationLimit = 2
-    objectiveLimit = 3
-    minStepLength = 4
+    convergence_criteria_satisfied = 0
+    max_time_limit = 1
+    iteration_limit = 2
+    objective_limit = 3
+    min_step_length = 4
     unbounded = 5
-    provenInfeasible = 6
-    locallyInfeasible = 7
-    infeasibleOrUnbounded = 8
+    proven_infeasible = 6
+    locally_infeasible = 7
+    infeasible_or_unbounded = 8
     error = 9
     interrupted = 10
-    licensingProblems = 11
-    emptyModel = 12
+    licensing_problems = 11
+    empty_model = 12
     unknown = 42
 
 

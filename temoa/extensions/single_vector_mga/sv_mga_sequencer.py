@@ -40,7 +40,7 @@ from pyomo.opt import check_optimal_termination
 
 from temoa._internal.run_actions import build_instance, handle_results, save_lp, solve_instance
 from temoa._internal.table_writer import TableWriter
-from temoa.components.costs import TotalCost_rule
+from temoa.components.costs import total_cost_rule
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
@@ -134,7 +134,7 @@ class SvMgaSequencer:
         logger.info('Completed initial solve with total cost:  %0.2f', tot_cost)
         logger.info('Relaxing cost by fraction:  %0.3f', self.cost_epsilon)
         # get hook on the expression generator for total cost...
-        cost_expression = TotalCost_rule(instance)
+        cost_expression = total_cost_rule(instance)
         instance.cost_cap = Constraint(expr=cost_expression <= (1 + self.cost_epsilon) * tot_cost)
 
         # 3b. remove the old objective
@@ -182,17 +182,17 @@ class SvMgaSequencer:
             logger.error('The baseline SVMGA solve failed.  Terminating run.')
             raise RuntimeError('Baseline SVMGA solve failed.  Terminating run.')
         logger.info(
-            'Completed secondary solve with total cost:  %0.2f', value(TotalCost_rule(instance))
+            'Completed secondary solve with total cost:  %0.2f', value(total_cost_rule(instance))
         )
 
         # record the 1-solve in all tables
         handle_results(instance, results=res, config=self.config, append=True, iteration=1)
 
         if not self.config.silent:
-            summarize(self.config, tot_cost, value(TotalCost_rule(instance)))
+            summarize(self.config, tot_cost, value(total_cost_rule(instance)))
 
     @staticmethod
-    def flow_idxs_from_eac_idx(M: TemoaModel, reitvo: tuple) -> tuple[list[tuple], ...]:
+    def flow_idxs_from_eac_idx(model: TemoaModel, reitvo: tuple) -> tuple[list[tuple], ...]:
         """
         From the emission index, expand to create the full list of possible flow indices
         for regular and annual flows.  These may/may not be valid and must be screened
@@ -200,16 +200,19 @@ class SvMgaSequencer:
         """
         r, _, i, t, v, o = reitvo
         psd_set = [
-            (p, s, d) for p in M.time_optimize for s in M.TimeSeason[p] for d in M.time_of_day
+            (p, s, d)
+            for p in model.time_optimize
+            for s in model.TimeSeason[p]
+            for d in model.time_of_day
         ]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
-        annual_flow_idxs = [(r, p, i, t, v, o) for p in M.time_optimize]
+        annual_flow_idxs = [(r, p, i, t, v, o) for p in model.time_optimize]
 
         return flow_idxs, annual_flow_idxs
 
     @staticmethod
     def construct_obj(
-        M: TemoaModel,
+        model: TemoaModel,
         emission_labels: Iterable[str],
         capacity_labels: Iterable[str],
         activity_labels: Iterable[str],
@@ -250,36 +253,38 @@ class SvMgaSequencer:
 
         # handle emissions...
         for label in emission_labels:
-            idxs = [idx for idx in M.EmissionActivity if idx[1] == label]
+            idxs = [idx for idx in model.EmissionActivity if idx[1] == label]
             logger.debug('Located %d items for emission label: %s', len(idxs), label)
             for idx in idxs:
                 # for each indexed item in EmissionActivity, we need to search both the regular
                 # flows and the annual flows.  And, we need to sum across the "expanded" index
                 # for both which includes period, season, tod or just period respectively
-                expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(M, idx)
+                expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(
+                    model, idx
+                )
                 element = sum(
-                    M.V_FlowOut[flow_idx] * M.EmissionActivity[idx]
+                    model.V_FlowOut[flow_idx] * model.EmissionActivity[idx]
                     for flow_idx in expanded_idxs
-                    if flow_idx in M.V_FlowOut
+                    if flow_idx in model.V_FlowOut
                 )
                 expr += element
                 annual_element = sum(
-                    M.V_FlowOutAnnual[annual_flow_idx] * M.EmissionActivity[idx]
+                    model.V_FlowOutAnnual[annual_flow_idx] * model.EmissionActivity[idx]
                     for annual_flow_idx in expanded_annual_idxs
-                    if annual_flow_idx in M.V_FlowOutAnnual
+                    if annual_flow_idx in model.V_FlowOutAnnual
                 )
                 expr += annual_element
 
         # handle activity...
         for label in activity_labels:
-            idxs = [idx for idx in M.V_FlowOut if idx[5] == label]
+            idxs = [idx for idx in model.V_FlowOut if idx[5] == label]
             logger.debug('Located %d items for activity label: %s', len(idxs), label)
-            expr += sum(M.V_FlowOut[idx] for idx in idxs)
+            expr += sum(model.V_FlowOut[idx] for idx in idxs)
 
         # handle capacity...
         for label in capacity_labels:
-            idxs = [idx for idx in M.V_Capacity if idx[2] == label]
+            idxs = [idx for idx in model.V_Capacity if idx[2] == label]
             logger.debug('Located %d items for capacity label: %s', len(idxs), label)
-            expr += sum(M.V_Capacity[idx] for idx in idxs)
+            expr += sum(model.V_Capacity[idx] for idx in idxs)
 
         return expr

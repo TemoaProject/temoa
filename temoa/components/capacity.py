@@ -13,10 +13,12 @@ from __future__ import annotations
 
 from itertools import product as cross_product
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from deprecated import deprecated
 from pyomo.environ import value
+
+from temoa.types import ExprLike
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -38,17 +40,17 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def CheckCapacityFactorProcess(M: TemoaModel) -> None:
-    count_rptv: dict[tuple[Any, Any, Any, Any], int] = {}
+def check_capacity_factor_process(model: TemoaModel) -> None:
+    count_rptv: dict[tuple[Region, Period, Technology, Vintage], int] = {}
     # Pull CapacityFactorTech by default
-    for r, p, _s, _d, t in M.CapacityFactor_rpsdt:
-        for v in M.processVintages[r, p, t]:
-            M.isCapacityFactorProcess[r, p, t, v] = False
+    for r, p, _s, _d, t in model.CapacityFactor_rpsdt:
+        for v in model.processVintages[r, p, t]:
+            model.isCapacityFactorProcess[r, p, t, v] = False
             count_rptv[r, p, t, v] = 0
 
     # Check for bad values and count up the good ones
-    for r, p, _s, _d, t, v in M.CapacityFactorProcess.sparse_iterkeys():
-        if v not in M.processVintages[r, p, t]:
+    for r, p, _s, _d, t, v in model.CapacityFactorProcess.sparse_iterkeys():
+        if v not in model.processVintages[r, p, t]:
             msg = f'Invalid process {p, v} for {r, t} in CapacityFactorProcess table'
             logger.error(msg)
             raise ValueError(msg)
@@ -59,9 +61,9 @@ def CheckCapacityFactorProcess(M: TemoaModel) -> None:
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
     for (r, p, t, v), count in count_rptv.items():
-        num_seg = len(M.TimeSeason[p]) * len(M.time_of_day)
+        num_seg = len(model.TimeSeason[p]) * len(model.time_of_day)
         if count > 0:
-            M.isCapacityFactorProcess[r, p, t, v] = True
+            model.isCapacityFactorProcess[r, p, t, v] = True
             if count < num_seg:
                 logger.info(
                     'Some but not all processes were set in CapacityFactorProcess (%i out of a possible %i) for: %s'
@@ -73,28 +75,27 @@ def CheckCapacityFactorProcess(M: TemoaModel) -> None:
 
 
 @deprecated('should not be needed.  We are pulling the default on-the-fly where used')
-def CreateCapacityFactors(M: TemoaModel) -> None:
+def create_capacity_factors(model: TemoaModel) -> None:
     """
     Steps to creating capacity factors:
     1. Collect all possible processes
     2. Find the ones _not_ specified in CapacityFactorProcess
     3. Set them, based on CapacityFactorTech.
     """
-    # Shorter names, for us lazy programmer types
-    CFP = M.CapacityFactorProcess
+    capacity_factor_process = model.CapacityFactorProcess
 
     # Step 1
-    processes = {(r, t, v) for r, i, t, v, o in M.Efficiency.sparse_iterkeys()}
+    processes = {(r, t, v) for r, i, t, v, o in model.Efficiency.sparse_iterkeys()}
 
     all_cfs = {
         (r, p, s, d, t, v)
         for (r, t, v) in processes
-        for p in M.processPeriods[r, t, v]
-        for s, d in cross_product(M.TimeSeason[p], M.time_of_day)
+        for p in model.processPeriods[r, t, v]
+        for s, d in cross_product(model.TimeSeason[p], model.time_of_day)
     }
 
     # Step 2
-    unspecified_cfs = all_cfs.difference(CFP.sparse_iterkeys())
+    unspecified_cfs = all_cfs.difference(capacity_factor_process.sparse_iterkeys())
 
     # Step 3
 
@@ -106,7 +107,7 @@ def CreateCapacityFactors(M: TemoaModel) -> None:
     if unspecified_cfs:
         # CFP._constructed = False
         for r, p, s, d, t, v in unspecified_cfs:
-            CFP[r, p, s, d, t, v] = M.CapacityFactorTech[r, p, s, d, t]
+            capacity_factor_process[r, p, s, d, t, v] = model.CapacityFactorTech[r, p, s, d, t]
         logger.debug(
             'Created Capacity Factors for %d processes without an explicit specification',
             len(unspecified_cfs),
@@ -115,7 +116,7 @@ def CreateCapacityFactors(M: TemoaModel) -> None:
 
 
 def get_default_capacity_factor(
-    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> float:
     """
     This initializer is used to fill the CapacityFactorProcess from the CapacityFactorTech where needed.
@@ -132,16 +133,16 @@ def get_default_capacity_factor(
     :param v: vintage
     :return: the capacity factor
     """
-    return value(M.CapacityFactorTech[r, p, s, d, t])
+    return value(model.CapacityFactorTech[r, p, s, d, t])
 
 
 def get_capacity_factor(
-    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> float:
-    if M.isCapacityFactorProcess[r, p, t, v]:
-        return value(M.CapacityFactorProcess[r, p, s, d, t, v])
+    if model.isCapacityFactorProcess[r, p, t, v]:
+        return value(model.CapacityFactorProcess[r, p, s, d, t, v])
     else:
-        return value(M.CapacityFactorTech[r, p, s, d, t])
+        return value(model.CapacityFactorTech[r, p, s, d, t])
 
 
 # ============================================================================
@@ -149,55 +150,59 @@ def get_capacity_factor(
 # ============================================================================
 
 
-def CapacityVariableIndices(
-    M: TemoaModel,
+def capacity_variable_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Technology, Vintage]] | None:
-    return M.newCapacity_rtv
+    return model.newCapacity_rtv
 
 
-def RetiredCapacityVariableIndices(
-    M: TemoaModel,
+def retired_capacity_variable_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]]:
     return {
         (r, p, t, v)
-        for r, p, t in M.processVintages
-        if t in M.tech_retirement and t not in M.tech_uncap
-        for v in M.processVintages[r, p, t]
-        if v < p <= v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[p])
+        for r, p, t in model.processVintages
+        if t in model.tech_retirement and t not in model.tech_uncap
+        for v in model.processVintages[r, p, t]
+        if v < p <= v + value(model.LifetimeProcess[r, t, v]) - value(model.PeriodLength[p])
     }
 
 
-def AnnualRetirementVariableIndices(
-    M: TemoaModel,
+def annual_retirement_variable_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]]:
-    return {(r, p, t, v) for r, t, v in M.retirementPeriods for p in M.retirementPeriods[r, t, v]}
+    return {
+        (r, p, t, v)
+        for r, t, v in model.retirementPeriods
+        for p in model.retirementPeriods[r, t, v]
+    }
 
 
-def CapacityAvailableVariableIndices(
-    M: TemoaModel,
+def capacity_available_variable_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology]] | None:
-    return M.activeCapacityAvailable_rpt
+    return model.activeCapacityAvailable_rpt
 
 
-def RegionalExchangeCapacityConstraintIndices(
-    M: TemoaModel,
+def regional_exchange_capacity_constraint_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Region, Period, Technology, Vintage]]:
     indices: set[tuple[Region, Region, Period, Technology, Vintage]] = set()
-    for r_e, p, i in M.exportRegions:
-        for r_i, t, v, _o in M.exportRegions[r_e, p, i]:
+    for r_e, p, i in model.exportRegions:
+        for r_i, t, v, _o in model.exportRegions[r_e, p, i]:
             indices.add((r_e, r_i, p, t, v))
 
     return indices
 
 
-def CapacityAnnualConstraintIndices(
-    M: TemoaModel,
+def capacity_annual_constraint_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]]:
     capacity_indices: set[tuple[Region, Period, Technology, Vintage]] = set()
-    if M.activeActivity_rptv:
-        for r, p, t, v in M.activeActivity_rptv:
-            if t in M.tech_annual and t not in M.tech_demand:
-                if t not in M.tech_uncap:
+    if model.activeActivity_rptv:
+        for r, p, t, v in model.activeActivity_rptv:
+            if t in model.tech_annual and t not in model.tech_demand:
+                if t not in model.tech_uncap:
                     capacity_indices.add((r, p, t, v))
     else:
         return set()
@@ -205,17 +210,17 @@ def CapacityAnnualConstraintIndices(
     return capacity_indices
 
 
-def CapacityConstraintIndices(
-    M: TemoaModel,
+def capacity_constraint_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     capacity_indices: set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] = set()
-    if M.activeActivity_rptv:
-        for r, p, t, v in M.activeActivity_rptv:
-            if t not in M.tech_annual or t in M.tech_demand:
-                if t not in M.tech_uncap:
-                    if t not in M.tech_storage:
-                        for s in M.TimeSeason[p]:
-                            for d in M.time_of_day:
+    if model.activeActivity_rptv:
+        for r, p, t, v in model.activeActivity_rptv:
+            if t not in model.tech_annual or t in model.tech_demand:
+                if t not in model.tech_uncap:
+                    if t not in model.tech_storage:
+                        for s in model.TimeSeason[p]:
+                            for d in model.time_of_day:
                                 capacity_indices.add((r, p, s, d, t, v))
     else:
         return set()
@@ -224,36 +229,36 @@ def CapacityConstraintIndices(
 
 
 @deprecated('switched over to validator... this set is typically VERY empty')
-def CapacityFactorProcessIndices(
-    M: TemoaModel,
-) -> set[tuple[str, str, str, str, int]]:
+def capacity_factor_process_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Season, TimeOfDay, Technology, Vintage]]:
     indices: set[tuple[Region, Season, TimeOfDay, Technology, Vintage]] = set()
-    for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
-        for p in M.time_optimize:
-            for s in M.TimeSeason[p]:
-                for d in M.time_of_day:
+    for r, _i, t, v, _o in model.Efficiency.sparse_iterkeys():
+        for p in model.time_optimize:
+            for s in model.TimeSeason[p]:
+                for d in model.time_of_day:
                     indices.add((r, s, d, t, v))
     return indices
 
 
-def CapacityFactorTechIndices(
-    M: TemoaModel,
+def capacity_factor_tech_indices(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology]]:
     all_cfs: set[tuple[Region, Period, Season, TimeOfDay, Technology]] = set()
-    if M.activeCapacityAvailable_rpt:
-        for r, p, t in M.activeCapacityAvailable_rpt:
-            for s in M.TimeSeason[p]:
-                for d in M.time_of_day:
+    if model.activeCapacityAvailable_rpt:
+        for r, p, t in model.activeCapacityAvailable_rpt:
+            for s in model.TimeSeason[p]:
+                for d in model.time_of_day:
                     all_cfs.add((r, p, s, d, t))
     else:
         return set()
     return all_cfs
 
 
-def CapacityAvailableVariableIndicesVintage(
-    M: TemoaModel,
+def capacity_available_variable_indices_vintage(
+    model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]] | None:
-    return M.activeCapacityAvailable_rptv
+    return model.activeCapacityAvailable_rptv
 
 
 # ============================================================================
@@ -261,9 +266,9 @@ def CapacityAvailableVariableIndicesVintage(
 # ============================================================================
 
 
-def AnnualRetirement_Constraint(
-    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
-) -> Any:
+def annual_retirement_constraint(
+    model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> ExprLike:
     r"""
     Get the annualised retirement rate for a process in a given period.
     Used to output retirement (including end of life, EOL) and to model end of
@@ -295,57 +300,57 @@ def AnnualRetirement_Constraint(
     """
 
     ## Get the capacity at the start of this period
-    if p == v + value(M.LifetimeProcess[r, t, v]):
+    if p == v + value(model.LifetimeProcess[r, t, v]):
         # Exact EOL. No V_Capacity or V_RetiredCapacity for this period.
-        if p == M.time_optimize.first():
+        if p == model.time_optimize.first():
             # Must be existing capacity. Apply survival curve to existing cap
-            cap_begin = M.ExistingCapacity[r, t, v] * M.LifetimeSurvivalCurve[r, p, t, v]
+            cap_begin = model.ExistingCapacity[r, t, v] * model.LifetimeSurvivalCurve[r, p, t, v]
         else:
             # Get previous capacity and continue survival curve
-            p_prev = M.time_optimize.prev(p)
+            p_prev = model.time_optimize.prev(p)
             cap_begin = (
-                M.V_Capacity[r, p_prev, t, v]
-                * value(M.LifetimeSurvivalCurve[r, p, t, v])
-                / value(M.ProcessLifeFrac[r, p_prev, t, v])
+                model.V_Capacity[r, p_prev, t, v]
+                * value(model.LifetimeSurvivalCurve[r, p, t, v])
+                / value(model.ProcessLifeFrac[r, p_prev, t, v])
             )
     else:
         # The capacity at the beginning of the period
         cap_begin = (
-            M.V_Capacity[r, p, t, v]
-            * value(M.LifetimeSurvivalCurve[r, p, t, v])
-            / value(M.ProcessLifeFrac[r, p, t, v])
+            model.V_Capacity[r, p, t, v]
+            * value(model.LifetimeSurvivalCurve[r, p, t, v])
+            / value(model.ProcessLifeFrac[r, p, t, v])
         )
 
     ## Get the capacity at the end of this period
-    if p <= v + value(M.LifetimeProcess[r, t, v]) < p + value(M.PeriodLength[p]):
+    if p <= v + value(model.LifetimeProcess[r, t, v]) < p + value(model.PeriodLength[p]):
         # EOL so capacity ends on zero
         cap_end = 0
     else:
         # Mid-life period, ending capacity is beginning capacity of next period
-        p_next = M.time_future.next(p)
+        p_next = model.time_future.next(p)
 
-        if p == M.time_optimize.last() or p_next == v + value(M.LifetimeProcess[r, t, v]):
+        if p == model.time_optimize.last() or p_next == v + value(model.LifetimeProcess[r, t, v]):
             # No V_Capacity or V_RetiredCapacity for next period so just continue down the survival curve
             cap_end = (
                 cap_begin
-                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
-                / value(M.LifetimeSurvivalCurve[r, p, t, v])
+                * value(model.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(model.LifetimeSurvivalCurve[r, p, t, v])
             )
         else:
             # Get the next period's beginning capacity
             cap_end = (
-                M.V_Capacity[r, p_next, t, v]
-                * value(M.LifetimeSurvivalCurve[r, p_next, t, v])
-                / value(M.ProcessLifeFrac[r, p_next, t, v])
+                model.V_Capacity[r, p_next, t, v]
+                * value(model.LifetimeSurvivalCurve[r, p_next, t, v])
+                / value(model.ProcessLifeFrac[r, p_next, t, v])
             )
 
-    annualised_retirement = (cap_begin - cap_end) / M.PeriodLength[p]
-    return M.V_AnnualRetirement[r, p, t, v] == annualised_retirement
+    annualised_retirement = (cap_begin - cap_end) / model.PeriodLength[p]
+    return model.V_AnnualRetirement[r, p, t, v] == annualised_retirement
 
 
-def CapacityAvailableByPeriodAndTech_Constraint(
-    M: TemoaModel, r: Region, p: Period, t: Technology
-) -> Any:
+def capacity_available_by_period_and_tech_constraint(
+    model: TemoaModel, r: Region, p: Period, t: Technology
+) -> ExprLike:
     r"""
 
     The :math:`\textbf{CAPAVL}` variable is nominally for reporting solution values,
@@ -359,15 +364,15 @@ def CapacityAvailableByPeriodAndTech_Constraint(
         \\
         \forall p \in \text{P}^o, r \in R, t \in T
     """
-    cap_avail = sum(M.V_Capacity[r, p, t, S_v] for S_v in M.processVintages[r, p, t])
+    cap_avail = sum(model.V_Capacity[r, p, t, S_v] for S_v in model.processVintages[r, p, t])
 
-    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
+    expr = model.V_CapacityAvailableByPeriodAndTech[r, p, t] == cap_avail
     return expr
 
 
-def CapacityAnnual_Constraint(
-    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
-) -> Any:
+def capacity_annual_constraint(
+    model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> ExprLike:
     r"""
     Similar to Capacity_Constraint, but for technologies belonging to the
     :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
@@ -390,17 +395,17 @@ def CapacityAnnual_Constraint(
         \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
     """
     activity_rptv = sum(
-        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-        for S_i in M.processInputs[r, p, t, v]
-        for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        model.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+        for S_i in model.processInputs[r, p, t, v]
+        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
     )
 
-    return value(M.CapacityToActivity[r, t]) * M.V_Capacity[r, p, t, v] >= activity_rptv
+    return value(model.CapacityToActivity[r, t]) * model.V_Capacity[r, p, t, v] >= activity_rptv
 
 
-def Capacity_Constraint(
-    M: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> Any:
+def capacity_constraint(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+) -> ExprLike:
     r"""
     This constraint ensures that the capacity of a given process is sufficient
     to support its activity across all time periods and time slices. The calculation
@@ -433,48 +438,48 @@ def Capacity_Constraint(
     # The expressions below are defined in-line to minimize the amount of
     # expression cloning taking place with Pyomo.
 
-    if t in M.tech_annual:
+    if t in model.tech_annual:
         # Annual demand technology
         useful_activity = sum(
             (
-                value(M.DemandSpecificDistribution[r, p, s, d, S_o])
-                if S_o in M.commodity_demand
-                else value(M.SegFrac[p, s, d])
+                value(model.DemandSpecificDistribution[r, p, s, d, S_o])
+                if S_o in model.commodity_demand
+                else value(model.SegFrac[p, s, d])
             )
-            * M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+            * model.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
         useful_activity = sum(
-            M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
 
-    if t in M.tech_curtailment:
+    if t in model.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
         # capacity must be available to cover both activity and curtailment.
-        return get_capacity_factor(M, r, p, s, d, t, v) * value(M.CapacityToActivity[r, t]) * value(
-            M.SegFrac[p, s, d]
-        ) * M.V_Capacity[r, p, t, v] == useful_activity + sum(
-            M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
-            for S_i in M.processInputs[r, p, t, v]
-            for S_o in M.processOutputsByInput[r, p, t, v, S_i]
+        return get_capacity_factor(model, r, p, s, d, t, v) * value(
+            model.CapacityToActivity[r, t]
+        ) * value(model.SegFrac[p, s, d]) * model.V_Capacity[r, p, t, v] == useful_activity + sum(
+            model.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.processInputs[r, p, t, v]
+            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
     else:
         return (
-            get_capacity_factor(M, r, p, s, d, t, v)
-            * value(M.CapacityToActivity[r, t])
-            * value(M.SegFrac[p, s, d])
-            * M.V_Capacity[r, p, t, v]
+            get_capacity_factor(model, r, p, s, d, t, v)
+            * value(model.CapacityToActivity[r, t])
+            * value(model.SegFrac[p, s, d])
+            * model.V_Capacity[r, p, t, v]
             >= useful_activity
         )
 
 
-def AdjustedCapacity_Constraint(
-    M: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
-) -> Any:
+def adjusted_capacity_constraint(
+    model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> ExprLike:
     r"""
     This constraint updates the capacity of a process by taking into account retirements
     and end of life. For a given :code:`(r,p,t,v)` index, this constraint sets the capacity
@@ -544,22 +549,24 @@ def AdjustedCapacity_Constraint(
     the time when that retirement occurred (treated here as at the beginning of each period).
     """
 
-    if v in M.time_exist:
-        built_capacity = value(M.ExistingCapacity[r, t, v])
+    if v in model.time_exist:
+        built_capacity = value(model.ExistingCapacity[r, t, v])
     else:
-        built_capacity = M.V_NewCapacity[r, t, v]
+        built_capacity = model.V_NewCapacity[r, t, v]
 
     early_retirements = 0
-    if t in M.tech_retirement:
+    if t in model.tech_retirement:
         early_retirements = sum(
-            M.V_RetiredCapacity[r, S_p, t, v] / value(M.LifetimeSurvivalCurve[r, S_p, t, v])
-            for S_p in M.time_optimize
+            model.V_RetiredCapacity[r, S_p, t, v] / value(model.LifetimeSurvivalCurve[r, S_p, t, v])
+            for S_p in model.time_optimize
             if v < S_p <= p
-            and S_p < v + value(M.LifetimeProcess[r, t, v]) - value(M.PeriodLength[S_p])
+            and S_p < v + value(model.LifetimeProcess[r, t, v]) - value(model.PeriodLength[S_p])
         )
 
-    remaining_capacity = (built_capacity - early_retirements) * value(M.ProcessLifeFrac[r, p, t, v])
-    return M.V_Capacity[r, p, t, v] == remaining_capacity
+    remaining_capacity = (built_capacity - early_retirements) * value(
+        model.ProcessLifeFrac[r, p, t, v]
+    )
+    return model.V_Capacity[r, p, t, v] == remaining_capacity
 
 
 # ============================================================================
@@ -567,7 +574,7 @@ def AdjustedCapacity_Constraint(
 # ============================================================================
 
 
-def create_capacity_and_retirement_sets(M: TemoaModel) -> None:
+def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
     """
     Creates and populates component-specific Python sets and dictionaries on the model object.
 
@@ -577,56 +584,58 @@ def create_capacity_and_retirement_sets(M: TemoaModel) -> None:
     used by other functions in this module to build Pyomo components.
 
     Populates:
-        - M.retirementPeriods: dict mapping (r, t, v) to a set of periods `p`
+        - model.retirementPeriods: dict mapping (r, t, v) to a set of periods `p`
           where retirement can occur.
-        - M.capacityConsumptionTechs: dict mapping (r, v, i) to a set of techs `t`
+        - model.capacityConsumptionTechs: dict mapping (r, v, i) to a set of techs `t`
           that consume commodity `i` for construction.
-        - M.retirementProductionProcesses: dict mapping (r, p, o) to a set of `(t, v)`
+        - model.retirementProductionProcesses: dict mapping (r, p, o) to a set of `(t, v)`
           processes that produce commodity `o` at end-of-life.
-        - M.newCapacity_rtv: set of (r, t, v) for new capacity investments.
-        - M.activeCapacityAvailable_rpt: set of (r, p, t) where capacity is active.
-        - M.activeCapacityAvailable_rptv: set of (r, p, t, v) where vintage capacity is active.
+        - model.newCapacity_rtv: set of (r, t, v) for new capacity investments.
+        - model.activeCapacityAvailable_rpt: set of (r, p, t) where capacity is active.
+        - model.activeCapacityAvailable_rptv: set of (r, p, t, v) where vintage capacity is active.
     """
 
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')
     # Calculate retirement periods based on lifetime and survival curves
-    for r, _i, t, v, _o in M.Efficiency.sparse_iterkeys():
-        lifetime = value(M.LifetimeProcess[r, t, v])
-        for p in M.time_optimize:
-            is_natural_eol = p <= v + lifetime < p + value(M.PeriodLength[p])
-            is_early_retire = t in M.tech_retirement and v < p <= v + lifetime - value(
-                M.PeriodLength[p]
+    for r, _i, t, v, _o in model.Efficiency.sparse_iterkeys():
+        lifetime = value(model.LifetimeProcess[r, t, v])
+        for p in model.time_optimize:
+            is_natural_eol = p <= v + lifetime < p + value(model.PeriodLength[p])
+            is_early_retire = t in model.tech_retirement and v < p <= v + lifetime - value(
+                model.PeriodLength[p]
             )
-            is_survival_curve = M.isSurvivalCurveProcess[r, t, v] and v <= p <= v + lifetime
+            is_survival_curve = model.isSurvivalCurveProcess[r, t, v] and v <= p <= v + lifetime
 
-            if t not in M.tech_uncap and any((is_natural_eol, is_early_retire, is_survival_curve)):
-                M.retirementPeriods.setdefault((r, t, v), set()).add(p)
+            if t not in model.tech_uncap and any(
+                (is_natural_eol, is_early_retire, is_survival_curve)
+            ):
+                model.retirementPeriods.setdefault((r, t, v), set()).add(p)
 
     # Link construction materials to technologies
-    for r, i, t, v in M.ConstructionInput.sparse_iterkeys():
-        M.capacityConsumptionTechs.setdefault((r, v, i), set()).add(t)
+    for r, i, t, v in model.ConstructionInput.sparse_iterkeys():
+        model.capacityConsumptionTechs.setdefault((r, v, i), set()).add(t)
 
     # Link end-of-life materials to retiring technologies
-    for r, t, v, o in M.EndOfLifeOutput.sparse_iterkeys():
-        if (r, t, v) in M.retirementPeriods:
-            for p in M.retirementPeriods[r, t, v]:
-                M.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
+    for r, t, v, o in model.EndOfLifeOutput.sparse_iterkeys():
+        if (r, t, v) in model.retirementPeriods:
+            for p in model.retirementPeriods[r, t, v]:
+                model.retirementProductionProcesses.setdefault((r, p, o), set()).add((t, v))
 
     # Create active capacity index sets from the now-populated processVintages
-    M.newCapacity_rtv = {
+    model.newCapacity_rtv = {
         (r, t, v)
-        for r, p, t in M.processVintages
-        for v in M.processVintages[r, p, t]
-        if t not in M.tech_uncap and v in M.time_optimize
+        for r, p, t in model.processVintages
+        for v in model.processVintages[r, p, t]
+        if t not in model.tech_uncap and v in model.time_optimize
     }
-    M.activeCapacityAvailable_rpt = {
+    model.activeCapacityAvailable_rpt = {
         (r, p, t)
-        for r, p, t in M.processVintages
-        if M.processVintages[r, p, t] and t not in M.tech_uncap
+        for r, p, t in model.processVintages
+        if model.processVintages[r, p, t] and t not in model.tech_uncap
     }
-    M.activeCapacityAvailable_rptv = {
+    model.activeCapacityAvailable_rptv = {
         (r, p, t, v)
-        for r, p, t in M.processVintages
-        for v in M.processVintages[r, p, t]
-        if t not in M.tech_uncap
+        for r, p, t in model.processVintages
+        for v in model.processVintages[r, p, t]
+        if t not in model.tech_uncap
     }
