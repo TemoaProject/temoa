@@ -32,15 +32,13 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     file_match = re.search(r'(\w+)\.(\w+)\b', ifile)
     if not file_match:
-        print(f'The file type {ifile} is not recognized. Use a .db file.')
-        sys.exit(2)
+        raise ValueError(f'The file type {ifile} is not recognized. Use a database file.')
 
     if ofile is None:
         ofile = Path(file_match.group(1))
         print(f'Look for output in {ofile}_*.xlsx')
 
     con = sqlite3.connect(ifile)
-    con.text_factory = str
     scenario_name = scenario.pop()
     ofile = ofile.with_suffix('.xlsx')
 
@@ -59,12 +57,12 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     """
     all_techs = pd.read_sql_query(query_all_techs, con)
 
-    query_capacity = f"""
+    query_capacity = """
         SELECT region, tech, sector, period, SUM(capacity) as capacity
-        FROM OutputNetCapacity WHERE scenario = '{scenario_name}'
+        FROM OutputNetCapacity WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
-    df_capacity = pd.read_sql_query(query_capacity, con)
+    df_capacity = pd.read_sql_query(query_capacity, con, params=(scenario_name,))
     for sector in sorted(df_capacity['sector'].unique()):
         df_sector = (
             df_capacity[df_capacity['sector'] == sector]
@@ -88,12 +86,12 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
         for col, val in enumerate(df_sector.columns.values):
             worksheet.write(0, col, val, header_format)
 
-    query_activity = f"""
+    query_activity = """
         SELECT region, tech, sector, period, SUM(flow) as vflow_out
-        FROM OutputFlowOut WHERE scenario = '{scenario_name}'
+        FROM OutputFlowOut WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
-    df_activity = pd.read_sql_query(query_activity, con)
+    df_activity = pd.read_sql_query(query_activity, con, params=(scenario_name,))
     for sector in sorted(df_activity['sector'].unique()):
         df_sector = (
             df_activity[df_activity['sector'] == sector]
@@ -127,12 +125,12 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     except sqlite3.OperationalError:
         all_emis_techs = pd.DataFrame()
 
-    query_emissions = f"""
+    query_emissions = """
         SELECT region, tech, sector, period, emis_comm, SUM(emission) as emissions
-        FROM OutputEmission WHERE scenario = '{scenario_name}'
+        FROM OutputEmission WHERE scenario = ?
         GROUP BY region, tech, sector, period, emis_comm
     """
-    df_emissions_raw = pd.read_sql_query(query_emissions, con)
+    df_emissions_raw = pd.read_sql_query(query_emissions, con, params=(scenario_name,))
     if not df_emissions_raw.empty:
         df_emissions = df_emissions_raw.pivot_table(
             values='emissions',
@@ -163,14 +161,14 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
         for col, val in enumerate(df_emissions.columns.values):
             worksheet.write(0, col, val, header_format)
 
-    query_costs = f"""
+    query_costs = """
         SELECT region, oc.tech, t.sector, vintage,
                d_invest + d_var + d_fixed + d_emiss as cost
         FROM OutputCost oc
         JOIN Technology t ON oc.tech = t.tech
-        WHERE scenario = '{scenario_name}'
+        WHERE scenario = ?
     """
-    df_costs = pd.read_sql_query(query_costs, con)
+    df_costs = pd.read_sql_query(query_costs, con, params=(scenario_name,))
     df_costs.columns = ['Region', 'Technology', 'Sector', 'Vintage', 'Cost']
     df_costs.to_excel(writer, sheet_name='Costs', index=False, startrow=1, header=False)
     worksheet = writer.sheets['Costs']
