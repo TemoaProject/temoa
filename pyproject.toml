@@ -90,13 +90,18 @@ ignore-names = ["MGA", "SVMGA"]  # Allow these names to violate naming conventio
 
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-addopts = "-ra -q"
 testpaths = [
     "tests",
 ]
 filterwarnings = [
-    "ignore:invalid escape sequence:SyntaxWarning:pyutilib.misc.misc",
+    # Raise all warnings as errors except for the ones we specifically ignore
+    "error::DeprecationWarning",
+    "error::FutureWarning",
+    "error::RuntimeWarning",
+    "error::UserWarning",
+
+    # Ignore deprecation warnings from dependencies
+    "error:invalid escape sequence:SyntaxWarning:pyutilib.misc.misc",
 ]
 
 [tool.mypy]
