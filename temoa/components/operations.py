@@ -85,10 +85,7 @@ def ramp_up_season_constraint_indices(
         for v in model.rampUpVintages[r, p, t]
         for _p, s_seq, s in model.ordered_season_sequential
         if _p == p
-        for s_seq_next in (model.time_next_sequential[p, s_seq],)  # next sequential season
-        for s_next in (
-            model.sequential_to_season[p, s_seq_next],
-        )  # next sequential season's matching season
+        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
         if s_next != model.time_next[p, s, model.time_of_day.last()][0]
     }
 
@@ -107,10 +104,8 @@ def ramp_down_season_constraint_indices(
         for r, p, t in model.rampDownVintages
         for v in model.rampDownVintages[r, p, t]
         for _p, s_seq, s in model.ordered_season_sequential
-        for s_seq_next in (model.time_next_sequential[p, s_seq],)  # next sequential season
-        for s_next in (
-            model.sequential_to_season[p, s_seq_next],
-        )  # next sequential season's matching season
+        if _p == p
+        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
         if s_next != model.time_next[p, s, model.time_of_day.last()][0]
     }
 
