@@ -636,14 +636,13 @@ def limit_tech_input_split_average_constraint(
         for S_d in model.time_of_day
         for S_o in model.processOutputsByInput[r, p, t, v, i]
     )
-
     total_inp = quicksum(
         model.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
-        / get_variable_efficiency(model, r, p, S_s, S_d, i, t, v, S_o)
+        / get_variable_efficiency(model, r, p, S_s, S_d, S_i, t, v, S_o)
         for S_s in model.TimeSeason[p]
         for S_d in model.time_of_day
         for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, i]
+        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
