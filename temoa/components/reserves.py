@@ -156,7 +156,6 @@ def reserve_margin_dynamic(
             * value(model.CapacityToActivity[r1r2, t])
             * value(model.SegFrac[p, s, d])
             for (t, v) in model.processReservePeriods[r1r2, p]
-            for t in model.tech_reserve
         )
 
     return available
@@ -235,7 +234,6 @@ def reserve_margin_static(
             * value(model.CapacityToActivity[r1r2, t])
             * value(model.SegFrac[p, s, d])
             for (t, v) in model.processReservePeriods[r1r2, p]
-            for t in model.tech_reserve
         )
 
     return available
