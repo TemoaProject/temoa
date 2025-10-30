@@ -301,6 +301,7 @@ def ramp_up_day_constraint(
 
     # How many hours does this time slice represent
     hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
+    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
 
     hourly_activity_sd = (
         sum(
@@ -317,7 +318,7 @@ def ramp_up_day_constraint(
             for S_i in model.processInputs[r, p, t, v]
             for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
-        / hours_adjust
+        / hours_adjust_next
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
@@ -386,6 +387,7 @@ def ramp_down_day_constraint(
 
     # How many hours does this time slice represent
     hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
+    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
 
     hourly_activity_sd = (
         sum(
@@ -402,7 +404,7 @@ def ramp_down_day_constraint(
             for S_i in model.processInputs[r, p, t, v]
             for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
-        / hours_adjust
+        / hours_adjust_next
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
@@ -455,6 +457,7 @@ def ramp_up_season_constraint(
 
     # How many hours does this time slice represent
     hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
+    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
 
     hourly_activity_sd = (
         sum(
@@ -471,7 +474,7 @@ def ramp_up_season_constraint(
             for S_i in model.processInputs[r, p, t, v]
             for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
-        / hours_adjust
+        / hours_adjust_next
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
@@ -524,6 +527,7 @@ def ramp_down_season_constraint(
 
     # How many hours does this time slice represent
     hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
+    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
 
     hourly_activity_sd = (
         sum(
@@ -540,7 +544,7 @@ def ramp_down_season_constraint(
             for S_i in model.processInputs[r, p, t, v]
             for S_o in model.processOutputsByInput[r, p, t, v, S_i]
         )
-        / hours_adjust
+        / hours_adjust_next
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
