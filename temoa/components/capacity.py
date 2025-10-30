@@ -584,15 +584,15 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
     used by other functions in this module to build Pyomo components.
 
     Populates:
-        - M.retirementPeriods: dict mapping (r, t, v) to a set of periods `p`
+        - model.retirementPeriods: dict mapping (r, t, v) to a set of periods `p`
           where retirement can occur.
-        - M.capacityConsumptionTechs: dict mapping (r, v, i) to a set of techs `t`
+        - model.capacityConsumptionTechs: dict mapping (r, v, i) to a set of techs `t`
           that consume commodity `i` for construction.
-        - M.retirementProductionProcesses: dict mapping (r, p, o) to a set of `(t, v)`
+        - model.retirementProductionProcesses: dict mapping (r, p, o) to a set of `(t, v)`
           processes that produce commodity `o` at end-of-life.
-        - M.newCapacity_rtv: set of (r, t, v) for new capacity investments.
-        - M.activeCapacityAvailable_rpt: set of (r, p, t) where capacity is active.
-        - M.activeCapacityAvailable_rptv: set of (r, p, t, v) where vintage capacity is active.
+        - model.newCapacity_rtv: set of (r, t, v) for new capacity investments.
+        - model.activeCapacityAvailable_rpt: set of (r, p, t) where capacity is active.
+        - model.activeCapacityAvailable_rptv: set of (r, p, t, v) where vintage capacity is active.
     """
 
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')

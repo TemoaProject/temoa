@@ -2,14 +2,15 @@ import os
 import sys
 from subprocess import call
 
-from database_util import DatabaseUtil
-from graphviz_formats import (
+from graphviz_util import create_text_edges, create_text_nodes, get_color_config, process_input
+
+from .database_util import DatabaseUtil
+from .graphviz_formats import (
     commodity_dot_fmt,
     quick_run_dot_fmt,
     results_dot_fmt,
     tech_results_dot_fmt,
 )
-from graphviz_util import create_text_edges, create_text_nodes, get_color_config, process_input
 
 
 class GraphvizDiagramGenerator:

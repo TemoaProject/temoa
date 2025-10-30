@@ -98,16 +98,16 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
     for flows, capacity, and storage levels will be created.
 
     Populates:
-        - M.commodityBalance_rpc: The master set of (r, p, c) for balance constraints.
-        - M.activeFlow_rpsditvo: Indices for time-sliced flows (V_FlowOut).
-        - M.activeFlow_rpitvo: Indices for annual flows (V_FlowOutAnnual).
-        - M.activeFlex_rpsditvo: Indices for flexible time-sliced flows (V_Flex).
-        - M.activeFlex_rpitvo: Indices for flexible annual flows (V_FlexAnnual).
-        - M.activeFlowInStorage_rpsditvo: Indices for flows into storage (V_FlowIn).
-        - M.activeCurtailment_rpsditvo: Indices for curtailed generation (V_Curtailment).
-        - M.activeActivity_rptv: Master set of active (r, p, t, v) processes.
-        - M.storageLevelIndices_rpsdtv: Indices for storage state variables (V_StorageLevel).
-        - M.seasonalStorageLevelIndices_rpstv: Indices for seasonal storage levels.
+        - model.commodityBalance_rpc: The master set of (r, p, c) for balance constraints.
+        - model.activeFlow_rpsditvo: Indices for time-sliced flows (V_FlowOut).
+        - model.activeFlow_rpitvo: Indices for annual flows (V_FlowOutAnnual).
+        - model.activeFlex_rpsditvo: Indices for flexible time-sliced flows (V_Flex).
+        - model.activeFlex_rpitvo: Indices for flexible annual flows (V_FlexAnnual).
+        - model.activeFlowInStorage_rpsditvo: Indices for flows into storage (V_FlowIn).
+        - model.activeCurtailment_rpsditvo: Indices for curtailed generation (V_Curtailment).
+        - model.activeActivity_rptv: Master set of active (r, p, t, v) processes.
+        - model.storageLevelIndices_rpsdtv: Indices for storage state variables (V_StorageLevel).
+        - model.seasonalStorageLevelIndices_rpstv: Indices for seasonal storage levels.
     """
     logger.debug('Creating commodity balance and active flow index sets.')
     # 1. Commodity Balance
@@ -127,7 +127,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.processVintages[r, p, t]
         for i in model.processInputs.get((r, p, t, v), set())
         for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]  # REVERTED THIS LINE
+        for s in model.TimeSeason[p]
         for d in model.time_of_day
     }
 
@@ -149,7 +149,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.processVintages[r, p, t]
         for i in model.processInputs.get((r, p, t, v), set())
         for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]  # REVERTED THIS LINE
+        for s in model.TimeSeason[p]
         for d in model.time_of_day
     }
 
@@ -169,7 +169,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.storageVintages[r, p, t]
         for i in model.processInputs.get((r, p, t, v), set())
         for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]  # REVERTED THIS LINE
+        for s in model.TimeSeason[p]
         for d in model.time_of_day
     }
 
@@ -179,7 +179,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.curtailmentVintages[r, p, t]
         for i in model.processInputs.get((r, p, t, v), set())
         for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]  # REVERTED THIS LINE
+        for s in model.TimeSeason[p]
         for d in model.time_of_day
     }
 
@@ -193,7 +193,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         (r, p, s, d, t, v)
         for r, p, t in model.storageVintages
         for v in model.storageVintages[r, p, t]
-        for s in model.TimeSeason[p]  # REVERTED THIS LINE
+        for s in model.TimeSeason[p]
         for d in model.time_of_day
     }
 

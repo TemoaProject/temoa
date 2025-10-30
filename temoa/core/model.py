@@ -126,7 +126,7 @@ class TemoaModel(PyomoAbstractModel):
         self.activeActivity_rptv: t.ActiveActivitySet = set()
         self.storageLevelIndices_rpsdtv: t.StorageLevelIndicesSet = set()
         self.seasonalStorageLevelIndices_rpstv: t.SeasonalStorageLevelIndicesSet = set()
-        """currently available (within lifespan) (r, p, t, v) tuples (from M.processVintages)"""
+        """currently available (within lifespan) (r, p, t, v) tuples (from model.processVintages)"""
 
         self.activeRegionsForTech: t.ActiveRegionsForTechDict = {}
         """currently available regions by period and tech {(p, t) : r}"""
@@ -820,13 +820,6 @@ class TemoaModel(PyomoAbstractModel):
         #                                              #
         ################################################
 
-        # ---------------------------------------------------------------
-        # Dev Note:
-        # Constraints are specified to ensure proper system behavior,
-        # and also to calculate some derived quantities. Note that descriptions
-        # of these constraints are provided in the associated comment blocks
-        # in temoa_rules.py, where the constraints are defined.
-        # ---------------------------------------------------------------
         self.progress_marker_4 = BuildAction(['Starting to build Constraints'], rule=progress_check)
 
         # Declare constraints to calculate derived decision variables

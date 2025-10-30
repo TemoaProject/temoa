@@ -5,7 +5,7 @@ This folder contains files used to manage Temoa input/output data. Included file
 1. `db_to_excel.py/`
 Python script that queries database output tables to create an Excel file containing scenario-specific results.
 
-2. `Make_Graphviz.py/`
+2. `make_graphviz.py/`
 Python script that creates a Graphviz diagram for the database.
 The most basic way to use graphviz is to view the full energy system map:
 ```$ python make_graphviz.py -i temoa_utopia.sqlite```  Other options include a capacitated
@@ -20,7 +20,7 @@ Create and activate the Temoa environment, as follows:
 
  ```$ source activate temoa-py3```
 
- Once the Temoa environment is created and activated, enable the following extensions from from the command line.
+ Once the Temoa environment is created and activated, enable the following extensions from the command line.
  This will need to be done only once, before using notebooks within the Temoa environment.
 
  ```(temoa-py3) $ jupyter nbextension enable init_cell/main```
