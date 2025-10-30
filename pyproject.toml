@@ -95,6 +95,9 @@ addopts = "-ra -q"
 testpaths = [
     "tests",
 ]
+filterwarnings = [
+    "ignore:invalid escape sequence:SyntaxWarning:pyutilib.misc.misc",
+]
 
 [tool.mypy]
 # Python version targeting
