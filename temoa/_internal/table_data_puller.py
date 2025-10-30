@@ -439,7 +439,7 @@ def poll_cost_results(
             var_cost,
             value(model.PeriodLength[p]),
             global_discount_rate=global_discount_rate,
-            p_0=float(p_0) if p_0 is not None else 0.0,
+            p_0=float(p_0_true),
             p=p,
         )
         if '-' in r:
