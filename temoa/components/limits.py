@@ -292,7 +292,7 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
 
 
 def limit_activity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     Limits the activity of a given technology or group as a fraction of another
@@ -372,7 +372,7 @@ def limit_activity_share_constraint(
 
 
 def limit_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     The LimitCapacityShare constraint limits the available capacity of a given
@@ -405,7 +405,7 @@ def limit_capacity_share_constraint(
 
 
 def limit_new_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     The LimitNewCapacityShare constraint limits the share of new capacity

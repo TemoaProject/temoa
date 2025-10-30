@@ -124,7 +124,7 @@ def storage_energy_constraint(
 
 
 def seasonal_storage_energy_constraint(
-    model: TemoaModel, r: Region, p: Period, s_seq: str, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, p: Period, s_seq: Season, t: Technology, v: Vintage
 ) -> ExprLike:
     r"""
     This constraint enforces the continuity of state of charge between seasons for seasonal
@@ -184,7 +184,7 @@ def seasonal_storage_energy_constraint(
         for S_i in model.processInputsByOutput[r, p, t, v, S_o]
     )
 
-    s_seq_next: str = model.time_next_sequential[p, s_seq]
+    s_seq_next: Season = model.time_next_sequential[p, s_seq]
     s_next: Season = model.sequential_to_season[p, s_seq_next]
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
@@ -272,7 +272,7 @@ def storage_energy_upper_bound_constraint(
 
 
 def seasonal_storage_energy_upper_bound_constraint(
-    model: TemoaModel, r: Region, p: Period, s_seq: str, d: TimeOfDay, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, p: Period, s_seq: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> ExprLike:
     r"""
     Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity
@@ -516,7 +516,7 @@ def limit_storage_fraction_constraint(
     )
 
     if model.isSeasonalStorage[t]:
-        s_seq: str = s  # sequential season
+        s_seq: Season = s  # sequential season
         s = model.sequential_to_season[p, s_seq]  # non-sequential season
 
     # adjust the storage level to the individual-day level

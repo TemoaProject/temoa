@@ -40,7 +40,7 @@ def get_default_loan_rate(model: TemoaModel, *_: Any) -> float:
     return value(model.DefaultLoanRate)
 
 
-def annuity_to_pv(rate: float, periods: int) -> float | Expression:
+def annuity_to_pv(rate: float, periods: float) -> float | Expression:
     r"""
     Multiplication factor to convert an annuity to net present value
 
@@ -59,7 +59,7 @@ def annuity_to_pv(rate: float, periods: int) -> float | Expression:
     return ((1 + rate) ** periods - 1) / (rate * (1 + rate) ** periods)
 
 
-def pv_to_annuity(rate: float, periods: int) -> float | Expression:
+def pv_to_annuity(rate: float, periods: float) -> float | Expression:
     r"""
     Multiplication factor to convert net present value to an annuity
 
@@ -73,7 +73,7 @@ def pv_to_annuity(rate: float, periods: int) -> float | Expression:
     return (rate * (1 + rate) ** periods) / ((1 + rate) ** periods - 1)
 
 
-def fv_to_pv(rate: float, periods: int) -> float | Expression:
+def fv_to_pv(rate: float, periods: float) -> float | Expression:
     r"""
     Multiplication factor to convert a future value to net present value
 
@@ -135,7 +135,7 @@ def loan_cost(
     invest_cost: float,
     loan_annualize: float,
     lifetime_loan_process: float | int,
-    lifetime_process: int,
+    lifetime_process: float,
     p_0: int,
     p_e: int,
     global_discount_rate: float,
@@ -194,15 +194,15 @@ def loan_cost(
 
 def loan_cost_survival_curve(
     model: TemoaModel,
-    r: str,
-    t: str,
-    v: int,
+    r: Region,
+    t: Technology,
+    v: Vintage,
     capacity: float | Var | ComponentData,
     invest_cost: float,
     loan_annualize: float,
     lifetime_loan_process: float | int,
-    p_0: int,
-    p_e: int,
+    p_0: Period,
+    p_e: Period,
     global_discount_rate: float,
 ) -> float | Expression:
     """

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from deprecated import deprecated
 from pyomo.environ import value
@@ -37,7 +37,7 @@ def gather_group_regions(model: TemoaModel, region: Region) -> Iterable[Region]:
     if region == 'global':
         regions = list(model.regions)
     elif '+' in region:
-        regions = region.split('+')
+        regions = [cast(Region, r) for r in region.split('+')]
     else:
         regions = [region]
     return regions
@@ -59,7 +59,7 @@ def create_regional_indices(model: TemoaModel) -> list[Region]:
             if r_i == r_j:
                 regional_indices.add(r_i)
             else:
-                regional_indices.add(r_i + '-' + r_j)
+                regional_indices.add(cast(Region, r_i + '-' + r_j))
     # dev note:  Sorting these passed them to pyomo in an ordered container and prevents warnings
     return sorted(regional_indices)
 
@@ -72,8 +72,8 @@ def regional_global_initialized_indices(model: TemoaModel) -> set[Region]:
     for n in range(1, len(model.regions) + 1):
         regional_perms = permutations(model.regions, n)
         for i in regional_perms:
-            indices.add('+'.join(i))
-    indices.add('global')
+            indices.add(cast(Region, '+'.join(i)))
+    indices.add(cast(Region, 'global'))
     indices = indices.union(model.regionalIndices)
 
     return indices
@@ -137,7 +137,9 @@ def create_geography_sets(model: TemoaModel) -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-        region_from, region_to = r.split('-', 1)
+        region_from_str, region_to_str = r.split('-', 1)
+        region_from = cast(Region, region_from_str)
+        region_to = cast(Region, region_to_str)
 
         lifetime: float = value(model.LifetimeProcess[r, t, v])
         for p in model.time_optimize:

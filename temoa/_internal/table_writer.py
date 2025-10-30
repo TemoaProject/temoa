@@ -8,7 +8,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.core import value
 from pyomo.opt import SolverResults
@@ -33,6 +33,7 @@ from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
 from temoa.extensions.monte_carlo.mc_run import ChangeRecord
+from temoa.types.core_types import Period, Region, Technology, Vintage
 
 if TYPE_CHECKING:
     pass
@@ -292,9 +293,9 @@ class TableWriter:
             if abs(val) < self.epsilon:
                 continue
             if hasattr(ei, 'p'):  # emissions from flows
-                entry = (scenario, ei.r, sector, ei.p, ei.e, ei.t, ei.v, val)
+                entry = (scenario, ei.r, sector, cast(int, ei.p), ei.e, ei.t, ei.v, val)
             else:  # embodied emissions
-                entry = (scenario, ei.r, sector, ei.v, ei.e, ei.t, ei.v, val)
+                entry = (scenario, ei.r, sector, cast(int, ei.v), ei.e, ei.t, ei.v, val)
             data.append(entry)
         qry = f'INSERT INTO OutputEmission VALUES {_marks(8)}'
         self.con.executemany(qry, data)
@@ -530,7 +531,8 @@ class TableWriter:
     def write_costs(
         self,
         model: TemoaModel,
-        emission_entries: dict[tuple[str, int, str, int], dict[CostType, float]] | None = None,
+        emission_entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]]
+        | None = None,
         iteration: int | None = None,
     ) -> None:
         """
@@ -555,9 +557,10 @@ class TableWriter:
 
     def _insert_cost_results(
         self,
-        regular_entries: dict[tuple[str, int, str, int], dict[CostType, float]],
-        exchange_entries: dict[tuple[str, int, str, int], dict[CostType, float]],
-        emission_entries: dict[tuple[str, int, str, int], dict[CostType, float]] | None,
+        regular_entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
+        exchange_entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
+        emission_entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]]
+        | None,
         iteration: int | None,
     ) -> None:
         # add the emission costs to the same row data, if provided
@@ -569,7 +572,7 @@ class TableWriter:
 
     def _write_cost_rows(
         self,
-        entries: dict[tuple[str, int, str, int], dict[CostType, float]],
+        entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
         iteration: int | None = None,
     ) -> None:
         """Write the entries to the OutputCost table"""
