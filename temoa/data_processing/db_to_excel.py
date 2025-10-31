@@ -1,11 +1,11 @@
 """
 This script processes a Temoa database file (SQLite) and converts the data
 into two Excel formats: one for human-readable analysis and another
-compatible with the pyam library for integrated assessment modeling.
+compatible with the IAMC format for integrated assessment modeling.
 
 The script extracts capacity, activity, emissions, and cost data for a
 specified scenario, formats it, and saves it to separate sheets in an
-Excel workbook. It also creates an aggregated `pyam`-compatible Excel file.
+Excel workbook. It also creates an aggregated IAMC-compatible Excel file.
 
 Usage:
     python db_to_excel.py -i <input_file.db> -s <scenario_name> [-o <output_file_name>]
@@ -19,116 +19,129 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from pyam import IamDataFrame
+from pandas import DataFrame
 
 
-def make_excel(ifile, ofile: Path, scenario):
+def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> None:
+    """
+    Processes a Temoa database to produce human-readable and IAMC-format
+    Excel files.
+    """
     if ifile is None:
         raise ValueError("You did not specify the input file. Remember to use the '-i' option.")
 
-    file_type = re.search(r'(\w+)\.(\w+)\b', ifile)  # Extract the input filename and extension
-    if not file_type:
-        print('The file type %s is not recognized. Use a db file.' % ifile)
-        sys.exit(2)
+    file_match = re.search(r'(\w+)\.(\w+)\b', ifile)
+    if not file_match:
+        raise ValueError(f'The file type {ifile} is not recognized. Use a database file.')
+
     if ofile is None:
-        ofile = file_type.group(1)
-        print('Look for output in %s_*.xls' % ofile)
+        ofile = Path(file_match.group(1))
+        print(f'Look for output in {ofile}_*.xlsx')
 
     con = sqlite3.connect(ifile)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
-    con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
-    scenario = scenario.pop()
+    scenario_name = scenario.pop()
     ofile = ofile.with_suffix('.xlsx')
+
     writer = pd.ExcelWriter(
-        ofile, engine='xlsxwriter', engine_kwargs={'options': {'strings_to_formulas': False}}
+        ofile,
+        engine='xlsxwriter',
+        engine_kwargs={'options': {'strings_to_formulas': False}},
     )
-
     workbook = writer.book
+    header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'align': 'left'})
 
-    header_format = workbook.add_format(
-        {
-            'bold': True,
-            'text_wrap': True,
-            'align': 'left',
-        }
-    )
+    query_all_techs = """
+        SELECT DISTINCT Efficiency.region, Efficiency.tech, Technology.sector
+        FROM Efficiency
+        INNER JOIN Technology ON Efficiency.tech = Technology.tech
+    """
+    all_techs = pd.read_sql_query(query_all_techs, con)
 
-    query = 'SELECT DISTINCT Efficiency.region, Efficiency.tech, Technology.sector FROM Efficiency \
-                INNER JOIN Technology ON Efficiency.tech=Technology.tech'
-    all_techs = pd.read_sql_query(query, con)
-
-    query = f"SELECT region, tech, sector, period, sum(capacity) as capacity FROM OutputNetCapacity WHERE scenario= '{scenario}' GROUP BY region, tech, sector, period"
-    df_capacity = pd.read_sql_query(query, con)
+    query_capacity = """
+        SELECT region, tech, sector, period, SUM(capacity) as capacity
+        FROM OutputNetCapacity WHERE scenario = ?
+        GROUP BY region, tech, sector, period
+    """
+    df_capacity = pd.read_sql_query(query_capacity, con, params=(scenario_name,))
     for sector in sorted(df_capacity['sector'].unique()):
-        df_capacity_sector = df_capacity[df_capacity['sector'] == sector]
-        df_capacity_sector = df_capacity_sector.drop(columns=['sector']).pivot_table(
-            values='capacity', index=['region', 'tech'], columns='period'
+        df_sector = (
+            df_capacity[df_capacity['sector'] == sector]
+            .drop(columns=['sector'])
+            .pivot_table(values='capacity', index=['region', 'tech'], columns='period')
+            .reset_index()
         )
-        df_capacity_sector.reset_index(inplace=True)
         sector_techs = all_techs[all_techs['sector'] == sector]
-        df_capacity_sector = pd.merge(
-            sector_techs[['region', 'tech']], df_capacity_sector, on=['region', 'tech'], how='left'
+        df_sector = pd.merge(
+            sector_techs[['region', 'tech']],
+            df_sector,
+            on=['region', 'tech'],
+            how='left',
         )
-        df_capacity_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
-        df_capacity_sector.to_excel(
-            writer, sheet_name='Capacity_' + sector, index=False, startrow=1, header=False
-        )
-        worksheet = writer.sheets['Capacity_' + sector]
+        df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
+        sheet_name = f'Capacity_{sector}'
+        df_sector.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
+        worksheet = writer.sheets[sheet_name]
         worksheet.set_column('A:A', 10)
         worksheet.set_column('B:B', 10)
-        for col, val in enumerate(df_capacity_sector.columns.values):
+        for col, val in enumerate(df_sector.columns.values):
             worksheet.write(0, col, val, header_format)
 
-    query = (
-        "SELECT region, tech, sector, period, sum(flow) as vflow_out FROM OutputFlowOut WHERE scenario='"
-        + scenario
-        + "' GROUP BY \
-            region, tech, sector, period"
-    )
-    df_activity = pd.read_sql_query(query, con)
+    query_activity = """
+        SELECT region, tech, sector, period, SUM(flow) as vflow_out
+        FROM OutputFlowOut WHERE scenario = ?
+        GROUP BY region, tech, sector, period
+    """
+    df_activity = pd.read_sql_query(query_activity, con, params=(scenario_name,))
     for sector in sorted(df_activity['sector'].unique()):
-        df_activity_sector = df_activity[df_activity['sector'] == sector]
-        df_activity_sector = df_activity_sector.drop(columns=['sector']).pivot_table(
-            values='vflow_out', index=['region', 'tech'], columns='period'
+        df_sector = (
+            df_activity[df_activity['sector'] == sector]
+            .drop(columns=['sector'])
+            .pivot_table(values='vflow_out', index=['region', 'tech'], columns='period')
+            .reset_index()
         )
-        df_activity_sector.reset_index(inplace=True)
         sector_techs = all_techs[all_techs['sector'] == sector]
-        df_activity_sector = pd.merge(
-            sector_techs[['region', 'tech']], df_activity_sector, on=['region', 'tech'], how='left'
+        df_sector = pd.merge(
+            sector_techs[['region', 'tech']],
+            df_sector,
+            on=['region', 'tech'],
+            how='left',
         )
-        df_activity_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
-        df_activity_sector.to_excel(
-            writer, sheet_name='Activity_' + sector, index=False, startrow=1, header=False
-        )
-        worksheet = writer.sheets['Activity_' + sector]
+        df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
+        sheet_name = f'Activity_{sector}'
+        df_sector.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
+        worksheet = writer.sheets[sheet_name]
         worksheet.set_column('A:A', 10)
         worksheet.set_column('B:B', 10)
-        for col, val in enumerate(df_activity_sector.columns.values):
+        for col, val in enumerate(df_sector.columns.values):
             worksheet.write(0, col, val, header_format)
 
-    query = (
-        'SELECT DISTINCT EmissionActivity.region, EmissionActivity.tech, EmissionActivity.emis_comm, Technology.sector FROM EmissionActivity \
-        INNER JOIN Technology ON EmissionActivity.tech=Technology.tech'
-    )
+    query_all_emis = """
+        SELECT DISTINCT ea.region, ea.tech, ea.emis_comm, t.sector
+        FROM EmissionActivity ea
+        INNER JOIN Technology t ON ea.tech = t.tech
+    """
     try:
-        all_emis_techs = pd.read_sql_query(query, con)
+        all_emis_techs = pd.read_sql_query(query_all_emis, con)
     except sqlite3.OperationalError:
         all_emis_techs = pd.DataFrame()
 
-    query = (
-        "SELECT region, tech, sector, period, emis_comm, sum(emission) as emissions FROM OutputEmission WHERE scenario='"
-        + scenario
-        + "' GROUP BY \
-    region, tech, sector, period, emis_comm"
-    )
-    df_emissions_raw = pd.read_sql_query(query, con)
+    query_emissions = """
+        SELECT region, tech, sector, period, emis_comm, SUM(emission) as emissions
+        FROM OutputEmission WHERE scenario = ?
+        GROUP BY region, tech, sector, period, emis_comm
+    """
+    df_emissions_raw = pd.read_sql_query(query_emissions, con, params=(scenario_name,))
     if not df_emissions_raw.empty:
         df_emissions = df_emissions_raw.pivot_table(
-            values='emissions', index=['region', 'tech', 'sector', 'emis_comm'], columns='period'
-        )
-        df_emissions.reset_index(inplace=True)
+            values='emissions',
+            index=['region', 'tech', 'sector', 'emis_comm'],
+            columns='period',
+        ).reset_index()
         df_emissions = pd.merge(
-            all_emis_techs, df_emissions, on=['region', 'tech', 'sector', 'emis_comm'], how='left'
+            all_emis_techs,
+            df_emissions,
+            on=['region', 'tech', 'sector', 'emis_comm'],
+            how='left',
         )
         df_emissions.rename(
             columns={
@@ -148,12 +161,14 @@ def make_excel(ifile, ofile: Path, scenario):
         for col, val in enumerate(df_emissions.columns.values):
             worksheet.write(0, col, val, header_format)
 
-    query = (
-        'SELECT region, OutputCost.tech, Technology.sector, vintage, d_invest + d_var + d_fixed + d_emiss FROM OutputCost '
-        ' JOIN main.Technology ON OutputCost.tech = main.Technology.tech '
-        f" WHERE scenario = '{scenario}'"
-    )
-    df_costs = pd.read_sql_query(query, con)
+    query_costs = """
+        SELECT region, oc.tech, t.sector, vintage,
+               d_invest + d_var + d_fixed + d_emiss as cost
+        FROM OutputCost oc
+        JOIN Technology t ON oc.tech = t.tech
+        WHERE scenario = ?
+    """
+    df_costs = pd.read_sql_query(query_costs, con, params=(scenario_name,))
     df_costs.columns = ['Region', 'Technology', 'Sector', 'Vintage', 'Cost']
     df_costs.to_excel(writer, sheet_name='Costs', index=False, startrow=1, header=False)
     worksheet = writer.sheets['Costs']
@@ -166,82 +181,98 @@ def make_excel(ifile, ofile: Path, scenario):
 
     writer.close()
 
-    # prepare results for IamDataFrame
-    df_emissions_raw['scenario'] = scenario
-    df_emissions_raw['unit'] = '?'
     df_emissions_raw['variable'] = (
         'Emissions|' + df_emissions_raw['emis_comm'] + '|' + df_emissions_raw['tech']
     )
-    df_emissions_raw.rename(columns={'period': 'year', 'emissions': 'value'}, inplace=True)
+    df_emissions_iamc = df_emissions_raw.rename(columns={'period': 'year', 'emissions': 'value'})
 
-    df_capacity['scenario'] = scenario
-    df_capacity['unit'] = '?'
     df_capacity['variable'] = 'Capacity|' + df_capacity['sector'] + '|' + df_capacity['tech']
-    df_capacity.rename(columns={'period': 'year', 'capacity': 'value'}, inplace=True)
+    df_capacity_iamc = df_capacity.rename(columns={'period': 'year', 'capacity': 'value'})
 
-    df_activity['scenario'] = scenario
-    df_activity['unit'] = '?'
     df_activity['variable'] = 'Activity|' + df_activity['sector'] + '|' + df_activity['tech']
-    df_activity.rename(columns={'period': 'year', 'vflow_out': 'value'}, inplace=True)
+    df_activity_iamc = df_activity.rename(columns={'period': 'year', 'vflow_out': 'value'})
 
-    # cast results to IamDataFrame and write to xlsx
-    columns = ['scenario', 'region', 'variable', 'year', 'value', 'unit']
-    _results = pd.concat([df_emissions_raw[columns], df_activity[columns], df_capacity[columns]])
-    df = IamDataFrame(_results, model='Temoa')
+    iamc_columns = ['region', 'variable', 'year', 'value']
+    df_iamc = pd.concat(
+        [
+            df_emissions_iamc[iamc_columns],
+            df_activity_iamc[iamc_columns],
+            df_capacity_iamc[iamc_columns],
+        ],
+        ignore_index=True,
+    )
+    df_iamc['unit'] = '?'
+    df_iamc['scenario'] = scenario_name
 
-    emiss = df_emissions_raw['emis_comm'].unique()
-    sector = df_capacity['sector'].unique()
+    aggregates_to_add: list[DataFrame] = []
+    grouping_cols = ['scenario', 'region', 'year', 'unit']
 
-    # adding aggregates of emissions for each species
-    df.aggregate([f'Emissions|{q}' for q in emiss], append=True)
+    emiss_types = df_emissions_raw['emis_comm'].unique()
+    for emiss in emiss_types:
+        new_variable_name = f'Emissions|{emiss}'
+        mask = df_iamc['variable'].str.startswith(f'{new_variable_name}|')
+        if mask.any():
+            agg = df_iamc[mask].groupby(grouping_cols, as_index=False).sum(numeric_only=True)
+            agg['variable'] = new_variable_name
+            aggregates_to_add.append(agg)
 
-    # adding aggregates of activity/capacity for each sector
-    prod = itertools.product(['Activity', 'Capacity'], sector)
-    df.aggregate([f'{t}|{s}' for t, s in prod], append=True)
+    sector_types = df_capacity['sector'].unique()
+    for var_type, sector in itertools.product(['Activity', 'Capacity'], sector_types):
+        new_variable_name = f'{var_type}|{sector}'
+        mask = df_iamc['variable'].str.startswith(f'{new_variable_name}|')
+        if mask.any():
+            agg = df_iamc[mask].groupby(grouping_cols, as_index=False).sum(numeric_only=True)
+            agg['variable'] = new_variable_name
+            aggregates_to_add.append(agg)
 
-    # write IamDataFrame to xlsx
-    base_name = ofile.name.split('.')[0]
-    excel_pyam_filename = ofile.with_name(base_name + '_pyam.xlsx')
-    df.to_excel(excel_pyam_filename)
+    if aggregates_to_add:
+        df_final_iamc = pd.concat([df_iamc, *aggregates_to_add], ignore_index=True)
+    else:
+        df_final_iamc = df_iamc
 
-    cur.close()
+    df_final_iamc['model'] = 'Temoa'
+    final_cols = ['model', 'scenario', 'region', 'variable', 'unit', 'year', 'value']
+    df_final_iamc = df_final_iamc[final_cols]
+
+    base_name = ofile.stem
+    excel_pyam_filename = ofile.with_name(f'{base_name}_pyam.xlsx')
+    df_final_iamc.to_excel(excel_pyam_filename, index=False)
+
     con.close()
 
 
-def get_data(inputs):
-    ifile = None
-    ofile = None
-    scenario = set()
+def get_data(inputs: dict[str, str]) -> None:
+    """Parses command-line arguments and calls the main excel creation function."""
+    ifile = inputs.get('-i') or inputs.get('--input')
+    ofile_str = inputs.get('-o') or inputs.get('--output')
+    ofile = Path(ofile_str) if ofile_str else None
+    scenario = {s for k, s in inputs.items() if k in ('-s', '--scenario')}
 
-    if not inputs:
-        raise ValueError('No arguments found')
-
-    for opt, arg in inputs.items():
-        if opt in ('-i', '--input'):
-            ifile = arg
-        elif opt in ('-o', '--output'):
-            ofile = arg
-        elif opt in ('-s', '--scenario'):
-            scenario.add(arg)
-        elif opt in ('-h', '--help'):
-            print(
-                'Use as :\n	python db_to_excel.py -i <input_file> (Optional -o <output_excel_file_name_only>)\n	Use -h for help.'
-            )
-            sys.exit()
+    if not scenario:
+        raise ValueError("You must specify a scenario with the '-s' option.")
 
     make_excel(ifile, ofile, scenario)
 
 
 if __name__ == '__main__':
     try:
-        argv = sys.argv[1:]
-        opts, args = getopt.getopt(argv, 'hi:o:s:', ['help', 'input=', 'output=', 'scenario='])
-    except getopt.GetoptError:
-        print(
-            "Something's Wrong. Use as :\n	python db_to_excel.py -i <input_file> (Optional -o <output_excel_file_name_only>)\n	Use -h for help."
+        opts, _ = getopt.getopt(
+            sys.argv[1:],
+            'hi:o:s:',
+            ['help', 'input=', 'output=', 'scenario='],
         )
+    except getopt.GetoptError as err:
+        print(err)
+        print('Use -h or --help for usage instructions.')
         sys.exit(2)
 
-    print(opts)
+    opts_dict = dict(opts)
+    if '-h' in opts_dict or '--help' in opts_dict:
+        print(__doc__)
+        sys.exit()
 
-    get_data(dict(opts))
+    try:
+        get_data(opts_dict)
+    except (ValueError, FileNotFoundError) as e:
+        print(f'Error: {e}')
+        sys.exit(2)
