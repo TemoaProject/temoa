@@ -20,7 +20,7 @@ from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
-    from temoa.types import Period, Region, Technology, Vintage
+from temoa.types import Period, Region, Technology, Vintage
 
 logger = getLogger(__name__)
 

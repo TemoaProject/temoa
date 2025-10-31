@@ -7,13 +7,15 @@ their layer (role) and sector, which helps the physics-based layout engine
 in vis.js converge to a cleaner and more readable state faster.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math
 import random
 import uuid
 from collections.abc import Iterable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import networkx as nx
 
@@ -22,13 +24,19 @@ from temoa.types.core_types import Commodity, Technology
 
 logger = logging.getLogger(__name__)
 
-GraphType = TypeVar(
-    'GraphType',
-    nx.Graph[Commodity | Technology | str],
-    nx.DiGraph[Commodity | Technology | str],
-    nx.MultiGraph[Commodity | Technology | str],
-    nx.MultiDiGraph[Commodity | Technology | str],
-)
+
+if TYPE_CHECKING:
+    GraphType = TypeVar(
+        'GraphType',
+        nx.Graph[Commodity | Technology | str],
+        nx.DiGraph[Commodity | Technology | str],
+        nx.MultiGraph[Commodity | Technology | str],
+        nx.MultiDiGraph[Commodity | Technology | str],
+    )
+else:
+    # At runtime, use the base types which are not subscripted.
+    # The TypeVar still enforces that the graph type is one of these.
+    GraphType = TypeVar('GraphType', nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)
 
 
 def convert_graph_to_json(

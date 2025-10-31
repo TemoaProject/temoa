@@ -53,12 +53,12 @@ def make_nx_graph(
     driven_commodities: set[Commodity],
     other_orphan_commodities: set[Commodity],
     demand_orphan_commodities: set[Commodity],
-) -> nx.MultiDiGraph[str]:
+) -> nx.MultiDiGraph:
     """
     Make an nx graph, grouping parallel edges to prevent label overlap.
     """
 
-    dg: nx.MultiDiGraph[str] = nx.MultiDiGraph()
+    dg: nx.MultiDiGraph = nx.MultiDiGraph()
     connections = tuple(connections)  # Freeze for multiple iterations
 
     node_styles_by_layer = {
