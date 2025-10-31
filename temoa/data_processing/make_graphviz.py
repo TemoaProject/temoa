@@ -1,6 +1,7 @@
 import os
 import sys
 from subprocess import call
+from typing import Any, TextIO
 
 from .database_util import DatabaseUtil
 from .graphviz_formats import (
@@ -13,7 +14,29 @@ from .graphviz_util import create_text_edges, create_text_nodes, get_color_confi
 
 
 class GraphvizDiagramGenerator:
-    def __init__(self, db_file, scenario=None, region=None, out_dir='.', verbose=1):
+    """Generates Graphviz diagrams for Temoa models."""
+
+    db_file: str
+    q_name: str
+    scenario: str | None
+    region: str | None
+    out_dir: str
+    folder: dict[str, str]
+    verbose: int
+    colors: dict[str, Any]
+    db_util: DatabaseUtil
+    logger: TextIO
+    grey_flag: bool
+
+    def __init__(
+        self,
+        db_file: str,
+        scenario: str | None = None,
+        region: str | None = None,
+        out_dir: str = '.',
+        verbose: int = 1,
+    ) -> None:
+        """Initialize the GraphvizDiagramGenerator."""
         self.db_file = db_file
         self.q_name = os.path.splitext(os.path.basename(self.db_file))[0]
         self.scenario = scenario
@@ -22,119 +45,125 @@ class GraphvizDiagramGenerator:
         self.folder = {'results': 'whole_system', 'tech': 'processes', 'comm': 'commodities'}
         self.verbose = verbose
         self.colors = {}
+        self.grey_flag = False
 
-    def connect(self):
+    def connect(self) -> None:
+        """Connect to the database and set up output directories."""
         self.db_util = DatabaseUtil(self.db_file, self.scenario)
         self.logger = open(os.path.join(self.out_dir, 'graphviz.log'), 'w')
         self.set_graphic_options(False, False)
         self.__log__('--------------------------------------')
         self.__log__('GraphvizDiagramGenerator: connected')
         if self.scenario:
-            out_dir = self.q_name + '_' + self.scenario + '_graphviz'
+            out_dir = f'{self.q_name}_{self.scenario}_graphviz'
         else:
-            out_dir = self.q_name + '_input_graphviz'
+            out_dir = f'{self.q_name}_input_graphviz'
 
         self.out_dir = os.path.join(self.out_dir, out_dir)
         if not os.path.exists(self.out_dir):
             os.mkdir(self.out_dir)
 
-    def close(self):
+    def close(self) -> None:
+        """Disconnect from the database and close the logger."""
         self.db_util.close()
         self.__log__('GraphvizDiagramGenerator: disconnected')
         self.__log__('--------------------------------------')
         self.logger.close()
-        # os.chdir('..')
 
-    def __log__(self, msg):
+    def __log__(self, msg: str) -> None:
+        """Log a message to the console and a log file."""
         if self.verbose == 1:
             print(msg)
         self.logger.write(msg + '\n')
 
-    def __generate_graph__(self, dot_format, dot_args, output_name, output_format):
+    def __generate_graph__(
+        self, dot_format: str, dot_args: dict[str, Any], output_name: str, output_format: str
+    ) -> None:
+        """Generate a graph from a DOT format string."""
         dot_args.update(self.colors)
         with open(output_name + '.dot', 'w') as f:
             f.write(dot_format % dot_args)
         cmd = (
             'dot',
-            '-T' + output_format,
-            '-o' + output_name + '.' + output_format,
-            output_name + '.dot',
+            f'-T{output_format}',
+            f'-o{output_name}.{output_format}',
+            f'{output_name}.dot',
         )
         call(cmd)
 
-    def set_graphic_options(self, grey_flag=None, splinevar=None):
+    def set_graphic_options(
+        self, grey_flag: bool | None = None, splinevar: bool | None = None
+    ) -> None:
+        """Set graphic options for the diagrams."""
         if grey_flag is not None:
             self.grey_flag = grey_flag
             self.colors.update(get_color_config(self.grey_flag))
         if splinevar is not None:
-            self.colors['splinevar'] = splinevar
+            self.colors['splinevar'] = 'spline' if splinevar else 'line'
         self.__log__(
-            'setGraphicOption: updated greyFlag = '
-            + str(self.grey_flag)
-            + ' and splinevar = '
-            + str(self.colors['splinevar'])
+            f'setGraphicOption: updated greyFlag = {self.grey_flag} '
+            f'and splinevar = {self.colors.get("splinevar", "line")}'
         )
 
-    def create_main_results_diagram(self, period, region, output_format='svg'):
-        self.__log__('CreateMainResultsDiagram: started with period = ' + str(period))
+    def create_main_results_diagram(
+        self, period: int, region: str | None, output_format: str = 'svg'
+    ) -> tuple[str, str]:
+        """Create the main results diagram for a specific period."""
+        self.__log__(f'CreateMainResultsDiagram: started with period = {period}')
 
-        if not os.path.exists(os.path.join(self.out_dir, self.folder['results'])):
-            os.makedirs(os.path.join(self.out_dir, self.folder['results']))
+        results_dir = os.path.join(self.out_dir, self.folder['results'])
+        if not os.path.exists(results_dir):
+            os.makedirs(results_dir)
 
-        output_name = os.path.join(self.folder['results'], 'results%s' % period)
+        output_name = os.path.join(self.folder['results'], f'results{period}')
         if self.region:
-            output_name += '_' + self.region
+            output_name += f'_{self.region}'
         output_name = os.path.join(self.out_dir, output_name)
         if self.grey_flag:
             output_name += '.grey'
 
         tech_all = self.db_util.get_technologies_for_flags(flags=['r', 'p', 'pb', 'ps'])
-
         commodity_carrier = self.db_util.get_commodities_for_flags(flags=['d', 'p'])
         commodity_emissions = self.db_util.get_commodities_for_flags(flags=['e'])
-
         efficiency_input = self.db_util.get_commodities_by_technology(region, comm_type='input')
         efficiency_output = self.db_util.get_commodities_by_technology(region, comm_type='output')
-
         v_cap2 = self.db_util.get_capacity_for_tech_and_period(period=period, region=region)
-
         ei_2 = self.db_util.get_output_flow_for_period(
             period=period, region=region, comm_type='input'
         )
         eo_2 = self.db_util.get_output_flow_for_period(
             period=period, region=region, comm_type='output'
         )
-
         emio_2 = self.db_util.get_emissions_activity_for_period(period=period, region=region)
 
         self.__log__('CreateMainResultsDiagram: database fetched successfully')
 
         tech_attr_fmt = 'label="%s\\nCapacity: %.2f", href="#", onclick="loadNextGraphvizGraph(\'results\', \'%s\', \'%s\')"'
-        # tech_attr_fmt = 'label="%%s\\nCapacity: %%.2f", href="results_%%s_%%s.%s"'
-        # tech_attr_fmt %= outputFormat
-        # commodity_fmt = 'href="../commodities/rc_%%s_%%s.%s"' % outputFormat
         commodity_fmt = "href=\"#\", onclick=\"loadNextGraphvizGraph('results', '%s', '%s')\""
         flow_fmt = 'label="%.2f"'
-
         epsilon = 0.005
 
-        etechs, dtechs, ecarriers, xnodes = set(), set(), set(), set()
-        eemissions = set()
-        eflowsi, eflowso, dflows = set(), set(), set()  # edges
+        etechs: set[tuple[str, str]] = set()
+        dtechs: set[tuple[str, str]] = set()
+        ecarriers: set[tuple[str, str]] = set()
+        xnodes: set[tuple[str, str]] = set()
+        eemissions: set[tuple[str, str]] = set()
+        eflowsi: set[tuple[str, str, str]] = set()
+        eflowso: set[tuple[str, str, str]] = set()
+        dflows: set[tuple[str, str, str]] = set()
         usedc, usede = set(), set()  # used carriers, used emissions
 
         v_cap2.index = v_cap2.tech
         for tech in set(tech_all) - set(v_cap2.tech):
-            dtechs.add((tech, None))
+            dtechs.add((tech, ''))
 
         for i in range(len(v_cap2)):
             row = v_cap2.iloc[i]
             etechs.add(
                 (row['tech'], tech_attr_fmt % (row['tech'], row['capacity'], row['tech'], period))
             )
-            # etechs.add( (row['tech'], tech_attr_fmt % (row['tech'], row['capacity'], row['tech'], period)) )
 
-        udflows = set()
+        udflows: set[tuple[str, str]] = set()
         for i in range(len(ei_2)):
             row = ei_2.iloc[i]
             if row['input_comm'] != 'ethos':
@@ -142,20 +171,16 @@ class GraphvizDiagramGenerator:
                 ecarriers.add((row['input_comm'], commodity_fmt % (row['input_comm'], period)))
                 usedc.add(row['input_comm'])
             else:
-                # check to see if this tech is in the unlim_cap set
                 tech = row['tech']
-                if tech not in v_cap2.tech:
-                    cap = 99999
-                else:
-                    cap = v_cap2.loc[row['tech']].capacity
+                cap = v_cap2.loc[row['tech']].capacity if tech in v_cap2.tech else 99999
                 xnodes.add((row['tech'], tech_attr_fmt % (row['tech'], cap, row['tech'], period)))
             udflows.add((row['input_comm'], row['tech']))
 
         for row in set(efficiency_input) - udflows:
             if row[0] != 'ethos':
-                dflows.add((row[0], row[1], None))
+                dflows.add((row[0], row[1], ''))
             else:
-                xnodes.add((row[1], None))
+                xnodes.add((row[1], ''))
 
         udflows = set()
         for i in range(len(eo_2)):
@@ -166,23 +191,17 @@ class GraphvizDiagramGenerator:
             udflows.add((row['tech'], row['output_comm']))
 
         for row in set(efficiency_output) - udflows:
-            dflows.add((row[0], row[1], None))
+            dflows.add((row[0], row[1], ''))
 
         for i in range(len(emio_2)):
             row = emio_2.iloc[i]
             if row['emis_activity'] >= epsilon:
                 eflowso.add((row['tech'], row['emis_comm'], flow_fmt % row['emis_activity']))
-                eemissions.add((row['emis_comm'], None))
+                eemissions.add((row['emis_comm'], ''))
                 usede.add(row['emis_comm'])
 
-        dcarriers = set()
-        demissions = set()
-        for cc in commodity_carrier:
-            if cc not in usedc and cc != 'ethos':
-                dcarriers.add((cc, None))
-        for ee in commodity_emissions:
-            if ee not in usede:
-                demissions.add((ee, None))
+        dcarriers = {(cc, '') for cc in commodity_carrier if cc not in usedc and cc != 'ethos'}
+        demissions = {(ee, '') for ee in commodity_emissions if ee not in usede}
 
         self.__log__('CreateMainResultsDiagram: creating diagrams')
         args = dict(
@@ -200,44 +219,43 @@ class GraphvizDiagramGenerator:
             eflowso=create_text_edges(eflowso, indent=3),
         )
 
+        output_path = output_name + '.' + output_format
         self.__generate_graph__(results_dot_fmt, args, output_name, output_format)
         self.__log__('CreateMainResultsDiagram: graph generated, returning')
-        return self.out_dir, output_name + '.' + output_format
+        return self.out_dir, output_path
 
-    # Needs some small fixing - cases where no input but output is there. # Check sample graphs
     def create_tech_results_diagrams(
-        self, period, region, tech, output_format='svg'
-    ):  # tech results
-        self.__log__(
-            'CreateTechResultsDiagrams: started with period = '
-            + str(period)
-            + ' and tech = '
-            + str(tech)
-        )
+        self, period: int, region: str | None, tech: str, output_format: str = 'svg'
+    ) -> tuple[str, str]:
+        """Create technology-specific results diagrams."""
+        self.__log__(f'CreateTechResultsDiagrams: started with period = {period} and tech = {tech}')
 
-        if not os.path.exists(os.path.join(self.out_dir, self.folder['tech'])):
-            os.makedirs(os.path.join(self.out_dir, self.folder['tech']))
+        tech_dir = os.path.join(self.out_dir, self.folder['tech'])
+        if not os.path.exists(tech_dir):
+            os.makedirs(tech_dir)
 
         output_name = os.path.join(self.folder['tech'], f'results_{tech}_{period}')
         if self.region:
-            output_name += '_' + self.region
+            output_name += f'_{self.region}'
         output_name = os.path.join(self.out_dir, output_name)
         if self.grey_flag:
             output_name += '.grey'
 
-        # enode_attr_fmt = 'href="../commodities/rc_%%s_%%s.%s"' % outputFormat
-        # vnode_attr_fmt = 'href="results_%%s_p%%sv%%s_segments.%s", ' % outputFormat
-        # vnode_attr_fmt += 'label="%s\\nCap: %.2f"'
         enode_attr_fmt = "href=\"#\", onclick=\"loadNextGraphvizGraph('results', '%s', '%s')\""
-        vnode_attr_fmt = "href=\"#\", onclick=\"loadNextGraphvizGraph('%s', '%s', '%s')\""
-        vnode_attr_fmt += 'label="%s\\nCap: %.2f"'
+        vnode_attr_fmt = (
+            "href=\"#\", onclick=\"loadNextGraphvizGraph('%s', '%s', '%s')\", "
+            'label="%s\\nCap: %.2f"'
+        )
 
         total_cap = self.db_util.get_capacity_for_tech_and_period(tech, period, region)
         flows = self.db_util.get_commodity_wise_input_and_output_flow(tech, period, region)
-
         self.__log__('CreateTechResultsDiagrams: database fetched successfully')
 
-        enodes, vnodes, iedges, oedges = set(), set(), set(), set()
+        enodes: set[tuple[str, str]] = set()
+        vnodes: set[tuple[str, str]] = set()
+        iedges: set[tuple[str, str, str]] = set()
+        oedges: set[tuple[str, str, str]] = set()
+
         for i in range(len(flows)):
             row = flows.iloc[i]
             vnode = str(row['vintage'])
@@ -255,13 +273,11 @@ class GraphvizDiagramGenerator:
             enodes.add((row['output_comm'], enode_attr_fmt % (row['output_comm'], period)))
             oedges.add((vnode, row['output_comm'], 'label="%.2f"' % row['flow_out']))
 
-        # cluster_vintage_url = "results%s.%s" % (period, outputFormat)
-        cluster_vintage_url = '#'
-
+        output_path = output_name + '.' + output_format
         if vnodes:
             self.__log__('CreateTechResultsDiagrams: creating diagrams')
-            args = dict(
-                cluster_vintage_url=cluster_vintage_url,
+            args: dict[str, Any] = dict(
+                cluster_vintage_url='#',
                 total_cap=total_cap,
                 inp_technology=tech,
                 period=period,
@@ -275,22 +291,23 @@ class GraphvizDiagramGenerator:
             self.__log__('CreateTechResultsDiagrams: nothing to create')
 
         self.__log__('CreateTechResultsDiagrams: graph generated, returning')
-        return self.out_dir, output_name + '.' + output_format
+        return self.out_dir, output_path
 
-    def create_commodity_partial_results(self, period, region, comm, output_format='svg'):
+    def create_commodity_partial_results(
+        self, period: int, region: str | None, comm: str, output_format: str = 'svg'
+    ) -> tuple[str, str]:
+        """Create commodity-specific partial results diagrams."""
         self.__log__(
-            'CreateCommodityPartialResults: started with period = '
-            + str(period)
-            + ' and comm = '
-            + str(comm)
+            f'CreateCommodityPartialResults: started with period = {period} and comm = {comm}'
         )
 
-        if not os.path.exists(os.path.join(self.out_dir, self.folder['comm'])):
-            os.makedirs(os.path.join(self.out_dir, self.folder['comm']))
+        comm_dir = os.path.join(self.out_dir, self.folder['comm'])
+        if not os.path.exists(comm_dir):
+            os.makedirs(comm_dir)
 
         output_name = os.path.join(self.folder['comm'], f'rc_{comm}_{period}')
         if self.region:
-            output_name += '_' + self.region
+            output_name += f'_{self.region}'
         output_name = os.path.join(self.out_dir, output_name)
         if self.grey_flag:
             output_name += '.grey'
@@ -301,28 +318,22 @@ class GraphvizDiagramGenerator:
         output_total = set(
             self.db_util.get_existing_technologies_for_commodity(comm, region, 'input')['tech']
         )
-
         flow_in = self.db_util.get_output_flow_for_period(period, region, 'input', comm)
         otechs = set(flow_in['tech'])
-
         flow_out = self.db_util.get_output_flow_for_period(period, region, 'output', comm)
         itechs = set(flow_out['tech'])
-
         self.__log__('CreateCommodityPartialResults: database fetched successfully')
-
-        # period_results_url_fmt = '../results/results%%s.%s' % outputFormat
-        # node_attr_fmt = 'href="../results/results_%%s_%%s.%s"' % outputFormat
-        # rc_node_fmt = 'color="%s", href="%s", shape="circle", fillcolor="%s", fontcolor="black"'
 
         node_attr_fmt = "href=\"#\", onclick=\"loadNextGraphvizGraph('results', '%s', '%s')\""
         rc_node_fmt = 'color="%s", href="%s", shape="circle", fillcolor="%s", fontcolor="black"'
 
-        # url = period_results_url_fmt % period
-        url = '#'
-        enodes, dnodes, eedges, dedges = set(), set(), set(), set()
+        enodes: set[tuple[str, str]] = set()
+        dnodes: set[tuple[str, str]] = set()
+        eedges: set[tuple[str, str, str]] = set()
+        dedges: set[tuple[str, str, str]] = set()
 
         rcnode = (
-            (comm, rc_node_fmt % (self.colors['commodity_color'], url, self.colors['fill_color'])),
+            (comm, rc_node_fmt % (self.colors['commodity_color'], '#', self.colors['fill_color'])),
         )
 
         for i in range(len(flow_in)):
@@ -331,16 +342,16 @@ class GraphvizDiagramGenerator:
             enodes.add((t, node_attr_fmt % (t, period)))
             eedges.add((comm, t, 'label="%.2f"' % f))
         for t in output_total - otechs:
-            dnodes.add((t, None))
-            dedges.add((comm, t, None))
+            dnodes.add((t, ''))
+            dedges.add((comm, t, ''))
         for i in range(len(flow_out)):
             t = flow_out.iloc[i]['tech']
             f = flow_out.iloc[i]['flow']
             enodes.add((t, node_attr_fmt % (t, period)))
             eedges.add((t, comm, 'label="%.2f"' % f))
         for t in input_total - itechs:
-            dnodes.add((t, None))
-            dedges.add((t, comm, None))
+            dnodes.add((t, ''))
+            dedges.add((t, comm, ''))
 
         self.__log__('CreateCommodityPartialResults: creating diagrams')
         args = dict(
@@ -352,39 +363,45 @@ class GraphvizDiagramGenerator:
             used_edges=create_text_edges(eedges, indent=2),
             unused_edges=create_text_edges(dedges, indent=2),
         )
+        output_path = output_name + '.' + output_format
         self.__generate_graph__(commodity_dot_fmt, args, output_name, output_format)
         self.__log__('CreateCommodityPartialResults: graph generated, returning')
-        return self.out_dir, output_name + '.' + output_format
+        return self.out_dir, output_path
 
-    # Function for generating the Input Graph
     def create_complete_input_graph(
-        self, region, inp_tech=None, inp_comm=None, output_format='svg'
-    ):
+        self,
+        region: str | None,
+        inp_tech: str | None = None,
+        inp_comm: str | None = None,
+        output_format: str = 'svg',
+    ) -> tuple[str, str]:
+        """Generate the complete input graph."""
         self.__log__(
-            'createCompleteInputGraph: started with inp_tech = '
-            + str(inp_tech)
-            + ' and inp_comm = '
-            + str(inp_comm)
+            f'createCompleteInputGraph: started with inp_tech = {inp_tech} '
+            f'and inp_comm = {inp_comm}'
         )
         output_name = self.q_name
 
         if inp_tech:
-            output_name += '_' + str(inp_tech)
-            if not os.path.exists(os.path.join(self.out_dir, self.folder['tech'])):
-                os.makedirs(os.path.join(self.out_dir, self.folder['tech']))
+            output_name += f'_{inp_tech}'
+            tech_dir = os.path.join(self.out_dir, self.folder['tech'])
+            if not os.path.exists(tech_dir):
+                os.makedirs(tech_dir)
             output_name = os.path.join(self.folder['tech'], output_name)
         elif inp_comm:
-            output_name += '_' + str(inp_comm)
-            if not os.path.exists(os.path.join(self.out_dir, self.folder['comm'])):
-                os.makedirs(os.path.join(self.out_dir, self.folder['comm']))
+            output_name += f'_{inp_comm}'
+            comm_dir = os.path.join(self.out_dir, self.folder['comm'])
+            if not os.path.exists(comm_dir):
+                os.makedirs(comm_dir)
             output_name = os.path.join(self.folder['comm'], output_name)
         else:
-            if not os.path.exists(os.path.join(self.out_dir, self.folder['results'])):
-                os.makedirs(os.path.join(self.out_dir, self.folder['results']))
+            results_dir = os.path.join(self.out_dir, self.folder['results'])
+            if not os.path.exists(results_dir):
+                os.makedirs(results_dir)
             output_name = os.path.join(self.folder['results'], output_name)
 
         if self.region:
-            output_name += '_' + self.region
+            output_name += f'_{self.region}'
 
         output_name = os.path.join(self.out_dir, output_name)
         if self.grey_flag:
@@ -392,13 +409,13 @@ class GraphvizDiagramGenerator:
 
         nodes, tech, ltech, to_tech, from_tech = set(), set(), set(), set(), set()
 
-        if DatabaseUtil.is_database_file(self.db_file):
-            res = self.db_util.get_commodities_and_tech(inp_comm, inp_tech, region)
-        else:
-            res = self.db_util.read_from_dat_file(inp_comm, inp_tech)
+        res = (
+            self.db_util.get_commodities_and_tech(inp_comm, inp_tech, region)
+            if DatabaseUtil.is_database_file(self.db_file)
+            else self.db_util.read_from_dat_file(inp_comm, inp_tech)
+        )
 
         self.__log__('createCompleteInputGraph: database fetched successfully')
-        # Create nodes and edges using the data frames from database
         for i in range(len(res)):
             row = res.iloc[i]
             if row['input_comm'] != 'ethos':
@@ -409,43 +426,49 @@ class GraphvizDiagramGenerator:
             tech.add(row['tech'])
 
             if row['input_comm'] != 'ethos':
-                to_tech.add('"%s"' % row['input_comm'] + '\t->\t"%s"' % row['tech'])
-            from_tech.add('"%s"' % row['tech'] + '\t->\t"%s"' % row['output_comm'])
+                to_tech.add(f'"{row["input_comm"]}"\t->\t"{row["tech"]}"')
+            from_tech.add(f'"{row["tech"]}"\t->\t"{row["output_comm"]}"')
 
         self.__log__('createCompleteInputGraph: creating diagrams')
 
         args = dict(
-            enodes=''.join('"%s";\n\t\t' % x for x in nodes),
-            tnodes=''.join('"%s";\n\t\t' % x for x in tech),
-            iedges=''.join('%s;\n\t\t' % x for x in to_tech),
-            oedges=''.join('%s;\n\t\t' % x for x in from_tech),
-            snodes=';'.join('"%s"' % x for x in ltech),
+            enodes=''.join(f'"{x}";\n\t\t' for x in nodes),
+            tnodes=''.join(f'"{x}";\n\t\t' for x in tech),
+            iedges=''.join(f'{x};\n\t\t' for x in to_tech),
+            oedges=''.join(f'{x};\n\t\t' for x in from_tech),
+            snodes=';'.join(f'"{x}"' for x in ltech),
         )
+        output_path = output_name + '.' + output_format
         self.__generate_graph__(quick_run_dot_fmt, args, output_name, output_format)
         self.__log__('createCompleteInputGraph: graph generated, returning')
-        return self.out_dir, output_name + '.' + output_format
+        return self.out_dir, output_path
 
 
 if __name__ == '__main__':
-    input = process_input(sys.argv[1:])
+    cli_input = process_input(sys.argv[1:])
     graph_gen = GraphvizDiagramGenerator(
-        input['ifile'], input['scenario_name'], input['region'], out_dir=input['res_dir']
+        cli_input['ifile'],
+        cli_input['scenario_name'],
+        cli_input['region'],
+        out_dir=cli_input['res_dir'],
     )
     graph_gen.connect()
-    graph_gen.set_graphic_options(grey_flag=input['grey_flag'], splinevar=input['splinevar'])
-    if input['scenario_name'] is None:
-        res = graph_gen.create_complete_input_graph(
-            input['region'], input['inp_technology'], input['inp_commodity']
+    graph_gen.set_graphic_options(
+        grey_flag=cli_input['grey_flag'], splinevar=cli_input['splinevar']
+    )
+    if cli_input['scenario_name'] is None:
+        result = graph_gen.create_complete_input_graph(
+            cli_input['region'], cli_input['inp_technology'], cli_input['inp_commodity']
         )
-    elif input['inp_technology'] is None and input['inp_commodity'] is None:
-        res = graph_gen.create_main_results_diagram(input['period'], input['region'])
-    elif input['inp_commodity'] is None:
-        res = graph_gen.create_tech_results_diagrams(
-            input['period'], input['region'], input['inp_technology']
+    elif cli_input['inp_technology'] is None and cli_input['inp_commodity'] is None:
+        result = graph_gen.create_main_results_diagram(cli_input['period'], cli_input['region'])
+    elif cli_input['inp_commodity'] is None:
+        result = graph_gen.create_tech_results_diagrams(
+            cli_input['period'], cli_input['region'], cli_input['inp_technology']
         )
-    elif input['inp_technology'] is None:
-        res = graph_gen.create_commodity_partial_results(
-            input['period'], input['region'], input['inp_commodity']
+    else:  # 'inp_technology' is None
+        result = graph_gen.create_commodity_partial_results(
+            cli_input['period'], cli_input['region'], cli_input['inp_commodity']
         )
     graph_gen.close()
-    print('Check graph generated at ', res[1], ' and all results at ', res[0])
+    print(f'Check graph generated at {result[1]} and all results at {result[0]}')

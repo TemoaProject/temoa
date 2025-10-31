@@ -1,7 +1,10 @@
 import argparse
+from collections.abc import Callable, Iterable, Sequence, Sized
+from typing import Any
 
 
-def process_input(args):
+def process_input(args: list[str]) -> dict[str, Any]:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Generate Output Plot')
     parser.add_argument(
         '-i',
@@ -118,9 +121,10 @@ def process_input(args):
     return vars(options)
 
 
-def get_color_config(grey_flag):
+def get_color_config(grey_flag: bool) -> dict[str, str | tuple[str, ...]]:
+    """Return a dictionary of color configurations for the graph."""
     grey_flag = not (grey_flag)
-    kwargs = dict(
+    kwargs: dict[str, str | tuple[str, ...]] = dict(
         tech_color='darkseagreen' if grey_flag else 'black',
         commodity_color='lightsteelblue' if grey_flag else 'black',
         unused_color='powderblue' if grey_flag else 'gray75',
@@ -141,55 +145,57 @@ def get_color_config(grey_flag):
         sb_arrow_color='forestgreen' if grey_flag else 'black',
         # SUBGRAPH 1 ARROW COLORS
         color_list=(
-            'red',
-            'orange',
-            'gold',
-            'green',
-            'blue',
-            'purple',
-            'hotpink',
-            'cyan',
-            'burlywood',
-            'coral',
-            'limegreen',
-            'black',
-            'brown',
-        )
-        if grey_flag
-        else ('black', 'black'),
+            (
+                'red',
+                'orange',
+                'gold',
+                'green',
+                'blue',
+                'purple',
+                'hotpink',
+                'cyan',
+                'burlywood',
+                'coral',
+                'limegreen',
+                'black',
+                'brown',
+            )
+            if grey_flag
+            else ('black', 'black')
+        ),
     )
     return kwargs
 
 
-def _get_len(key):
-    def wrapped(obj):
+def _get_len(key: int) -> Callable[[Sequence[Sized]], int]:
+    """Return a function that gets the length of an item at a specific index in a sequence."""
+
+    def wrapped(obj: Sequence[Sized]) -> int:
         return len(obj[key])
 
     return wrapped
 
 
-def create_text_nodes(nodes, indent=1):
-    """\
-Return a set of text nodes in Graphviz DOT format, optimally padded for easier
-reading and debugging.
+def create_text_nodes(nodes: Iterable[tuple[str, str]], indent: int = 1) -> str:
+    """
+    Return a set of text nodes in Graphviz DOT format, optimally padded for
+    easier reading and debugging.
 
-nodes: iterable of (id, attribute) node tuples
-       e.g. [(node1, attr1), (node2, attr2), ...]
-
-indent: integer, number of tabs with which to indent all Dot node lines
-"""
+    Args:
+        nodes: iterable of (id, attribute) node tuples
+               e.g. [(node1, attr1), (node2, attr2), ...]
+        indent: integer, number of tabs with which to indent all Dot node lines
+    """
     if not nodes:
         return '// no nodes in this section'
 
-    # guarantee basic structure of nodes arg
-    assert len(nodes) == sum(1 for a, b in nodes)
-
     # Step 1: for alignment, get max item length in node list
-    maxl = max(map(_get_len(0), nodes)) + 2  # account for two extra quotes
+    # The `+ 2` accounts for the two extra quotes that will be added.
+    maxl = max(map(_get_len(0), nodes), default=0) + 2
 
     # Step 2: prepare a text format based on max node size that pads all
     #         lines with attributes
-    nfmt_attr = '{0:<%d} [ {1} ] ;' % maxl  # node text format
+    nfmt_attr = f'{{0:<{maxl}}} [ {{1}} ] ;'  # node text format
     nfmt_noa = '{0} ;'
 
     # Step 3: create each node, and place string representation in a set to
@@ -199,35 +205,31 @@ indent: integer, number of tabs with which to indent all Dot node lines
     gviz.update(nfmt_noa.format(q % n) for n, a in nodes if not a)
 
     # Step 4: return a sorted version of nodes, as a single string
-    indent = '\n' + '\t' * indent
-    return indent.join(sorted(gviz))
+    indent_str = '\n' + '\t' * indent
+    return indent_str.join(sorted(gviz))
 
 
-def create_text_edges(edges, indent=1):
-    """\
-Return a set of text edge definitions in Graphviz DOT format, optimally padded
-for easier reading and debugging.
+def create_text_edges(edges: Iterable[tuple[str, str, str]], indent: int = 1) -> str:
+    """
+    Return a set of text edge definitions in Graphviz DOT format, optimally
+    padded for easier reading and debugging.
 
-edges: iterable of (from, to, attribute) edge tuples
-       e.g. [(inp1, tech1, attr1), (inp2, tech2, attr2), ...]
-
-indent: integer, number of tabs with which to indent all Dot edge lines
-"""
+    Args:
+        edges: iterable of (from, to, attribute) edge tuples
+               e.g. [(inp1, tech1, attr1), (inp2, tech2, attr2), ...]
+        indent: integer, number of tabs with which to indent all Dot edge lines
+    """
     if not edges:
         return '// no edges in this section'
 
-    # guarantee basic structure of edges arg
-    assert len(edges) == sum(1 for a, b, c in edges)
-
     # Step 1: for alignment, get max length of items on left and right side of
-    # graph operator token ('->')
-    maxl, maxr = max(map(_get_len(0), edges)), max(map(_get_len(1), edges))
-    maxl += 2  # account for additional two quotes
-    maxr += 2  # account for additional two quotes
+    # graph operator token ('->'). The `+ 2` accounts for the two extra quotes.
+    maxl = max(map(_get_len(0), edges), default=0) + 2
+    maxr = max(map(_get_len(1), edges), default=0) + 2
 
     # Step 2: prepare format to be "\n\tinp+PADDING -> out+PADDING [..."
-    efmt_attr = '{0:<%d} -> {1:<%d} [ {2} ] ;' % (maxl, maxr)  # with attributes
-    efmt_noa = '{0:<%d} -> {1} ;' % maxl  # no attributes
+    efmt_attr = f'{{0:<{maxl}}} -> {{1:<{maxr}}} [ {{2}} ] ;'  # with attributes
+    efmt_noa = f'{{0:<{maxl}}} -> {{1}} ;'  # no attributes
 
     # Step 3: add each edge to a set (to guarantee unique entries only)
     q = '"%s"'  # enforce quoting for all tokens
@@ -235,5 +237,5 @@ indent: integer, number of tabs with which to indent all Dot edge lines
     gviz.update(efmt_noa.format(q % i, q % t) for i, t, a in edges if not a)
 
     # Step 4: return a sorted version of the edges, as a single string
-    indent = '\n' + '\t' * indent
-    return indent.join(sorted(gviz))
+    indent_str = '\n' + '\t' * indent
+    return indent_str.join(sorted(gviz))

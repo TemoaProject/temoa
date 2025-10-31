@@ -240,7 +240,7 @@ def _fetch_all_tech_definitions(
     cur: sqlite3.Cursor, myopic_index: MyopicIndex | None
 ) -> list[
     tuple[Region, Commodity, Technology, Vintage, Commodity, int]
-    | tuple[Region, Commodity, Technology, Vintage, Commodity, int, str]
+    | tuple[Region, Commodity, Technology, Vintage, Commodity, int, Sector]
 ]:
     """Fetches the main block of technology efficiency and lifetime data."""
     default_lifetime = TemoaModel.default_lifetime_tech
