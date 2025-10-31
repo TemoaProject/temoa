@@ -9,7 +9,7 @@ import networkx as nx
 
 from temoa.core.config import TemoaConfig
 from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
-from temoa.types.core_types import Period, Region
+from temoa.types.core_types import Commodity, Period, Region, Sector, Technology
 from temoa.utilities.graph_utils import (
     calculate_initial_positions,
     calculate_tech_graph_positions,
@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 def generate_technology_graph(
     all_edges: Iterable[EdgeTuple],
-    source_commodities: set[str],
-    demand_commodities: set[str],
+    source_commodities: set[Commodity],
+    demand_commodities: set[Commodity],
     sector_colors: dict[str, str],
 ) -> nx.MultiDiGraph[str]:
     """
@@ -170,17 +170,18 @@ def generate_commodity_graph(
 
     # 3. Prepare edge attributes with sector-based coloring
     edge_attributes_map: dict[tuple[str, str, str, str | None], dict[str, Any]] = {}
-    all_connections: set[tuple[str, str, str, str | None]] = {
-        (tech.input_comm, tech.tech, tech.output_comm, tech.sector) for tech in all_edge_tuples
+    all_connections: set[tuple[Commodity, Technology, Commodity, Sector | None]] = {
+        (edge_tuple.input_comm, edge_tuple.tech, edge_tuple.output_comm, edge_tuple.sector)
+        for edge_tuple in all_edge_tuples
     }
 
     driven_names = {t.tech for t in driven_techs}
     other_orphan_names = {t.tech for t in other_orphans}
     demand_orphan_names = {t.tech for t in demand_orphans}
 
-    driven_commodities: set[str] = set()
-    other_orphan_commodities: set[str] = set()
-    demand_orphan_commodities: set[str] = set()
+    driven_commodities: set[Commodity] = set()
+    other_orphan_commodities: set[Commodity] = set()
+    demand_orphan_commodities: set[Commodity] = set()
 
     for ic, tech_name, oc, sector in all_connections:
         key = (ic, tech_name, oc, sector)

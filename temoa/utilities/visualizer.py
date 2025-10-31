@@ -21,6 +21,7 @@ from typing import Any
 
 import networkx as nx
 
+from temoa.types.core_types import Commodity, Sector, Technology
 from temoa.utilities.graph_utils import (
     GraphType,
     convert_graph_to_json,
@@ -41,23 +42,23 @@ def deep_merge_dicts(source: dict[str, Any], destination: dict[str, Any]) -> dic
 
 
 def make_nx_graph(
-    connections: Iterable[tuple[str, str, str, str | None]],
-    edge_attributes_map: dict[tuple, dict[str, Any]],
+    connections: Iterable[tuple[Commodity, Technology, Commodity, Sector | None]],
+    edge_attributes_map: dict[tuple[str, str, str, str | None], dict[str, Any]],
     node_layer_map: dict[str, int],
     node_positions: dict[str, dict[str, Any]],
-    commodity_to_primary_sector: dict[str, str],
-    driven_tech_names: set[str],
-    other_orphan_names: set[str],
-    demand_orphan_names: set[str],
-    driven_commodities: set[str],
-    other_orphan_commodities: set[str],
-    demand_orphan_commodities: set[str],
-) -> nx.MultiDiGraph:
+    commodity_to_primary_sector: dict[Commodity, Sector],
+    driven_tech_names: set[Technology],
+    other_orphan_names: set[Commodity],
+    demand_orphan_names: set[Commodity],
+    driven_commodities: set[Commodity],
+    other_orphan_commodities: set[Commodity],
+    demand_orphan_commodities: set[Commodity],
+) -> nx.MultiDiGraph[str]:
     """
     Make an nx graph, grouping parallel edges to prevent label overlap.
     """
 
-    dg = nx.MultiDiGraph()
+    dg: nx.MultiDiGraph[str] = nx.MultiDiGraph()
     connections = tuple(connections)  # Freeze for multiple iterations
 
     node_styles_by_layer = {
@@ -125,7 +126,7 @@ def make_nx_graph(
         dg.add_node(node_name, **node_attrs)
 
     # 2. Group technologies by their input/output commodity pair
-    grouped_edges = defaultdict(list)
+    grouped_edges: dict[tuple[Commodity, Commodity], list[dict[str, Any]]] = defaultdict(list)
     for ic, tech, oc, sector in connections:
         edge_key = (ic, tech, oc, sector)
         attrs = edge_attributes_map.get(edge_key, {})
@@ -133,7 +134,7 @@ def make_nx_graph(
 
     # 3. Create a single, combined edge for each group
     for (ic, oc), techs_info in grouped_edges.items():
-        combined_attrs = {}
+        combined_attrs: dict[str, Any] = {}
         tech_names = [info['tech'] for info in techs_info]
 
         # Combine labels: Show up to 2 names, then "X techs"
@@ -175,15 +176,15 @@ def make_nx_graph(
             combined_attrs['dashes'] = True
 
         combined_attrs['value'] = sum(info['attrs'].get('value', 1) for info in techs_info)
-        edge_key = f'{ic}-{oc}-{uuid.uuid4().hex[:8]}'
-        dg.add_edge(ic, oc, key=edge_key, **combined_attrs)
+        multi_edge_key = f'{ic}-{oc}-{uuid.uuid4().hex[:8]}'
+        dg.add_edge(ic, oc, key=multi_edge_key, **combined_attrs)
 
     return dg
 
 
 def nx_to_vis(
     nx_graph: GraphType,
-    output_filename: Path,  # Changed to Path object for clarity
+    output_filename: Path,
     html_title: str = 'NetworkX to vis.js Graph',
     vis_options: dict[str, Any] | None = None,
     override_node_properties: dict[str, Any] | None = None,
@@ -203,7 +204,8 @@ def nx_to_vis(
     nodes_data_primary, edges_data_primary = convert_graph_to_json(
         nx_graph, override_node_properties, override_edge_properties, 0
     )
-    nodes_data_secondary, edges_data_secondary = [], []
+    nodes_data_secondary: list[dict[str, Any]] = []
+    edges_data_secondary: list[dict[str, Any]] = []
     if secondary_graph:
         nodes_data_secondary, edges_data_secondary = convert_graph_to_json(
             secondary_graph, override_node_properties, override_edge_properties, 0

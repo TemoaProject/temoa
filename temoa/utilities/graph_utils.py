@@ -18,10 +18,17 @@ from typing import Any, TypeVar
 import networkx as nx
 
 from temoa.model_checking.network_model_data import EdgeTuple
+from temoa.types.core_types import Commodity, Technology
 
 logger = logging.getLogger(__name__)
 
-GraphType = TypeVar('GraphType', nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)
+GraphType = TypeVar(
+    'GraphType',
+    nx.Graph[Commodity | Technology | str],
+    nx.DiGraph[Commodity | Technology | str],
+    nx.MultiGraph[Commodity | Technology | str],
+    nx.MultiDiGraph[Commodity | Technology | str],
+)
 
 
 def convert_graph_to_json(
@@ -140,7 +147,7 @@ def calculate_initial_positions(
     - Other nodes are arranged in clusters based on their primary sector,
       with the clusters themselves arranged in a large circle.
     """
-    positions = {}
+    positions: dict[str, dict[str, Any]] = {}
 
     # Prepare to lay out the remaining (non-fixed) nodes: all layers except 1
     nodes_to_place = {n for n, layer in node_layer_map.items() if layer != 1}
@@ -194,7 +201,7 @@ def calculate_initial_positions(
 
 def calculate_tech_graph_positions(
     all_edges: Iterable[EdgeTuple],
-) -> dict[str, dict[str, Any]]:
+) -> dict[Technology, dict[str, Any]]:
     """
     Calculates an initial (x, y) layout for the technology graph.
     All technologies are arranged in clusters by sector, with clusters

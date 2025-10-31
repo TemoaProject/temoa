@@ -13,14 +13,14 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import NamedTuple, Self, TypedDict, overload
+from typing import NamedTuple, Self, TypedDict, cast, overload
 
 import deprecated
 from pyomo.core.base import ConcreteModel
 
 from temoa.core.model import TemoaModel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
-from temoa.types import Commodity, Period, Region, Technology, Vintage
+from temoa.types import Commodity, Period, Region, Sector, Technology, Vintage
 from temoa.types.core_types import ParameterValue
 
 
@@ -32,7 +32,7 @@ class EdgeTuple(NamedTuple):
     vintage: Vintage
     output_comm: Commodity
     lifetime: int | None = None
-    sector: str | None = None
+    sector: Sector | None = None
 
 
 class LinkedTechTuple(NamedTuple):
@@ -359,8 +359,11 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
             living_techs.add(tech)
             if '-' in r and r.count('-') == 1:  # Inter-regional transfer
-                r1, r2 = r.split('-', 1)
-                source_comm, dest_comm = f'{ic} ({r1})', f'{oc} ({r2})'
+                r1, r2 = (cast(Region, reg) for reg in r.split('-', 1))
+                source_comm, dest_comm = (
+                    cast(Commodity, f'{ic} ({r1})'),
+                    cast(Commodity, f'{oc} ({r2})'),
+                )
                 res.available_techs[r2, p].add(
                     EdgeTuple(
                         region=r2,
