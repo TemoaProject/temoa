@@ -8,22 +8,17 @@ import typer
 from rich.logging import RichHandler
 
 from definitions import set_OUTPUT_PATH
-
-# Updated imports to bring in the config object
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
 from temoa.version_information import TEMOA_MAJOR, TEMOA_MINOR
 
 # =============================================================================
-# Logging Setup
+# Logging & Helper Setup
 # =============================================================================
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# Helper Functions
-# =============================================================================
 def _create_output_folder() -> Path:
     """Create a default time-stamped folder for outputs."""
     output_path = Path('output_files', datetime.now().strftime('%Y-%m-%d_%H%M%S'))
@@ -31,25 +26,78 @@ def _create_output_folder() -> Path:
     return output_path
 
 
-def _setup_logging(output_path: Path, debug: bool = False) -> None:
-    """Set up logging to a file and a rich console."""
-    level = logging.DEBUG if debug else logging.INFO
-    log_format = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
-    date_format = '%Y-%m-%d %H:%M:%S'
+def _setup_logging(output_path: Path, debug: bool = False, silent: bool = False) -> None:
+    """Set up logging with different levels for console and file."""
+    # The root logger should be set to the most verbose level required by any handler.
+    # The file handler will always be more verbose than the console in silent mode.
+    root_level = logging.DEBUG if debug else logging.INFO
+
+    # Determine console level based on flags. `debug` takes precedence.
+    if debug:
+        console_level = logging.DEBUG
+    elif silent:
+        console_level = logging.WARNING
+    else:
+        console_level = logging.INFO
+
+    # Configure the rich handler for the console
+    rich_handler = RichHandler(
+        level=console_level,
+        rich_tracebacks=True,
+        show_path=False,
+        log_time_format='[%X]',
+    )
+
+    # Configure the file handler (always verbose)
     log_file = output_path / 'temoa-run.log'
     file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(logging.Formatter(log_format, date_format))
-    rich_handler = RichHandler(rich_tracebacks=True, show_path=False, log_time_format='[%X]')
+    file_handler.setLevel(root_level)
+    file_handler.setFormatter(
+        logging.Formatter(
+            '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
+            '%Y-%m-%d %H:%M:%S',
+        )
+    )
+
+    # Configure the root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(level)
+    root_logger.setLevel(root_level)
     root_logger.handlers = [file_handler, rich_handler]
+
+    # Silence other overly verbose libraries
     logging.getLogger('pyomo').setLevel(logging.WARNING)
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
+
+    # Log the initialization message (will go to file, and to console if not silent)
     logger.info(f'Logging initialized. Log file at: {log_file}')
 
 
+def _setup_sequencer(
+    config_file: Path,
+    output_path: Path | None,
+    silent: bool,
+    debug: bool,
+    mode_override: TemoaMode | None = None,
+) -> tuple[TemoaSequencer, Path]:
+    """Handles the common setup logic for creating and configuring the sequencer."""
+    final_output_path = output_path if output_path else _create_output_folder()
+    final_output_path.mkdir(parents=True, exist_ok=True)
+
+    # Pass the silent flag to the logging setup
+    _setup_logging(final_output_path, debug=debug, silent=silent)
+
+    set_OUTPUT_PATH(final_output_path)
+    config = TemoaConfig.build_config(
+        config_file=config_file, output_path=final_output_path, silent=silent
+    )
+    sequencer = TemoaSequencer(config=config, mode_override=mode_override)
+    return sequencer, final_output_path
+
+
+# =============================================================================
+# Callbacks and Typer App Setup
+# =============================================================================
 def _version_callback(value: bool) -> None:
-    """Callback to print version information and exit."""
     if value:
         version = f'{TEMOA_MAJOR}.{TEMOA_MINOR}'
         rich.print(f'Temoa Version: [bold green]{version}[/bold green]')
@@ -57,7 +105,6 @@ def _version_callback(value: bool) -> None:
 
 
 def _cite_callback(value: bool) -> None:
-    """Callback to print citation information and exit."""
     if value:
         citation_text = """
         [bold]How to Cite Temoa:[/bold]
@@ -69,9 +116,6 @@ def _cite_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-# =============================================================================
-# Typer Application Setup
-# =============================================================================
 app = typer.Typer(
     name='temoa',
     help='The Temoa Project: Tools for Energy Model Optimization and Analysis.',
@@ -82,8 +126,56 @@ app = typer.Typer(
 
 
 # =============================================================================
-# Main 'run' Subcommand
+# CLI Commands
 # =============================================================================
+@app.command()
+def validate(
+    config_file: Annotated[
+        Path,
+        typer.Argument(
+            help='Path to the configuration file to validate.',
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=True,
+        ),
+    ],
+    output_path: Annotated[
+        Path | None,
+        typer.Option('--output', '-o', help='Directory to save validation log.'),
+    ] = None,
+    silent: Annotated[
+        bool, typer.Option('--silent', '-s', help='Suppress informational output on success.')
+    ] = False,
+    debug: Annotated[
+        bool, typer.Option('--debug', '-d', help='Enable debug-level logging.')
+    ] = False,
+) -> None:
+    """
+    Validates a configuration file and database by building the model instance without solving it.
+    """
+    if not silent:
+        rich.print(f'Validating configuration: [cyan]{config_file}[/cyan]')
+    try:
+        ts, final_output_path = _setup_sequencer(
+            config_file=config_file,
+            output_path=output_path,
+            silent=True,  # Sequencer is always non-interactive for validation
+            debug=debug,
+            mode_override=TemoaMode.BUILD_ONLY,
+        )
+        _ = ts.build_model()
+        if not silent:
+            rich.print('\n[bold green]✅ Validation successful.[/bold green]')
+            rich.print('The model can be built from the provided configuration.')
+            rich.print(f'Log file is available in: [cyan]{final_output_path}[/cyan]')
+    except Exception as e:
+        logger.exception('An error occurred during validation.')
+        rich.print(f'\n[bold red]❌ Validation failed:[/bold red] {e}')
+        raise typer.Exit(code=1) from e
+
+
 @app.command()
 def run(
     config_file: Annotated[
@@ -99,26 +191,17 @@ def run(
     ],
     output_path: Annotated[
         Path | None,
-        typer.Option(
-            '--output',
-            '-o',
-            help='Directory to save outputs. Defaults to a new time-stamped folder.',
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            resolve_path=True,
-        ),
+        typer.Option('--output', '-o', help='Directory to save outputs.'),
     ] = None,
     build_only: Annotated[
         bool,
-        typer.Option(
-            '--build-only',
-            '-b',
-            help='Build an unsolved TemoaModel instance without solving.',
-        ),
+        typer.Option('--build-only', '-b', help='Build the model without solving.'),
     ] = False,
     silent: Annotated[
-        bool, typer.Option('--silent', '-s', help='Silent run. No interactive prompts.')
+        bool,
+        typer.Option(
+            '--silent', '-s', help='Silent run. No interactive prompts or INFO logs on console.'
+        ),
     ] = False,
     debug: Annotated[
         bool, typer.Option('--debug', '-d', help='Enable debug-level logging.')
@@ -127,47 +210,34 @@ def run(
     """
     Builds and solves a Temoa model based on the provided configuration.
     """
-    final_output_path = output_path if output_path else _create_output_folder()
-    final_output_path.mkdir(parents=True, exist_ok=True)
-
-    _setup_logging(final_output_path, debug)
-    set_OUTPUT_PATH(final_output_path)
-
     try:
-        # Step 1: Create the configuration object first.
-        config = TemoaConfig.build_config(
-            config_file=config_file, output_path=final_output_path, silent=silent
-        )
-
-        # Step 2: Handle user interaction in the CLI, not the sequencer.
-        if not silent:
-            rich.print(config)  # Print the rich representation of the config
-            # Use Typer's confirmation prompt, which aborts on "n".
-            typer.confirm('\nPlease confirm the settings above to continue', abort=True)
-
-        # Step 3: Instantiate the sequencer and decide which method to call.
         mode_override = TemoaMode.BUILD_ONLY if build_only else None
-        ts = TemoaSequencer(config=config, mode_override=mode_override)
-
+        ts, final_output_path = _setup_sequencer(
+            config_file=config_file,
+            output_path=output_path,
+            silent=silent,
+            debug=debug,
+            mode_override=mode_override,
+        )
+        if not silent:
+            rich.print(ts.config)
+            typer.confirm('\nPlease confirm the settings above to continue', abort=True)
         if build_only:
             logger.info('Build-only mode selected. Calling build_model().')
-            # The returned model is not used here, but could be in other contexts.
             _ = ts.build_model()
-            rich.print('\n[bold green]✅ Model built successfully.[/bold green]')
-            rich.print(f'Log file is available in: [cyan]{final_output_path}[/cyan]')
+            if not silent:
+                rich.print('\n[bold green]✅ Model built successfully.[/bold green]')
+                rich.print(f'Log file is available in: [cyan]{final_output_path}[/cyan]')
         else:
             logger.info('Full run mode selected. Calling start().')
             ts.start()
-            rich.print('\n[bold green]✅ Temoa run completed successfully.[/bold green]')
-            rich.print(f'Outputs are available in: [cyan]{final_output_path}[/cyan]')
-
+            if not silent:
+                rich.print('\n[bold green]✅ Temoa run completed successfully.[/bold green]')
+                rich.print(f'Outputs are available in: [cyan]{final_output_path}[/cyan]')
     except typer.Abort:
-        # This catches the "n" from the confirmation prompt.
         rich.print('\n[yellow]Run aborted by user.[/yellow]')
         raise typer.Exit() from None
-
     except Exception as e:
-        # This now correctly catches all errors raised from the sequencer.
         logger.exception('An unhandled error occurred during the Temoa run.')
         rich.print(f'\n[bold red]❌ An error occurred:[/bold red] {e}')
         raise typer.Exit(code=1) from e

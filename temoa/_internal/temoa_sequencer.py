@@ -82,6 +82,7 @@ class TemoaSequencer:
         Builds and returns an unsolved TemoaModel instance.
         This is the dedicated method for the 'BUILD_ONLY' mode.
         """
+        self._run_preliminary_checks()
         logger.info('Starting model build process (build-only mode).')
         # Ensure certain features that don't apply to a simple build are disabled
         if self.config.source_trace:
@@ -92,6 +93,12 @@ class TemoaSequencer:
             logger.warning('Commodity network plotting disabled for build-only mode.')
         if self.config.price_check:
             logger.warning('Price check disabled for build-only mode.')
+
+        # Validate database before attempting to build model
+        if not check_database_version(
+            self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
+        ):
+            raise RuntimeError('Database version check failed. See log file for details.')
 
         with sqlite3.connect(self.config.input_database) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
