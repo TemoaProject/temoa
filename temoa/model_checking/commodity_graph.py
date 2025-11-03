@@ -139,7 +139,7 @@ def generate_commodity_graph(
     }
     default_color = '#A9A9A9'
 
-    commodity_sector_counts: defaultdict[str, defaultdict[str, int]] = defaultdict(
+    commodity_sector_counts: defaultdict[Commodity, defaultdict[Sector, int]] = defaultdict(
         lambda: defaultdict(int)
     )
     for tech in all_edge_tuples:
@@ -148,7 +148,7 @@ def generate_commodity_graph(
             commodity_sector_counts[tech.output_comm][tech.sector] += 1
 
     commodity_to_primary_sector: dict[Commodity, Sector] = {
-        cast(Commodity, comm): cast(Sector, max(counts, key=lambda k: counts[k]))
+        comm: max(counts, key=lambda k: counts[k])
         for comm, counts in commodity_sector_counts.items()
         if counts
     }

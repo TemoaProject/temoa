@@ -18,8 +18,6 @@ Vintage = NewType('Vintage', int)
 Season = NewType('Season', str)
 TimeOfDay = NewType('TimeOfDay', str)
 Commodity = NewType('Commodity', str)
-InputCommodity = NewType('InputCommodity', Commodity)
-OutputCommodity = NewType('OutputCommodity', Commodity)
 Process = NewType('Process', str)
 
 # Type aliases for common data structures

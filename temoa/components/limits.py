@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import sys
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Constraint, quicksum, value
 
@@ -419,7 +419,7 @@ def limit_new_capacity_share_constraint(
         model.V_NewCapacity[_r, _t, p]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, p) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.processPeriods
     )
 
     super_group = technology.gather_group_techs(model, g2)
@@ -427,7 +427,7 @@ def limit_new_capacity_share_constraint(
         model.V_NewCapacity[_r, _t, p]
         for _t in super_group
         for _r in regions
-        if (_r, _t, p) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.processPeriods
     )
 
     share_lim = value(model.LimitNewCapacityShare[r, p, g1, g2, op])
