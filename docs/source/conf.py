@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 #
 import os
 import sys
 import time
+from typing import Any
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -96,7 +96,7 @@ html_static_path = ['default/static']
 
 
 # this stylesheet eliminates fixed width and is located in the _static directory
-def setup(app):
+def setup(app: Any) -> None:
     app.add_css_file('my_theme.css')
 
 

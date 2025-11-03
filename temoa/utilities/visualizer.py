@@ -10,12 +10,14 @@ name, and an interactive configuration panel.
 This code is designed to replace previous graphing dependencies like `gravis`.
 """
 
+from __future__ import annotations
+
 import copy
 import json
 import logging
 import uuid
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -48,17 +50,17 @@ def make_nx_graph(
     node_positions: dict[str, dict[str, Any]],
     commodity_to_primary_sector: dict[Commodity, Sector],
     driven_tech_names: set[Technology],
-    other_orphan_names: set[Commodity],
-    demand_orphan_names: set[Commodity],
+    other_orphan_names: set[Technology],
+    demand_orphan_names: set[Technology],
     driven_commodities: set[Commodity],
     other_orphan_commodities: set[Commodity],
     demand_orphan_commodities: set[Commodity],
-) -> nx.MultiDiGraph:
+) -> nx.MultiDiGraph[str]:
     """
     Make an nx graph, grouping parallel edges to prevent label overlap.
     """
 
-    dg: nx.MultiDiGraph = nx.MultiDiGraph()
+    dg: nx.MultiDiGraph[str] = nx.MultiDiGraph()
     connections = tuple(connections)  # Freeze for multiple iterations
 
     node_styles_by_layer = {
@@ -189,7 +191,7 @@ def nx_to_vis(
     vis_options: dict[str, Any] | None = None,
     override_node_properties: dict[str, Any] | None = None,
     override_edge_properties: dict[str, Any] | None = None,
-    sectors: list[str] | None = None,
+    sectors: Sequence[Sector] | None = None,
     color_legend_map: dict[str, str] | None = None,
     style_legend_map: list[dict[str, Any]] | None = None,
     secondary_graph: GraphType | None = None,

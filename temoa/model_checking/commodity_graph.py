@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 import networkx as nx
 
@@ -23,7 +23,7 @@ def generate_technology_graph(
     all_edges: Iterable[EdgeTuple],
     source_commodities: set[Commodity],
     demand_commodities: set[Commodity],
-    sector_colors: dict[str, str],
+    sector_colors: dict[Sector, str],
 ) -> nx.MultiDiGraph[str]:
     """
     Generates a technology-centric graph with a pre-computed initial layout.
@@ -47,7 +47,7 @@ def generate_technology_graph(
 
     # Pass 2: Create a single, correctly styled node for each unique technology.
     for tech_name, info in tech_info.items():
-        pos_attrs = tech_positions.get(tech_name, {})
+        pos_attrs = tech_positions.get(cast(Technology, tech_name)) or {}
         sector = info['sector']
 
         color_obj: dict[str, str] = {}
@@ -108,7 +108,7 @@ def generate_commodity_graph(
     demand_orphans: Iterable[EdgeTuple],
     other_orphans: Iterable[EdgeTuple],
     driven_techs: Iterable[EdgeTuple],
-) -> tuple[nx.MultiDiGraph[str], dict[str, str]]:
+) -> tuple[nx.MultiDiGraph[str], dict[Sector, str]]:
     """
     Generates the commodity-centric graph and its associated color scheme.
     In this view, commodities are nodes and technologies are grouped into edges.
@@ -147,8 +147,8 @@ def generate_commodity_graph(
             commodity_sector_counts[tech.input_comm][tech.sector] += 1
             commodity_sector_counts[tech.output_comm][tech.sector] += 1
 
-    commodity_to_primary_sector = {
-        comm: max(counts, key=lambda k: counts[k])
+    commodity_to_primary_sector: dict[Commodity, Sector] = {
+        cast(Commodity, comm): cast(Sector, max(counts, key=lambda k: counts[k]))
         for comm, counts in commodity_sector_counts.items()
         if counts
     }
@@ -290,7 +290,7 @@ def visualize_graph(
         output_filename=output_file,
         html_title=f'Network Graphs - {region} {period}',
         sectors=unique_sectors,
-        color_legend_map=sector_colors,
+        color_legend_map=cast(dict[str, str], sector_colors),
         style_legend_map=style_legend_map,
         show_browser=False,
     )
