@@ -14,13 +14,13 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
-    from temoa.types import Period, Region, Technology, Vintage
+from temoa.types import Period, Region, Technology, Vintage
 
 logger = getLogger(__name__)
 
@@ -29,11 +29,11 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def gather_group_techs(model: TemoaModel, t_or_g: str) -> Iterable[str]:
+def gather_group_techs(model: TemoaModel, t_or_g: Technology) -> Iterable[Technology]:
     if t_or_g in model.tech_group_names:
         return model.tech_group_members[t_or_g]
     elif '+' in t_or_g:
-        return t_or_g.split('+')
+        return [cast(Technology, tech) for tech in t_or_g.split('+')]
     else:
         return (t_or_g,)
 
@@ -253,7 +253,7 @@ def create_survival_curve(model: TemoaModel) -> None:
         if periods_rtv != list(range(p_first, p_last + 1, 1)):
             rtv_interpolated.add((r, t, v))
 
-        between_periods = []
+        between_periods: list[Period] = []
         for i, p in enumerate(periods_rtv):
             if i == 0:
                 continue  # Cant look back from first period. Could be zero but hey why not
@@ -271,7 +271,7 @@ def create_survival_curve(model: TemoaModel) -> None:
                 raise ValueError(msg)
 
             if p - p_prev > 1:
-                _between_periods = list(range(p_prev + 1, p, 1))
+                _between_periods = [cast(Period, _p) for _p in range(p_prev + 1, p, 1)]
                 for _p in _between_periods:
                     x = (_p - p_prev) / (p - p_prev)
                     lsc_x = lsc_prev + x * (lsc - lsc_prev)

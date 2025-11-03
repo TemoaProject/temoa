@@ -1,29 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  12/5/24
-
 A companion module to the table writer to hold some data-pulling functions and small utilities and separate them
 from the writing process for organization and to isolate the DB access in the writer such that
 these functions can be called on a model instance without any DB interactions.  (Intended to support use
@@ -34,6 +9,7 @@ could all be refactored to perform tasks within workers, but concurrent access t
 import functools
 import logging
 from collections import defaultdict
+from typing import cast
 
 from pyomo.common.numeric_types import value
 from pyomo.core import Objective
@@ -42,6 +18,7 @@ from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCost
 from temoa.components import costs
 from temoa.components.utils import get_variable_efficiency
 from temoa.core.model import TemoaModel
+from temoa.types.core_types import Commodity, Period, Region, Technology, Vintage
 from temoa.types.model_types import EI, FI, SLI, CapData, FlowType
 
 logger = logging.getLogger(__name__)
@@ -54,12 +31,12 @@ def _marks(num: int) -> str:
     return marks
 
 
-def ritvo(fi: FI) -> tuple[str, str, str, int, str]:
+def ritvo(fi: FI) -> tuple[Region, Commodity, Technology, Vintage, Commodity]:
     """convert FI to ritvo index"""
     return fi.r, fi.i, fi.t, fi.v, fi.o
 
 
-def rpetv(fi: FI, e: str) -> tuple[str, int, str, str, int]:
+def rpetv(fi: FI, e: Commodity) -> tuple[Region, Period, Commodity, Technology, Vintage]:
     """convert FI and emission to rpetv index"""
     return fi.r, fi.p, e, fi.t, fi.v
 
@@ -205,7 +182,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         )
         for s in model.TimeSeason[v]:
             for d in model.time_of_day:
-                fi = FI(r, v, s, d, i, t, v, 'ConstructionInput')
+                fi = FI(r, v, s, d, i, t, v, cast(Commodity, 'ConstructionInput'))
                 flow = annual * value(model.SegFrac[v, s, d])
                 if abs(flow) < epsilon:
                     continue
@@ -221,7 +198,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             )
             for s in model.TimeSeason[p]:
                 for d in model.time_of_day:
-                    fi = FI(r, p, s, d, 'EndOfLifeOutput', t, v, o)
+                    fi = FI(r, p, s, d, cast(Commodity, 'EndOfLifeOutput'), t, v, o)
                     flow = annual * value(model.SegFrac[p, s, d])
                     if abs(flow) < epsilon:
                         continue
@@ -286,10 +263,10 @@ def poll_objective(model: TemoaModel) -> list[tuple[str, float]]:
 
 
 def poll_cost_results(
-    model: TemoaModel, p_0: int | None, epsilon: float = 1e-5
+    model: TemoaModel, p_0: Period | None, epsilon: float = 1e-5
 ) -> tuple[
-    dict[tuple[str, int, str, int], dict[CostType, float]],
-    dict[tuple[str, int, str, int], dict[CostType, float]],
+    dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
+    dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
 ]:
     """
     Poll a solved model for all cost results
@@ -298,7 +275,7 @@ def poll_cost_results(
     :param epsilon: epsilon (default 1e-5)
     :return: tuple of cost_dict, exchange_cost_dict (for exchange techs)
     """
-    p_0_true: int
+    p_0_true: Period
     if p_0 is None:
         p_0_true = min(model.time_optimize)
     else:
@@ -312,7 +289,9 @@ def poll_cost_results(
     loan_lifetime_process = model.LoanLifetimeProcess
 
     exchange_costs = ExchangeTechCostLedger(model)
-    entries: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)
+    entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]] = defaultdict(
+        dict
+    )
     for r, t, v in model.CostInvest.sparse_iterkeys():  # Returns only non-zero values
         # gather details...
         cap = value(model.V_NewCapacity[r, t, v])
@@ -367,8 +346,9 @@ def poll_cost_results(
                 cost_type=CostType.INVEST,
             )
         else:
-            # enter it into the entries table with period of cost = vintage (p=v)
-            entries[r, v, t, v].update(
+            # The period `p` for an investment cost is its vintage `v`.
+            key = (cast(Region, r), cast(Period, v), cast(Technology, t), cast(Vintage, v))
+            entries[key].update(
                 {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
 
@@ -518,17 +498,17 @@ def loan_costs(
 
 def loan_costs_survival_curve(
     model: TemoaModel,
-    r: str,
-    t: str,
-    v: int,
+    r: Region,
+    t: Technology,
+    v: Vintage,
     loan_rate: float,  # this is referred to as LoanRate in parameters
     loan_life: float,
     capacity: float,
     invest_cost: float,
-    p_0: int,
-    p_e: int,
+    p_0: Period,
+    p_e: Period,
     global_discount_rate: float,
-    vintage: int,
+    vintage: Vintage,
     **kwargs: object,
 ) -> tuple[float, float]:
     """
@@ -570,8 +550,10 @@ def loan_costs_survival_curve(
 
 
 def poll_emissions(
-    model: TemoaModel, p_0: int | None = None, epsilon: float = 1e-5
-) -> tuple[dict[tuple[str, int, str, int], dict[CostType, float]], dict[EI, float]]:
+    model: TemoaModel, p_0: Period | None = None, epsilon: float = 1e-5
+) -> tuple[
+    dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]], dict[EI, float]
+]:
     """
     Gather all emission flows, cost them and provide a tuple of costs and flows
     :param M: the model
@@ -582,7 +564,7 @@ def poll_emissions(
 
     # UPDATE:  older versions brought forward had some accounting errors here for flex/curtailed emissions
     #          see the note on emissions in the Cost function in temoa_rules
-    p_0_true: int
+    p_0_true: Period
     if p_0 is None:
         p_0_true = min(model.time_optimize)
     else:
@@ -626,8 +608,8 @@ def poll_emissions(
         )
 
     # gather costs
-    ud_costs: dict[tuple[str, int, str, int], float] = defaultdict(float)
-    d_costs: dict[tuple[str, int, str, int], float] = defaultdict(float)
+    ud_costs: dict[tuple[Region, Period, Technology, Vintage], float] = defaultdict(float)
+    d_costs: dict[tuple[Region, Period, Technology, Vintage], float] = defaultdict(float)
     for ei in flows:
         # zero out tiny flows
         if abs(flows[ei]) < epsilon:
@@ -676,26 +658,28 @@ def poll_emissions(
             flows[ei] = 0.0
             continue
         # screen to see if there is an associated cost
-        cost_index = (ei.r, ei.v, ei.e)
+        cost_index = (ei.r, cast(Period, ei.v), ei.e)
         if cost_index not in model.CostEmission:
             continue
         undiscounted_emiss_cost = (
             embodied_flows[ei]
-            * model.CostEmission[ei.r, ei.v, ei.e]
-            * model.PeriodLength[ei.v]  # treat as fixed cost distributed over construction period
+            * model.CostEmission[ei.r, cast(Period, ei.v), ei.e]
+            * model.PeriodLength[
+                cast(Period, ei.v)
+            ]  # treat as fixed cost distributed over construction period
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=embodied_flows[ei],
-            cost_factor=value(model.CostEmission[ei.r, ei.v, ei.e]),
+            cost_factor=value(model.CostEmission[ei.r, cast(Period, ei.v), ei.e]),
             cost_years=model.PeriodLength[
-                ei.v
+                cast(Period, ei.v)
             ],  # treat as fixed cost distributed over construction period
             global_discount_rate=global_discount_rate,
             p_0=p_0_true,
-            p=ei.v,
+            p=cast(Period, ei.v),
         )
-        ud_costs[ei.r, ei.v, ei.t, ei.v] += float(value(undiscounted_emiss_cost))
-        d_costs[ei.r, ei.v, ei.t, ei.v] += float(value(discounted_emiss_cost))
+        ud_costs[ei.r, cast(Period, ei.v), ei.t, ei.v] += float(value(undiscounted_emiss_cost))
+        d_costs[ei.r, cast(Period, ei.v), ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     ###########################
     #   End of life Emissions
@@ -743,7 +727,9 @@ def poll_emissions(
         d_costs[ei.r, ei.p, ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     # finally, now that all costs are added up for each rptv, put in cost dict
-    costs_dict: dict[tuple[str, int, str, int], dict[CostType, float]] = defaultdict(dict)
+    costs_dict: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]] = (
+        defaultdict(dict)
+    )
     for rptv in ud_costs:
         costs_dict[rptv][CostType.EMISS] = ud_costs[rptv]
     for rptv in d_costs:

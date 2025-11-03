@@ -25,6 +25,8 @@ logger = getLogger(__name__)
 
 # Represents a technology link: (input_commodity, tech_name)
 type TechLink = tuple[Commodity, Technology]
+# Represents a pair of linked technologies: (driver_tech, driven_tech)
+type LinkedTechPair = tuple[Technology, Technology]
 # Represents a full connection: (input_commodity, tech_name, output_commodity)
 type TechConnection = tuple[Commodity, Technology, Commodity]
 # Adjacency dict mapping: {output_comm: set of (input_comm, tech_name)}
@@ -78,7 +80,7 @@ class CommodityNetwork:
         self.tech_inputs: dict[Technology, set[Commodity]] = defaultdict(set)
         self.tech_outputs: dict[Technology, set[Commodity]] = defaultdict(set)
         self.connections: ForwardConnections = defaultdict(set)
-        self.viable_linked_tech: set[TechLink] = set()
+        self.viable_linked_tech: set[LinkedTechPair] = set()
 
         self._load_connections()
         self.prescreen_linked_tech()

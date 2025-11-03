@@ -234,9 +234,9 @@ def loop_period_next_timeslice(
 
 def loop_season_next_timeslice(
     model: TemoaModel, p: Period, s: Season, d: TimeOfDay
-) -> tuple[str, str]:
+) -> tuple[Season, TimeOfDay]:
     # We loop each season so never carrying state between seasons
-    s_next: str = s
+    s_next: Season = s
 
     # Final time slice of any season
     # Loop state back to initial state of same season
@@ -296,7 +296,7 @@ def create_time_sequence(model: TemoaModel) -> None:
 
     # Superimposed sequential seasons
     for p in model.time_optimize:
-        seasons: list[tuple[str, str]] = [
+        seasons: list[tuple[Season, Season]] = [
             (s_seq, s) for _p, s_seq, s in model.ordered_season_sequential if _p == p
         ]
         for i, (s_seq, s) in enumerate(seasons):

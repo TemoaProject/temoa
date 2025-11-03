@@ -7,20 +7,18 @@ and fundamental data structures.
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, NewType
 
 # Core type aliases for commonly used dimensions
-Region = str
-Period = int
-Technology = str
-Sector = str
-Vintage = int
-Season = str
-TimeOfDay = str
-Commodity = str
-InputCommodity = str
-OutputCommodity = str
-Process = str
+Region = NewType('Region', str)
+Period = NewType('Period', int)
+Technology = NewType('Technology', str)
+Sector = NewType('Sector', str)
+Vintage = NewType('Vintage', int)
+Season = NewType('Season', str)
+TimeOfDay = NewType('TimeOfDay', str)
+Commodity = NewType('Commodity', str)
+Process = NewType('Process', str)
 
 # Type aliases for common data structures
 SparseIndex = (

@@ -15,6 +15,7 @@ from temoa._internal.table_data_puller import (
     poll_objective,
 )
 from temoa.core.model import TemoaModel
+from temoa.types.core_types import Period, Region, Technology, Vintage
 from temoa.types.model_types import EI, FI, CapData, FlowType
 
 
@@ -26,13 +27,13 @@ class DataBrick:
     def __init__(
         self,
         name: str,
-        emission_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
+        emission_costs: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
         emission_flows: dict[EI, float],
         capacity_data: CapData,
         flow_data: dict[FI, dict[FlowType, float]],
         obj_data: list[tuple[str, float]],
-        regular_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
-        exchange_costs: dict[tuple[str, int, str, int], dict[CostType, float]],
+        regular_costs: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
+        exchange_costs: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
     ):
         self._name = name
         self._emission_costs = emission_costs
@@ -64,15 +65,19 @@ class DataBrick:
         return self._obj_data
 
     @property
-    def cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
+    def cost_data(self) -> dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]]:
         return self._regular_costs
 
     @property
-    def exchange_cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
+    def exchange_cost_data(
+        self,
+    ) -> dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]]:
         return self._exchange_costs
 
     @property
-    def emission_cost_data(self) -> dict[tuple[str, int, str, int], dict[CostType, float]]:
+    def emission_cost_data(
+        self,
+    ) -> dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]]:
         return self._emission_costs
 
 

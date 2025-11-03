@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import sys
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Constraint, quicksum, value
 
@@ -292,7 +292,7 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
 
 
 def limit_activity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     Limits the activity of a given technology or group as a fraction of another
@@ -372,7 +372,7 @@ def limit_activity_share_constraint(
 
 
 def limit_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     The LimitCapacityShare constraint limits the available capacity of a given
@@ -405,7 +405,7 @@ def limit_capacity_share_constraint(
 
 
 def limit_new_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: str, g2: str, op: str
+    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
     The LimitNewCapacityShare constraint limits the share of new capacity
@@ -419,7 +419,7 @@ def limit_new_capacity_share_constraint(
         model.V_NewCapacity[_r, _t, p]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, p) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.processPeriods
     )
 
     super_group = technology.gather_group_techs(model, g2)
@@ -427,7 +427,7 @@ def limit_new_capacity_share_constraint(
         model.V_NewCapacity[_r, _t, p]
         for _t in super_group
         for _r in regions
-        if (_r, _t, p) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.processPeriods
     )
 
     share_lim = value(model.LimitNewCapacityShare[r, p, g1, g2, op])

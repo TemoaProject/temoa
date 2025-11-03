@@ -16,6 +16,7 @@ __all__ = [
     'TechSet',
     'TimeOfDay',
     'Vintage',
+    'Sector',
     # Dictionary types
     'ActiveRegionsForTechDict',
     'BaseloadVintagesDict',
@@ -81,6 +82,7 @@ from .core_types import (
     Region,
     RegionSet,
     Season,
+    Sector,
     SparseIndex,
     Technology,
     TechSet,

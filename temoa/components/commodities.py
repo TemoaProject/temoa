@@ -14,7 +14,7 @@ import sys
 from itertools import product as cross_product
 from logging import getLogger
 from operator import itemgetter as iget
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pyomo.environ import value
 
@@ -178,16 +178,16 @@ def demand_constraint(model: TemoaModel, r: Region, p: Period, dem: Commodity) -
 
     # All demand techs are annual now
     # supply = sum(
-    #     M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, dem]
-    #     for S_t, S_v in M.commodityUStreamProcess[r, p, dem]
-    #     if S_t not in M.tech_annual
-    #     for S_i in M.processInputsByOutput[r, p, S_t, S_v, dem]
+    #     M.V_FlowOut[r, p, s, d, s_i, s_t, s_v, dem]
+    #     for s_t, s_v in M.commodityUStreamProcess[r, p, dem]
+    #     if s_t not in M.tech_annual
+    #     for s_i in M.processInputsByOutput[r, p, s_t, s_v, dem]
     # )
 
     supply_annual = sum(
-        model.V_FlowOutAnnual[r, p, S_i, S_t, S_v, dem]
-        for S_t, S_v in model.commodityUStreamProcess[r, p, dem]
-        for S_i in model.processInputsByOutput[r, p, S_t, S_v, dem]
+        model.V_FlowOutAnnual[r, p, s_i, s_t, s_v, dem]
+        for s_t, s_v in model.commodityUStreamProcess[r, p, dem]
+        for s_i in model.processInputsByOutput[r, p, s_t, s_v, dem]
     )
 
     demand_constraint_error_check(supply_annual, r, p, dem)
@@ -238,13 +238,13 @@ def demand_activity_constraint(
     """
 
     activity = sum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, dem]
-        for S_i in model.processInputsByOutput[r, p, t, v, dem]
+        model.V_FlowOut[r, p, s, d, s_i, t, v, dem]
+        for s_i in model.processInputsByOutput[r, p, t, v, dem]
     )
 
     annual_activity = sum(
-        model.V_FlowOutAnnual[r, p, S_i, t, v, dem]
-        for S_i in model.processInputsByOutput[r, p, t, v, dem]
+        model.V_FlowOutAnnual[r, p, s_i, t, v, dem]
+        for s_i in model.processInputsByOutput[r, p, t, v, dem]
     )
 
     expr = annual_activity * value(model.DemandSpecificDistribution[r, p, s, d, dem]) == activity
@@ -358,33 +358,33 @@ def commodity_balance_constraint(
         # Only storage techs have a flow in variable
         # For other techs, it would be redundant as in = out / eff
         consumed += sum(
-            model.V_FlowIn[r, p, s, d, c, S_t, S_v, S_o]
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t in model.tech_storage
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            model.V_FlowIn[r, p, s, d, c, s_t, s_v, s_o]
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t in model.tech_storage
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
         # Into flows
         consumed += sum(
-            model.V_FlowOut[r, p, s, d, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r, p, s, d, c, S_t, S_v, S_o)
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t not in model.tech_storage and S_t not in model.tech_annual
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            model.V_FlowOut[r, p, s, d, c, s_t, s_v, s_o]
+            / get_variable_efficiency(model, r, p, s, d, c, s_t, s_v, s_o)
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t not in model.tech_storage and s_t not in model.tech_annual
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
         # Into annual flows
         consumed += sum(
             (
-                value(model.DemandSpecificDistribution[r, p, s, d, S_o])
-                if S_o in model.commodity_demand
+                value(model.DemandSpecificDistribution[r, p, s, d, s_o])
+                if s_o in model.commodity_demand
                 else value(model.SegFrac[p, s, d])
             )
-            * model.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r, p, s, d, c, S_t, S_v, S_o)
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t in model.tech_annual
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            * model.V_FlowOutAnnual[r, p, c, s_t, s_v, s_o]
+            / get_variable_efficiency(model, r, p, s, d, c, s_t, s_v, s_o)
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t in model.tech_annual
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
     if (r, p, c) in model.capacityConsumptionTechs:
@@ -393,8 +393,8 @@ def commodity_balance_constraint(
         consumed += (
             value(model.SegFrac[p, s, d])
             * sum(
-                value(model.ConstructionInput[r, c, S_t, p]) * model.V_NewCapacity[r, S_t, p]
-                for S_t in model.capacityConsumptionTechs[r, p, c]
+                value(model.ConstructionInput[r, c, s_t, p]) * model.V_NewCapacity[r, s_t, p]
+                for s_t in model.capacityConsumptionTechs[r, p, c]
             )
             / model.PeriodLength[p]
         )
@@ -402,72 +402,72 @@ def commodity_balance_constraint(
     if (r, p, c) in model.commodityUStreamProcess:
         # From flows including output from storage
         produced += sum(
-            model.V_FlowOut[r, p, s, d, S_i, S_t, S_v, c]
-            for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-            if S_t not in model.tech_annual
-            for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+            model.V_FlowOut[r, p, s, d, s_i, s_t, s_v, c]
+            for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+            if s_t not in model.tech_annual
+            for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
         )
 
         # From annual flows
         produced += value(model.SegFrac[p, s, d]) * sum(
-            model.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
-            for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-            if S_t in model.tech_annual
-            for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+            model.V_FlowOutAnnual[r, p, s_i, s_t, s_v, c]
+            for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+            if s_t in model.tech_annual
+            for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
         )
 
         if c in model.commodity_flex:
             # Wasted by flex flows
             consumed += sum(
-                model.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
-                for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-                if S_t not in model.tech_annual and S_t in model.tech_flex
-                for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+                model.V_Flex[r, p, s, d, s_i, s_t, s_v, c]
+                for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+                if s_t not in model.tech_annual and s_t in model.tech_flex
+                for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
             )
             # Wasted by annual flex flows
             consumed += value(model.SegFrac[p, s, d]) * sum(
-                model.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
-                for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-                if S_t in model.tech_annual and S_t in model.tech_flex
-                for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+                model.V_FlexAnnual[r, p, s_i, s_t, s_v, c]
+                for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+                if s_t in model.tech_annual and s_t in model.tech_flex
+                for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
             )
 
     if (r, p, c) in model.retirementProductionProcesses:
         # Produced by retiring capacity
         # Assume evenly distributed over a year
         produced += value(model.SegFrac[p, s, d]) * sum(
-            value(model.EndOfLifeOutput[r, S_t, S_v, c]) * model.V_AnnualRetirement[r, p, S_t, S_v]
-            for S_t, S_v in model.retirementProductionProcesses[r, p, c]
+            value(model.EndOfLifeOutput[r, s_t, s_v, c]) * model.V_AnnualRetirement[r, p, s_t, s_v]
+            for s_t, s_v in model.retirementProductionProcesses[r, p, c]
         )
 
     # export of commodity c from region r to other regions
     if (r, p, c) in model.exportRegions:
         consumed += sum(
-            model.V_FlowOut[r + '-' + reg, p, s, d, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
-            for reg, S_t, S_v, S_o in model.exportRegions[r, p, c]
-            if S_t not in model.tech_annual
+            model.V_FlowOut[r + '-' + reg, p, s, d, c, s_t, s_v, S_o]
+            / get_variable_efficiency(model, cast(Region, r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            for reg, s_t, s_v, S_o in model.exportRegions[r, p, c]
+            if s_t not in model.tech_annual
         )
         consumed += sum(
             value(model.SegFrac[p, s, d])
-            * model.V_FlowOutAnnual[r + '-' + reg, p, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r + '-' + reg, p, s, d, c, S_t, S_v, S_o)
-            for reg, S_t, S_v, S_o in model.exportRegions[r, p, c]
-            if S_t in model.tech_annual
+            * model.V_FlowOutAnnual[r + '-' + reg, p, c, s_t, s_v, S_o]
+            / get_variable_efficiency(model, cast(Region, r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            for reg, s_t, s_v, S_o in model.exportRegions[r, p, c]
+            if s_t in model.tech_annual
         )
 
     # import of commodity c from other regions into region r
     if (r, p, c) in model.importRegions:
         produced += sum(
-            model.V_FlowOut[reg + '-' + r, p, s, d, S_i, S_t, S_v, c]
-            for reg, S_t, S_v, S_i in model.importRegions[r, p, c]
-            if S_t not in model.tech_annual
+            model.V_FlowOut[reg + '-' + r, p, s, d, s_i, s_t, s_v, c]
+            for reg, s_t, s_v, s_i in model.importRegions[r, p, c]
+            if s_t not in model.tech_annual
         )
         produced += sum(
             value(model.SegFrac[p, s, d])
-            * model.V_FlowOutAnnual[reg + '-' + r, p, S_i, S_t, S_v, c]
-            for reg, S_t, S_v, S_i in model.importRegions[r, p, c]
-            if S_t in model.tech_annual
+            * model.V_FlowOutAnnual[reg + '-' + r, p, s_i, s_t, s_v, c]
+            for reg, s_t, s_v, s_i in model.importRegions[r, p, c]
+            if s_t in model.tech_annual
         )
 
     commodity_balance_constraint_error_check(
@@ -504,30 +504,30 @@ def annual_commodity_balance_constraint(
         # Only storage techs have a flow in variable
         # For other techs, it would be redundant as in = out / eff
         consumed += sum(
-            model.V_FlowIn[r, p, S_s, S_d, c, S_t, S_v, S_o]
-            for S_s in model.TimeSeason[p]
-            for S_d in model.time_of_day
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t in model.tech_storage
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            model.V_FlowIn[r, p, s_s, s_d, c, s_t, s_v, s_o]
+            for s_s in model.TimeSeason[p]
+            for s_d in model.time_of_day
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t in model.tech_storage
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
         consumed += sum(
-            model.V_FlowOut[r, p, S_s, S_d, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r, p, S_s, S_d, c, S_t, S_v, S_o)
-            for S_s in model.TimeSeason[p]
-            for S_d in model.time_of_day
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t not in model.tech_storage and S_t not in model.tech_annual
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            model.V_FlowOut[r, p, s_s, s_d, c, s_t, s_v, s_o]
+            / get_variable_efficiency(model, r, p, s_s, s_d, c, s_t, s_v, s_o)
+            for s_s in model.TimeSeason[p]
+            for s_d in model.time_of_day
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t not in model.tech_storage and s_t not in model.tech_annual
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
         consumed += sum(
-            model.V_FlowOutAnnual[r, p, c, S_t, S_v, S_o]
-            / value(model.Efficiency[r, c, S_t, S_v, S_o])
-            for S_t, S_v in model.commodityDStreamProcess[r, p, c]
-            if S_t in model.tech_annual
-            for S_o in model.processOutputsByInput[r, p, S_t, S_v, c]
+            model.V_FlowOutAnnual[r, p, c, s_t, s_v, s_o]
+            / value(model.Efficiency[r, c, s_t, s_v, s_o])
+            for s_t, s_v in model.commodityDStreamProcess[r, p, c]
+            if s_t in model.tech_annual
+            for s_o in model.processOutputsByInput[r, p, s_t, s_v, c]
         )
 
     if (r, p, c) in model.capacityConsumptionTechs:
@@ -535,8 +535,8 @@ def annual_commodity_balance_constraint(
         # Assume evenly distributed over a year
         consumed += (
             sum(
-                value(model.ConstructionInput[r, c, S_t, p]) * model.V_NewCapacity[r, S_t, p]
-                for S_t in model.capacityConsumptionTechs[r, p, c]
+                value(model.ConstructionInput[r, c, s_t, p]) * model.V_NewCapacity[r, s_t, p]
+                for s_t in model.capacityConsumptionTechs[r, p, c]
             )
             / model.PeriodLength[p]
         )
@@ -544,75 +544,77 @@ def annual_commodity_balance_constraint(
     if (r, p, c) in model.commodityUStreamProcess:
         # Includes output from storage
         produced += sum(
-            model.V_FlowOut[r, p, S_s, S_d, S_i, S_t, S_v, c]
-            for S_s in model.TimeSeason[p]
-            for S_d in model.time_of_day
-            for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-            if S_t not in model.tech_annual
-            for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+            model.V_FlowOut[r, p, s_s, s_d, s_i, s_t, s_v, c]
+            for s_s in model.TimeSeason[p]
+            for s_d in model.time_of_day
+            for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+            if s_t not in model.tech_annual
+            for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
         )
 
         produced += sum(
-            model.V_FlowOutAnnual[r, p, S_i, S_t, S_v, c]
-            for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-            if S_t in model.tech_annual
-            for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+            model.V_FlowOutAnnual[r, p, s_i, s_t, s_v, c]
+            for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+            if s_t in model.tech_annual
+            for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
         )
 
         if c in model.commodity_flex:
             consumed += sum(
-                model.V_Flex[r, p, S_s, S_d, S_i, S_t, S_v, c]
-                for S_s in model.TimeSeason[p]
-                for S_d in model.time_of_day
-                for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-                if S_t not in model.tech_annual and S_t in model.tech_flex
-                for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+                model.V_Flex[r, p, s_s, s_d, s_i, s_t, s_v, c]
+                for s_s in model.TimeSeason[p]
+                for s_d in model.time_of_day
+                for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+                if s_t not in model.tech_annual and s_t in model.tech_flex
+                for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
             )
             consumed += sum(
-                model.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
-                for S_t, S_v in model.commodityUStreamProcess[r, p, c]
-                if S_t in model.tech_flex and S_t in model.tech_annual
-                for S_i in model.processInputsByOutput[r, p, S_t, S_v, c]
+                model.V_FlexAnnual[r, p, s_i, s_t, s_v, c]
+                for s_t, s_v in model.commodityUStreamProcess[r, p, c]
+                if s_t in model.tech_flex and s_t in model.tech_annual
+                for s_i in model.processInputsByOutput[r, p, s_t, s_v, c]
             )
 
     if (r, p, c) in model.retirementProductionProcesses:
         # Produced by retiring capacity
         # Assume evenly distributed over a year
         produced += sum(
-            value(model.EndOfLifeOutput[r, S_t, S_v, c]) * model.V_AnnualRetirement[r, p, S_t, S_v]
-            for S_t, S_v in model.retirementProductionProcesses[r, p, c]
+            value(model.EndOfLifeOutput[r, s_t, s_v, c]) * model.V_AnnualRetirement[r, p, s_t, s_v]
+            for s_t, s_v in model.retirementProductionProcesses[r, p, c]
         )
 
     # export of commodity c from region r to other regions
     if (r, p, c) in model.exportRegions:
         consumed += sum(
-            model.V_FlowOut[r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o]
-            / get_variable_efficiency(model, r + '-' + S_r, p, S_s, S_d, c, S_t, S_v, S_o)
-            for S_s in model.TimeSeason[p]
-            for S_d in model.time_of_day
-            for S_r, S_t, S_v, S_o in model.exportRegions[r, p, c]
-            if S_t not in model.tech_annual
+            model.V_FlowOut[cast(Region, r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o]
+            / get_variable_efficiency(
+                model, cast(Region, r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o
+            )
+            for s_s in model.TimeSeason[p]
+            for s_d in model.time_of_day
+            for s_r, s_t, s_v, s_o in model.exportRegions[r, p, c]
+            if s_t not in model.tech_annual
         )
         consumed += sum(
-            model.V_FlowOutAnnual[r + '-' + S_r, p, c, S_t, S_v, S_o]
-            / model.Efficiency[r + '-' + S_r, c, S_t, S_v, S_o]
-            for S_r, S_t, S_v, S_o in model.exportRegions[r, p, c]
-            if S_t in model.tech_annual
+            model.V_FlowOutAnnual[cast(Region, r + '-' + s_r), p, c, s_t, s_v, s_o]
+            / model.Efficiency[cast(Region, r + '-' + s_r), c, s_t, s_v, s_o]
+            for s_r, s_t, s_v, s_o in model.exportRegions[r, p, c]
+            if s_t in model.tech_annual
         )
 
     # import of commodity c from other regions into region r
     if (r, p, c) in model.importRegions:
         produced += sum(
-            model.V_FlowOut[S_r + '-' + r, p, S_s, S_d, S_i, S_t, S_v, c]
-            for S_s in model.TimeSeason[p]
+            model.V_FlowOut[cast(Region, s_r + '-' + r), p, s_s, S_d, s_i, s_t, s_v, c]
+            for s_s in model.TimeSeason[p]
             for S_d in model.time_of_day
-            for S_r, S_t, S_v, S_i in model.importRegions[r, p, c]
-            if S_t not in model.tech_annual
+            for s_r, s_t, s_v, s_i in model.importRegions[r, p, c]
+            if s_t not in model.tech_annual
         )
         produced += sum(
-            model.V_FlowOutAnnual[S_r + '-' + r, p, S_i, S_t, S_v, c]
-            for S_r, S_t, S_v, S_i in model.importRegions[r, p, c]
-            if S_t in model.tech_annual
+            model.V_FlowOutAnnual[cast(Region, s_r + '-' + r), p, s_i, s_t, s_v, c]
+            for s_r, s_t, s_v, s_i in model.importRegions[r, p, c]
+            if s_t in model.tech_annual
         )
 
     annual_commodity_balance_constraint_error_check(

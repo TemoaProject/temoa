@@ -34,7 +34,7 @@ class CommodityNetworkManager:
 
     def __init__(self, periods: Iterable[str | int], network_data: NetworkModelData) -> None:
         self.analyzed: bool = False
-        self.periods: list[int] = sorted(map(int, periods))
+        self.periods: list[Period] = sorted([Period(int(p)) for p in periods])
         self.orig_data: NetworkModelData = network_data
         self.filtered_data: NetworkModelData | None = None
         self.regions: set[Region] | None = None

@@ -13,14 +13,14 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import NamedTuple, Self, TypedDict, overload
+from typing import NamedTuple, Self, TypedDict, cast, overload
 
 import deprecated
 from pyomo.core.base import ConcreteModel
 
 from temoa.core.model import TemoaModel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
-from temoa.types import Commodity, Period, Region, Technology, Vintage
+from temoa.types import Commodity, Period, Region, Sector, Technology, Vintage
 from temoa.types.core_types import ParameterValue
 
 
@@ -32,7 +32,7 @@ class EdgeTuple(NamedTuple):
     vintage: Vintage
     output_comm: Commodity
     lifetime: int | None = None
-    sector: str | None = None
+    sector: Sector | None = None
 
 
 class LinkedTechTuple(NamedTuple):
@@ -240,7 +240,7 @@ def _fetch_all_tech_definitions(
     cur: sqlite3.Cursor, myopic_index: MyopicIndex | None
 ) -> list[
     tuple[Region, Commodity, Technology, Vintage, Commodity, int]
-    | tuple[Region, Commodity, Technology, Vintage, Commodity, int, str]
+    | tuple[Region, Commodity, Technology, Vintage, Commodity, int, Sector]
 ]:
     """Fetches the main block of technology efficiency and lifetime data."""
     default_lifetime = TemoaModel.default_lifetime_tech
@@ -359,8 +359,11 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
             living_techs.add(tech)
             if '-' in r and r.count('-') == 1:  # Inter-regional transfer
-                r1, r2 = r.split('-', 1)
-                source_comm, dest_comm = f'{ic} ({r1})', f'{oc} ({r2})'
+                r1, r2 = (cast(Region, reg) for reg in r.split('-', 1))
+                source_comm, dest_comm = (
+                    cast(Commodity, f'{ic} ({r1})'),
+                    cast(Commodity, f'{oc} ({r2})'),
+                )
                 res.available_techs[r2, p].add(
                     EdgeTuple(
                         region=r2,
@@ -427,35 +430,37 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     res.available_techs[r, p].add(
                         EdgeTuple(
                             region=r,
-                            input_comm=tech,
-                            tech='EndOfLife',
+                            input_comm=cast(Commodity, tech),
+                            tech=cast(Technology, 'EndOfLife'),
                             vintage=v,
                             output_comm=eol_oc,
                             lifetime=lifetime,
-                            sector='Other',
+                            sector=cast(Sector, 'Other'),
                         )
                     )
-                    res.source_commodities[r, p].add(tech)
-                    res.capacity_commodities.add(tech)
+                    res.source_commodities[r, p].add(cast(Commodity, tech))
+                    res.capacity_commodities.add(cast(Commodity, tech))
                     if eol_oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(eol_oc)
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
-        construction_lifetime = basic_data['period_length'].get(v, 1)
-        res.available_techs[r, v].add(
+        construction_lifetime = basic_data['period_length'].get(cast(Period, v), cast(Period, 1))
+        res.available_techs[r, cast(Period, v)].add(
             EdgeTuple(
                 region=r,
                 input_comm=ic,
-                tech='Construction',
+                tech=cast(Technology, 'Construction'),
                 vintage=v,
-                output_comm=tech,
+                output_comm=cast(
+                    Commodity, tech
+                ),  # commodity is kind of input to the capacity of the technology/vice versa
                 lifetime=construction_lifetime,
-                sector='Other',
+                sector=cast(Sector, 'Other'),
             )
         )
-        res.demand_commodities[r, v].add(tech)
-        res.capacity_commodities.add(tech)
+        res.demand_commodities[r, cast(Period, v)].add(cast(Commodity, tech))
+        res.capacity_commodities.add(cast(Commodity, tech))
         living_techs.add(tech)
 
     # --- 4. Process Linked Techs and Other Metadata ---

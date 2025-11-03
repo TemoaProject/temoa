@@ -7,21 +7,36 @@ their layer (role) and sector, which helps the physics-based layout engine
 in vis.js converge to a cleaner and more readable state faster.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math
 import random
 import uuid
-from collections.abc import Iterable
-from typing import Any, TypeVar
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import networkx as nx
 
 from temoa.model_checking.network_model_data import EdgeTuple
+from temoa.types.core_types import Commodity, Sector, Technology
 
 logger = logging.getLogger(__name__)
 
-GraphType = TypeVar('GraphType', nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)
+
+if TYPE_CHECKING:
+    GraphType = TypeVar(
+        'GraphType',
+        nx.Graph[Commodity | Technology | str],
+        nx.DiGraph[Commodity | Technology | str],
+        nx.MultiGraph[Commodity | Technology | str],
+        nx.MultiDiGraph[Commodity | Technology | str],
+    )
+else:
+    # At runtime, use the base types which are not subscripted.
+    # The TypeVar still enforces that the graph type is one of these.
+    GraphType = TypeVar('GraphType', nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)
 
 
 def convert_graph_to_json(
@@ -129,8 +144,8 @@ def calculate_source_positions(
 
 def calculate_initial_positions(
     node_layer_map: dict[str, int],
-    commodity_to_primary_sector: dict[str, str],
-    unique_sectors: list[str],
+    commodity_to_primary_sector: dict[Commodity, Sector],
+    unique_sectors: Sequence[Sector] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """
     Calculates an initial (x, y) layout for all nodes to provide a better
@@ -140,10 +155,10 @@ def calculate_initial_positions(
     - Other nodes are arranged in clusters based on their primary sector,
       with the clusters themselves arranged in a large circle.
     """
-    positions = {}
+    positions: dict[str, dict[str, Any]] = {}
 
     # Prepare to lay out the remaining (non-fixed) nodes: all layers except 1
-    nodes_to_place = {n for n, layer in node_layer_map.items() if layer != 1}
+    nodes_to_place = {cast(Commodity, n) for n, layer in node_layer_map.items() if layer != 1}
     if not nodes_to_place:
         return positions
 
@@ -194,7 +209,7 @@ def calculate_initial_positions(
 
 def calculate_tech_graph_positions(
     all_edges: Iterable[EdgeTuple],
-) -> dict[str, dict[str, Any]]:
+) -> dict[Technology, dict[str, Any]]:
     """
     Calculates an initial (x, y) layout for the technology graph.
     All technologies are arranged in clusters by sector, with clusters

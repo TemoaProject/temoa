@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 import networkx as nx
 
 from temoa.core.config import TemoaConfig
 from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
-from temoa.types.core_types import Period, Region
+from temoa.types.core_types import Commodity, Period, Region, Sector, Technology
 from temoa.utilities.graph_utils import (
     calculate_initial_positions,
     calculate_tech_graph_positions,
@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 
 def generate_technology_graph(
     all_edges: Iterable[EdgeTuple],
-    source_commodities: set[str],
-    demand_commodities: set[str],
-    sector_colors: dict[str, str],
+    source_commodities: set[Commodity],
+    demand_commodities: set[Commodity],
+    sector_colors: dict[Sector, str],
 ) -> nx.MultiDiGraph[str]:
     """
     Generates a technology-centric graph with a pre-computed initial layout.
@@ -47,7 +47,7 @@ def generate_technology_graph(
 
     # Pass 2: Create a single, correctly styled node for each unique technology.
     for tech_name, info in tech_info.items():
-        pos_attrs = tech_positions.get(tech_name, {})
+        pos_attrs = tech_positions.get(cast(Technology, tech_name)) or {}
         sector = info['sector']
 
         color_obj: dict[str, str] = {}
@@ -108,7 +108,7 @@ def generate_commodity_graph(
     demand_orphans: Iterable[EdgeTuple],
     other_orphans: Iterable[EdgeTuple],
     driven_techs: Iterable[EdgeTuple],
-) -> tuple[nx.MultiDiGraph[str], dict[str, str]]:
+) -> tuple[nx.MultiDiGraph[str], dict[Sector, str]]:
     """
     Generates the commodity-centric graph and its associated color scheme.
     In this view, commodities are nodes and technologies are grouped into edges.
@@ -139,7 +139,7 @@ def generate_commodity_graph(
     }
     default_color = '#A9A9A9'
 
-    commodity_sector_counts: defaultdict[str, defaultdict[str, int]] = defaultdict(
+    commodity_sector_counts: defaultdict[Commodity, defaultdict[Sector, int]] = defaultdict(
         lambda: defaultdict(int)
     )
     for tech in all_edge_tuples:
@@ -147,7 +147,7 @@ def generate_commodity_graph(
             commodity_sector_counts[tech.input_comm][tech.sector] += 1
             commodity_sector_counts[tech.output_comm][tech.sector] += 1
 
-    commodity_to_primary_sector = {
+    commodity_to_primary_sector: dict[Commodity, Sector] = {
         comm: max(counts, key=lambda k: counts[k])
         for comm, counts in commodity_sector_counts.items()
         if counts
@@ -170,17 +170,18 @@ def generate_commodity_graph(
 
     # 3. Prepare edge attributes with sector-based coloring
     edge_attributes_map: dict[tuple[str, str, str, str | None], dict[str, Any]] = {}
-    all_connections: set[tuple[str, str, str, str | None]] = {
-        (tech.input_comm, tech.tech, tech.output_comm, tech.sector) for tech in all_edge_tuples
+    all_connections: set[tuple[Commodity, Technology, Commodity, Sector | None]] = {
+        (edge_tuple.input_comm, edge_tuple.tech, edge_tuple.output_comm, edge_tuple.sector)
+        for edge_tuple in all_edge_tuples
     }
 
     driven_names = {t.tech for t in driven_techs}
     other_orphan_names = {t.tech for t in other_orphans}
     demand_orphan_names = {t.tech for t in demand_orphans}
 
-    driven_commodities: set[str] = set()
-    other_orphan_commodities: set[str] = set()
-    demand_orphan_commodities: set[str] = set()
+    driven_commodities: set[Commodity] = set()
+    other_orphan_commodities: set[Commodity] = set()
+    demand_orphan_commodities: set[Commodity] = set()
 
     for ic, tech_name, oc, sector in all_connections:
         key = (ic, tech_name, oc, sector)
@@ -289,7 +290,7 @@ def visualize_graph(
         output_filename=output_file,
         html_title=f'Network Graphs - {region} {period}',
         sectors=unique_sectors,
-        color_legend_map=sector_colors,
+        color_legend_map=cast(dict[str, str], sector_colors),
         style_legend_map=style_legend_map,
         show_browser=False,
     )
