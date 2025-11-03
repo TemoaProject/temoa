@@ -9,6 +9,7 @@ authors = [
     { name = "TemoaProject Team", email = "info@temoaproject.org" }
 ]
 
+
 dependencies = [
     "pyomo>=6.8.0",
     "matplotlib==3.9.2",
@@ -27,8 +28,13 @@ dependencies = [
     "networkx>=3.3",
     "highspy>=1.7.2",
     "scipy>=1.14.1",
+    "typer>=0.20.0",
+    "rich>=14.2.0",
 ]
 
+
+[project.scripts]
+temoa = "temoa.cli:app"
 
 [dependency-groups]
 dev = [
