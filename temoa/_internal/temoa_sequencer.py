@@ -84,29 +84,42 @@ class TemoaSequencer:
         """
         self._run_preliminary_checks()
         logger.info('Starting model build process (build-only mode).')
-        # Ensure certain features that don't apply to a simple build are disabled
-        if self.config.source_trace:
-            self.config.source_trace = False
-            logger.warning('Source trace disabled for build-only mode.')
-        if self.config.plot_commodity_network:
-            self.config.plot_commodity_network = False
-            logger.warning('Commodity network plotting disabled for build-only mode.')
-        if self.config.price_check:
-            logger.warning('Price check disabled for build-only mode.')
 
-        # Validate database before attempting to build model
-        if not check_database_version(
-            self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
-        ):
-            raise RuntimeError('Database version check failed. See log file for details.')
+        # Capture original values to restore later
+        original_source_trace = self.config.source_trace
+        original_plot_commodity_network = self.config.plot_commodity_network
+        original_price_check = self.config.price_check
 
-        with sqlite3.connect(self.config.input_database) as con:
-            hybrid_loader = HybridLoader(db_connection=con, config=self.config)
-            data_portal = hybrid_loader.load_data_portal(myopic_index=None)
-            instance = build_instance(data_portal, silent=self.config.silent)
+        try:
+            # Ensure certain features that don't apply to a simple build are disabled
+            if self.config.source_trace:
+                self.config.source_trace = False
+                logger.warning('Source trace disabled for build-only mode.')
+            if self.config.plot_commodity_network:
+                self.config.plot_commodity_network = False
+                logger.warning('Commodity network plotting disabled for build-only mode.')
+            if self.config.price_check:
+                self.config.price_check = False
+                logger.warning('Price check disabled for build-only mode.')
 
-        logger.info('Model build process complete.')
-        return instance
+            # Validate database before attempting to build model
+            if not check_database_version(
+                self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
+            ):
+                raise RuntimeError('Database version check failed. See log file for details.')
+
+            with sqlite3.connect(self.config.input_database) as con:
+                hybrid_loader = HybridLoader(db_connection=con, config=self.config)
+                data_portal = hybrid_loader.load_data_portal(myopic_index=None)
+                instance = build_instance(data_portal, silent=self.config.silent)
+
+            logger.info('Model build process complete.')
+            return instance
+        finally:
+            # Restore original config values
+            self.config.source_trace = original_source_trace
+            self.config.plot_commodity_network = original_plot_commodity_network
+            self.config.price_check = original_price_check
 
     def start(self) -> None:
         """

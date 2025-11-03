@@ -58,13 +58,11 @@ def test_flows(solved_connection):
     Test that the emissions from each technology archetype are correct, and check total emissions
     """
     con, name, tech, period, flow_target = solved_connection
-    row = (
-        con.cursor()
-        .execute(
-            f"SELECT SUM(flow) FROM main.OutputFlowOut WHERE tech == '{tech}' AND period == {period}"
-        )
-        .fetchone()
-    )
+    cursor = con.cursor()
+    row = cursor.execute(
+        'SELECT SUM(flow) FROM main.OutputFlowOut WHERE tech = ? AND period = ?',
+        (tech, period),
+    ).fetchone()
     # If the query returns no rows, row will be None. If it finds rows but the sum is NULL, row[0] will be None.
     flow = row[0] if row and row[0] is not None else 0.0
 

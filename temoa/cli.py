@@ -222,7 +222,7 @@ def run(
         if not silent:
             rich.print(ts.config)
             typer.confirm('\nPlease confirm the settings above to continue', abort=True)
-        if build_only:
+        if build_only or ts.temoa_mode is TemoaMode.BUILD_ONLY:
             logger.info('Build-only mode selected. Calling build_model().')
             _ = ts.build_model()
             if not silent:
