@@ -22,6 +22,7 @@
 !CONTRIBUTING.md
 !.pre-commit-config.yaml
 !.coderabbit.yaml
+!CITATION.cff
 
 # recursively re-ignore
 __pycache__
