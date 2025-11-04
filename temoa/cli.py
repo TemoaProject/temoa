@@ -6,6 +6,7 @@ from typing import Annotated
 import rich
 import typer
 from rich.logging import RichHandler
+from rich.text import Text
 
 from definitions import set_OUTPUT_PATH
 from temoa._internal.temoa_sequencer import TemoaSequencer
@@ -106,12 +107,25 @@ def _version_callback(value: bool) -> None:
 
 def _cite_callback(value: bool) -> None:
     if value:
-        citation_text = """
-        [bold]How to Cite Temoa:[/bold]
+        citation_text = Text()
+        citation_text.append('[bold]How to Cite Temoa:[/bold]\n\n', style='bold')
+        citation_text.append(
+            'If you use Temoa in your research, please cite the following publication:\n\n'
+        )
 
-        Please consult the project documentation or associated publications
-        for the most up-to-date citation information.
-        """
+        citation_text.append(
+            """Hunter, K., Sreepathi, S., & DeCarolis, J. F. (2013). """
+            """Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa). """
+            """Energy Economics, 40, 339–349. """
+            """https://doi.org/10.1016/j.eneco.2013.07.014""",
+            style='italic',
+        )
+        citation_text.append('\n\n')
+        citation_text.append(
+            'You can also find citation information in the CITATION.cff file in the repository.',
+            style='dim',
+        )
+
         rich.print(citation_text)
         raise typer.Exit()
 
