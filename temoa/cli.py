@@ -70,7 +70,7 @@ def _setup_logging(output_path: Path, debug: bool = False, silent: bool = False)
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
     # Log the initialization message (will go to file, and to console if not silent)
-    logger.info(f'Logging initialized. Log file at: {log_file}')
+    logger.info('Logging initialized. Log file at: %s', log_file)
 
 
 def _setup_sequencer(
@@ -116,7 +116,7 @@ def _cite_callback(value: bool) -> None:
         citation_text.append(
             """Hunter, K., Sreepathi, S., & DeCarolis, J. F. (2013). """
             """Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa). """
-            """Energy Economics, 40, 339–349. """
+            """Energy Economics, 40, 339-349. """
             """https://doi.org/10.1016/j.eneco.2013.07.014""",
             style='italic',
         )
@@ -279,7 +279,6 @@ def main_options(
     ),
 ) -> None:
     """Manage global options for the Temoa CLI."""
-    pass
 
 
 if __name__ == '__main__':
