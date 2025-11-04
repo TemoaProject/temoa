@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-name: "Hunter"
+    given-names: "Kevin"
+  - family-name: "Sreepathi"
+    given-names: "Sarat"
+  - family-name: "DeCarolis"
+    given-names: "Joseph F."
+title: "Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa)"
+journal: "Energy Economics"
+volume: "40"
+pages: "339-349"
+year: 2013
+month: 11 # November
+doi: "10.1016/j.eneco.2013.07.014"
+url: "https://doi.org/10.1016/j.eneco.2013.07.014"

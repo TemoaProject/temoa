@@ -23,6 +23,7 @@
 !.pre-commit-config.yaml
 !.coderabbit.yaml
 !FEATURE_BRANCH.md
+!CITATION.cff
 
 # recursively re-ignore
 __pycache__
