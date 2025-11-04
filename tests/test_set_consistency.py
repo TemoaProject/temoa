@@ -1,33 +1,6 @@
 """
 These tests are designed to check the construction of the numerous sets in the 2 exemplar models:
 Utopia and Test System.
-
-They construct all the pyomo Sets associated with the model and compare them with cached results that are stored
-in json files
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  9/26/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import json
@@ -38,8 +11,12 @@ from pyomo import environ as pyo
 
 from definitions import PROJECT_ROOT
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
 
+TESTING_CONFIGS_DIR = pathlib.Path(__file__).parent / 'testing_configs'
+
+# Update params to just be filenames, we will construct the path inside the test
 params = [
     ('utopia', 'config_utopia.toml', 'utopia_sets.json'),
     ('test_system', 'config_test_system.toml', 'test_system_sets.json'),
@@ -54,22 +31,24 @@ def test_set_consistency(data_name, config_file, set_file, tmp_path):
     """
     test the set membership of the utopia model against cached values to ensure consistency
     """
-    config_file = pathlib.Path(PROJECT_ROOT, 'tests', 'testing_configs', config_file)
-    options = {'silent': True, 'debug': True}
-    ts = TemoaSequencer(
-        config_file=config_file, output_path=tmp_path, mode_override=TemoaMode.BUILD_ONLY, **options
-    )
+    full_config_path = TESTING_CONFIGS_DIR / config_file
 
-    built_instance = ts.start()
+    config = TemoaConfig.build_config(
+        config_file=full_config_path, output_path=tmp_path, silent=True
+    )
+    ts = TemoaSequencer(config=config, mode_override=TemoaMode.BUILD_ONLY)
+
+    built_instance = ts.build_model()
+
     model_sets = built_instance.component_map(ctype=pyo.Set)
     model_sets = {k: set(v) for k, v in model_sets.items()}
 
     # retrieve the cache and convert the set values from list -> set (json can't store sets)
     cache_file = pathlib.Path(PROJECT_ROOT, 'tests', 'testing_data', set_file)
-    with open(cache_file, 'r') as src:
+    with open(cache_file) as src:
         cached_sets = json.load(src)
     cached_sets = {
-        k: set(tuple(t) if isinstance(t, list) else t for t in v) for (k, v) in cached_sets.items()
+        k: {tuple(t) if isinstance(t, list) else t for t in v} for (k, v) in cached_sets.items()
     }
 
     # compare sets where they exist in the model.
@@ -123,6 +102,6 @@ def test_set_consistency(data_name, config_file, set_file, tmp_path):
         f'The {data_name} run-produced sets did not match cached values'
     )
     if cache_extra_sets:
-        assert False, 'Cache has extra sets'
+        assert False, 'Cache has extra sets'  # noqa B011
     if model_extra_sets:
-        assert False, 'Model has extra sets'
+        assert False, 'Model has extra sets'  # noqa B011

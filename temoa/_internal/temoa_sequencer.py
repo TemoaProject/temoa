@@ -4,35 +4,10 @@ scenario has a declared processing mode (regular, myopic, mga, etc.) and the Tem
 up the necessary run(s) to accomplish that.  Several processing modes have requirements
 for multiple runs, and the Temoa Sequencer may hand off to a mode-specific sequencer
 
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/14/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import sqlite3
-import sys
 from logging import getLogger
-from pathlib import Path
 
 import pyomo.opt
 
@@ -65,229 +40,211 @@ logger = getLogger(__name__)
 
 
 class TemoaSequencer:
-    """A Sequencer instance to control all runs for a scenario based on the TemoaMode"""
+    """A Sequencer instance to control all runs for a scenario based on the TemoaMode."""
 
     def __init__(
         self,
-        config_file: str | Path,
-        output_path: str | Path,
+        config: TemoaConfig,
         mode_override: TemoaMode | None = None,
-        silent: bool = False,
-        **kwargs: object,
     ) -> None:
         """
-        Create a new Sequencer
-        :param config_file: Optional path to config file.  If not provided, it will be read
-        from Command Line Args
-        :param mode_override: Optional override to execution mode.  If not provided,
-        it will be read from config file
-        :param silent:  boolean to indicate whether to silence run-time feedback
+        Create a new Sequencer.
+
+        :param config: A fully constructed TemoaConfig object.
+        :param mode_override: Optional override to the execution mode from the config.
         """
-        self.config: TemoaConfig | None = None
-        self.temoa_mode: TemoaMode
+        self.config = config
+        self.temoa_mode = config.scenario_mode
 
-        self.config_file: Path = Path(config_file)
-        # check it...
-        if not self.config_file.is_file():
-            logger.error(
-                'Config file location passed %s does not point to a file', self.config_file
-            )
-            raise FileNotFoundError(f'Invalid config file: {self.config_file}')
+        # Handle and log the mode override if provided
+        if mode_override and mode_override != self.config.scenario_mode:
+            self.temoa_mode = mode_override
+            self.config.scenario_mode = mode_override
+            logger.info(f'Temoa Mode overridden by caller to: {self.temoa_mode}')
 
-        self.output_path: Path = Path(output_path)
-        # check it...
-        if not self.output_path.is_dir():
-            logger.error('Output directory does not exist: %s', self.output_path)
-            raise FileNotFoundError(f'Invalid output directory: {self.output_path}')
-
-        self.mode_override: TemoaMode | None = mode_override
-
-        # for feedback to user
-        self.silent = silent
-
-        # for results catching for perfect_foresight, other modes / testing
+        # for results catching for perfect_foresight or testing
         self.pf_results: pyomo.opt.SolverResults | None = None
         self.pf_solved_instance: TemoaModel | None = None
 
-    def start(self) -> TemoaModel | None:
-        """Start the processing of the scenario"""
-
-        # ----- Run the "preliminaries"
-        # Build a TemoaConfig
-        self.config = TemoaConfig.build_config(
-            config_file=self.config_file, output_path=self.output_path, silent=self.silent
-        )
-
-        # Run some checks...
-        good = True
-        good &= check_python_version(MIN_PYTHON_MAJOR, MIN_PYTHON_MINOR)
-        good &= check_database_version(
+    def _run_preliminary_checks(self) -> None:
+        """Runs pre-flight checks and raises an error if any fail."""
+        checks_ok = True
+        checks_ok &= check_python_version(MIN_PYTHON_MAJOR, MIN_PYTHON_MINOR)
+        checks_ok &= check_database_version(
             self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
         )
-        if not good:
-            logger.error('Failed pre-run checks...  See log file for details')
-            sys.exit(-1)
+        if not checks_ok:
+            # The specific reasons for failure are already in the log.
+            raise RuntimeError('Failed pre-run checks. See log file for details.')
 
-        # Distill the TemoaMode
-        if self.mode_override and self.mode_override != self.config.scenario_mode:
-            # capture and log the override...
-            self.temoa_mode = self.mode_override
-            if self.config:  # register the override in the config
-                self.config.scenario_mode = self.mode_override
-            logger.info('Temoa Mode overridden to be:  %s', self.temoa_mode)
-        else:
-            self.temoa_mode = self.config.scenario_mode
-        # check it...
-        if not isinstance(self.temoa_mode, TemoaMode):
-            logger.error(  # type: ignore[unreachable]
-                'Temoa Mode not set properly.  Override: %s, Config File: %s',
-                self.mode_override,
-                self.config.scenario_mode,
-            )
-            raise RuntimeError('Problem with mode selection, see log file.')
+    def build_model(self) -> TemoaModel:
+        """
+        Builds and returns an unsolved TemoaModel instance.
+        This is the dedicated method for the 'BUILD_ONLY' mode.
+        """
+        self._run_preliminary_checks()
+        logger.info('Starting model build process (build-only mode).')
 
-        # Get user confirmation if not silent
-        if not self.silent:
-            try:
-                print(self.config.__repr__())
-                print('\nPlease press enter to continue or Ctrl+C to quit.\n')
-                input()  # Give the user a chance to confirm input
-            except KeyboardInterrupt:
-                logger.warning('User aborted from confirmation page.  Exiting')
-                print('\n\nUser requested quit.  Exiting Temoa ...\n')
-                sys.exit()
+        # Capture original values to restore later
+        original_source_trace = self.config.source_trace
+        original_plot_commodity_network = self.config.plot_commodity_network
+        original_price_check = self.config.price_check
 
-        # ---- Select execution path based on mode ----
-        match self.temoa_mode:
-            case TemoaMode.BUILD_ONLY:
-                # override the "extras"
-                if self.config.source_trace:
-                    self.config.source_trace = False
-                    logger.warning('Source trace disabled for BUILD_ONLY')
-                if self.config.plot_commodity_network:
-                    self.config.plot_commodity_network = False
-                    logger.warning('Plot commodity network disabled for BUILD_ONLY')
-                if self.config.price_check:
-                    logger.warning('Price check disabled for BUILD_ONLY')
-                con = sqlite3.connect(self.config.input_database)
+        try:
+            # Ensure certain features that don't apply to a simple build are disabled
+            if self.config.source_trace:
+                self.config.source_trace = False
+                logger.warning('Source trace disabled for build-only mode.')
+            if self.config.plot_commodity_network:
+                self.config.plot_commodity_network = False
+                logger.warning('Commodity network plotting disabled for build-only mode.')
+            if self.config.price_check:
+                self.config.price_check = False
+                logger.warning('Price check disabled for build-only mode.')
+
+            # Validate database before attempting to build model
+            if not check_database_version(
+                self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
+            ):
+                raise RuntimeError('Database version check failed. See log file for details.')
+
+            with sqlite3.connect(self.config.input_database) as con:
                 hybrid_loader = HybridLoader(db_connection=con, config=self.config)
                 data_portal = hybrid_loader.load_data_portal(myopic_index=None)
                 instance = build_instance(data_portal, silent=self.config.silent)
-                con.close()
-                return instance
+
+            logger.info('Model build process complete.')
+            return instance
+        finally:
+            # Restore original config values
+            self.config.source_trace = original_source_trace
+            self.config.plot_commodity_network = original_plot_commodity_network
+            self.config.price_check = original_price_check
+
+    def start(self) -> None:
+        """
+        Executes the full scenario run to completion.
+        This method returns None on success and raises an exception on failure.
+        """
+        self._run_preliminary_checks()
+
+        # The mode is now definitively set, so we can proceed.
+        logger.info(f'Executing scenario in mode: {self.temoa_mode}')
+
+        # Select execution path based on mode
+        match self.temoa_mode:
+            case TemoaMode.BUILD_ONLY:
+                # The `start` method's contract is to run to completion, not return a model.
+                # Raise an error to guide the developer to the correct API.
+                raise RuntimeError(
+                    "For BUILD_ONLY mode, please use the 'build_model()' method instead of 'start()'."
+                )
 
             case TemoaMode.CHECK:
-                con = sqlite3.connect(self.config.input_database)
-                if self.config.source_trace is False:
-                    logger.warning('Source trace automatic for CHECK')
-                    self.config.source_trace = True
-                hybrid_loader = HybridLoader(db_connection=con, config=self.config)
-                data_portal = hybrid_loader.load_data_portal(myopic_index=None)
-                instance = build_instance(
-                    data_portal,
-                    silent=self.config.silent,
-                    keep_lp_file=self.config.save_lp_file,
-                    lp_path=self.config.output_path,
-                )
-                # disregard what the config says about price_check and source_trace and just do it...
-                if self.config.price_check is False:
-                    logger.warning('Price check of model is automatic with CHECK')
-                good_prices = price_checker(instance)
-                if not good_prices and not self.config.silent:
-                    print('Warning: Cost anomalies discovered. Check log file for details.')
-                con.close()
-                return None
+                self._run_check_mode()
 
             case TemoaMode.PERFECT_FORESIGHT:
-                con = sqlite3.connect(self.config.input_database)
-                hybrid_loader = HybridLoader(db_connection=con, config=self.config)
-                data_portal = hybrid_loader.load_data_portal(myopic_index=None)
-                instance = build_instance(
-                    data_portal,
-                    silent=self.config.silent,
-                    keep_lp_file=self.config.save_lp_file,
-                    lp_path=self.config.output_path,
-                )
-                if self.config.price_check:
-                    good_prices = price_checker(instance)
-                    if not good_prices and not self.config.silent:
-                        print('Warning: Cost anomalies discovered. Check log file for details.')
-                suffixes = (
-                    [
-                        'dual',
-                    ]
-                    if self.config.save_duals
-                    else None
-                )
-                self.pf_solved_instance, self.pf_results = solve_instance(
-                    instance,
-                    self.config.solver_name,
-                    silent=self.config.silent,
-                    solver_suffixes=suffixes,
-                )
-                good_solve, msg = check_solve_status(self.pf_results)
-                if not good_solve:
-                    logger.error('The solve result is reported as %s.  Aborting', msg)
-                    logger.error(
-                        'This may be the result of the output messaging of the chosen solver'
-                        'If this is deemed an acceptable status, adjustment may be needed to the '
-                        'function check_solve_status in run_actions.py'
-                    )
-                    sys.exit(-1)
-                handle_results(self.pf_solved_instance, self.pf_results, self.config)
-                con.close()
-                return None
+                self._run_perfect_foresight()
 
             case TemoaMode.MYOPIC:
-                # create a myopic sequencer and shift control to it
                 myopic_sequencer = MyopicSequencer(config=self.config)
                 myopic_sequencer.start()
-                return None
 
             case TemoaMode.MGA:
                 if self.config.solver_name == 'appsi_highs':
                     raise ValueError(
-                        'Multiprocessing currently not working with HiGHS solver.  '
-                        'Unknown fix...appears to be pyomo issue.  Gurobi, CBC, Ipopt all work.'
+                        'MGA mode is not compatible with the HiGHS solver due to a multiprocessing issue.'
                     )
                 mga_sequencer = MgaSequencer(config=self.config)
                 mga_sequencer.start()
-                return None
 
             case TemoaMode.SVMGA:
                 sv_mga_sequencer = SvMgaSequencer(config=self.config)
                 sv_mga_sequencer.start()
-                return None
 
             case TemoaMode.METHOD_OF_MORRIS:
                 mm_sequencer = MorrisSequencer(config=self.config)
                 mm_sequencer.start()
-                return None
 
             case TemoaMode.MONTE_CARLO:
-                if self.config.solver_name == 'appsi_highs':
-                    raise ValueError(
-                        'Multiprocessing currently not working with HiGHS solver.  '
-                        'Unknown fix...appears to be pyomo issue.  Gurobi, CBC, Ipopt all work.'
-                    )
-                if self.config.plot_commodity_network:
-                    self.config.plot_commodity_network = False
-                    logger.warning('Plot commodity network disabled for MONTE_CARLO')
-                if self.config.price_check:
-                    self.config.price_check = False
-                    logger.warning('Price check disabled for MONTE_CARLO')
-                if self.config.save_excel:
-                    self.config.save_excel = False
-                    logger.warning('Save excel disabled for MONTE_CARLO')
-                if self.config.save_lp_file:
-                    self.config.save_lp_file = False
-                    logger.warning('Save lp file disabled for MONTE_CARLO')
-                if self.config.save_duals:
-                    self.config.save_duals = False
-                    logger.warning('Save duals disabled for MONTE_CARLO')
-                mc_sequencer = MCSequencer(config=self.config)
-                mc_sequencer.start()
-                return None
+                self._run_monte_carlo()
 
             case _:
-                raise NotImplementedError('not yet built')
+                raise NotImplementedError(
+                    f"The scenario mode '{self.temoa_mode}' is not yet implemented."
+                )
+
+    def _run_check_mode(self) -> None:
+        """Encapsulated logic for the CHECK mode."""
+        with sqlite3.connect(self.config.input_database) as con:
+            if not self.config.source_trace:
+                logger.warning('Source trace is automatically enabled for CHECK mode.')
+                self.config.source_trace = True
+            hybrid_loader = HybridLoader(db_connection=con, config=self.config)
+            data_portal = hybrid_loader.load_data_portal(myopic_index=None)
+            instance = build_instance(
+                data_portal,
+                silent=self.config.silent,
+                keep_lp_file=self.config.save_lp_file,
+                lp_path=self.config.output_path,
+            )
+            if not self.config.price_check:
+                logger.warning('Price check is automatically enabled for CHECK mode.')
+            price_checker(instance)
+
+    def _run_perfect_foresight(self) -> None:
+        """Encapsulated logic for the PERFECT_FORESIGHT mode."""
+        with sqlite3.connect(self.config.input_database) as con:
+            hybrid_loader = HybridLoader(db_connection=con, config=self.config)
+            data_portal = hybrid_loader.load_data_portal(myopic_index=None)
+            instance = build_instance(
+                data_portal,
+                silent=self.config.silent,
+                keep_lp_file=self.config.save_lp_file,
+                lp_path=self.config.output_path,
+            )
+            if self.config.price_check:
+                price_checker(instance)
+
+            suffixes = ['dual'] if self.config.save_duals else None
+            self.pf_solved_instance, self.pf_results = solve_instance(
+                instance,
+                self.config.solver_name,
+                silent=self.config.silent,
+                solver_suffixes=suffixes,
+            )
+            good_solve, msg = check_solve_status(self.pf_results)
+            if not good_solve:
+                raise RuntimeError(
+                    f"The solver reported a non-optimal status: '{msg}'. Aborting run. "
+                    "This may be due to the solver's output messaging. If this status is "
+                    'acceptable, the `check_solve_status` function may need adjustment.'
+                )
+            handle_results(self.pf_solved_instance, self.pf_results, self.config)
+
+    def _run_monte_carlo(self) -> None:
+        """Encapsulated logic for the MONTE_CARLO mode."""
+        if self.config.solver_name == 'appsi_highs':
+            raise ValueError(
+                'Monte Carlo mode is not compatible with the HiGHS solver due to a multiprocessing issue.'
+            )
+
+        # Disable features not typically used in Monte Carlo runs to reduce noise/overhead
+        if self.config.plot_commodity_network:
+            self.config.plot_commodity_network = False
+            logger.warning('Commodity network plotting disabled for MONTE_CARLO mode.')
+        if self.config.price_check:
+            self.config.price_check = False
+            logger.warning('Price check disabled for MONTE_CARLO mode.')
+        if self.config.save_excel:
+            self.config.save_excel = False
+            logger.warning('Excel output disabled for MONTE_CARLO mode.')
+        if self.config.save_lp_file:
+            self.config.save_lp_file = False
+            logger.warning('LP file saving disabled for MONTE_CARLO mode.')
+        if self.config.save_duals:
+            self.config.save_duals = False
+            logger.warning('Saving of duals disabled for MONTE_CARLO mode.')
+
+        mc_sequencer = MCSequencer(config=self.config)
+        mc_sequencer.start()

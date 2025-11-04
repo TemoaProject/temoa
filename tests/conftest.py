@@ -1,33 +1,3 @@
-"""
-pytest configuration
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  6/27/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-"""
-
 import logging
 import os
 import sqlite3
@@ -37,8 +7,9 @@ from typing import Any
 import pytest
 from pyomo.opt import SolverResults
 
-from definitions import PROJECT_ROOT
+from definitions import PROJECT_ROOT, set_OUTPUT_PATH
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 
 logger = logging.getLogger(__name__)
@@ -85,7 +56,7 @@ def refresh_databases() -> None:
             os.remove(data_output_path / db)
         # make a new one and fill it
         con = sqlite3.connect(data_output_path / db)
-        with open(data_source_path / src, 'r') as script:
+        with open(data_source_path / src) as script:
             con.executescript(script.read())
         con.close()
 
@@ -103,15 +74,24 @@ def system_test_run(
     data_name = request.param['name']
     logger.info('Setting up and solving: %s', data_name)
     filename = request.param['filename']
-    options = {'silent': True, 'debug': True}
     config_file = Path(PROJECT_ROOT, 'tests', 'testing_configs', filename)
 
-    sequencer = TemoaSequencer(
+    set_OUTPUT_PATH(tmp_path)
+
+    config = TemoaConfig.build_config(
         config_file=config_file,
         output_path=tmp_path,
-        **options,
+        silent=True,
     )
+
+    sequencer = TemoaSequencer(config=config)
+
     sequencer.start()
-    res = sequencer.pf_results
-    mdl = sequencer.pf_solved_instance
-    return data_name, res, mdl, sequencer
+
+    # The rest of the fixture returns the solved instance from the sequencer
+    return (
+        data_name,
+        sequencer.pf_results,
+        sequencer.pf_solved_instance,
+        sequencer,
+    )
