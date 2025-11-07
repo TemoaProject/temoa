@@ -53,17 +53,17 @@ def validate_linked_tech(model: TemoaModel) -> bool:
     """
     logger.debug('Starting to validate linked techs.')
 
-    base_idx = model.LinkedEmissionsTechConstraint_rpsdtve
+    base_idx = model.linked_emissions_tech_constraint_rpsdtve
 
     drivers = {(r, t, v, e) for r, p, s, d, t, v, e in base_idx}
     for r, t_driver, v, e in drivers:
         # get the linked tech of same region, emission
-        t_driven = model.LinkedTechs[r, t_driver, e]
+        t_driven = model.linked_techs[r, t_driver, e]
 
         # check for equality in lifetimes for vintage v
-        driver_lifetime = model.LifetimeProcess[r, t_driver, v]
+        driver_lifetime = model.lifetime_process[r, t_driver, v]
         try:
-            driven_lifetime = model.LifetimeProcess[r, t_driven, v]
+            driven_lifetime = model.lifetime_process[r, t_driven, v]
         except KeyError:
             logger.error(
                 'Linked Tech Error:  Driven tech %s does not have a vintage entry %d to match driver %s',
@@ -277,14 +277,14 @@ def validate_capacity_factor_process(
     :param v: vintage
     :return:
     """
-    # devnote: CapacityFactorProcess can be a BIG table and most of these seem redundant
+    # devnote: capacity_factor_process can be a BIG table and most of these seem redundant
     # when they're already enforced by the domain of the parameter
     # Doesn't seem worth the compute time
     return all(
         (
             r in model.regions,
             p in model.time_optimize,
-            s in model.TimeSeason[p],
+            s in model.time_season[p],
             d in model.time_of_day,
             t in model.tech_with_capacity,
             v in model.vintage_all,
@@ -308,7 +308,7 @@ def validate_efficiency(
         (
             isinstance(val, float),
             val > 0,
-            r in model.regionalIndices,
+            r in model.regional_indices,
             si in model.commodity_physical,
             t in model.tech_all,
             so in model.commodity_carrier,
@@ -317,7 +317,7 @@ def validate_efficiency(
     ):
         return True
     print('Element Validations:')
-    print('region', r in model.regionalIndices)
+    print('region', r in model.regional_indices)
     print('input_commodity', si in model.commodity_physical)
     print('tech', t in model.tech_all)
     print('vintage', v in model.vintage_all)
@@ -326,11 +326,11 @@ def validate_efficiency(
 
 
 def validate_reserve_margin(model: TemoaModel) -> None:
-    for r in model.PlanningReserveMargin.sparse_iterkeys():
-        if all((r, p) not in model.processReservePeriods for p in model.time_optimize):
+    for r in model.planning_reserve_margin.sparse_iterkeys():
+        if all((r, p) not in model.process_reserve_periods for p in model.time_optimize):
             logger.warning(
                 'Planning reserve margin provided but there are no reserve '
-                f'technologies serving this region: {r, model.PlanningReserveMargin[r]}'
+                f'technologies serving this region: {r, model.planning_reserve_margin[r]}'
             )
 
 

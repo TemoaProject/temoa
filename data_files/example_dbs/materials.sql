@@ -19,7 +19,7 @@ CREATE TABLE MetaDataReal
     PRIMARY KEY (element)
 );
 INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'Discount Rate for future costs');
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in loan_rate table');
 CREATE TABLE OutputDualVariable
 (
     scenario        TEXT,
@@ -47,7 +47,7 @@ CREATE TABLE SectorLabel
     sector TEXT PRIMARY KEY,
     notes  TEXT
 );
-CREATE TABLE CapacityCredit
+CREATE TABLE capacity_credit
 (
     region  TEXT,
     period  INTEGER
@@ -60,7 +60,7 @@ CREATE TABLE CapacityCredit
     PRIMARY KEY (region, period, tech, vintage),
     CHECK (credit >= 0 AND credit <= 1)
 );
-CREATE TABLE CapacityFactorProcess
+CREATE TABLE capacity_factor_process
 (
     region  TEXT,
     period  INTEGER
@@ -77,7 +77,7 @@ CREATE TABLE CapacityFactorProcess
     PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE CapacityFactorTech
+CREATE TABLE capacity_factor_tech
 (
     region TEXT,
     period INTEGER
@@ -93,102 +93,102 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2000,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2010,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionA',2020,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2000,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2010,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO CapacityFactorTech VALUES('RegionB',2020,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2000,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2010,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionA',2020,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2000,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2010,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'summer','morning','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'autumn','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'winter','morning','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'spring','morning','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'summer','afternoon','SOL_PV',0.2999999999999999889,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'autumn','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'winter','afternoon','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'spring','afternoon','SOL_PV',0.2000000000000000111,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'summer','evening','SOL_PV',0.1000000000000000055,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO capacity_factor_tech VALUES('RegionB',2020,'spring','overnight','SOL_PV',0.0,NULL);
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -235,7 +235,7 @@ INSERT INTO CommodityType VALUES('p','physical commodity');
 INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('d','demand commodity');
 INSERT INTO CommodityType VALUES('s','source commodity');
-CREATE TABLE ConstructionInput
+CREATE TABLE construction_input
 (
     region      TEXT,
     input_comm   TEXT
@@ -249,19 +249,19 @@ CREATE TABLE ConstructionInput
     notes       TEXT,
     PRIMARY KEY (region, input_comm, tech, vintage)
 );
-INSERT INTO ConstructionInput VALUES('RegionA','battery_nmc','CAR_BEV',2000,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionA','battery_lfp','CAR_PHEV',2000,0.1000000000000000055,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionA','battery_nmc','CAR_BEV',2010,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionA','battery_lfp','CAR_PHEV',2010,0.1000000000000000055,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionA','battery_nmc','CAR_BEV',2020,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionA','battery_lfp','CAR_PHEV',2020,0.1000000000000000055,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_nmc','CAR_BEV',2000,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_lfp','CAR_PHEV',2000,0.1000000000000000055,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_nmc','CAR_BEV',2010,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_lfp','CAR_PHEV',2010,0.1000000000000000055,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_nmc','CAR_BEV',2020,1.0,NULL,NULL);
-INSERT INTO ConstructionInput VALUES('RegionB','battery_lfp','CAR_PHEV',2020,0.1000000000000000055,NULL,NULL);
-CREATE TABLE CostEmission
+INSERT INTO construction_input VALUES('RegionA','battery_nmc','CAR_BEV',2000,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionA','battery_lfp','CAR_PHEV',2000,0.1000000000000000055,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionA','battery_nmc','CAR_BEV',2010,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionA','battery_lfp','CAR_PHEV',2010,0.1000000000000000055,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionA','battery_nmc','CAR_BEV',2020,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionA','battery_lfp','CAR_PHEV',2020,0.1000000000000000055,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_nmc','CAR_BEV',2000,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_lfp','CAR_PHEV',2000,0.1000000000000000055,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_nmc','CAR_BEV',2010,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_lfp','CAR_PHEV',2010,0.1000000000000000055,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_nmc','CAR_BEV',2020,1.0,NULL,NULL);
+INSERT INTO construction_input VALUES('RegionB','battery_lfp','CAR_PHEV',2020,0.1000000000000000055,NULL,NULL);
+CREATE TABLE cost_emission
 (
     region    TEXT,
     period    INTEGER
@@ -273,13 +273,13 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('RegionA',2000,'co2e',1.0,NULL,NULL);
-INSERT INTO CostEmission VALUES('RegionA',2010,'co2e',1.0,NULL,NULL);
-INSERT INTO CostEmission VALUES('RegionA',2020,'co2e',1.0,NULL,NULL);
-INSERT INTO CostEmission VALUES('RegionB',2000,'co2e',1.0,NULL,NULL);
-INSERT INTO CostEmission VALUES('RegionB',2010,'co2e',1.0,NULL,NULL);
-INSERT INTO CostEmission VALUES('RegionB',2020,'co2e',1.0,NULL,NULL);
-CREATE TABLE CostFixed
+INSERT INTO cost_emission VALUES('RegionA',2000,'co2e',1.0,NULL,NULL);
+INSERT INTO cost_emission VALUES('RegionA',2010,'co2e',1.0,NULL,NULL);
+INSERT INTO cost_emission VALUES('RegionA',2020,'co2e',1.0,NULL,NULL);
+INSERT INTO cost_emission VALUES('RegionB',2000,'co2e',1.0,NULL,NULL);
+INSERT INTO cost_emission VALUES('RegionB',2010,'co2e',1.0,NULL,NULL);
+INSERT INTO cost_emission VALUES('RegionB',2020,'co2e',1.0,NULL,NULL);
+CREATE TABLE cost_fixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -293,7 +293,7 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-CREATE TABLE CostInvest
+CREATE TABLE cost_invest
 (
     region  TEXT,
     tech    TEXT
@@ -305,41 +305,41 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO CostInvest VALUES('RegionA','CAR_BEV',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_BEV',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_BEV',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_PHEV',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_PHEV',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_PHEV',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_ICE',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_ICE',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','CAR_ICE',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','RECYCLE_NMC',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','RECYCLE_LFP',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','MANUFAC_NMC',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','MANUFAC_LFP',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','BATT_GRID',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','SOL_PV',2000,10.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA','GEN_DSL',2000,2.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_BEV',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_BEV',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_BEV',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_PHEV',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_PHEV',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_PHEV',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_ICE',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_ICE',2010,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','CAR_ICE',2020,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','RECYCLE_NMC',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','RECYCLE_LFP',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','MANUFAC_NMC',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','MANUFAC_LFP',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','BATT_GRID',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','GEN_DSL',2000,2.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionA-RegionB','ELEC_INTERTIE',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB-RegionA','ELEC_INTERTIE',2000,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('RegionB','SOL_PV',2000,1.0,NULL,NULL);
-CREATE TABLE CostVariable
+INSERT INTO cost_invest VALUES('RegionA','CAR_BEV',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_BEV',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_BEV',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_PHEV',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_PHEV',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_PHEV',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_ICE',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_ICE',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','CAR_ICE',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','RECYCLE_NMC',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','RECYCLE_LFP',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','MANUFAC_NMC',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','MANUFAC_LFP',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','BATT_GRID',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','SOL_PV',2000,10.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA','GEN_DSL',2000,2.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_BEV',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_BEV',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_BEV',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_PHEV',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_PHEV',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_PHEV',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_ICE',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_ICE',2010,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','CAR_ICE',2020,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','RECYCLE_NMC',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','RECYCLE_LFP',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','MANUFAC_NMC',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','MANUFAC_LFP',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','BATT_GRID',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','GEN_DSL',2000,2.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionA-RegionB','ELEC_INTERTIE',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB-RegionA','ELEC_INTERTIE',2000,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('RegionB','SOL_PV',2000,1.0,NULL,NULL);
+CREATE TABLE cost_variable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -353,42 +353,42 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostVariable VALUES('RegionA',2000,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2000,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2000,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2000,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2000,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2000,'DOMESTIC_NI',2000,0.5,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2010,'DOMESTIC_NI',2000,0.5,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionA',2020,'DOMESTIC_NI',2000,0.5,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'IMPORT_DSL',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'IMPORT_LI',2000,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'IMPORT_NI',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'IMPORT_CO',2000,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'IMPORT_P',2000,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2000,'DOMESTIC_NI',2000,0.5,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2010,'DOMESTIC_NI',2000,0.5,NULL,NULL);
-INSERT INTO CostVariable VALUES('RegionB',2020,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2000,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2010,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionA',2020,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'IMPORT_DSL',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'IMPORT_LI',2000,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'IMPORT_NI',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'IMPORT_CO',2000,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'IMPORT_P',2000,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2000,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2010,'DOMESTIC_NI',2000,0.5,NULL,NULL);
+INSERT INTO cost_variable VALUES('RegionB',2020,'DOMESTIC_NI',2000,0.5,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -525,7 +525,7 @@ INSERT INTO DemandSpecificDistribution VALUES('RegionB',2020,'summer','overnight
 INSERT INTO DemandSpecificDistribution VALUES('RegionB',2020,'autumn','overnight','heating',0.1199999999999999956,NULL);
 INSERT INTO DemandSpecificDistribution VALUES('RegionB',2020,'winter','overnight','heating',0.1600000000000000033,NULL);
 INSERT INTO DemandSpecificDistribution VALUES('RegionB',2020,'spring','overnight','heating',0.0,NULL);
-CREATE TABLE EndOfLifeOutput
+CREATE TABLE end_of_life_output
 (
     region      TEXT,
     tech        TEXT
@@ -539,37 +539,37 @@ CREATE TABLE EndOfLifeOutput
     notes       TEXT,
     PRIMARY KEY (region, tech, vintage, output_comm)
 );
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',1990,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',1990,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',2000,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',2000,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',2010,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',2010,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',1990,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',1990,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',2000,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',2000,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',2010,'used_batt_nmc',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',2010,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_ICE',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_ICE',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_BEV',2010,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_ICE',2010,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionA','CAR_PHEV',2010,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_ICE',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',1990,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_ICE',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',2000,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_BEV',2010,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_ICE',2010,'waste_steel',1.0,NULL,NULL);
-INSERT INTO EndOfLifeOutput VALUES('RegionB','CAR_PHEV',2010,'waste_steel',1.0,NULL,NULL);
-CREATE TABLE Efficiency
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',1990,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',1990,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',2000,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',2000,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',2010,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',2010,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',1990,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',1990,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',2000,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',2000,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',2010,'used_batt_nmc',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',2010,'used_batt_lfp',0.1000000000000000055,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_ICE',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_ICE',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_BEV',2010,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_ICE',2010,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionA','CAR_PHEV',2010,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_ICE',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',1990,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_ICE',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',2000,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_BEV',2010,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_ICE',2010,'waste_steel',1.0,NULL,NULL);
+INSERT INTO end_of_life_output VALUES('RegionB','CAR_PHEV',2010,'waste_steel',1.0,NULL,NULL);
+CREATE TABLE efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -585,85 +585,85 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('RegionA','ethos','DOMESTIC_NI',2000,'nickel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','IMPORT_LI',2000,'lithium',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','IMPORT_NI',2000,'nickel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','IMPORT_CO',2000,'cobalt',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','IMPORT_P',2000,'phosphorous',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','used_batt_nmc','RECYCLE_NMC',2000,'battery_nmc',0.2000000000000000111,NULL);
-INSERT INTO Efficiency VALUES('RegionA','used_batt_lfp','RECYCLE_LFP',2000,'battery_lfp',0.2000000000000000111,NULL);
-INSERT INTO Efficiency VALUES('RegionA','lithium','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','nickel','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','cobalt','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','lithium','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','phosphorous','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','RECYCLE_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionA','electricity','RECYCLE_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionA','electricity','MANUFAC_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionA','electricity','MANUFAC_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionA','diesel','GEN_DSL',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','SOL_PV',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','BATT_GRID',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','FURNACE',2000,'heating',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','HEATPUMP',2000,'heating',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_BEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_PHEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_PHEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_ICE',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_BEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_PHEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_PHEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_ICE',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_BEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_PHEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_PHEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_ICE',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_BEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','electricity','CAR_PHEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_PHEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA','diesel','CAR_ICE',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','DOMESTIC_NI',2000,'nickel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','IMPORT_LI',2000,'lithium',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','IMPORT_NI',2000,'nickel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','IMPORT_CO',2000,'cobalt',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','IMPORT_P',2000,'phosphorous',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','used_batt_nmc','RECYCLE_NMC',2000,'battery_nmc',0.2000000000000000111,NULL);
-INSERT INTO Efficiency VALUES('RegionB','used_batt_lfp','RECYCLE_LFP',2000,'battery_lfp',0.2000000000000000111,NULL);
-INSERT INTO Efficiency VALUES('RegionB','lithium','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','nickel','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','cobalt','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','lithium','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','phosphorous','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','RECYCLE_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionB','electricity','RECYCLE_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionB','electricity','MANUFAC_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionB','electricity','MANUFAC_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
-INSERT INTO Efficiency VALUES('RegionB','diesel','GEN_DSL',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','SOL_PV',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','BATT_GRID',2000,'electricity',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','FURNACE',2000,'heating',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','HEATPUMP',2000,'heating',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_BEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_PHEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_PHEV',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_ICE',1990,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_BEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_PHEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_PHEV',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_ICE',2000,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_BEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_PHEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_PHEV',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_ICE',2010,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_BEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','electricity','CAR_PHEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_PHEV',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionB','diesel','CAR_ICE',2020,'passenger_km',1.0,NULL);
-INSERT INTO Efficiency VALUES('RegionA-RegionB','electricity','ELEC_INTERTIE',2000,'electricity',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('RegionB-RegionA','electricity','ELEC_INTERTIE',2000,'electricity',0.9000000000000000222,NULL);
-CREATE TABLE EfficiencyVariable
+INSERT INTO efficiency VALUES('RegionA','ethos','DOMESTIC_NI',2000,'nickel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','IMPORT_LI',2000,'lithium',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','IMPORT_NI',2000,'nickel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','IMPORT_CO',2000,'cobalt',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','IMPORT_P',2000,'phosphorous',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','used_batt_nmc','RECYCLE_NMC',2000,'battery_nmc',0.2000000000000000111,NULL);
+INSERT INTO efficiency VALUES('RegionA','used_batt_lfp','RECYCLE_LFP',2000,'battery_lfp',0.2000000000000000111,NULL);
+INSERT INTO efficiency VALUES('RegionA','lithium','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','nickel','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','cobalt','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','lithium','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','phosphorous','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','RECYCLE_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionA','electricity','RECYCLE_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionA','electricity','MANUFAC_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionA','electricity','MANUFAC_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionA','diesel','GEN_DSL',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','SOL_PV',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','BATT_GRID',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','FURNACE',2000,'heating',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','HEATPUMP',2000,'heating',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_BEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_PHEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_PHEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_ICE',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_BEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_PHEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_PHEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_ICE',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_BEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_PHEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_PHEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_ICE',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_BEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','electricity','CAR_PHEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_PHEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA','diesel','CAR_ICE',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','DOMESTIC_NI',2000,'nickel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','IMPORT_LI',2000,'lithium',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','IMPORT_NI',2000,'nickel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','IMPORT_CO',2000,'cobalt',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','IMPORT_P',2000,'phosphorous',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','used_batt_nmc','RECYCLE_NMC',2000,'battery_nmc',0.2000000000000000111,NULL);
+INSERT INTO efficiency VALUES('RegionB','used_batt_lfp','RECYCLE_LFP',2000,'battery_lfp',0.2000000000000000111,NULL);
+INSERT INTO efficiency VALUES('RegionB','lithium','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','nickel','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','cobalt','MANUFAC_NMC',2000,'battery_nmc',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','lithium','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','phosphorous','MANUFAC_LFP',2000,'battery_lfp',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','RECYCLE_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionB','electricity','RECYCLE_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionB','electricity','MANUFAC_NMC',2000,'battery_nmc',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionB','electricity','MANUFAC_LFP',2000,'battery_lfp',0.00100000000000000002,'Effectively zero');
+INSERT INTO efficiency VALUES('RegionB','diesel','GEN_DSL',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','SOL_PV',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','BATT_GRID',2000,'electricity',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','FURNACE',2000,'heating',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','HEATPUMP',2000,'heating',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_BEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_PHEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_PHEV',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_ICE',1990,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_BEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_PHEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_PHEV',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_ICE',2000,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_BEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_PHEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_PHEV',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_ICE',2010,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_BEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','electricity','CAR_PHEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_PHEV',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionB','diesel','CAR_ICE',2020,'passenger_km',1.0,NULL);
+INSERT INTO efficiency VALUES('RegionA-RegionB','electricity','ELEC_INTERTIE',2000,'electricity',0.9000000000000000222,NULL);
+INSERT INTO efficiency VALUES('RegionB-RegionA','electricity','ELEC_INTERTIE',2000,'electricity',0.9000000000000000222,NULL);
+CREATE TABLE efficiency_variable
 (
     region      TEXT,
     period      INTEGER
@@ -685,7 +685,7 @@ CREATE TABLE EfficiencyVariable
     PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE EmissionActivity
+CREATE TABLE emission_activity
 (
     region      TEXT,
     emis_comm   TEXT
@@ -703,9 +703,9 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('RegionA','co2e','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL,'assumed combusted');
-INSERT INTO EmissionActivity VALUES('RegionB','co2e','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL,'assumed combusted');
-CREATE TABLE EmissionEmbodied
+INSERT INTO emission_activity VALUES('RegionA','co2e','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL,'assumed combusted');
+INSERT INTO emission_activity VALUES('RegionB','co2e','ethos','IMPORT_DSL',2000,'diesel',1.0,NULL,'assumed combusted');
+CREATE TABLE emission_embodied
 (
     region      TEXT,
     emis_comm   TEXT
@@ -719,7 +719,7 @@ CREATE TABLE EmissionEmbodied
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE EmissionEndOfLife
+CREATE TABLE emission_end_of_life
 (
     region      TEXT,
     emis_comm   TEXT
@@ -733,7 +733,7 @@ CREATE TABLE EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE ExistingCapacity
+CREATE TABLE existing_capacity
 (
     region   TEXT,
     tech     TEXT
@@ -745,19 +745,19 @@ CREATE TABLE ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO ExistingCapacity VALUES('RegionA','CAR_BEV',1990,1.0,NULL,NULL);
-INSERT INTO ExistingCapacity VALUES('RegionA','CAR_PHEV',1990,1.0,NULL,NULL);
-INSERT INTO ExistingCapacity VALUES('RegionA','CAR_ICE',1990,1.0,NULL,NULL);
-INSERT INTO ExistingCapacity VALUES('RegionB','CAR_BEV',1990,1.0,NULL,NULL);
-INSERT INTO ExistingCapacity VALUES('RegionB','CAR_PHEV',1990,1.0,NULL,NULL);
-INSERT INTO ExistingCapacity VALUES('RegionB','CAR_ICE',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionA','CAR_BEV',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionA','CAR_PHEV',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionA','CAR_ICE',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionB','CAR_BEV',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionB','CAR_PHEV',1990,1.0,NULL,NULL);
+INSERT INTO existing_capacity VALUES('RegionB','CAR_ICE',1990,1.0,NULL,NULL);
 CREATE TABLE TechGroup
 (
     group_name TEXT
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE LoanLifetimeProcess
+CREATE TABLE loan_lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -768,7 +768,7 @@ CREATE TABLE LoanLifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LoanRate
+CREATE TABLE loan_rate
 (
     region  TEXT,
     tech    TEXT
@@ -779,7 +779,7 @@ CREATE TABLE LoanRate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeProcess
+CREATE TABLE lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -790,7 +790,7 @@ CREATE TABLE LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeTech
+CREATE TABLE lifetime_tech
 (
     region   TEXT,
     tech     TEXT
@@ -799,12 +799,12 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('RegionA','CAR_BEV',10.0,NULL);
-INSERT INTO LifetimeTech VALUES('RegionA','CAR_PHEV',10.0,NULL);
-INSERT INTO LifetimeTech VALUES('RegionA','CAR_ICE',10.0,NULL);
-INSERT INTO LifetimeTech VALUES('RegionB','CAR_BEV',10.0,NULL);
-INSERT INTO LifetimeTech VALUES('RegionB','CAR_PHEV',10.0,NULL);
-INSERT INTO LifetimeTech VALUES('RegionB','CAR_ICE',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionA','CAR_BEV',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionA','CAR_PHEV',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionA','CAR_ICE',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionB','CAR_BEV',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionB','CAR_PHEV',10.0,NULL);
+INSERT INTO lifetime_tech VALUES('RegionB','CAR_ICE',10.0,NULL);
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -813,7 +813,7 @@ CREATE TABLE Operator
 INSERT INTO Operator VALUES('e','equal to');
 INSERT INTO Operator VALUES('le','less than or equal to');
 INSERT INTO Operator VALUES('ge','greater than or equal to');
-CREATE TABLE LimitGrowthCapacity
+CREATE TABLE limit_growth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -825,7 +825,7 @@ CREATE TABLE LimitGrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthCapacity
+CREATE TABLE limit_degrowth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -837,7 +837,7 @@ CREATE TABLE LimitDegrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacity
+CREATE TABLE limit_growth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -849,7 +849,7 @@ CREATE TABLE LimitGrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacity
+CREATE TABLE limit_degrowth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -861,7 +861,7 @@ CREATE TABLE LimitDegrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacityDelta
+CREATE TABLE limit_growth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -873,7 +873,7 @@ CREATE TABLE LimitGrowthNewCapacityDelta
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacityDelta
+CREATE TABLE limit_degrowth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -904,7 +904,7 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
-CREATE TABLE LimitActivity
+CREATE TABLE limit_activity
 (
     region  TEXT,
     period  INTEGER
@@ -917,7 +917,7 @@ CREATE TABLE LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitActivityShare
+CREATE TABLE limit_activity_share
 (
     region         TEXT,
     period         INTEGER
@@ -930,7 +930,7 @@ CREATE TABLE LimitActivityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitAnnualCapacityFactor
+CREATE TABLE limit_annual_capacity_factor
 (
     region      TEXT,
     period      INTEGER
@@ -946,7 +946,7 @@ CREATE TABLE LimitAnnualCapacityFactor
     PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE LimitCapacity
+CREATE TABLE limit_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -959,7 +959,7 @@ CREATE TABLE LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitCapacityShare
+CREATE TABLE limit_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -972,7 +972,7 @@ CREATE TABLE LimitCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitNewCapacity
+CREATE TABLE limit_new_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -985,7 +985,7 @@ CREATE TABLE LimitNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitNewCapacityShare
+CREATE TABLE limit_new_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -998,7 +998,7 @@ CREATE TABLE LimitNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitResource
+CREATE TABLE limit_resource
 (
     region  TEXT,
     tech_or_group   TEXT,
@@ -1009,7 +1009,7 @@ CREATE TABLE LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitSeasonalCapacityFactor
+CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -1025,7 +1025,7 @@ CREATE TABLE LimitSeasonalCapacityFactor
 	notes	TEXT,
 	PRIMARY KEY(region, period, season, tech, operator)
 );
-CREATE TABLE LimitTechInputSplit
+CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
     period         INTEGER
@@ -1040,7 +1040,7 @@ CREATE TABLE LimitTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechInputSplitAnnual
+CREATE TABLE limit_tech_input_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -1055,61 +1055,61 @@ CREATE TABLE LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2000,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2010,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionA',2020,'diesel','CAR_PHEV','le',0.8000000000000000444,NULL);
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2000,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2010,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
-INSERT INTO LimitTechInputSplitAnnual VALUES('RegionB',2020,'diesel','CAR_PHEV','le',0.8000000000000000444,NULL);
-CREATE TABLE LimitTechOutputSplit
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2000,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2010,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionA',2020,'diesel','CAR_PHEV','le',0.8000000000000000444,NULL);
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'lithium','MANUFAC_NMC','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'nickel','MANUFAC_NMC','le',0.1499999999999999945,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'cobalt','MANUFAC_NMC','le',0.04000000000000000083,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'electricity','MANUFAC_NMC','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'lithium','MANUFAC_LFP','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'phosphorous','MANUFAC_LFP','le',0.1900000000000000022,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'electricity','MANUFAC_LFP','le',0.0100000000000000002,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2000,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2010,'diesel','CAR_PHEV','le',0.8000000000000000444,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'electricity','CAR_PHEV','le',0.2000000000000000111,'');
+INSERT INTO limit_tech_input_split_annual VALUES('RegionB',2020,'diesel','CAR_PHEV','le',0.8000000000000000444,NULL);
+CREATE TABLE limit_tech_output_split
 (
     region         TEXT,
     period         INTEGER
@@ -1124,7 +1124,7 @@ CREATE TABLE LimitTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitTechOutputSplitAnnual
+CREATE TABLE limit_tech_output_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -1139,7 +1139,7 @@ CREATE TABLE LimitTechOutputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitEmission
+CREATE TABLE limit_emission
 (
     region    TEXT,
     period    INTEGER
@@ -1296,7 +1296,7 @@ CREATE TABLE OutputStorageLevel
     level REAL,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
-CREATE TABLE PlanningReserveMargin
+CREATE TABLE planning_reserve_margin
 (
     region TEXT
         PRIMARY KEY
@@ -1304,7 +1304,7 @@ CREATE TABLE PlanningReserveMargin
     margin REAL,
     notes TEXT
 );
-CREATE TABLE RampDownHourly
+CREATE TABLE ramp_down_hourly
 (
     region TEXT,
     tech   TEXT
@@ -1313,7 +1313,7 @@ CREATE TABLE RampDownHourly
     notes TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUpHourly
+CREATE TABLE ramp_up_hourly
 (
     region TEXT,
     tech   TEXT
@@ -1330,7 +1330,7 @@ CREATE TABLE Region
 );
 INSERT INTO Region VALUES('RegionA',NULL);
 INSERT INTO Region VALUES('RegionB',NULL);
-CREATE TABLE ReserveCapacityDerate
+CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     period  INTEGER
@@ -1346,7 +1346,7 @@ CREATE TABLE ReserveCapacityDerate
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE TimeSegmentFraction
-(   
+(
     period INTEGER
         REFERENCES TimePeriod (period),
     season TEXT
@@ -1406,7 +1406,7 @@ INSERT INTO TimeSegmentFraction VALUES(2020,'summer','overnight',0.0625,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2020,'autumn','overnight',0.0625,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2020,'winter','overnight',0.0625,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2020,'spring','overnight',0.0625,NULL);
-CREATE TABLE StorageDuration
+CREATE TABLE storage_duration
 (
     region   TEXT,
     tech     TEXT,
@@ -1414,9 +1414,9 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO StorageDuration VALUES('RegionA','BATT_GRID',2.0,'2 hours energy storage');
-INSERT INTO StorageDuration VALUES('RegionB','BATT_GRID',2.0,'2 hours energy storage');
-CREATE TABLE LifetimeSurvivalCurve
+INSERT INTO storage_duration VALUES('RegionA','BATT_GRID',2.0,'2 hours energy storage');
+INSERT INTO storage_duration VALUES('RegionB','BATT_GRID',2.0,'2 hours energy storage');
+CREATE TABLE lifetime_survival_curve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -1482,7 +1482,7 @@ INSERT INTO TimeSeason VALUES(2020,9,'summer',NULL);
 INSERT INTO TimeSeason VALUES(2020,10,'autumn',NULL);
 INSERT INTO TimeSeason VALUES(2020,11,'winter',NULL);
 INSERT INTO TimeSeason VALUES(2020,12,'spring',NULL);
-CREATE TABLE TimeSeasonSequential
+CREATE TABLE time_season_sequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),

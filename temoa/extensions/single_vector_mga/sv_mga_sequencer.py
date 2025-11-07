@@ -130,7 +130,7 @@ class SvMgaSequencer:
         handle_results(instance, results=res, config=self.config, append=False, iteration=0)
 
         # 3a. Capture cost and make it a constraint
-        tot_cost = value(instance.TotalCost)
+        tot_cost = value(instance.total_cost)
         logger.info('Completed initial solve with total cost:  %0.2f', tot_cost)
         logger.info('Relaxing cost by fraction:  %0.3f', self.cost_epsilon)
         # get hook on the expression generator for total cost...
@@ -138,8 +138,8 @@ class SvMgaSequencer:
         instance.cost_cap = Constraint(expr=cost_expression <= (1 + self.cost_epsilon) * tot_cost)
 
         # 3b. remove the old objective
-        # instance.TotalCost.deactivate()
-        instance.del_component(instance.TotalCost)
+        # instance.total_cost.deactivate()
+        instance.del_component(instance.total_cost)
 
         # 4.  Reconstruct the OBJ function...
         emission_labels = self.config.svmga_inputs.get('emission_labels', [])
@@ -202,7 +202,7 @@ class SvMgaSequencer:
         psd_set = [
             (p, s, d)
             for p in model.time_optimize
-            for s in model.TimeSeason[p]
+            for s in model.time_season[p]
             for d in model.time_of_day
         ]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]
@@ -253,38 +253,38 @@ class SvMgaSequencer:
 
         # handle emissions...
         for label in emission_labels:
-            idxs = [idx for idx in model.EmissionActivity if idx[1] == label]
+            idxs = [idx for idx in model.emission_activity if idx[1] == label]
             logger.debug('Located %d items for emission label: %s', len(idxs), label)
             for idx in idxs:
-                # for each indexed item in EmissionActivity, we need to search both the regular
+                # for each indexed item in emission_activity, we need to search both the regular
                 # flows and the annual flows.  And, we need to sum across the "expanded" index
                 # for both which includes period, season, tod or just period respectively
                 expanded_idxs, expanded_annual_idxs = SvMgaSequencer.flow_idxs_from_eac_idx(
                     model, idx
                 )
                 element = sum(
-                    model.V_FlowOut[flow_idx] * model.EmissionActivity[idx]
+                    model.v_flow_out[flow_idx] * model.emission_activity[idx]
                     for flow_idx in expanded_idxs
-                    if flow_idx in model.V_FlowOut
+                    if flow_idx in model.v_flow_out
                 )
                 expr += element
                 annual_element = sum(
-                    model.V_FlowOutAnnual[annual_flow_idx] * model.EmissionActivity[idx]
+                    model.v_flow_out_annual[annual_flow_idx] * model.emission_activity[idx]
                     for annual_flow_idx in expanded_annual_idxs
-                    if annual_flow_idx in model.V_FlowOutAnnual
+                    if annual_flow_idx in model.v_flow_out_annual
                 )
                 expr += annual_element
 
         # handle activity...
         for label in activity_labels:
-            idxs = [idx for idx in model.V_FlowOut if idx[5] == label]
+            idxs = [idx for idx in model.v_flow_out if idx[5] == label]
             logger.debug('Located %d items for activity label: %s', len(idxs), label)
-            expr += sum(model.V_FlowOut[idx] for idx in idxs)
+            expr += sum(model.v_flow_out[idx] for idx in idxs)
 
         # handle capacity...
         for label in capacity_labels:
-            idxs = [idx for idx in model.V_Capacity if idx[2] == label]
+            idxs = [idx for idx in model.v_capacity if idx[2] == label]
             logger.debug('Located %d items for capacity label: %s', len(idxs), label)
-            expr += sum(model.V_Capacity[idx] for idx in idxs)
+            expr += sum(model.v_capacity[idx] for idx in idxs)
 
         return expr

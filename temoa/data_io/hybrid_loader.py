@@ -43,22 +43,22 @@ logger = getLogger(__name__)
 
 # A manifest of tables that may contain region groups, used by a custom loader.
 tables_with_regional_groups = {
-    'LimitAnnualCapacityFactor': 'region',
-    'LimitEmission': 'region',
-    'LimitSeasonalCapacityFactor': 'region',
-    'LimitCapacity': 'region',
-    'LimitActivity': 'region',
-    'LimitNewCapacity': 'region',
-    'LimitActivityShare': 'region',
-    'LimitCapacityShare': 'region',
-    'LimitNewCapacityShare': 'region',
-    'LimitResource': 'region',
-    'LimitGrowthCapacity': 'region',
-    'LimitDegrowthCapacity': 'region',
-    'LimitGrowthNewCapacity': 'region',
-    'LimitDegrowthNewCapacity': 'region',
-    'LimitGrowthNewCapacityDelta': 'region',
-    'LimitDegrowthNewCapacityDelta': 'region',
+    'limit_annual_capacity_factor': 'region',
+    'limit_emission': 'region',
+    'limit_seasonal_capacity_factor': 'region',
+    'limit_capacity': 'region',
+    'limit_activity': 'region',
+    'limit_new_capacity': 'region',
+    'limit_activity_share': 'region',
+    'limit_capacity_share': 'region',
+    'limit_new_capacity_share': 'region',
+    'limit_resource': 'region',
+    'limit_growth_capacity': 'region',
+    'limit_degrowth_capacity': 'region',
+    'limit_growth_new_capacity': 'region',
+    'limit_degrowth_new_capacity': 'region',
+    'limit_growth_new_capacity_delta': 'region',
+    'limit_degrowth_new_capacity_delta': 'region',
 }
 
 
@@ -256,14 +256,16 @@ class HybridLoader:
         # Finalization
         # ---------------------------------------------------------------------
         # Load simple config-based or myopic-specific values
-        self._load_component_data(data, model.TimeSequencing, [(self.config.time_sequencing,)])
-        self._load_component_data(data, model.ReserveMarginMethod, [(self.config.reserve_margin,)])
+        self._load_component_data(data, model.time_sequencing, [(self.config.time_sequencing,)])
+        self._load_component_data(
+            data, model.reserve_margin_method, [(self.config.reserve_margin,)]
+        )
         if myopic_index:
             p0_result = cur.execute(
                 "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
             ).fetchone()
             if p0_result:
-                data[model.MyopicDiscountingYear.name] = {None: int(p0_result[0])}
+                data[model.myopic_discounting_year.name] = {None: int(p0_result[0])}
 
         # Create derived index sets for parameters now that all base data is loaded
         set_data = self.load_param_idx_sets(data=data)
@@ -431,12 +433,12 @@ class HybridLoader:
         if myopic_index:
             contents = cur.execute(
                 'SELECT region, input_comm, tech, vintage, output_comm, efficiency, lifetime '
-                'FROM MyopicEfficiency WHERE vintage + lifetime > ?',
+                'FROM Myopicefficiency WHERE vintage + lifetime > ?',
                 (myopic_index.base_year,),
             ).fetchall()
         else:
             contents = cur.execute(
-                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, NULL FROM main.Efficiency'
+                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, NULL FROM main.efficiency'
             ).fetchall()
 
         if use_raw_data:
@@ -473,7 +475,7 @@ class HybridLoader:
             for row in contents
             if (row[0], row[1], row[2], row[3], row[4]) in self.viable_ritvo.members
         }
-        logger.debug('Polled %d elements from Efficiency tables', len(efficiency_entries))
+        logger.debug('Polled %d elements from efficiency tables', len(efficiency_entries))
         self.efficiency_values = sorted(efficiency_entries)
 
     # =================================================================================
@@ -509,7 +511,7 @@ class HybridLoader:
             raise ValueError('A table has an empty entry for its region column.')
 
         list_of_groups = sorted((t,) for t in regions_and_groups)
-        self._load_component_data(data, model.regionalGlobalIndices, list_of_groups)
+        self._load_component_data(data, model.regional_global_indices, list_of_groups)
 
     def _load_tech_group_members(
         self,
@@ -552,49 +554,51 @@ class HybridLoader:
             rows_to_load = list(raw_data)
 
         if not rows_to_load:
-            data.setdefault(model.time_season.name, [])
+            data.setdefault(model.time_season_all.name, [])
             return
 
         unique_seasons = sorted(list({(row[1],) for row in rows_to_load}))
-        self._load_component_data(data, model.time_season, unique_seasons)
+        self._load_component_data(data, model.time_season_all, unique_seasons)
 
         for period, season in rows_to_load:
-            store = data.get(model.TimeSeason.name, defaultdict(list))
+            store = data.get(model.time_season.name, defaultdict(list))
             store[period].append(season)  # type: ignore[index]
-            data[model.TimeSeason.name] = store
+            data[model.time_season.name] = store
 
-    def _load_time_season_sequential(
+    def _load_time_season_to_sequential(
         self,
         data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Composite loader for TimeSeasonSequential and its associated index sets.
+        Composite loader for time_season_sequential and its associated index sets.
         """
         model = TemoaModel()
-        self._load_component_data(data, model.TimeSeasonSequential, filtered_data)
+        self._load_component_data(data, model.time_season_sequential, filtered_data)
         if filtered_data:
             ordered_data = [row[0:3] for row in filtered_data]
             self._load_component_data(data, model.ordered_season_sequential, ordered_data)
             seq_data = sorted({(row[1],) for row in filtered_data})
-            self._load_component_data(data, model.time_season_sequential, seq_data)
+            self._load_component_data(data, model.time_season_to_sequential, seq_data)
 
-    def _load_seg_frac(
+    def _load_segment_fraction(
         self,
         data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Handles dynamic fallbacks for SegFrac if its table is missing."""
+        """Handles dynamic fallbacks for segment_fraction if its table is missing."""
         model = TemoaModel()
         if filtered_data:
-            self._load_component_data(data, model.SegFrac, filtered_data)
+            self._load_component_data(data, model.segment_fraction, filtered_data)
         else:
-            logger.warning('No TimeSegmentFraction table found. Generating default SegFrac values.')
+            logger.warning(
+                'No TimeSegmentFraction table found. Generating default segment_fraction values.'
+            )
             time_optimize = data.get('time_optimize', [])
             fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]  # type: ignore[attr-defined]
-            self._load_component_data(data, model.SegFrac, fallback)
+            self._load_component_data(data, model.segment_fraction, fallback)
 
     # --- Capacity and Cost Components ---
     def _load_existing_capacity(
@@ -619,15 +623,15 @@ class HybridLoader:
             prev_period = prev_period_res[0] if prev_period_res else -1
             rows_to_load = cur.execute(
                 'SELECT region, tech, vintage, capacity FROM OutputBuiltCapacity WHERE vintage <= ? AND scenario = ? '
-                'UNION SELECT region, tech, vintage, capacity FROM ExistingCapacity',
+                'UNION SELECT region, tech, vintage, capacity FROM existing_capacity',
                 (prev_period, self.config.scenario),
             ).fetchall()
-        elif self.table_exists('ExistingCapacity'):
+        elif self.table_exists('existing_capacity'):
             rows_to_load = cur.execute(
-                'SELECT region, tech, vintage, capacity FROM ExistingCapacity'
+                'SELECT region, tech, vintage, capacity FROM existing_capacity'
             ).fetchall()
 
-        self._load_component_data(data, model.ExistingCapacity, rows_to_load)
+        self._load_component_data(data, model.existing_capacity, rows_to_load)
         if rows_to_load:
             tech_exist_data = sorted(list({(row[1],) for row in rows_to_load}))
             self._load_component_data(data, model.tech_exist, tech_exist_data)
@@ -638,13 +642,13 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Handles myopic period filtering for CostInvest."""
+        """Handles myopic period filtering for cost_invest."""
         model = TemoaModel()
         base_year = self.myopic_index.base_year if self.myopic_index else None
         data_to_load = [
             row for row in filtered_data if base_year is None or cast(int, row[2]) >= base_year
         ]
-        self._load_component_data(data, model.CostInvest, data_to_load)
+        self._load_component_data(data, model.cost_invest, data_to_load)
 
     def _load_loan_rate(
         self,
@@ -652,11 +656,11 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Handles myopic period filtering for LoanRate."""
+        """Handles myopic period filtering for loan_rate."""
         model = TemoaModel()
         mi = self.myopic_index
         data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]  # type: ignore[operator]
-        self._load_component_data(data, model.LoanRate, data_to_load)
+        self._load_component_data(data, model.loan_rate, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_days_per_period(
@@ -665,14 +669,14 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Loads the singleton DaysPerPeriod, with a fallback."""
+        """Loads the singleton days_per_period, with a fallback."""
         model = TemoaModel()
         days = 365
         if filtered_data:
             days = cast(int, filtered_data[0][0])
         else:
             logger.info('No value for days_per_period found. Assuming 365 days per period.')
-        data[model.DaysPerPeriod.name] = {None: days}
+        data[model.days_per_period.name] = {None: days}
 
     def _load_global_discount_rate(
         self,
@@ -683,7 +687,7 @@ class HybridLoader:
         """Loads the required singleton GlobalDiscountRate."""
         model = TemoaModel()
         if filtered_data:
-            data[model.GlobalDiscountRate.name] = {None: cast(float, filtered_data[0][0])}
+            data[model.global_discount_rate.name] = {None: cast(float, filtered_data[0][0])}
         else:
             raise ValueError(
                 "Missing required parameter: 'global_discount_rate' not found in MetaDataReal table."
@@ -695,10 +699,10 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Loads the optional singleton DefaultLoanRate."""
+        """Loads the optional singleton default_loan_rate."""
         model = TemoaModel()
         if filtered_data:
-            data[model.DefaultLoanRate.name] = {None: cast(float, filtered_data[0][0])}
+            data[model.default_loan_rate.name] = {None: cast(float, filtered_data[0][0])}
 
     # --- Operational Constraints and Parameters ---
     def _load_efficiency(
@@ -707,9 +711,9 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Loads the main Efficiency parameter, which is pre-calculated."""
+        """Loads the main efficiency parameter, which is pre-calculated."""
         model = TemoaModel()
-        self._load_component_data(data, model.Efficiency, self.efficiency_values)
+        self._load_component_data(data, model.efficiency, self.efficiency_values)
 
     def _load_linked_techs(
         self,
@@ -717,8 +721,8 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Provides critical error checking for LinkedTechs."""
-        item = self.manifest_map['LinkedTechs']
+        """Provides critical error checking for linked_techs."""
+        item = self.manifest_map['linked_techs']
         self._load_component_data(data, item.component, filtered_data)
         if len(filtered_data) < len(raw_data):
             missing = set(raw_data) - set(filtered_data)
@@ -739,9 +743,9 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Composite loader for RampDownHourly and its index set `tech_downramping`."""
+        """Composite loader for ramp_down_hourly and its index set `tech_downramping`."""
         model = TemoaModel()
-        self._load_component_data(data, model.RampDownHourly, filtered_data)
+        self._load_component_data(data, model.ramp_down_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted(list({(row[1],) for row in filtered_data}))
             tech_filtered = self._filter_data(
@@ -755,9 +759,9 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Composite loader for RampUpHourly and its index set `tech_upramping`."""
+        """Composite loader for ramp_up_hourly and its index set `tech_upramping`."""
         model = TemoaModel()
-        self._load_component_data(data, model.RampUpHourly, filtered_data)
+        self._load_component_data(data, model.ramp_up_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted(list({(row[1],) for row in filtered_data}))
             tech_filtered = self._filter_data(
@@ -771,12 +775,12 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Handles deprecation warning for RenewablePortfolioStandard."""
+        """Handles deprecation warning for renewable_portfolio_standard."""
         model = TemoaModel()
-        self._load_component_data(data, model.RenewablePortfolioStandard, filtered_data)
+        self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
         if filtered_data:
             logger.warning(
-                'The RenewablePortfolioStandard constraint is deprecated. Use LimitActivityShare instead. '
+                'The renewable_portfolio_standard constraint is deprecated. Use limit_activity_share instead. '
                 'The constraint has been applied but this feature may be removed in the future.'
             )
 
@@ -786,8 +790,8 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Provides detailed warnings for filtered LimitTechInputSplit data."""
-        item = self.manifest_map['LimitTechInputSplit']
+        """Provides detailed warnings for filtered limit_tech_input_split data."""
+        item = self.manifest_map['limit_tech_input_split']
         self._load_component_data(data, item.component, filtered_data)
         if len(filtered_data) < len(raw_data):
             missing = set(raw_data) - set(filtered_data)
@@ -807,8 +811,8 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Provides detailed warnings for filtered LimitTechInputSplitAnnual data."""
-        item = self.manifest_map['LimitTechInputSplitAnnual']
+        """Provides detailed warnings for filtered limit_tech_input_split_annual data."""
+        item = self.manifest_map['limit_tech_input_split_annual']
         self._load_component_data(data, item.component, filtered_data)
         if len(filtered_data) < len(raw_data):
             missing = set(raw_data) - set(filtered_data)
@@ -828,8 +832,8 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Provides detailed warnings for filtered LimitTechOutputSplit data."""
-        item = self.manifest_map['LimitTechOutputSplit']
+        """Provides detailed warnings for filtered limit_tech_output_split data."""
+        item = self.manifest_map['limit_tech_output_split']
         self._load_component_data(data, item.component, filtered_data)
         if len(filtered_data) < len(raw_data):
             missing = set(raw_data) - set(filtered_data)
@@ -849,8 +853,8 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Provides detailed warnings for filtered LimitTechOutputSplitAnnual data."""
-        item = self.manifest_map['LimitTechOutputSplitAnnual']
+        """Provides detailed warnings for filtered limit_tech_output_split_annual data."""
+        item = self.manifest_map['limit_tech_output_split_annual']
         self._load_component_data(data, item.component, filtered_data)
         if len(filtered_data) < len(raw_data):
             missing = set(raw_data) - set(filtered_data)
@@ -879,21 +883,21 @@ class HybridLoader:
         """
         model = TemoaModel()
         param_idx_sets = {
-            model.CostInvest.name: model.CostInvest_rtv.name,
-            model.CostEmission.name: model.CostEmission_rpe.name,
-            model.Demand.name: model.DemandConstraint_rpc.name,
-            model.LimitEmission.name: model.LimitEmissionConstraint_rpe.name,
-            model.LimitActivity.name: model.LimitActivityConstraint_rpt.name,
-            model.LimitSeasonalCapacityFactor.name: model.LimitSeasonalCapacityFactorConstraint_rpst.name,
-            model.LimitActivityShare.name: model.LimitActivityShareConstraint_rpgg.name,
-            model.LimitAnnualCapacityFactor.name: model.LimitAnnualCapacityFactorConstraint_rpto.name,
-            model.LimitCapacity.name: model.LimitCapacityConstraint_rpt.name,
-            model.LimitCapacityShare.name: model.LimitCapacityShareConstraint_rpgg.name,
-            model.LimitNewCapacity.name: model.LimitNewCapacityConstraint_rpt.name,
-            model.LimitNewCapacityShare.name: model.LimitNewCapacityShareConstraint_rpgg.name,
-            model.LimitResource.name: model.LimitResourceConstraint_rt.name,
-            model.LimitStorageFraction.name: model.LimitStorageFractionConstraint_rpsdtv.name,
-            model.RenewablePortfolioStandard.name: model.RenewablePortfolioStandardConstraint_rpg.name,
+            model.cost_invest.name: model.cost_invest_rtv.name,
+            model.cost_emission.name: model.cost_emission_rpe.name,
+            model.demand.name: model.demand_constraint_rpc.name,
+            model.limit_emission.name: model.limit_emission_constraint_rpe.name,
+            model.limit_activity.name: model.limit_activity_constraint_rpt.name,
+            model.limit_seasonal_capacity_factor.name: model.limit_seasonal_capacity_factor_constraint_rpst.name,
+            model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
+            model.limit_annual_capacity_factor.name: model.limit_annual_capacity_factor_constraint_rpto.name,
+            model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
+            model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
+            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rpt.name,
+            model.limit_new_capacity_share.name: model.limit_new_capacity_share_constraint_rpgg.name,
+            model.limit_resource.name: model.limit_resource_constraint_rt.name,
+            model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,
+            model.renewable_portfolio_standard.name: model.renewable_portfolio_standard_constraint_rpg.name,
         }
 
         res: dict[str, object] = {}

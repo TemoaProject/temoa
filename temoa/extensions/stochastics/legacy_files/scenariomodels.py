@@ -20,7 +20,7 @@ scenario_tree_model.ScenarioLeafNode = Param(
 )
 
 scenario_tree_model.StageVariables = Set(scenario_tree_model.Stages)
-scenario_tree_model.StageCostVariable = Param(scenario_tree_model.Stages)
+scenario_tree_model.Stagecost_variable = Param(scenario_tree_model.Stages)
 
 # scenario data can be populated in one of two ways. the first is "scenario-based",
 # in which a single .dat file contains all of the data for each scenario. the .dat
@@ -52,7 +52,7 @@ scenario_tree_model.BundleScenarios = Set(scenario_tree_model.Bundles)
 # scenario_tree_model.ScenarioLeafNode = Param(scenario_tree_model.Scenarios, within=scenario_tree_model.Nodes)
 
 # scenario_tree_model.StageVariables = Set(scenario_tree_model.Stages)
-# scenario_tree_model.StageCostVariable = Param(scenario_tree_model.Stages)
+# scenario_tree_model.Stagecost_variable = Param(scenario_tree_model.Stages)
 
 ## scenario data can be populated in one of two ways. the first is "scenario-based",
 ## in which a single .dat file contains all of the data for each scenario. the .dat

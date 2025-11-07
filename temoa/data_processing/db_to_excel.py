@@ -51,9 +51,9 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'align': 'left'})
 
     query_all_techs = """
-        SELECT DISTINCT Efficiency.region, Efficiency.tech, Technology.sector
-        FROM Efficiency
-        INNER JOIN Technology ON Efficiency.tech = Technology.tech
+        SELECT DISTINCT efficiency.region, efficiency.tech, Technology.sector
+        FROM efficiency
+        INNER JOIN Technology ON efficiency.tech = Technology.tech
     """
     all_techs = pd.read_sql_query(query_all_techs, con)
 
@@ -117,7 +117,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_all_emis = """
         SELECT DISTINCT ea.region, ea.tech, ea.emis_comm, t.sector
-        FROM EmissionActivity ea
+        FROM emission_activity ea
         INNER JOIN Technology t ON ea.tech = t.tech
     """
     try:

@@ -66,12 +66,12 @@ def test_against_legacy_outputs(system_test_run):
 
     # inspect some summary results
     assert res['Solution'][0]['Status'] == 'optimal'
-    assert res['Solution'][0]['Objective']['TotalCost']['Value'] == pytest.approx(
+    assert res['Solution'][0]['Objective']['total_cost']['Value'] == pytest.approx(
         expected_vals[ExpectedVals.OBJ_VALUE], 0.00001
     )
 
     # inspect a couple set sizes
-    efficiency_param: pyo.Param = mdl.Efficiency
+    efficiency_param: pyo.Param = mdl.efficiency
     # check the set membership
     assert (
         len(tuple(efficiency_param.sparse_iterkeys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]

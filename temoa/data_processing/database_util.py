@@ -142,7 +142,7 @@ class DatabaseUtil:
         if region:
             where_clause = f"region LIKE '%{region}%' AND {where_clause}"
 
-        query = f'SELECT input_comm, tech, output_comm FROM Efficiency WHERE {where_clause}'
+        query = f'SELECT input_comm, tech, output_comm FROM efficiency WHERE {where_clause}'
         self.cur.execute(query)
         return pd.DataFrame(self.cur.fetchall(), columns=['input_comm', 'tech', 'output_comm'])
 
@@ -151,9 +151,9 @@ class DatabaseUtil:
     ) -> pd.DataFrame:
         """Retrieves technologies associated with a specific commodity."""
         if comm_type == 'input':
-            query = f"SELECT DISTINCT tech FROM Efficiency WHERE input_comm IS '{comm}'"
+            query = f"SELECT DISTINCT tech FROM efficiency WHERE input_comm IS '{comm}'"
         else:
-            query = f"SELECT DISTINCT tech FROM Efficiency WHERE output_comm IS '{comm}'"
+            query = f"SELECT DISTINCT tech FROM efficiency WHERE output_comm IS '{comm}'"
         if region:
             query += f" AND region LIKE '%{region}%'"
 
@@ -175,9 +175,9 @@ class DatabaseUtil:
     ) -> set[tuple[str, str]]:
         """Retrieves commodity-technology pairs."""
         if comm_type == 'input':
-            query = 'SELECT DISTINCT input_comm, tech FROM Efficiency'
+            query = 'SELECT DISTINCT input_comm, tech FROM efficiency'
         elif comm_type == 'output':
-            query = 'SELECT DISTINCT tech, output_comm FROM Efficiency'
+            query = 'SELECT DISTINCT tech, output_comm FROM efficiency'
         else:
             raise ValueError("Invalid comm_type: can only be 'input' or 'output'")
 
@@ -269,7 +269,7 @@ class DatabaseUtil:
 
         query = f"""
             SELECT E.emis_comm, E.tech, SUM(E.activity * O.flow)
-            FROM EmissionActivity E, OutputFlowOut O
+            FROM emission_activity E, OutputFlowOut O
             WHERE E.input_comm = O.input_comm
               AND E.tech = O.tech
               AND E.vintage = O.vintage

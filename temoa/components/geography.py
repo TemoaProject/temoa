@@ -74,7 +74,7 @@ def regional_global_initialized_indices(model: TemoaModel) -> set[Region]:
         for i in regional_perms:
             indices.add(cast(Region, '+'.join(i)))
     indices.add(cast(Region, 'global'))
-    indices = indices.union(model.regionalIndices)
+    indices = indices.union(model.regional_indices)
 
     return indices
 
@@ -103,7 +103,7 @@ def regional_exchange_capacity_constraint(
           \forall \{r_e, r_i, t, v\} \in \Theta_{\text{RegionalExchangeCapacity}}
     """
 
-    expr = model.V_Capacity[r_e + '-' + r_i, p, t, v] == model.V_Capacity[r_i + '-' + r_e, p, t, v]
+    expr = model.v_capacity[r_e + '-' + r_i, p, t, v] == model.v_capacity[r_i + '-' + r_e, p, t, v]
 
     return expr
 
@@ -118,17 +118,17 @@ def create_geography_sets(model: TemoaModel) -> None:
     Populates dictionaries related to inter-regional commodity exchange.
 
     This function iterates through exchange technologies (identified by a '-' in
-    their region name) and populates the `M.exportRegions` and `M.importRegions`
+    their region name) and populates the `M.export_regions` and `M.import_regions`
     dictionaries. These are used later in the commodity balance constraints.
 
     Populates:
-        - M.exportRegions: dict mapping (region_from, p, commodity) to a set
+        - M.export_regions: dict mapping (region_from, p, commodity) to a set
           of (region_to, t, v, o) tuples.
-        - M.importRegions: dict mapping (region_to, p, commodity) to a set
+        - M.import_regions: dict mapping (region_to, p, commodity) to a set
           of (region_from, t, v, i) tuples.
     """
     logger.debug('Creating geography-related sets for exchange technologies.')
-    for r, i, t, v, o in model.Efficiency.sparse_iterkeys():
+    for r, i, t, v, o in model.efficiency.sparse_iterkeys():
         if t not in model.tech_exchange:
             continue
 
@@ -141,8 +141,12 @@ def create_geography_sets(model: TemoaModel) -> None:
         region_from = cast(Region, region_from_str)
         region_to = cast(Region, region_to_str)
 
-        lifetime: float = value(model.LifetimeProcess[r, t, v])
+        lifetime: float = value(model.lifetime_process[r, t, v])
         for p in model.time_optimize:
             if p >= v and v + lifetime > p:
-                model.exportRegions.setdefault((region_from, p, i), set()).add((region_to, t, v, o))
-                model.importRegions.setdefault((region_to, p, o), set()).add((region_from, t, v, i))
+                model.export_regions.setdefault((region_from, p, i), set()).add(
+                    (region_to, t, v, o)
+                )
+                model.import_regions.setdefault((region_to, p, o), set()).add(
+                    (region_from, t, v, i)
+                )

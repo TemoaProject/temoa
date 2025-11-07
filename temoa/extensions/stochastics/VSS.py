@@ -7,8 +7,8 @@ from pyomo.pysp.ef_writer_script_old import *
 
 def organize_csv():
     # This function was imported from the EVPI script
-    from csv import reader, writer
     from collections import OrderedDict
+    from csv import reader, writer
 
     rows = list()
     tech = list()
@@ -47,8 +47,8 @@ def organize_csv():
 
 def my_ef_writer(scenario_tree):
     # This function was imported from the EVPI script
-    from csv import writer
     from collections import OrderedDict
+    from csv import writer
 
     rows = dict()  # Key is the variable's name
     for stage in scenario_tree._stages:
@@ -146,7 +146,7 @@ def solve_ef_fix(ef_options, avg_instance):
 
     time_fut = avg_instance.time_future.data()
     techs = avg_instance.tech_all.data()
-    dV_Capacity = avg_instance.V_Capacity.get_values()  # Getting dec vars that matters to be fixed
+    dv_capacity = avg_instance.v_capacity.get_values()  # Getting dec vars that matters to be fixed
     # dV_HydroStorage = avg_instance.V_HydroStorage.get_values()
 
     # Storing techs and future time periods in vector for easy access
@@ -157,10 +157,10 @@ def solve_ef_fix(ef_options, avg_instance):
         k = k + 1
 
     # Fixing Capacity values for first stage at the ef instance with values from the deterministic instance
-    for iaux1, iaux2 in dV_Capacity:
+    for iaux1, iaux2 in dv_capacity:
         if iaux2 == vtime_fut[0]:
-            ef._binding_instance.S0s0s0.V_Capacity[iaux1, iaux2].fix(dV_Capacity[iaux1, iaux2])
-            # ef._binding_instance.S0.V_Capacity[iaux1, iaux2].fix(3)  #just for checking if fixing at one scen also fix in the other - ok for now
+            ef._binding_instance.S0s0s0.v_capacity[iaux1, iaux2].fix(dv_capacity[iaux1, iaux2])
+            # ef._binding_instance.S0.v_capacity[iaux1, iaux2].fix(3)  #just for checking if fixing at one scen also fix in the other - ok for now
 
     # Fixing Hydro Storage values for first stage
     # for iaux1 , iaux2 in dV_HydroStorage:
@@ -197,8 +197,8 @@ def solve_dm(p_model, p_data, opt_solver):
         # Assuming there is only one objective function
         return obj_values[0]
 
-    import sys
     import os
+    import sys
 
     (head, tail) = os.path.split(p_model)
     sys.path.insert(0, head)
@@ -228,7 +228,7 @@ def solve_dm(p_model, p_data, opt_solver):
 
     # Writting to the Shell
     sys.stdout.write('\nSolved deterministic model with uncertainty at average valures \n')
-    sys.stdout.write('    Total cost: {}\n'.format(obj_val))
+    sys.stdout.write(f'    Total cost: {obj_val}\n')
     os.chdir(pwd)
     return instance  # Returning instance solved, values will be used later
 
@@ -253,8 +253,8 @@ def runVSS():
     # As input, this function requires the path of the stochastic folder and temoa_stochastic.py file
     # It assumes that an instance named ReferenceModel.dat is located inside the stochastic folder
 
-    from time import time
     import sys
+    from time import time
 
     sys.stderr.write('\nFinding the Value of the Stochastic Solution using Temoa\n')
 
@@ -270,7 +270,7 @@ def runVSS():
         p_model, p_data, optsolver
     )  # Here we have all the information with respect to objfunc and decvars
 
-    zdm_result = dm_instance.TotalCost.value
+    zdm_result = dm_instance.total_cost.value
     # ---------------------
     # Solving the extensive model for the recoursive problem
     # ---------------------
@@ -283,8 +283,8 @@ def runVSS():
     sys.stderr.write('\nSolving extensive form\n')
     ef_result = solve_ef(ef_options)
 
-    msg = '\nrunef time: {} s\n'.format(time() - start_time)
-    msg += 'runef objective value: {}\n'.format(ef_result)
+    msg = f'\nrunef time: {time() - start_time} s\n'
+    msg += f'runef objective value: {ef_result}\n'
     sys.stderr.write(msg)
 
     # ---------------------

@@ -65,18 +65,18 @@ def get_variable_efficiency(
     Calculates the effective efficiency for a process in a specific time slice.
 
     This function handles time-varying efficiencies. It checks a pre-computed boolean,
-    `M.isEfficiencyVariable`, to determine if a variable efficiency is defined for
+    `M.is_efficiency_variable`, to determine if a variable efficiency is defined for
     the given process.
 
-    - If True, it returns `Efficiency * EfficiencyVariable`.
-    - If False, it returns the base `Efficiency`.
+    - If True, it returns `efficiency * efficiency_variable`.
+    - If False, it returns the base `efficiency`.
 
     This dictionary-lookup approach is used for performance, as it is much faster
     than repeatedly checking the indices of a large Pyomo parameter during model build.
     """
-    if model.isEfficiencyVariable.get((r, p, i, t, v, o), False):
-        return value(model.Efficiency[r, i, t, v, o]) * value(
-            model.EfficiencyVariable[r, p, s, d, i, t, v, o]
+    if model.is_efficiency_variable.get((r, p, i, t, v, o), False):
+        return value(model.efficiency[r, i, t, v, o]) * value(
+            model.efficiency_variable[r, p, s, d, i, t, v, o]
         )
     else:
-        return value(model.Efficiency[r, i, t, v, o])
+        return value(model.efficiency[r, i, t, v, o])

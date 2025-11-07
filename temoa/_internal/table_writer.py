@@ -129,7 +129,7 @@ class TableWriter:
         self.write_capacity_tables(model, iteration=iteration)
         # analyze the emissions to get the costs and flows
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = model.MyopicDiscountingYear
+            p_0 = model.myopic_discounting_year
         else:
             p_0 = None  # min year will be used in poll
         e_costs, e_flows = poll_emissions(model=model, p_0=value(p_0))
@@ -473,9 +473,9 @@ class TableWriter:
         for fi in flows:
             if fi.t in model.tech_storage:
                 continue
-            if fi.i == 'EndOfLifeOutput':
+            if fi.i == 'end_of_life_output':
                 continue
-            if fi.o == 'ConstructionInput':
+            if fi.o == 'construction_input':
                 continue
 
             # some conveniences for the players...
@@ -546,7 +546,7 @@ class TableWriter:
         # P_0 is usually the first optimization year, but if running myopic, we could assign it via
         # table entry.  Perhaps in future it is just always the first optimization year of the 1st iter.
         if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = model.MyopicDiscountingYear
+            p_0 = model.myopic_discounting_year
         else:
             p_0 = min(model.time_optimize)
 

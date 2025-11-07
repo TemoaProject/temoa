@@ -33,16 +33,16 @@ from tests.utilities.namespace_mock import Namespace
 
 # these are the necessary Temoa elements to make the ledger work
 data = {
-    'TimeSeason': {2000: [1]},
+    'time_season': {2000: [1]},
     'time_of_day': {1},
     'tech_annual': set(),
-    'LifetimeProcess': {('A-B', 't1', 2000): 30, ('B-A', 't1', 2000): 30},
-    'processInputs': {('A-B', 2000, 't1', 2000): ('c1',), ('B-A', 2000, 't1', 2000): ('c1',)},
-    'processOutputsByInput': {
+    'lifetime_process': {('A-B', 't1', 2000): 30, ('B-A', 't1', 2000): 30},
+    'process_inputs': {('A-B', 2000, 't1', 2000): ('c1',), ('B-A', 2000, 't1', 2000): ('c1',)},
+    'process_outputs_by_input': {
         ('A-B', 2000, 't1', 2000, 'c1'): ('c1',),
         ('B-A', 2000, 't1', 2000, 'c1'): ('c1',),
     },
-    'V_FlowOut': {
+    'v_flow_out': {
         ('A-B', 2000, 1, 1, 'c1', 't1', 2000, 'c1'): 60,
         ('B-A', 2000, 1, 1, 'c1', 't1', 2000, 'c1'): 40,
     },

@@ -253,13 +253,13 @@ class MorrisSequencer:
             for category in analysis.keys():
                 print(f'\nAnalysis of {category}:')
                 print(
-                    '{0:<30} {1:>10} {2:>10} {3:>20} {4:>10}'.format(
+                    '{:<30} {:>10} {:>10} {:>20} {:>10}'.format(
                         'Parameter', 'Mu_Star', 'Mu', mu_star_conf_label, 'Sigma'
                     )
                 )
                 for j in list(range(number_of_groups)):
                     print(
-                        '{0:30} {1:10.3f} {2:10.3f} {3:20.3f} {4:10.3f}'.format(
+                        '{:30} {:10.3f} {:10.3f} {:20.3f} {:10.3f}'.format(
                             analysis[category]['names'][j],
                             analysis[category]['mu_star'][j],
                             analysis[category]['mu'][j],
@@ -298,12 +298,12 @@ class MorrisSequencer:
         with open(self.param_file, 'w') as f:
             v_idx = 4  # index of variable to perturb
             raw = cur.execute(
-                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM CostVariable WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE MMAnalysis IS NOT NULL'
             ).fetchall()
             g1 = len(raw)
             for i in range(0, len(raw)):
                 param_names[i] = [
-                    'CostVariable',
+                    'cost_variable',
                     *raw[i][:4],
                     'cost_variable',
                 ]
@@ -317,11 +317,11 @@ class MorrisSequencer:
 
             v_idx = 3
             raw = cur.execute(
-                'SELECT region, tech, vintage, cost, MMAnalysis FROM CostInvest WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis IS NOT NULL'
             ).fetchall()
             g2 = len(raw)
             for i in range(0, len(raw)):
-                param_names[i + g1] = ['CostInvest', *raw[i][:3], 'cost_invest']
+                param_names[i + g1] = ['cost_invest', *raw[i][:3], 'cost_invest']
 
                 iter = f'x{i + g1}'
                 low = str(raw[i][v_idx] * (1 - self.mm_perturbation))
@@ -334,13 +334,13 @@ class MorrisSequencer:
             v_idx = 5
             raw = cur.execute(
                 'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, '
-                'MMAnalysis FROM Efficiency WHERE MMAnalysis IS NOT NULL'
+                'MMAnalysis FROM efficiency WHERE MMAnalysis IS NOT NULL'
             ).fetchall()
 
             g3 = len(raw)
             for i in range(0, len(raw)):
                 param_names[i + g1 + g2] = [
-                    'Efficiency',
+                    'efficiency',
                     *raw[i][:5],
                     'efficiency',
                 ]

@@ -41,6 +41,7 @@ power by:
 Let's make a set of 500 runs and explore output
 
 """
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -73,11 +74,13 @@ with open(file_loc, 'w') as f:
     f.write('run,param,index,mod,value,notes\n')
     for run_idx in range(num_runs):
         f.write(
-            f'{run_idx+1},CostVariable,*|*|IMPOIL1|*,r,{price_devs[run_idx, 0]},oil relative change\n'
+            f'{run_idx + 1},cost_variable,*|*|IMPOIL1|*,r,{price_devs[run_idx, 0]},oil relative change\n'
         )
-        f.write(f'{run_idx+1},Demand,*|*|RH,r,{price_devs[run_idx, 1]},res heat relative change\n')
         f.write(
-            f'{run_idx+1},CostInvest,*|E21|2000/2010,r,{nuc_dev[run_idx]},nuclear invest relative discount\n'
+            f'{run_idx + 1},Demand,*|*|RH,r,{price_devs[run_idx, 1]},res heat relative change\n'
+        )
+        f.write(
+            f'{run_idx + 1},cost_invest,*|E21|2000/2010,r,{nuc_dev[run_idx]},nuclear invest relative discount\n'
         )
         if nuc_dev[run_idx] < 0:
-            f.write(f'{run_idx+1},CostFixed,*|*|E21|2000/2010,s,0.0,nuclear op cost covered\n')
+            f.write(f'{run_idx + 1},cost_fixed,*|*|E21|2000/2010,s,0.0,nuclear op cost covered\n')

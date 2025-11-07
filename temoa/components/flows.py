@@ -6,7 +6,7 @@ This module is responsible for:
 -  Pre-computing the sparse index sets for all types of commodity flows
     (standard, annual, flexible, storage, curtailment).
 -  Defining the Pyomo index set functions used to construct the flow-related
-    decision variables (V_FlowOut, V_FlowIn, V_Flex, etc.).
+    decision variables (v_flow_out, v_flow_in, v_flex, etc.).
 """
 
 from __future__ import annotations
@@ -45,13 +45,13 @@ def flow_variable_indices(
 ) -> (
     set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
 ):
-    return model.activeFlow_rpsditvo
+    return model.active_flow_rpsditvo
 
 
 def flow_variable_annual_indices(
     model: TemoaModel,
 ) -> ActiveFlowAnnualSet:
-    return model.activeFlow_rpitvo
+    return model.active_flow_rpitvo
 
 
 def flex_variable_indices(
@@ -59,13 +59,13 @@ def flex_variable_indices(
 ) -> (
     set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
 ):
-    return model.activeFlex_rpsditvo
+    return model.active_flex_rpsditvo
 
 
 def flex_variable_annual_indices(
     model: TemoaModel,
 ) -> ActiveFlexAnnualSet:
-    return model.activeFlex_rpitvo
+    return model.active_flex_rpitvo
 
 
 def flow_in_storage_variable_indices(
@@ -73,7 +73,7 @@ def flow_in_storage_variable_indices(
 ) -> (
     set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
 ):
-    return model.activeFlowInStorage_rpsditvo
+    return model.active_flow_in_storage_rpsditvo
 
 
 def curtailment_variable_indices(
@@ -81,7 +81,7 @@ def curtailment_variable_indices(
 ) -> (
     set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
 ):
-    return model.activeCurtailment_rpsditvo
+    return model.active_curtailment_rpsditvo
 
 
 # ============================================================================
@@ -99,109 +99,113 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
 
     Populates:
         - model.commodityBalance_rpc: The master set of (r, p, c) for balance constraints.
-        - model.activeFlow_rpsditvo: Indices for time-sliced flows (V_FlowOut).
-        - model.activeFlow_rpitvo: Indices for annual flows (V_FlowOutAnnual).
-        - model.activeFlex_rpsditvo: Indices for flexible time-sliced flows (V_Flex).
-        - model.activeFlex_rpitvo: Indices for flexible annual flows (V_FlexAnnual).
-        - model.activeFlowInStorage_rpsditvo: Indices for flows into storage (V_FlowIn).
-        - model.activeCurtailment_rpsditvo: Indices for curtailed generation (V_Curtailment).
+        - model.activeFlow_rpsditvo: Indices for time-sliced flows (v_flow_out).
+        - model.activeFlow_rpitvo: Indices for annual flows (v_flow_out_annual).
+        - model.activeFlex_rpsditvo: Indices for flexible time-sliced flows (v_flex).
+        - model.activeFlex_rpitvo: Indices for flexible annual flows (v_flex_annual).
+        - model.activeflow_in_storage_rpsditvo: Indices for flows into storage (v_flow_in).
+        - model.activeCurtailment_rpsditvo: Indices for curtailed generation (v_curtailment).
         - model.activeActivity_rptv: Master set of active (r, p, t, v) processes.
-        - model.storageLevelIndices_rpsdtv: Indices for storage state variables (V_StorageLevel).
+        - model.storageLevelIndices_rpsdtv: Indices for storage state variables (v_storage_level).
         - model.seasonalStorageLevelIndices_rpstv: Indices for seasonal storage levels.
     """
     logger.debug('Creating commodity balance and active flow index sets.')
     # 1. Commodity Balance
     commodity_upstream = set(
-        model.commodityUStreamProcess | model.retirementProductionProcesses | model.importRegions
+        model.commodity_up_stream_process
+        | model.retirement_production_processes
+        | model.import_regions
     )
     commodity_downstream = set(
-        model.commodityDStreamProcess | model.capacityConsumptionTechs | model.exportRegions
+        model.commodity_down_stream_process
+        | model.capacity_consumption_techs
+        | model.export_regions
     )
     model.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)
 
     # 2. Active Flow Indices (Time-Sliced)
-    model.activeFlow_rpsditvo = {
+    model.active_flow_rpsditvo = {
         (r, p, s, d, i, t, v, o)
-        for r, p, t in model.processVintages
+        for r, p, t in model.process_vintages
         if t not in model.tech_annual
-        for v in model.processVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]
+        for v in model.process_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
     # 3. Active Flow Indices (Annual)
-    model.activeFlow_rpitvo = {
+    model.active_flow_rpitvo = {
         (r, p, i, t, v, o)
-        for r, p, t in model.processVintages
-        for v in model.processVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
+        for r, p, t in model.process_vintages
+        for v in model.process_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
         if t in model.tech_annual or (t in model.tech_demand and o in model.commodity_demand)
     }
 
     # 4. Active Flexible Technology Flow Indices
-    model.activeFlex_rpsditvo = {
+    model.active_flex_rpsditvo = {
         (r, p, s, d, i, t, v, o)
-        for r, p, t in model.processVintages
+        for r, p, t in model.process_vintages
         if (t not in model.tech_annual) and (t in model.tech_flex)
-        for v in model.processVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]
+        for v in model.process_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
-    model.activeFlex_rpitvo = {
+    model.active_flex_rpitvo = {
         (r, p, i, t, v, o)
-        for r, p, t in model.processVintages
+        for r, p, t in model.process_vintages
         if (t in model.tech_annual) and (t in model.tech_flex)
-        for v in model.processVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
+        for v in model.process_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
     }
 
     # 5. Active Storage and Curtailment Indices
-    model.activeFlowInStorage_rpsditvo = {
+    model.active_flow_in_storage_rpsditvo = {
         (r, p, s, d, i, t, v, o)
-        for r, p, t in model.storageVintages
-        for v in model.storageVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]
+        for r, p, t in model.storage_vintages
+        for v in model.storage_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
-    model.activeCurtailment_rpsditvo = {
+    model.active_curtailment_rpsditvo = {
         (r, p, s, d, i, t, v, o)
-        for r, p, t in model.curtailmentVintages
-        for v in model.curtailmentVintages[r, p, t]
-        for i in model.processInputs.get((r, p, t, v), set())
-        for o in model.processOutputsByInput.get((r, p, t, v, i), set())
-        for s in model.TimeSeason[p]
+        for r, p, t in model.curtailment_vintages
+        for v in model.curtailment_vintages[r, p, t]
+        for i in model.process_inputs.get((r, p, t, v), set())
+        for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
     # 6. Active Technology and Capacity Indices
-    model.activeActivity_rptv = {
-        (r, p, t, v) for r, p, t in model.processVintages for v in model.processVintages[r, p, t]
+    model.active_activity_rptv = {
+        (r, p, t, v) for r, p, t in model.process_vintages for v in model.process_vintages[r, p, t]
     }
 
     # 7. Storage Level Indices
-    model.storageLevelIndices_rpsdtv = {
+    model.storage_level_indices_rpsdtv = {
         (r, p, s, d, t, v)
-        for r, p, t in model.storageVintages
-        for v in model.storageVintages[r, p, t]
-        for s in model.TimeSeason[p]
+        for r, p, t in model.storage_vintages
+        for v in model.storage_vintages[r, p, t]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
-    model.seasonalStorageLevelIndices_rpstv = {
+    model.seasonal_storage_level_indices_rpstv = {
         (r, p, s_stor, t, v)
-        for r, p, t in model.storageVintages
+        for r, p, t in model.storage_vintages
         if t in model.tech_seasonal_storage
-        for v in model.storageVintages[r, p, t]
+        for v in model.storage_vintages[r, p, t]
         for _p, s_stor in model.sequential_to_season
         if _p == p
     }

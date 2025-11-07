@@ -72,7 +72,9 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 indent-width = 4
-exclude = ["stubs"]
+exclude = ["stubs",
+    "temoa/extensions/"
+]
 
 [tool.ruff.format]
 quote-style = "single"

@@ -34,22 +34,22 @@ def test_storage_fraction(system_test_run):
 
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.LimitStorageFractionConstraint_rpsdtv) > 0, (
+    assert len(model.limit_storage_fraction_constraint_rpsdtv) > 0, (
         'This model does not appear to have any StorageFraction constraints to test'
     )
 
-    for r, p, s, d, t, v, op in model.LimitStorageFractionConstraint_rpsdtv:
+    for r, p, s, d, t, v, op in model.limit_storage_fraction_constraint_rpsdtv:
         energy = (
-            model.LimitStorageFraction[r, p, s, d, t, v, op]
-            * model.V_Capacity[r, p, t, v].value
-            * model.CapacityToActivity[r, t]
-            * (model.StorageDuration[r, t] / 8760)
-            * model.SegFracPerSeason[p, s]
-            * model.DaysPerPeriod
-            * model.ProcessLifeFrac[r, p, t, v]
+            model.limit_storage_fraction[r, p, s, d, t, v, op]
+            * model.v_capacity[r, p, t, v].value
+            * model.capacity_to_activity[r, t]
+            * (model.storage_duration[r, t] / 8760)
+            * model.segment_fraction_per_season[p, s]
+            * model.days_per_period
+            * model.process_life_frac[r, p, t, v]
         )
 
-        assert model.V_StorageLevel[r, p, s, d, t, v].value == pytest.approx(energy, abs=1e-5), (
+        assert model.v_storage_level[r, p, s, d, t, v].value == pytest.approx(energy, abs=1e-5), (
             f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
         )
 
@@ -67,26 +67,26 @@ def test_state_sequencing(system_test_run):
 
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.StorageLevel_rpsdtv) > 0, (
+    assert len(model.storage_level_rpsdtv) > 0, (
         'This model does not appear to have any available storage components'
     )
 
-    for r, p, s, d, t, v in model.StorageLevel_rpsdtv:
+    for r, p, s, d, t, v in model.storage_level_rpsdtv:
         charge = sum(
-            model.V_FlowIn[r, p, s, d, S_i, t, v, S_o].value * model.Efficiency[r, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_in[r, p, s, d, S_i, t, v, S_o].value * model.efficiency[r, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         discharge = sum(
-            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o].value
-            for S_o in model.processOutputs[r, p, t, v]
-            for S_i in model.processInputsByOutput[r, p, t, v, S_o]
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o].value
+            for S_o in model.process_outputs[r, p, t, v]
+            for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
         )
 
         s_next, d_next = model.time_next[p, s, d]
 
-        state = model.V_StorageLevel[r, p, s, d, t, v].value
-        next_state = model.V_StorageLevel[r, p, s_next, d_next, t, v].value
+        state = model.v_storage_level[r, p, s, d, t, v].value
+        next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value
 
         assert state + charge - discharge == pytest.approx(next_state, abs=1e-5), (
             f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
@@ -106,28 +106,28 @@ def test_storage_flow_balance(system_test_run):
     """
     model: TemoaModel  # helps with typing for some reason...
     data_name, results, model, _ = system_test_run
-    assert len(model.StorageLevel_rpsdtv) > 0, (
+    assert len(model.storage_level_rpsdtv) > 0, (
         'This model does not appear to haveany available storage components'
     )
     for s_tech in model.tech_storage:
         inflow_indices = {
             (r, p, s, d, i, t, v, o)
-            for r, p, s, d, i, t, v, o in model.FlowInStorage_rpsditvo
+            for r, p, s, d, i, t, v, o in model.flow_in_storage_rpsditvo
             if t == s_tech
         }
         outflow_indices = {
             (r, p, s, d, i, t, v, o)
-            for r, p, s, d, i, t, v, o in model.FlowVar_rpsditvo
+            for r, p, s, d, i, t, v, o in model.flow_var_rpsditvo
             if t == s_tech
         }
 
         # calculate the inflow and outflow.  Inflow is taxed by efficiency in the model,
         # so we need to do that here as well
         inflow = sum(
-            model.V_FlowIn[r, p, s, d, i, t, v, o].value * model.Efficiency[r, i, t, v, o]
+            model.v_flow_in[r, p, s, d, i, t, v, o].value * model.efficiency[r, i, t, v, o]
             for (r, p, s, d, i, t, v, o) in inflow_indices
         )
-        outflow = sum(model.V_FlowOut[idx].value for idx in outflow_indices)
+        outflow = sum(model.v_flow_out[idx].value for idx in outflow_indices)
 
         assert inflow == pytest.approx(outflow, abs=1e-5), (
             f'total inflow and outflow of storage tech {s_tech} do not match',

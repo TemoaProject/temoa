@@ -80,8 +80,8 @@ class ExchangeTechCostLedger:
         rr2 = cast(Region, '-'.join([importer, exporter]))
         if any(
             (
-                period >= vintage + value(model.LifetimeProcess[rr1, tech, vintage]),
-                period >= vintage + value(model.LifetimeProcess[rr2, tech, vintage]),
+                period >= vintage + value(model.lifetime_process[rr1, tech, vintage]),
+                period >= vintage + value(model.lifetime_process[rr2, tech, vintage]),
                 period < vintage,
             )
         ):
@@ -89,35 +89,35 @@ class ExchangeTechCostLedger:
         if tech not in model.tech_annual:
             act_dir1 = value(
                 sum(
-                    model.V_FlowOut[rr1, period, s, d, s_i, tech, vintage, s_o]
-                    for s in model.TimeSeason[period]
+                    model.v_flow_out[rr1, period, s, d, s_i, tech, vintage, s_o]
+                    for s in model.time_season[period]
                     for d in model.time_of_day
-                    for s_i in model.processInputs[rr1, period, tech, vintage]
-                    for s_o in model.processOutputsByInput[rr1, period, tech, vintage, s_i]
+                    for s_i in model.process_inputs[rr1, period, tech, vintage]
+                    for s_o in model.process_outputs_by_input[rr1, period, tech, vintage, s_i]
                 )
             )
             act_dir2 = value(
                 sum(
-                    model.V_FlowOut[rr2, period, s, d, s_i, tech, vintage, s_o]
-                    for s in model.TimeSeason[period]
+                    model.v_flow_out[rr2, period, s, d, s_i, tech, vintage, s_o]
+                    for s in model.time_season[period]
                     for d in model.time_of_day
-                    for s_i in model.processInputs[rr2, period, tech, vintage]
-                    for s_o in model.processOutputsByInput[rr2, period, tech, vintage, s_i]
+                    for s_i in model.process_inputs[rr2, period, tech, vintage]
+                    for s_o in model.process_outputs_by_input[rr2, period, tech, vintage, s_i]
                 )
             )
         else:
             act_dir1 = value(
                 sum(
-                    model.V_FlowOutAnnual[rr1, period, s_i, tech, vintage, s_o]
-                    for s_i in model.processInputs[rr1, period, tech, vintage]
-                    for s_o in model.processOutputsByInput[rr1, period, tech, vintage, s_i]
+                    model.v_flow_out_annual[rr1, period, s_i, tech, vintage, s_o]
+                    for s_i in model.process_inputs[rr1, period, tech, vintage]
+                    for s_o in model.process_outputs_by_input[rr1, period, tech, vintage, s_i]
                 )
             )
             act_dir2 = value(
                 sum(
-                    model.V_FlowOutAnnual[rr2, period, s_i, tech, vintage, s_o]
-                    for s_i in model.processInputs[rr2, period, tech, vintage]
-                    for s_o in model.processOutputsByInput[rr2, period, tech, vintage, s_i]
+                    model.v_flow_out_annual[rr2, period, s_i, tech, vintage, s_o]
+                    for s_i in model.process_inputs[rr2, period, tech, vintage]
+                    for s_o in model.process_outputs_by_input[rr2, period, tech, vintage, s_i]
                 )
             )
 

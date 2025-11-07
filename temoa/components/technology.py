@@ -4,7 +4,7 @@ Defines the core technology-related components of the Temoa model.
 
 This module is the foundation of the model, responsible for:
 -  Pre-computing the core data structures that link technologies to commodities,
-    time periods, and vintages based on the `Efficiency` parameter.
+    time periods, and vintages based on the `efficiency` parameter.
 -  Handling technology lifetimes, including survival curve validation and interpolation.
 -  Defining Pyomo index sets for core technology parameters.
 -  Validating model inputs related to technologies, efficiencies, and commodities.
@@ -51,15 +51,15 @@ def model_process_life_indices(
     the periods in which a process is active, distinct from TechLifeFracIndices that
     returns indices only for processes that EOL mid-period.
     """
-    return model.activeActivity_rptv
+    return model.active_activity_rptv
 
 
 def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology, Vintage]]:
     """
-    Based on the Efficiency parameter's indices, this function returns the set of
-    process indices that may be specified in the LifetimeProcess parameter.
+    Based on the efficiency parameter's indices, this function returns the set of
+    process indices that may be specified in the lifetime_process parameter.
     """
-    indices = {(r, t, v) for r, i, t, v, o in model.Efficiency.sparse_iterkeys()}
+    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
 
     return indices
 
@@ -68,28 +68,28 @@ def get_default_survival(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
 ) -> float:
     """
-    Getting LifetimeSurvivalCurve where it is not defined
+    Getting lifetime_survival_curve where it is not defined
     If this is a survival curve process, return 0 (likely beyond EOL)
     Otherwise return 1 (no survival curve based EOL)
     """
-    return 0.0 if model.isSurvivalCurveProcess[r, t, v] else 1.0
+    return 0.0 if model.is_survival_curve_process[r, t, v] else 1.0
 
 
 def get_default_process_lifetime(model: TemoaModel, r: Region, t: Technology, v: Vintage) -> int:
     """
-    This initializer used to initialize the LifetimeProcess parameter from LifetimeTech where needed
+    This initializer used to initialize the lifetime_process parameter from lifetime_tech where needed
 
     Priority:
-        1.  Specified in LifetimeProcess data (provided as a fill and would not call this function)
-        2.  Specified in LifetimeTech data
-        3.  The default value from the LifetimeTech param (automatic)
+        1.  Specified in lifetime_process data (provided as a fill and would not call this function)
+        2.  Specified in lifetime_tech data
+        3.  The default value from the lifetime_tech param (automatic)
     :param M: generic model reference (not used)
     :param r: region
     :param t: tech
     :param v: vintage
     :return: the final lifetime value
     """
-    return value(model.LifetimeTech[r, t])
+    return value(model.lifetime_tech[r, t])
 
 
 def param_process_life_fraction_rule(
@@ -102,16 +102,17 @@ def param_process_life_fraction_rule(
     for processes using survival curves.
     """
 
-    period_length = value(model.PeriodLength[p])
+    period_length = value(model.period_length[p])
 
-    if model.isSurvivalCurveProcess[r, t, v]:
+    if model.is_survival_curve_process[r, t, v]:
         # Sum survival fraction over the period
         years_remaining = sum(
-            value(model.LifetimeSurvivalCurve[r, _p, t, v]) for _p in range(p, p + period_length, 1)
+            value(model.lifetime_survival_curve[r, _p, t, v])
+            for _p in range(p, p + period_length, 1)
         )
     else:
         # Remaining life years within the EOL period
-        years_remaining = v + value(model.LifetimeProcess[r, t, v]) - p
+        years_remaining = v + value(model.lifetime_process[r, t, v]) - p
 
     if years_remaining >= period_length:
         # try to avoid floating point round-off errors for the common case.
@@ -128,49 +129,49 @@ def param_process_life_fraction_rule(
 
 def populate_core_dictionaries(model: TemoaModel) -> None:
     """
-    Populates the core sparse dictionaries from the `Efficiency` parameter.
+    Populates the core sparse dictionaries from the `efficiency` parameter.
 
     This function is foundational for creating the sparse indices used throughout
     the model, defining process relationships, inputs, outputs, and active periods.
 
     Populates:
-        - M.processInputs, M.processOutputs
-        - M.commodityDStreamProcess, M.commodityUStreamProcess
-        - M.processOutputsByInput, M.processInputsByOutput
-        - M.processVintages, M.processPeriods
+        - M.process_inputs, M.process_outputs
+        - M.commodity_down_stream_process, M.commodity_up_stream_process
+        - M.process_outputs_by_input, M.process_inputs_by_output
+        - M.process_vintages, M.process_periods
         - M.used_techs
     """
-    logger.debug('Populating core sparse dictionaries from Efficiency parameter.')
+    logger.debug('Populating core sparse dictionaries from efficiency parameter.')
     first_period = min(model.time_future)
-    exist_indices = model.ExistingCapacity.sparse_keys()
+    exist_indices = model.existing_capacity.sparse_keys()
 
-    for r, i, t, v, o in model.Efficiency.sparse_iterkeys():
+    for r, i, t, v, o in model.efficiency.sparse_iterkeys():
         # A. Basic data validation and warnings
         process = (r, t, v)
-        lifetime = value(model.LifetimeProcess[process])
+        lifetime = value(model.lifetime_process[process])
         if v in model.vintage_exist:
             if process not in exist_indices and t not in model.tech_uncap:
                 logger.warning(
-                    f'Warning: {process} has a specified Efficiency, but does not '
-                    f'have any existing install base (ExistingCapacity).'
+                    f'Warning: {process} has a specified efficiency, but does not '
+                    f'have any existing install base (existing_capacity).'
                 )
                 continue
-            if t not in model.tech_uncap and model.ExistingCapacity[process] == 0:
+            if t not in model.tech_uncap and model.existing_capacity[process] == 0:
                 logger.warning(
-                    f'Notice: Unnecessary specification of ExistingCapacity for {process}. '
+                    f'Notice: Unnecessary specification of existing_capacity for {process}. '
                     f'Declaring a capacity of zero may be omitted.'
                 )
                 continue
             if v + lifetime <= first_period:
                 logger.info(
-                    f'{process} specified as ExistingCapacity, but its '
+                    f'{process} specified as existing_capacity, but its '
                     f'lifetime ({lifetime} years) does not extend past the '
                     f'beginning of time_future ({first_period}).'
                 )
 
-        if model.Efficiency[r, i, t, v, o] == 0:
+        if model.efficiency[r, i, t, v, o] == 0:
             logger.info(
-                f'Notice: Unnecessary specification of Efficiency for {(r, i, t, v, o)}. '
+                f'Notice: Unnecessary specification of efficiency for {(r, i, t, v, o)}. '
                 f'Specifying an efficiency of zero may be omitted.'
             )
             continue
@@ -186,65 +187,65 @@ def populate_core_dictionaries(model: TemoaModel) -> None:
             pindex = (r, p, t, v)
 
             # C. Initialize dictionary keys if not present
-            if pindex not in model.processInputs:
-                model.processInputs[pindex] = set()
-                model.processOutputs[pindex] = set()
-            if (r, p, i) not in model.commodityDStreamProcess:
-                model.commodityDStreamProcess[r, p, i] = set()
-            if (r, p, o) not in model.commodityUStreamProcess:
-                model.commodityUStreamProcess[r, p, o] = set()
-            if (r, p, t, v, i) not in model.processOutputsByInput:
-                model.processOutputsByInput[r, p, t, v, i] = set()
-            if (r, p, t, v, o) not in model.processInputsByOutput:
-                model.processInputsByOutput[r, p, t, v, o] = set()
-            if (r, p, t) not in model.processVintages:
-                model.processVintages[r, p, t] = set()
-            if (r, t, v) not in model.processPeriods:
-                model.processPeriods[r, t, v] = set()
+            if pindex not in model.process_inputs:
+                model.process_inputs[pindex] = set()
+                model.process_outputs[pindex] = set()
+            if (r, p, i) not in model.commodity_down_stream_process:
+                model.commodity_down_stream_process[r, p, i] = set()
+            if (r, p, o) not in model.commodity_up_stream_process:
+                model.commodity_up_stream_process[r, p, o] = set()
+            if (r, p, t, v, i) not in model.process_outputs_by_input:
+                model.process_outputs_by_input[r, p, t, v, i] = set()
+            if (r, p, t, v, o) not in model.process_inputs_by_output:
+                model.process_inputs_by_output[r, p, t, v, o] = set()
+            if (r, p, t) not in model.process_vintages:
+                model.process_vintages[r, p, t] = set()
+            if (r, t, v) not in model.process_periods:
+                model.process_periods[r, t, v] = set()
 
             # D. Populate the dictionaries
-            model.processInputs[pindex].add(i)
-            model.processOutputs[pindex].add(o)
-            model.commodityDStreamProcess[r, p, i].add((t, v))
-            model.commodityUStreamProcess[r, p, o].add((t, v))
-            model.processOutputsByInput[r, p, t, v, i].add(o)
-            model.processInputsByOutput[r, p, t, v, o].add(i)
-            model.processVintages[r, p, t].add(v)
-            model.processPeriods[r, t, v].add(p)
+            model.process_inputs[pindex].add(i)
+            model.process_outputs[pindex].add(o)
+            model.commodity_down_stream_process[r, p, i].add((t, v))
+            model.commodity_up_stream_process[r, p, o].add((t, v))
+            model.process_outputs_by_input[r, p, t, v, i].add(o)
+            model.process_inputs_by_output[r, p, t, v, o].add(i)
+            model.process_vintages[r, p, t].add(v)
+            model.process_periods[r, t, v].add(p)
 
 
 def create_survival_curve(model: TemoaModel) -> None:
     rtv_interpolated = set()  # so we only need one warning
 
-    for r, _, t, v, _ in model.Efficiency.sparse_iterkeys():
-        model.isSurvivalCurveProcess[r, t, v] = False  # by default
+    for r, _, t, v, _ in model.efficiency.sparse_iterkeys():
+        model.is_survival_curve_process[r, t, v] = False  # by default
 
     # Collect rptv indices into (r, t, v): p dictionary
-    for r, p, t, v in model.LifetimeSurvivalCurve.sparse_iterkeys():
-        if (r, t, v) not in model.survivalCurvePeriods:
-            model.survivalCurvePeriods[r, t, v] = set()
-        model.survivalCurvePeriods[r, t, v].add(p)
-        model.isSurvivalCurveProcess[r, t, v] = True
+    for r, p, t, v in model.lifetime_survival_curve.sparse_iterkeys():
+        if (r, t, v) not in model.survival_curve_periods:
+            model.survival_curve_periods[r, t, v] = set()
+        model.survival_curve_periods[r, t, v].add(p)
+        model.is_survival_curve_process[r, t, v] = True
 
     # Go through all the periods for each (r, t, v) in order
-    for r, t, v in model.survivalCurvePeriods:
-        periods_rtv: list[int] = sorted(model.survivalCurvePeriods[r, t, v])
+    for r, t, v in model.survival_curve_periods:
+        periods_rtv: list[int] = sorted(model.survival_curve_periods[r, t, v])
 
         p_first = periods_rtv[0]
         p_last = periods_rtv[-1]
 
         if p_first != v:
             msg = (
-                'LifetimeSurvivalCurve must be defined starting in the vintage period. Must '
+                'lifetime_survival_curve must be defined starting in the vintage period. Must '
                 f'define ({r}, >{v}<, {t}, {v})'
             )
             logger.error(msg)
             raise ValueError(msg)
 
-        if value(model.LifetimeSurvivalCurve[r, v, t, v]) != 1:
+        if value(model.lifetime_survival_curve[r, v, t, v]) != 1:
             msg_str = (
-                'LifetimeSurvivalCurve must begin at 1 for calculating annual retirements. '
-                f'Got {value(model.LifetimeSurvivalCurve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
+                'lifetime_survival_curve must begin at 1 for calculating annual retirements. '
+                f'Got {value(model.lifetime_survival_curve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
             )
             logger.error(msg_str)
             raise ValueError(msg_str)
@@ -260,11 +261,11 @@ def create_survival_curve(model: TemoaModel) -> None:
 
             # Check that the survival curve monotonically decreases
             p_prev = periods_rtv[i - 1]
-            lsc = value(model.LifetimeSurvivalCurve[r, p, t, v])
-            lsc_prev = value(model.LifetimeSurvivalCurve[r, p_prev, t, v])
+            lsc = value(model.lifetime_survival_curve[r, p, t, v])
+            lsc_prev = value(model.lifetime_survival_curve[r, p_prev, t, v])
             if lsc - lsc_prev > 0.0001:
                 msg = (
-                    'LifetimeSurvivalCurve fraction increases going forward in time from {} to {}. '
+                    'lifetime_survival_curve fraction increases going forward in time from {} to {}. '
                     'This is not allowed.'
                 ).format((r, p_prev, t, v), (r, p, t, v))
                 logger.error(msg)
@@ -275,7 +276,7 @@ def create_survival_curve(model: TemoaModel) -> None:
                 for _p in _between_periods:
                     x = (_p - p_prev) / (p - p_prev)
                     lsc_x = lsc_prev + x * (lsc - lsc_prev)
-                    model.LifetimeSurvivalCurve[r, _p, t, v] = lsc_x
+                    model.lifetime_survival_curve[r, _p, t, v] = lsc_x
                 between_periods.extend(_between_periods)
 
             if lsc < 0.0001:
@@ -287,20 +288,20 @@ def create_survival_curve(model: TemoaModel) -> None:
                     logger.info(msg)
 
                 # Make sure the lifetime for this process aligns with survival curve end
-                if value(model.LifetimeProcess[r, t, v]) < p - v:
+                if value(model.lifetime_process[r, t, v]) < p - v:
                     msg = (
-                        f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
+                        f'The lifetime_process parameter for process ({r, t, v}) with survival curve  '
                         f'does not extend beyond the end of that survival curve in {p}. To agree with '
-                        f'the survival curve, set LifetimeProcess[{r, t, v}] >= {p - v}'
+                        f'the survival curve, set lifetime_process[{r, t, v}] >= {p - v}'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
-                elif value(model.LifetimeProcess[r, t, v]) != p - v:
+                elif value(model.lifetime_process[r, t, v]) != p - v:
                     msg = (
-                        f'The LifetimeProcess parameter for process ({r, t, v}) with survival curve  '
+                        f'The lifetime_process parameter for process ({r, t, v}) with survival curve  '
                         f'does match the end of that survival curve in {p}. This will waste compute. '
                         'To agree with the survival curve and suppress this warning, set '
-                        f'LifetimeProcess[{r, t, v}] = {p - v}'
+                        f'lifetime_process[{r, t, v}] = {p - v}'
                     )
                     logger.warning(msg)
 
@@ -316,11 +317,11 @@ def create_survival_curve(model: TemoaModel) -> None:
                 logger.error(msg)
                 raise ValueError(msg)
 
-        model.survivalCurvePeriods[r, t, v].update(between_periods)
+        model.survival_curve_periods[r, t, v].update(between_periods)
 
     if rtv_interpolated:
         msg = (
-            'For the purposes of investment cost accounting, LifetimeSurvivalCurve must be defined '
+            'For the purposes of investment cost accounting, lifetime_survival_curve must be defined '
             'for each individual year. Gaps between defined years will be filled by linear interpolation. '
             'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
         ).format([rtv for rtv in rtv_interpolated])
@@ -329,15 +330,15 @@ def create_survival_curve(model: TemoaModel) -> None:
 
 def check_efficiency_indices(model: TemoaModel) -> None:
     """
-    Ensure that there are no unused items in any of the Efficiency index sets.
+    Ensure that there are no unused items in any of the efficiency index sets.
     """
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
-    c_physical = {i for r, i, t, v, o in model.Efficiency.sparse_iterkeys()}
-    c_physical = c_physical | {i for r, i, t, v in model.ConstructionInput.sparse_iterkeys()}
-    techs = {t for r, i, t, v, o in model.Efficiency.sparse_iterkeys()}
-    c_outputs = {o for r, i, t, v, o in model.Efficiency.sparse_iterkeys()}
-    c_outputs = c_outputs | {o for r, t, v, o in model.EndOfLifeOutput.sparse_iterkeys()}
+    c_physical = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    c_physical = c_physical | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
+    techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    c_outputs = {o for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    c_outputs = c_outputs | {o for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
 
     symdiff = c_physical.symmetric_difference(model.commodity_physical)
     if symdiff:
@@ -379,27 +380,27 @@ def check_efficiency_indices(model: TemoaModel) -> None:
 def check_efficiency_variable(model: TemoaModel) -> None:
     count_rpitvo = {}
     # Pull non-variable efficiency by default
-    for r, i, t, v, o in model.Efficiency.sparse_iterkeys():
-        if (r, t, v) not in model.processPeriods:
+    for r, i, t, v, o in model.efficiency.sparse_iterkeys():
+        if (r, t, v) not in model.process_periods:
             # Probably an existing vintage that retires in p0
             # Still want it for end of life flows
             continue
-        for p in model.processPeriods[r, t, v]:
-            model.isEfficiencyVariable[r, p, i, t, v, o] = False
+        for p in model.process_periods[r, t, v]:
+            model.is_efficiency_variable[r, p, i, t, v, o] = False
             count_rpitvo[r, p, i, t, v, o] = 0
 
     annual = set()
     # Check for bad values and count up the good ones
-    for r, p, _s, _d, i, t, v, o in model.EfficiencyVariable.sparse_iterkeys():
-        if p not in model.processPeriods[r, t, v]:
-            msg = f'Invalid period {p} for process {r, t, v} in EfficiencyVariable table'
+    for r, p, _s, _d, i, t, v, o in model.efficiency_variable.sparse_iterkeys():
+        if p not in model.process_periods[r, t, v]:
+            msg = f'Invalid period {p} for process {r, t, v} in efficiency_variable table'
             logger.error(msg)
             raise ValueError(msg)
 
         if t in model.tech_annual:
             annual.add(t)
 
-        # Good value, pull from EfficiencyVariable table
+        # Good value, pull from efficiency_variable table
         count_rpitvo[r, p, i, t, v, o] += 1
 
     for t in annual:
@@ -412,14 +413,14 @@ def check_efficiency_variable(model: TemoaModel) -> None:
 
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(model.TimeSeason[p]) * len(model.time_of_day)
+    num_seg = len(model.time_season[p]) * len(model.time_of_day)
     for (r, p, i, t, v, o), count in count_rpitvo.items():
         if count > 0:
-            model.isEfficiencyVariable[r, p, i, t, v, o] = True
+            model.is_efficiency_variable[r, p, i, t, v, o] = True
             if count < num_seg:
                 logger.info(
-                    'Some but not all EfficiencyVariable values were set (%i out of a possible %i) for: %s'
-                    ' Missing values will default to value set in Efficiency table.',
+                    'Some but not all efficiency_variable values were set (%i out of a possible %i) for: %s'
+                    ' Missing values will default to value set in efficiency table.',
                     count,
                     num_seg,
                     (r, p, i, t, v, o),

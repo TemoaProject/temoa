@@ -43,8 +43,8 @@ test_scenarios = [
                 ('d2',),
             ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
-            # Unique keys for Efficiency and optional tables
-            'FROM main.Efficiency': [
+            # Unique keys for efficiency and optional tables
+            'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
                 ('R1', 's1', 't4', 1990, 'p3', 100),
                 ('R1', 's1', 't1', 2000, 'p1', 100),
@@ -52,10 +52,10 @@ test_scenarios = [
                 ('R1', 'p2', 't3', 2000, 'd1', 100),
                 ('R1', 'p2', 't5', 2000, 'd2', 100),
             ],
-            'FROM EndOfLifeOutput': [],
-            'FROM ConstructionInput': [],
+            'FROM end_of_life_output': [],
+            'FROM construction_input': [],
             'FROM main.LinkedTech': [],
-            'FROM CostVariable': [],
+            'FROM cost_variable': [],
         },
         'expected': {
             'demands_count': 2,
@@ -84,15 +84,15 @@ test_scenarios = [
                 ('d2',),
             ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
-            'FROM main.Efficiency': [
+            'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
                 ('R1', 'p1', 'driven', 1990, 'd2', 100),
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
-            'FROM EndOfLifeOutput': [],
-            'FROM ConstructionInput': [],
+            'FROM end_of_life_output': [],
+            'FROM construction_input': [],
             'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
-            'FROM CostVariable': [],
+            'FROM cost_variable': [],
         },
         'expected': {
             'demands_count': 2,
@@ -121,15 +121,15 @@ test_scenarios = [
                 ('s2',),
             ],
             'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
-            'FROM main.Efficiency': [
+            'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'd2', 100),
                 ('R1', 's2', 'driven', 1990, 'd2', 100),
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
-            'FROM EndOfLifeOutput': [],
-            'FROM ConstructionInput': [],
+            'FROM end_of_life_output': [],
+            'FROM construction_input': [],
             'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
-            'FROM CostVariable': [],
+            'FROM cost_variable': [],
         },
         'expected': {
             'demands_count': 2,
@@ -253,7 +253,7 @@ def test_sector_handling_with_sectors() -> None:
     def dispatcher(query: str, *_: object) -> MagicMock:
         if 'sector FROM Technology' in query:
             return sector_check_mock
-        elif 'FROM main.Efficiency' in query:
+        elif 'FROM main.efficiency' in query:
             return efficiency_mock
         elif 'Technology WHERE retire==1' in query:
             m = MagicMock()
@@ -283,11 +283,11 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = [('R1', 2020, 'd1')]
             return m
-        elif 'FROM EndOfLifeOutput' in query:
+        elif 'FROM end_of_life_output' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM ConstructionInput' in query:
+        elif 'FROM construction_input' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -295,7 +295,7 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM CostVariable' in query:
+        elif 'FROM cost_variable' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -306,7 +306,7 @@ def test_sector_handling_with_sectors() -> None:
     # Build network data
     network_data = network_model_data._build_from_db(mock_con)
 
-    # Verify sectors are included in EfficiencyTuple
+    # Verify sectors are included in efficiencyTuple
     techs = list(network_data.available_techs[('R1', 2020)])
     assert len(techs) == 2
     # Fields: region, ic, tech, vintage, oc, lifetime, sector
@@ -327,7 +327,7 @@ def test_sector_handling_without_sectors() -> None:
         if 'sector FROM Technology' in query:
             # Simulate column not existing
             raise sqlite3.OperationalError('no such column: sector')
-        elif 'FROM main.Efficiency' in query:
+        elif 'FROM main.efficiency' in query:
             # Return data without sector column
             mock = MagicMock()
             mock.fetchall.return_value = [
@@ -367,11 +367,11 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = [('R1', 2020, 'd1')]
             return m
-        elif 'FROM EndOfLifeOutput' in query:
+        elif 'FROM end_of_life_output' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM ConstructionInput' in query:
+        elif 'FROM construction_input' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -379,7 +379,7 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM CostVariable' in query:
+        elif 'FROM cost_variable' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m

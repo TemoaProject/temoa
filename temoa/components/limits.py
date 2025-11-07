@@ -39,19 +39,19 @@ def limit_tech_input_split_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, str]]:
     indices = {
         (r, p, s, d, i, t, v, op)
-        for r, p, i, t, op in model.inputSplitVintages
+        for r, p, i, t, op in model.input_split_vintages
         if t not in model.tech_annual
-        for v in model.inputSplitVintages[r, p, i, t, op]
-        for s in model.TimeSeason[p]
+        for v in model.input_split_vintages[r, p, i, t, op]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
     ann_indices = {
-        (r, p, i, t, op) for r, p, i, t, op in model.inputSplitVintages if t in model.tech_annual
+        (r, p, i, t, op) for r, p, i, t, op in model.input_split_vintages if t in model.tech_annual
     }
     if len(ann_indices) > 0:
         msg = (
-            'Warning: Annual technologies included in LimitTechInputSplit table. '
-            'Use LimitTechInputSplitAnnual table instead or these constraints will be ignored: {}'
+            'Warning: Annual technologies included in limit_tech_input_split table. '
+            'Use limit_tech_input_split_annual table instead or these constraints will be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -63,9 +63,9 @@ def limit_tech_input_split_annual_constraint_indices(
 ) -> set[tuple[Region, Period, Commodity, Technology, Vintage, str]]:
     indices = {
         (r, p, i, t, v, op)
-        for r, p, i, t, op in model.inputSplitAnnualVintages
+        for r, p, i, t, op in model.input_split_annual_vintages
         if t in model.tech_annual
-        for v in model.inputSplitAnnualVintages[r, p, i, t, op]
+        for v in model.input_split_annual_vintages[r, p, i, t, op]
     }
 
     return indices
@@ -76,9 +76,9 @@ def limit_tech_input_split_average_constraint_indices(
 ) -> set[tuple[Region, Period, Commodity, Technology, Vintage, str]]:
     indices = {
         (r, p, i, t, v, op)
-        for r, p, i, t, op in model.inputSplitAnnualVintages
+        for r, p, i, t, op in model.input_split_annual_vintages
         if t not in model.tech_annual
-        for v in model.inputSplitAnnualVintages[r, p, i, t, op]
+        for v in model.input_split_annual_vintages[r, p, i, t, op]
     }
     return indices
 
@@ -88,19 +88,19 @@ def limit_tech_output_split_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, Commodity, str]]:
     indices = {
         (r, p, s, d, t, v, o, op)
-        for r, p, t, o, op in model.outputSplitVintages
+        for r, p, t, o, op in model.output_split_vintages
         if t not in model.tech_annual
-        for v in model.outputSplitVintages[r, p, t, o, op]
-        for s in model.TimeSeason[p]
+        for v in model.output_split_vintages[r, p, t, o, op]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
     ann_indices = {
-        (r, p, t, o, op) for r, p, t, o, op in model.outputSplitVintages if t in model.tech_annual
+        (r, p, t, o, op) for r, p, t, o, op in model.output_split_vintages if t in model.tech_annual
     }
     if len(ann_indices) > 0:
         msg = (
-            'Warning: Annual technologies included in LimitTechOutputSplit table. '
-            'Use LimitTechOutputSplitAnnual table instead or these constraints will be ignored: {}'
+            'Warning: Annual technologies included in limit_tech_output_split table. '
+            'Use limit_tech_output_split_annual table instead or these constraints will be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -112,9 +112,9 @@ def limit_tech_output_split_annual_constraint_indices(
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
     indices = {
         (r, p, t, v, o, op)
-        for r, p, t, o, op in model.outputSplitAnnualVintages
+        for r, p, t, o, op in model.output_split_annual_vintages
         if t in model.tech_annual
-        for v in model.outputSplitAnnualVintages[r, p, t, o, op]
+        for v in model.output_split_annual_vintages[r, p, t, o, op]
     }
     return indices
 
@@ -124,9 +124,9 @@ def limit_tech_output_split_average_constraint_indices(
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
     indices = {
         (r, p, t, v, o, op)
-        for r, p, t, o, op in model.outputSplitAnnualVintages
+        for r, p, t, o, op in model.output_split_annual_vintages
         if t not in model.tech_annual
-        for v in model.outputSplitAnnualVintages[r, p, t, o, op]
+        for v in model.output_split_annual_vintages[r, p, t, o, op]
     }
     return indices
 
@@ -134,7 +134,7 @@ def limit_tech_output_split_average_constraint_indices(
 def limit_growth_capacity_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitGrowthCapacity.sparse_iterkeys()
+        for r, t, op in model.limit_growth_capacity.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -145,7 +145,7 @@ def limit_degrowth_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitDegrowthCapacity.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_capacity.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -156,7 +156,7 @@ def limit_growth_new_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitGrowthNewCapacity.sparse_iterkeys()
+        for r, t, op in model.limit_growth_new_capacity.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -167,7 +167,7 @@ def limit_degrowth_new_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitDegrowthNewCapacity.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_new_capacity.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -178,7 +178,7 @@ def limit_growth_new_capacity_delta_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitGrowthNewCapacityDelta.sparse_iterkeys()
+        for r, t, op in model.limit_growth_new_capacity_delta.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -189,7 +189,7 @@ def limit_degrowth_new_capacity_delta_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.LimitDegrowthNewCapacityDelta.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_new_capacity_delta.sparse_iterkeys()
         for p in model.time_optimize
     }
     return indices
@@ -200,7 +200,7 @@ def limit_degrowth_new_capacity_delta_indices(
 # ============================================================================
 
 
-# @deprecated('Deprecated. Use LimitActivityGroupShare instead') # doesn't play well with pyomo
+# @deprecated('Deprecated. Use limit_activityGroupShare instead') # doesn't play well with pyomo
 def renewable_portfolio_standard_constraint(
     model: TemoaModel, r: Region, p: Period, g: str
 ) -> ExprLike:
@@ -210,41 +210,41 @@ def renewable_portfolio_standard_constraint(
     """
     # devnote: this formulation leans on the reserve set, which is not necessarily
     # the super set we want. We can also generalise this to all groups and so
-    # it has been deprecated in favour of the LimitActivityGroupShare constraint.
+    # it has been deprecated in favour of the limit_activityGroupShare constraint.
 
     inp = quicksum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for t in model.tech_group_members[g]
-        for (_t, v) in model.processReservePeriods.get((r, p), [])
+        for (_t, v) in model.process_reserve_periods.get((r, p), [])
         if _t == t
-        for s in model.TimeSeason[p]
+        for s in model.time_season[p]
         for d in model.time_of_day
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     total_inp = quicksum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for (t, v) in model.processReservePeriods[r, p]
-        for s in model.TimeSeason[p]
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+        for (t, v) in model.process_reserve_periods[r, p]
+        for s in model.time_season[p]
         for d in model.time_of_day
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    expr = inp >= (value(model.RenewablePortfolioStandard[r, p, g]) * total_inp)
+    expr = inp >= (value(model.renewable_portfolio_standard[r, p, g]) * total_inp)
     return expr
 
 
 def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: str) -> ExprLike:
     r"""
 
-    The LimitResource constraint sets a limit on the available resource of a
+    The limit_resource constraint sets a limit on the available resource of a
     given technology across all model time periods. Note that the indices for these
     constraints are region and tech.
 
     .. math::
-       :label: LimitResource
+       :label: limit_resource
 
        \sum_{P,S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t \notin T^a, v, o}
 
@@ -252,7 +252,7 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
 
        \le LR_{r, t}
 
-       \forall \{r, t\} \in \Theta_{\text{LimitResource}}"""
+       \forall \{r, t\} \in \Theta_{\text{limit_resource}}"""
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
     #            regardless of whatever "resources" are consumed.
     # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
@@ -262,31 +262,31 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
     techs = technology.gather_group_techs(model, t)
 
     activity = quicksum(
-        model.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
+        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
         for _t in techs
         if _t in model.tech_annual
         for p in model.time_optimize
         for _r in regions
-        if (_r, p, _t) in model.processVintages
-        for S_v in model.processVintages[_r, p, _t]
-        for S_i in model.processInputs[_r, p, _t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, _t, S_v, S_i]
+        if (_r, p, _t) in model.process_vintages
+        for S_v in model.process_vintages[_r, p, _t]
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
     )
     activity += quicksum(
-        model.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
+        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
         for _t in techs
         if _t not in model.tech_annual
         for p in model.time_optimize
         for _r in regions
-        if (_r, p, _t) in model.processVintages
-        for S_v in model.processVintages[_r, p, _t]
-        for S_i in model.processInputs[_r, p, _t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, _t, S_v, S_i]
-        for s in model.TimeSeason[p]
+        if (_r, p, _t) in model.process_vintages
+        for S_v in model.process_vintages[_r, p, _t]
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
+        for s in model.time_season[p]
         for d in model.time_of_day
     )
 
-    resource_lim = value(model.LimitResource[r, t, op])
+    resource_lim = value(model.limit_resource[r, t, op])
     expr = operator_expression(activity, Operator(op), resource_lim)
     return expr
 
@@ -306,56 +306,56 @@ def limit_activity_share_constraint(
         \leq LAS_{r,p,g_1,g_2} \cdot
         \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
 
-        \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{LimitActivityShare}}
+        \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit_activity_share}}
     """
 
     regions = geography.gather_group_regions(model, r)
 
     sub_group = technology.gather_group_techs(model, g1)
     sub_activity = quicksum(
-        model.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
+        model.v_flow_out[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in sub_group
         if S_t not in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, S_t), [])
-        for S_i in model.processInputs[_r, p, S_t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in model.TimeSeason[p]
+        for S_v in model.process_vintages.get((_r, p, S_t), [])
+        for S_i in model.process_inputs[_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for s in model.time_season[p]
         for d in model.time_of_day
     )
     sub_activity += quicksum(
-        model.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
+        model.v_flow_out_annual[_r, p, S_i, S_t, S_v, S_o]
         for S_t in sub_group
         if S_t in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, S_t), [])
-        for S_i in model.processInputs[_r, p, S_t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((_r, p, S_t), [])
+        for S_i in model.process_inputs[_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
     )
 
     super_group = technology.gather_group_techs(model, g2)
     super_activity = quicksum(
-        model.V_FlowOut[_r, p, s, d, S_i, S_t, S_v, S_o]
+        model.v_flow_out[_r, p, s, d, S_i, S_t, S_v, S_o]
         for S_t in super_group
         if S_t not in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, S_t), [])
-        for S_i in model.processInputs[_r, p, S_t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, S_t, S_v, S_i]
-        for s in model.TimeSeason[p]
+        for S_v in model.process_vintages.get((_r, p, S_t), [])
+        for S_i in model.process_inputs[_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for s in model.time_season[p]
         for d in model.time_of_day
     )
     super_activity += quicksum(
-        model.V_FlowOutAnnual[_r, p, S_i, S_t, S_v, S_o]
+        model.v_flow_out_annual[_r, p, S_i, S_t, S_v, S_o]
         for S_t in super_group
         if S_t in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, S_t), [])
-        for S_i in model.processInputs[_r, p, S_t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((_r, p, S_t), [])
+        for S_i in model.process_inputs[_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
     )
 
-    share_lim = value(model.LimitActivityShare[r, p, g1, g2, op])
+    share_lim = value(model.limit_activity_share[r, p, g1, g2, op])
     expr = operator_expression(sub_activity, Operator(op), share_lim * super_activity)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -375,7 +375,7 @@ def limit_capacity_share_constraint(
     model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
-    The LimitCapacityShare constraint limits the available capacity of a given
+    The limit_capacity_share constraint limits the available capacity of a given
     technology or technology group as a fraction of another technology or group.
     """
 
@@ -383,20 +383,20 @@ def limit_capacity_share_constraint(
 
     sub_group = technology.gather_group_techs(model, g1)
     sub_capacity = quicksum(
-        model.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
         for _t in sub_group
         for _r in regions
-        if (_r, p, _t) in model.processVintages
+        if (_r, p, _t) in model.process_vintages
     )
 
     super_group = technology.gather_group_techs(model, g2)
     super_capacity = quicksum(
-        model.V_CapacityAvailableByPeriodAndTech[_r, p, _t]
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
         for _t in super_group
         for _r in regions
-        if (_r, p, _t) in model.processVintages
+        if (_r, p, _t) in model.process_vintages
     )
-    share_lim = value(model.LimitCapacityShare[r, p, g1, g2, op])
+    share_lim = value(model.limit_capacity_share[r, p, g1, g2, op])
 
     expr = operator_expression(sub_capacity, Operator(op), share_lim * super_capacity)
     if isinstance(expr, bool):
@@ -408,7 +408,7 @@ def limit_new_capacity_share_constraint(
     model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
 ) -> ExprLike:
     r"""
-    The LimitNewCapacityShare constraint limits the share of new capacity
+    The limit_new_capacity_share constraint limits the share of new capacity
     of a given technology or group as a fraction of another technology or
     group."""
 
@@ -416,21 +416,21 @@ def limit_new_capacity_share_constraint(
 
     sub_group = technology.gather_group_techs(model, g1)
     sub_new_cap = quicksum(
-        model.V_NewCapacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, p]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, cast(Vintage, p)) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.process_periods
     )
 
     super_group = technology.gather_group_techs(model, g2)
     super_new_cap = quicksum(
-        model.V_NewCapacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, p]
         for _t in super_group
         for _r in regions
-        if (_r, _t, cast(Vintage, p)) in model.processPeriods
+        if (_r, _t, cast(Vintage, p)) in model.process_periods
     )
 
-    share_lim = value(model.LimitNewCapacityShare[r, p, g1, g2, op])
+    share_lim = value(model.limit_new_capacity_share[r, p, g1, g2, op])
     expr = operator_expression(sub_new_cap, Operator(op), share_lim * super_new_cap)
     if isinstance(expr, bool):
         return Constraint.Skip
@@ -441,53 +441,54 @@ def limit_annual_capacity_factor_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, o: Commodity, op: str
 ) -> ExprLike:
     r"""
-    The LimitAnnualCapacityFactor sets an upper bound on the annual capacity factor
+    The limit_annual_capacity_factor sets an upper bound on the annual capacity factor
     from a specific technology. The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
 
     .. math::
-        :label: LimitAnnualCapacityFactor
+        :label: limit_annual_capacity_factor
 
             \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
+            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
 
             \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitAnnualCapacityFactor}}
+            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all((_r, p, t) not in model.V_CapacityAvailableByPeriodAndTech for _r in regions):
+    if all((_r, p, t) not in model.v_capacity_available_by_period_and_tech for _r in regions):
         return Constraint.Skip
 
     if t not in model.tech_annual:
         activity_rpt = quicksum(
-            model.V_FlowOut[_r, p, s, d, S_i, t, S_v, o]
+            model.v_flow_out[_r, p, s, d, S_i, t, S_v, o]
             for _r in regions
-            for S_v in model.processVintages.get((_r, p, t), [])
-            for S_i in model.processInputs[_r, p, t, S_v]
-            for s in model.TimeSeason[p]
+            for S_v in model.process_vintages.get((_r, p, t), [])
+            for S_i in model.process_inputs[_r, p, t, S_v]
+            for s in model.time_season[p]
             for d in model.time_of_day
         )
     else:
         activity_rpt = quicksum(
-            model.V_FlowOutAnnual[_r, p, S_i, t, S_v, o]
+            model.v_flow_out_annual[_r, p, S_i, t, S_v, o]
             for _r in regions
-            for S_v in model.processVintages.get((_r, p, t), [])
-            for S_i in model.processInputs[_r, p, t, S_v]
+            for S_v in model.process_vintages.get((_r, p, t), [])
+            for S_i in model.process_inputs[_r, p, t, S_v]
         )
 
     possible_activity_rpt = quicksum(
-        model.V_CapacityAvailableByPeriodAndTech[_r, p, t] * value(model.CapacityToActivity[_r, t])
+        model.v_capacity_available_by_period_and_tech[_r, p, t]
+        * value(model.capacity_to_activity[_r, t])
         for _r in regions
     )
-    annual_cf = value(model.LimitAnnualCapacityFactor[r, p, t, o, op])
+    annual_cf = value(model.limit_annual_capacity_factor[r, p, t, o, op])
     expr = operator_expression(activity_rpt, Operator(op), annual_cf * possible_activity_rpt)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -499,7 +500,7 @@ def limit_seasonal_capacity_factor_constraint(
     model: TemoaModel, r: Region, p: Period, s: Season, t: Technology, op: str
 ) -> ExprLike:
     r"""
-    The LimitSeasonalCapacityFactor sets an upper bound on the seasonal capacity factor
+    The limit_seasonal_capacity_factor sets an upper bound on the seasonal capacity factor
     from a specific technology. The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
@@ -510,45 +511,46 @@ def limit_seasonal_capacity_factor_constraint(
 
         \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-        \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+        \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
 
         \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-        \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{LimitSeasonalCapacityFactor}}
+        \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all((_r, p, t) not in model.V_CapacityAvailableByPeriodAndTech for _r in regions):
+    if all((_r, p, t) not in model.v_capacity_available_by_period_and_tech for _r in regions):
         return Constraint.Skip
 
     if t not in model.tech_annual:
         activity_rpst = quicksum(
-            model.V_FlowOut[_r, p, s, d, S_i, t, S_v, S_o]
+            model.v_flow_out[_r, p, s, d, S_i, t, S_v, S_o]
             for _r in regions
-            for S_v in model.processVintages[_r, p, t]
-            for S_i in model.processInputs[_r, p, t, S_v]
-            for S_o in model.processOutputsByInput[_r, p, t, S_v, S_i]
+            for S_v in model.process_vintages[_r, p, t]
+            for S_i in model.process_inputs[_r, p, t, S_v]
+            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
             for d in model.time_of_day
         )
     else:
         activity_rpst = quicksum(
-            model.V_FlowOutAnnual[_r, p, S_i, t, S_v, S_o] * model.SegFracPerSeason[p, s]
+            model.v_flow_out_annual[_r, p, S_i, t, S_v, S_o]
+            * model.segment_fraction_per_season[p, s]
             for _r in regions
-            for S_v in model.processVintages[_r, p, t]
-            for S_i in model.processInputs[_r, p, t, S_v]
-            for S_o in model.processOutputsByInput[_r, p, t, S_v, S_i]
+            for S_v in model.process_vintages[_r, p, t]
+            for S_i in model.process_inputs[_r, p, t, S_v]
+            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
         )
 
     possible_activity_rpst = quicksum(
-        model.V_CapacityAvailableByPeriodAndTech[_r, p, t]
-        * value(model.CapacityToActivity[_r, t])
-        * value(model.SegFracPerSeason[p, s])
+        model.v_capacity_available_by_period_and_tech[_r, p, t]
+        * value(model.capacity_to_activity[_r, t])
+        * value(model.segment_fraction_per_season[p, s])
         for _r in regions
     )
-    seasonal_cf = value(model.LimitSeasonalCapacityFactor[r, p, s, t, op])
+    seasonal_cf = value(model.limit_seasonal_capacity_factor[r, p, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -570,24 +572,24 @@ def limit_tech_input_split_constraint(
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    LimitTechOutputSplit_Constraint for an analogous explanation. Under this constraint,
+    limit_tech_output_split_Constraint for an analogous explanation. Under this constraint,
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = quicksum(
-        model.V_FlowOut[r, p, s, d, i, t, v, S_o]
+        model.v_flow_out[r, p, s, d, i, t, v, S_o]
         / get_variable_efficiency(model, r, p, s, d, i, t, v, S_o)
-        for S_o in model.processOutputsByInput[r, p, t, v, i]
+        for S_o in model.process_outputs_by_input[r, p, t, v, i]
     )
 
     total_inp = quicksum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         / get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
-        inp, Operator(op), value(model.LimitTechInputSplit[r, p, i, t, op]) * total_inp
+        inp, Operator(op), value(model.limit_tech_input_split[r, p, i, t, op]) * total_inp
     )
     return expr
 
@@ -598,22 +600,22 @@ def limit_tech_input_split_annual_constraint(
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    LimitTechOutputSplitAnnual_Constraint for an analogous explanation. Under this
+    limit_tech_output_split_annual_Constraint for an analogous explanation. Under this
     function, only the technologies with constant annual output (i.e., members
     of the :code:`tech_annual` set) are considered."""
     inp = quicksum(
-        model.V_FlowOutAnnual[r, p, i, t, v, S_o] / value(model.Efficiency[r, i, t, v, S_o])
-        for S_o in model.processOutputsByInput[r, p, t, v, i]
+        model.v_flow_out_annual[r, p, i, t, v, S_o] / value(model.efficiency[r, i, t, v, S_o])
+        for S_o in model.process_outputs_by_input[r, p, t, v, i]
     )
 
     total_inp = quicksum(
-        model.V_FlowOutAnnual[r, p, S_i, t, v, S_o] / value(model.Efficiency[r, S_i, t, v, S_o])
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        model.v_flow_out_annual[r, p, S_i, t, v, S_o] / value(model.efficiency[r, S_i, t, v, S_o])
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
-        inp, Operator(op), value(model.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+        inp, Operator(op), value(model.limit_tech_input_split_annual[r, p, i, t, op]) * total_inp
     )
     return expr
 
@@ -625,28 +627,28 @@ def limit_tech_input_split_average_constraint(
     Allows users to limit shares of commodity inputs to a process
     producing a single output. Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from LimitTechInputSplit as it specifies shares on an annual basis,
+    This constraint differs from limit_tech_input_split as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the input shares over the course of a year."""
 
     inp = quicksum(
-        model.V_FlowOut[r, p, S_s, S_d, i, t, v, S_o]
+        model.v_flow_out[r, p, S_s, S_d, i, t, v, S_o]
         / get_variable_efficiency(model, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in model.TimeSeason[p]
+        for S_s in model.time_season[p]
         for S_d in model.time_of_day
-        for S_o in model.processOutputsByInput[r, p, t, v, i]
+        for S_o in model.process_outputs_by_input[r, p, t, v, i]
     )
     total_inp = quicksum(
-        model.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
+        model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o]
         / get_variable_efficiency(model, r, p, S_s, S_d, S_i, t, v, S_o)
-        for S_s in model.TimeSeason[p]
+        for S_s in model.time_season[p]
         for S_d in model.time_of_day
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
-        inp, Operator(op), value(model.LimitTechInputSplitAnnual[r, p, i, t, op]) * total_inp
+        inp, Operator(op), value(model.limit_tech_input_split_annual[r, p, i, t, op]) * total_inp
     )
     return expr
 
@@ -689,26 +691,26 @@ def limit_tech_output_split_constraint(
     The constraint is formulated as follows:
 
     .. math::
-       :label: LimitTechOutputSplit
+       :label: limit_tech_output_split
 
          \sum_{I, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
        \geq
          TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{LimitTechOutputSplit}}"""
+       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{limit_tech_output_split}}"""
     out = quicksum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, o]
-        for S_i in model.processInputsByOutput[r, p, t, v, o]
+        model.v_flow_out[r, p, s, d, S_i, t, v, o]
+        for S_i in model.process_inputs_by_output[r, p, t, v, o]
     )
 
     total_out = quicksum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
-        out, Operator(op), value(model.LimitTechOutputSplit[r, p, t, o, op]) * total_out
+        out, Operator(op), value(model.limit_tech_output_split[r, p, t, o, op]) * total_out
     )
     return expr
 
@@ -717,31 +719,31 @@ def limit_tech_output_split_annual_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage, o: Commodity, op: str
 ) -> ExprLike:
     r"""
-    This constraint operates similarly to LimitTechOutputSplit_Constraint.
+    This constraint operates similarly to limit_tech_output_split_Constraint.
     However, under this function, only the technologies with constant annual
     output (i.e., members of the :code:`tech_annual` set) are considered.
 
     .. math::
-       :label: LimitTechOutputSplitAnnual
+       :label: limit_tech_output_split_annual
 
             \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
             \geq
             TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{LimitTechOutputSplitAnnual}}"""
+            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{limit_tech_output_split_annual}}"""
     out = quicksum(
-        model.V_FlowOutAnnual[r, p, S_i, t, v, o]
-        for S_i in model.processInputsByOutput[r, p, t, v, o]
+        model.v_flow_out_annual[r, p, S_i, t, v, o]
+        for S_i in model.process_inputs_by_output[r, p, t, v, o]
     )
 
     total_out = quicksum(
-        model.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        model.v_flow_out_annual[r, p, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     expr = operator_expression(
-        out, Operator(op), value(model.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+        out, Operator(op), value(model.limit_tech_output_split_annual[r, p, t, o, op]) * total_out
     )
     return expr
 
@@ -753,27 +755,27 @@ def limit_tech_output_split_average_constraint(
     Allows users to limit shares of commodity outputs from a process.
     Under this constraint, only the technologies with variable
     output at the timeslice level (i.e., NOT in the :code:`tech_annual` set) are considered.
-    This constraint differs from LimitTechOutputSplit as it specifies shares on an annual basis,
+    This constraint differs from limit_tech_output_split as it specifies shares on an annual basis,
     so even though it applies to technologies with variable output at the timeslice level,
     the constraint only fixes the output shares over the course of a year."""
 
     out = quicksum(
-        model.V_FlowOut[r, p, S_s, S_d, S_i, t, v, o]
-        for S_i in model.processInputsByOutput[r, p, t, v, o]
-        for S_s in model.TimeSeason[p]
+        model.v_flow_out[r, p, S_s, S_d, S_i, t, v, o]
+        for S_i in model.process_inputs_by_output[r, p, t, v, o]
+        for S_s in model.time_season[p]
         for S_d in model.time_of_day
     )
 
     total_out = quicksum(
-        model.V_FlowOut[r, p, S_s, S_d, S_i, t, v, S_o]
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
-        for S_s in model.TimeSeason[p]
+        model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
+        for S_s in model.time_season[p]
         for S_d in model.time_of_day
     )
 
     expr = operator_expression(
-        out, Operator(op), value(model.LimitTechOutputSplitAnnual[r, p, t, o, op]) * total_out
+        out, Operator(op), value(model.limit_tech_output_split_annual[r, p, t, o, op]) * total_out
     )
     return expr
 
@@ -784,15 +786,15 @@ def limit_emission_constraint(
     r"""
 
     A modeler can track emissions through use of the :code:`commodity_emissions`
-    set and :code:`EmissionActivity` parameter.  The :math:`EAC` parameter is
+    set and :code:`emission_activity` parameter.  The :math:`EAC` parameter is
     analogous to the efficiency table, tying emissions to a unit of activity.  The
-    LimitEmission constraint allows the modeler to assign an upper bound per period
+    limit_emission constraint allows the modeler to assign an upper bound per period
     to each emission commodity. Note that this constraint sums emissions from
     technologies with output varying at the time slice and those with constant annual
     output in separate terms.
 
     .. math::
-       :label: LimitEmission
+       :label: limit_emission
 
            \sum_{S,D,I,T,V,O|{r,e,i,t,v,o} \in EAC} \left (
            EAC_{r, e, i, t, v, o} \cdot \textbf{FO}_{r, p, s, d, i, t, v, o}
@@ -805,10 +807,10 @@ def limit_emission_constraint(
            ELM_{r, p, e}
 
            \\
-           & \forall \{r, p, e\} \in \Theta_{\text{LimitEmission}}
+           & \forall \{r, p, e\} \in \Theta_{\text{limit_emission}}
 
     """
-    emission_limit = value(model.LimitEmission[r, p, e, op])
+    emission_limit = value(model.limit_emission[r, p, e, op])
 
     # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'),
     # or 'global'.  Note that regions!=M.regions. We iterate over regions to find actual_emissions
@@ -819,45 +821,45 @@ def limit_emission_constraint(
     regions = geography.gather_group_regions(model, r)
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
+    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
     # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
 
     process_emissions = quicksum(
-        model.V_FlowOut[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
-        * value(model.EmissionActivity[reg, e, S_i, S_t, S_v, S_o])
+        model.v_flow_out[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
+        * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
         for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.EmissionActivity.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_iterkeys()
         if tmp_e == e and tmp_r == reg and S_t not in model.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in model.processInputs
-        for S_s in model.TimeSeason[p]
+        if (reg, p, S_t, S_v) in model.process_inputs
+        for S_s in model.time_season[p]
         for S_d in model.time_of_day
     )
 
     process_emissions_annual = quicksum(
-        model.V_FlowOutAnnual[reg, p, S_i, S_t, S_v, S_o]
-        * value(model.EmissionActivity[reg, e, S_i, S_t, S_v, S_o])
+        model.v_flow_out_annual[reg, p, S_i, S_t, S_v, S_o]
+        * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
         for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.EmissionActivity.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_iterkeys()
         if tmp_e == e and tmp_r == reg and S_t in model.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in model.processInputs
+        if (reg, p, S_t, S_v) in model.process_inputs
     )
 
     embodied_emissions = quicksum(
-        model.V_NewCapacity[reg, t, v]
-        * value(model.EmissionEmbodied[reg, e, t, v])
-        / value(model.PeriodLength[v])
+        model.v_new_capacity[reg, t, v]
+        * value(model.emission_embodied[reg, e, t, v])
+        / value(model.period_length[v])
         for reg in regions
-        for (S_r, S_e, t, v) in model.EmissionEmbodied.sparse_iterkeys()
+        for (S_r, S_e, t, v) in model.emission_embodied.sparse_iterkeys()
         if v == p and S_r == reg and S_e == e
     )
 
     retirement_emissions = quicksum(
-        model.V_AnnualRetirement[reg, p, t, v] * value(model.EmissionEndOfLife[reg, e, t, v])
+        model.v_annual_retirement[reg, p, t, v] * value(model.emission_end_of_life[reg, e, t, v])
         for reg in regions
-        for (S_r, S_e, t, v) in model.EmissionEndOfLife.sparse_iterkeys()
-        if (reg, t, v) in model.retirementPeriods and p in model.retirementPeriods[reg, t, v]
+        for (S_r, S_e, t, v) in model.emission_end_of_life.sparse_iterkeys()
+        if (reg, t, v) in model.retirement_periods and p in model.retirement_periods[reg, t, v]
         if S_r == reg and S_e == e
     )
 
@@ -914,7 +916,7 @@ def limit_growth_capacity(
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p_{prev},t}
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacity}}
 
 
             \begin{aligned}\text{Degrowth:}\\
@@ -922,16 +924,16 @@ def limit_growth_capacity(
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p,t}
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacity}}
     """
 
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
 
-    growth = model.LimitDegrowthCapacity if degrowth else model.LimitGrowthCapacity
+    growth = model.limit_degrowth_capacity if degrowth else model.limit_growth_capacity
     rate = 1 + value(growth[r, t, op][0])
     seed = value(growth[r, t, op][1])
-    cap_rpt = model.V_CapacityAvailableByPeriodAndTech
+    cap_rpt = model.v_capacity_available_by_period_and_tech
 
     # relevant r, p, t indices
     cap_indices = {(_r, _p, _t) for _r, _p, _t in cap_rpt.keys() if _t in techs and _r in regions}
@@ -976,12 +978,12 @@ def limit_growth_capacity(
         # Adjust in-line for past PLF because we are constraining available capacity
         p_prev = model.time_exist.last()
         capacity_prev = sum(
-            value(model.ExistingCapacity[_r, _t, _v])
-            * min(1.0, (_v + value(model.LifetimeProcess[_r, _t, _v]) - p_prev) / (p - p_prev))
-            for _r, _t, _v in model.ExistingCapacity.sparse_iterkeys()
+            value(model.existing_capacity[_r, _t, _v])
+            * min(1.0, (_v + value(model.lifetime_process[_r, _t, _v]) - p_prev) / (p - p_prev))
+            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
             if _r in regions
             and _t in techs
-            and _v + value(model.LifetimeProcess[_r, _t, _v]) > p_prev
+            and _v + value(model.lifetime_process[_r, _t, _v]) > p_prev
         )
     else:
         # Otherwise, grab previous future period
@@ -1035,7 +1037,7 @@ def limit_growth_new_capacity(
             \text{ where } v=p
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacity}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{prev}}
@@ -1043,16 +1045,16 @@ def limit_growth_new_capacity(
             \text{ where } v=p
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacity}}
     """
 
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
 
-    growth = model.LimitDegrowthNewCapacity if degrowth else model.LimitGrowthNewCapacity
+    growth = model.limit_degrowth_new_capacity if degrowth else model.limit_growth_new_capacity
     rate = 1 + value(growth[r, t, op][0])
     seed = value(growth[r, t, op][1])
-    new_cap_rtv = model.V_NewCapacity
+    new_cap_rtv = model.v_new_capacity
 
     # relevant r, t, v indices
     cap_rtv = {(_r, _t, _v) for _r, _t, _v in new_cap_rtv.keys() if _t in techs and _r in regions}
@@ -1096,8 +1098,8 @@ def limit_growth_new_capacity(
         # First future period. Grab last existing vintage
         p_prev = model.time_exist.last()
         new_cap_prev = sum(
-            value(model.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in model.ExistingCapacity.sparse_iterkeys()
+            value(model.existing_capacity[_r, _t, _v])
+            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev
         )
     else:
@@ -1154,7 +1156,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitGrowthCapacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacityDelta}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
@@ -1163,16 +1165,20 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{LimitDegrowthCapacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacityDelta}}
     """
 
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
 
-    growth = model.LimitDegrowthNewCapacityDelta if degrowth else model.LimitGrowthNewCapacityDelta
+    growth = (
+        model.limit_degrowth_new_capacity_delta
+        if degrowth
+        else model.limit_growth_new_capacity_delta
+    )
     rate = 1 + value(growth[r, t, op][0])
     seed = value(growth[r, t, op][1])
-    new_cap_rtv = model.V_NewCapacity
+    new_cap_rtv = model.v_new_capacity
 
     # relevant r, t, v indices
     cap_rtv = {(_r, _t, _v) for _r, _t, _v in new_cap_rtv.keys() if _t in techs and _r in regions}
@@ -1217,14 +1223,14 @@ def limit_growth_new_capacity_delta(
         # First planning period, pull last two existing vintages
         p_prev = model.time_exist.last()
         new_cap_prev = sum(
-            value(model.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in model.ExistingCapacity.sparse_iterkeys()
+            value(model.existing_capacity[_r, _t, _v])
+            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev
         )
         p_prev2 = model.time_exist.prev(p_prev)
         new_cap_prev2 = sum(
-            value(model.ExistingCapacity[_r, _t, _v])
-            for _r, _t, _v in model.ExistingCapacity.sparse_iterkeys()
+            value(model.existing_capacity[_r, _t, _v])
+            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
             if _r in regions and _t in techs and _v == p_prev2
         )
     else:
@@ -1235,8 +1241,8 @@ def limit_growth_new_capacity_delta(
             # Second future period, grab last existing vintage
             p_prev2 = model.time_exist.last()
             new_cap_prev2 = sum(
-                value(model.ExistingCapacity[_r, _t, _v])
-                for _r, _t, _v in model.ExistingCapacity.sparse_iterkeys()
+                value(model.existing_capacity[_r, _t, _v])
+                for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
                 if _r in regions and _t in techs and _v == p_prev2
             )
         else:
@@ -1271,15 +1277,15 @@ def limit_activity_constraint(
     set.
 
     .. math::
-       :label: LimitActivity
+       :label: limit_activity
 
        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, t \notin T^{a}\} \in \Theta_{\text{LimitActivity}}
+       \forall \{r, p, t \notin T^{a}\} \in \Theta_{\text{limit_activity}}
 
        +\sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
-       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{LimitActivity}}
+       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{limit_activity}}
 
        \le LA_{r, p, t}
     """
@@ -1290,27 +1296,27 @@ def limit_activity_constraint(
     techs = technology.gather_group_techs(model, t)
 
     activity = quicksum(
-        model.V_FlowOut[_r, p, s, d, S_i, _t, S_v, S_o]
+        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
         for _t in techs
         if _t not in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, _t), [])
-        for S_i in model.processInputs[_r, p, _t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, _t, S_v, S_i]
-        for s in model.TimeSeason[p]
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
+        for s in model.time_season[p]
         for d in model.time_of_day
     )
     activity += quicksum(
-        model.V_FlowOutAnnual[_r, p, S_i, _t, S_v, S_o]
+        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
         for _t in techs
         if _t in model.tech_annual
         for _r in regions
-        for S_v in model.processVintages.get((_r, p, _t), [])
-        for S_i in model.processInputs[_r, p, _t, S_v]
-        for S_o in model.processOutputsByInput[_r, p, _t, S_v, S_i]
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
     )
 
-    act_lim = value(model.LimitActivity[r, p, t, op])
+    act_lim = value(model.limit_activity[r, p, t, op])
     expr = operator_expression(activity, Operator(op), act_lim)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
@@ -1322,12 +1328,12 @@ def limit_new_capacity_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, op: str
 ) -> ExprLike:
     r"""
-    The LimitNewCapacity constraint sets a limit on the newly installed capacity of a
+    The limit_new_capacity constraint sets a limit on the newly installed capacity of a
     given technology or group in a given year. Note that the indices for these constraints are region,
     period and tech.
 
     .. math::
-        :label: LimitNewCapacity
+        :label: limit_new_capacity
 
         \textbf{NCAP}_{r, t, v} \le LNC_{r, p, t}
 
@@ -1335,8 +1341,8 @@ def limit_new_capacity_constraint(
     """
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
-    cap_lim = value(model.LimitNewCapacity[r, p, t, op])
-    new_cap = quicksum(model.V_NewCapacity[_r, _t, p] for _t in techs for _r in regions)
+    cap_lim = value(model.limit_new_capacity[r, p, t, op])
+    new_cap = quicksum(model.v_new_capacity[_r, _t, p] for _t in techs for _r in regions)
     expr = operator_expression(new_cap, Operator(op), cap_lim)
     return expr
 
@@ -1346,21 +1352,21 @@ def limit_capacity_constraint(
 ) -> ExprLike:
     r"""
 
-    The LimitCapacity constraint sets a limit on the available capacity of a
+    The limit_capacity constraint sets a limit on the available capacity of a
     given technology. Note that the indices for these constraints are region, period and
     tech, not tech and vintage.
 
     .. math::
-       :label: LimitCapacity
+       :label: limit_capacity
 
        \textbf{CAPAVL}_{r, p, t} \le LC_{r, p, t}
 
-       \forall \{r, p, t\} \in \Theta_{\text{LimitCapacity}}"""
+       \forall \{r, p, t\} \in \Theta_{\text{limit_capacity}}"""
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
-    cap_lim = value(model.LimitCapacity[r, p, t, op])
+    cap_lim = value(model.limit_capacity[r, p, t, op])
     capacity = quicksum(
-        model.V_CapacityAvailableByPeriodAndTech[_r, p, _t] for _t in techs for _r in regions
+        model.v_capacity_available_by_period_and_tech[_r, p, _t] for _t in techs for _r in regions
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
     return expr
@@ -1380,25 +1386,27 @@ def create_limit_vintage_sets(model: TemoaModel) -> None:
     the index set functions below.
 
     Populates:
-        - M.inputSplitVintages: dict mapping (r, p, i, t, op) to a set of vintages `v`.
-        - M.inputSplitAnnualVintages: dict for annual-specific input splits.
-        - M.outputSplitVintages: dict mapping (r, p, t, o, op) to a set of vintages `v`.
-        - M.outputSplitAnnualVintages: dict for annual-specific output splits.
+        - M.input_split_vintages: dict mapping (r, p, i, t, op) to a set of vintages `v`.
+        - M.input_split_annual_vintages: dict for annual-specific input splits.
+        - M.output_split_vintages: dict mapping (r, p, t, o, op) to a set of vintages `v`.
+        - M.output_split_annual_vintages: dict for annual-specific output splits.
     """
     logger.debug('Creating vintage sets for split limits.')
-    # Assuming M.processVintages is already populated
-    for r, p, t in model.processVintages:
-        for v in model.processVintages[r, p, t]:
-            for i in model.processInputs.get((r, p, t, v), []):
+    # Assuming M.process_vintages is already populated
+    for r, p, t in model.process_vintages:
+        for v in model.process_vintages[r, p, t]:
+            for i in model.process_inputs.get((r, p, t, v), []):
                 for op in model.operator:
-                    if (r, p, i, t, op) in model.LimitTechInputSplit:
-                        model.inputSplitVintages.setdefault((r, p, i, t, op), set()).add(v)
-                    if (r, p, i, t, op) in model.LimitTechInputSplitAnnual:
-                        model.inputSplitAnnualVintages.setdefault((r, p, i, t, op), set()).add(v)
+                    if (r, p, i, t, op) in model.limit_tech_input_split:
+                        model.input_split_vintages.setdefault((r, p, i, t, op), set()).add(v)
+                    if (r, p, i, t, op) in model.limit_tech_input_split_annual:
+                        model.input_split_annual_vintages.setdefault((r, p, i, t, op), set()).add(v)
 
-            for o in model.processOutputs.get((r, p, t, v), []):
+            for o in model.process_outputs.get((r, p, t, v), []):
                 for op in model.operator:
-                    if (r, p, t, o, op) in model.LimitTechOutputSplit:
-                        model.outputSplitVintages.setdefault((r, p, t, o, op), set()).add(v)
-                    if (r, p, t, o, op) in model.LimitTechOutputSplitAnnual:
-                        model.outputSplitAnnualVintages.setdefault((r, p, t, o, op), set()).add(v)
+                    if (r, p, t, o, op) in model.limit_tech_output_split:
+                        model.output_split_vintages.setdefault((r, p, t, o, op), set()).add(v)
+                    if (r, p, t, o, op) in model.limit_tech_output_split_annual:
+                        model.output_split_annual_vintages.setdefault((r, p, t, o, op), set()).add(
+                            v
+                        )

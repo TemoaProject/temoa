@@ -396,7 +396,7 @@ def handle_results(
         excel_filename = config.output_path / scenario_name
         make_excel(str(config.output_database), excel_filename, temp_scenario)
 
-    # normal (non-MGA) run will have a TotalCost as the OBJ:
-    if hasattr(instance, 'TotalCost'):
-        logger.info('TotalCost value: %0.2f', value(instance.TotalCost))
+    # normal (non-MGA) run will have a total_cost as the OBJ:
+    if hasattr(instance, 'total_cost'):
+        logger.info('total_cost value: %0.2f', value(instance.total_cost))
     return

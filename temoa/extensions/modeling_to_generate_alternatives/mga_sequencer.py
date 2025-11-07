@@ -188,7 +188,7 @@ class MgaSequencer:
         self.writer.write_summary_flow(instance, iteration=0)
 
         # 3a. Capture cost and make it a constraint
-        tot_cost = pyo.value(instance.TotalCost)
+        tot_cost = pyo.value(instance.total_cost)
         logger.info('Completed initial solve with total cost:  %0.2f', tot_cost)
         logger.info('Relaxing cost by fraction:  %0.3f', self.cost_epsilon)
         # get hook on the expression generator for total cost...
@@ -198,7 +198,7 @@ class MgaSequencer:
         )
 
         # 3b. remove the old objective and prep for iterative solving
-        instance.del_component(instance.TotalCost)
+        instance.del_component(instance.total_cost)
 
         # 4.  Instantiate the vector manager
         vector_manager: VectorManager = get_manager(

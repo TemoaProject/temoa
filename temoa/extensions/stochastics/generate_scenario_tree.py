@@ -1,7 +1,7 @@
 #!/usr/bin/env pyomo_python
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -16,8 +16,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -25,9 +25,10 @@ import os
 import sys
 from io import StringIO
 from pprint import pformat
-from shutil import copy as copyfile, rmtree
+from shutil import copy as copyfile
+from shutil import rmtree
 
-from pyomo.core.base.sets import _SetProduct, SimpleSet
+from pyomo.core.base.sets import SimpleSet, _SetProduct
 
 SE = sys.stderr
 instance = None
@@ -45,7 +46,7 @@ class Storage:
     __repr__ = __str__
 
 
-class Param(object):
+class Param:
     # will be common to all Parameters, so no sense in storing it N times
     stochasticset = None
 
@@ -138,8 +139,8 @@ class Param(object):
             return _tmp()
 
     def __str__(self):
-        x = '; '.join('(%s, %s)' % (self[i].value, self[i].rate) for i in self)
-        return 'Param(%s): %s' % (self.name, x)
+        x = '; '.join(f'({self[i].value}, {self[i].rate})' for i in self)
+        return f'Param({self.name}): {x}'
 
     __repr__ = __str__
 
@@ -196,7 +197,7 @@ class Param(object):
         return data.getvalue()
 
 
-class TreeNode(object):
+class TreeNode:
     __slots__ = ('name', 'spoint', 'prob', 'params', 'bname', 'children')
 
     def __init__(self, *args, **kwargs):
@@ -236,7 +237,7 @@ class TreeNode(object):
         x = self.name
         if isinstance(self.name, tuple):
             x = ', '.join(x)
-        return '%s(%s): ' % (self.spoint, x) + ', '.join(str(i) for i in self.params.values())
+        return f'{self.spoint}({x}): ' + ', '.join(str(i) for i in self.params.values())
 
     def __str__(self, indent='  ', space=''):
         x = ''.join(i.__str__(indent, space + indent) for i in self.children)
@@ -308,12 +309,12 @@ def write_scenario_file(stochasticset, tree):
 
     leaves = '\n  '.join(scenario_fmt % {'i': i} for i in scenarios)
     nodes = '\n  '.join(nodes)
-    nodestage = '\n  '.join(('   '.join(ns) for ns in nodestage))
+    nodestage = '\n  '.join('   '.join(ns) for ns in nodestage)
     scenarios = 'S%s' % '\n  S'.join(scenarios)
     stagecost = '\n  '.join(stagecost_fmt % (s, s) for s in stochasticset)
     stages = '\n  s'.join(str(se) for se in stochasticset)
 
-    probability = '\n  '.join(('  '.join(str(i) for i in p) for p in probability))
+    probability = '\n  '.join('  '.join(str(i) for i in p) for p in probability)
     children = '\n'.join(child_fmt % (c[0], '\n  '.join(c[1])) for c in children)
 
     # XXX: Absolute hack, that currently only works for Temoa models.  I have
@@ -321,17 +322,17 @@ def write_scenario_file(stochasticset, tree):
 
     stage_var_sets = list()
     for se in stochasticset:  # se = "stochastic element"
-        flow_keys = [index for index in instance.V_FlowOut.keys() if index[0] == se]
+        flow_keys = [index for index in instance.v_flow_out.keys() if index[0] == se]
         processes = [(t, v) for p, s, d, i, t, v, o in flow_keys if v == se]
 
         stage_vars = list()
         stage_vars.extend(
-            sorted(set('V_FlowIn[{},{},{},{},{},{},{}]'.format(*index) for index in flow_keys))
+            sorted({'v_flow_in[{},{},{},{},{},{},{}]'.format(*index) for index in flow_keys})
         )
         stage_vars.extend(
-            sorted(set('V_FlowOut[{},{},{},{},{},{},{}]'.format(*index) for index in flow_keys))
+            sorted({'v_flow_out[{},{},{},{},{},{},{}]'.format(*index) for index in flow_keys})
         )
-        stage_vars.extend(sorted(set('V_Capacity[{},{}]'.format(*index) for index in processes)))
+        stage_vars.extend(sorted({'v_capacity[{},{}]'.format(*index) for index in processes}))
 
         stage_var_sets.append(stages_fmt.format(se, '\n  '.join(stage_vars)))
 
@@ -366,7 +367,7 @@ param  ScenarioLeafNode  :=
   %(leaves)s
 	;
 
-param  StageCostVariable  :=
+param  Stagecost_variable  :=
   %(stagecost)s
 	;
 
@@ -551,7 +552,7 @@ def main():
         sys.path.pop(0)
 
     except ImportError:
-        msg = 'Unable to import {}.\n\nRun this script with no arguments for ' 'more information.\n'
+        msg = 'Unable to import {}.\n\nRun this script with no arguments for more information.\n'
         SE.write(msg.format(sys.argv[1]))
         raise
 

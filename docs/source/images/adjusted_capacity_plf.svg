@@ -144,7 +144,7 @@
          id="tspan219"
          x="450.91309"
          y="405.55908"
-         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">ProcessLifeFraction adjustment</tspan></text>
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">process_life_fraction adjustment</tspan></text>
     <rect
        style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
        id="rect1"

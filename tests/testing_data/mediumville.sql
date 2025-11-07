@@ -18,7 +18,7 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in loan_rate table');
 INSERT INTO MetaDataReal VALUES('global_discount_rate',0.42000000000000004,'');
 CREATE TABLE OutputDualVariable
 (
@@ -51,7 +51,7 @@ INSERT INTO SectorLabel VALUES('transport',NULL);
 INSERT INTO SectorLabel VALUES('commercial',NULL);
 INSERT INTO SectorLabel VALUES('residential',NULL);
 INSERT INTO SectorLabel VALUES('industrial',NULL);
-CREATE TABLE CapacityCredit
+CREATE TABLE capacity_credit
 (
     region  TEXT,
     period  INTEGER
@@ -64,8 +64,8 @@ CREATE TABLE CapacityCredit
     PRIMARY KEY (region, period, tech, vintage),
     CHECK (credit >= 0 AND credit <= 1)
 );
-INSERT INTO CapacityCredit VALUES('A',2025,'EF',2025,0.5999999999999999778,NULL);
-CREATE TABLE CapacityFactorProcess
+INSERT INTO capacity_credit VALUES('A',2025,'EF',2025,0.5999999999999999778,NULL);
+CREATE TABLE capacity_factor_process
 (
     region  TEXT,
     period  INTEGER
@@ -82,9 +82,9 @@ CREATE TABLE CapacityFactorProcess
     PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorProcess VALUES('A',2025,'s2','d1','EFL',2025,0.8000000000000000444,NULL);
-INSERT INTO CapacityFactorProcess VALUES('A',2025,'s1','d2','EFL',2025,0.9000000000000000222,NULL);
-CREATE TABLE CapacityFactorTech
+INSERT INTO capacity_factor_process VALUES('A',2025,'s2','d1','EFL',2025,0.8000000000000000444,NULL);
+INSERT INTO capacity_factor_process VALUES('A',2025,'s1','d2','EFL',2025,0.9000000000000000222,NULL);
+CREATE TABLE capacity_factor_tech
 (
     region TEXT,
     period INTEGER
@@ -100,8 +100,8 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('A',2025,'s1','d1','EF',0.8000000000000000444,NULL);
-INSERT INTO CapacityFactorTech VALUES('B',2025,'s2','d2','bulbs',0.75,NULL);
+INSERT INTO capacity_factor_tech VALUES('A',2025,'s1','d1','EF',0.8000000000000000444,NULL);
+INSERT INTO capacity_factor_tech VALUES('B',2025,'s2','d2','bulbs',0.75,NULL);
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -144,7 +144,7 @@ INSERT INTO CommodityType VALUES('p','physical commodity');
 INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('d','demand commodity');
 INSERT INTO CommodityType VALUES('s','source commodity');
-CREATE TABLE ConstructionInput
+CREATE TABLE construction_input
 (
     region      TEXT,
     input_comm   TEXT
@@ -158,7 +158,7 @@ CREATE TABLE ConstructionInput
     notes       TEXT,
     PRIMARY KEY (region, input_comm, tech, vintage)
 );
-CREATE TABLE CostEmission
+CREATE TABLE cost_emission
 (
     region    TEXT,
     period    INTEGER
@@ -170,8 +170,8 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-INSERT INTO CostEmission VALUES('A',2025,'co2',1.989999999999999992,'dollars','none');
-CREATE TABLE CostFixed
+INSERT INTO cost_emission VALUES('A',2025,'co2',1.989999999999999992,'dollars','none');
+CREATE TABLE cost_fixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -185,21 +185,21 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostFixed VALUES('A',2025,'EH',2025,3.299999999999999823,'','');
-INSERT INTO CostFixed VALUES('A',2025,'EF',2025,2.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('A',2025,'EFL',2025,3.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'batt',2025,1.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'EF',2025,2.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('A',2025,'bulbs',2025,1.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'bulbs',2025,1.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('A',2025,'heater',2025,2.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'heater',2025,2.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'GeoThermal',2025,6.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'GeoHeater',2025,1.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('B',2025,'EH',2025,3.299999999999999823,NULL,NULL);
-INSERT INTO CostFixed VALUES('A',2025,'GeoThermal',2025,4.0,NULL,NULL);
-INSERT INTO CostFixed VALUES('A',2025,'GeoHeater',2025,4.5,NULL,NULL);
-CREATE TABLE CostInvest
+INSERT INTO cost_fixed VALUES('A',2025,'EH',2025,3.299999999999999823,'','');
+INSERT INTO cost_fixed VALUES('A',2025,'EF',2025,2.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('A',2025,'EFL',2025,3.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'batt',2025,1.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'EF',2025,2.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('A',2025,'bulbs',2025,1.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'bulbs',2025,1.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('A',2025,'heater',2025,2.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'heater',2025,2.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'GeoThermal',2025,6.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'GeoHeater',2025,1.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('B',2025,'EH',2025,3.299999999999999823,NULL,NULL);
+INSERT INTO cost_fixed VALUES('A',2025,'GeoThermal',2025,4.0,NULL,NULL);
+INSERT INTO cost_fixed VALUES('A',2025,'GeoHeater',2025,4.5,NULL,NULL);
+CREATE TABLE cost_invest
 (
     region  TEXT,
     tech    TEXT
@@ -211,21 +211,21 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO CostInvest VALUES('A','EF',2025,1.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','EH',2025,3.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','bulbs',2025,4.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','heater',2025,5.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','EF',2025,6.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','batt',2025,7.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','bulbs',2025,8.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','heater',2025,9.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','EFL',2025,2.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','GeoThermal',2025,3.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','GeoHeater',2025,4.0,NULL,NULL);
-INSERT INTO CostInvest VALUES('B','EH',2025,3.299999999999999823,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','GeoThermal',2025,5.599999999999999645,NULL,NULL);
-INSERT INTO CostInvest VALUES('A','GeoHeater',2025,4.200000000000000177,NULL,NULL);
-CREATE TABLE CostVariable
+INSERT INTO cost_invest VALUES('A','EF',2025,1.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','EH',2025,3.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','bulbs',2025,4.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','heater',2025,5.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','EF',2025,6.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','batt',2025,7.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','bulbs',2025,8.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','heater',2025,9.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','EFL',2025,2.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','GeoThermal',2025,3.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','GeoHeater',2025,4.0,NULL,NULL);
+INSERT INTO cost_invest VALUES('B','EH',2025,3.299999999999999823,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','GeoThermal',2025,5.599999999999999645,NULL,NULL);
+INSERT INTO cost_invest VALUES('A','GeoHeater',2025,4.200000000000000177,NULL,NULL);
+CREATE TABLE cost_variable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -239,15 +239,15 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostVariable VALUES('A',2025,'EF',2025,9.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('A',2025,'EFL',2025,8.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('A',2025,'EH',2025,7.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('A',2025,'bulbs',2025,6.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('A',2025,'heater',2025,5.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('B',2025,'EF',2025,4.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('B',2025,'batt',2025,3.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('B',2025,'bulbs',2025,2.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('B',2025,'heater',2025,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('A',2025,'EF',2025,9.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('A',2025,'EFL',2025,8.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('A',2025,'EH',2025,7.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('A',2025,'bulbs',2025,6.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('A',2025,'heater',2025,5.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('B',2025,'EF',2025,4.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('B',2025,'batt',2025,3.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('B',2025,'bulbs',2025,2.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('B',2025,'heater',2025,1.0,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -296,7 +296,7 @@ INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s1','d2','RH',0.25,NULL)
 INSERT INTO DemandSpecificDistribution VALUES('A',2025,'s2','d2','RH',0.25,NULL);
 INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s1','d2','RH',0.25,NULL);
 INSERT INTO DemandSpecificDistribution VALUES('B',2025,'s2','d2','RH',0.25,NULL);
-CREATE TABLE EndOfLifeOutput
+CREATE TABLE end_of_life_output
 (
     region      TEXT,
     tech        TEXT
@@ -310,7 +310,7 @@ CREATE TABLE EndOfLifeOutput
     notes       TEXT,
     PRIMARY KEY (region, tech, vintage, output_comm)
 );
-CREATE TABLE Efficiency
+CREATE TABLE efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -326,25 +326,25 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('A','ELC','bulbs',2025,'RL',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','HYD','EH',2025,'ELC',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','HYD','EF',2025,'ELC',1.0,NULL);
-INSERT INTO Efficiency VALUES('B','ELC','bulbs',2025,'RL',1.0,NULL);
-INSERT INTO Efficiency VALUES('B','HYD','EH',2025,'ELC',1.0,NULL);
-INSERT INTO Efficiency VALUES('B','ELC','batt',2025,'ELC',1.0,NULL);
-INSERT INTO Efficiency VALUES('B','HYD','EF',2025,'ELC',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','earth','well',2025,'HYD',1.0,NULL);
-INSERT INTO Efficiency VALUES('B','earth','well',2025,'HYD',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','earth','EFL',2025,'FusionGasFuel',1.0,NULL);
-INSERT INTO Efficiency VALUES('A','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('A-B','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
-INSERT INTO Efficiency VALUES('B','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('B','GeoHyd','GeoHeater',2025,'RH',0.980000000000000094,NULL);
-INSERT INTO Efficiency VALUES('B','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
-INSERT INTO Efficiency VALUES('B-A','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
-INSERT INTO Efficiency VALUES('A','GeoHyd','GeoHeater',2025,'RH',0.9000000000000000222,NULL);
-INSERT INTO Efficiency VALUES('A','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
-CREATE TABLE EfficiencyVariable
+INSERT INTO efficiency VALUES('A','ELC','bulbs',2025,'RL',1.0,NULL);
+INSERT INTO efficiency VALUES('A','HYD','EH',2025,'ELC',1.0,NULL);
+INSERT INTO efficiency VALUES('A','HYD','EF',2025,'ELC',1.0,NULL);
+INSERT INTO efficiency VALUES('B','ELC','bulbs',2025,'RL',1.0,NULL);
+INSERT INTO efficiency VALUES('B','HYD','EH',2025,'ELC',1.0,NULL);
+INSERT INTO efficiency VALUES('B','ELC','batt',2025,'ELC',1.0,NULL);
+INSERT INTO efficiency VALUES('B','HYD','EF',2025,'ELC',1.0,NULL);
+INSERT INTO efficiency VALUES('A','earth','well',2025,'HYD',1.0,NULL);
+INSERT INTO efficiency VALUES('B','earth','well',2025,'HYD',1.0,NULL);
+INSERT INTO efficiency VALUES('A','earth','EFL',2025,'FusionGasFuel',1.0,NULL);
+INSERT INTO efficiency VALUES('A','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
+INSERT INTO efficiency VALUES('A-B','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
+INSERT INTO efficiency VALUES('B','FusionGasFuel','heater',2025,'RH',0.9000000000000000222,NULL);
+INSERT INTO efficiency VALUES('B','GeoHyd','GeoHeater',2025,'RH',0.980000000000000094,NULL);
+INSERT INTO efficiency VALUES('B','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
+INSERT INTO efficiency VALUES('B-A','FusionGasFuel','FGF_pipe',2025,'FusionGasFuel',0.949999999999999956,NULL);
+INSERT INTO efficiency VALUES('A','GeoHyd','GeoHeater',2025,'RH',0.9000000000000000222,NULL);
+INSERT INTO efficiency VALUES('A','earth','GeoThermal',2025,'GeoHyd',1.0,NULL);
+CREATE TABLE efficiency_variable
 (
     region      TEXT,
     period      INTEGER
@@ -366,7 +366,7 @@ CREATE TABLE EfficiencyVariable
     PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE EmissionActivity
+CREATE TABLE emission_activity
 (
     region      TEXT,
     emis_comm   TEXT
@@ -384,9 +384,9 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('A','co2','HYD','EH',2025,'ELC',0.02000000000000000041,NULL,NULL);
-INSERT INTO EmissionActivity VALUES('A','FusionGas','HYD','EF',2025,'ELC',-0.2000000000000000111,NULL,'needs to be negative as a driver of linked tech...don''t ask');
-CREATE TABLE EmissionEmbodied
+INSERT INTO emission_activity VALUES('A','co2','HYD','EH',2025,'ELC',0.02000000000000000041,NULL,NULL);
+INSERT INTO emission_activity VALUES('A','FusionGas','HYD','EF',2025,'ELC',-0.2000000000000000111,NULL,'needs to be negative as a driver of linked tech...don''t ask');
+CREATE TABLE emission_embodied
 (
     region      TEXT,
     emis_comm   TEXT
@@ -400,7 +400,7 @@ CREATE TABLE EmissionEmbodied
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE EmissionEndOfLife
+CREATE TABLE emission_end_of_life
 (
     region      TEXT,
     emis_comm   TEXT
@@ -414,7 +414,7 @@ CREATE TABLE EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE ExistingCapacity
+CREATE TABLE existing_capacity
 (
     region   TEXT,
     tech     TEXT
@@ -426,7 +426,7 @@ CREATE TABLE ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO ExistingCapacity VALUES('A','EH',2020,200.0,'things',NULL);
+INSERT INTO existing_capacity VALUES('A','EH',2020,200.0,'things',NULL);
 CREATE TABLE TechGroup
 (
     group_name TEXT
@@ -435,7 +435,7 @@ CREATE TABLE TechGroup
 );
 INSERT INTO TechGroup VALUES('RPS_common','');
 INSERT INTO TechGroup VALUES('A_tech_grp_1','converted from old db');
-CREATE TABLE LoanLifetimeProcess
+CREATE TABLE loan_lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -446,25 +446,25 @@ CREATE TABLE LoanLifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LoanLifetimeProcess VALUES('A','EF',2025,57,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','EFL',2025,68,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','bulbs',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','EH',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','well',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','heater',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','GeoHeater',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A','GeoThermal',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','EF',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','bulbs',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','EH',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','batt',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','well',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','heater',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','GeoHeater',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B','GeoThermal',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('A-B','FGF_pipe',2025,10,NULL);
-INSERT INTO LoanLifetimeProcess VALUES('B-A','FGF_pipe',2025,10,NULL);
-CREATE TABLE LoanRate
+INSERT INTO loan_lifetime_process VALUES('A','EF',2025,57,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','EFL',2025,68,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','bulbs',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','EH',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','well',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','heater',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','GeoHeater',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A','GeoThermal',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','EF',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','bulbs',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','EH',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','batt',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','well',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','heater',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','GeoHeater',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B','GeoThermal',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('A-B','FGF_pipe',2025,10,NULL);
+INSERT INTO loan_lifetime_process VALUES('B-A','FGF_pipe',2025,10,NULL);
+CREATE TABLE loan_rate
 (
     region  TEXT,
     tech    TEXT
@@ -475,7 +475,7 @@ CREATE TABLE LoanRate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeProcess
+CREATE TABLE lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -486,8 +486,8 @@ CREATE TABLE LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LifetimeProcess VALUES('B','EF',2025,200.0,NULL);
-CREATE TABLE LifetimeTech
+INSERT INTO lifetime_process VALUES('B','EF',2025,200.0,NULL);
+CREATE TABLE lifetime_tech
 (
     region   TEXT,
     tech     TEXT
@@ -496,8 +496,8 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('A','EH',60.0,'');
-INSERT INTO LifetimeTech VALUES('B','bulbs',100.0,'super LED!');
+INSERT INTO lifetime_tech VALUES('A','EH',60.0,'');
+INSERT INTO lifetime_tech VALUES('B','bulbs',100.0,'super LED!');
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -506,7 +506,7 @@ CREATE TABLE Operator
 INSERT INTO Operator VALUES('e','equal to');
 INSERT INTO Operator VALUES('le','less than or equal to');
 INSERT INTO Operator VALUES('ge','greater than or equal to');
-CREATE TABLE LimitGrowthCapacity
+CREATE TABLE limit_growth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -518,7 +518,7 @@ CREATE TABLE LimitGrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthCapacity
+CREATE TABLE limit_degrowth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -530,7 +530,7 @@ CREATE TABLE LimitDegrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacity
+CREATE TABLE limit_growth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -542,7 +542,7 @@ CREATE TABLE LimitGrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacity
+CREATE TABLE limit_degrowth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -554,7 +554,7 @@ CREATE TABLE LimitDegrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacityDelta
+CREATE TABLE limit_growth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -566,7 +566,7 @@ CREATE TABLE LimitGrowthNewCapacityDelta
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacityDelta
+CREATE TABLE limit_degrowth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -597,7 +597,7 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
-CREATE TABLE LimitActivity
+CREATE TABLE limit_activity
 (
     region  TEXT,
     period  INTEGER
@@ -610,12 +610,12 @@ CREATE TABLE LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-INSERT INTO LimitActivity VALUES('A',2025,'EF','ge',0.00100000000000000002,'PJ/CY','goofy units');
-INSERT INTO LimitActivity VALUES('B',2025,'EH','le',10000.0,'stuff',NULL);
-INSERT INTO LimitActivity VALUES('A',2025,'EF','le',10000.0,'stuff',NULL);
-INSERT INTO LimitActivity VALUES('A',2025,'A_tech_grp_1','ge',0.05000000000000000277,'',NULL);
-INSERT INTO LimitActivity VALUES('A',2025,'A_tech_grp_1','le',10000.0,'',NULL);
-CREATE TABLE LimitActivityShare
+INSERT INTO limit_activity VALUES('A',2025,'EF','ge',0.00100000000000000002,'PJ/CY','goofy units');
+INSERT INTO limit_activity VALUES('B',2025,'EH','le',10000.0,'stuff',NULL);
+INSERT INTO limit_activity VALUES('A',2025,'EF','le',10000.0,'stuff',NULL);
+INSERT INTO limit_activity VALUES('A',2025,'A_tech_grp_1','ge',0.05000000000000000277,'',NULL);
+INSERT INTO limit_activity VALUES('A',2025,'A_tech_grp_1','le',10000.0,'',NULL);
+CREATE TABLE limit_activity_share
 (
     region         TEXT,
     period         INTEGER
@@ -628,7 +628,7 @@ CREATE TABLE LimitActivityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitAnnualCapacityFactor
+CREATE TABLE limit_annual_capacity_factor
 (
     region      TEXT,
     period      INTEGER
@@ -644,7 +644,7 @@ CREATE TABLE LimitAnnualCapacityFactor
     PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE LimitCapacity
+CREATE TABLE limit_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -657,13 +657,13 @@ CREATE TABLE LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-INSERT INTO LimitCapacity VALUES('A',2025,'EH','ge',0.1000000000000000055,'','');
-INSERT INTO LimitCapacity VALUES('B',2025,'batt','ge',0.1000000000000000055,'','');
-INSERT INTO LimitCapacity VALUES('A',2025,'EH','le',20000.0,'','');
-INSERT INTO LimitCapacity VALUES('B',2025,'EH','le',20000.0,'','');
-INSERT INTO LimitCapacity VALUES('A',2025,'A_tech_grp_1','ge',0.2000000000000000111,'',NULL);
-INSERT INTO LimitCapacity VALUES('A',2025,'A_tech_grp_1','le',6000.0,'',NULL);
-CREATE TABLE LimitCapacityShare
+INSERT INTO limit_capacity VALUES('A',2025,'EH','ge',0.1000000000000000055,'','');
+INSERT INTO limit_capacity VALUES('B',2025,'batt','ge',0.1000000000000000055,'','');
+INSERT INTO limit_capacity VALUES('A',2025,'EH','le',20000.0,'','');
+INSERT INTO limit_capacity VALUES('B',2025,'EH','le',20000.0,'','');
+INSERT INTO limit_capacity VALUES('A',2025,'A_tech_grp_1','ge',0.2000000000000000111,'',NULL);
+INSERT INTO limit_capacity VALUES('A',2025,'A_tech_grp_1','le',6000.0,'',NULL);
+CREATE TABLE limit_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -676,7 +676,7 @@ CREATE TABLE LimitCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitNewCapacity
+CREATE TABLE limit_new_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -689,7 +689,7 @@ CREATE TABLE LimitNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitNewCapacityShare
+CREATE TABLE limit_new_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -702,9 +702,9 @@ CREATE TABLE LimitNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-INSERT INTO LimitNewCapacityShare VALUES('A',2025,'RPS_common','A_tech_grp_1','ge',0.0,'');
-INSERT INTO LimitNewCapacityShare VALUES('global',2025,'RPS_common','A_tech_grp_1','le',1.0,'');
-CREATE TABLE LimitResource
+INSERT INTO limit_new_capacity_share VALUES('A',2025,'RPS_common','A_tech_grp_1','ge',0.0,'');
+INSERT INTO limit_new_capacity_share VALUES('global',2025,'RPS_common','A_tech_grp_1','le',1.0,'');
+CREATE TABLE limit_resource
 (
     region  TEXT,
     tech_or_group   TEXT,
@@ -715,8 +715,8 @@ CREATE TABLE LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-INSERT INTO LimitResource VALUES('B','EF','le',9000.0,'clumps',NULL);
-CREATE TABLE LimitSeasonalCapacityFactor
+INSERT INTO limit_resource VALUES('B','EF','le',9000.0,'clumps',NULL);
+CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -732,7 +732,7 @@ CREATE TABLE LimitSeasonalCapacityFactor
 	notes	TEXT,
 	PRIMARY KEY(region, period, season, tech, operator)
 );
-CREATE TABLE LimitTechInputSplit
+CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
     period         INTEGER
@@ -747,8 +747,8 @@ CREATE TABLE LimitTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-INSERT INTO LimitTechInputSplit VALUES('A',2025,'HYD','EH','ge',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
-CREATE TABLE LimitTechInputSplitAnnual
+INSERT INTO limit_tech_input_split VALUES('A',2025,'HYD','EH','ge',0.949999999999999956,'95% HYD reqt.  (other not specified...)');
+CREATE TABLE limit_tech_input_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -763,7 +763,7 @@ CREATE TABLE LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechOutputSplit
+CREATE TABLE limit_tech_output_split
 (
     region         TEXT,
     period         INTEGER
@@ -778,8 +778,8 @@ CREATE TABLE LimitTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-INSERT INTO LimitTechOutputSplit VALUES('B',2025,'EH','ELC','ge',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
-CREATE TABLE LimitTechOutputSplitAnnual
+INSERT INTO limit_tech_output_split VALUES('B',2025,'EH','ELC','ge',0.949999999999999956,'95% ELC output (there are not others, this is a min)');
+CREATE TABLE limit_tech_output_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -794,7 +794,7 @@ CREATE TABLE LimitTechOutputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitEmission
+CREATE TABLE limit_emission
 (
     region    TEXT,
     period    INTEGER
@@ -808,7 +808,7 @@ CREATE TABLE LimitEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm, operator)
 );
-INSERT INTO LimitEmission VALUES('A',2025,'co2','le',10000.0,'gulps',NULL);
+INSERT INTO limit_emission VALUES('A',2025,'co2','le',10000.0,'gulps',NULL);
 CREATE TABLE LinkedTech
 (
     primary_region TEXT,
@@ -953,7 +953,7 @@ CREATE TABLE OutputStorageLevel
     level REAL,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
-CREATE TABLE PlanningReserveMargin
+CREATE TABLE planning_reserve_margin
 (
     region TEXT
         PRIMARY KEY
@@ -961,8 +961,8 @@ CREATE TABLE PlanningReserveMargin
     margin REAL,
     notes TEXT
 );
-INSERT INTO PlanningReserveMargin VALUES('A',0.05000000000000000277,NULL);
-CREATE TABLE RampDownHourly
+INSERT INTO planning_reserve_margin VALUES('A',0.05000000000000000277,NULL);
+CREATE TABLE ramp_down_hourly
 (
     region TEXT,
     tech   TEXT
@@ -971,9 +971,9 @@ CREATE TABLE RampDownHourly
     notes TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampDownHourly VALUES('A','EH',0.05000000000000000277,NULL);
-INSERT INTO RampDownHourly VALUES('B','EH',0.05000000000000000277,NULL);
-CREATE TABLE RampUpHourly
+INSERT INTO ramp_down_hourly VALUES('A','EH',0.05000000000000000277,NULL);
+INSERT INTO ramp_down_hourly VALUES('B','EH',0.05000000000000000277,NULL);
+CREATE TABLE ramp_up_hourly
 (
     region TEXT,
     tech   TEXT
@@ -982,8 +982,8 @@ CREATE TABLE RampUpHourly
     notes TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO RampUpHourly VALUES('B','EH',0.05000000000000000277,NULL);
-INSERT INTO RampUpHourly VALUES('A','EH',0.05000000000000000277,NULL);
+INSERT INTO ramp_up_hourly VALUES('B','EH',0.05000000000000000277,NULL);
+INSERT INTO ramp_up_hourly VALUES('A','EH',0.05000000000000000277,NULL);
 CREATE TABLE Region
 (
     region TEXT
@@ -992,7 +992,7 @@ CREATE TABLE Region
 );
 INSERT INTO Region VALUES('A','main region');
 INSERT INTO Region VALUES('B','just a 2nd region');
-CREATE TABLE ReserveCapacityDerate
+CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     period  INTEGER
@@ -1008,7 +1008,7 @@ CREATE TABLE ReserveCapacityDerate
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE TimeSegmentFraction
-(   
+(
     period INTEGER
         REFERENCES TimePeriod (period),
     season TEXT
@@ -1024,7 +1024,7 @@ INSERT INTO TimeSegmentFraction VALUES(2025,'s2','d1',0.25,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2025,'s2','d2',0.25,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2025,'s1','d1',0.25,NULL);
 INSERT INTO TimeSegmentFraction VALUES(2025,'s1','d2',0.25,NULL);
-CREATE TABLE StorageDuration
+CREATE TABLE storage_duration
 (
     region   TEXT,
     tech     TEXT,
@@ -1032,8 +1032,8 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO StorageDuration VALUES('B','batt',15.0,NULL);
-CREATE TABLE LifetimeSurvivalCurve
+INSERT INTO storage_duration VALUES('B','batt',15.0,NULL);
+CREATE TABLE lifetime_survival_curve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -1085,7 +1085,7 @@ CREATE TABLE TimeSeason
 );
 INSERT INTO TimeSeason VALUES(2025,1,'s1',NULL);
 INSERT INTO TimeSeason VALUES(2025,2,'s2',NULL);
-CREATE TABLE TimeSeasonSequential
+CREATE TABLE time_season_sequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),

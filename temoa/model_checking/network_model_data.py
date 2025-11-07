@@ -163,20 +163,20 @@ def _build_from_model(
         raise NotImplementedError('Cannot build network data from model using a MyopicIndex')
 
     dem_com = defaultdict(set)
-    for r, p, d in model.Demand.sparse_iterkeys():
+    for r, p, d in model.demand.sparse_iterkeys():
         dem_com[r, p].add(d)
 
     techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = defaultdict(set)
-    if model.activeFlow_rpsditvo is not None:
-        for r, p, _s, _d, ic, tech, v, oc in model.activeFlow_rpsditvo:
+    if model.active_flow_rpsditvo is not None:
+        for r, p, _s, _d, ic, tech, v, oc in model.active_flow_rpsditvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
-    if model.activeFlow_rpitvo is not None:
-        for r, p, ic, tech, v, oc in model.activeFlow_rpitvo:
+    if model.active_flow_rpitvo is not None:
+        for r, p, ic, tech, v, oc in model.active_flow_rpitvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
 
     linked_techs = {
         LinkedTechTuple(r, driver, emission, driven)
-        for r, driver, emission, driven in model.LinkedTechs.sparse_iterkeys()
+        for r, driver, emission, driven in model.linked_techs.sparse_iterkeys()
     }
 
     res = NetworkModelData(
@@ -244,7 +244,7 @@ def _fetch_all_tech_definitions(
 ]:
     """Fetches the main block of technology efficiency and lifetime data."""
     default_lifetime = TemoaModel.default_lifetime_tech
-    table = 'MyopicEfficiency' if myopic_index else 'Efficiency'
+    table = 'Myopicefficiency' if myopic_index else 'efficiency'
 
     # Check if Technology table has sector column
     try:
@@ -263,8 +263,8 @@ def _fetch_all_tech_definitions(
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime,
                 COALESCE(tech_dim.sector, 'Other') AS sector
             FROM main.{table} AS eff
-            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
-            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
             LEFT JOIN main.Technology AS tech_dim ON eff.tech = tech_dim.tech
             JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
         """
@@ -274,8 +274,8 @@ def _fetch_all_tech_definitions(
                 eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
             FROM main.{table} AS eff
-            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
-            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
             JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
         """
     cursor = cur.execute(query, (default_lifetime,))
@@ -288,18 +288,18 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
 
     try:
         for r, tech, v, oc in cur.execute(
-            'SELECT region, tech, vintage, output_comm FROM EndOfLifeOutput'
+            'SELECT region, tech, vintage, output_comm FROM end_of_life_output'
         ).fetchall():
             lookups['eol'][(r, tech, v)].append(oc)
     except sqlite3.OperationalError:
-        logger.warning('Table EndOfLifeOutput not found, skipping.')
+        logger.warning('Table end_of_life_output not found, skipping.')
 
     try:
         lookups['construction'] = cur.execute(
-            'SELECT region, input_comm, tech, vintage FROM ConstructionInput'
+            'SELECT region, input_comm, tech, vintage FROM construction_input'
         ).fetchall()
     except sqlite3.OperationalError:
-        logger.warning('Table ConstructionInput not found, skipping.')
+        logger.warning('Table construction_input not found, skipping.')
 
     try:
         lookups['linked'] = set(
@@ -314,11 +314,11 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
         lookups['neg_cost_techs'] = {
             tech
             for (tech,) in cur.execute(
-                'SELECT DISTINCT tech FROM CostVariable WHERE cost < 0'
+                'SELECT DISTINCT tech FROM cost_variable WHERE cost < 0'
             ).fetchall()
         }
     except sqlite3.OperationalError:
-        logger.warning('Table CostVariable not found, skipping.')
+        logger.warning('Table cost_variable not found, skipping.')
 
     return lookups
 
