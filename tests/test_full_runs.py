@@ -110,7 +110,7 @@ def test_myopic_utopia(system_test_run):
     _, _, _, sequencer = system_test_run
     con = sqlite3.connect(sequencer.config.output_database)
     cur = con.cursor()
-    res = cur.execute('SELECT SUM(d_invest) FROM main.OutputCost').fetchone()
+    res = cur.execute('SELECT SUM(d_invest) FROM main.output_cost').fetchone()
     invest_sum = res[0]
     # reduced this target after storageinit rework
     # reduced after removing ancient 1-year shift bug from objective function

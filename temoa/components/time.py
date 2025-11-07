@@ -102,9 +102,9 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
             missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
             msg: str = (
-                'TimeSegmentFraction elements for period {} do not match TimeSeason and TimeOfDay.'
+                'TimeSegmentFraction elements for period {} do not match time_season and time_of_day.'
                 '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from TimeSeason/TimeOfDay:\n{}'
+                '\n\nIndices in TimeSegmentFraction missing from time_season/time_of_day:\n{}'
             ).format(p, missing, extra)
             logger.error(msg)
             raise ValueError(msg)
@@ -146,7 +146,7 @@ def validate_time_manual(model: TemoaModel) -> None:
     if model.time_sequencing.first() != 'manual':
         return
 
-    segfrac_psd: set[tuple[int, str, str]] = set(model.segment_fraction.sparse_iterkeys())
+    segment_fraction_psd: set[tuple[int, str, str]] = set(model.segment_fraction.sparse_iterkeys())
     time_manual_psd: set[tuple[int, str, str]] = {
         (p, s, d) for p, s, d, s_next, d_next in model.time_manual
     }
@@ -154,8 +154,10 @@ def validate_time_manual(model: TemoaModel) -> None:
         (p, s_next, d_next) for p, s, d, s_next, d_next in model.time_manual
     }
 
-    missing_psd: set[tuple[int, str, str]] = segfrac_psd.difference(time_manual_psd)
-    missing_psd_next: set[tuple[int, str, str]] = segfrac_psd.difference(time_manual_psd_next)
+    missing_psd: set[tuple[int, str, str]] = segment_fraction_psd.difference(time_manual_psd)
+    missing_psd_next: set[tuple[int, str, str]] = segment_fraction_psd.difference(
+        time_manual_psd_next
+    )
     if missing_psd or missing_psd_next:
         msg: str = (
             'Failed to build state sequence. '
@@ -326,7 +328,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
             logger.info(
                 'No data in time_season_sequential. By default, assuming sequential seasons '
-                'match TimeSeason and TimeSegmentFraction.'
+                'match time_season and TimeSegmentFraction.'
             )
             for s in model.time_season_all:
                 model.time_season_to_sequential.add(s)
@@ -403,14 +405,14 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             logger.warning(msg)
 
         # Check that the two tables agree on the total seasonal composition of each period
-        segfrac = value(model.segment_fraction_per_season[p, s])
-        segfracseq = sequential[p, s] / count_total[p]
-        if abs(segfrac - segfracseq) >= 0.001:
+        segment_fraction = value(model.segment_fraction_per_season[p, s])
+        segment_fraction_seq = sequential[p, s] / count_total[p]
+        if abs(segment_fraction - segment_fraction_seq) >= 0.001:
             msg = (
                 'Discrepancy of total period-season composition between '
                 'TimeSegmentFraction and time_season_sequential. Total fraction of each '
                 'period assigned to each season should match: '
                 f'TimeSegmentFraction: {(p, s, value(model.segment_fraction_per_season[p, s]))}'
-                f', time_season_sequential: {(p, s, segfracseq)}'
+                f', time_season_sequential: {(p, s, segment_fraction_seq)}'
             )
             logger.warning(msg)

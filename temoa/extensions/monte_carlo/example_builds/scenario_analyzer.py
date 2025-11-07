@@ -40,7 +40,7 @@ db_path = Path(PROJECT_ROOT, 'data_files/example_dbs/utopia.sqlite')
 with Connection(db_path) as conn:
     cur = conn.cursor()
     obj_values = cur.execute(
-        f"SELECT total_system_cost FROM OutputObjective WHERE scenario LIKE '{scenario_name}-%'"
+        f"SELECT total_system_cost FROM output_objective WHERE scenario LIKE '{scenario_name}-%'"
     ).fetchall()
     obj_values = tuple(t[0] for t in obj_values)
 

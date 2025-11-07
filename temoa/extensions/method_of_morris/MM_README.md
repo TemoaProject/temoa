@@ -21,7 +21,7 @@ which also refers to relevant studies.
   - It should be noted that co2 is _not_ optimized in any way, it is just the co2 emission
   for the optimal cost solution
   - Further, the code is currently hard-coded to look for _exactly_ the string `co2` in the
-  `OutputEmissions` table.  It is highly advisable to do a "regular" run on the data to ensure
+  `output_emissions` table.  It is highly advisable to do a "regular" run on the data to ensure
   that `co2` is properly represented in the commodity and output tables.
 
 - The basic sequence is:  marking of input parameters (by user) and domains (through the `perturbation`
@@ -42,7 +42,7 @@ relevant `config.toml` file which can then be run.
 3. Observe the `morris` configuration comments in the corresponding `morris_utopia.toml` file in `my_configs`.
 4. Run the config as normal.
 5. MM analysis is reported on screen and in 2 csv files for the objective and `co2` in the Outputs folder
-6. The DB will contain updated values (tagged by scenario name and "dash run") in `OutputObjective` and `OutputEmissions`
+6. The DB will contain updated values (tagged by scenario name and "dash run") in `output_objective` and `output_emissions`
 _only_ which might be of secondary value to the modeler.  Other output tables are _not_ updated.
 
 ### Preparing Other Databases (or modifying `morris_utopia`)

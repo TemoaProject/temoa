@@ -101,7 +101,7 @@ direct_transfer_tables = [
     ('',                    'TechInputSplitAverage'),
     ('',                    'TechOutputSplit'),
     ('technology_labels',   'TechnologyType'),
-    ('time_period_labels',  'TimePeriodType'),
+    ('time_period_labels',  'time_periodType'),
     ('SegFrac',             'TimeSegmentFraction'),
 ]
 
@@ -114,7 +114,7 @@ units_added_tables = [
 
 sequence_added_tables = [
     ('time_season',         'TimeSeason'),
-    ('time_periods',        'TimePeriod'),
+    ('time_periods',        'time_period'),
     ('time_of_day',         'TimeOfDay'),
 ]
 # fmt: on

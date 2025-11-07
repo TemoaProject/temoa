@@ -21,7 +21,7 @@ test_scenarios = [
         'db_data': {
             'Technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
-            'FROM TimePeriod': [(2020,), (2025,)],
+            'FROM time_period': [(2020,), (2025,)],
             # Unique keys for each Commodity query
             'FROM main.Commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%p%'": [
@@ -72,7 +72,7 @@ test_scenarios = [
         'db_data': {
             'Technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
-            'FROM TimePeriod': [(2020,), (2025,)],
+            'FROM time_period': [(2020,), (2025,)],
             'FROM main.Commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
             "Commodity WHERE flag LIKE '%w%'": [],
@@ -109,7 +109,7 @@ test_scenarios = [
         'db_data': {
             'Technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
-            'FROM TimePeriod': [(2020,), (2025,)],
+            'FROM time_period': [(2020,), (2025,)],
             'FROM main.Commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
             "Commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
             "Commodity WHERE flag LIKE '%w%'": [],
@@ -263,7 +263,7 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM TimePeriod' in query:
+        elif 'FROM time_period' in query:
             m = MagicMock()
             m.fetchall.return_value = [(2020,), (2025,)]
             return m
@@ -347,7 +347,7 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM TimePeriod' in query:
+        elif 'FROM time_period' in query:
             m = MagicMock()
             m.fetchall.return_value = [(2020,), (2025,)]
             return m

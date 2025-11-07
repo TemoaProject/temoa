@@ -109,10 +109,10 @@ class DatabaseUtil:
     def get_time_peridos_for_flags(self, flags: list[str] | None = None) -> set[int]:
         """Retrieves a set of time periods, optionally filtered by flags."""
         if (flags is None) or (not flags):
-            query = 'SELECT period FROM TimePeriod'
+            query = 'SELECT period FROM time_period'
         else:
             in_clause = ', '.join(f"'{flag}'" for flag in flags)
-            query = f'SELECT period FROM TimePeriod WHERE flag IN ({in_clause})'
+            query = f'SELECT period FROM time_period WHERE flag IN ({in_clause})'
 
         self.cur.execute(query)
         return {int(row[0]) for row in self.cur}
@@ -194,7 +194,7 @@ class DatabaseUtil:
             raise ValueError('A scenario must be set for output-related queries')
 
         columns = ['tech', 'period', 'SUM(capacity)', 'region']
-        query = f"SELECT {', '.join(columns)} FROM OutputNetCapacity WHERE scenario IS '{self.scenario}'"
+        query = f"SELECT {', '.join(columns)} FROM output_net_capacity WHERE scenario IS '{self.scenario}'"
 
         if region:
             query += f" AND region LIKE '{region}%'"
@@ -233,11 +233,11 @@ class DatabaseUtil:
         columns: list[str] = []
         table = ''
         if comm_type == 'input':
-            table = 'OutputFlowIn'
+            table = 'output_flow_in'
             if commodity is None:
                 columns.append('input_comm')
         elif comm_type == 'output':
-            table = 'OutputFlowOut'
+            table = 'output_flow_out'
             if commodity is None:
                 columns.append('output_comm')
         columns.append('tech')
@@ -269,7 +269,7 @@ class DatabaseUtil:
 
         query = f"""
             SELECT E.emis_comm, E.tech, SUM(E.activity * O.flow)
-            FROM emission_activity E, OutputFlowOut O
+            FROM emission_activity E, output_flow_out O
             WHERE E.input_comm = O.input_comm
               AND E.tech = O.tech
               AND E.vintage = O.vintage
@@ -298,12 +298,12 @@ class DatabaseUtil:
                 OC.capacity
             FROM (
                 SELECT region, scenario, period, input_comm, tech, vintage, output_comm, SUM(flow) AS vflow_in
-                FROM OutputFlowIn
+                FROM output_flow_in
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OF
             INNER JOIN (
                 SELECT region, scenario, period, input_comm, tech, vintage, output_comm, SUM(flow) AS vflow_out
-                FROM OutputFlowOut
+                FROM output_flow_out
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OFO ON
                 OF.region = OFO.region AND
@@ -313,7 +313,7 @@ class DatabaseUtil:
                 OF.input_comm = OFO.input_comm AND
                 OF.vintage = OFO.vintage AND
                 OF.output_comm = OFO.output_comm
-            INNER JOIN OutputNetCapacity OC ON
+            INNER JOIN output_net_capacity OC ON
                 OF.region = OC.region AND
                 OF.scenario = OC.scenario AND
                 OF.tech = OC.tech AND

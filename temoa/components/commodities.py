@@ -695,7 +695,7 @@ def create_demands(model: TemoaModel) -> None:
 
     # devnote: DDD just clones segment_fraction. Unless we want to specify it in the database,
     #          makes sense to just use segment_fraction directly
-    # Step 2: Build the demand default distribution (= segfrac)
+    # Step 2: Build the demand default distribution (= segment_fraction)
     # DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
     # unset_defaults = set(M.segment_fraction.sparse_iterkeys())
     # unset_defaults.difference_update(DDD.sparse_iterkeys())

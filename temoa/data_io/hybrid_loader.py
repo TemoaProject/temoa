@@ -197,19 +197,19 @@ class HybridLoader:
         # Load critical time sets first, as they index other components
         if myopic_index:
             raw_exist = cur.execute(
-                'SELECT period FROM TimePeriod WHERE period < ? ORDER BY sequence',
+                'SELECT period FROM time_period WHERE period < ? ORDER BY sequence',
                 (myopic_index.base_year,),
             ).fetchall()
             raw_future = cur.execute(
-                'SELECT period FROM TimePeriod WHERE flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
+                'SELECT period FROM time_period WHERE flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
                 (myopic_index.base_year, myopic_index.last_year),
             ).fetchall()
         else:
             raw_exist = cur.execute(
-                "SELECT period FROM TimePeriod WHERE flag = 'e' ORDER BY sequence"
+                "SELECT period FROM time_period WHERE flag = 'e' ORDER BY sequence"
             ).fetchall()
             raw_future = cur.execute(
-                "SELECT period FROM TimePeriod WHERE flag = 'f' ORDER BY sequence"
+                "SELECT period FROM time_period WHERE flag = 'f' ORDER BY sequence"
             ).fetchall()
         self._load_component_data(data, model.time_exist, raw_exist)
         self._load_component_data(data, model.time_future, raw_future)
@@ -262,7 +262,7 @@ class HybridLoader:
         )
         if myopic_index:
             p0_result = cur.execute(
-                "SELECT min(period) FROM TimePeriod WHERE flag == 'f'"
+                "SELECT min(period) FROM time_period WHERE flag == 'f'"
             ).fetchone()
             if p0_result:
                 data[model.myopic_discounting_year.name] = {None: int(p0_result[0])}
@@ -408,7 +408,7 @@ class HybridLoader:
             [
                 p
                 for (p,) in cur.execute(
-                    "SELECT period FROM TimePeriod WHERE flag = 'f' ORDER BY period"
+                    "SELECT period FROM time_period WHERE flag = 'f' ORDER BY period"
                 )
             ][:-1]  # drop last period
         )
@@ -536,7 +536,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Loads the indexed TimeSeason set and the simple time_season set,
+        Loads the indexed time_season set and the simple time_season set,
         with a dynamic fallback if the table is missing.
         """
         model = TemoaModel()
@@ -545,7 +545,7 @@ class HybridLoader:
 
         rows_to_load: list[tuple[object, ...]] = []
         if not raw_data:
-            logger.warning('No TimeSeason table found. Loading a single filler season "S".')
+            logger.warning('No time_season table found. Loading a single filler season "S".')
             rows_to_load = [(p, 'S') for p in time_optimize]
         elif mi:
             valid_periods = set(time_optimize)
@@ -618,11 +618,11 @@ class HybridLoader:
         rows_to_load = []
         if mi:
             prev_period_res = cur.execute(
-                'SELECT MAX(period) FROM TimePeriod WHERE period < ?', (mi.base_year,)
+                'SELECT MAX(period) FROM time_period WHERE period < ?', (mi.base_year,)
             ).fetchone()
             prev_period = prev_period_res[0] if prev_period_res else -1
             rows_to_load = cur.execute(
-                'SELECT region, tech, vintage, capacity FROM OutputBuiltCapacity WHERE vintage <= ? AND scenario = ? '
+                'SELECT region, tech, vintage, capacity FROM output_built_capacity WHERE vintage <= ? AND scenario = ? '
                 'UNION SELECT region, tech, vintage, capacity FROM existing_capacity',
                 (prev_period, self.config.scenario),
             ).fetchall()

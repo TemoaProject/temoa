@@ -8,18 +8,18 @@ import sys
 from pathlib import Path
 
 basic_output_tables = [
-    'OutputBuiltCapacity',
-    'OutputCost',
-    'OutputCurtailment',
-    'OutputDualVariable',
-    'OutputEmission',
-    'OutputFlowIn',
-    'OutputFlowOut',
-    'OutputNetCapacity',
-    'OutputObjective',
-    'OutputRetiredCapacity',
+    'output_built_capacity',
+    'output_cost',
+    'output_curtailment',
+    'output_dual_variable',
+    'output_emissionn',
+    'output_flow_in',
+    'output_flow_out',
+    'output_net_capacity',
+    'output_objective',
+    'output_retired_capacity',
 ]
-optional_output_tables = ['OutputFlowOutSummary', 'MyopicEfficiency']
+optional_output_tables = ['output_flow_outSummary', 'MyopicEfficiency']
 
 if len(sys.argv) != 2:
     print('this utility file expects a CLA for the path to the database to clear')

@@ -85,7 +85,7 @@ def poll_emission(conn: Connection, scenario: str, label: str) -> float:
     poll the output database of selected iteration for the given emission label total
     """
     raw = conn.execute(
-        'SELECT sum(emission) FROM main.OutputEmission WHERE scenario=? AND emis_comm=?',
+        'SELECT sum(emission) FROM main.output_emissionn WHERE scenario=? AND emis_comm=?',
         (scenario, label),
     ).fetchone()[0]
     return raw
@@ -96,7 +96,7 @@ def poll_activity(conn: Connection, scenario: str, label: str) -> float:
     poll the Flow Out activity for the given emission label total
     """
     raw = conn.execute(
-        'SELECT sum(flow) FROM main.OutputFlowOut WHERE scenario=? AND tech=?',
+        'SELECT sum(flow) FROM main.output_flow_out WHERE scenario=? AND tech=?',
         (scenario, label),
     ).fetchone()[0]
     return raw
@@ -107,7 +107,7 @@ def poll_capacity(conn: Connection, scenario: str, label: str) -> float:
     poll the built capacity for the given emission label total
     """
     raw = conn.execute(
-        'SELECT sum(capacity) FROM main.OutputBuiltCapacity WHERE scenario=? AND tech=?',
+        'SELECT sum(capacity) FROM main.output_built_capacityty WHERE scenario=? AND tech=?',
         (scenario, label),
     ).fetchone()[0]
     return raw

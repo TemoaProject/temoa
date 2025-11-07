@@ -4,7 +4,7 @@ BEGIN TRANSACTION;
 CREATE TABLE IF NOT EXISTS metadata
 (
     element TEXT,
-    value   INTEGER,
+    value   INT,
     notes   TEXT,
     PRIMARY KEY (element)
 );
@@ -1053,5 +1053,27 @@ CREATE TABLE IF NOT EXISTS output_cost
     FOREIGN KEY (vintage) REFERENCES time_period (period),
     FOREIGN KEY (tech) REFERENCES technology (tech)
 );
+
+CREATE TABLE IF NOT EXISTS time_season
+(
+    period INTEGER REFERENCES time_period (period),
+    sequence INTEGER,
+    season TEXT REFERENCES season_label(season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, season)
+);
+
+CREATE TABLE IF NOT EXISTS time_season_sequential
+(
+    period INTEGER REFERENCES time_period (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT REFERENCES season_label(season),
+    num_days REAL NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (num_days > 0)
+);
+
 COMMIT;
 PRAGMA foreign_keys = 1;

@@ -59,7 +59,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_capacity = """
         SELECT region, tech, sector, period, SUM(capacity) as capacity
-        FROM OutputNetCapacity WHERE scenario = ?
+        FROM output_net_capacity WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
     df_capacity = pd.read_sql_query(query_capacity, con, params=(scenario_name,))
@@ -88,7 +88,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_activity = """
         SELECT region, tech, sector, period, SUM(flow) as vflow_out
-        FROM OutputFlowOut WHERE scenario = ?
+        FROM output_flow_out WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
     df_activity = pd.read_sql_query(query_activity, con, params=(scenario_name,))
@@ -127,7 +127,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_emissions = """
         SELECT region, tech, sector, period, emis_comm, SUM(emission) as emissions
-        FROM OutputEmission WHERE scenario = ?
+        FROM output_emission WHERE scenario = ?
         GROUP BY region, tech, sector, period, emis_comm
     """
     df_emissions_raw = pd.read_sql_query(query_emissions, con, params=(scenario_name,))
@@ -164,7 +164,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     query_costs = """
         SELECT region, oc.tech, t.sector, vintage,
                d_invest + d_var + d_fixed + d_emiss as cost
-        FROM OutputCost oc
+        FROM output_cost oc
         JOIN Technology t ON oc.tech = t.tech
         WHERE scenario = ?
     """

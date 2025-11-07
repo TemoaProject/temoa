@@ -60,7 +60,7 @@ def test_flows(solved_connection):
     con, name, tech, period, flow_target = solved_connection
     cursor = con.cursor()
     row = cursor.execute(
-        'SELECT SUM(flow) FROM main.OutputFlowOut WHERE tech = ? AND period = ?',
+        'SELECT SUM(flow) FROM main.output_flow_out WHERE tech = ? AND period = ?',
         (tech, period),
     ).fetchone()
     # If the query returns no rows, row will be None. If it finds rows but the sum is NULL, row[0] will be None.

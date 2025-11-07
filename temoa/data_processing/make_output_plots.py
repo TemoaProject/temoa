@@ -60,20 +60,20 @@ class OutputPlotGenerator:
         cur = con.cursor()
         if mode == 1:
             cur.execute(
-                f'SELECT sector, period, tech, capacity FROM OutputNetCapacity '
+                f'SELECT sector, period, tech, capacity FROM output_net_capacity '
                 f"WHERE scenario == '{self.scenario}' AND region LIKE '{self.region}'"
             )
             self.capacity_output = [list(elem) for elem in cur.fetchall()]
         elif mode == 2:
             cur.execute(
-                f'SELECT sector, period, tech, SUM(flow) FROM OutputFlowOut '
+                f'SELECT sector, period, tech, SUM(flow) FROM output_flow_out '
                 f"WHERE scenario == '{self.scenario}' AND region LIKE '{self.region}' "
                 f'GROUP BY sector, period, tech'
             )
             self.output_vflow = [list(elem) for elem in cur.fetchall()]
         elif mode == 3:
             cur.execute(
-                f'SELECT sector, period, emis_comm, SUM(emission) FROM OutputEmission '
+                f'SELECT sector, period, emis_comm, SUM(emission) FROM output_emission '
                 f"WHERE scenario == '{self.scenario}' AND region LIKE '{self.region}' "
                 f'GROUP BY sector, period, emis_comm'
             )

@@ -319,9 +319,9 @@ recommend that you populate input tables in the following order:
 **Group 2: sets used within Temoa**
   * Commodity: list of commodities used within the database
   * Technology: list of technologies used within the database
-  * TimePeriod: list of both past and future time periods considered in the database
-  * TimeSeason: seasons modeled in the database
-  * TimeOfDay: time of day segments modeled in the database
+  * time_period: list of both past and future time periods considered in the database
+  * time_season: seasons modeled in the database
+  * time_of_day: time of day segments modeled in the database
 
 
 **Group 3: parameters used to define processes within Temoa**
@@ -750,7 +750,7 @@ Sets
    ":math:`\text{T}^e`",":code:`tech_existing`","string","technologies constructed in an existing (past) vintage; (:math:`{T}^e \subset T`)."
    ":math:`\text{T}^f`",":code:`tech_flex`","string","technologies producing excess commodity flows; (:math:`{T}^f \subset T`)"
    "",":code:`TechGroupName`","string","named groups for use in group constraints"
-   "",":code:`TechGroupMember`","(TechGroupName, tech)","Each technology belonging to each group defined above"
+   "",":code:`tech_group_member`","(TechGroupName, tech)","Each technology belonging to each group defined above"
    ":math:`\text{T}^p`",":code:`tech_production`","string","techs producing intermediate commodities"
    ":math:`\text{T}^{ur}`",":code:`tech_upramping`","string","electric generators with a ramp up hourly rate limit; (:math:`{T}^{ur} \subset T`)"
    ":math:`\text{T}^{dr}`",":code:`tech_downramping`","string","electric generators with a ramp down hourly rate limit; (:math:`{T}^{dr} \subset T`)"
@@ -1278,7 +1278,7 @@ costs, which are the basis of the objective function.  Costs are discounted to t
 first future time period in the model by default.  If running a Myopic run, the
 discount base year can be set in the MetaData table.  This is the :code:`MyopicBaseYear`.
 
-The output in the :code:`OutputCost` table shows both discounted and non-discounted (raw)
+The output in the :code:`output_cost` table shows both discounted and non-discounted (raw)
 values for all model costs.  Of note, all loan costs are displayed as an annuity cost in
 the vintage year, not as a string of payments.
 
@@ -1822,8 +1822,8 @@ portion of the electricity production counts towards the target, and there is
 no way to distinguish it from the useful production. Including an explicit
 curtailment term addresses the issue.  Curtailment in the model is simply
 the production activity that is not used in the model and is reported as
-such in the OutputCurtailment table.  Note:  Outputs presented in the
-`OutputCurtailment` table for curtailment (the table separately includes
+such in the output_curtailment table.  Note:  Outputs presented in the
+`output_curtailment` table for curtailment (the table separately includes
 flex outputs) are limited by Capacity Factor.  Meaning:  if a tech has a
 capacity of 10 units, and a CF of 0.8 and a usage of 5 units, then the reported
 curtailment is 3 units (0.8 x 10 - 5).

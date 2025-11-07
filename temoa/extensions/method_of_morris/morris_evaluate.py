@@ -104,7 +104,7 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
     cur = con.cursor()
     scenario_name = config.scenario + f'-{i}'
     cur.execute(
-        'SELECT total_system_cost FROM OutputObjective where scenario = ?', (scenario_name,)
+        'SELECT total_system_cost FROM output_objective where scenario = ?', (scenario_name,)
     )
     output_query = cur.fetchall()
     if len(output_query) > 1:
@@ -114,7 +114,7 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
     else:
         Y_OF = output_query[0][0]
     cur.execute(
-        "SELECT SUM(emission) FROM OutputEmission WHERE emis_comm='co2' AND scenario=?",
+        "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
         (scenario_name,),
     )
     output_query = cur.fetchall()
@@ -122,7 +122,7 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
         Y_CumulativeCO2 = 0.0
     elif len(output_query) > 1:
         raise RuntimeError(
-            'Multiple outputs found in OutputEmissions table matching scenario name.  Coding error.'
+            'Multiple outputs found in output_emissions table matching scenario name.  Coding error.'
         )
     else:
         Y_CumulativeCO2 = output_query[0][0]

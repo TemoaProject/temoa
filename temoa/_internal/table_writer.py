@@ -72,18 +72,18 @@ Note:  This file borrows heavily from the legacy pformat_results.py, and is some
 logger = getLogger(__name__)
 
 basic_output_tables = [
-    'OutputBuiltCapacity',
-    'OutputCost',
-    'OutputCurtailment',
-    'OutputDualVariable',
-    'OutputEmission',
-    'OutputFlowIn',
-    'OutputFlowOut',
-    'OutputNetCapacity',
-    'OutputObjective',
-    'OutputRetiredCapacity',
+    'output_built_capacity',
+    'output_cost',
+    'output_curtailment',
+    'output_dual_variable',
+    'output_emission',
+    'output_flow_in',
+    'output_flow_out',
+    'output_net_capacity',
+    'output_objective',
+    'output_retired_capacity',
 ]
-optional_output_tables = ['OutputFlowOutSummary', 'OutputMCDelta', 'OutputStorageLevel']
+optional_output_tables = ['output_flow_outSummary', 'OutputMCDelta', 'output_storage_level']
 
 flow_summary_file_loc = Path(
     PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
@@ -251,7 +251,7 @@ class TableWriter:
                 (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
             )
 
-        qry = f'INSERT INTO OutputStorageLevel VALUES {_marks(9)}'
+        qry = f'INSERT INTO output_storage_level VALUES {_marks(9)}'
         self.con.executemany(qry, data)
         self.con.commit()
 
@@ -269,7 +269,7 @@ class TableWriter:
             else self.config.scenario
         )
         for obj_name, obj_value in obj_vals:
-            qry = 'INSERT INTO OutputObjective VALUES (?, ?, ?)'
+            qry = 'INSERT INTO output_objective VALUES (?, ?, ?)'
             data = (scenario_name, obj_name, obj_value)
             self.con.execute(qry, data)
             self.con.commit()
@@ -297,7 +297,7 @@ class TableWriter:
             else:  # embodied emissions
                 entry = (scenario, ei.r, sector, cast(int, ei.v), ei.e, ei.t, ei.v, val)
             data.append(entry)
-        qry = f'INSERT INTO OutputEmission VALUES {_marks(8)}'
+        qry = f'INSERT INTO output_emission VALUES {_marks(8)}'
         self.con.executemany(qry, data)
         self.con.commit()
 
@@ -314,7 +314,7 @@ class TableWriter:
             s = self.tech_sectors.get(t)
             new_cap = (scenario, r, s, t, v, val)
             data.append(new_cap)
-        qry = 'INSERT INTO OutputBuiltCapacity VALUES (?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO output_built_capacity VALUES (?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data)
 
         # NetCapacity
@@ -331,7 +331,7 @@ class TableWriter:
                 val,
             )
             data_net.append(new_net_cap)
-        qry = 'INSERT INTO OutputNetCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO output_net_capacity VALUES (?, ?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data_net)
 
         # Retired Capacity
@@ -349,7 +349,7 @@ class TableWriter:
                 early,
             )
             data_ret.append(new_retired_cap)
-        qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO output_retired_capacity VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data_ret)
         self.con.commit()
 
@@ -384,10 +384,10 @@ class TableWriter:
                 flows_by_type[flow_type].append(entry)
 
         table_associations = {
-            FlowType.OUT: 'OutputFlowOut',
-            FlowType.IN: 'OutputFlowIn',
-            FlowType.CURTAIL: 'OutputCurtailment',
-            FlowType.FLEX: 'OutputCurtailment',  # devnote: should flex have its own table?
+            FlowType.OUT: 'output_flow_out',
+            FlowType.IN: 'output_flow_in',
+            FlowType.CURTAIL: 'output_curtailment',
+            FlowType.FLEX: 'output_curtailment',  # devnote: should flex have its own table?
         }
 
         for flow_type, table_name in table_associations.items():
@@ -453,7 +453,7 @@ class TableWriter:
             entry: tuple[str, str, str | None, int, str, str, int, str, float] = (*idx, flow)
             entries.append(entry)
 
-        qry = f'INSERT INTO OutputFlowOutSummary VALUES {_marks(9)}'
+        qry = f'INSERT INTO output_flow_outSummary VALUES {_marks(9)}'
         self.con.executemany(qry, entries)
 
         self.con.commit()
@@ -575,7 +575,7 @@ class TableWriter:
         entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
         iteration: int | None = None,
     ) -> None:
-        """Write the entries to the OutputCost table"""
+        """Write the entries to the output_cost table"""
         if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
         cur = self.con.cursor()
@@ -604,12 +604,12 @@ class TableWriter:
             for (r, p, t, v) in entries
         ]
         rows.sort(key=lambda r: (r[0:5]))
-        qry = 'INSERT INTO OutputCost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO output_cost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         cur.executemany(qry, rows)
         self.con.commit()
 
     def write_dual_variables(self, results: SolverResults, iteration: int | None = None) -> None:
-        """Write the dual variables to the OutputDualVariable table"""
+        """Write the dual variables to the output_dual_variable table"""
         scenario_name = (
             self.config.scenario + f'-{iteration}'
             if iteration is not None
@@ -617,7 +617,7 @@ class TableWriter:
         )  # collect the values
         constraint_data = results['Solution'].Constraint.items()
         dual_data = [(scenario_name, t[0], t[1]['Dual']) for t in constraint_data]
-        qry = 'INSERT INTO OutputDualVariable VALUES (?, ?, ?)'
+        qry = 'INSERT INTO output_dual_variable VALUES (?, ?, ?)'
         self.con.executemany(qry, dual_data)
         self.con.commit()
 

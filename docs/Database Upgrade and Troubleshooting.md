@@ -51,7 +51,7 @@ be slipped in to the `temoa_model.py` code anywhere in the constraint section.  
 will limit **all** flows to an upper bound.  If using this approach, the
 modeler should also limit any arbitrarily large demands in the
 demand table that may need to be revised downward in conjuction with this limit.
-The `OutputFlowOut` table can then be inspected for unusually high activity.
+The `output_flow_out` table can then be inspected for unusually high activity.
 
 ```
 @M.Constraint(M.flow_var_rpsditvo)

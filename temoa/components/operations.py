@@ -455,7 +455,7 @@ def ramp_up_season_constraint(
     of sequential seasons. Same as RampUpDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    TimeSeason table.
+    time_season table.
     """
 
     d = model.time_of_day.last()
@@ -528,7 +528,7 @@ def ramp_down_season_constraint(
     of sequential seasons. Same as RampDownDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    TimeSeason table.
+    time_season table.
     """
 
     d = model.time_of_day.last()

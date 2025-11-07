@@ -48,11 +48,11 @@ def evaluate(param_names, param_values, data: dict, k):
 
     con = sqlite3.connect(db_file)
     cur = con.cursor()
-    cur.execute('SELECT * FROM OutputObjective')
+    cur.execute('SELECT * FROM output_objective')
     output_query = cur.fetchall()
     for row in output_query:
         Y_OF = row[-1]
-    cur.execute("SELECT emis_comm, SUM(emission) FROM OutputEmission WHERE emis_comm='co2'")
+    cur.execute("SELECT emis_comm, SUM(emission) FROM output_emissionn WHERE emis_comm='co2'")
     output_query = cur.fetchall()
     for row in output_query:
         Y_CumulativeCO2 = row[-1]

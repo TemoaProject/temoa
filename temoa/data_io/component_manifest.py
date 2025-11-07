@@ -40,7 +40,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         # =========================================================================
         LoadItem(
             component=model.regions,
-            table='Region',
+            table='region',
             columns=['region'],
             is_period_filtered=False,
         ),
@@ -54,7 +54,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_production,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause="flag LIKE 'p%'",
             validator_name='viable_techs',
@@ -63,7 +63,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_uncap,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='unlim_cap > 0',
             validator_name='viable_techs',
@@ -73,7 +73,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_baseload,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause="flag = 'pb'",
             validator_name='viable_techs',
@@ -82,7 +82,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_storage,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause="flag = 'ps'",
             validator_name='viable_techs',
@@ -91,7 +91,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_seasonal_storage,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause="flag = 'ps' AND seas_stor > 0",
             validator_name='viable_techs',
@@ -100,7 +100,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_reserve,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='reserve > 0',
             validator_name='viable_techs',
@@ -109,7 +109,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_curtailment,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='curtail > 0',
             validator_name='viable_techs',
@@ -118,7 +118,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_flex,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='flex > 0',
             validator_name='viable_techs',
@@ -127,7 +127,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_exchange,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='exchange > 0',
             validator_name='viable_techs',
@@ -136,7 +136,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_annual,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='annual > 0',
             validator_name='viable_techs',
@@ -145,7 +145,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_retirement,
-            table='Technology',
+            table='technology',
             columns=['tech'],
             where_clause='retire > 0',
             validator_name='viable_techs',
@@ -154,14 +154,14 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.tech_group_names,
-            table='TechGroup',
+            table='tech_group',
             columns=['group_name'],
             is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
             component=model.tech_group_members,
-            table='TechGroupMember',
+            table='tech_group_member',
             columns=['group_name', 'tech'],
             custom_loader_name='_load_tech_group_members',
             is_period_filtered=False,
@@ -169,7 +169,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.commodity_demand,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag = 'd'",
             validator_name='viable_comms',
@@ -178,14 +178,14 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.commodity_emissions,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag = 'e'",
             is_period_filtered=False,
         ),
         LoadItem(
             component=model.commodity_physical,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'",
             validator_name='viable_input_comms',
@@ -194,7 +194,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.commodity_source,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag = 's'",
             validator_name='viable_input_comms',
@@ -203,7 +203,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.commodity_annual,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag LIKE '%a%'",
             validator_name='viable_input_comms',
@@ -212,7 +212,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.commodity_waste,
-            table='Commodity',
+            table='commodity',
             columns=['name'],
             where_clause="flag LIKE '%w%'",
             validator_name='viable_output_comms',
@@ -221,7 +221,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.operator,
-            table='Operator',
+            table='operator',
             columns=['operator'],
             is_period_filtered=False,
             is_table_required=False,
@@ -231,7 +231,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         # =========================================================================
         LoadItem(
             component=model.time_of_day,
-            table='TimeOfDay',
+            table='time_of_day',
             columns=['tod'],
             is_period_filtered=False,
             is_table_required=False,
@@ -239,7 +239,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.time_season,
-            table='TimeSeason',
+            table='time_season',
             columns=['period', 'season'],
             custom_loader_name='_load_time_season',
             is_period_filtered=False,  # Custom loader handles myopic filtering
@@ -247,15 +247,15 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.time_season_sequential,
-            table='time_season_sequential',
+            table='time_season_to_sequential',
             columns=['period', 'seas_seq', 'season', 'num_days'],
             custom_loader_name='_load_time_season_to_sequential',
             is_table_required=False,
         ),
         LoadItem(
             component=model.segment_fraction,
-            table='TimeSegmentFraction',
-            columns=['period', 'season', 'tod', 'segfrac'],
+            table='time_segment_fraction',
+            columns=['period', 'season', 'tod', 'segment_fraction'],
             custom_loader_name='_load_segment_fraction',
             is_table_required=False,
         ),
@@ -315,7 +315,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         # =========================================================================
         LoadItem(
             component=model.days_per_period,
-            table='MetaData',
+            table='metadata',
             columns=['value'],
             where_clause="element == 'days_per_period'",
             custom_loader_name='_load_days_per_period',
@@ -324,7 +324,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.global_discount_rate,
-            table='MetaDataReal',
+            table='metadata_real',
             columns=['value'],
             where_clause="element = 'global_discount_rate'",
             custom_loader_name='_load_global_discount_rate',
@@ -333,7 +333,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.default_loan_rate,
-            table='MetaDataReal',
+            table='metadata_real',
             columns=['value'],
             where_clause="element = 'default_loan_rate'",
             custom_loader_name='_load_default_loan_rate',
@@ -371,18 +371,18 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.demand,
-            table='Demand',
+            table='demand',
             columns=['region', 'period', 'commodity', 'demand'],
         ),
         LoadItem(
             component=model.demand_specific_distribution,
-            table='DemandSpecificDistribution',
+            table='demand_specific_distribution',
             columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
             is_table_required=False,
         ),
         LoadItem(
             component=model.capacity_to_activity,
-            table='CapacityToActivity',
+            table='capacity_to_activity',
             columns=['region', 'tech', 'c2a'],
             validator_name='viable_rt',
             validation_map=(0, 1),
@@ -479,7 +479,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.renewable_portfolio_standard,
-            table='RPSRequirement',
+            table='rps_requirement',
             columns=['region', 'period', 'tech_group', 'requirement'],
             custom_loader_name='_load_rps_requirement',
             is_table_required=False,
@@ -518,7 +518,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.limit_storage_fraction,
-            table='LimitStorageLevelFraction',
+            table='limit_storage_level_fraction',
             columns=[
                 'region',
                 'period',
@@ -692,7 +692,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.linked_techs,
-            table='LinkedTech',
+            table='linked_tech',
             columns=['primary_region', 'primary_tech', 'emis_comm', 'driven_tech'],
             validator_name='viable_rtt',
             validation_map=(0, 1, 3),
