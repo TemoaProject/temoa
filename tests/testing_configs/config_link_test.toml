@@ -37,7 +37,7 @@ price_check = false
 
 # Check the network connectivity for processes in the model.  Strongly
 # recommended to ensure proper performance.  Results are reported in log file
-# This requires that source commodities be marked with 's' in Commodity table
+# This requires that source commodities be marked with 's' in commodity table
 # This is required for Myopic runs
 source_trace = true
 
@@ -86,7 +86,7 @@ save_lp_file = false
 #       Each season represents a number of days, though not necessarily in any particular order.
 #       If using inter-season constraints like seasonal storage or ramp rates, the true sequence
 #       must be defined using the time_season_sequential table. Seasonal storage must also be tagged in
-#       the Technology table.
+#       the technology table.
 #   'seasonal_timeslices'
 #       Each season represents a sequential slice of the year, with one or many days represented per
 #       season. We assume that the true sequence is the same as the TimeSeason sequence, so the

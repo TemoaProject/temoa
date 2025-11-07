@@ -19,12 +19,12 @@ test_scenarios = [
     {
         'name': 'basic',
         'db_data': {
-            'Technology WHERE retire==1': [],
+            'technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
             'FROM time_period': [(2020,), (2025,)],
-            # Unique keys for each Commodity query
-            'FROM main.Commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
-            "Commodity WHERE flag LIKE '%p%'": [
+            # Unique keys for each commodity query
+            'FROM main.commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
+            "commodity WHERE flag LIKE '%p%'": [
                 ('s1',),
                 ('p1',),
                 ('p2',),
@@ -32,9 +32,9 @@ test_scenarios = [
                 ('d1',),
                 ('d2',),
             ],
-            "Commodity WHERE flag LIKE '%w%'": [],
-            "Commodity WHERE flag = 's'": [('s1',)],
-            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+            "commodity WHERE flag LIKE '%w%'": [],
+            "commodity WHERE flag = 's'": [('s1',)],
+            "commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
                 ('s1',),
                 ('p1',),
                 ('p2',),
@@ -42,7 +42,7 @@ test_scenarios = [
                 ('d1',),
                 ('d2',),
             ],
-            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            'FROM main.demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             # Unique keys for efficiency and optional tables
             'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
@@ -70,20 +70,20 @@ test_scenarios = [
     {
         'name': 'bad linked tech',
         'db_data': {
-            'Technology WHERE retire==1': [],
+            'technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
             'FROM time_period': [(2020,), (2025,)],
-            'FROM main.Commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
-            "Commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
-            "Commodity WHERE flag LIKE '%w%'": [],
-            "Commodity WHERE flag = 's'": [('s1',)],
-            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+            'FROM main.commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
+            "commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
+            "commodity WHERE flag LIKE '%w%'": [],
+            "commodity WHERE flag = 's'": [('s1',)],
+            "commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
                 ('s1',),
                 ('p3',),
                 ('d1',),
                 ('d2',),
             ],
-            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            'FROM main.demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'p3', 100),
                 ('R1', 'p1', 'driven', 1990, 'd2', 100),
@@ -107,20 +107,20 @@ test_scenarios = [
     {
         'name': 'good linked tech',
         'db_data': {
-            'Technology WHERE retire==1': [],
+            'technology WHERE retire==1': [],
             'FROM SurvivalCurve': [],
             'FROM time_period': [(2020,), (2025,)],
-            'FROM main.Commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
-            "Commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
-            "Commodity WHERE flag LIKE '%w%'": [],
-            "Commodity WHERE flag = 's'": [('s1',), ('s2',)],
-            "Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
+            'FROM main.commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
+            "commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
+            "commodity WHERE flag LIKE '%w%'": [],
+            "commodity WHERE flag = 's'": [('s1',), ('s2',)],
+            "commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'": [
                 ('s1',),
                 ('d1',),
                 ('d2',),
                 ('s2',),
             ],
-            'FROM main.Demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
+            'FROM main.demand': [('R1', 2020, 'd1'), ('R1', 2020, 'd2')],
             'FROM main.efficiency': [
                 ('R1', 's1', 't4', 2000, 'd2', 100),
                 ('R1', 's2', 'driven', 1990, 'd2', 100),
@@ -162,7 +162,7 @@ def mock_db_connection(request):
     mock_con.cursor.return_value = mock_cursor
 
     def dispatcher(query: str, *_: object) -> MagicMock:
-        if 'sector FROM Technology' in query:
+        if 'sector FROM technology' in query:
             raise sqlite3.OperationalError('no such column: sector')
         for key, data in sorted(db_data.items(), key=lambda kv: -len(kv[0])):
             if key in query:
@@ -251,11 +251,11 @@ def test_sector_handling_with_sectors() -> None:
     ]
 
     def dispatcher(query: str, *_: object) -> MagicMock:
-        if 'sector FROM Technology' in query:
+        if 'sector FROM technology' in query:
             return sector_check_mock
         elif 'FROM main.efficiency' in query:
             return efficiency_mock
-        elif 'Technology WHERE retire==1' in query:
+        elif 'technology WHERE retire==1' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -267,19 +267,19 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = [(2020,), (2025,)]
             return m
-        elif "Commodity WHERE flag LIKE '%p%'" in query:
+        elif "commodity WHERE flag LIKE '%p%'" in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
             return m
-        elif "Commodity WHERE flag LIKE '%w%'" in query:
+        elif "commodity WHERE flag LIKE '%w%'" in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif "Commodity WHERE flag = 's'" in query:
+        elif "commodity WHERE flag = 's'" in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',)]
             return m
-        elif 'FROM main.Demand' in query:
+        elif 'FROM main.demand' in query:
             m = MagicMock()
             m.fetchall.return_value = [('R1', 2020, 'd1')]
             return m
@@ -324,7 +324,7 @@ def test_sector_handling_without_sectors() -> None:
 
     # Mock the sector column check to raise OperationalError (column doesn't exist)
     def dispatcher(query: str, *_: object) -> MagicMock:
-        if 'sector FROM Technology' in query:
+        if 'sector FROM technology' in query:
             # Simulate column not existing
             raise sqlite3.OperationalError('no such column: sector')
         elif 'FROM main.efficiency' in query:
@@ -335,11 +335,11 @@ def test_sector_handling_without_sectors() -> None:
                 ('R1', 'p1', 't2', 2000, 'd1', 100),
             ]
             return mock
-        elif 'FROM main.Commodity' in query:
+        elif 'FROM main.commodity' in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
             return m
-        elif 'Technology WHERE retire==1' in query:
+        elif 'technology WHERE retire==1' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -351,19 +351,19 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = [(2020,), (2025,)]
             return m
-        elif "Commodity WHERE flag LIKE '%p%'" in query:
+        elif "commodity WHERE flag LIKE '%p%'" in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
             return m
-        elif "Commodity WHERE flag LIKE '%w%'" in query:
+        elif "commodity WHERE flag LIKE '%w%'" in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif "Commodity WHERE flag = 's'" in query:
+        elif "commodity WHERE flag = 's'" in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',)]
             return m
-        elif 'FROM main.Demand' in query:
+        elif 'FROM main.demand' in query:
             m = MagicMock()
             m.fetchall.return_value = [('R1', 2020, 'd1')]
             return m

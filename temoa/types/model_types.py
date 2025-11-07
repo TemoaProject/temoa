@@ -99,7 +99,7 @@ class TemoaModelProtocol(Protocol):
 
     # Geography sets
     regions: Set
-    regionalIndices: Set
+    regional_indices: Set
 
     # Technology sets
     tech_all: Set
@@ -115,30 +115,30 @@ class TemoaModelProtocol(Protocol):
     commodity_emissions: Set
 
     # Model parameters
-    GlobalDiscountRate: Param
-    Demand: Param
-    Efficiency: Param
-    ExistingCapacity: Param
-    CapacityToActivity: Param
+    global_discount_rate: Param
+    demand: Param
+    ffficiency: Param
+    existing_capacity: Param
+    capacity_to_activity: Param
 
     # Model variables
-    V_FlowOut: Var
-    V_Capacity: Var
-    V_NewCapacity: Var
+    v_flow_out: Var
+    v_capacity: Var
+    v_new_capacity: Var
 
     # Model constraints
-    DemandConstraint: Constraint
-    CommodityBalanceConstraint: Constraint
-    CapacityConstraint: Constraint
+    demand_constraint: Constraint
+    commodity_balance_constraint: Constraint
+    capacity_constraint: Constraint
 
     # Internal data structures
-    processInputs: ProcessInputs
-    processOutputs: ProcessOutputs
-    activeFlow_rpsditvo: (
+    process_inputs: ProcessInputs
+    process_outputs: ProcessOutputs
+    active_flow_rpsditvo: (
         set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
         | None
     )
-    activeActivity_rptv: set[tuple[Region, Period, Technology, Vintage]] | None
+    active_activity_rptv: set[tuple[Region, Period, Technology, Vintage]] | None
 
     def __init__(self, *args: object, **kwargs: object) -> None: ...
 
@@ -167,8 +167,8 @@ if TYPE_CHECKING:
 
         # Geography sets
         regions: Set
-        regionalIndices: Set
-        regionalGlobalIndices: Set
+        regional_indices: Set
+        regional_global_indices: Set
 
         # Technology sets
         tech_all: Set
@@ -190,36 +190,36 @@ if TYPE_CHECKING:
         commodity_carrier: Set
 
         # Model parameters
-        GlobalDiscountRate: Param
-        PeriodLength: Param
-        SegFrac: Param
-        Demand: Param
-        Efficiency: Param
-        ExistingCapacity: Param
-        CapacityToActivity: Param
-        CostInvest: Param
-        CostFixed: Param
-        CostVariable: Param
+        global_discount_rate: Param
+        period_length: Param
+        segment_fraction: Param
+        demand: Param
+        efficiency: Param
+        existing_capacity: Param
+        capacity_to_activity: Param
+        cost_invest: Param
+        cost_fixed: Param
+        cost_variable: Param
 
         # Model variables
-        V_FlowOut: Var
-        V_Capacity: Var
-        V_NewCapacity: Var
-        V_RetiredCapacity: Var
+        v_flow_out: Var
+        v_capacity: Var
+        v_new_capacity: Var
+        v_retired_capacity: Var
 
         # Model constraints
-        DemandConstraint: Constraint
-        CommodityBalanceConstraint: Constraint
-        CapacityConstraint: Constraint
+        demand_constraint: Constraint
+        commodity_balance_constraint: Constraint
+        capacity_constraint: Constraint
 
         # Internal tracking dictionaries
-        processInputs: ProcessInputs
-        processOutputs: ProcessOutputs
+        process_inputs: ProcessInputs
+        process_outputs: ProcessOutputs
         used_techs: TechSet
-        activeFlow_rpsditvo: set[
+        active_flow_rpsditvo: set[
             tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]
         ]
-        activeActivity_rptv: set[tuple[Region, Period, Technology, Vintage]]
+        active_activity_rptv: set[tuple[Region, Period, Technology, Vintage]]
 
         def __init__(self, *args: object, **kwargs: object) -> None: ...
 
