@@ -247,9 +247,9 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         ),
         LoadItem(
             component=model.time_season_sequential,
-            table='time_season_to_sequential',
+            table='time_season_sequential',
             columns=['period', 'seas_seq', 'season', 'num_days'],
-            custom_loader_name='_load_time_season_to_sequential',
+            custom_loader_name='_load_time_season_sequential',
             is_table_required=False,
         ),
         LoadItem(

@@ -4,7 +4,7 @@ This module contains components related to time indexing in the Temoa model.
 
 It is responsible for:
 -  Validating the core time sets (`time_exist`, `time_future`).
--  Validating the user-defined time-slice fractions (`TimeSegmentFraction`).
+-  Validating the user-defined time-slice fractions (`time_segment_fraction`).
 -  Creating the sequence of time slices (`time_next`) based on the chosen
     sequencing method (e.g., `seasonal_timeslices`, `consecutive_days`).
 -  Creating and validating the superimposed sequential seasons used for
@@ -102,9 +102,9 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
             missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
             msg: str = (
-                'TimeSegmentFraction elements for period {} do not match time_season and time_of_day.'
-                '\n\nIndices missing from TimeSegmentFraction:\n{}'
-                '\n\nIndices in TimeSegmentFraction missing from time_season/time_of_day:\n{}'
+                'time_segment_fraction elements for period {} do not match time_season and time_of_day.'
+                '\n\nIndices missing from time_segment_fraction:\n{}'
+                '\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n{}'
             ).format(p, missing, extra)
             logger.error(msg)
             raise ValueError(msg)
@@ -129,7 +129,7 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             items: str = '\n   '.join(f'{str(k):<{key_padding}} = {v}' for k, v in items_list)
 
             msg = (
-                'The values of TimeSegmentFraction do not sum to 1 for period {}. '
+                'The values of time_segment_fraction do not sum to 1 for period {}. '
                 'Each item in segment_fraction represents a fraction of a year, so they must '
                 'total to 1.  Current values:\n   {}\n\tsum = {}'
             ).format(p, items, total)
@@ -140,7 +140,7 @@ def validate_segment_fraction(model: TemoaModel) -> None:
 def validate_time_manual(model: TemoaModel) -> None:
     """
     If using this table, check that defined states are actually valid.
-    TimeSegmentFraction is already compared to other tables so just compare to segment_fraction.
+    time_segment_fraction is already compared to other tables so just compare to segment_fraction.
     """
     # Only check TimeNext if it is actually being used
     if model.time_sequencing.first() != 'manual':
@@ -161,8 +161,8 @@ def validate_time_manual(model: TemoaModel) -> None:
     if missing_psd or missing_psd_next:
         msg: str = (
             'Failed to build state sequence. '
-            '\nThese states from TimeSegmentFraction were not given a next state:\n{}\n'
-            '\nThese states from TimeSegmentFraction do not follow any state:\n{}'
+            '\nThese states from time_segment_fraction were not given a next state:\n{}\n'
+            '\nThese states from time_segment_fraction do not follow any state:\n{}'
         ).format(missing_psd, missing_psd_next)
         logger.error(msg)
         raise ValueError(msg)
@@ -286,7 +286,7 @@ def create_time_sequence(model: TemoaModel) -> None:
             # Hidden feature. Define the sequence directly in the TimeManual table
             msg = 'Pulling time sequence from TimeNext table.'
             for p, s, d, s_next, d_next in model.time_manual:
-                model.time_manual[p, s, d] = s_next, d_next
+                model.time_next[p, s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader
             msg = f"Invalid time sequencing parameter loaded '{model.time_sequencing.first()}'. Likely code error."
@@ -328,7 +328,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
             logger.info(
                 'No data in time_season_sequential. By default, assuming sequential seasons '
-                'match time_season and TimeSegmentFraction.'
+                'match time_season and time_segment_fraction.'
             )
             for s in model.time_season_all:
                 model.time_season_to_sequential.add(s)
@@ -390,7 +390,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         if (p, s) not in model.segment_fraction_per_season:
             msg = (
                 f'Period-season index {(p, s)} that does not exist in '
-                'TimeSegmentFraction referenced in time_season_sequential .'
+                'time_segment_fraction referenced in time_season_sequential .'
             )
             logger.error(msg)
             raise ValueError(msg)
@@ -410,9 +410,9 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         if abs(segment_fraction - segment_fraction_seq) >= 0.001:
             msg = (
                 'Discrepancy of total period-season composition between '
-                'TimeSegmentFraction and time_season_sequential. Total fraction of each '
+                'time_segment_fraction and time_season_sequential. Total fraction of each '
                 'period assigned to each season should match: '
-                f'TimeSegmentFraction: {(p, s, value(model.segment_fraction_per_season[p, s]))}'
+                f'time_segment_fraction: {(p, s, value(model.segment_fraction_per_season[p, s]))}'
                 f', time_season_sequential: {(p, s, segment_fraction_seq)}'
             )
             logger.warning(msg)

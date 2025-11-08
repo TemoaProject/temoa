@@ -340,7 +340,7 @@ recommend that you populate input tables in the following order:
   * emission_activity
   * lifetime_tech
   * lifetime_process (only if LT varies by vintage; overwrites lifetime_tech)
-  * TimeSegmentFraction: proportion of each period represented by each time slice
+  * time_segment_fraction: proportion of each period represented by each time slice
 
 **Group 4: parameters used to define constraints within Temoa**
   * limit_activity
@@ -1150,7 +1150,7 @@ DemandDefaultDistribution
 
 **Note**:  The Demand Specific Distribution is currently not supported in
 the project.  Modelers should use the DSD or rely on a "flat" distribution default
-from the TimeSegmentFraction.
+from the time_segment_fraction.
 
 By default, Temoa assumes that end-use demands (:ref:`Demand`) are evenly
 distributed throughout a year.  In other words, the Demand will be apportioned

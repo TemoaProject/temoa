@@ -1120,19 +1120,7 @@ INSERT INTO "time_season_sequential" VALUES(2000,11,'apr_w3','charge',7.0,NULL);
 INSERT INTO "time_season_sequential" VALUES(2000,12,'apr_w4','discharge',7.0,NULL);
 INSERT INTO "time_season_sequential" VALUES(2000,13,'apr_29th','charge',1.0,NULL);
 INSERT INTO "time_season_sequential" VALUES(2000,14,'apr_30th','discharge',1.0,NULL);
-CREATE TABLE time_season_to_sequential
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    seas_seq TEXT,
-    season TEXT
-        REFERENCES season_label (season),
-    num_days REAL NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
+
 CREATE TABLE time_segment_fraction
 (
     period INTEGER
@@ -1155,4 +1143,5 @@ INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','b',0.125,NULL);
 INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','c',0.125,NULL);
 INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','d',0.125,NULL);
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
+
 COMMIT;

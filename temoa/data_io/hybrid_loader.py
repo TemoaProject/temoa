@@ -565,7 +565,7 @@ class HybridLoader:
             store[period].append(season)  # type: ignore[index]
             data[model.time_season.name] = store
 
-    def _load_time_season_to_sequential(
+    def _load_time_season_sequential(
         self,
         data: dict[str, object],
         raw_data: Sequence[tuple[object, ...]],
@@ -594,7 +594,7 @@ class HybridLoader:
             self._load_component_data(data, model.segment_fraction, filtered_data)
         else:
             logger.warning(
-                'No TimeSegmentFraction table found. Generating default segment_fraction values.'
+                'No time_segment_fraction table found. Generating default segment_fraction values.'
             )
             time_optimize = data.get('time_optimize', [])
             fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]  # type: ignore[attr-defined]
