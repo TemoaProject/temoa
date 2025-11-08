@@ -572,7 +572,7 @@ def limit_tech_input_split_constraint(
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    limit_tech_output_split_Constraint for an analogous explanation. Under this constraint,
+    limit_tech_output_split_constraint for an analogous explanation. Under this constraint,
     only the technologies with variable output at the timeslice level (i.e.,
     NOT in the :code:`tech_annual` set) are considered."""
     inp = quicksum(
@@ -600,7 +600,7 @@ def limit_tech_input_split_annual_constraint(
     r"""
     Allows users to limit shares of commodity inputs to a process
     producing a single output. These shares can vary by model time period. See
-    limit_tech_output_split_annual_Constraint for an analogous explanation. Under this
+    limit_tech_output_split_annual_constraint for an analogous explanation. Under this
     function, only the technologies with constant annual output (i.e., members
     of the :code:`tech_annual` set) are considered."""
     inp = quicksum(
@@ -719,7 +719,7 @@ def limit_tech_output_split_annual_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage, o: Commodity, op: str
 ) -> ExprLike:
     r"""
-    This constraint operates similarly to limit_tech_output_split_Constraint.
+    This constraint operates similarly to limit_tech_output_split_constraint.
     However, under this function, only the technologies with constant annual
     output (i.e., members of the :code:`tech_annual` set) are considered.
 

@@ -174,8 +174,12 @@ def migrate_all(args) -> None:
             n = migrate_direct_table(con_old, con_new, old, new)
             print(f'Copied {n} rows: {old} -> {new}')
             total += n
-        except Exception as e:
-            print('Error:', e)
+        except Exception:
+            import traceback
+
+            print(f'Error migrating {old} -> {new}:')
+            traceback.print_exc()
+
     # ensure metadata version bumped
     cur = con_new.cursor()
     cur.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MAJOR', 4, '')")

@@ -329,8 +329,8 @@ def validate_reserve_margin(model: TemoaModel) -> None:
     for r in model.planning_reserve_margin.sparse_iterkeys():
         if all((r, p) not in model.process_reserve_periods for p in model.time_optimize):
             logger.warning(
-                'Planning reserve margin provided but there are no reserve '
-                f'technologies serving this region: {r, model.planning_reserve_margin[r]}'
+                'Planning reserve margin provided but there are no reserve technologies serving this region: %s',
+                (r, model.planning_reserve_margin[r]),
             )
 
 

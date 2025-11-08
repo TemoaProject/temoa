@@ -63,12 +63,12 @@ def return_CP_and_path(p_data):
     ctpTree = dict()  # Child to parent dict, one to one mapping
 
     to_process = deque()
-    to_process.extend(sStructure.Children.keys())
+    to_process.extend(sStructure.children.keys())
     while to_process:
         node = to_process.pop()
-        if node in sStructure.Children:
+        if node in sStructure.children:
             # it's a parent!
-            new_nodes = set(sStructure.Children[node])
+            new_nodes = set(sStructure.children[node])
             to_process.extend(new_nodes)
             ctpTree.update({n: node for n in new_nodes})
 
@@ -81,8 +81,8 @@ def return_CP_and_path(p_data):
     # ptcTree = dict( ptcTree )   # be slightly defensive; catch any additions
 
     # leaf_nodes = set(ctpTree.keys()) - set(ctpTree.values())
-    # leaf_nodes = set(sStructure.ScenarioLeafNode.values()) # Try to hack Kevin's code
-    leaf_nodes = sStructure.ScenarioLeafNode.values()  # Try to hack Kevin's code
+    # leaf_nodes = set(sStructure.scenario_leaf_node.values()) # Try to hack Kevin's code
+    leaf_nodes = sStructure.scenario_leaf_node.values()  # Try to hack Kevin's code
     leaf_nodes_names = list()
     for n in leaf_nodes:
         leaf_nodes_names.append(n.value)
@@ -99,16 +99,16 @@ def return_CP_and_path(p_data):
         s.reverse()
     ###########################################################################
 
-    for s in sStructure.Scenarios:
+    for s in sStructure.scenarios:
         cp = 1.0  # Starting probability
-        for n in scenario_nodes[value(sStructure.ScenarioLeafNode[s])]:
-            cp = cp * value(sStructure.ConditionalProbability[n])
-            if not sStructure.ScenarioBasedData.value:
+        for n in scenario_nodes[value(sStructure.scenario_leaf_node[s])]:
+            cp = cp * value(sStructure.conditional_probability[n])
+            if not sStructure.scenario_based_data.value:
                 s2fp_dict[s].append(n + '.dat')
         s2cd_dict[s] = cp
 
-    if sStructure.ScenarioBasedData.value:
-        for s in sStructure.Scenarios:
+    if sStructure.scenario_based_data.value:
+        for s in sStructure.scenarios:
             s2fp_dict[s].append(s + '.dat')
     os.chdir(pwd)
     return (s2cd_dict, s2fp_dict)

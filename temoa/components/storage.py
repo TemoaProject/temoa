@@ -90,7 +90,7 @@ def storage_energy_constraint(
 
     # We allow a non-zero daily delta only in the case of seasonal storage
     if model.is_seasonal_storage[t] and d == model.time_of_day.last():
-        return Constraint.Skip  # handled by SeasonalStorageEnergy_Constraint
+        return Constraint.Skip  # handled by SeasonalStorageEnergy_constraint
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s,d
@@ -275,7 +275,7 @@ def seasonal_storage_energy_upper_bound_constraint(
     model: TemoaModel, r: Region, p: Period, s_seq: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> ExprLike:
     r"""
-    Builds off of StorageEnergyUpperBound_Constraint. Enforces the max charge capacity
+    Builds off of StorageEnergyUpperBound_constraint. Enforces the max charge capacity
     of seasonal storage, summing the real storage level with the superimposed sequential
     seasonal storage level. :math:`s^*` represents the matching non-sequential season for
     the sequential season :math:`s^{seq}`.

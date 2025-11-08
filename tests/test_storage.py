@@ -150,4 +150,4 @@ def test_storage_flow_balance(system_test_run):
 #     )
 #     # get a built, unsolved model
 #     model = sequencer.start()
-#     model.V_StorageInit['electricville', 'batt', 2025] = 0.5
+#     model.v_storage_init['electricville', 'batt', 2025] = 0.5

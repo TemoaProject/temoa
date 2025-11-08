@@ -819,7 +819,7 @@ class TemoaModel(AbstractModel):
 
         # devnote: I think this constraint is redundant
         # M.Retiredcapacity_constraint = Constraint(
-        #     M.retired_capacity_var_rptv, rule=RetiredCapacity_Constraint
+        #     M.retired_capacity_var_rptv, rule=RetiredCapacity_constraint
         # )
         self.progress_marker_4a = BuildAction(
             ['Starting annual_retirement_constraint'], rule=progress_check
@@ -866,7 +866,7 @@ class TemoaModel(AbstractModel):
         )
 
         # M.ResourceExtractionConstraint = Constraint(
-        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
+        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_constraint
         # )
 
         self.baseload_diurnal_constraint_rpsdtv = Set(

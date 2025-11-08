@@ -99,15 +99,15 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
 
     Populates:
         - model.commodity_balance_rpc: The master set of (r, p, c) for balance constraints.
-        - model.activeFlow_rpsditvo: Indices for time-sliced flows (v_flow_out).
-        - model.activeFlow_rpitvo: Indices for annual flows (v_flow_out_annual).
-        - model.activeFlex_rpsditvo: Indices for flexible time-sliced flows (v_flex).
-        - model.activeFlex_rpitvo: Indices for flexible annual flows (v_flex_annual).
-        - model.activeflow_in_storage_rpsditvo: Indices for flows into storage (v_flow_in).
-        - model.activeCurtailment_rpsditvo: Indices for curtailed generation (v_curtailment).
-        - model.activeActivity_rptv: Master set of active (r, p, t, v) processes.
-        - model.storageLevelIndices_rpsdtv: Indices for storage state variables (v_storage_level).
-        - model.seasonalStorageLevelIndices_rpstv: Indices for seasonal storage levels.
+        - model.active_flow_rpsditvo: Indices for time-sliced flows (v_flow_out).
+        - model.active_flow_rpitvo: Indices for annual flows (v_flow_out_annual).
+        - model.active_flex_rpsditvo: Indices for flexible time-sliced flows (v_flex).
+        - model.active_flex_rpitvo: Indices for flexible annual flows (v_flex_annual).
+        - model.active_flow_in_storage_rpsditvo: Indices for flows into storage (v_flow_in).
+        - model.active_curtailment_rpsditvo: Indices for curtailed generation (v_curtailment).
+        - model.active_activity_rptv: Master set of active (r, p, t, v) processes.
+        - model.storage_level_indices_rpsdtv: Indices for storage state variables (v_storage_level).
+        - model.seasonal_storage_level_indices_rpstv: Indices for seasonal storage levels.
     """
     logger.debug('Creating commodity balance and active flow index sets.')
     # 1. Commodity Balance

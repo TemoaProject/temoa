@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-run_all_migrations.py
+run_all_v4_migrations.py
 
 Iterates over all .sql files in a specified directory, runs the v3.1 to v4
 SQL migration script on each, and overwrites the original file if successful.
@@ -24,7 +24,7 @@ from pathlib import Path
 
 
 def run_command(
-    cmd: list[str], cwd: Path = None, capture_output: bool = True
+    cmd: list[str], cwd: Path | None = None, capture_output: bool = True
 ) -> subprocess.CompletedProcess:
     """Helper to run shell commands."""
     print(f'Executing: {" ".join(cmd)}')

@@ -302,9 +302,9 @@ def write_scenario_file(stochasticset, tree):
         probability,
     ) = tree.get_scenario_data()
 
-    child_fmt = 'set  Children[%s]  :=\n  %s\n\t;\n'
+    child_fmt = 'set  children[%s]  :=\n  %s\n\t;\n'
     scenario_fmt = 'S%(i)s  Rs%(i)s'
-    stages_fmt = 'set  StageVariables[s{}]  :=\n  {}\n\t;'
+    stages_fmt = 'set  stage_variables[s{}]  :=\n  {}\n\t;'
     stagecost_fmt = 's%s StochasticPointCost[%s]'
 
     leaves = '\n  '.join(scenario_fmt % {'i': i} for i in scenarios)
@@ -339,15 +339,15 @@ def write_scenario_file(stochasticset, tree):
     stage_var_sets = '\n\n'.join(stage_var_sets)
 
     structure = """\
-set  Stages  :=
+set  stages  :=
   s%(stages)s
 	;
 
-set  Scenarios  :=
+set  scenarios  :=
   %(scenarios)s
 	;
 
-set  Nodes  :=
+set  nodes  :=
   %(nodes)s
 	;
 
@@ -355,23 +355,23 @@ set  Nodes  :=
 
 %(stage_var_sets)s
 
-param  NodeStage  :=
+param  node_stage  :=
   %(nodestage)s
 	;
 
-param  ConditionalProbability  :=
+param  conditional_probability  :=
   %(cond_prob)s
 	;
 
-param  ScenarioLeafNode  :=
+param  scenario_leaf_node  :=
   %(leaves)s
 	;
 
-param  Stagecost_variable  :=
+param  stage_cost_variable  :=
   %(stagecost)s
 	;
 
-param  ScenarioBasedData  :=  False ;
+param  scenario_based_data  :=  False ;
 """
 
     structure %= dict(

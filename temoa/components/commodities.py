@@ -292,10 +292,10 @@ def commodity_balance_constraint(
     producing the excess commodity should be added to the :code:`tech_flex` set.
     This flexible technology designation will activate a slack variable
     (:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`) representing
-    the excess production in the :code:`CommodityBalanceAnnual_Constraint`. Note
+    the excess production in the :code:`CommodityBalanceAnnual_constraint`. Note
     that the :code:`tech_flex` set is different from :code:`tech_curtailment` set;
     the latter is technology- rather than commodity-focused and is used in the
-    :code:`Capacity_Constraint` to track output that is used to produce useful
+    :code:`Capacity_constraint` to track output that is used to produce useful
     output and the amount curtailed, and to ensure that the installed capacity
     covers both. Alternatively, the commodity can be added to the
     :code:`commodity_waste` set, for which this equality constraint becomes an
@@ -493,7 +493,7 @@ def annual_commodity_balance_constraint(
     model: TemoaModel, r: Region, p: Period, c: Commodity
 ) -> ExprLike:
     r"""
-    Similar to CommodityBalance_Constraint but only balances the supply and demand of the commodity
+    Similar to CommodityBalance_constraint but only balances the supply and demand of the commodity
     at the period level, summing all flows over the period but allowing imbalances at the time slice
     or seasonal level. Applies only to commodities in the :code:`commodity_annual` set.
     """
@@ -668,7 +668,7 @@ def create_demands(model: TemoaModel) -> None:
     2. Find any slices not set in DemandDefaultDistribution, and set them based
     on the associated segment_fraction slice.
     3. Validate that the DemandDefaultDistribution sums to 1.
-    4. Find any per-demand DemandSpecificDistribution values not set, and set
+    4. Find any per-demand demand_specific_distribution values not set, and set
     them from DemandDefaultDistribution.  Note that this only sets a
     distribution for an end-use demand if the user has *not* specified _any_
     anything for that end-use demand.  Thus, it is up to the user to fully
@@ -808,8 +808,8 @@ def create_demands(model: TemoaModel) -> None:
             )
             items = '\n   '.join(fmt % (str(k), v) for k, v in items_list)
             msg = (
-                'The values of the DemandSpecificDistribution parameter do not '
-                'sum to 1 for {}. The DemandSpecificDistribution specifies how end-use '
+                'The values of the demand_specific_distribution parameter do not '
+                'sum to 1 for {}. The demand_specific_distribution specifies how end-use '
                 'demands are distributed per time-slice (i.e., time_season, '
                 'time_of_day). Within each region, period, end-use demand, then, the distribution '
                 'must total to 1.\n\n Demand-specific distribution in error: '

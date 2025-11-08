@@ -374,7 +374,7 @@ def capacity_annual_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage
 ) -> ExprLike:
     r"""
-    Similar to Capacity_Constraint, but for technologies belonging to the
+    Similar to Capacity_constraint, but for technologies belonging to the
     :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
     across different timeslices within a year, so we do not need to ensure
     that installed capacity is sufficient across all timeslices, thus saving

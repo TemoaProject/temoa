@@ -283,7 +283,7 @@ def create_time_sequence(model: TemoaModel) -> None:
                 for s, d in model.time_season[p] * model.time_of_day:
                     model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
         case 'manual':
-            # Hidden feature. Define the sequence directly in the TimeManual table
+            # Hidden feature. Define the sequence directly in the time_manual table
             msg = 'Pulling time sequence from TimeNext table.'
             for p, s, d, s_next, d_next in model.time_manual:
                 model.time_next[p, s, d] = s_next, d_next

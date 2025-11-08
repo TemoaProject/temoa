@@ -557,7 +557,7 @@ class HybridLoader:
             data.setdefault(model.time_season_all.name, [])
             return
 
-        unique_seasons = sorted(list({(row[1],) for row in rows_to_load}))
+        unique_seasons = sorted({(row[1],) for row in rows_to_load})
         self._load_component_data(data, model.time_season_all, unique_seasons)
 
         for period, season in rows_to_load:
@@ -684,7 +684,7 @@ class HybridLoader:
         raw_data: Sequence[tuple[object, ...]],
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
-        """Loads the required singleton GlobalDiscountRate."""
+        """Loads the required singleton global_discount_rate."""
         model = TemoaModel()
         if filtered_data:
             data[model.global_discount_rate.name] = {None: cast(float, filtered_data[0][0])}

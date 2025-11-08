@@ -83,7 +83,7 @@ basic_output_tables = [
     'output_objective',
     'output_retired_capacity',
 ]
-optional_output_tables = ['output_flow_out_summary', 'OutputMCDelta', 'output_storage_level']
+optional_output_tables = ['output_flow_out_summary', 'output_mc_delta', 'output_storage_level']
 
 flow_summary_file_loc = Path(
     PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
@@ -636,7 +636,7 @@ class TableWriter:
                 change_record.new_value,
             )
             records.append(element)
-        qry = 'INSERT INTO OutputMCDelta VALUES (?, ?, ?, ?, ?, ?)'
+        qry = 'INSERT INTO output_mc_delta VALUES (?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, records)
         self.con.commit()
 

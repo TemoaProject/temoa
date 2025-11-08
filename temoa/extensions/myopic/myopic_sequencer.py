@@ -309,7 +309,7 @@ class MyopicSequencer:
             '       ON main.efficiency.tech = main.lifetime_tech.tech '
             '     AND main.efficiency.region = main.lifetime_tech.region '
             '   JOIN time_period '
-            '   ON efficiency.vintage = time_period.period '
+            '   ON efficiency.vintage = main.time_period.period '
             "   WHERE flag = 'e'"
         )
 
@@ -378,7 +378,7 @@ class MyopicSequencer:
                 'WHERE (SELECT region, tech, vintage) '
                 '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
                 '    WHERE period = ? AND scenario = ?) '
-                'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
+                'AND tech not in (SELECT tech FROM main.technology where unlim_cap > 0)'
             )
 
             if self.debugging:

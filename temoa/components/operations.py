@@ -248,7 +248,7 @@ def ramp_up_day_constraint(
 ) -> ExprLike:
     r"""
     One of two constraints built from the ramp_up_hourly table, along with the
-    RampUpSeason_Constraint. RampUpDay constrains ramp rates between time slices
+    RampUpSeason_constraint. RampUpDay constrains ramp rates between time slices
     within each season and RampUpSeason constrains ramp rates between sequential
     seasons. If the :code:`time_sequencing` parameter is set to :code:`consecutive_days`
     then the RampUpSeason constraint is skipped as seasons already connect together.

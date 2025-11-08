@@ -687,16 +687,16 @@ def create_costs(model: TemoaModel) -> None:
     if unspecified_fixed_prices:
         # CF._constructed = False
         for r, p, t, v in unspecified_fixed_prices:
-            if (r, t, v) in model.cost_fixedVintageDefault:
-                cost_fixed[r, p, t, v] = model.cost_fixedVintageDefault[
+            if (r, t, v) in model.cost_fixed_vintage_default:
+                cost_fixed[r, p, t, v] = model.cost_fixed_vintage_default[
                     r, t, v
                 ]  # CF._constructed = True
 
     if unspecified_var_prices:
         # CV._constructed = False
         for r, p, t, v in unspecified_var_prices:
-            if (r, t, v) in model.cost_variableVintageDefault:
-                cost_variable[r, p, t, v] = model.cost_variableVintageDefault[r, t, v]
+            if (r, t, v) in model.cost_variable_vintage_default:
+                cost_variable[r, p, t, v] = model.cost_variable_vintage_default[r, t, v]
     # CV._constructed = True
     logger.debug('Created M.cost_fixed with size: %d', len(value(model.cost_fixed)))
     logger.debug('Created M.cost_variable with size: %d', len(value(model.cost_variable)))
