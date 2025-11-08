@@ -433,7 +433,7 @@ class HybridLoader:
         if myopic_index:
             contents = cur.execute(
                 'SELECT region, input_comm, tech, vintage, output_comm, efficiency, lifetime '
-                'FROM Myopicefficiency WHERE vintage + lifetime > ?',
+                'FROM myopic_efficiency WHERE vintage + lifetime > ?',
                 (myopic_index.base_year,),
             ).fetchall()
         else:
@@ -496,9 +496,9 @@ class HybridLoader:
         cur = self.con.cursor()
         regions_and_groups: set[str] = set()
 
-        if self.table_exists('Region'):
+        if self.table_exists('region'):
             regions_and_groups.update(
-                t[0] for t in cur.execute('SELECT region FROM main.Region').fetchall()
+                t[0] for t in cur.execute('SELECT region FROM main.region').fetchall()
             )
 
         for table, field_name in tables_with_regional_groups.items():

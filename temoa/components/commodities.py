@@ -120,7 +120,7 @@ def commodity_balance_constraint_indices(
     # technologies with varying output at the time slice level.
     indices = {
         (r, p, s, d, c)
-        for r, p, c in model.commodityBalance_rpc
+        for r, p, c in model.commodity_balance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in model.regions  # this line ensures only the regions are included.
         and c not in model.commodity_annual
@@ -138,7 +138,7 @@ def annual_commodity_balance_constraint_indices(
     # technologies with constant annual output.
     indices = {
         (r, p, c)
-        for r, p, c in model.commodityBalance_rpc
+        for r, p, c in model.commodity_balance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in model.regions  # this line ensures only the regions are included.
         and c in model.commodity_annual

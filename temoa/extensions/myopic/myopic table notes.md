@@ -1,7 +1,7 @@
 Notes on Myopic
 ===============
 
-Myopicefficiency Table
+myopic_efficiency Table
 ----------------
 
 - Largely similar to baseline efficiency table

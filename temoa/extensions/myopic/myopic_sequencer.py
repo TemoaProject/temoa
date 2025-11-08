@@ -48,11 +48,11 @@ class MyopicSequencer:
         'output_storage_level',
     ]
     tables_without_scenario_reference = [
-        'Myopicefficiency',
+        'myopic_efficiency',
     ]
 
     # Tables that may be cleaned by period during myopic run
-    # note:  below excludes Myopicefficiency, which is managed separately
+    # note:  below excludes myopic_efficiency, which is managed separately
 
     tables_with_period = [
         'output_cost',
@@ -146,14 +146,14 @@ class MyopicSequencer:
         # clear out the old riff-raff
         self.clear_old_results()
 
-        # start building the Myopicefficiency table.
+        # start building the myopic_efficiency table.
         self.initialize_myopic_efficiency_table()
 
         # start the fundamental control loop
         # 1.  get feedback from previous instance execution (optimal/infeasible/...)
         # 2.  decide what to do about it
         # 3.  pull the next instance from the queue (if !empty & if needed)
-        # 4.  Update the Myopicefficiency table (clean up history / add stuff now in visibility)
+        # 4.  Update the myopic_efficiency table (clean up history / add stuff now in visibility)
         # 5.  pull data for next run and filter it with source tracing
         # 6.  build instance
         # 7.  run checks (price check) on the model, if selected
@@ -196,7 +196,7 @@ class MyopicSequencer:
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'load')
 
-            # 4. update the Myopicefficiency table so it is ready for the upcoming data pull.
+            # 4. update the myopic_efficiency table so it is ready for the upcoming data pull.
             self.update_myopic_efficiency_table(myopic_index=idx, prev_base=last_base_year)
 
             # 5. pull the data
@@ -284,11 +284,11 @@ class MyopicSequencer:
 
     def initialize_myopic_efficiency_table(self):
         """
-        create a new Myopicefficiency table and pre-load it with all existing_capacity
+        create a new myopic_efficiency table and pre-load it with all existing_capacity
         :return:
         """
         # clear out everything from previous runs
-        self.cursor.execute('DELETE FROM Myopicefficiency WHERE 1')
+        self.cursor.execute('DELETE FROM myopic_efficiency WHERE 1')
         self.output_con.commit()
 
         # the -1 for base year is used to indicate "existing" for flag purposes
@@ -297,7 +297,7 @@ class MyopicSequencer:
         # the "coalesce" is an if-else structure to pluck out the correct lifetime value, precedence left->right
         default_lifetime = TemoaModel.default_lifetime_tech
         query = (
-            'INSERT INTO Myopicefficiency '
+            'INSERT INTO myopic_efficiency '
             '  SELECT -1, main.efficiency.region, input_comm, efficiency.tech, efficiency.vintage, output_comm, efficiency, '
             f'  coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, {default_lifetime}) AS lifetime '
             '   FROM main.efficiency '
@@ -331,7 +331,7 @@ class MyopicSequencer:
 
     def update_myopic_efficiency_table(self, myopic_index: MyopicIndex, prev_base: int):
         """
-        This function adds to the Myopicefficiency table in the db with data specific
+        This function adds to the myopic_efficiency table in the db with data specific
         to the current MyopicIndex timeframe.  Basically:  prep it for the current iteration.
         :return:
         """
@@ -355,13 +355,13 @@ class MyopicSequencer:
 
         base = myopic_index.base_year
         last_demand_year = myopic_index.last_demand_year
-        logger.info('Starting update of Myopicefficiency Table retaining [%s, %s)', prev_base, base)
+        logger.info('Starting update of myopic_efficiency Table retaining [%s, %s)', prev_base, base)
 
         # 0.  Clear any future things past the base year for housekeeping
         #     ease with steps, depth, etc.  These may have been added if we are stepping less
         #     than the previous solve depth or if backtracking.
         self.cursor.execute(
-            'DELETE FROM Myopicefficiency WHERE Myopicefficiency.vintage >= ?', (base,)
+            'DELETE FROM myopic_efficiency WHERE myopic_efficiency.vintage >= ?', (base,)
         )
         self.output_con.commit()
 
@@ -374,7 +374,7 @@ class MyopicSequencer:
         if flag == 'f':  # the prior period should have an output_net_capacity entry
             # Delete anything that doesn't have capacity remaining at the end of last interval
             delete_qry = (
-                'DELETE FROM Myopicefficiency '
+                'DELETE FROM myopic_efficiency '
                 'WHERE (SELECT region, tech, vintage) '
                 '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
                 '    WHERE period = ? AND scenario = ?) '
@@ -383,7 +383,7 @@ class MyopicSequencer:
 
             if self.debugging:
                 debug_query = (
-                    'SELECT * FROM Myopicefficiency '
+                    'SELECT * FROM myopic_efficiency '
                     'WHERE (SELECT region, tech, vintage) '
                     '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
                     '    WHERE period = ? AND scenario = ?) '
@@ -403,7 +403,7 @@ class MyopicSequencer:
         #            process lifetime > tech lifetime > lifetime default
         lifetime = TemoaModel.default_lifetime_tech
         query = (
-            'INSERT INTO Myopicefficiency '
+            'INSERT INTO myopic_efficiency '
             f'SELECT {base}, efficiency.region, input_comm, '
             '      efficiency.tech, efficiency.vintage, output_comm, efficiency, '
             f'     coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, {lifetime}) '
@@ -427,7 +427,7 @@ class MyopicSequencer:
                 f'  WHERE efficiency.vintage >= {base}'
                 f'  AND efficiency.vintage <= {last_demand_year}'
             ).fetchall()
-            print('\n\n **** adding to Myopicefficiency table from newly visible techs ****')
+            print('\n\n **** adding to myopic_efficiency table from newly visible techs ****')
             for idx, t in enumerate(raw):
                 print(idx, t)
             print()

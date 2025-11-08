@@ -107,7 +107,7 @@ test_vals = {
     'survival_curve': {
         # added 2025/06/19 after addition of survival curves
         # reduced after changing fixed costs from MLP to PL
-        # increased after adding PeriodSurvivalCurve
+        # increased after adding Periodsurvival_curve
         ExpectedVals.OBJ_VALUE: 31.9423,
         ExpectedVals.EFF_DOMAIN_SIZE: 64,
         ExpectedVals.EFF_INDEX_SIZE: 8,
@@ -118,7 +118,7 @@ test_vals = {
     'annualised_demand': {
         # added 2025/06/19 after addition of survival curves
         # reduced after changing fixed costs from MLP to PL
-        # increased after adding PeriodSurvivalCurve
+        # increased after adding Periodsurvival_curve
         ExpectedVals.OBJ_VALUE: 1.9524,
         ExpectedVals.EFF_DOMAIN_SIZE: 36,
         ExpectedVals.EFF_INDEX_SIZE: 10,

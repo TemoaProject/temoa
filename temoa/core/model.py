@@ -129,7 +129,7 @@ class TemoaModel(AbstractModel):
         self.group_region_active_flow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
-        self.commodityBalance_rpc: t.CommodityBalancedSet = (
+        self.commodity_balance_rpc: t.CommodityBalancedSet = (
             set()
         )  # Set of valid region-period-commodity indices to balance
         self.commodity_down_stream_process: t.CommodityStreamProcessDict = {}  # The downstream process of a commodity during a period
@@ -421,7 +421,7 @@ class TemoaModel(AbstractModel):
 
         # Dev Note:  The loan_lifetime_process table *could* be removed.  There is no longer a
         #            supporting table in the database.  It is just a "passthrough" now to the
-        #            default Loanlifetime_tech. It is already stitched in to the model,
+        #            default loan_lifetime_tech. It is already stitched in to the model,
         #            so will leave it for now.  Table may be revived.
 
         self.loan_lifetime_process = Param(

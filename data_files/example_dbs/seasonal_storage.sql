@@ -381,7 +381,7 @@ CREATE TABLE TechGroup
         PRIMARY KEY,
     notes      TEXT
 );
-CREATE TABLE Loanlifetime_tech
+CREATE TABLE loan_lifetime_tech
 (
     region   TEXT,
     tech     TEXT

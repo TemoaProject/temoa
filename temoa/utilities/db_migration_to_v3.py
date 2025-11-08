@@ -101,7 +101,7 @@ direct_transfer_tables = [
     ('',                    'TechInputSplitAverage'),
     ('',                    'TechOutputSplit'),
     ('technology_labels',   'TechnologyType'),
-    ('time_period_labels',  'time_periodType'),
+    ('time_period_labels',  'TimePeriodType'),
     ('SegFrac',             'TimeSegmentFraction'),
 ]
 

@@ -1075,5 +1075,38 @@ CREATE TABLE IF NOT EXISTS time_season_sequential
     CHECK (num_days > 0)
 );
 
+CREATE TABLE IF NOT EXISTS myopic_efficiency
+(
+    base_year   integer,
+    region      text,
+    input_comm  text,
+    tech        text,
+    vintage     integer,
+    output_comm text,
+    efficiency  real,
+    lifetime    integer,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
+);
+-- for efficient searching by rtv:
+CREATE INDEX IF NOT EXISTS region_tech_vintage ON myopic_efficiency (region, tech, vintage);
+
+CREATE TABLE IF NOT EXISTS output_flow_out_summary
+(
+    scenario    TEXT NOT NULL,
+    region      TEXT NOT NULL,
+    sector      TEXT,
+    period      INTEGER,
+    input_comm  TEXT NOT NULL,
+    tech        TEXT NOT NULL,
+    vintage     INTEGER,
+    output_comm TEXT NOT NULL,
+    flow        REAL NOT NULL,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
+);
+
 COMMIT;
 PRAGMA foreign_keys = 1;

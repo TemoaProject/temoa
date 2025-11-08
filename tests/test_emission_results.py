@@ -72,7 +72,7 @@ def test_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emissionn WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -146,7 +146,7 @@ def test_embodied_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emissionn WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -222,7 +222,7 @@ def test_endoflife_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emissionn WHERE tech LIKE '{tech}' AND period == 2005"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2005"
         )
         .fetchone()[0]
     )

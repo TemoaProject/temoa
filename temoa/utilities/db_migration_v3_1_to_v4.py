@@ -30,6 +30,7 @@ CUSTOM_MAP: dict[str, str] = {
     'segfrac': 'segment_fraction',
     'MetaDataReal': 'metadata_real',
     'MetaData': 'metadata',
+    'Myopicefficiency': 'myopic_efficiency',
     'DB_MAJOR': 'db_major',
     'DB_MINOR': 'db_minor',
 }

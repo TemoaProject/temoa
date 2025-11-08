@@ -83,7 +83,7 @@ basic_output_tables = [
     'output_objective',
     'output_retired_capacity',
 ]
-optional_output_tables = ['output_flow_outSummary', 'OutputMCDelta', 'output_storage_level']
+optional_output_tables = ['output_flow_out_summary', 'OutputMCDelta', 'output_storage_level']
 
 flow_summary_file_loc = Path(
     PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
@@ -453,7 +453,7 @@ class TableWriter:
             entry: tuple[str, str, str | None, int, str, str, int, str, float] = (*idx, flow)
             entries.append(entry)
 
-        qry = f'INSERT INTO output_flow_outSummary VALUES {_marks(9)}'
+        qry = f'INSERT INTO output_flow_out_summary VALUES {_marks(9)}'
         self.con.executemany(qry, entries)
 
         self.con.commit()

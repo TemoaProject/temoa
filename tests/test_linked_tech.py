@@ -57,7 +57,7 @@ def test_linked_tech(system_test_run):
     print(output_db_path)
     conn = sqlite3.connect(str(output_db_path))
     co2_emiss = conn.execute(
-        "SELECT emission FROM output_emissionn WHERE emis_comm = 'CO2'"
+        "SELECT emission FROM output_emission WHERE emis_comm = 'CO2'"
     ).fetchall()
     assert len(co2_emiss) == 1
     co2_emiss = co2_emiss[0][0]

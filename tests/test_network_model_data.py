@@ -20,7 +20,7 @@ test_scenarios = [
         'name': 'basic',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM SurvivalCurve': [],
+            'FROM survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             # Unique keys for each commodity query
             'FROM main.commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
@@ -54,7 +54,7 @@ test_scenarios = [
             ],
             'FROM end_of_life_output': [],
             'FROM construction_input': [],
-            'FROM main.LinkedTech': [],
+            'FROM main.linked_tech': [],
             'FROM cost_variable': [],
         },
         'expected': {
@@ -71,7 +71,7 @@ test_scenarios = [
         'name': 'bad linked tech',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM SurvivalCurve': [],
+            'FROM survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             'FROM main.commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
             "commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
@@ -91,7 +91,7 @@ test_scenarios = [
             ],
             'FROM end_of_life_output': [],
             'FROM construction_input': [],
-            'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
+            'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
         'expected': {
@@ -108,7 +108,7 @@ test_scenarios = [
         'name': 'good linked tech',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM SurvivalCurve': [],
+            'FROM survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             'FROM main.commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
             "commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
@@ -128,7 +128,7 @@ test_scenarios = [
             ],
             'FROM end_of_life_output': [],
             'FROM construction_input': [],
-            'FROM main.LinkedTech': [('R1', 't4', 'nox', 'driven')],
+            'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
         'expected': {
@@ -259,7 +259,7 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM SurvivalCurve' in query:
+        elif 'FROM survival_curve' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -291,7 +291,7 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM main.LinkedTech' in query:
+        elif 'FROM main.linked_tech' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -343,7 +343,7 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM SurvivalCurve' in query:
+        elif 'FROM survival_curve' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -375,7 +375,7 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM main.LinkedTech' in query:
+        elif 'FROM main.linked_tech' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m

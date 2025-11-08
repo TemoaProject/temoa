@@ -19,7 +19,7 @@ basic_output_tables = [
     'output_objective',
     'output_retired_capacity',
 ]
-optional_output_tables = ['output_flow_outSummary', 'MyopicEfficiency']
+optional_output_tables = ['output_flow_out_summary', 'myopic_efficiency']
 
 if len(sys.argv) != 2:
     print('this utility file expects a CLA for the path to the database to clear')

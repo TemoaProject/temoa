@@ -107,7 +107,7 @@ def poll_capacity(conn: Connection, scenario: str, label: str) -> float:
     poll the built capacity for the given emission label total
     """
     raw = conn.execute(
-        'SELECT sum(capacity) FROM main.output_built_capacityty WHERE scenario=? AND tech=?',
+        'SELECT sum(capacity) FROM main.output_built_capacity WHERE scenario=? AND tech=?',
         (scenario, label),
     ).fetchone()[0]
     return raw

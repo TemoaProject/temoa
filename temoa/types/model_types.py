@@ -117,7 +117,7 @@ class TemoaModelProtocol(Protocol):
     # Model parameters
     global_discount_rate: Param
     demand: Param
-    ffficiency: Param
+    efficiency: Param
     existing_capacity: Param
     capacity_to_activity: Param
 

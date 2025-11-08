@@ -1,58 +1,4 @@
-PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
-CREATE TABLE metadata
-(
-    element TEXT,
-    value   INT,
-    notes   TEXT,
-    PRIMARY KEY (element)
-);
-INSERT INTO metadata VALUES('DB_MAJOR',3,'DB major version number');
-INSERT INTO metadata VALUES('DB_MINOR',1,'DB minor version number');
-INSERT INTO metadata VALUES ('days_per_period', 365, 'count of days in each period');
-CREATE TABLE metadata_real
-(
-    element TEXT,
-    value   REAL,
-    notes   TEXT,
-
-    PRIMARY KEY (element)
-);
-INSERT INTO metadata_real VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in loan_rate table');
-INSERT INTO metadata_real VALUES('global_discount_rate',0.05000000000000000277,'');
-CREATE TABLE output_dual_variable
-(
-    scenario        TEXT,
-    constraint_name TEXT,
-    dual            REAL,
-    PRIMARY KEY (constraint_name, scenario)
-);
-CREATE TABLE OutputObjective
-(
-    scenario          TEXT,
-    objective_name    TEXT,
-    total_system_cost REAL
-);
-CREATE TABLE SeasonLabel
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO SeasonLabel VALUES('summer',NULL);
-INSERT INTO SeasonLabel VALUES('fall',NULL);
-INSERT INTO SeasonLabel VALUES('winter',NULL);
-INSERT INTO SeasonLabel VALUES('spring',NULL);
-CREATE TABLE SectorLabel
-(
-    sector TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO SectorLabel VALUES('supply',NULL);
-INSERT INTO SectorLabel VALUES('electric',NULL);
-INSERT INTO SectorLabel VALUES('transport',NULL);
-INSERT INTO SectorLabel VALUES('commercial',NULL);
-INSERT INTO SectorLabel VALUES('residential',NULL);
-INSERT INTO SectorLabel VALUES('industrial',NULL);
 CREATE TABLE capacity_credit
 (
     region  TEXT,
@@ -72,9 +18,9 @@ CREATE TABLE capacity_factor_process
     period  INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES season_label (season),
     tod     TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
@@ -89,9 +35,9 @@ CREATE TABLE capacity_factor_tech
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES season_label (season),
     tod    TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     tech   TEXT
         REFERENCES technology (tech),
     factor REAL,
@@ -99,55 +45,55 @@ CREATE TABLE capacity_factor_tech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'spring','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'summer','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'fall','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'winter','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2020,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'spring','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'summer','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'fall','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'winter','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2020,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'spring','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'summer','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'fall','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'winter','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2025,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'spring','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'summer','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'fall','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'winter','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2025,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'spring','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'summer','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'fall','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'winter','day','E_SOLPV',0.5999999999999999778,'');
-INSERT INTO capacity_factor_tech VALUES('R1',2030,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'spring','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'summer','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'fall','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'winter','day','E_SOLPV',0.4799999999999999823,'');
-INSERT INTO capacity_factor_tech VALUES('R2',2030,'winter','night','E_SOLPV',0.0,'');
-CREATE TABLE CapacityToActivity
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'spring','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'summer','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'fall','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'winter','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'spring','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'summer','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'fall','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'winter','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'spring','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'summer','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'fall','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'winter','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'spring','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'summer','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'fall','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'winter','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'spring','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'summer','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'fall','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'winter','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'spring','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'summer','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'fall','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'winter','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'winter','night','E_SOLPV',0.0,'');
+CREATE TABLE capacity_to_activity
 (
     region TEXT,
     tech   TEXT
@@ -156,73 +102,73 @@ CREATE TABLE CapacityToActivity
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO CapacityToActivity VALUES('R1','S_IMPETH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','S_IMPOIL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','S_IMPNG',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','S_IMPURN',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','S_OILREF',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','E_NGCC',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R1','E_SOLPV',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R1','E_BATT',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R1','E_NUCLEAR',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R1','T_BLND',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','T_DSL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','T_GSL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','T_EV',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','R_EH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1','R_NGH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','S_IMPETH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','S_IMPOIL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','S_IMPNG',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','S_IMPURN',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','S_OILREF',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','E_NGCC',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R2','E_SOLPV',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R2','E_BATT',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R2','E_NUCLEAR',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R2','T_BLND',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','T_DSL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','T_GSL',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','T_EV',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','R_EH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R2','R_NGH',1.0,'');
-INSERT INTO CapacityToActivity VALUES('R1-R2','E_TRANS',31.53999999999999915,'');
-INSERT INTO CapacityToActivity VALUES('R2-R1','E_TRANS',31.53999999999999915,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','S_IMPETH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','S_IMPOIL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','S_IMPNG',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','S_IMPURN',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','S_OILREF',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','E_NGCC',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','E_SOLPV',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','E_BATT',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','E_NUCLEAR',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','T_BLND',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','T_DSL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','T_GSL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','T_EV',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','R_EH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1','R_NGH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','S_IMPETH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','S_IMPOIL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','S_IMPNG',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','S_IMPURN',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','S_OILREF',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','E_NGCC',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','E_SOLPV',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','E_BATT',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','E_NUCLEAR',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','T_BLND',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','T_DSL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','T_GSL',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','T_EV',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','R_EH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R2','R_NGH',1.0,'');
+INSERT INTO "capacity_to_activity" VALUES('R1-R2','E_TRANS',31.54,'');
+INSERT INTO "capacity_to_activity" VALUES('R2-R1','E_TRANS',31.54,'');
 CREATE TABLE commodity
 (
     name        TEXT
         PRIMARY KEY,
     flag        TEXT
-        REFERENCES commodityType (label),
+        REFERENCES commodity_type (label),
     description TEXT
 );
-INSERT INTO commodity VALUES('ethos','s','dummy commodity to supply inputs (makes graph easier to read)');
-INSERT INTO commodity VALUES('OIL','p','crude oil');
-INSERT INTO commodity VALUES('NG','p','natural gas');
-INSERT INTO commodity VALUES('URN','p','uranium');
-INSERT INTO commodity VALUES('ETH','p','ethanol');
-INSERT INTO commodity VALUES('SOL','p','solar insolation');
-INSERT INTO commodity VALUES('GSL','p','gasoline');
-INSERT INTO commodity VALUES('DSL','p','diesel');
-INSERT INTO commodity VALUES('ELC','p','electricity');
-INSERT INTO commodity VALUES('E10','p','gasoline blend with 10% ethanol');
-INSERT INTO commodity VALUES('VMT','d','travel demand for vehicle-miles traveled');
-INSERT INTO commodity VALUES('RH','d','demand for residential heating');
-INSERT INTO commodity VALUES('CO2','e','CO2 emissions commodity');
-CREATE TABLE commodityType
+INSERT INTO "commodity" VALUES('ethos','s','dummy commodity to supply inputs (makes graph easier to read)');
+INSERT INTO "commodity" VALUES('OIL','p','crude oil');
+INSERT INTO "commodity" VALUES('NG','p','natural gas');
+INSERT INTO "commodity" VALUES('URN','p','uranium');
+INSERT INTO "commodity" VALUES('ETH','p','ethanol');
+INSERT INTO "commodity" VALUES('SOL','p','solar insolation');
+INSERT INTO "commodity" VALUES('GSL','p','gasoline');
+INSERT INTO "commodity" VALUES('DSL','p','diesel');
+INSERT INTO "commodity" VALUES('ELC','p','electricity');
+INSERT INTO "commodity" VALUES('E10','p','gasoline blend with 10% ethanol');
+INSERT INTO "commodity" VALUES('VMT','d','travel demand for vehicle-miles traveled');
+INSERT INTO "commodity" VALUES('RH','d','demand for residential heating');
+INSERT INTO "commodity" VALUES('CO2','e','CO2 emissions commodity');
+CREATE TABLE commodity_type
 (
     label       TEXT
         PRIMARY KEY,
     description TEXT
 );
-INSERT INTO commodityType VALUES('w','waste commodity');
-INSERT INTO commodityType VALUES('wa','waste annual commodity');
-INSERT INTO commodityType VALUES('wp','waste physical commodity');
-INSERT INTO commodityType VALUES('a','annual commodity');
-INSERT INTO commodityType VALUES('s','source commodity');
-INSERT INTO commodityType VALUES('p','physical commodity');
-INSERT INTO commodityType VALUES('e','emissions commodity');
-INSERT INTO commodityType VALUES('d','demand commodity');
+INSERT INTO "commodity_type" VALUES('w','waste commodity');
+INSERT INTO "commodity_type" VALUES('wa','waste annual commodity');
+INSERT INTO "commodity_type" VALUES('wp','waste physical commodity');
+INSERT INTO "commodity_type" VALUES('a','annual commodity');
+INSERT INTO "commodity_type" VALUES('s','source commodity');
+INSERT INTO "commodity_type" VALUES('p','physical commodity');
+INSERT INTO "commodity_type" VALUES('e','emissions commodity');
+INSERT INTO "commodity_type" VALUES('d','demand commodity');
 CREATE TABLE construction_input
 (
     region      TEXT,
@@ -263,54 +209,54 @@ CREATE TABLE cost_fixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO cost_fixed VALUES('R1',2020,'E_NGCC',2020,30.60000000000000142,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_NGCC',2020,9.77999999999999937,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_NGCC',2025,9.77999999999999937,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NGCC',2020,9.77999999999999937,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NGCC',2025,9.77999999999999937,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NGCC',2030,9.77999999999999937,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2020,'E_SOLPV',2020,10.40000000000000035,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_SOLPV',2020,10.40000000000000035,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_SOLPV',2025,9.099999999999999645,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_SOLPV',2020,10.40000000000000035,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_SOLPV',2025,9.099999999999999645,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_SOLPV',2030,9.099999999999999645,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2020,'E_NUCLEAR',2020,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_NUCLEAR',2020,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_NUCLEAR',2025,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NUCLEAR',2020,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NUCLEAR',2025,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_NUCLEAR',2030,98.0999999999999801,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2020,'E_BATT',2020,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_BATT',2020,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2025,'E_BATT',2025,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_BATT',2020,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_BATT',2025,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R1',2030,'E_BATT',2030,7.049999999999999823,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2020,'E_NGCC',2020,24.48000000000000042,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_NGCC',2020,7.823999999999999844,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_NGCC',2025,7.823999999999999844,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NGCC',2020,7.823999999999999844,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NGCC',2025,7.823999999999999844,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NGCC',2030,7.823999999999999844,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2020,'E_SOLPV',2020,8.320000000000000284,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_SOLPV',2020,8.320000000000000284,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_SOLPV',2025,7.280000000000000248,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_SOLPV',2020,8.320000000000000284,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_SOLPV',2025,7.280000000000000248,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_SOLPV',2030,7.280000000000000248,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2020,'E_NUCLEAR',2020,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_NUCLEAR',2020,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_NUCLEAR',2025,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NUCLEAR',2020,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NUCLEAR',2025,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_NUCLEAR',2030,78.48000000000000397,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2020,'E_BATT',2020,5.639999999999999681,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_BATT',2020,5.639999999999999681,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2025,'E_BATT',2025,5.639999999999999681,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_BATT',2020,5.639999999999999681,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_BATT',2025,5.639999999999999681,'$M/GWyr','');
-INSERT INTO cost_fixed VALUES('R2',2030,'E_BATT',2030,5.639999999999999681,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2020,'E_NGCC',2020,30.6,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_NGCC',2020,9.78,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_NGCC',2025,9.78,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NGCC',2020,9.78,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NGCC',2025,9.78,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NGCC',2030,9.78,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2020,'E_SOLPV',2020,10.4,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_SOLPV',2020,10.4,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_SOLPV',2025,9.1,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_SOLPV',2020,10.4,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_SOLPV',2025,9.1,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_SOLPV',2030,9.1,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2020,'E_NUCLEAR',2020,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_NUCLEAR',2020,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_NUCLEAR',2025,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NUCLEAR',2020,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NUCLEAR',2025,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_NUCLEAR',2030,9.809999999999998e+01,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2020,'E_BATT',2020,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_BATT',2020,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2025,'E_BATT',2025,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_BATT',2020,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_BATT',2025,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R1',2030,'E_BATT',2030,7.05,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2020,'E_NGCC',2020,24.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_NGCC',2020,7.824,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_NGCC',2025,7.824,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NGCC',2020,7.824,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NGCC',2025,7.824,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NGCC',2030,7.824,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2020,'E_SOLPV',2020,8.32,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_SOLPV',2020,8.32,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_SOLPV',2025,7.28,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_SOLPV',2020,8.32,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_SOLPV',2025,7.28,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_SOLPV',2030,7.28,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2020,'E_NUCLEAR',2020,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_NUCLEAR',2020,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_NUCLEAR',2025,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NUCLEAR',2020,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NUCLEAR',2025,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_NUCLEAR',2030,78.48,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2020,'E_BATT',2020,5.64,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_BATT',2020,5.64,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2025,'E_BATT',2025,5.64,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_BATT',2020,5.64,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_BATT',2025,5.64,'$M/GWyr','');
+INSERT INTO "cost_fixed" VALUES('R2',2030,'E_BATT',2030,5.64,'$M/GWyr','');
 CREATE TABLE cost_invest
 (
     region  TEXT,
@@ -323,60 +269,60 @@ CREATE TABLE cost_invest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO cost_invest VALUES('R1','E_NGCC',2020,1050.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_NGCC',2025,1025.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_NGCC',2030,1000.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_SOLPV',2020,900.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_SOLPV',2025,560.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_SOLPV',2030,800.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_NUCLEAR',2020,6145.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_NUCLEAR',2025,6045.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_NUCLEAR',2030,5890.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_BATT',2020,1150.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_BATT',2025,720.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','E_BATT',2030,480.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R1','T_GSL',2020,2570.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_GSL',2025,2700.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_GSL',2030,2700.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_DSL',2020,2715.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_DSL',2025,2810.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_DSL',2030,2810.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_EV',2020,3100.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_EV',2025,3030.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','T_EV',2030,2925.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R1','R_EH',2020,4.099999999999999644,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R1','R_EH',2025,4.099999999999999644,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R1','R_EH',2030,4.099999999999999644,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R1','R_NGH',2020,7.599999999999999645,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R1','R_NGH',2025,7.599999999999999645,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R1','R_NGH',2030,7.599999999999999645,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','E_NGCC',2020,840.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_NGCC',2025,820.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_NGCC',2030,800.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_SOLPV',2020,720.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_SOLPV',2025,448.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_SOLPV',2030,640.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_NUCLEAR',2020,4916.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_NUCLEAR',2025,4836.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_NUCLEAR',2030,4712.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_BATT',2020,920.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_BATT',2025,576.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','E_BATT',2030,384.0,'$M/GW','');
-INSERT INTO cost_invest VALUES('R2','T_GSL',2020,2056.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_GSL',2025,2160.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_GSL',2030,2160.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_DSL',2020,2172.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_DSL',2025,2248.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_DSL',2030,2248.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_EV',2020,2480.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_EV',2025,2424.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','T_EV',2030,2340.0,'$/bvmt/yr','');
-INSERT INTO cost_invest VALUES('R2','R_EH',2020,3.279999999999999805,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','R_EH',2025,3.279999999999999805,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','R_EH',2030,3.279999999999999805,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','R_NGH',2020,6.080000000000000071,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','R_NGH',2025,6.080000000000000071,'$/PJ/yr','');
-INSERT INTO cost_invest VALUES('R2','R_NGH',2030,6.080000000000000071,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','E_NGCC',2020,1050.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_NGCC',2025,1025.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_NGCC',2030,1000.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_SOLPV',2020,900.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_SOLPV',2025,560.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_SOLPV',2030,800.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_NUCLEAR',2020,6145.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_NUCLEAR',2025,6045.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_NUCLEAR',2030,5890.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_BATT',2020,1150.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_BATT',2025,720.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','E_BATT',2030,480.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R1','T_GSL',2020,2570.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_GSL',2025,2700.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_GSL',2030,2700.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_DSL',2020,2715.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_DSL',2025,2810.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_DSL',2030,2810.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_EV',2020,3100.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_EV',2025,3030.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','T_EV',2030,2925.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_EH',2020,4.1,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_EH',2025,4.1,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_EH',2030,4.1,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_NGH',2020,7.6,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_NGH',2025,7.6,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R1','R_NGH',2030,7.6,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','E_NGCC',2020,840.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_NGCC',2025,820.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_NGCC',2030,800.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_SOLPV',2020,720.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_SOLPV',2025,448.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_SOLPV',2030,640.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_NUCLEAR',2020,4916.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_NUCLEAR',2025,4836.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_NUCLEAR',2030,4712.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_BATT',2020,920.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_BATT',2025,576.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','E_BATT',2030,384.0,'$M/GW','');
+INSERT INTO "cost_invest" VALUES('R2','T_GSL',2020,2056.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_GSL',2025,2160.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_GSL',2030,2160.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_DSL',2020,2172.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_DSL',2025,2248.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_DSL',2030,2248.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_EV',2020,2480.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_EV',2025,2424.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','T_EV',2030,2340.0,'$/bvmt/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_EH',2020,3.28,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_EH',2025,3.28,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_EH',2030,3.28,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_NGH',2020,6.08,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_NGH',2025,6.08,'$/PJ/yr','');
+INSERT INTO "cost_invest" VALUES('R2','R_NGH',2030,6.08,'$/PJ/yr','');
 CREATE TABLE cost_variable
 (
     region  TEXT    NOT NULL,
@@ -391,60 +337,60 @@ CREATE TABLE cost_variable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO cost_variable VALUES('R1',2020,'S_IMPETH',2020,32.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'S_IMPETH',2020,32.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'S_IMPETH',2020,32.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2020,'S_IMPOIL',2020,20.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'S_IMPOIL',2020,20.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'S_IMPOIL',2020,20.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2020,'S_IMPNG',2020,4.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'S_IMPNG',2020,4.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'S_IMPNG',2020,4.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2020,'S_OILREF',2020,1.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'S_OILREF',2020,1.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'S_OILREF',2020,1.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2020,'E_NGCC',2020,1.600000000000000088,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'E_NGCC',2020,1.600000000000000088,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'E_NGCC',2025,1.699999999999999956,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NGCC',2020,1.600000000000000088,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NGCC',2025,1.699999999999999956,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NGCC',2030,1.800000000000000044,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2020,'E_NUCLEAR',2020,0.2399999999999999912,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'E_NUCLEAR',2020,0.2399999999999999912,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2025,'E_NUCLEAR',2025,0.25,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NUCLEAR',2020,0.2399999999999999912,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NUCLEAR',2025,0.25,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1',2030,'E_NUCLEAR',2030,0.2600000000000000088,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'S_IMPETH',2020,25.60000000000000142,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'S_IMPETH',2020,25.60000000000000142,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'S_IMPETH',2020,25.60000000000000142,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'S_IMPOIL',2020,16.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'S_IMPOIL',2020,16.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'S_IMPOIL',2020,16.0,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'S_IMPNG',2020,3.200000000000000177,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'S_IMPNG',2020,3.200000000000000177,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'S_IMPNG',2020,3.200000000000000177,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'S_OILREF',2020,0.8000000000000000444,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'S_OILREF',2020,0.8000000000000000444,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'S_OILREF',2020,0.8000000000000000444,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'E_NGCC',2020,1.280000000000000026,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'E_NGCC',2020,1.280000000000000026,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'E_NGCC',2025,1.360000000000000097,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NGCC',2020,1.280000000000000026,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NGCC',2025,1.360000000000000097,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NGCC',2030,1.439999999999999947,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2020,'E_NUCLEAR',2020,0.1920000000000000039,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'E_NUCLEAR',2020,0.1920000000000000039,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2025,'E_NUCLEAR',2025,0.2000000000000000111,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NUCLEAR',2020,0.1920000000000000039,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NUCLEAR',2025,0.2000000000000000111,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2',2030,'E_NUCLEAR',2030,0.2080000000000000183,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1-R2',2020,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1-R2',2025,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R1-R2',2030,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2-R1',2020,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2-R1',2025,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
-INSERT INTO cost_variable VALUES('R2-R1',2030,'E_TRANS',2015,0.1000000000000000055,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'S_IMPETH',2020,32.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'S_IMPETH',2020,32.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'S_IMPETH',2020,32.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'S_IMPOIL',2020,20.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'S_IMPOIL',2020,20.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'S_IMPOIL',2020,20.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'S_IMPNG',2020,4.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'S_IMPNG',2020,4.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'S_IMPNG',2020,4.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'S_OILREF',2020,1.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'S_OILREF',2020,1.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'S_OILREF',2020,1.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'E_NGCC',2020,1.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'E_NGCC',2020,1.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'E_NGCC',2025,1.7,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NGCC',2020,1.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NGCC',2025,1.7,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NGCC',2030,1.8,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2020,'E_NUCLEAR',2020,0.24,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'E_NUCLEAR',2020,0.24,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2025,'E_NUCLEAR',2025,0.25,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NUCLEAR',2020,0.24,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NUCLEAR',2025,0.25,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1',2030,'E_NUCLEAR',2030,0.26,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'S_IMPETH',2020,25.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'S_IMPETH',2020,25.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'S_IMPETH',2020,25.6,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'S_IMPOIL',2020,16.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'S_IMPOIL',2020,16.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'S_IMPOIL',2020,16.0,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'S_IMPNG',2020,3.2,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'S_IMPNG',2020,3.2,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'S_IMPNG',2020,3.2,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'S_OILREF',2020,0.8,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'S_OILREF',2020,0.8,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'S_OILREF',2020,0.8,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'E_NGCC',2020,1.28,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'E_NGCC',2020,1.28,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'E_NGCC',2025,1.36,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NGCC',2020,1.28,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NGCC',2025,1.36,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NGCC',2030,1.44,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2020,'E_NUCLEAR',2020,0.192,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'E_NUCLEAR',2020,0.192,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2025,'E_NUCLEAR',2025,0.2,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NUCLEAR',2020,0.192,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NUCLEAR',2025,0.2,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2',2030,'E_NUCLEAR',2030,2.08000000000000018e-01,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1-R2',2020,'E_TRANS',2015,0.1,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1-R2',2025,'E_TRANS',2015,0.1,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R1-R2',2030,'E_TRANS',2015,0.1,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2-R1',2020,'E_TRANS',2015,0.1,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2-R1',2025,'E_TRANS',2015,0.1,'$M/PJ','');
+INSERT INTO "cost_variable" VALUES('R2-R1',2030,'E_TRANS',2015,0.1,'$M/PJ','');
 CREATE TABLE demand
 (
     region    TEXT,
@@ -457,27 +403,27 @@ CREATE TABLE demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-INSERT INTO demand VALUES('R1',2020,'RH',30.0,'','');
-INSERT INTO demand VALUES('R1',2025,'RH',33.0,'','');
-INSERT INTO demand VALUES('R1',2030,'RH',36.0,'','');
-INSERT INTO demand VALUES('R1',2020,'VMT',84.0,'','');
-INSERT INTO demand VALUES('R1',2025,'VMT',91.0,'','');
-INSERT INTO demand VALUES('R1',2030,'VMT',98.0,'','');
-INSERT INTO demand VALUES('R2',2020,'RH',70.0,'','');
-INSERT INTO demand VALUES('R2',2025,'RH',77.0,'','');
-INSERT INTO demand VALUES('R2',2030,'RH',84.0,'','');
-INSERT INTO demand VALUES('R2',2020,'VMT',36.0,'','');
-INSERT INTO demand VALUES('R2',2025,'VMT',39.0,'','');
-INSERT INTO demand VALUES('R2',2030,'VMT',42.0,'','');
+INSERT INTO "demand" VALUES('R1',2020,'RH',30.0,'','');
+INSERT INTO "demand" VALUES('R1',2025,'RH',33.0,'','');
+INSERT INTO "demand" VALUES('R1',2030,'RH',36.0,'','');
+INSERT INTO "demand" VALUES('R1',2020,'VMT',84.0,'','');
+INSERT INTO "demand" VALUES('R1',2025,'VMT',91.0,'','');
+INSERT INTO "demand" VALUES('R1',2030,'VMT',98.0,'','');
+INSERT INTO "demand" VALUES('R2',2020,'RH',70.0,'','');
+INSERT INTO "demand" VALUES('R2',2025,'RH',77.0,'','');
+INSERT INTO "demand" VALUES('R2',2030,'RH',84.0,'','');
+INSERT INTO "demand" VALUES('R2',2020,'VMT',36.0,'','');
+INSERT INTO "demand" VALUES('R2',2025,'VMT',39.0,'','');
+INSERT INTO "demand" VALUES('R2',2030,'VMT',42.0,'','');
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES season_label (season),
     tod         TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     demand_name TEXT
         REFERENCES commodity (name),
     dsd         REAL,
@@ -485,68 +431,54 @@ CREATE TABLE demand_specific_distribution
     PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2020,'winter','night','RH',0.4000000000000000222,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2020,'winter','night','RH',0.4000000000000000222,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2025,'winter','night','RH',0.4000000000000000222,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2025,'winter','night','RH',0.4000000000000000222,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R1',2030,'winter','night','RH',0.4000000000000000222,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'spring','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'spring','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'summer','day','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'summer','night','RH',0.0,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'fall','day','RH',0.05000000000000000277,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'fall','night','RH',0.1000000000000000055,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'winter','day','RH',0.2999999999999999889,'');
-INSERT INTO demand_specific_distribution VALUES('R2',2030,'winter','night','RH',0.4000000000000000222,'');
-CREATE TABLE end_of_life_output
-(
-    region      TEXT,
-    tech        TEXT
-        REFERENCES technology (tech),
-    vintage     INTEGER
-        REFERENCES time_period (period),
-    output_comm   TEXT
-        REFERENCES commodity (name),
-    value       REAL,
-    units       TEXT,
-    notes       TEXT,
-    PRIMARY KEY (region, tech, vintage, output_comm)
-);
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'winter','night','RH',0.4,'');
 CREATE TABLE efficiency
 (
     region      TEXT,
@@ -563,89 +495,89 @@ CREATE TABLE efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO efficiency VALUES('R1','ethos','S_IMPETH',2020,'ETH',1.0,'');
-INSERT INTO efficiency VALUES('R1','ethos','S_IMPOIL',2020,'OIL',1.0,'');
-INSERT INTO efficiency VALUES('R1','ethos','S_IMPNG',2020,'NG',1.0,'');
-INSERT INTO efficiency VALUES('R1','ethos','S_IMPURN',2020,'URN',1.0,'');
-INSERT INTO efficiency VALUES('R1','OIL','S_OILREF',2020,'GSL',1.0,'');
-INSERT INTO efficiency VALUES('R1','OIL','S_OILREF',2020,'DSL',1.0,'');
-INSERT INTO efficiency VALUES('R1','ETH','T_BLND',2020,'E10',1.0,'');
-INSERT INTO efficiency VALUES('R1','GSL','T_BLND',2020,'E10',1.0,'');
-INSERT INTO efficiency VALUES('R1','NG','E_NGCC',2020,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R1','NG','E_NGCC',2025,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R1','NG','E_NGCC',2030,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R1','SOL','E_SOLPV',2020,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R1','SOL','E_SOLPV',2025,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R1','SOL','E_SOLPV',2030,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R1','URN','E_NUCLEAR',2015,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R1','URN','E_NUCLEAR',2020,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R1','URN','E_NUCLEAR',2025,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R1','URN','E_NUCLEAR',2030,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R1','ELC','E_BATT',2020,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1','ELC','E_BATT',2025,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1','ELC','E_BATT',2030,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1','E10','T_GSL',2020,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R1','E10','T_GSL',2025,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R1','E10','T_GSL',2030,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R1','DSL','T_DSL',2020,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R1','DSL','T_DSL',2025,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R1','DSL','T_DSL',2030,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R1','ELC','T_EV',2020,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R1','ELC','T_EV',2025,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R1','ELC','T_EV',2030,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R1','ELC','R_EH',2020,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R1','ELC','R_EH',2025,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R1','ELC','R_EH',2030,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R1','NG','R_NGH',2020,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1','NG','R_NGH',2025,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1','NG','R_NGH',2030,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','ethos','S_IMPETH',2020,'ETH',1.0,'');
-INSERT INTO efficiency VALUES('R2','ethos','S_IMPOIL',2020,'OIL',1.0,'');
-INSERT INTO efficiency VALUES('R2','ethos','S_IMPNG',2020,'NG',1.0,'');
-INSERT INTO efficiency VALUES('R2','ethos','S_IMPURN',2020,'URN',1.0,'');
-INSERT INTO efficiency VALUES('R2','OIL','S_OILREF',2020,'GSL',1.0,'');
-INSERT INTO efficiency VALUES('R2','OIL','S_OILREF',2020,'DSL',1.0,'');
-INSERT INTO efficiency VALUES('R2','ETH','T_BLND',2020,'E10',1.0,'');
-INSERT INTO efficiency VALUES('R2','GSL','T_BLND',2020,'E10',1.0,'');
-INSERT INTO efficiency VALUES('R2','NG','E_NGCC',2020,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R2','NG','E_NGCC',2025,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R2','NG','E_NGCC',2030,'ELC',0.5500000000000000444,'');
-INSERT INTO efficiency VALUES('R2','SOL','E_SOLPV',2020,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R2','SOL','E_SOLPV',2025,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R2','SOL','E_SOLPV',2030,'ELC',1.0,'');
-INSERT INTO efficiency VALUES('R2','URN','E_NUCLEAR',2015,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R2','URN','E_NUCLEAR',2020,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R2','URN','E_NUCLEAR',2025,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R2','URN','E_NUCLEAR',2030,'ELC',0.4000000000000000222,'');
-INSERT INTO efficiency VALUES('R2','ELC','E_BATT',2020,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','ELC','E_BATT',2025,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','ELC','E_BATT',2030,'ELC',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','E10','T_GSL',2020,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R2','E10','T_GSL',2025,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R2','E10','T_GSL',2030,'VMT',0.25,'');
-INSERT INTO efficiency VALUES('R2','DSL','T_DSL',2020,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R2','DSL','T_DSL',2025,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R2','DSL','T_DSL',2030,'VMT',0.2999999999999999889,'');
-INSERT INTO efficiency VALUES('R2','ELC','T_EV',2020,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R2','ELC','T_EV',2025,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R2','ELC','T_EV',2030,'VMT',0.8900000000000000133,'');
-INSERT INTO efficiency VALUES('R2','ELC','R_EH',2020,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R2','ELC','R_EH',2025,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R2','ELC','R_EH',2030,'RH',1.0,'');
-INSERT INTO efficiency VALUES('R2','NG','R_NGH',2020,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','NG','R_NGH',2025,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R2','NG','R_NGH',2030,'RH',0.8499999999999999778,'');
-INSERT INTO efficiency VALUES('R1-R2','ELC','E_TRANS',2015,'ELC',0.9000000000000000222,'');
-INSERT INTO efficiency VALUES('R2-R1','ELC','E_TRANS',2015,'ELC',0.9000000000000000222,'');
+INSERT INTO "efficiency" VALUES('R1','ethos','S_IMPETH',2020,'ETH',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ethos','S_IMPOIL',2020,'OIL',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ethos','S_IMPNG',2020,'NG',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ethos','S_IMPURN',2020,'URN',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','OIL','S_OILREF',2020,'GSL',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','OIL','S_OILREF',2020,'DSL',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ETH','T_BLND',2020,'E10',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','GSL','T_BLND',2020,'E10',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','NG','E_NGCC',2020,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R1','NG','E_NGCC',2025,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R1','NG','E_NGCC',2030,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R1','SOL','E_SOLPV',2020,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','SOL','E_SOLPV',2025,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','SOL','E_SOLPV',2030,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','URN','E_NUCLEAR',2015,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R1','URN','E_NUCLEAR',2020,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R1','URN','E_NUCLEAR',2025,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R1','URN','E_NUCLEAR',2030,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','E_BATT',2020,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','E_BATT',2025,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','E_BATT',2030,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R1','E10','T_GSL',2020,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R1','E10','T_GSL',2025,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R1','E10','T_GSL',2030,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R1','DSL','T_DSL',2020,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R1','DSL','T_DSL',2025,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R1','DSL','T_DSL',2030,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','T_EV',2020,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','T_EV',2025,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','T_EV',2030,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','R_EH',2020,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','R_EH',2025,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','ELC','R_EH',2030,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R1','NG','R_NGH',2020,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R1','NG','R_NGH',2025,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R1','NG','R_NGH',2030,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','ethos','S_IMPETH',2020,'ETH',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ethos','S_IMPOIL',2020,'OIL',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ethos','S_IMPNG',2020,'NG',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ethos','S_IMPURN',2020,'URN',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','OIL','S_OILREF',2020,'GSL',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','OIL','S_OILREF',2020,'DSL',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ETH','T_BLND',2020,'E10',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','GSL','T_BLND',2020,'E10',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','NG','E_NGCC',2020,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R2','NG','E_NGCC',2025,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R2','NG','E_NGCC',2030,'ELC',0.55,'');
+INSERT INTO "efficiency" VALUES('R2','SOL','E_SOLPV',2020,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','SOL','E_SOLPV',2025,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','SOL','E_SOLPV',2030,'ELC',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','URN','E_NUCLEAR',2015,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R2','URN','E_NUCLEAR',2020,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R2','URN','E_NUCLEAR',2025,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R2','URN','E_NUCLEAR',2030,'ELC',0.4,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','E_BATT',2020,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','E_BATT',2025,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','E_BATT',2030,'ELC',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','E10','T_GSL',2020,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R2','E10','T_GSL',2025,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R2','E10','T_GSL',2030,'VMT',0.25,'');
+INSERT INTO "efficiency" VALUES('R2','DSL','T_DSL',2020,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R2','DSL','T_DSL',2025,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R2','DSL','T_DSL',2030,'VMT',0.3,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','T_EV',2020,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','T_EV',2025,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','T_EV',2030,'VMT',0.89,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','R_EH',2020,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','R_EH',2025,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','ELC','R_EH',2030,'RH',1.0,'');
+INSERT INTO "efficiency" VALUES('R2','NG','R_NGH',2020,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','NG','R_NGH',2025,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R2','NG','R_NGH',2030,'RH',0.85,'');
+INSERT INTO "efficiency" VALUES('R1-R2','ELC','E_TRANS',2015,'ELC',0.9,'');
+INSERT INTO "efficiency" VALUES('R2-R1','ELC','E_TRANS',2015,'ELC',0.9,'');
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES season_label (season),
     tod         TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     input_comm  TEXT
         REFERENCES commodity (name),
     tech        TEXT
@@ -677,12 +609,12 @@ CREATE TABLE emission_activity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO emission_activity VALUES('R1','CO2','ethos','S_IMPNG',2020,'NG',50.29999999999999005,'kT/PJ','taken from MIT Energy Fact Sheet');
-INSERT INTO emission_activity VALUES('R1','CO2','OIL','S_OILREF',2020,'GSL',67.20000000000000284,'kT/PJ','taken from MIT Energy Fact Sheet');
-INSERT INTO emission_activity VALUES('R1','CO2','OIL','S_OILREF',2020,'DSL',69.40000000000000569,'kT/PJ','taken from MIT Energy Fact Sheet');
-INSERT INTO emission_activity VALUES('R2','CO2','ethos','S_IMPNG',2020,'NG',50.29999999999999005,'kT/PJ','taken from MIT Energy Fact Sheet');
-INSERT INTO emission_activity VALUES('R2','CO2','OIL','S_OILREF',2020,'GSL',67.20000000000000284,'kT/PJ','taken from MIT Energy Fact Sheet');
-INSERT INTO emission_activity VALUES('R2','CO2','OIL','S_OILREF',2020,'DSL',69.40000000000000569,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R1','CO2','ethos','S_IMPNG',2020,'NG',5.029999999999999e+01,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R1','CO2','OIL','S_OILREF',2020,'GSL',67.2,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R1','CO2','OIL','S_OILREF',2020,'DSL',69.4,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R2','CO2','ethos','S_IMPNG',2020,'NG',5.029999999999999e+01,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R2','CO2','OIL','S_OILREF',2020,'GSL',67.2,'kT/PJ','taken from MIT Energy Fact Sheet');
+INSERT INTO "emission_activity" VALUES('R2','CO2','OIL','S_OILREF',2020,'DSL',69.4,'kT/PJ','taken from MIT Energy Fact Sheet');
 CREATE TABLE emission_embodied
 (
     region      TEXT,
@@ -695,7 +627,7 @@ CREATE TABLE emission_embodied
     value       REAL,
     units       TEXT,
     notes       TEXT,
-    PRIMARY KEY (region, emis_comm,  tech, vintage)
+    PRIMARY KEY (region, emis_comm, tech, vintage)
 );
 CREATE TABLE emission_end_of_life
 (
@@ -709,7 +641,21 @@ CREATE TABLE emission_end_of_life
     value       REAL,
     units       TEXT,
     notes       TEXT,
-    PRIMARY KEY (region, emis_comm,  tech, vintage)
+    PRIMARY KEY (region, emis_comm, tech, vintage)
+);
+CREATE TABLE end_of_life_output
+(
+    region      TEXT,
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm   TEXT
+        REFERENCES commodity (name),
+    value       REAL,
+    units       TEXT,
+    notes       TEXT,
+    PRIMARY KEY (region, tech, vintage, output_comm)
 );
 CREATE TABLE existing_capacity
 (
@@ -723,15 +669,409 @@ CREATE TABLE existing_capacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO existing_capacity VALUES('R1','E_NUCLEAR',2015,0.07000000000000000667,'GW','');
-INSERT INTO existing_capacity VALUES('R2','E_NUCLEAR',2015,0.02999999999999999889,'GW','');
-INSERT INTO existing_capacity VALUES('R1-R2','E_TRANS',2015,10.0,'GW','');
-INSERT INTO existing_capacity VALUES('R2-R1','E_TRANS',2015,10.0,'GW','');
-CREATE TABLE TechGroup
+INSERT INTO "existing_capacity" VALUES('R1','E_NUCLEAR',2015,0.07,'GW','');
+INSERT INTO "existing_capacity" VALUES('R2','E_NUCLEAR',2015,0.03,'GW','');
+INSERT INTO "existing_capacity" VALUES('R1-R2','E_TRANS',2015,10.0,'GW','');
+INSERT INTO "existing_capacity" VALUES('R2-R1','E_TRANS',2015,10.0,'GW','');
+CREATE TABLE lifetime_process
 (
-    group_name TEXT
-        PRIMARY KEY,
-    notes      TEXT
+    region   TEXT,
+    tech     TEXT
+        REFERENCES technology (tech),
+    vintage  INTEGER
+        REFERENCES time_period (period),
+    lifetime REAL,
+    notes    TEXT,
+    PRIMARY KEY (region, tech, vintage)
+);
+CREATE TABLE lifetime_survival_curve
+(
+    region  TEXT    NOT NULL,
+    period  INTEGER NOT NULL,
+    tech    TEXT    NOT NULL
+        REFERENCES technology (tech),
+    vintage INTEGER NOT NULL
+        REFERENCES time_period (period),
+    fraction  REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech, vintage)
+);
+CREATE TABLE lifetime_tech
+(
+    region   TEXT,
+    tech     TEXT
+        REFERENCES technology (tech),
+    lifetime REAL,
+    notes    TEXT,
+    PRIMARY KEY (region, tech)
+);
+INSERT INTO "lifetime_tech" VALUES('R1','S_IMPETH',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','S_IMPOIL',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','S_IMPNG',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','S_IMPURN',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','S_OILREF',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','E_NGCC',30.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','E_SOLPV',30.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','E_BATT',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','E_NUCLEAR',50.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','T_BLND',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','T_DSL',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','T_GSL',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','T_EV',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','R_EH',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1','R_NGH',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','S_IMPETH',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','S_IMPOIL',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','S_IMPNG',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','S_IMPURN',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','S_OILREF',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','E_NGCC',30.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','E_SOLPV',30.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','E_BATT',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','E_NUCLEAR',50.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','T_BLND',100.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','T_DSL',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','T_GSL',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','T_EV',12.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','R_EH',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2','R_NGH',20.0,'');
+INSERT INTO "lifetime_tech" VALUES('R1-R2','E_TRANS',30.0,'');
+INSERT INTO "lifetime_tech" VALUES('R2-R1','E_TRANS',30.0,'');
+CREATE TABLE limit_activity
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES time_period (period),
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    activity REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech_or_group, operator)
+);
+INSERT INTO "limit_activity" VALUES('R1',2020,'T_GSL','ge',35.0,'','');
+INSERT INTO "limit_activity" VALUES('R1',2025,'T_GSL','ge',35.0,'','');
+INSERT INTO "limit_activity" VALUES('R1',2030,'T_GSL','ge',35.0,'','');
+INSERT INTO "limit_activity" VALUES('R2',2020,'T_GSL','ge',15.0,'','');
+INSERT INTO "limit_activity" VALUES('R2',2025,'T_GSL','ge',15.0,'','');
+INSERT INTO "limit_activity" VALUES('R2',2030,'T_GSL','ge',15.0,'','');
+CREATE TABLE limit_activity_share
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    sub_group      TEXT,
+    super_group    TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    share REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group, operator)
+);
+CREATE TABLE limit_annual_capacity_factor
+(
+    region      TEXT,
+    period      INTEGER
+        REFERENCES time_period (period),
+    tech        TEXT
+        REFERENCES technology (tech),
+    output_comm TEXT
+        REFERENCES commodity (name),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    factor      REAL,
+    notes       TEXT,
+    PRIMARY KEY (region, period, tech, output_comm, operator),
+    CHECK (factor >= 0 AND factor <= 1)
+);
+CREATE TABLE limit_capacity
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES time_period (period),
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    capacity REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech_or_group, operator)
+);
+CREATE TABLE limit_capacity_share
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    sub_group      TEXT,
+    super_group    TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    share REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group, operator)
+);
+CREATE TABLE limit_degrowth_capacity
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_degrowth_new_capacity
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_degrowth_new_capacity_delta
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_emission
+(
+    region    TEXT,
+    period    INTEGER
+        REFERENCES time_period (period),
+    emis_comm TEXT
+        REFERENCES commodity (name),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    value     REAL,
+    units     TEXT,
+    notes     TEXT,
+    PRIMARY KEY (region, period, emis_comm, operator)
+);
+INSERT INTO "limit_emission" VALUES('R1',2020,'CO2','le',25000.0,'kT CO2','');
+INSERT INTO "limit_emission" VALUES('R1',2025,'CO2','le',24000.0,'kT CO2','');
+INSERT INTO "limit_emission" VALUES('R1',2030,'CO2','le',23000.0,'kT CO2','');
+INSERT INTO "limit_emission" VALUES('global',2020,'CO2','le',37500.0,'kT CO2','');
+INSERT INTO "limit_emission" VALUES('global',2025,'CO2','le',36000.0,'kT CO2','');
+INSERT INTO "limit_emission" VALUES('global',2030,'CO2','le',34500.0,'kT CO2','');
+CREATE TABLE limit_growth_capacity
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_growth_new_capacity
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_growth_new_capacity_delta
+(
+    region TEXT,
+    tech_or_group   TEXT,
+    operator TEXT NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    rate   REAL NOT NULL DEFAULT 0,
+    seed   REAL NOT NULL DEFAULT 0,
+    seed_units TEXT,
+    notes  TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_new_capacity
+(
+    region  TEXT,
+    period  INTEGER
+        REFERENCES time_period (period),
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    new_cap REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, period, tech_or_group, operator)
+);
+CREATE TABLE limit_new_capacity_share
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    sub_group      TEXT,
+    super_group    TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    share REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, sub_group, super_group, operator)
+);
+CREATE TABLE limit_resource
+(
+    region  TEXT,
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    cum_act REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE limit_seasonal_capacity_factor
+(
+	region  TEXT
+        REFERENCES region (region),
+	period	INTEGER
+        REFERENCES time_period (period),
+	season TEXT
+        REFERENCES season_label (season),
+	tech    TEXT
+        REFERENCES technology (tech),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+	factor	REAL,
+	notes	TEXT,
+	PRIMARY KEY(region, period, season, tech, operator)
+);
+CREATE TABLE limit_storage_level_fraction
+(
+    region   TEXT,
+    period   INTEGER
+        REFERENCES time_period (period),
+    season TEXT
+        REFERENCES season_label (season),
+    tod      TEXT
+        REFERENCES time_of_day (tod),
+    tech     TEXT
+        REFERENCES technology (tech),
+    vintage  INTEGER
+        REFERENCES time_period (period),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    fraction REAL,
+    notes    TEXT,
+    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+);
+INSERT INTO "limit_storage_level_fraction" VALUES('R1',2025,'winter','day','E_BATT',2025,'e',0.5,'');
+INSERT INTO "limit_storage_level_fraction" VALUES('R2',2020,'summer','day','E_BATT',2020,'e',0.5,'');
+CREATE TABLE limit_tech_input_split
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    input_comm     TEXT
+        REFERENCES commodity (name),
+    tech           TEXT
+        REFERENCES technology (tech),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, input_comm, tech, operator)
+);
+INSERT INTO "limit_tech_input_split" VALUES('R1',2020,'GSL','T_BLND','ge',0.9,'');
+INSERT INTO "limit_tech_input_split" VALUES('R1',2020,'ETH','T_BLND','ge',0.1,'');
+INSERT INTO "limit_tech_input_split" VALUES('R1',2025,'GSL','T_BLND','ge',0.9,'');
+INSERT INTO "limit_tech_input_split" VALUES('R1',2025,'ETH','T_BLND','ge',0.1,'');
+INSERT INTO "limit_tech_input_split" VALUES('R1',2030,'GSL','T_BLND','ge',0.9,'');
+INSERT INTO "limit_tech_input_split" VALUES('R1',2030,'ETH','T_BLND','ge',0.1,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2020,'GSL','T_BLND','ge',0.72,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2020,'ETH','T_BLND','ge',0.08,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2025,'GSL','T_BLND','ge',0.72,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2025,'ETH','T_BLND','ge',0.08,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2030,'GSL','T_BLND','ge',0.72,'');
+INSERT INTO "limit_tech_input_split" VALUES('R2',2030,'ETH','T_BLND','ge',0.08,'');
+CREATE TABLE limit_tech_input_split_annual
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    input_comm     TEXT
+        REFERENCES commodity (name),
+    tech           TEXT
+        REFERENCES technology (tech),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, input_comm, tech, operator)
+);
+CREATE TABLE limit_tech_output_split
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    tech           TEXT
+        REFERENCES technology (tech),
+    output_comm    TEXT
+        REFERENCES commodity (name),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, tech, output_comm, operator)
+);
+INSERT INTO "limit_tech_output_split" VALUES('R1',2020,'S_OILREF','GSL','ge',0.9,'');
+INSERT INTO "limit_tech_output_split" VALUES('R1',2020,'S_OILREF','DSL','ge',0.1,'');
+INSERT INTO "limit_tech_output_split" VALUES('R1',2025,'S_OILREF','GSL','ge',0.9,'');
+INSERT INTO "limit_tech_output_split" VALUES('R1',2025,'S_OILREF','DSL','ge',0.1,'');
+INSERT INTO "limit_tech_output_split" VALUES('R1',2030,'S_OILREF','GSL','ge',0.9,'');
+INSERT INTO "limit_tech_output_split" VALUES('R1',2030,'S_OILREF','DSL','ge',0.1,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2020,'S_OILREF','GSL','ge',0.72,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2020,'S_OILREF','DSL','ge',0.08,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2025,'S_OILREF','GSL','ge',0.72,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2025,'S_OILREF','DSL','ge',0.08,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2030,'S_OILREF','GSL','ge',0.72,'');
+INSERT INTO "limit_tech_output_split" VALUES('R2',2030,'S_OILREF','DSL','ge',0.08,'');
+CREATE TABLE limit_tech_output_split_annual
+(
+    region         TEXT,
+    period         INTEGER
+        REFERENCES time_period (period),
+    tech           TEXT
+        REFERENCES technology (tech),
+    output_comm    TEXT
+        REFERENCES commodity (name),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    proportion REAL,
+    notes          TEXT,
+    PRIMARY KEY (region, period, tech, output_comm, operator)
+);
+CREATE TABLE linked_tech
+(
+    primary_region TEXT,
+    primary_tech   TEXT
+        REFERENCES technology (tech),
+    emis_comm      TEXT
+        REFERENCES commodity (name),
+    driven_tech    TEXT
+        REFERENCES technology (tech),
+    notes          TEXT,
+    PRIMARY KEY (primary_region, primary_tech, emis_comm)
 );
 CREATE TABLE loan_lifetime_process
 (
@@ -755,401 +1095,80 @@ CREATE TABLE loan_rate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE lifetime_process
+CREATE TABLE metadata
 (
-    region   TEXT,
-    tech     TEXT
-        REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
-    lifetime REAL,
-    notes    TEXT,
-    PRIMARY KEY (region, tech, vintage)
+    element TEXT,
+    value   INT,
+    notes   TEXT,
+    PRIMARY KEY (element)
 );
-CREATE TABLE lifetime_tech
+INSERT INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
+INSERT INTO "metadata" VALUES('DB_MAJOR',4,'');
+INSERT INTO "metadata" VALUES('DB_MINOR',0,'');
+CREATE TABLE metadata_real
 (
-    region   TEXT,
-    tech     TEXT
-        REFERENCES technology (tech),
-    lifetime REAL,
-    notes    TEXT,
-    PRIMARY KEY (region, tech)
+    element TEXT,
+    value   REAL,
+    notes   TEXT,
+
+    PRIMARY KEY (element)
 );
-INSERT INTO lifetime_tech VALUES('R1','S_IMPETH',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','S_IMPOIL',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','S_IMPNG',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','S_IMPURN',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','S_OILREF',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','E_NGCC',30.0,'');
-INSERT INTO lifetime_tech VALUES('R1','E_SOLPV',30.0,'');
-INSERT INTO lifetime_tech VALUES('R1','E_BATT',20.0,'');
-INSERT INTO lifetime_tech VALUES('R1','E_NUCLEAR',50.0,'');
-INSERT INTO lifetime_tech VALUES('R1','T_BLND',100.0,'');
-INSERT INTO lifetime_tech VALUES('R1','T_DSL',12.0,'');
-INSERT INTO lifetime_tech VALUES('R1','T_GSL',12.0,'');
-INSERT INTO lifetime_tech VALUES('R1','T_EV',12.0,'');
-INSERT INTO lifetime_tech VALUES('R1','R_EH',20.0,'');
-INSERT INTO lifetime_tech VALUES('R1','R_NGH',20.0,'');
-INSERT INTO lifetime_tech VALUES('R2','S_IMPETH',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','S_IMPOIL',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','S_IMPNG',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','S_IMPURN',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','S_OILREF',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','E_NGCC',30.0,'');
-INSERT INTO lifetime_tech VALUES('R2','E_SOLPV',30.0,'');
-INSERT INTO lifetime_tech VALUES('R2','E_BATT',20.0,'');
-INSERT INTO lifetime_tech VALUES('R2','E_NUCLEAR',50.0,'');
-INSERT INTO lifetime_tech VALUES('R2','T_BLND',100.0,'');
-INSERT INTO lifetime_tech VALUES('R2','T_DSL',12.0,'');
-INSERT INTO lifetime_tech VALUES('R2','T_GSL',12.0,'');
-INSERT INTO lifetime_tech VALUES('R2','T_EV',12.0,'');
-INSERT INTO lifetime_tech VALUES('R2','R_EH',20.0,'');
-INSERT INTO lifetime_tech VALUES('R2','R_NGH',20.0,'');
-INSERT INTO lifetime_tech VALUES('R1-R2','E_TRANS',30.0,'');
-INSERT INTO lifetime_tech VALUES('R2-R1','E_TRANS',30.0,'');
-CREATE TABLE Operator
+INSERT INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
+INSERT INTO "metadata_real" VALUES('global_discount_rate',0.05,'');
+CREATE TABLE myopic_efficiency
+(
+    base_year   integer,
+    region      text,
+    input_comm  text,
+    tech        text,
+    vintage     integer,
+    output_comm text,
+    efficiency  real,
+    lifetime    integer,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE operator
 (
 	operator TEXT PRIMARY KEY,
 	notes TEXT
 );
-INSERT INTO Operator VALUES('e','equal to');
-INSERT INTO Operator VALUES('le','less than or equal to');
-INSERT INTO Operator VALUES('ge','greater than or equal to');
-CREATE TABLE limit_growth_capacity
+INSERT INTO "operator" VALUES('e','equal to');
+INSERT INTO "operator" VALUES('le','less than or equal to');
+INSERT INTO "operator" VALUES('ge','greater than or equal to');
+CREATE TABLE output_built_capacity
 (
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_degrowth_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_growth_new_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_degrowth_new_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_growth_new_capacity_delta
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_degrowth_new_capacity_delta
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE LimitStorageLevelFraction
-(
+    scenario TEXT,
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    tod      TEXT
-        REFERENCES TimeOfDay (tod),
+    sector   TEXT
+        REFERENCES sector_label (sector),
     tech     TEXT
         REFERENCES technology (tech),
     vintage  INTEGER
         REFERENCES time_period (period),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    fraction REAL,
-    notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
-);
-INSERT INTO LimitStorageLevelFraction VALUES('R1',2025,'winter','day','E_BATT',2025,'e',0.5,'');
-INSERT INTO LimitStorageLevelFraction VALUES('R2',2020,'summer','day','E_BATT',2020,'e',0.5,'');
-CREATE TABLE limit_activity
-(
-    region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
-    tech_or_group   TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    activity REAL,
-    units   TEXT,
-    notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
-);
-INSERT INTO limit_activity VALUES('R1',2020,'T_GSL','ge',35.0,'','');
-INSERT INTO limit_activity VALUES('R1',2025,'T_GSL','ge',35.0,'','');
-INSERT INTO limit_activity VALUES('R1',2030,'T_GSL','ge',35.0,'','');
-INSERT INTO limit_activity VALUES('R2',2020,'T_GSL','ge',15.0,'','');
-INSERT INTO limit_activity VALUES('R2',2025,'T_GSL','ge',15.0,'','');
-INSERT INTO limit_activity VALUES('R2',2030,'T_GSL','ge',15.0,'','');
-CREATE TABLE limit_activity_share
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    sub_group      TEXT,
-    super_group    TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    share REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
-);
-CREATE TABLE limit_annual_capacity_factor
-(
-    region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
-    tech        TEXT
-        REFERENCES technology (tech),
-    output_comm TEXT
-        REFERENCES commodity (name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    factor      REAL,
-    notes       TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator),
-    CHECK (factor >= 0 AND factor <= 1)
-);
-CREATE TABLE limit_capacity
-(
-    region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
-    tech_or_group   TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
     capacity REAL,
-    units   TEXT,
-    notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
+    PRIMARY KEY (region, scenario, tech, vintage)
 );
-CREATE TABLE limit_capacity_share
+CREATE TABLE output_cost
 (
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    sub_group      TEXT,
-    super_group    TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    share REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
-);
-CREATE TABLE limit_new_capacity
-(
-    region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
-    tech_or_group   TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    new_cap REAL,
-    units   TEXT,
-    notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
-);
-CREATE TABLE limit_new_capacity_share
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    sub_group      TEXT,
-    super_group    TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    share REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
-);
-CREATE TABLE limit_resource
-(
-    region  TEXT,
-    tech_or_group   TEXT,
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    cum_act REAL,
-    units   TEXT,
-    notes   TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE limit_seasonal_capacity_factor
-(
-	region  TEXT
-        REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
-	season TEXT
-        REFERENCES SeasonLabel (season),
-	tech    TEXT
-        REFERENCES technology (tech),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-	factor	REAL,
-	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
-);
-CREATE TABLE limit_tech_input_split
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    input_comm     TEXT
-        REFERENCES commodity (name),
-    tech           TEXT
-        REFERENCES technology (tech),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    proportion REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, input_comm, tech, operator)
-);
-INSERT INTO limit_tech_input_split VALUES('R1',2020,'GSL','T_BLND','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_input_split VALUES('R1',2020,'ETH','T_BLND','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_input_split VALUES('R1',2025,'GSL','T_BLND','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_input_split VALUES('R1',2025,'ETH','T_BLND','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_input_split VALUES('R1',2030,'GSL','T_BLND','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_input_split VALUES('R1',2030,'ETH','T_BLND','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2020,'GSL','T_BLND','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2020,'ETH','T_BLND','ge',0.08000000000000000166,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2025,'GSL','T_BLND','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2025,'ETH','T_BLND','ge',0.08000000000000000166,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2030,'GSL','T_BLND','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_input_split VALUES('R2',2030,'ETH','T_BLND','ge',0.08000000000000000166,'');
-CREATE TABLE limit_tech_input_split_annual
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    input_comm     TEXT
-        REFERENCES commodity (name),
-    tech           TEXT
-        REFERENCES technology (tech),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    proportion REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, input_comm, tech, operator)
-);
-CREATE TABLE limit_tech_output_split
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    tech           TEXT
-        REFERENCES technology (tech),
-    output_comm    TEXT
-        REFERENCES commodity (name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    proportion REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator)
-);
-INSERT INTO limit_tech_output_split VALUES('R1',2020,'S_OILREF','GSL','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_output_split VALUES('R1',2020,'S_OILREF','DSL','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_output_split VALUES('R1',2025,'S_OILREF','GSL','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_output_split VALUES('R1',2025,'S_OILREF','DSL','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_output_split VALUES('R1',2030,'S_OILREF','GSL','ge',0.9000000000000000222,'');
-INSERT INTO limit_tech_output_split VALUES('R1',2030,'S_OILREF','DSL','ge',0.1000000000000000055,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2020,'S_OILREF','GSL','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2020,'S_OILREF','DSL','ge',0.08000000000000000166,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2025,'S_OILREF','GSL','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2025,'S_OILREF','DSL','ge',0.08000000000000000166,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2030,'S_OILREF','GSL','ge',0.7199999999999999734,'');
-INSERT INTO limit_tech_output_split VALUES('R2',2030,'S_OILREF','DSL','ge',0.08000000000000000166,'');
-CREATE TABLE limit_tech_output_split_annual
-(
-    region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
-    tech           TEXT
-        REFERENCES technology (tech),
-    output_comm    TEXT
-        REFERENCES commodity (name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    proportion REAL,
-    notes          TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator)
-);
-CREATE TABLE limit_emission
-(
-    region    TEXT,
-    period    INTEGER
-        REFERENCES time_period (period),
-    emis_comm TEXT
-        REFERENCES commodity (name),
-    operator	TEXT  NOT NULL DEFAULT "le"
-    	REFERENCES Operator (operator),
-    value     REAL,
-    units     TEXT,
-    notes     TEXT,
-    PRIMARY KEY (region, period, emis_comm, operator)
-);
-INSERT INTO limit_emission VALUES('R1',2020,'CO2','le',25000.0,'kT CO2','');
-INSERT INTO limit_emission VALUES('R1',2025,'CO2','le',24000.0,'kT CO2','');
-INSERT INTO limit_emission VALUES('R1',2030,'CO2','le',23000.0,'kT CO2','');
-INSERT INTO limit_emission VALUES('global',2020,'CO2','le',37500.0,'kT CO2','');
-INSERT INTO limit_emission VALUES('global',2025,'CO2','le',36000.0,'kT CO2','');
-INSERT INTO limit_emission VALUES('global',2030,'CO2','le',34500.0,'kT CO2','');
-CREATE TABLE LinkedTech
-(
-    primary_region TEXT,
-    primary_tech   TEXT
-        REFERENCES technology (tech),
-    emis_comm      TEXT
-        REFERENCES commodity (name),
-    driven_tech    TEXT
-        REFERENCES technology (tech),
-    notes          TEXT,
-    PRIMARY KEY (primary_region, primary_tech, emis_comm)
+    scenario TEXT,
+    region   TEXT,
+    sector   TEXT REFERENCES sector_label (sector),
+    period   INTEGER REFERENCES time_period (period),
+    tech     TEXT REFERENCES technology (tech),
+    vintage  INTEGER REFERENCES time_period (period),
+    d_invest REAL,
+    d_fixed  REAL,
+    d_var    REAL,
+    d_emiss  REAL,
+    invest   REAL,
+    fixed    REAL,
+    var      REAL,
+    emiss    REAL,
+    PRIMARY KEY (scenario, region, period, tech, vintage),
+    FOREIGN KEY (vintage) REFERENCES time_period (period),
+    FOREIGN KEY (tech) REFERENCES technology (tech)
 );
 CREATE TABLE output_curtailment
 (
@@ -1161,7 +1180,7 @@ CREATE TABLE output_curtailment
     season      TEXT
         REFERENCES time_period (period),
     tod         TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     input_comm  TEXT
         REFERENCES commodity (name),
     tech        TEXT
@@ -1173,12 +1192,97 @@ CREATE TABLE output_curtailment
     curtailment REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE OutputNetCapacity
+CREATE TABLE output_dual_variable
+(
+    scenario        TEXT,
+    constraint_name TEXT,
+    dual            REAL,
+    PRIMARY KEY (constraint_name, scenario)
+);
+CREATE TABLE output_emission
+(
+    scenario  TEXT,
+    region    TEXT,
+    sector    TEXT
+        REFERENCES sector_label (sector),
+    period    INTEGER
+        REFERENCES time_period (period),
+    emis_comm TEXT
+        REFERENCES commodity (name),
+    tech      TEXT
+        REFERENCES technology (tech),
+    vintage   INTEGER
+        REFERENCES time_period (period),
+    emission  REAL,
+    PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
+);
+CREATE TABLE output_flow_in
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES sector_label (sector),
+    period      INTEGER
+        REFERENCES time_period (period),
+    season TEXT
+        REFERENCES season_label (season),
+    tod         TEXT
+        REFERENCES time_of_day (tod),
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
+    flow        REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE output_flow_out
+(
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES sector_label (sector),
+    period      INTEGER
+        REFERENCES time_period (period),
+    season TEXT
+        REFERENCES season_label (season),
+    tod         TEXT
+        REFERENCES time_of_day (tod),
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
+    flow        REAL,
+    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE output_flow_out_summary
+(
+    scenario    TEXT NOT NULL,
+    region      TEXT NOT NULL,
+    sector      TEXT,
+    period      INTEGER,
+    input_comm  TEXT NOT NULL,
+    tech        TEXT NOT NULL,
+    vintage     INTEGER,
+    output_comm TEXT NOT NULL,
+    flow        REAL NOT NULL,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE output_net_capacity
 (
     scenario TEXT,
     region   TEXT,
     sector   TEXT
-        REFERENCES SectorLabel (sector),
+        REFERENCES sector_label (sector),
     period   INTEGER
         REFERENCES time_period (period),
     tech     TEXT
@@ -1188,25 +1292,18 @@ CREATE TABLE OutputNetCapacity
     capacity REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
-CREATE TABLE output_built_capacity
+CREATE TABLE output_objective
 (
-    scenario TEXT,
-    region   TEXT,
-    sector   TEXT
-        REFERENCES SectorLabel (sector),
-    tech     TEXT
-        REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
-    capacity REAL,
-    PRIMARY KEY (region, scenario, tech, vintage)
+    scenario          TEXT,
+    objective_name    TEXT,
+    total_system_cost REAL
 );
-CREATE TABLE OutputRetiredCapacity
+CREATE TABLE output_retired_capacity
 (
     scenario TEXT,
     region   TEXT,
     sector   TEXT
-        REFERENCES SectorLabel (sector),
+        REFERENCES sector_label (sector),
     period   INTEGER
         REFERENCES time_period (period),
     tech     TEXT
@@ -1217,64 +1314,18 @@ CREATE TABLE OutputRetiredCapacity
     cap_early REAL,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
-CREATE TABLE OutputFlowIn
-(
-    scenario    TEXT,
-    region      TEXT,
-    sector      TEXT
-        REFERENCES SectorLabel (sector),
-    period      INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    tod         TEXT
-        REFERENCES TimeOfDay (tod),
-    input_comm  TEXT
-        REFERENCES commodity (name),
-    tech        TEXT
-        REFERENCES technology (tech),
-    vintage     INTEGER
-        REFERENCES time_period (period),
-    output_comm TEXT
-        REFERENCES commodity (name),
-    flow        REAL,
-    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
-);
-CREATE TABLE OutputFlowOut
-(
-    scenario    TEXT,
-    region      TEXT,
-    sector      TEXT
-        REFERENCES SectorLabel (sector),
-    period      INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    tod         TEXT
-        REFERENCES TimeOfDay (tod),
-    input_comm  TEXT
-        REFERENCES commodity (name),
-    tech        TEXT
-        REFERENCES technology (tech),
-    vintage     INTEGER
-        REFERENCES time_period (period),
-    output_comm TEXT
-        REFERENCES commodity (name),
-    flow        REAL,
-    PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
-);
 CREATE TABLE output_storage_level
 (
     scenario TEXT,
     region TEXT,
     sector TEXT
-        REFERENCES SectorLabel (sector),
+        REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES season_label (season),
     tod TEXT
-        REFERENCES TimeOfDay (tod),
+        REFERENCES time_of_day (tod),
     tech TEXT
         REFERENCES technology (tech),
     vintage INTEGER
@@ -1314,15 +1365,15 @@ CREATE TABLE region
         PRIMARY KEY,
     notes  TEXT
 );
-INSERT INTO region VALUES('R1',NULL);
-INSERT INTO region VALUES('R2',NULL);
+INSERT INTO "region" VALUES('R1',NULL);
+INSERT INTO "region" VALUES('R2',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     period  INTEGER
         REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES SeasonLabel (season),
+    	REFERENCES season_label (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
@@ -1331,43 +1382,37 @@ CREATE TABLE reserve_capacity_derate
     PRIMARY KEY (region, period, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE TimeSegmentFraction
+CREATE TABLE rps_requirement
 (
-    period INTEGER
+    region      TEXT    NOT NULL
+        REFERENCES region (region),
+    period      INTEGER NOT NULL
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    tod     TEXT
-        REFERENCES TimeOfDay (tod),
-    segfrac REAL,
-    notes   TEXT,
-    PRIMARY KEY (period, season, tod),
-    CHECK (segfrac >= 0 AND segfrac <= 1)
+    tech_group  TEXT    NOT NULL
+        REFERENCES tech_group (group_name),
+    requirement REAL    NOT NULL,
+    notes       TEXT
 );
-INSERT INTO TimeSegmentFraction VALUES(2020,'spring','day',0.125,'Spring - Day');
-INSERT INTO TimeSegmentFraction VALUES(2020,'spring','night',0.125,'Spring - Night');
-INSERT INTO TimeSegmentFraction VALUES(2020,'summer','day',0.125,'Summer - Day');
-INSERT INTO TimeSegmentFraction VALUES(2020,'summer','night',0.125,'Summer - Night');
-INSERT INTO TimeSegmentFraction VALUES(2020,'fall','day',0.125,'Fall - Day');
-INSERT INTO TimeSegmentFraction VALUES(2020,'fall','night',0.125,'Fall - Night');
-INSERT INTO TimeSegmentFraction VALUES(2020,'winter','day',0.125,'Winter - Day');
-INSERT INTO TimeSegmentFraction VALUES(2020,'winter','night',0.125,'Winter - Night');
-INSERT INTO TimeSegmentFraction VALUES(2025,'spring','day',0.125,'Spring - Day');
-INSERT INTO TimeSegmentFraction VALUES(2025,'spring','night',0.125,'Spring - Night');
-INSERT INTO TimeSegmentFraction VALUES(2025,'summer','day',0.125,'Summer - Day');
-INSERT INTO TimeSegmentFraction VALUES(2025,'summer','night',0.125,'Summer - Night');
-INSERT INTO TimeSegmentFraction VALUES(2025,'fall','day',0.125,'Fall - Day');
-INSERT INTO TimeSegmentFraction VALUES(2025,'fall','night',0.125,'Fall - Night');
-INSERT INTO TimeSegmentFraction VALUES(2025,'winter','day',0.125,'Winter - Day');
-INSERT INTO TimeSegmentFraction VALUES(2025,'winter','night',0.125,'Winter - Night');
-INSERT INTO TimeSegmentFraction VALUES(2030,'spring','day',0.125,'Spring - Day');
-INSERT INTO TimeSegmentFraction VALUES(2030,'spring','night',0.125,'Spring - Night');
-INSERT INTO TimeSegmentFraction VALUES(2030,'summer','day',0.125,'Summer - Day');
-INSERT INTO TimeSegmentFraction VALUES(2030,'summer','night',0.125,'Summer - Night');
-INSERT INTO TimeSegmentFraction VALUES(2030,'fall','day',0.125,'Fall - Day');
-INSERT INTO TimeSegmentFraction VALUES(2030,'fall','night',0.125,'Fall - Night');
-INSERT INTO TimeSegmentFraction VALUES(2030,'winter','day',0.125,'Winter - Day');
-INSERT INTO TimeSegmentFraction VALUES(2030,'winter','night',0.125,'Winter - Night');
+CREATE TABLE season_label
+(
+    season TEXT PRIMARY KEY,
+    notes  TEXT
+);
+INSERT INTO "season_label" VALUES('summer',NULL);
+INSERT INTO "season_label" VALUES('fall',NULL);
+INSERT INTO "season_label" VALUES('winter',NULL);
+INSERT INTO "season_label" VALUES('spring',NULL);
+CREATE TABLE sector_label
+(
+    sector TEXT PRIMARY KEY,
+    notes  TEXT
+);
+INSERT INTO "sector_label" VALUES('supply',NULL);
+INSERT INTO "sector_label" VALUES('electric',NULL);
+INSERT INTO "sector_label" VALUES('transport',NULL);
+INSERT INTO "sector_label" VALUES('commercial',NULL);
+INSERT INTO "sector_label" VALUES('residential',NULL);
+INSERT INTO "sector_label" VALUES('industrial',NULL);
 CREATE TABLE storage_duration
 (
     region   TEXT,
@@ -1376,125 +1421,18 @@ CREATE TABLE storage_duration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO storage_duration VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
-INSERT INTO storage_duration VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
-CREATE TABLE lifetime_survival_curve
-(
-    region  TEXT    NOT NULL,
-    period  INTEGER NOT NULL,
-    tech    TEXT    NOT NULL
-        REFERENCES technology (tech),
-    vintage INTEGER NOT NULL
-        REFERENCES time_period (period),
-    fraction  REAL,
-    notes   TEXT,
-    PRIMARY KEY (region, period, tech, vintage)
-);
-CREATE TABLE technologyType
-(
-    label       TEXT
-        PRIMARY KEY,
-    description TEXT
-);
-INSERT INTO technologyType VALUES('p','production technology');
-INSERT INTO technologyType VALUES('pb','baseload production technology');
-INSERT INTO technologyType VALUES('ps','storage production technology');
-CREATE TABLE TimeOfDay
-(
-    sequence INTEGER UNIQUE,
-    tod      TEXT
-        PRIMARY KEY
-);
-INSERT INTO TimeOfDay VALUES(1,'day');
-INSERT INTO TimeOfDay VALUES(2,'night');
-CREATE TABLE time_period
-(
-    sequence INTEGER UNIQUE,
-    period   INTEGER
-        PRIMARY KEY,
-    flag     TEXT
-        REFERENCES time_periodType (label)
-);
-INSERT INTO time_period VALUES(1,2015,'e');
-INSERT INTO time_period VALUES(2,2020,'f');
-INSERT INTO time_period VALUES(3,2025,'f');
-INSERT INTO time_period VALUES(4,2030,'f');
-INSERT INTO time_period VALUES(5,2035,'f');
-CREATE TABLE TimeSeason
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    notes TEXT,
-    PRIMARY KEY (period, sequence, season)
-);
-INSERT INTO TimeSeason VALUES(2020,1,'spring',NULL);
-INSERT INTO TimeSeason VALUES(2020,2,'summer',NULL);
-INSERT INTO TimeSeason VALUES(2020,3,'fall',NULL);
-INSERT INTO TimeSeason VALUES(2020,4,'winter',NULL);
-INSERT INTO TimeSeason VALUES(2025,1,'spring',NULL);
-INSERT INTO TimeSeason VALUES(2025,2,'summer',NULL);
-INSERT INTO TimeSeason VALUES(2025,3,'fall',NULL);
-INSERT INTO TimeSeason VALUES(2025,4,'winter',NULL);
-INSERT INTO TimeSeason VALUES(2030,1,'spring',NULL);
-INSERT INTO TimeSeason VALUES(2030,2,'summer',NULL);
-INSERT INTO TimeSeason VALUES(2030,3,'fall',NULL);
-INSERT INTO TimeSeason VALUES(2030,4,'winter',NULL);
-CREATE TABLE time_season_sequential
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    seas_seq TEXT,
-    season TEXT
-        REFERENCES SeasonLabel (season),
-    num_days REAL NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
-CREATE TABLE time_periodType
-(
-    label       TEXT
-        PRIMARY KEY,
-    description TEXT
-);
-INSERT INTO time_periodType VALUES('e','existing vintages');
-INSERT INTO time_periodType VALUES('f','future');
-CREATE TABLE OutputEmission
-(
-    scenario  TEXT,
-    region    TEXT,
-    sector    TEXT
-        REFERENCES SectorLabel (sector),
-    period    INTEGER
-        REFERENCES time_period (period),
-    emis_comm TEXT
-        REFERENCES commodity (name),
-    tech      TEXT
-        REFERENCES technology (tech),
-    vintage   INTEGER
-        REFERENCES time_period (period),
-    emission  REAL,
-    PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
-);
-CREATE TABLE RPSRequirement
-(
-    region      TEXT    NOT NULL
-        REFERENCES region (region),
-    period      INTEGER NOT NULL
-        REFERENCES time_period (period),
-    tech_group  TEXT    NOT NULL
-        REFERENCES TechGroup (group_name),
-    requirement REAL    NOT NULL,
-    notes       TEXT
-);
-CREATE TABLE TechGroupMember
+INSERT INTO "storage_duration" VALUES('R1','E_BATT',8.0,'8-hour duration specified as fraction of a day');
+INSERT INTO "storage_duration" VALUES('R2','E_BATT',8.0,'8-hour duration specified as fraction of a day');
+CREATE TABLE tech_group
 (
     group_name TEXT
-        REFERENCES TechGroup (group_name),
+        PRIMARY KEY,
+    notes      TEXT
+);
+CREATE TABLE tech_group_member
+(
+    group_name TEXT
+        REFERENCES tech_group (group_name),
     tech       TEXT
         REFERENCES technology (tech),
     PRIMARY KEY (group_name, tech)
@@ -1515,42 +1453,152 @@ CREATE TABLE technology
     exchange     INTEGER NOT NULL DEFAULT 0,
     seas_stor    INTEGER NOT NULL DEFAULT 0,
     description  TEXT,
-    FOREIGN KEY (flag) REFERENCES technologyType (label)
+    FOREIGN KEY (flag) REFERENCES technology_type (label)
 );
-INSERT INTO technology VALUES('S_IMPETH','p','supply','','',1,0,0,0,0,0,0,0,' imported ethanol');
-INSERT INTO technology VALUES('S_IMPOIL','p','supply','','',1,0,0,0,0,0,0,0,' imported crude oil');
-INSERT INTO technology VALUES('S_IMPNG','p','supply','','',1,0,0,0,0,0,0,0,' imported natural gas');
-INSERT INTO technology VALUES('S_IMPURN','p','supply','','',1,0,0,0,0,0,0,0,' imported uranium');
-INSERT INTO technology VALUES('S_OILREF','p','supply','','',0,0,0,1,0,0,0,0,' crude oil refinery');
-INSERT INTO technology VALUES('E_NGCC','p','electric','','',0,0,0,0,0,0,0,0,' natural gas combined-cycle');
-INSERT INTO technology VALUES('E_SOLPV','p','electric','','',0,0,0,0,0,0,0,0,' solar photovoltaic');
-INSERT INTO technology VALUES('E_BATT','ps','electric','','',0,0,0,0,0,0,0,0,' lithium-ion battery');
-INSERT INTO technology VALUES('E_NUCLEAR','pb','electric','','',0,0,0,0,0,0,0,0,' nuclear power plant');
-INSERT INTO technology VALUES('T_BLND','p','transport','','',0,0,0,0,0,0,0,0,'ethanol - gasoline blending process');
-INSERT INTO technology VALUES('T_DSL','p','transport','','',0,0,0,0,0,0,0,0,'diesel vehicle');
-INSERT INTO technology VALUES('T_GSL','p','transport','','',0,0,0,0,0,0,0,0,'gasoline vehicle');
-INSERT INTO technology VALUES('T_EV','p','transport','','',0,0,0,0,0,0,0,0,'electric vehicle');
-INSERT INTO technology VALUES('R_EH','p','residential','','',0,0,0,0,0,0,0,0,' electric residential heating');
-INSERT INTO technology VALUES('R_NGH','p','residential','','',0,0,0,0,0,0,0,0,' natural gas residential heating');
-INSERT INTO technology VALUES('E_TRANS','p','electric','','',0,0,0,0,0,0,1,0,'electric transmission');
-CREATE TABLE output_cost
+INSERT INTO "technology" VALUES('S_IMPETH','p','supply','','',1,0,0,0,0,0,0,0,' imported ethanol');
+INSERT INTO "technology" VALUES('S_IMPOIL','p','supply','','',1,0,0,0,0,0,0,0,' imported crude oil');
+INSERT INTO "technology" VALUES('S_IMPNG','p','supply','','',1,0,0,0,0,0,0,0,' imported natural gas');
+INSERT INTO "technology" VALUES('S_IMPURN','p','supply','','',1,0,0,0,0,0,0,0,' imported uranium');
+INSERT INTO "technology" VALUES('S_OILREF','p','supply','','',0,0,0,1,0,0,0,0,' crude oil refinery');
+INSERT INTO "technology" VALUES('E_NGCC','p','electric','','',0,0,0,0,0,0,0,0,' natural gas combined-cycle');
+INSERT INTO "technology" VALUES('E_SOLPV','p','electric','','',0,0,0,0,0,0,0,0,' solar photovoltaic');
+INSERT INTO "technology" VALUES('E_BATT','ps','electric','','',0,0,0,0,0,0,0,0,' lithium-ion battery');
+INSERT INTO "technology" VALUES('E_NUCLEAR','pb','electric','','',0,0,0,0,0,0,0,0,' nuclear power plant');
+INSERT INTO "technology" VALUES('T_BLND','p','transport','','',0,0,0,0,0,0,0,0,'ethanol - gasoline blending process');
+INSERT INTO "technology" VALUES('T_DSL','p','transport','','',0,0,0,0,0,0,0,0,'diesel vehicle');
+INSERT INTO "technology" VALUES('T_GSL','p','transport','','',0,0,0,0,0,0,0,0,'gasoline vehicle');
+INSERT INTO "technology" VALUES('T_EV','p','transport','','',0,0,0,0,0,0,0,0,'electric vehicle');
+INSERT INTO "technology" VALUES('R_EH','p','residential','','',0,0,0,0,0,0,0,0,' electric residential heating');
+INSERT INTO "technology" VALUES('R_NGH','p','residential','','',0,0,0,0,0,0,0,0,' natural gas residential heating');
+INSERT INTO "technology" VALUES('E_TRANS','p','electric','','',0,0,0,0,0,0,1,0,'electric transmission');
+CREATE TABLE technology_type
 (
-    scenario TEXT,
-    region   TEXT,
-    sector   TEXT REFERENCES SectorLabel (sector),
-    period   INTEGER REFERENCES time_period (period),
-    tech     TEXT REFERENCES technology (tech),
-    vintage  INTEGER REFERENCES time_period (period),
-    d_invest REAL,
-    d_fixed  REAL,
-    d_var    REAL,
-    d_emiss  REAL,
-    invest   REAL,
-    fixed    REAL,
-    var      REAL,
-    emiss    REAL,
-    PRIMARY KEY (scenario, region, period, tech, vintage),
-    FOREIGN KEY (vintage) REFERENCES time_period (period),
-    FOREIGN KEY (tech) REFERENCES technology (tech)
+    label       TEXT
+        PRIMARY KEY,
+    description TEXT
 );
+INSERT INTO "technology_type" VALUES('p','production technology');
+INSERT INTO "technology_type" VALUES('pb','baseload production technology');
+INSERT INTO "technology_type" VALUES('ps','storage production technology');
+CREATE TABLE time_of_day
+(
+    sequence INTEGER UNIQUE,
+    tod      TEXT
+        PRIMARY KEY
+);
+INSERT INTO "time_of_day" VALUES(1,'day');
+INSERT INTO "time_of_day" VALUES(2,'night');
+CREATE TABLE time_period
+(
+    sequence INTEGER UNIQUE,
+    period   INTEGER
+        PRIMARY KEY,
+    flag     TEXT
+        REFERENCES time_period_type (label)
+);
+INSERT INTO "time_period" VALUES(1,2015,'e');
+INSERT INTO "time_period" VALUES(2,2020,'f');
+INSERT INTO "time_period" VALUES(3,2025,'f');
+INSERT INTO "time_period" VALUES(4,2030,'f');
+INSERT INTO "time_period" VALUES(5,2035,'f');
+CREATE TABLE time_period_type
+(
+    label       TEXT
+        PRIMARY KEY,
+    description TEXT
+);
+INSERT INTO "time_period_type" VALUES('e','existing vintages');
+INSERT INTO "time_period_type" VALUES('f','future');
+CREATE TABLE time_season
+(
+    period INTEGER REFERENCES time_period (period),
+    sequence INTEGER,
+    season TEXT REFERENCES season_label(season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, season)
+);
+INSERT INTO "time_season" VALUES(2020,1,'spring',NULL);
+INSERT INTO "time_season" VALUES(2020,2,'summer',NULL);
+INSERT INTO "time_season" VALUES(2020,3,'fall',NULL);
+INSERT INTO "time_season" VALUES(2020,4,'winter',NULL);
+INSERT INTO "time_season" VALUES(2025,1,'spring',NULL);
+INSERT INTO "time_season" VALUES(2025,2,'summer',NULL);
+INSERT INTO "time_season" VALUES(2025,3,'fall',NULL);
+INSERT INTO "time_season" VALUES(2025,4,'winter',NULL);
+INSERT INTO "time_season" VALUES(2030,1,'spring',NULL);
+INSERT INTO "time_season" VALUES(2030,2,'summer',NULL);
+INSERT INTO "time_season" VALUES(2030,3,'fall',NULL);
+INSERT INTO "time_season" VALUES(2030,4,'winter',NULL);
+CREATE TABLE time_season_all
+(
+    period INTEGER
+        REFERENCES time_period (period),
+    sequence INTEGER,
+    season TEXT
+        REFERENCES season_label (season),
+    notes TEXT,
+    PRIMARY KEY (period, sequence, season)
+);
+CREATE TABLE time_season_sequential
+(
+    period INTEGER REFERENCES time_period (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT REFERENCES season_label(season),
+    num_days REAL NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (num_days > 0)
+);
+CREATE TABLE time_season_to_sequential
+(
+    period INTEGER
+        REFERENCES time_period (period),
+    sequence INTEGER,
+    seas_seq TEXT,
+    season TEXT
+        REFERENCES season_label (season),
+    num_days REAL NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (period, sequence, seas_seq, season),
+    CHECK (num_days > 0)
+);
+CREATE TABLE time_segment_fraction
+(
+    period INTEGER
+        REFERENCES time_period (period),
+    season TEXT
+        REFERENCES season_label (season),
+    tod     TEXT
+        REFERENCES time_of_day (tod),
+    segment_fraction REAL,
+    notes   TEXT,
+    PRIMARY KEY (period, season, tod),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
+);
+INSERT INTO "time_segment_fraction" VALUES(2020,'spring','day',0.125,'Spring - Day');
+INSERT INTO "time_segment_fraction" VALUES(2020,'spring','night',0.125,'Spring - Night');
+INSERT INTO "time_segment_fraction" VALUES(2020,'summer','day',0.125,'Summer - Day');
+INSERT INTO "time_segment_fraction" VALUES(2020,'summer','night',0.125,'Summer - Night');
+INSERT INTO "time_segment_fraction" VALUES(2020,'fall','day',0.125,'Fall - Day');
+INSERT INTO "time_segment_fraction" VALUES(2020,'fall','night',0.125,'Fall - Night');
+INSERT INTO "time_segment_fraction" VALUES(2020,'winter','day',0.125,'Winter - Day');
+INSERT INTO "time_segment_fraction" VALUES(2020,'winter','night',0.125,'Winter - Night');
+INSERT INTO "time_segment_fraction" VALUES(2025,'spring','day',0.125,'Spring - Day');
+INSERT INTO "time_segment_fraction" VALUES(2025,'spring','night',0.125,'Spring - Night');
+INSERT INTO "time_segment_fraction" VALUES(2025,'summer','day',0.125,'Summer - Day');
+INSERT INTO "time_segment_fraction" VALUES(2025,'summer','night',0.125,'Summer - Night');
+INSERT INTO "time_segment_fraction" VALUES(2025,'fall','day',0.125,'Fall - Day');
+INSERT INTO "time_segment_fraction" VALUES(2025,'fall','night',0.125,'Fall - Night');
+INSERT INTO "time_segment_fraction" VALUES(2025,'winter','day',0.125,'Winter - Day');
+INSERT INTO "time_segment_fraction" VALUES(2025,'winter','night',0.125,'Winter - Night');
+INSERT INTO "time_segment_fraction" VALUES(2030,'spring','day',0.125,'Spring - Day');
+INSERT INTO "time_segment_fraction" VALUES(2030,'spring','night',0.125,'Spring - Night');
+INSERT INTO "time_segment_fraction" VALUES(2030,'summer','day',0.125,'Summer - Day');
+INSERT INTO "time_segment_fraction" VALUES(2030,'summer','night',0.125,'Summer - Night');
+INSERT INTO "time_segment_fraction" VALUES(2030,'fall','day',0.125,'Fall - Day');
+INSERT INTO "time_segment_fraction" VALUES(2030,'fall','night',0.125,'Fall - Night');
+INSERT INTO "time_segment_fraction" VALUES(2030,'winter','day',0.125,'Winter - Day');
+INSERT INTO "time_segment_fraction" VALUES(2030,'winter','night',0.125,'Winter - Night');
+CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

@@ -98,7 +98,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
     for flows, capacity, and storage levels will be created.
 
     Populates:
-        - model.commodityBalance_rpc: The master set of (r, p, c) for balance constraints.
+        - model.commodity_balance_rpc: The master set of (r, p, c) for balance constraints.
         - model.activeFlow_rpsditvo: Indices for time-sliced flows (v_flow_out).
         - model.activeFlow_rpitvo: Indices for annual flows (v_flow_out_annual).
         - model.activeFlex_rpsditvo: Indices for flexible time-sliced flows (v_flex).
@@ -121,7 +121,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         | model.capacity_consumption_techs
         | model.export_regions
     )
-    model.commodityBalance_rpc = commodity_upstream.intersection(commodity_downstream)
+    model.commodity_balance_rpc = commodity_upstream.intersection(commodity_downstream)
 
     # 2. Active Flow Indices (Time-Sliced)
     model.active_flow_rpsditvo = {

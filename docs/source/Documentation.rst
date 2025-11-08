@@ -1310,7 +1310,7 @@ loan_lifetime_process
 :math:`{LLP}_{r \in R, t \in T, v \in P}`
 
 **Note**:  :code:`LifetimeLoanProcess` is currently not supported in the database.
-Modelers should use the :code:`Loanlifetime_tech` below.
+Modelers should use the :code:`loan_lifetime_tech` below.
 
 Temoa gives the modeler the ability to separate the loan lifetime from the
 useful life of a process.  This parameter specifies the loan term associated
@@ -1318,14 +1318,14 @@ with capital investment in a process, in years.  If not specified, the model
 assigns the technology lifetime to the loan period in :code:`temoa_initialize.py`.
 
 
-Loanlifetime_tech
+loan_lifetime_tech
 ^^^^^^^^^^^^^^^^
 
 :math:`{LLT}_{r \in R, t \in T}`
 
 Same as the :code:`loan_lifetime_process` but without the vintage index. If all
 vintages of a given technology are assumed to have the same loan term, then
-:code:`Loanlifetime_tech` can be defined instead of :code:`loan_lifetime_process`.
+:code:`loan_lifetime_tech` can be defined instead of :code:`loan_lifetime_process`.
 
 
 lifetime_process

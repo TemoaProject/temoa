@@ -34,10 +34,11 @@ CUSTOM_MAP: dict[str, str] = {
     'TimeNext': 'time_manual',
     'CommodityDStreamProcess': 'commodity_down_stream_process',
     'commodityUStreamProcess': 'commodity_up_stream_process',
-    'SegFrac': 'time_segment_fraction',
+    'SegFrac': 'segment_fraction',
     'segfrac': 'segment_fraction',  # canonical column name for column 'segfrac'
     'MetaDataReal': 'metadata_real',
     'MetaData': 'metadata',
+    'Myopicefficiency': 'myopic_efficiency',
     'DB_MAJOR': 'db_major',
     'DB_MINOR': 'db_minor',
 }

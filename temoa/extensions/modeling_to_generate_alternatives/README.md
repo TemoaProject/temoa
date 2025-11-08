@@ -7,7 +7,7 @@ analytic approach to MGA.  MGA uses multi-processing to iteratively explore near
 
 - The processing of results is left to the modeler and the results from runs are tagged iteratively in the Output
 tables in the database.
-- Running MGA analysis also adds an additional `output_flow_outSummary` table which
+- Running MGA analysis also adds an additional `output_flow_out_summary` table which
 summarizes flows at the period level (summarizing time of day and season) to manage the size of the output for
 larger models
 
