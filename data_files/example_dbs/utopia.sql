@@ -1125,6 +1125,20 @@ CREATE TABLE metadata_real
 );
 INSERT INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 INSERT INTO "metadata_real" VALUES('global_discount_rate',0.05,'');
+CREATE TABLE myopic_efficiency
+(
+    base_year   integer,
+    region      text,
+    input_comm  text,
+    tech        text,
+    vintage     integer,
+    output_comm text,
+    efficiency  real,
+    lifetime    integer,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
+);
 CREATE TABLE operator
 (
 	operator TEXT PRIMARY KEY,
@@ -1257,6 +1271,21 @@ CREATE TABLE output_flow_out
         REFERENCES commodity (name),
     flow        REAL,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
+);
+CREATE TABLE output_flow_out_summary
+(
+    scenario    TEXT NOT NULL,
+    region      TEXT NOT NULL,
+    sector      TEXT,
+    period      INTEGER,
+    input_comm  TEXT NOT NULL,
+    tech        TEXT NOT NULL,
+    vintage     INTEGER,
+    output_comm TEXT NOT NULL,
+    flow        REAL NOT NULL,
+
+    FOREIGN KEY (tech) REFERENCES technology (tech),
+    PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE output_net_capacity
 (
@@ -1573,4 +1602,5 @@ INSERT INTO "time_segment_fraction" VALUES(2010,'summer','day',0.1667,'# S-D');
 INSERT INTO "time_segment_fraction" VALUES(2010,'summer','night',0.0833,'# S-N');
 INSERT INTO "time_segment_fraction" VALUES(2010,'winter','day',0.3333,'# W-D');
 INSERT INTO "time_segment_fraction" VALUES(2010,'winter','night',0.1667,'# W-N');
+CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;
