@@ -306,6 +306,6 @@ def visualize_graph(
             if len(cycle) < 2:
                 continue
             cycle_str = ' -> '.join(cycle) + f' -> {cycle[0]}'
-            logger.warning('Cycle detected: %s', cycle_str)
+            logger.info('Cycle detected: %s', cycle_str)
     except nx.NetworkXError as e:
         logger.warning('NetworkXError during cycle detection: %s', e, exc_info=True)
