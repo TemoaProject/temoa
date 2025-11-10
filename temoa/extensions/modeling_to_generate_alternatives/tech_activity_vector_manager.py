@@ -1,31 +1,3 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/16/24
-
-"""
-
 import queue
 import sqlite3
 from collections import defaultdict
@@ -38,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyomo.core import Expression, Objective, Var, quicksum, value
 
-from definitions import get_OUTPUT_PATH
+from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.extensions.modeling_to_generate_alternatives.hull import Hull
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaWeighting
@@ -73,12 +45,14 @@ class TechActivityVectorManager(VectorManager):
         weighting: MgaWeighting,
         optimal_cost: float,
         cost_relaxation: float,
+        config: TemoaConfig,
     ):
         self.completed_solves = 0
         self.conn = conn
         self.base_model = base_model
         self.optimal_cost = optimal_cost
         self.cost_relaxation = cost_relaxation
+        self.config = config
         self.generation_index = 1  # index of how many models generated to couple inputs-outputs
 
         # {category : [technology, ...]}
@@ -362,7 +336,7 @@ class TechActivityVectorManager(VectorManager):
             self.perf_data.update({len(self.hull_points): volume})
 
     def finalize_tracker(self):
-        fout = Path(get_OUTPUT_PATH(), 'hull_performance.png')
+        fout = self.config.output_path / 'hull_performance.png'
         pts = sorted(self.perf_data.keys())
         y = [self.perf_data[pt] for pt in pts]
         plt.plot(pts, y)

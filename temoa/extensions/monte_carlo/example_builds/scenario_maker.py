@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/11/24
 
 This file is intended to be a simple EXAMPLE for testing mainly of how one might make a set of
 runs for a Monte Carlo simulation.
@@ -45,9 +21,8 @@ Let's make a set of 500 runs and explore output
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from importlib import resources
 import numpy as np
-
-from definitions import PROJECT_ROOT
 
 # distro for the related cost vars
 
@@ -69,7 +44,7 @@ plt.show()
 nuc_dev = np.random.binomial(n=1, p=0.20, size=num_runs) * -0.4
 
 # put it together...
-file_loc = Path(PROJECT_ROOT) / 'data_files/monte_carlo/run_settings_2.csv'
+file_loc = resources.files('data_files.monte_carlo') / 'run_settings_2.csv'
 with open(file_loc, 'w') as f:
     f.write('run,param,index,mod,value,notes\n')
     for run_idx in range(num_runs):

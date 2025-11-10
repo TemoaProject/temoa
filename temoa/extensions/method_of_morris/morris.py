@@ -1,10 +1,10 @@
 # from __future__ import division
 import time
+from importlib import resources
 from pathlib import Path
 
 from pyomo.dataportal import DataPortal
 
-from definitions import PROJECT_ROOT
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
@@ -63,11 +63,11 @@ def evaluate(param_names, param_values, data: dict, k):
     return Morris_Objectives
 
 
-morris_root = Path(PROJECT_ROOT, 'temoa/extensions/method_of_morris')
+morris_root = Path(__file__).parent
 perturbation_coefficient = 0.2  # minus plus 10% of the baseline values
 param_file = morris_root / 'm_params.txt'
-db_file = Path(PROJECT_ROOT, 'data_files/untracked_data/morris/morris_utopia.sqlite')
-config_path = Path(PROJECT_ROOT, 'data_files/untracked_data/morris/morris_utopia.toml')
+db_file = resources.files('data_files.untracked_data.morris') / 'morris_utopia.sqlite'
+config_path = resources.files('data_files.untracked_data.morris') / 'morris_utopia.toml'
 with sqlite3.connect(db_file) as con:
     with open(param_file, 'w') as file:
         param_names = {}

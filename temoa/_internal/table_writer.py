@@ -6,6 +6,7 @@ import sqlite3
 import sys
 from collections import defaultdict
 from collections.abc import Iterable
+from importlib import resources
 from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -13,7 +14,6 @@ from typing import TYPE_CHECKING, cast
 from pyomo.core import value
 from pyomo.opt import SolverResults
 
-from definitions import PROJECT_ROOT
 from temoa._internal.data_brick import DataBrick
 from temoa._internal.exchange_tech_cost_ledger import CostType
 from temoa._internal.table_data_puller import (
@@ -85,10 +85,11 @@ basic_output_tables = [
 ]
 optional_output_tables = ['output_flow_out_summary', 'output_mc_delta', 'output_storage_level']
 
-flow_summary_file_loc = Path(
-    PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
+flow_summary_file_loc = (
+    resources.files('temoa.extensions.modeling_to_generate_alternatives')
+    / 'make_flow_summary_table.sql'
 )
-mc_tweaks_file_loc = Path(PROJECT_ROOT, 'temoa/extensions/monte_carlo/make_deltas_table.sql')
+mc_tweaks_file_loc = resources.files('temoa.extensions.monte_carlo') / 'make_deltas_table.sql'
 
 
 class TableWriter:

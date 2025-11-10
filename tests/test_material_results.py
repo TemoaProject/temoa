@@ -1,10 +1,11 @@
 import logging
 import sqlite3
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from definitions import PROJECT_ROOT
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 
@@ -12,14 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='module')
-def solved_connection(request, tmp_path_factory):
+def solved_connection(
+    request: Any, tmp_path_factory: Any
+) -> Generator[tuple[sqlite3.Connection, str, str, int, float], None, None]:
     """
     spin up the model, solve it, and hand over a connection to the results db
     """
     data_name = 'materials'
     logger.info('Setting up and solving: %s', data_name)
     filename = 'config_materials.toml'
-    config_file = Path(PROJECT_ROOT, 'tests', 'testing_configs', filename)
+    config_file = Path(__file__).parent / 'testing_configs' / filename
     tmp_path = tmp_path_factory.mktemp('data')
     config = TemoaConfig.build_config(config_file=config_file, output_path=tmp_path, silent=True)
     sequencer = TemoaSequencer(config=config)
@@ -51,9 +54,9 @@ flow_tests = [
     'solved_connection',
     argvalues=flow_tests,
     indirect=True,
-    ids=[t['name'] for t in flow_tests],
+    ids=[str(t['name']) for t in flow_tests],
 )
-def test_flows(solved_connection):
+def test_flows(solved_connection: tuple[sqlite3.Connection, str, str, int, float]) -> None:
     """
     Test that the emissions from each technology archetype are correct, and check total emissions
     """

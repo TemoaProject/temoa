@@ -1,30 +1,5 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/15/24
-
-The purpose of this module is to perform top-level control over an MGA model run
+Performs top-level control over an MGA model run
 """
 
 import logging
@@ -35,6 +10,7 @@ import tomllib
 from datetime import datetime
 from logging import getLogger
 from multiprocessing import Queue
+from importlib import resources
 from pathlib import Path
 from queue import Empty
 
@@ -43,7 +19,6 @@ from pyomo.contrib.solver.common.results import Results
 from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
-from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
 from temoa.components.costs import total_cost_rule
@@ -58,8 +33,8 @@ from temoa.model_checking.pricing_check import price_checker
 
 logger = getLogger(__name__)
 
-solver_options_path = Path(
-    PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/MGA_solver_options.toml'
+solver_options_path = (
+    resources.files('temoa.extensions.modeling_to_generate_alternatives') / 'MGA_solver_options.toml'
 )
 
 
@@ -208,6 +183,7 @@ class MgaSequencer:
             con=self.con,
             optimal_cost=tot_cost,
             cost_relaxation=self.cost_epsilon,
+            config=self.config,
         )
 
         # 5.  Set up the Workers
@@ -224,7 +200,7 @@ class MgaSequencer:
             'solver_options': self.worker_solver_options,
         }
         # construct path for the solver logs
-        s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
+        s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
         for _ in range(num_workers):
