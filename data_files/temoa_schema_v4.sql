@@ -1109,4 +1109,4 @@ CREATE TABLE IF NOT EXISTS output_flow_out_summary
 );
 
 COMMIT;
-PRAGMA foreign_keys = 1;
+PRAGMA foreign_keys = ON;

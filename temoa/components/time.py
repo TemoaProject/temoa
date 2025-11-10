@@ -139,8 +139,9 @@ def validate_segment_fraction(model: TemoaModel) -> None:
 
 def validate_time_manual(model: TemoaModel) -> None:
     """
-    If using this table, check that defined states are actually valid.
-    time_segment_fraction is already compared to other tables so just compare to segment_fraction.
+    If using the manual sequencing table, check that all defined states are valid.
+    segment_fraction keys are already validated, so we compare time_manual against those.
+
     """
     # Only check TimeNext if it is actually being used
     if model.time_sequencing.first() != 'manual':
@@ -284,7 +285,7 @@ def create_time_sequence(model: TemoaModel) -> None:
                     model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the time_manual table
-            msg = 'Pulling time sequence from TimeNext table.'
+            msg = 'Pulling time sequence from time_manual table.'
             for p, s, d, s_next, d_next in model.time_manual:
                 model.time_next[p, s, d] = s_next, d_next
         case _:

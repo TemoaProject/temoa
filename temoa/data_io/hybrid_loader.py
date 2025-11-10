@@ -536,8 +536,9 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Loads the indexed time_season set and the simple time_season set,
-        with a dynamic fallback if the table is missing.
+        Loads time_season_all (simple set of all seasons) and time_season
+        (indexed set mapping periods to seasons), with a dynamic fallback
+        if the table is missing.
         """
         model = TemoaModel()
         mi = self.myopic_index
@@ -594,7 +595,7 @@ class HybridLoader:
             self._load_component_data(data, model.segment_fraction, filtered_data)
         else:
             logger.warning(
-                'No time_segment_fraction table found. Generating default segment_fraction values.'
+                'No segment_fraction table found. Generating default segment_fraction values.'
             )
             time_optimize = data.get('time_optimize', [])
             fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]  # type: ignore[attr-defined]
