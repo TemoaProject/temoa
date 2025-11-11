@@ -29,6 +29,7 @@ if t not in {'y', 'Y'}:
     sys.exit(0)
 
 output_path = Path(__file__).parent.parent / 'testing_log'  # capture the log here
+output_path.mkdir(parents=True, exist_ok=True)
 
 scenarios = [
     {

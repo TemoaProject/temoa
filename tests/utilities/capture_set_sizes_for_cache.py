@@ -26,6 +26,8 @@ if t not in {'y', 'Y'}:
 output_file = Path(__file__).parent.parent / 'testing_data' / 'US_9R_8D_set_sizes.json'
 config_file_path = Path(__file__).parent / 'config_US_9R_8D.toml'
 output_path = Path(__file__).parent.parent / 'testing_log'
+output_path.mkdir(parents=True, exist_ok=True)
+
 options = {'silent': True}
 config = TemoaConfig.build_config(
     config_file=config_file_path, output_path=output_path, silent=options['silent']
