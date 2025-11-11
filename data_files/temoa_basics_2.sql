@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS MetaDataReal
 REPLACE INTO MetaDataReal
 VALUES ('global_discount_rate', 0.05, 'Discount Rate for future costs');
 REPLACE INTO MetaDataReal
-VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in LoanRate table');
+VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in loan_rate table');
 
-CREATE TABLE IF NOT EXISTS CapacityFactorTech
+CREATE TABLE IF NOT EXISTS capacity_factor_tech
 (
     region TEXT,
     period INTEGER
@@ -76,7 +76,7 @@ REPLACE INTO CommodityType
 VALUES ('d', 'demand commodity');
 REPLACE INTO CommodityType
 VALUES ('e', 'emissions commodity');
-CREATE TABLE IF NOT EXISTS CostEmission
+CREATE TABLE IF NOT EXISTS cost_emission
 (
     region    TEXT,
     period    INTEGER
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-CREATE TABLE IF NOT EXISTS CostFixed
+CREATE TABLE IF NOT EXISTS cost_fixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS CostInvest
+CREATE TABLE IF NOT EXISTS cost_invest
 (
     region  TEXT,
     tech    TEXT
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS CostVariable
+CREATE TABLE IF NOT EXISTS cost_variable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS DemandSpecificDistribution
     PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-CREATE TABLE IF NOT EXISTS Efficiency
+CREATE TABLE IF NOT EXISTS efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE IF NOT EXISTS EmissionActivity
+CREATE TABLE IF NOT EXISTS emission_activity
 (
     region      TEXT,
     emis_comm   TEXT
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-CREATE TABLE IF NOT EXISTS ExistingCapacity
+CREATE TABLE IF NOT EXISTS existing_capacity
 (
     region   TEXT,
     tech     TEXT
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS LifetimeProcess
+CREATE TABLE IF NOT EXISTS lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS LifetimeTech
+CREATE TABLE IF NOT EXISTS lifetime_tech
 (
     region   TEXT,
     tech     TEXT
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE IF NOT EXISTS LimitActivity
+CREATE TABLE IF NOT EXISTS limit_activity
 (
     region  TEXT,
     period  INTEGER
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitActivityShare
+CREATE TABLE IF NOT EXISTS limit_activity_share
 (
     region         TEXT,
     period         INTEGER
@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS LimitActivityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
+CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
 (
     region      TEXT,
     period      INTEGER
@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
     PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE IF NOT EXISTS LimitCapacity
+CREATE TABLE IF NOT EXISTS limit_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitCapacityShare
+CREATE TABLE IF NOT EXISTS limit_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS LimitCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitDegrowthCapacity
+CREATE TABLE IF NOT EXISTS limit_degrowth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -302,7 +302,7 @@ CREATE TABLE IF NOT EXISTS LimitDegrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitEmission
+CREATE TABLE IF NOT EXISTS limit_emission
 (
     region    TEXT,
     period    INTEGER
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS LimitEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitGrowthCapacity
+CREATE TABLE IF NOT EXISTS limit_growth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -328,7 +328,7 @@ CREATE TABLE IF NOT EXISTS LimitGrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitNewCapacity
+CREATE TABLE IF NOT EXISTS limit_new_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -341,7 +341,7 @@ CREATE TABLE IF NOT EXISTS LimitNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitNewCapacityShare
+CREATE TABLE IF NOT EXISTS limit_new_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -354,7 +354,7 @@ CREATE TABLE IF NOT EXISTS LimitNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitResource
+CREATE TABLE IF NOT EXISTS limit_resource
 (
     region  TEXT,
     tech_or_group   TEXT,
@@ -365,7 +365,7 @@ CREATE TABLE IF NOT EXISTS LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitSeasonalCapacityFactor
+CREATE TABLE IF NOT EXISTS limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -400,7 +400,7 @@ CREATE TABLE IF NOT EXISTS LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitTechInputSplit
+CREATE TABLE IF NOT EXISTS limit_tech_input_split
 (
     region         TEXT,
     period         INTEGER
@@ -415,7 +415,7 @@ CREATE TABLE IF NOT EXISTS LimitTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitTechInputSplitAnnual
+CREATE TABLE IF NOT EXISTS limit_tech_input_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -430,7 +430,7 @@ CREATE TABLE IF NOT EXISTS LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitTechOutputSplit
+CREATE TABLE IF NOT EXISTS limit_tech_output_split
 (
     region         TEXT,
     period         INTEGER
@@ -445,7 +445,7 @@ CREATE TABLE IF NOT EXISTS LimitTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE IF NOT EXISTS LimitTechOutputSplitAnnual
+CREATE TABLE IF NOT EXISTS limit_tech_output_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -665,7 +665,7 @@ CREATE TABLE IF NOT EXISTS SectorLabel
     sector TEXT PRIMARY KEY,
     notes  TEXT
 );
-CREATE TABLE IF NOT EXISTS StorageDuration
+CREATE TABLE IF NOT EXISTS storage_duration
 (
     region   TEXT,
     tech     TEXT,
@@ -738,7 +738,7 @@ CREATE TABLE IF NOT EXISTS TimeSeason
     PRIMARY KEY (period, sequence, season)
 );
 CREATE TABLE IF NOT EXISTS TimeSegmentFraction
-(   
+(
     period INTEGER
         REFERENCES TimePeriod (period),
     season TEXT

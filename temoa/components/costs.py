@@ -7,7 +7,7 @@ This module is responsible for:
 -  Pre-computing and populating cost parameters.
 -  Defining the rules for calculating all investment, fixed, variable, and emission-related
     costs incurred over the model horizon.
--  Defining the model's objective function (TotalCost_rule) to minimize the
+-  Defining the model's objective function (total_cost_rule) to minimize the
     net present value of the total system cost.
 """
 
@@ -36,8 +36,8 @@ logger = getLogger(name=__name__)
 
 
 def get_default_loan_rate(model: TemoaModel, *_: Any) -> float:
-    """get the default loan rate from the DefaultLoanRate param"""
-    return value(model.DefaultLoanRate)
+    """get the default loan rate from the default_loan_rate param"""
+    return value(model.default_loan_rate)
 
 
 def annuity_to_pv(rate: float, periods: float) -> float | Expression:
@@ -88,7 +88,7 @@ def fv_to_pv(rate: float, periods: float) -> float | Expression:
 
 
 def get_loan_life(model: TemoaModel, r: Region, t: Technology, v: Vintage) -> int:
-    return value(model.LifetimeProcess[r, t, v])
+    return value(model.lifetime_process[r, t, v])
 
 
 # ============================================================================
@@ -98,28 +98,28 @@ def get_loan_life(model: TemoaModel, r: Region, t: Technology, v: Vintage) -> in
 
 def cost_fixed_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, Vintage]]:
     # we pull the unlimited capacity techs from this index.  They cannot have fixed costs
-    if model.activeActivity_rptv:
+    if model.active_activity_rptv:
         return {
-            (r, p, t, v) for r, p, t, v in model.activeActivity_rptv if t not in model.tech_uncap
+            (r, p, t, v) for r, p, t, v in model.active_activity_rptv if t not in model.tech_uncap
         }
     return set()
 
 
 def cost_variable_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, Vintage]]:
-    if model.activeActivity_rptv:
-        return model.activeActivity_rptv
+    if model.active_activity_rptv:
+        return model.active_activity_rptv
     return set()
 
 
 def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Technology, Vintage]]:
     """
-    Based on the Efficiency parameter's indices and time_future parameter, this
+    Based on the efficiency parameter's indices and time_future parameter, this
     function returns the set of process indices that may be specified in the
-    CostInvest parameter.
+    cost_invest parameter.
     """
     min_period = min(model.vintage_optimize)
 
-    indices = {(r, t, v) for r, i, t, v, o in model.Efficiency.sparse_iterkeys() if v >= min_period}
+    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys() if v >= min_period}
 
     return indices
 
@@ -158,7 +158,7 @@ def loan_cost(
     # calculate the amortised loan repayment (annuity)
     annuity = (
         capacity
-        * invest_cost  # lump investment cost is capacity times CostInvest
+        * invest_cost  # lump investment cost is capacity times cost_invest
         * loan_annualize  # calculate loan annuities for investment cost, if used
     )
 
@@ -222,7 +222,7 @@ def loan_cost_survival_curve(
     # calculate the amortised loan repayment (annuity)
     annuity = (
         capacity
-        * invest_cost  # lump investment cost is capacity times CostInvest
+        * invest_cost  # lump investment cost is capacity times cost_invest
         * loan_annualize  # calculate loan annuities for investment cost, if used
     )
 
@@ -232,13 +232,13 @@ def loan_cost_survival_curve(
             annuity
             * lifetime_loan_process  # sum of loan payments over loan period
             / sum(  # redistributed over survival curve within horizon
-                value(model.LifetimeSurvivalCurve[r, p, t, v])
-                for p in model.survivalCurvePeriods[r, t, v]
+                value(model.lifetime_survival_curve[r, p, t, v])
+                for p in model.survival_curve_periods[r, t, v]
                 if v <= p
             )
             * sum(  # summed over survival curve within horizon
-                value(model.LifetimeSurvivalCurve[r, p, t, v])
-                for p in model.survivalCurvePeriods[r, t, v]
+                value(model.lifetime_survival_curve[r, p, t, v])
+                for p in model.survival_curve_periods[r, t, v]
                 if v <= p < p_e
             )
         )
@@ -251,18 +251,18 @@ def loan_cost_survival_curve(
             )  # PV of all loan payments, discounted to vintage year using GDR
             / sum(  # redistributed over survival curve within horizon
                 value(
-                    model.LifetimeSurvivalCurve[r, p, t, v]
+                    model.lifetime_survival_curve[r, p, t, v]
                 )  # reamortised over survival curve of process using GDR
                 * fv_to_pv(
                     global_discount_rate, p - v + 1
                 )  # +1 because LSC is indexed to start of p not end of p
-                for p in model.survivalCurvePeriods[r, t, v]
+                for p in model.survival_curve_periods[r, t, v]
                 if v <= p  # this shouldnt be possible but play it safe
             )
             * sum(  # PV of all reamortised costs (within planning horizon)
-                value(model.LifetimeSurvivalCurve[r, p, t, v])
+                value(model.lifetime_survival_curve[r, p, t, v])
                 * fv_to_pv(global_discount_rate, p - v + 1)
-                for p in model.survivalCurvePeriods[r, t, v]
+                for p in model.survival_curve_periods[r, t, v]
                 if v <= p < p_e
             )
             * fv_to_pv(
@@ -316,26 +316,26 @@ def fixed_or_variable_cost(
 def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     p_0 = min(model.time_optimize)
     p_e = model.time_future.last()  # End point of modeled horizon
-    global_discount_rate = value(model.GlobalDiscountRate)
+    global_discount_rate = value(model.global_discount_rate)
     # MPL = M.ModelProcessLife
 
-    if value(model.MyopicDiscountingYear) != 0:
-        p_0 = value(model.MyopicDiscountingYear)
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
 
     loan_costs = quicksum(
         loan_cost(
-            model.V_NewCapacity[r, S_t, S_v],
-            value(model.CostInvest[r, S_t, S_v]),
-            value(model.LoanAnnualize[r, S_t, S_v]),
-            value(model.LoanLifetimeProcess[r, S_t, S_v]),
-            value(model.LifetimeProcess[r, S_t, S_v]),
+            model.v_new_capacity[r, S_t, S_v],
+            value(model.cost_invest[r, S_t, S_v]),
+            value(model.loan_annualize[r, S_t, S_v]),
+            value(model.loan_lifetime_process[r, S_t, S_v]),
+            value(model.lifetime_process[r, S_t, S_v]),
             p_0,
             p_e,
             global_discount_rate,
             vintage=S_v,
         )
-        for r, S_t, S_v in model.CostInvest.sparse_iterkeys()
-        if S_v == p and not model.isSurvivalCurveProcess[r, S_t, S_v]
+        for r, S_t, S_v in model.cost_invest.sparse_iterkeys()
+        if S_v == p and not model.is_survival_curve_process[r, S_t, S_v]
     )
     loan_costs += quicksum(
         loan_cost_survival_curve(
@@ -343,87 +343,87 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             r,
             S_t,
             S_v,
-            model.V_NewCapacity[r, S_t, S_v],
-            value(model.CostInvest[r, S_t, S_v]),
-            value(model.LoanAnnualize[r, S_t, S_v]),
-            value(model.LoanLifetimeProcess[r, S_t, S_v]),
+            model.v_new_capacity[r, S_t, S_v],
+            value(model.cost_invest[r, S_t, S_v]),
+            value(model.loan_annualize[r, S_t, S_v]),
+            value(model.loan_lifetime_process[r, S_t, S_v]),
             p_0,
             p_e,
             global_discount_rate,
         )
-        for r, S_t, S_v in model.CostInvest.sparse_iterkeys()
-        if S_v == p and model.isSurvivalCurveProcess[r, S_t, S_v]
+        for r, S_t, S_v in model.cost_invest.sparse_iterkeys()
+        if S_v == p and model.is_survival_curve_process[r, S_t, S_v]
     )
 
     fixed_costs = quicksum(
         fixed_or_variable_cost(
-            model.V_Capacity[r, p, S_t, S_v],
-            value(model.CostFixed[r, p, S_t, S_v]),
-            value(model.PeriodLength[p]),
+            model.v_capacity[r, p, S_t, S_v],
+            value(model.cost_fixed[r, p, S_t, S_v]),
+            value(model.period_length[p]),
             global_discount_rate,
             p_0,
             p=p,
         )
-        for r, S_p, S_t, S_v in model.CostFixed.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_fixed.sparse_iterkeys()
         if S_p == p
     )
 
     variable_costs = quicksum(
         fixed_or_variable_cost(
-            model.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o],
-            value(model.CostVariable[r, p, S_t, S_v]),
-            value(model.PeriodLength[p]),
+            model.v_flow_out[r, p, s, d, S_i, S_t, S_v, S_o],
+            value(model.cost_variable[r, p, S_t, S_v]),
+            value(model.period_length[p]),
             global_discount_rate,
             p_0,
             p,
         )
-        for r, S_p, S_t, S_v in model.CostVariable.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_variable.sparse_iterkeys()
         if S_p == p and S_t not in model.tech_annual
-        for S_i in model.processInputs[r, S_p, S_t, S_v]
-        for S_o in model.processOutputsByInput[r, S_p, S_t, S_v, S_i]
-        for s in model.TimeSeason[p]
+        for S_i in model.process_inputs[r, S_p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[r, S_p, S_t, S_v, S_i]
+        for s in model.time_season[p]
         for d in model.time_of_day
     )
 
     variable_costs_annual = quicksum(
         fixed_or_variable_cost(
-            model.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o],
-            value(model.CostVariable[r, p, S_t, S_v]),
-            value(model.PeriodLength[p]),
+            model.v_flow_out_annual[r, p, S_i, S_t, S_v, S_o],
+            value(model.cost_variable[r, p, S_t, S_v]),
+            value(model.period_length[p]),
             global_discount_rate,
             p_0,
             p,
         )
-        for r, S_p, S_t, S_v in model.CostVariable.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_variable.sparse_iterkeys()
         if S_p == p and S_t in model.tech_annual
-        for S_i in model.processInputs[r, S_p, S_t, S_v]
-        for S_o in model.processOutputsByInput[r, S_p, S_t, S_v, S_i]
+        for S_i in model.process_inputs[r, S_p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[r, S_p, S_t, S_v, S_i]
     )
 
     # The emissions costs occur over the five possible emission sources.
     # to do any/all of them we need 2 baseline sets:  The regular and annual sets
     # of indices that are valid which is basically the filter of:
-    #     EmissionActivty by CostEmission
+    #     EmissionActivty by cost_emission
     # and to ensure that the techology is active we need to filter that
     # result with processInput
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from V_FlowOut, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
+    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
     # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
     # Earlier versions of this code had accounting for flex & curtailment that have been removed.
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in model.EmissionActivity.sparse_iterkeys()
-        if (r, p, e) in model.CostEmission  # tightest filter first
-        and (r, p, t, v) in model.processInputs
+        for (r, e, i, t, v, o) in model.emission_activity.sparse_iterkeys()
+        if (r, p, e) in model.cost_emission  # tightest filter first
+        and (r, p, t, v) in model.process_inputs
     ]
 
     # then expand the base for the normal (season/tod) set and annual separately:
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in model.TimeSeason[p]
+        for s in model.time_season[p]
         for d in model.time_of_day
         if t not in model.tech_annual
     ]
@@ -433,10 +433,10 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     # 1. variable emissions
     var_emissions = quicksum(
         fixed_or_variable_cost(
-            cap_or_flow=model.V_FlowOut[r, p, s, d, i, t, v, o]
-            * value(model.EmissionActivity[r, e, i, t, v, o]),
-            cost_factor=value(model.CostEmission[r, p, e]),
-            cost_years=value(model.PeriodLength[p]),
+            cap_or_flow=model.v_flow_out[r, p, s, d, i, t, v, o]
+            * value(model.emission_activity[r, e, i, t, v, o]),
+            cost_factor=value(model.cost_emission[r, p, e]),
+            cost_years=value(model.period_length[p]),
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
@@ -451,10 +451,10 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     # 4. annual emissions
     var_annual_emissions = quicksum(
         fixed_or_variable_cost(
-            cap_or_flow=model.V_FlowOutAnnual[r, p, i, t, v, o]
-            * value(model.EmissionActivity[r, e, i, t, v, o]),
-            cost_factor=value(model.CostEmission[r, p, e]),
-            cost_years=value(model.PeriodLength[p]),
+            cap_or_flow=model.v_flow_out_annual[r, p, i, t, v, o]
+            * value(model.emission_activity[r, e, i, t, v, o]),
+            cost_factor=value(model.cost_emission[r, p, e]),
+            cost_years=value(model.period_length[p]),
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
@@ -468,38 +468,38 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     # 6. embodied - treated as a fixed cost distributed over the deployment period (vintage)
     embodied_emissions = quicksum(
         fixed_or_variable_cost(
-            cap_or_flow=model.V_NewCapacity[r, t, v]
-            * value(model.EmissionEmbodied[r, e, t, v])
-            / value(model.PeriodLength[p]),
-            cost_factor=value(model.CostEmission[r, p, e]),
+            cap_or_flow=model.v_new_capacity[r, t, v]
+            * value(model.emission_embodied[r, e, t, v])
+            / value(model.period_length[p]),
+            cost_factor=value(model.cost_emission[r, p, e]),
             cost_years=value(
-                model.PeriodLength[v]
+                model.period_length[v]
             ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
         )
-        for (r, e, t, v) in model.EmissionEmbodied.sparse_iterkeys()
-        if (r, p, e) in model.CostEmission
+        for (r, e, t, v) in model.emission_embodied.sparse_iterkeys()
+        if (r, p, e) in model.cost_emission
         if v == p
     )
 
     # 6. endoflife - treated as a fixed cost distributed over the retirement period
     endoflife_emissions = quicksum(
         fixed_or_variable_cost(
-            cap_or_flow=model.V_AnnualRetirement[r, p, t, v]
-            * value(model.EmissionEndOfLife[r, e, t, v]),
-            cost_factor=value(model.CostEmission[r, p, e]),
+            cap_or_flow=model.v_annual_retirement[r, p, t, v]
+            * value(model.emission_end_of_life[r, e, t, v]),
+            cost_factor=value(model.cost_emission[r, p, e]),
             cost_years=value(
-                model.PeriodLength[p]
+                model.period_length[p]
             ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
         )
-        for (r, e, t, v) in model.EmissionEndOfLife.sparse_iterkeys()
-        if (r, p, e) in model.CostEmission
-        if (r, t, v) in model.retirementPeriods and p in model.retirementPeriods[r, t, v]
+        for (r, e, t, v) in model.emission_end_of_life.sparse_iterkeys()
+        if (r, p, e) in model.cost_emission
+        if (r, t, v) in model.retirement_periods and p in model.retirement_periods[r, t, v]
     )
 
     period_emission_cost = (
@@ -661,17 +661,17 @@ def total_cost_rule(model: TemoaModel) -> Expression:
 def create_costs(model: TemoaModel) -> None:
     """
     Steps to creating fixed and variable costs:
-    1. Collect all possible cost indices (CostFixed, CostVariable)
-    2. Find the ones _not_ specified in CostFixed and CostVariable
+    1. Collect all possible cost indices (cost_fixed, cost_variable)
+    2. Find the ones _not_ specified in cost_fixed and cost_variable
     3. Set them, based on Cost*VintageDefault
     """
     logger.debug('Started Creating Fixed and Variable costs in CreateCosts()')
-    cost_fixed = model.CostFixed
-    cost_variable = model.CostVariable
+    cost_fixed = model.cost_fixed
+    cost_variable = model.cost_variable
 
     # Step 1
-    fixed_indices = set(model.CostFixed_rptv)
-    var_indices = set(model.CostVariable_rptv)
+    fixed_indices = set(model.cost_fixed_rptv)
+    var_indices = set(model.cost_variable_rptv)
 
     # Step 2
     unspecified_fixed_prices = fixed_indices.difference(cost_fixed.sparse_iterkeys())
@@ -687,19 +687,19 @@ def create_costs(model: TemoaModel) -> None:
     if unspecified_fixed_prices:
         # CF._constructed = False
         for r, p, t, v in unspecified_fixed_prices:
-            if (r, t, v) in model.CostFixedVintageDefault:
-                cost_fixed[r, p, t, v] = model.CostFixedVintageDefault[
+            if (r, t, v) in model.cost_fixed_vintage_default:
+                cost_fixed[r, p, t, v] = model.cost_fixed_vintage_default[
                     r, t, v
                 ]  # CF._constructed = True
 
     if unspecified_var_prices:
         # CV._constructed = False
         for r, p, t, v in unspecified_var_prices:
-            if (r, t, v) in model.CostVariableVintageDefault:
-                cost_variable[r, p, t, v] = model.CostVariableVintageDefault[r, t, v]
+            if (r, t, v) in model.cost_variable_vintage_default:
+                cost_variable[r, p, t, v] = model.cost_variable_vintage_default[r, t, v]
     # CV._constructed = True
-    logger.debug('Created M.CostFixed with size: %d', len(value(model.CostFixed)))
-    logger.debug('Created M.CostVariable with size: %d', len(value(model.CostVariable)))
+    logger.debug('Created M.cost_fixed with size: %d', len(value(model.cost_fixed)))
+    logger.debug('Created M.cost_variable with size: %d', len(value(model.cost_variable)))
     logger.debug('Finished creating Fixed and Variable costs')
 
 
@@ -707,7 +707,7 @@ def param_loan_annualize_rule(
     model: TemoaModel, r: Region, t: Technology, v: Vintage
 ) -> float | Expression:
     """Rule to calculate the annualized loan rate from the loan rate and lifetime."""
-    dr = value(model.LoanRate[r, t, v])
-    lln = value(model.LoanLifetimeProcess[r, t, v])
+    dr = value(model.loan_rate[r, t, v])
+    lln = value(model.loan_lifetime_process[r, t, v])
     annualized_rate = pv_to_annuity(dr, lln)
     return annualized_rate

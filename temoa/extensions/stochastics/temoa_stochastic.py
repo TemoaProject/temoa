@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa): 
+Tools for Energy Model Optimization and Analysis (Temoa):
 An open source framework for energy systems optimization modeling
 
 Copyright (C) 2015,  NC State University
@@ -16,10 +16,11 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-A complete copy of the GNU General Public License v2 (GPLv2) is available 
-in LICENSE.txt.  Users uncompressing this from an archive may not have 
+A complete copy of the GNU General Public License v2 (GPLv2) is available
+in LICENSE.txt.  Users uncompressing this from an archive may not have
 received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import os
 import sys
 
@@ -40,7 +41,7 @@ def return_CP_and_path(p_data):
     # returns conditional two dictionaries, the first one is the conditional
     # probability of a scenario, the second one is the path to all files of a
     # scenario.
-    from collections import deque, defaultdict
+    from collections import defaultdict, deque
 
     # from pyomo.pysp.util.scenariomodels import scenario_tree_model
     from pyomo.pysp.scenariotree.tree_structure_model import CreateAbstractScenarioTreeModel
@@ -62,12 +63,12 @@ def return_CP_and_path(p_data):
     ctpTree = dict()  # Child to parent dict, one to one mapping
 
     to_process = deque()
-    to_process.extend(sStructure.Children.keys())
+    to_process.extend(sStructure.children.keys())
     while to_process:
         node = to_process.pop()
-        if node in sStructure.Children:
+        if node in sStructure.children:
             # it's a parent!
-            new_nodes = set(sStructure.Children[node])
+            new_nodes = set(sStructure.children[node])
             to_process.extend(new_nodes)
             ctpTree.update({n: node for n in new_nodes})
 
@@ -80,8 +81,8 @@ def return_CP_and_path(p_data):
     # ptcTree = dict( ptcTree )   # be slightly defensive; catch any additions
 
     # leaf_nodes = set(ctpTree.keys()) - set(ctpTree.values())
-    # leaf_nodes = set(sStructure.ScenarioLeafNode.values()) # Try to hack Kevin's code
-    leaf_nodes = sStructure.ScenarioLeafNode.values()  # Try to hack Kevin's code
+    # leaf_nodes = set(sStructure.scenario_leaf_node.values()) # Try to hack Kevin's code
+    leaf_nodes = sStructure.scenario_leaf_node.values()  # Try to hack Kevin's code
     leaf_nodes_names = list()
     for n in leaf_nodes:
         leaf_nodes_names.append(n.value)
@@ -98,16 +99,16 @@ def return_CP_and_path(p_data):
         s.reverse()
     ###########################################################################
 
-    for s in sStructure.Scenarios:
+    for s in sStructure.scenarios:
         cp = 1.0  # Starting probability
-        for n in scenario_nodes[value(sStructure.ScenarioLeafNode[s])]:
-            cp = cp * value(sStructure.ConditionalProbability[n])
-            if not sStructure.ScenarioBasedData.value:
+        for n in scenario_nodes[value(sStructure.scenario_leaf_node[s])]:
+            cp = cp * value(sStructure.conditional_probability[n])
+            if not sStructure.scenario_based_data.value:
                 s2fp_dict[s].append(n + '.dat')
         s2cd_dict[s] = cp
 
-    if sStructure.ScenarioBasedData.value:
-        for s in sStructure.Scenarios:
+    if sStructure.scenario_based_data.value:
+        for s in sStructure.scenarios:
             s2fp_dict[s].append(s + '.dat')
     os.chdir(pwd)
     return (s2cd_dict, s2fp_dict)
@@ -173,7 +174,7 @@ def solve_ef(p_model, p_data, temoa_options=None):
                 #     options.scenario_tree_location,
                 #     stochastic_output
                 #     )
-                msg = '\nStoring results from scenario {} to database.\n'.format(s.name)
+                msg = f'\nStoring results from scenario {s.name} to database.\n'
                 sys.stderr.write(msg)
                 formatted_results = pformat_results(ins, ef_result, temoa_options)
 
@@ -196,8 +197,8 @@ M = model = TemoaModel('TEMOA Stochastic')
 M.StochasticPointCost = Var(M.time_optimize, within=NonNegativeReals)
 M.StochasticPointCostConstraint = Constraint(M.time_optimize, rule=StochasticPointObjective_rule)
 
-del M.TotalCost
-M.TotalCost = Objective(rule=Objective_rule, sense=minimize)
+del M.total_cost
+M.total_cost = Objective(rule=Objective_rule, sense=minimize)
 
 if __name__ == '__main__':
     p_model = './ReferenceModel.py'

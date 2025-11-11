@@ -38,15 +38,15 @@ def mock_model():
     model = ConcreteModel('mock')
     model.tech_uncap = Set(initialize=['refinery'])
     model.time_optimize = Set(initialize=[2000, 2010, 2020, 2030])
-    model.LifetimeProcess = Param(Any, Any, Any, initialize={('CA', 'refinery', 2020): 30})
-    model.Efficiency = Param(
+    model.lifetime_process = Param(Any, Any, Any, initialize={('CA', 'refinery', 2020): 30})
+    model.efficiency = Param(
         Any, Any, Any, Any, Any, initialize={('CA', 0, 'refinery', 2020, 0): 1.0}
     )
 
-    model.ExistingCapacity = Param(Any, Any, Any, mutable=True)
-    model.CostFixed = Param(Any, Any, Any, Any, mutable=True)
-    model.CostInvest = Param(Any, Any, Any, mutable=True)
-    model.CostVariable = Param(Any, Any, Any, Any, mutable=True)
+    model.existing_capacity = Param(Any, Any, Any, mutable=True)
+    model.cost_fixed = Param(Any, Any, Any, Any, mutable=True)
+    model.cost_invest = Param(Any, Any, Any, mutable=True)
+    model.cost_variable = Param(Any, Any, Any, Any, mutable=True)
     model.MaxCapacity = Param(Any, Any, Any, mutable=True)
     model.MinCapacity = Param(Any, Any, Any, mutable=True)
     return model
@@ -61,10 +61,10 @@ def test_check_tech_uncap(mock_model):
     model = mock_model
 
     assert check_tech_uncap(model), 'should pass for no fixed/invest/variable costs'
-    model.CostVariable[('CA', 2020, 'refinery', 2020)] = 42
+    model.cost_variable[('CA', 2020, 'refinery', 2020)] = 42
     assert not check_tech_uncap(model), 'should fail.  Has cost in 2020, but missing in 2030'
     # add in missing cost...
-    model.CostVariable[('CA', 2030, 'refinery', 2020)] = 42
+    model.cost_variable[('CA', 2030, 'refinery', 2020)] = 42
     assert check_tech_uncap(model), 'should pass for all periods having var cost'
 
 
@@ -76,7 +76,7 @@ def test_detect_fixed_cost(mock_model):
     """
     model = mock_model
     assert check_tech_uncap(model), 'should have cleared and passed again'
-    model.CostFixed[('CA', 2020, 'refinery', 2020)] = 42
+    model.cost_fixed[('CA', 2020, 'refinery', 2020)] = 42
     assert not check_tech_uncap(model), 'should fail with any fixed cost'
 
 
@@ -87,5 +87,5 @@ def test_detect_invest_cost(mock_model):
     :return:
     """
     model = mock_model
-    model.CostInvest['CA', 'refinery', 2020] = 42
+    model.cost_invest['CA', 'refinery', 2020] = 42
     assert not check_tech_uncap(model), 'should fail with any investment cost'

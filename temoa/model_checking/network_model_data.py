@@ -160,23 +160,23 @@ def _build_from_model(
 ) -> NetworkModelData:
     """Build a NetworkModelData from a TemoaModel."""
     if myopic_index is not None:
-        raise NotImplementedError('Cannot build network data from model using a MyopicIndex')
+        raise NotImplementedError('Cannot build network data from model using a myopic_index')
 
     dem_com = defaultdict(set)
-    for r, p, d in model.Demand.sparse_iterkeys():
+    for r, p, d in model.demand.sparse_iterkeys():
         dem_com[r, p].add(d)
 
     techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = defaultdict(set)
-    if model.activeFlow_rpsditvo is not None:
-        for r, p, _s, _d, ic, tech, v, oc in model.activeFlow_rpsditvo:
+    if model.active_flow_rpsditvo is not None:
+        for r, p, _s, _d, ic, tech, v, oc in model.active_flow_rpsditvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
-    if model.activeFlow_rpitvo is not None:
-        for r, p, ic, tech, v, oc in model.activeFlow_rpitvo:
+    if model.active_flow_rpitvo is not None:
+        for r, p, ic, tech, v, oc in model.active_flow_rpitvo:
             techs[r, p].add(EdgeTuple(r, ic, tech, v, oc))
 
     linked_techs = {
         LinkedTechTuple(r, driver, emission, driven)
-        for r, driver, emission, driven in model.LinkedTechs.sparse_iterkeys()
+        for r, driver, emission, driven in model.linked_techs.sparse_iterkeys()
     }
 
     res = NetworkModelData(
@@ -192,16 +192,16 @@ def _build_from_model(
 def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
     """Fetches simple, required tables and parameters from the DB."""
     tech_retire = {
-        t[0] for t in cur.execute('SELECT tech FROM Technology WHERE retire==1').fetchall()
+        t[0] for t in cur.execute('SELECT tech FROM technology WHERE retire==1').fetchall()
     }
     try:
         tech_survival_curve = set(
-            cur.execute('SELECT DISTINCT region, tech, vintage FROM SurvivalCurve').fetchall()
+            cur.execute('SELECT DISTINCT region, tech, vintage FROM survival_curve').fetchall()
         )
     except sqlite3.OperationalError:
         tech_survival_curve = set()
 
-    periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM TimePeriod').fetchall())
+    periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM time_period').fetchall())
     periods = periods_full[:-1]
     period_length = {
         periods_full[i]: periods_full[i + 1] - periods_full[i] for i in range(len(periods_full) - 1)
@@ -210,18 +210,18 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
     physical_commodities = {
         c[0]
         for c in cur.execute(
-            "SELECT name FROM main.Commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'"
+            "SELECT name FROM main.commodity WHERE flag LIKE '%p%' OR flag = 's' OR flag LIKE '%a%'"
         ).fetchall()
     }
     waste_commodities_all = {
-        c[0] for c in cur.execute("SELECT name FROM Commodity WHERE flag LIKE '%w%'").fetchall()
+        c[0] for c in cur.execute("SELECT name FROM commodity WHERE flag LIKE '%w%'").fetchall()
     }
     source_commodities_all = {
-        c[0] for c in cur.execute("SELECT name FROM Commodity WHERE flag = 's'").fetchall()
+        c[0] for c in cur.execute("SELECT name FROM commodity WHERE flag = 's'").fetchall()
     }
 
     demand_commodities: defaultdict[tuple[Region, Period], set[Commodity]] = defaultdict(set)
-    for r, p, d in cur.execute('SELECT region, period, commodity FROM main.Demand').fetchall():
+    for r, p, d in cur.execute('SELECT region, period, commodity FROM main.demand').fetchall():
         demand_commodities[r, p].add(d)
 
     return BasicData(
@@ -244,11 +244,11 @@ def _fetch_all_tech_definitions(
 ]:
     """Fetches the main block of technology efficiency and lifetime data."""
     default_lifetime = TemoaModel.default_lifetime_tech
-    table = 'MyopicEfficiency' if myopic_index else 'Efficiency'
+    table = 'myopic_efficiency' if myopic_index else 'efficiency'
 
     # Check if Technology table has sector column
     try:
-        cur.execute('SELECT sector FROM Technology LIMIT 1')
+        cur.execute('SELECT sector FROM technology LIMIT 1')
         has_sector = True
     except sqlite3.OperationalError:
         has_sector = False
@@ -263,10 +263,10 @@ def _fetch_all_tech_definitions(
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime,
                 COALESCE(tech_dim.sector, 'Other') AS sector
             FROM main.{table} AS eff
-            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
-            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
-            LEFT JOIN main.Technology AS tech_dim ON eff.tech = tech_dim.tech
-            JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            LEFT JOIN main.technology AS tech_dim ON eff.tech = tech_dim.tech
+            JOIN main.time_period AS tp ON eff.vintage = tp.period
         """
     else:
         query = f"""
@@ -274,9 +274,9 @@ def _fetch_all_tech_definitions(
                 eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
             FROM main.{table} AS eff
-            LEFT JOIN main.LifetimeProcess AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
-            LEFT JOIN main.LifetimeTech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
-            JOIN main.TimePeriod AS tp ON eff.vintage = tp.period
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
+            JOIN main.time_period AS tp ON eff.vintage = tp.period
         """
     cursor = cur.execute(query, (default_lifetime,))
     return cursor.fetchall()
@@ -288,37 +288,37 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
 
     try:
         for r, tech, v, oc in cur.execute(
-            'SELECT region, tech, vintage, output_comm FROM EndOfLifeOutput'
+            'SELECT region, tech, vintage, output_comm FROM end_of_life_output'
         ).fetchall():
             lookups['eol'][(r, tech, v)].append(oc)
     except sqlite3.OperationalError:
-        logger.warning('Table EndOfLifeOutput not found, skipping.')
+        logger.warning('Table end_of_life_output not found, skipping.')
 
     try:
         lookups['construction'] = cur.execute(
-            'SELECT region, input_comm, tech, vintage FROM ConstructionInput'
+            'SELECT region, input_comm, tech, vintage FROM construction_input'
         ).fetchall()
     except sqlite3.OperationalError:
-        logger.warning('Table ConstructionInput not found, skipping.')
+        logger.warning('Table construction_input not found, skipping.')
 
     try:
         lookups['linked'] = set(
             cur.execute(
-                'SELECT primary_region, primary_tech, emis_comm, driven_tech FROM main.LinkedTech'
+                'SELECT primary_region, primary_tech, emis_comm, driven_tech FROM main.linked_tech'
             ).fetchall()
         )
     except sqlite3.OperationalError:
-        logger.warning('Table LinkedTech not found, skipping.')
+        logger.warning('Table linked_tech not found, skipping.')
 
     try:
         lookups['neg_cost_techs'] = {
             tech
             for (tech,) in cur.execute(
-                'SELECT DISTINCT tech FROM CostVariable WHERE cost < 0'
+                'SELECT DISTINCT tech FROM cost_variable WHERE cost < 0'
             ).fetchall()
         }
     except sqlite3.OperationalError:
-        logger.warning('Table CostVariable not found, skipping.')
+        logger.warning('Table cost_variable not found, skipping.')
 
     return lookups
 
@@ -431,11 +431,11 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                         EdgeTuple(
                             region=r,
                             input_comm=cast(Commodity, tech),
-                            tech=cast(Technology, 'EndOfLife'),
+                            tech=cast(Technology, 'end_of_life'),
                             vintage=v,
                             output_comm=eol_oc,
                             lifetime=lifetime,
-                            sector=cast(Sector, 'Other'),
+                            sector=cast(Sector, 'other'),
                         )
                     )
                     res.source_commodities[r, p].add(cast(Commodity, tech))
@@ -450,13 +450,13 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             EdgeTuple(
                 region=r,
                 input_comm=ic,
-                tech=cast(Technology, 'Construction'),
+                tech=cast(Technology, 'construction'),
                 vintage=v,
                 output_comm=cast(
                     Commodity, tech
                 ),  # commodity is kind of input to the capacity of the technology/vice versa
                 lifetime=construction_lifetime,
-                sector=cast(Sector, 'Other'),
+                sector=cast(Sector, 'other'),
             )
         )
         res.demand_commodities[r, cast(Period, v)].add(cast(Commodity, tech))

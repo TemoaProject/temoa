@@ -55,7 +55,7 @@ def test_set_consistency(data_name, config_file, set_file, tmp_path):
     overage_in_model = dict()
     shortage_in_model = dict()
     for set_name, s in model_sets.items():
-        if set_name == 'CostEmission_rpe':
+        if set_name == 'cost_emission_rpe':
             pass
         if cached_sets.get(set_name) != s:
             cached_set = cached_sets.get(set_name, set())

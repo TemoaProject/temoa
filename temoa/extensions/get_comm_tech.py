@@ -23,12 +23,12 @@ def get_tperiods(inp_f):
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM OutputFlowOut')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
     x = []
     for row in cur:
         x.append(row[0])
     for y in x:
-        cur.execute("SELECT DISTINCT period FROM OutputFlowOut WHERE scenario is '" + str(y) + "'")
+        cur.execute("SELECT DISTINCT period FROM output_flow_out WHERE scenario is '" + str(y) + "'")
         periods_list[y] = []
         for per in cur:
             z = per[0]
@@ -56,7 +56,7 @@ def get_scenario(inp_f):
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM OutputFlowOut')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
     for row in cur:
         x = row[0]
         scene_list[x] = x
@@ -87,7 +87,7 @@ def get_comm(inp_f, db_dat):
 
         if not is_query_empty:
             cur.execute(
-                'SELECT input_comm FROM OutputFlowOut UNION SELECT output_comm FROM OutputFlowOut'
+                'SELECT input_comm FROM output_flow_out UNION SELECT output_comm FROM output_flow_out'
             )
 
         for row in cur:
@@ -103,25 +103,25 @@ def get_comm(inp_f, db_dat):
         with open(inp_f) as f:
             for line in f:
                 if eff_flag is False and re.search(
-                    '^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
+                    r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param Efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
-                    if re.search('^\s*;\s*$', line):
+                    if re.search(r'^\s*;\s*$', line):
                         break  #  Finish searching this section when encounter a ';'
-                    if re.search('^\s+$', line):
+                    if re.search(r'^\s+$', line):
                         continue
-                    line = re.sub('^\s+|\s+$', '', line)
-                    row = re.split('\s+', line)
+                    line = re.sub(r'^\s+|\s+$', '', line)
+                    row = re.split(r'\s+', line)
                     if row[0] != 'ethos':
                         comm_set.add(row[0])
                     comm_set.add(row[3])
 
         if eff_flag is False:
             print(
-                'Error: The Efficiency Parameters cannot be found in the specified file - ' + inp_f
+                'Error: The efficiency Parameters cannot be found in the specified file - ' + inp_f
             )
             sys.exit(2)
 
@@ -150,7 +150,7 @@ def get_tech(inp_f, db_dat):
             tech_list[x] = x
 
         if not is_query_empty:
-            cur.execute('SELECT DISTINCT tech FROM OutputFlowOut')
+            cur.execute('SELECT DISTINCT tech FROM output_flow_out')
 
         for row in cur:
             x = row[0]
@@ -164,23 +164,23 @@ def get_tech(inp_f, db_dat):
         with open(inp_f) as f:
             for line in f:
                 if eff_flag is False and re.search(
-                    '^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
+                    r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param Efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
-                    if re.search('^\s*;\s*$', line):
+                    if re.search(r'^\s*;\s*$', line):
                         break  #  Finish searching this section when encounter a ';'
-                    if re.search('^\s+$', line):
+                    if re.search(r'^\s+$', line):
                         continue
-                    line = re.sub('^\s+|\s+$', '', line)
-                    row = re.split('\s+', line)
+                    line = re.sub(r'^\s+|\s+$', '', line)
+                    row = re.split(r'\s+', line)
                     tech_set.add(row[1])
 
         if eff_flag is False:
             print(
-                'Error: The Efficiency Parameters cannot be found in the specified file - ' + inp_f
+                'Error: The efficiency Parameters cannot be found in the specified file - ' + inp_f
             )
             sys.exit(2)
 
@@ -261,7 +261,7 @@ def get_info(inputs):
         raise Exception('no arguments found')
 
     for opt, arg in inputs.items():
-        print('%s == %s' % (opt, arg))
+        print(f'{opt} == {arg}')
 
         if opt in ('-i', '--input'):
             inp_file = arg
@@ -297,7 +297,7 @@ def get_info(inputs):
     file_ty = re.search(r'(\w+)\.(\w+)\b', inp_file)  # Extract the input filename and extension
 
     if not file_ty:
-        raise Exception('The file type {} is not recognized.'.format(file_ty))
+        raise Exception(f'The file type {file_ty} is not recognized.')
 
     elif file_ty.group(2) in ('db', 'sqlite', 'sqlite3', 'sqlitedb'):
         db_or_dat = False

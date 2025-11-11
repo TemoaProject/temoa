@@ -1,7 +1,7 @@
 {
-    "AnnualCommodityBalanceConstraint_rpc": [],
-    "AnnualRetirementVar_rptv": [],
-    "BaseloadDiurnalConstraint_rpsdtv": [
+    "annual_commodity_balance_constraint_rpc": [],
+    "annual_retirement_var_rptv": [],
+    "baseload_diurnal_constraint_rpsdtv": [
         [
             "B",
             2025,
@@ -67,7 +67,7 @@
             2025
         ]
     ],
-    "CapacityAnnualConstraint_rptv": [
+    "capacity_annual_constraint_rptv": [
         [
             "A",
             2025,
@@ -81,7 +81,7 @@
             2025
         ]
     ],
-    "CapacityAvailableVar_rpt": [
+    "capacity_available_var_rpt": [
         [
             "A-B",
             2025,
@@ -173,7 +173,7 @@
             "well"
         ]
     ],
-    "CapacityConstraint_rpsdtv": [
+    "capacity_constraint_rpsdtv": [
         [
             "A",
             2025,
@@ -655,7 +655,7 @@
             2025
         ]
     ],
-    "CapacityFactor_rpsdt": [
+    "capacity_factor_rpsdt": [
         [
             "A",
             2025,
@@ -1161,7 +1161,7 @@
             "well"
         ]
     ],
-    "CapacityVar_rptv": [
+    "capacity_var_rptv": [
         [
             "A",
             2025,
@@ -1271,7 +1271,7 @@
             2025
         ]
     ],
-    "CommodityBalanceConstraint_rpsdc": [
+    "commodity_balance_constraint_rpsdc": [
         [
             "B",
             2025,
@@ -1497,14 +1497,14 @@
             "HYD"
         ]
     ],
-    "CostEmission_rpe": [
+    "cost_emission_rpe": [
         [
             "A",
             2025,
             "co2"
         ]
     ],
-    "CostFixed_rptv": [
+    "cost_fixed_rptv": [
         [
             "A",
             2025,
@@ -1614,7 +1614,7 @@
             2025
         ]
     ],
-    "CostInvest_rtv": [
+    "cost_invest_rtv": [
         [
             "A",
             "heater",
@@ -1686,7 +1686,7 @@
             2025
         ]
     ],
-    "CostVariable_rptv": [
+    "cost_variable_rptv": [
         [
             "A",
             2025,
@@ -1796,7 +1796,7 @@
             2025
         ]
     ],
-    "CurtailmentVar_rpsditvo": [
+    "curtailment_var_rpsditvo": [
         [
             "A",
             2025,
@@ -1878,7 +1878,7 @@
             "ELC"
         ]
     ],
-    "DemandActivityConstraint_rpsdtv_dem": [
+    "demand_activity_constraint_rpsdtv_dem": [
         [
             "B",
             2025,
@@ -2096,7 +2096,7 @@
             "RH"
         ]
     ],
-    "DemandConstraint_rpc": [
+    "demand_constraint_rpc": [
         [
             "B",
             2025,
@@ -2118,7 +2118,7 @@
             "RL"
         ]
     ],
-    "EmissionActivity_reitvo": [
+    "emission_activity_reitvo": [
         [
             "B",
             "FusionGas",
@@ -2376,8 +2376,8 @@
             "RL"
         ]
     ],
-    "FlexVarAnnual_rpitvo": [],
-    "FlexVar_rpsditvo": [
+    "flex_var_annual_rpitvo": [],
+    "flex_var_rpsditvo": [
         [
             "A",
             2025,
@@ -2419,7 +2419,7 @@
             "FusionGasFuel"
         ]
     ],
-    "FlowInStorage_rpsditvo": [
+    "flow_in_storage_rpsditvo": [
         [
             "B",
             2025,
@@ -2461,7 +2461,7 @@
             "ELC"
         ]
     ],
-    "FlowVarAnnual_rpitvo": [
+    "flow_var_annual_rpitvo": [
         [
             "B",
             2025,
@@ -2527,7 +2527,7 @@
             "RH"
         ]
     ],
-    "FlowVar_rpsditvo": [
+    "flow_var_rpsditvo": [
         [
             "B",
             2025,
@@ -3169,7 +3169,7 @@
             "HYD"
         ]
     ],
-    "LifetimeProcess_rtv": [
+    "lifetime_process_rtv": [
         [
             "A",
             "heater",
@@ -3261,7 +3261,7 @@
             2025
         ]
     ],
-    "LimitActivityConstraint_rpt": [
+    "limit_activity_constraint_rpt": [
         [
             "B",
             2025,
@@ -3293,9 +3293,9 @@
             "ge"
         ]
     ],
-    "LimitActivityShareConstraint_rpgg": [],
-    "LimitAnnualCapacityFactorConstraint_rpto": [],
-    "LimitCapacityConstraint_rpt": [
+    "limit_activity_share_constraint_rpgg": [],
+    "limit_annual_capacity_factor_constraint_rpto": [],
+    "limit_capacity_constraint_rpt": [
         [
             "B",
             2025,
@@ -3333,11 +3333,11 @@
             "ge"
         ]
     ],
-    "LimitCapacityShareConstraint_rpgg": [],
-    "LimitDegrowthCapacityConstraint_rpt": [],
-    "LimitDegrowthNewCapacityConstraint_rpt": [],
-    "LimitDegrowthNewCapacityDeltaConstraint_rpt": [],
-    "LimitEmissionConstraint_rpe": [
+    "limit_capacity_share_constraint_rpgg": [],
+    "limit_degrowth_capacity_constraint_rpt": [],
+    "limit_degrowth_new_capacity_constraint_rpt": [],
+    "limit_degrowth_new_capacity_delta_constraint_rpt": [],
+    "limit_emission_constraint_rpe": [
         [
             "A",
             2025,
@@ -3345,11 +3345,11 @@
             "le"
         ]
     ],
-    "LimitGrowthCapacityConstraint_rpt": [],
-    "LimitGrowthNewCapacityConstraint_rpt": [],
-    "LimitGrowthNewCapacityDeltaConstraint_rpt": [],
-    "LimitNewCapacityConstraint_rpt": [],
-    "LimitNewCapacityShareConstraint_rpgg": [
+    "limit_growth_capacity_constraint_rpt": [],
+    "limit_growth_new_capacity_constraint_rpt": [],
+    "limit_growth_new_capacity_delta_constraint_rpt": [],
+    "limit_new_capacity_constraint_rpt": [],
+    "limit_new_capacity_share_constraint_rpgg": [
         [
             "A",
             2025,
@@ -3365,18 +3365,18 @@
             "le"
         ]
     ],
-    "LimitResourceConstraint_rt": [
+    "limit_resource_constraint_rt": [
         [
             "B",
             "EF",
             "le"
         ]
     ],
-    "LimitSeasonalCapacityFactorConstraint_rpst": [],
-    "LimitStorageFractionConstraint_rpsdtv": [],
-    "LimitTechInputSplitAnnualConstraint_rpitv": [],
-    "LimitTechInputSplitAverageConstraint_rpitv": [],
-    "LimitTechInputSplitConstraint_rpsditv": [
+    "limit_seasonal_capacity_factor_constraint_rpst": [],
+    "limit_storage_fraction_constraint_rpsdtv": [],
+    "limit_tech_input_split_annual_constraint_rpitv": [],
+    "limit_tech_input_split_average_constraint_rpitv": [],
+    "limit_tech_input_split_constraint_rpsditv": [
         [
             "A",
             2025,
@@ -3418,9 +3418,9 @@
             "ge"
         ]
     ],
-    "LimitTechOutputSplitAnnualConstraint_rptvo": [],
-    "LimitTechOutputSplitAverageConstraint_rptvo": [],
-    "LimitTechOutputSplitConstraint_rpsdtvo": [
+    "limit_tech_output_split_annual_constraint_rptvo": [],
+    "limit_tech_output_split_average_constraint_rptvo": [],
+    "limit_tech_output_split_constraint_rpsdtvo": [
         [
             "B",
             2025,
@@ -3462,7 +3462,7 @@
             "ge"
         ]
     ],
-    "LinkedEmissionsTechConstraint_rpsdtve": [
+    "linked_emissions_tech_constraint_rpsdtve": [
         [
             "A",
             2025,
@@ -3500,7 +3500,7 @@
             "FusionGas"
         ]
     ],
-    "LoanLifetimeProcess_rtv": [
+    "loan_lifetime_process_rtv": [
         [
             "A",
             "heater",
@@ -3592,7 +3592,7 @@
             2025
         ]
     ],
-    "NewCapacityVar_rtv": [
+    "new_capacity_var_rtv": [
         [
             "A",
             "heater",
@@ -3684,7 +3684,7 @@
             2025
         ]
     ],
-    "ProcessLifeFrac_rptv": [
+    "process_life_frac_rptv": [
         [
             "A",
             2025,
@@ -3794,7 +3794,7 @@
             2025
         ]
     ],
-    "RampDownDayConstraint_rpsdtv": [
+    "ramp_down_day_constraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3860,7 +3860,7 @@
             2025
         ]
     ],
-    "RampDownSeasonConstraint_rpsstv": [
+    "ramp_down_season_constraint_rpsstv": [
         [
             "A",
             2025,
@@ -3894,7 +3894,7 @@
             2025
         ]
     ],
-    "RampUpDayConstraint_rpsdtv": [
+    "ramp_up_day_constraint_rpsdtv": [
         [
             "B",
             2025,
@@ -3960,7 +3960,7 @@
             2025
         ]
     ],
-    "RampUpSeasonConstraint_rpsstv": [
+    "ramp_up_season_constraint_rpsstv": [
         [
             "A",
             2025,
@@ -3994,7 +3994,7 @@
             2025
         ]
     ],
-    "RegionalExchangeCapacityConstraint_rrptv": [
+    "regional_exchange_capacity_constraint_rrptv": [
         [
             "B",
             "A",
@@ -4010,14 +4010,14 @@
             2025
         ]
     ],
-    "RenewablePortfolioStandardConstraint_rpg": [
+    "renewable_portfolio_standard_constraint_rpg": [
         [
             "B",
             2025,
             "RPS_common"
         ]
     ],
-    "ReserveMargin_rpsd": [
+    "reserve_margin_rpsd": [
         [
             "A",
             2025,
@@ -4043,13 +4043,13 @@
             "d2"
         ]
     ],
-    "ReserveMarginMethod": [
+    "reserve_margin_method": [
         "static"
     ],
-    "RetiredCapacityVar_rptv": [],
-    "SeasonalStorageLevel_rpstv": [],
-    "SeasonalStorageConstraints_rpsdtv": [],
-    "StorageConstraints_rpsdtv": [
+    "retired_capacity_var_rptv": [],
+    "seasonal_storage_level_rpstv": [],
+    "seasonal_storage_constraints_rpsdtv": [],
+    "storage_constraints_rpsdtv": [
         [
             "B",
             2025,
@@ -4083,7 +4083,7 @@
             2025
         ]
     ],
-    "StorageLevel_rpsdtv": [
+    "storage_level_rpsdtv": [
         [
             "B",
             2025,
@@ -4117,7 +4117,7 @@
             2025
         ]
     ],
-    "TimeNext": [],
+    "time_manual": [],
     "commodity_all": [
         "FusionGas",
         "RH",
@@ -4178,12 +4178,12 @@
             "s2"
         ]
     ],
-    "regionalGlobalIndices": [
+    "regional_global_indices": [
         "B",
         "A",
         "global"
     ],
-    "regionalIndices": [
+    "regional_indices": [
         "B",
         "A",
         "A-B",
@@ -4305,18 +4305,18 @@
     "time_optimize": [
         2025
     ],
-    "TimeSeason": [
+    "time_season": [
         2025
     ],
-    "time_season": [
+    "time_season_all": [
         "s1",
         "s2"
     ],
-    "time_season_sequential": [
+    "time_season_to_sequential": [
         "s1",
         "s2"
     ],
-    "TimeSequencing": [
+    "time_sequencing": [
         "seasonal_timeslices"
     ],
     "vintage_all": [

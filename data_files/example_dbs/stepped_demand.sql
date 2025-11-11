@@ -18,7 +18,7 @@ CREATE TABLE MetaDataReal
 
     PRIMARY KEY (element)
 );
-INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in LoanRate table');
+INSERT INTO MetaDataReal VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in loan_rate table');
 INSERT INTO MetaDataReal VALUES('global_discount_rate',0.05000000000000000277,'');
 CREATE TABLE OutputDualVariable
 (
@@ -52,7 +52,7 @@ INSERT INTO SectorLabel VALUES('transport',NULL);
 INSERT INTO SectorLabel VALUES('commercial',NULL);
 INSERT INTO SectorLabel VALUES('residential',NULL);
 INSERT INTO SectorLabel VALUES('industrial',NULL);
-CREATE TABLE CapacityCredit
+CREATE TABLE capacity_credit
 (
     region  TEXT,
     period  INTEGER
@@ -65,7 +65,7 @@ CREATE TABLE CapacityCredit
     PRIMARY KEY (region, period, tech, vintage),
     CHECK (credit >= 0 AND credit <= 1)
 );
-CREATE TABLE CapacityFactorProcess
+CREATE TABLE capacity_factor_process
 (
     region  TEXT,
     period  INTEGER
@@ -82,7 +82,7 @@ CREATE TABLE CapacityFactorProcess
     PRIMARY KEY (region, period, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE CapacityFactorTech
+CREATE TABLE capacity_factor_tech
 (
     region TEXT,
     period INTEGER
@@ -98,72 +98,72 @@ CREATE TABLE CapacityFactorTech
     PRIMARY KEY (region, period, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2000,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2005,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2010,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2015,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2020,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2025,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2030,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2035,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2040,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2045,'summer','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'inter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'winter','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'summer','day','EF',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'inter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'winter','day','EH',1.0,'');
-INSERT INTO CapacityFactorTech VALUES('electricville',2050,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2000,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2005,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2010,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2015,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2020,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2025,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2030,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2035,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2040,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2045,'summer','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'inter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'winter','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'summer','day','EF',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'inter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'winter','day','EH',1.0,'');
+INSERT INTO capacity_factor_tech VALUES('electricville',2050,'summer','day','EH',1.0,'');
 CREATE TABLE CapacityToActivity
 (
     region TEXT,
@@ -201,7 +201,7 @@ INSERT INTO CommodityType VALUES('s','source commodity');
 INSERT INTO CommodityType VALUES('p','physical commodity');
 INSERT INTO CommodityType VALUES('e','emissions commodity');
 INSERT INTO CommodityType VALUES('d','demand commodity');
-CREATE TABLE ConstructionInput
+CREATE TABLE construction_input
 (
     region      TEXT,
     input_comm   TEXT
@@ -215,7 +215,7 @@ CREATE TABLE ConstructionInput
     notes       TEXT,
     PRIMARY KEY (region, input_comm, tech, vintage)
 );
-CREATE TABLE CostEmission
+CREATE TABLE cost_emission
 (
     region    TEXT,
     period    INTEGER
@@ -227,7 +227,7 @@ CREATE TABLE CostEmission
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm)
 );
-CREATE TABLE CostFixed
+CREATE TABLE cost_fixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -241,37 +241,37 @@ CREATE TABLE CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostFixed VALUES('electricville',2000,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2005,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2010,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2015,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2020,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2025,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2035,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2040,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2045,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2050,'EH',1995,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2010,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2015,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2020,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2025,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2030,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2035,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2040,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2045,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2050,'EF',2010,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2000,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2005,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2010,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2015,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2020,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2025,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2030,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2035,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2040,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2045,'EH',2000,2.0,'','');
-INSERT INTO CostFixed VALUES('electricville',2050,'EH',2000,2.0,'','');
-CREATE TABLE CostInvest
+INSERT INTO cost_fixed VALUES('electricville',2000,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2005,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2010,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2015,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2020,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2025,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2035,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2040,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2045,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2050,'EH',1995,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2010,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2015,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2020,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2025,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2030,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2035,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2040,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2045,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2050,'EF',2010,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2000,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2005,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2010,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2015,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2020,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2025,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2030,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2035,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2040,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2045,'EH',2000,2.0,'','');
+INSERT INTO cost_fixed VALUES('electricville',2050,'EH',2000,2.0,'','');
+CREATE TABLE cost_invest
 (
     region  TEXT,
     tech    TEXT
@@ -283,9 +283,9 @@ CREATE TABLE CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO CostInvest VALUES('electricville','EF',2010,200.0,'','');
-INSERT INTO CostInvest VALUES('electricville','EH',2000,100.0,'','');
-CREATE TABLE CostVariable
+INSERT INTO cost_invest VALUES('electricville','EF',2010,200.0,'','');
+INSERT INTO cost_invest VALUES('electricville','EH',2000,100.0,'','');
+CREATE TABLE cost_variable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -299,39 +299,39 @@ CREATE TABLE CostVariable
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-INSERT INTO CostVariable VALUES('electricville',2010,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2015,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2020,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2025,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2030,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2035,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2040,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2045,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2050,'EF',2010,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2000,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2005,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2010,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2015,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2020,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2025,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2030,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2035,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2040,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2045,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2050,'EH',1995,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2000,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2005,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2010,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2015,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2020,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2025,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2030,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2035,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2040,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2045,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2050,'EH',2000,2.0,'','');
-INSERT INTO CostVariable VALUES('electricville',2000,'well',2000,1.0,NULL,NULL);
-INSERT INTO CostVariable VALUES('electricville',2010,'well',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('electricville',2010,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2015,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2020,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2025,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2030,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2035,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2040,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2045,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2050,'EF',2010,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2000,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2005,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2010,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2015,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2020,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2025,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2030,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2035,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2040,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2045,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2050,'EH',1995,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2000,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2005,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2010,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2015,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2020,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2025,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2030,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2035,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2040,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2045,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2050,'EH',2000,2.0,'','');
+INSERT INTO cost_variable VALUES('electricville',2000,'well',2000,1.0,NULL,NULL);
+INSERT INTO cost_variable VALUES('electricville',2010,'well',2000,1.0,NULL,NULL);
 CREATE TABLE Demand
 (
     region    TEXT,
@@ -404,7 +404,7 @@ INSERT INTO DemandSpecificDistribution VALUES('electricville',2045,'winter','day
 INSERT INTO DemandSpecificDistribution VALUES('electricville',2050,'inter','day','RL',0.3332999999999999852,'');
 INSERT INTO DemandSpecificDistribution VALUES('electricville',2050,'summer','day','RL',0.3332999999999999852,'');
 INSERT INTO DemandSpecificDistribution VALUES('electricville',2050,'winter','day','RL',0.3332999999999999852,'');
-CREATE TABLE EndOfLifeOutput
+CREATE TABLE end_of_life_output
 (
     region      TEXT,
     tech        TEXT
@@ -418,7 +418,7 @@ CREATE TABLE EndOfLifeOutput
     notes       TEXT,
     PRIMARY KEY (region, tech, vintage, output_comm)
 );
-CREATE TABLE Efficiency
+CREATE TABLE efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -434,13 +434,13 @@ CREATE TABLE Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-INSERT INTO Efficiency VALUES('electricville','HYD','EH',1995,'ELC',1.0,'est');
-INSERT INTO Efficiency VALUES('electricville','HYD','EH',2000,'ELC',1.0,'est');
-INSERT INTO Efficiency VALUES('electricville','HYD','EF',2010,'ELC',10.0,'est');
-INSERT INTO Efficiency VALUES('electricville','ELC','bulbs',2000,'RL',1.0,NULL);
-INSERT INTO Efficiency VALUES('electricville','earth','well',2000,'HYD',1.0,'water source');
-INSERT INTO Efficiency VALUES('electricville','HYD','EH',2020,'ELC',1.0,NULL);
-CREATE TABLE EfficiencyVariable
+INSERT INTO efficiency VALUES('electricville','HYD','EH',1995,'ELC',1.0,'est');
+INSERT INTO efficiency VALUES('electricville','HYD','EH',2000,'ELC',1.0,'est');
+INSERT INTO efficiency VALUES('electricville','HYD','EF',2010,'ELC',10.0,'est');
+INSERT INTO efficiency VALUES('electricville','ELC','bulbs',2000,'RL',1.0,NULL);
+INSERT INTO efficiency VALUES('electricville','earth','well',2000,'HYD',1.0,'water source');
+INSERT INTO efficiency VALUES('electricville','HYD','EH',2020,'ELC',1.0,NULL);
+CREATE TABLE efficiency_variable
 (
     region      TEXT,
     period      INTEGER
@@ -462,7 +462,7 @@ CREATE TABLE EfficiencyVariable
     PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE EmissionActivity
+CREATE TABLE emission_activity
 (
     region      TEXT,
     emis_comm   TEXT
@@ -480,10 +480,10 @@ CREATE TABLE EmissionActivity
     notes       TEXT,
     PRIMARY KEY (region, emis_comm, input_comm, tech, vintage, output_comm)
 );
-INSERT INTO EmissionActivity VALUES('electricville','co2','HYD','EH',1995,'ELC',0.05000000000000000277,'','');
-INSERT INTO EmissionActivity VALUES('electricville','co2','HYD','EF',2010,'ELC',0.0100000000000000002,'','');
-INSERT INTO EmissionActivity VALUES('electricville','co2','HYD','EH',2000,'ELC',0.02000000000000000041,NULL,NULL);
-CREATE TABLE EmissionEmbodied
+INSERT INTO emission_activity VALUES('electricville','co2','HYD','EH',1995,'ELC',0.05000000000000000277,'','');
+INSERT INTO emission_activity VALUES('electricville','co2','HYD','EF',2010,'ELC',0.0100000000000000002,'','');
+INSERT INTO emission_activity VALUES('electricville','co2','HYD','EH',2000,'ELC',0.02000000000000000041,NULL,NULL);
+CREATE TABLE emission_embodied
 (
     region      TEXT,
     emis_comm   TEXT
@@ -497,7 +497,7 @@ CREATE TABLE EmissionEmbodied
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE EmissionEndOfLife
+CREATE TABLE emission_end_of_life
 (
     region      TEXT,
     emis_comm   TEXT
@@ -511,7 +511,7 @@ CREATE TABLE EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
-CREATE TABLE ExistingCapacity
+CREATE TABLE existing_capacity
 (
     region   TEXT,
     tech     TEXT
@@ -523,7 +523,7 @@ CREATE TABLE ExistingCapacity
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO ExistingCapacity VALUES('electricville','EH',1995,0.5,'','');
+INSERT INTO existing_capacity VALUES('electricville','EH',1995,0.5,'','');
 CREATE TABLE TechGroup
 (
     group_name TEXT
@@ -532,7 +532,7 @@ CREATE TABLE TechGroup
 );
 INSERT INTO TechGroup VALUES('RPS_global','');
 INSERT INTO TechGroup VALUES('RPS_common','');
-CREATE TABLE LoanLifetimeProcess
+CREATE TABLE loan_lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -543,8 +543,8 @@ CREATE TABLE LoanLifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LoanLifetimeProcess VALUES('electricville','EF',2010,50.0,'');
-CREATE TABLE LoanRate
+INSERT INTO loan_lifetime_process VALUES('electricville','EF',2010,50.0,'');
+CREATE TABLE loan_rate
 (
     region  TEXT,
     tech    TEXT
@@ -555,7 +555,7 @@ CREATE TABLE LoanRate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE LifetimeProcess
+CREATE TABLE lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -566,8 +566,8 @@ CREATE TABLE LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-INSERT INTO LifetimeProcess VALUES('electricville','EH',1995,80.0,'#forexistingcap');
-CREATE TABLE LifetimeTech
+INSERT INTO lifetime_process VALUES('electricville','EH',1995,80.0,'#forexistingcap');
+CREATE TABLE lifetime_tech
 (
     region   TEXT,
     tech     TEXT
@@ -576,10 +576,10 @@ CREATE TABLE LifetimeTech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-INSERT INTO LifetimeTech VALUES('electricville','EH',100.0,'');
-INSERT INTO LifetimeTech VALUES('electricville','EF',100.0,'');
-INSERT INTO LifetimeTech VALUES('electricville','bulbs',100.0,'super LED!');
-INSERT INTO LifetimeTech VALUES('electricville','well',100.0,NULL);
+INSERT INTO lifetime_tech VALUES('electricville','EH',100.0,'');
+INSERT INTO lifetime_tech VALUES('electricville','EF',100.0,'');
+INSERT INTO lifetime_tech VALUES('electricville','bulbs',100.0,'super LED!');
+INSERT INTO lifetime_tech VALUES('electricville','well',100.0,NULL);
 CREATE TABLE Operator
 (
 	operator TEXT PRIMARY KEY,
@@ -588,7 +588,7 @@ CREATE TABLE Operator
 INSERT INTO Operator VALUES('e','equal to');
 INSERT INTO Operator VALUES('le','less than or equal to');
 INSERT INTO Operator VALUES('ge','greater than or equal to');
-CREATE TABLE LimitGrowthCapacity
+CREATE TABLE limit_growth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -600,7 +600,7 @@ CREATE TABLE LimitGrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthCapacity
+CREATE TABLE limit_degrowth_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -612,7 +612,7 @@ CREATE TABLE LimitDegrowthCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacity
+CREATE TABLE limit_growth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -624,7 +624,7 @@ CREATE TABLE LimitGrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacity
+CREATE TABLE limit_degrowth_new_capacity
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -636,7 +636,7 @@ CREATE TABLE LimitDegrowthNewCapacity
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitGrowthNewCapacityDelta
+CREATE TABLE limit_growth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -648,7 +648,7 @@ CREATE TABLE LimitGrowthNewCapacityDelta
     notes  TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitDegrowthNewCapacityDelta
+CREATE TABLE limit_degrowth_new_capacity_delta
 (
     region TEXT,
     tech_or_group   TEXT,
@@ -679,7 +679,7 @@ CREATE TABLE LimitStorageLevelFraction
     notes    TEXT,
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
-CREATE TABLE LimitActivity
+CREATE TABLE limit_activity
 (
     region  TEXT,
     period  INTEGER
@@ -692,7 +692,7 @@ CREATE TABLE LimitActivity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitActivityShare
+CREATE TABLE limit_activity_share
 (
     region         TEXT,
     period         INTEGER
@@ -705,7 +705,7 @@ CREATE TABLE LimitActivityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitAnnualCapacityFactor
+CREATE TABLE limit_annual_capacity_factor
 (
     region      TEXT,
     period      INTEGER
@@ -721,7 +721,7 @@ CREATE TABLE LimitAnnualCapacityFactor
     PRIMARY KEY (region, period, tech, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE LimitCapacity
+CREATE TABLE limit_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -734,18 +734,18 @@ CREATE TABLE LimitCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-INSERT INTO LimitCapacity VALUES('electricville',2000,'EH','ge',0.2000000000000000111,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2005,'EH','ge',0.2000000000000000111,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2010,'EH','ge',0.2000000000000000111,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2015,'EH','ge',0.2000000000000000111,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2000,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2005,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2010,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2015,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2020,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2025,'EH','le',5.0,'','');
-INSERT INTO LimitCapacity VALUES('electricville',2030,'EH','le',5.0,'','');
-CREATE TABLE LimitCapacityShare
+INSERT INTO limit_capacity VALUES('electricville',2000,'EH','ge',0.2000000000000000111,'','');
+INSERT INTO limit_capacity VALUES('electricville',2005,'EH','ge',0.2000000000000000111,'','');
+INSERT INTO limit_capacity VALUES('electricville',2010,'EH','ge',0.2000000000000000111,'','');
+INSERT INTO limit_capacity VALUES('electricville',2015,'EH','ge',0.2000000000000000111,'','');
+INSERT INTO limit_capacity VALUES('electricville',2000,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2005,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2010,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2015,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2020,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2025,'EH','le',5.0,'','');
+INSERT INTO limit_capacity VALUES('electricville',2030,'EH','le',5.0,'','');
+CREATE TABLE limit_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -758,7 +758,7 @@ CREATE TABLE LimitCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitNewCapacity
+CREATE TABLE limit_new_capacity
 (
     region  TEXT,
     period  INTEGER
@@ -771,7 +771,7 @@ CREATE TABLE LimitNewCapacity
     notes   TEXT,
     PRIMARY KEY (region, period, tech_or_group, operator)
 );
-CREATE TABLE LimitNewCapacityShare
+CREATE TABLE limit_new_capacity_share
 (
     region         TEXT,
     period         INTEGER
@@ -784,7 +784,7 @@ CREATE TABLE LimitNewCapacityShare
     notes          TEXT,
     PRIMARY KEY (region, period, sub_group, super_group, operator)
 );
-CREATE TABLE LimitResource
+CREATE TABLE limit_resource
 (
     region  TEXT,
     tech_or_group   TEXT,
@@ -795,7 +795,7 @@ CREATE TABLE LimitResource
     notes   TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
 );
-CREATE TABLE LimitSeasonalCapacityFactor
+CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES Region (region),
@@ -811,7 +811,7 @@ CREATE TABLE LimitSeasonalCapacityFactor
 	notes	TEXT,
 	PRIMARY KEY(region, period, season, tech, operator)
 );
-CREATE TABLE LimitTechInputSplit
+CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
     period         INTEGER
@@ -826,7 +826,7 @@ CREATE TABLE LimitTechInputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechInputSplitAnnual
+CREATE TABLE limit_tech_input_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -841,7 +841,7 @@ CREATE TABLE LimitTechInputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, input_comm, tech, operator)
 );
-CREATE TABLE LimitTechOutputSplit
+CREATE TABLE limit_tech_output_split
 (
     region         TEXT,
     period         INTEGER
@@ -856,7 +856,7 @@ CREATE TABLE LimitTechOutputSplit
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitTechOutputSplitAnnual
+CREATE TABLE limit_tech_output_split_annual
 (
     region         TEXT,
     period         INTEGER
@@ -871,7 +871,7 @@ CREATE TABLE LimitTechOutputSplitAnnual
     notes          TEXT,
     PRIMARY KEY (region, period, tech, output_comm, operator)
 );
-CREATE TABLE LimitEmission
+CREATE TABLE limit_emission
 (
     region    TEXT,
     period    INTEGER
@@ -1028,7 +1028,7 @@ CREATE TABLE OutputStorageLevel
     level REAL,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
-CREATE TABLE PlanningReserveMargin
+CREATE TABLE planning_reserve_margin
 (
     region TEXT
         PRIMARY KEY
@@ -1036,7 +1036,7 @@ CREATE TABLE PlanningReserveMargin
     margin REAL,
     notes TEXT
 );
-CREATE TABLE RampDownHourly
+CREATE TABLE ramp_down_hourly
 (
     region TEXT,
     tech   TEXT
@@ -1045,7 +1045,7 @@ CREATE TABLE RampDownHourly
     notes TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE RampUpHourly
+CREATE TABLE ramp_up_hourly
 (
     region TEXT,
     tech   TEXT
@@ -1061,7 +1061,7 @@ CREATE TABLE Region
     notes  TEXT
 );
 INSERT INTO Region VALUES('electricville',NULL);
-CREATE TABLE ReserveCapacityDerate
+CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     period  INTEGER
@@ -1077,7 +1077,7 @@ CREATE TABLE ReserveCapacityDerate
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE TimeSegmentFraction
-(   
+(
     period INTEGER
         REFERENCES TimePeriod (period),
     season TEXT
@@ -1122,7 +1122,7 @@ INSERT INTO TimeSegmentFraction VALUES(2045,'winter','day',0.3332999999999999852
 INSERT INTO TimeSegmentFraction VALUES(2050,'inter','day',0.3332999999999999852,'# I-D');
 INSERT INTO TimeSegmentFraction VALUES(2050,'summer','day',0.3332999999999999852,'# S-D');
 INSERT INTO TimeSegmentFraction VALUES(2050,'winter','day',0.3332999999999999852,'# W-D');
-CREATE TABLE StorageDuration
+CREATE TABLE storage_duration
 (
     region   TEXT,
     tech     TEXT,
@@ -1130,7 +1130,7 @@ CREATE TABLE StorageDuration
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE LifetimeSurvivalCurve
+CREATE TABLE lifetime_survival_curve
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL,
@@ -1222,7 +1222,7 @@ INSERT INTO TimeSeason VALUES(2045,3,'winter',NULL);
 INSERT INTO TimeSeason VALUES(2050,1,'inter',NULL);
 INSERT INTO TimeSeason VALUES(2050,2,'summer',NULL);
 INSERT INTO TimeSeason VALUES(2050,3,'winter',NULL);
-CREATE TABLE TimeSeasonSequential
+CREATE TABLE time_season_sequential
 (
     period INTEGER
         REFERENCES TimePeriod (period),

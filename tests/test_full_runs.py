@@ -66,12 +66,12 @@ def test_against_legacy_outputs(system_test_run):
 
     # inspect some summary results
     assert res['Solution'][0]['Status'] == 'optimal'
-    assert res['Solution'][0]['Objective']['TotalCost']['Value'] == pytest.approx(
+    assert res['Solution'][0]['Objective']['total_cost']['Value'] == pytest.approx(
         expected_vals[ExpectedVals.OBJ_VALUE], 0.00001
     )
 
     # inspect a couple set sizes
-    efficiency_param: pyo.Param = mdl.Efficiency
+    efficiency_param: pyo.Param = mdl.efficiency
     # check the set membership
     assert (
         len(tuple(efficiency_param.sparse_iterkeys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
@@ -110,7 +110,7 @@ def test_myopic_utopia(system_test_run):
     _, _, _, sequencer = system_test_run
     con = sqlite3.connect(sequencer.config.output_database)
     cur = con.cursor()
-    res = cur.execute('SELECT SUM(d_invest) FROM main.OutputCost').fetchone()
+    res = cur.execute('SELECT SUM(d_invest) FROM main.output_cost').fetchone()
     invest_sum = res[0]
     # reduced this target after storageinit rework
     # reduced after removing ancient 1-year shift bug from objective function

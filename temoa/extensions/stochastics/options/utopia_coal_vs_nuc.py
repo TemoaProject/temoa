@@ -5,7 +5,7 @@ dirname = 'utopia_demand'
 modelpath = '../temoa_model/temoa_model.py'
 dotdatpath = '../data_files/utopia-15.dat'
 stochasticset = 'time_optimize'
-stochastic_indices = {'Demand': 0, 'CostInvest': 1}
+stochastic_indices = {'Demand': 0, 'cost_invest': 1}
 
 # CL, CA, CH = coal "[lower, average, high]" rate
 # _Low, _Average, _High = demand "[low, average, high]" rate
@@ -45,7 +45,7 @@ rates = {
         CA_High=(('*,*,RH', 1.480), ('*,*,RL', 1.480), ('*,*,TX', 1.480)),
         CH_High=(('*,*,RH', 1.480), ('*,*,RL', 1.480), ('*,*,TX', 1.480)),
     ),
-    'CostInvest': dict(
+    'cost_invest': dict(
         CL_Low=(
             ('E01,*', 1.8),
             ('E21,*', 1.2),

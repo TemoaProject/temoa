@@ -3,8 +3,8 @@ import sys
 from collections import defaultdict
 from time import time
 
-import CplexSolverError
 import cplex
+import CplexSolverError
 import pandas as pd
 from matplotlib import pyplot as plt
 from openpyxl import Workbook
@@ -79,21 +79,21 @@ def coef_IC(instance, target_tech, target_year):
     v = target_year
     P_0 = min(instance.time_optimize)
     P_e = instance.time_future.last()
-    GDR = value(instance.GlobalDiscountRate)
+    GDR = value(instance.global_discount_rate)
     MPL = instance.ModelProcessLife
-    LLN = instance.LoanLifetimeProcess
+    LLN = instance.loan_lifetime_process
     x = 1 + GDR  # convenience variable, nothing more.
     period_available = set()
     for p in instance.time_future:
-        if (p, t, v) in instance.CostFixed.keys():
+        if (p, t, v) in instance.cost_fixed.keys():
             period_available.add(p)
     c_i = (
-        instance.CostInvest[t, v]
-        * instance.LoanAnnualize[t, v]
+        instance.cost_invest[t, v]
+        * instance.loan_annualize[t, v]
         * (LLN[t, v] if not GDR else (x ** (P_0 - v + 1) * (1 - x ** (-value(LLN[t, v]))) / GDR))
     ) * (
-        (1 - x ** (-min(value(instance.LifetimeProcess[t, v]), P_e - v)))
-        / (1 - x ** (-value(instance.LifetimeProcess[t, v])))
+        (1 - x ** (-min(value(instance.lifetime_process[t, v]), P_e - v)))
+        / (1 - x ** (-value(instance.lifetime_process[t, v])))
     )
     return value(c_i)
 
@@ -104,17 +104,17 @@ def coef_FC(instance, target_tech, target_year):
     v = target_year
     P_0 = min(instance.time_optimize)
     P_e = instance.time_future.last()
-    GDR = value(instance.GlobalDiscountRate)
+    GDR = value(instance.global_discount_rate)
     MPL = instance.ModelProcessLife
-    LLN = instance.LoanLifetimeProcess
+    LLN = instance.loan_lifetime_process
     x = 1 + GDR  # convenience variable, nothing more.
     period_available = set()
     for p in instance.time_future:
-        if (p, t, v) in instance.CostFixed.keys():
+        if (p, t, v) in instance.cost_fixed.keys():
             period_available.add(p)
 
     c_f = sum(
-        instance.CostFixed[p, t, v]
+        instance.cost_fixed[p, t, v]
         * (
             MPL[p, t, v]
             if not GDR
@@ -171,9 +171,9 @@ def sensitivity(dat, techs):
     for t in techs:
         vintages = instance.vintage_optimize
         P_0 = min(instance.time_optimize)
-        GDR = value(instance.GlobalDiscountRate)
+        GDR = value(instance.global_discount_rate)
         MPL = instance.ModelProcessLife
-        LLN = instance.LoanLifetimeProcess
+        LLN = instance.loan_lifetime_process
         x = 1 + GDR  # convenience variable, nothing more.
 
         bic_s[t] = list()
@@ -183,11 +183,11 @@ def sensitivity(dat, techs):
         for v in vintages:
             period_available = set()
             for p in instance.time_future:
-                if (p, t, v) in instance.CostFixed.keys():
+                if (p, t, v) in instance.cost_fixed.keys():
                     period_available.add(p)
             c_i = (
-                instance.CostInvest[t, v]
-                * instance.LoanAnnualize[t, v]
+                instance.cost_invest[t, v]
+                * instance.loan_annualize[t, v]
                 * (
                     LLN[t, v]
                     if not GDR
@@ -196,7 +196,7 @@ def sensitivity(dat, techs):
             )
 
             c_s = (-1) * (
-                value(instance.CostInvest[t, v])
+                value(instance.cost_invest[t, v])
                 * value(instance.SalvageRate[t, v])
                 / (
                     1
@@ -207,7 +207,7 @@ def sensitivity(dat, techs):
             )
 
             c_f = sum(
-                instance.CostFixed[p, t, v]
+                instance.cost_fixed[p, t, v]
                 * (
                     MPL[p, t, v]
                     if not GDR
@@ -217,12 +217,12 @@ def sensitivity(dat, techs):
             )
 
             c = c_i + c_s + c_f
-            s = (c - instance.lrc[instance.V_Capacity[t, v]]) / c
+            s = (c - instance.lrc[instance.v_capacity[t, v]]) / c
             coef_CAP[t, v] = c
             scal_CAP[t, v] = s  # Must reduce TO this percentage
-            bic_s[t].append(scal_CAP[t, v] * instance.CostInvest[t, v])
-            ic_s[t].append(instance.CostInvest[t, v])
-            cap_s[t].append(value(instance.V_Capacity[t, v]))
+            bic_s[t].append(scal_CAP[t, v] * instance.cost_invest[t, v])
+            ic_s[t].append(instance.cost_invest[t, v])
+            cap_s[t].append(value(instance.v_capacity[t, v]))
 
         # print("Tech\tVintage\tL. RC\tCoef\tU .RC\tScale\tBE IC\tBE FC\tIC\tFC\tCap")
         print(
@@ -241,8 +241,8 @@ def sensitivity(dat, techs):
             )
         )
         for v in vintages:
-            lrc = instance.lrc[instance.V_Capacity[t, v]]
-            urc = instance.urc[instance.V_Capacity[t, v]]
+            lrc = instance.lrc[instance.v_capacity[t, v]]
+            urc = instance.urc[instance.v_capacity[t, v]]
 
             # print("{:>s}\t{:>g}\t{:>.0f}\t{:>.0f}\t{:>.0f}\t{:>.3f}\t{:>.1f}\t{:>.1f}\t{:>.0f}\t{:>.0f}\t{:>.3f}".format()
             print(
@@ -253,11 +253,11 @@ def sensitivity(dat, techs):
                     coef_CAP[t, v],
                     urc,
                     scal_CAP[t, v],
-                    scal_CAP[t, v] * instance.CostInvest[t, v],
-                    scal_CAP[t, v] * instance.CostFixed[v, t, v],  # Use the FC of the first period
-                    instance.CostInvest[t, v],
-                    instance.CostFixed[v, t, v],
-                    value(instance.V_Capacity[t, v]),
+                    scal_CAP[t, v] * instance.cost_invest[t, v],
+                    scal_CAP[t, v] * instance.cost_fixed[v, t, v],  # Use the FC of the first period
+                    instance.cost_invest[t, v],
+                    instance.cost_fixed[v, t, v],
+                    value(instance.v_capacity[t, v]),
                 )
             )
 
@@ -283,8 +283,8 @@ def sensitivity(dat, techs):
                         p,
                         s,
                         tod,
-                        instance.dual[instance.DemandConstraint[p, s, tod, c]],
-                        instance.slack[instance.DemandConstraint[p, s, tod, c]],
+                        instance.dual[instance.demand_constraint[p, s, tod, c]],
+                        instance.slack[instance.demand_constraint[p, s, tod, c]],
                     )
 
 
@@ -341,7 +341,7 @@ def sensitivity_api(instance, techs, algorithm=None):
         ic_s[t] = list()
         cap_s[t] = list()
         for v in vintages:
-            target_var = 'V_Capacity(' + t + '_' + str(v) + ')'
+            target_var = 'v_capacity(' + t + '_' + str(v) + ')'
             c0 = c.objective.get_linear(target_var)
             clb, cub = c.solution.sensitivity.objective(
                 target_var
@@ -356,10 +356,10 @@ def sensitivity_api(instance, techs, algorithm=None):
                 sys.exit(0)
             coef_CAP[t, v] = c0
             scal_CAP[t, v] = clb / c0  # Break-even cost 1: Scaling both IC and FC
-            alpha = c_i / value(instance.CostInvest[t, v])
+            alpha = c_i / value(instance.cost_invest[t, v])
             bic = (clb - c_f) / alpha  # Break-even cost 2: Only decrease IC
             bic_s[t].append(bic)
-            ic_s[t].append(value(instance.CostInvest[t, v]))
+            ic_s[t].append(value(instance.cost_invest[t, v]))
             cap_s[t].append(c.solution.get_values(target_var))
 
         print(
@@ -390,7 +390,7 @@ def sensitivity_api(instance, techs, algorithm=None):
         for v in vintages:
             deployed = abs(cap_s[t][vintages.index(v)]) >= 1e-3
             tmp_beic_cs = (
-                value(instance.CostInvest[t, v]) if deployed else bic_s[t][vintages.index(v)]
+                value(instance.cost_invest[t, v]) if deployed else bic_s[t][vintages.index(v)]
             )
             tmp_bes_cs = 1 if deployed else scal_CAP[t, v]
             row = {
@@ -403,7 +403,7 @@ def sensitivity_api(instance, techs, algorithm=None):
                 'coef upper bound': cub_s[t, v],
                 'scale': scal_CAP[t, v],
                 'BE IC': bic_s[t][vintages.index(v)],
-                'IC': value(instance.CostInvest[t, v]),
+                'IC': value(instance.cost_invest[t, v]),
                 'capacity': cap_s[t][vintages.index(v)],
                 'BE IC (CS)': tmp_beic_cs,
                 'scale (CS)': tmp_bes_cs,
@@ -418,7 +418,7 @@ def sensitivity_api(instance, techs, algorithm=None):
                     cub_s[t, v],
                     scal_CAP[t, v],
                     bic_s[t][vintages.index(v)],
-                    value(instance.CostInvest[t, v]),
+                    value(instance.cost_invest[t, v]),
                     cap_s[t][vintages.index(v)],
                 )
             )
@@ -431,7 +431,7 @@ def sensitivity_api(instance, techs, algorithm=None):
                 cub_s[t, v],
                 scal_CAP[t, v],
                 bic_s[t][vintages.index(v)],
-                value(instance.CostInvest[t, v]),
+                value(instance.cost_invest[t, v]),
                 cap_s[t][vintages.index(v)],
             )
             msg += '\n'
@@ -473,16 +473,16 @@ def bin_search(tech, vintage, dat, eps=0.01, all_v=False):
     fc0 = dict()
     if all_v:
         for v in time_optimize:
-            if (monitor_tech, v) in data['CostInvest']:
-                ic0[monitor_tech, v] = data['CostInvest'][monitor_tech, v]
+            if (monitor_tech, v) in data['cost_invest']:
+                ic0[monitor_tech, v] = data['cost_invest'][monitor_tech, v]
                 for p in time_optimize:
-                    if (p, monitor_tech, v) in data['CostFixed']:
-                        fc0[p, monitor_tech, v] = data['CostFixed'][p, monitor_tech, v]
+                    if (p, monitor_tech, v) in data['cost_fixed']:
+                        fc0[p, monitor_tech, v] = data['cost_fixed'][p, monitor_tech, v]
     else:
-        ic0[monitor_tech, monitor_year] = data['CostInvest'][monitor_tech, monitor_year]
+        ic0[monitor_tech, monitor_year] = data['cost_invest'][monitor_tech, monitor_year]
         for p in time_optimize:
-            if (p, monitor_tech, monitor_year) in data['CostFixed']:
-                fc0[p, monitor_tech, monitor_year] = data['CostFixed'][
+            if (p, monitor_tech, monitor_year) in data['cost_fixed']:
+                fc0[p, monitor_tech, monitor_year] = data['cost_fixed'][
                     p, monitor_tech, monitor_year
                 ]
 
@@ -497,14 +497,14 @@ def bin_search(tech, vintage, dat, eps=0.01, all_v=False):
     counter = 0
     scale_this = scale_u  # Starting scale
 
-    print('Iteration # {} starts at {} s'.format(counter, time_mark()))
+    print(f'Iteration # {counter} starts at {time_mark()} s')
     instance = model.create_instance(data)
     instance.preprocess()
     results = optimizer.solve(instance, suffixes=['dual', 'urc', 'slack', 'lrc'])
     instance.solutions.load_from(results)
-    cap_target = value(instance.V_Capacity[monitor_tech, monitor_year])
-    print('Iteration # {} solved at {} s'.format(counter, time_mark()))
-    print('Iteration # {}, scale: {:1.2f}, capacity: {} GW'.format(counter, scale_this, cap_target))
+    cap_target = value(instance.v_capacity[monitor_tech, monitor_year])
+    print(f'Iteration # {counter} solved at {time_mark()} s')
+    print(f'Iteration # {counter}, scale: {scale_this:1.2f}, capacity: {cap_target} GW')
     if 1.0 - scale_this <= eps and cap_target > 0:
         return scale_this
 
@@ -519,17 +519,17 @@ def bin_search(tech, vintage, dat, eps=0.01, all_v=False):
 
         scale_this = (scale_u + scale_l) * 0.5
         for k in ic0:
-            data['CostInvest'][k] = scale_this * ic0[k]
+            data['cost_invest'][k] = scale_this * ic0[k]
         for k in fc0:
-            data['CostFixed'][k] = scale_this * fc0[k]
+            data['cost_fixed'][k] = scale_this * fc0[k]
 
-        print('Iteration # {} starts at {} s'.format(counter, time_mark()))
+        print(f'Iteration # {counter} starts at {time_mark()} s')
         instance = model.create_instance(data)
         instance.preprocess()
         results = optimizer.solve(instance, suffixes=['dual', 'urc', 'slack', 'lrc'])
         instance.solutions.load_from(results)
-        cap_target = value(instance.V_Capacity[monitor_tech, monitor_year])
-        print('Iteration # {} solved at {} s'.format(counter, time_mark()))
+        cap_target = value(instance.v_capacity[monitor_tech, monitor_year])
+        print(f'Iteration # {counter} solved at {time_mark()} s')
         print(
             'Iteration # {}, scale: {:1.2f}, capacity: {} GW'.format(
                 counter, scale_this, cap_target
@@ -581,7 +581,7 @@ def cplex_search(t, v, cplex_instance, eps=0.01, all_v=False):
     msg = ''
     target_year = v
     target_tech = t
-    target_var0 = 'V_Capacity(' + target_tech + '_' + str(target_year) + ')'
+    target_var0 = 'v_capacity(' + target_tech + '_' + str(target_year) + ')'
 
     t0 = time()
     time_mark = lambda: time() - t0
@@ -599,8 +599,8 @@ def cplex_search(t, v, cplex_instance, eps=0.01, all_v=False):
     counter = 0
     scale_this = scale_u  # Starting scale
 
-    print('Iteration # {} starts at {} s'.format(counter, time_mark()))
-    msg += 'Iteration # {} starts at {} s\n'.format(counter, time_mark())
+    print(f'Iteration # {counter} starts at {time_mark()} s')
+    msg += f'Iteration # {counter} starts at {time_mark()} s\n'
     try:
         cplex_instance.solve()
     except CplexSolverError:
@@ -608,11 +608,9 @@ def cplex_search(t, v, cplex_instance, eps=0.01, all_v=False):
         msg += 'Exception raised during solve\n'
         return msg, None
     cap_target0 = cplex_instance.solution.get_values(target_var0)
-    print('Iteration # {} solved at {} s'.format(counter, time_mark()))
-    msg += 'Iteration # {} solved at {} s\n'.format(counter, time_mark())
-    print(
-        'Iteration # {}, scale: {:1.2f}, capacity: {} GW'.format(counter, scale_this, cap_target0)
-    )
+    print(f'Iteration # {counter} solved at {time_mark()} s')
+    msg += f'Iteration # {counter} solved at {time_mark()} s\n'
+    print(f'Iteration # {counter}, scale: {scale_this:1.2f}, capacity: {cap_target0} GW')
     if 1.0 - scale_this <= eps and cap_target0 > 0:
         row = return_row(c0, scale_this, cap_target0)
         return msg, pd.DataFrame([row])
@@ -630,8 +628,8 @@ def cplex_search(t, v, cplex_instance, eps=0.01, all_v=False):
         scale_this = (scale_u + scale_l) * 0.5
         cplex_instance.objective.set_linear(target_var0, scale_this * c0)
 
-        print('Iteration # {} starts at {} s'.format(counter, time_mark()))
-        msg += 'Iteration # {} starts at {} s'.format(counter, time_mark())
+        print(f'Iteration # {counter} starts at {time_mark()} s')
+        msg += f'Iteration # {counter} starts at {time_mark()} s'
         try:
             cplex_instance.solve()
         except CplexSolverError:
@@ -639,8 +637,8 @@ def cplex_search(t, v, cplex_instance, eps=0.01, all_v=False):
             msg += 'Exception raised during solve\n'
             return msg, None
         cap_target = cplex_instance.solution.get_values(target_var0)
-        print('Iteration # {} solved at {} s'.format(counter, time_mark()))
-        msg += 'Iteration # {} solved at {} s\n'.format(counter, time_mark())
+        print(f'Iteration # {counter} solved at {time_mark()} s')
+        msg += f'Iteration # {counter} solved at {time_mark()} s\n'
         print(
             'Iteration # {}, scale: {:1.2f}, capacity: {} GW'.format(
                 counter, scale_this, cap_target
@@ -654,13 +652,13 @@ def sen_range_api(tech, vintage, scales, list_dat):
     # This function is adapted from CPLEX's example script lpex2.py
     # It does the same thing as sen_range, but with CPLEX API for Python
 
-    # Given a range of scaling factor for coefficient of a specific V_Capacity,
+    # Given a range of scaling factor for coefficient of a specific v_capacity,
     # returns objective value, reduced cost, capacity etc. for each scaling
     # factor
 
     target_year = vintage
     target_tech = tech
-    target_var0 = 'V_Capacity(' + target_tech + '_' + str(target_year) + ')'
+    target_var0 = 'v_capacity(' + target_tech + '_' + str(target_year) + ')'
     algmap = {
         'primal simplex': 'p',
         'dual simplex': 'd',
@@ -675,8 +673,8 @@ def sen_range_api(tech, vintage, scales, list_dat):
     data = return_Temoa_data(model, list_dat)
     instance = model.create_instance(data)
 
-    ic0 = data['CostInvest'][target_tech, target_year]
-    fc0 = data['CostFixed'][target_year, target_tech, target_year]
+    ic0 = data['cost_invest'][target_tech, target_year]
+    fc0 = data['cost_fixed'][target_year, target_tech, target_year]
     all_periods = data['time_future']
 
     obj = dict()
@@ -691,7 +689,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
     rc = dict()  # Reduced cost
 
     for algorithm in ['barrier', 'dual simplex', 'primal simplex']:
-        print('Algorithm: {}'.format(algorithm))
+        print(f'Algorithm: {algorithm}')
         instance.write('tmp.lp', io_options={'symbolic_solver_labels': True})
         c = cplex.Cplex('tmp.lp')
         os.remove('tmp.lp')
@@ -700,7 +698,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
         if not validate_coef(c0, instance, target_tech, target_year):
             print('Error!')
             sys.exit(0)
-        print('[{:>9.2f}] CPLEX model loaded.'.format(time_mark()))
+        print(f'[{time_mark():>9.2f}] CPLEX model loaded.')
 
         if algmap[algorithm] == 'o':
             c.parameters.lpmethod.set(c.parameters.lpmethod.values.auto)
@@ -731,7 +729,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
         cub_alg = defaultdict(list)
         rc_alg = defaultdict(list)
         for s in scales:
-            print('[{:>9.2f}] Scale: {:>.3f} starts'.format(time_mark(), s))
+            print(f'[{time_mark():>9.2f}] Scale: {s:>.3f} starts')
             c.objective.set_linear(target_var0, s * c0)
 
             try:
@@ -743,7 +741,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
             obj_alg.append(c.solution.get_objective_value())
             for y in instance.time_optimize:
                 key = str(y)
-                target_var = 'V_Capacity(' + target_tech + '_' + key + ')'
+                target_var = 'v_capacity(' + target_tech + '_' + key + ')'
                 coefficient = c.objective.get_linear(target_var)
                 if y != target_year:
                     if not validate_coef(coefficient, instance, target_tech, y):
@@ -760,8 +758,8 @@ def sen_range_api(tech, vintage, scales, list_dat):
                 except:
                     c_bound = [None, None]
                     s_be = None
-                cost_i = s * value(instance.CostInvest[target_tech, y])
-                cost_f = s * value(instance.CostFixed[y, target_tech, y])
+                cost_i = s * value(instance.cost_invest[target_tech, y])
+                cost_f = s * value(instance.cost_fixed[y, target_tech, y])
 
                 cap_alg[key].append(capacity)
                 coef_alg[key].append(coefficient)
@@ -789,7 +787,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
         rc[algorithm] = rc_alg
 
         # Write to Excel spreadsheet
-        print('[{:>9.2f}] Saving to Excel spreadsheet'.format(time_mark()))
+        print(f'[{time_mark():>9.2f}] Saving to Excel spreadsheet')
         row_title = [
             'scale',
             'obj',
@@ -842,7 +840,7 @@ def sen_range_api(tech, vintage, scales, list_dat):
 
 
 def sen_range(tech, vintage, scales, dat):
-    # Given a range of scaling factor for coefficient of a specific V_Capacity,
+    # Given a range of scaling factor for coefficient of a specific v_capacity,
     # returns objective value, reduced cost, capacity etc. for each scaling
     # factor
     from openpyxl import Workbook
@@ -863,8 +861,8 @@ def sen_range(tech, vintage, scales, dat):
     data = return_Temoa_data(model, dat)
     optimizer = SolverFactory('cplex')
 
-    ic0 = data['CostInvest'][target_tech, target_year]
-    fc0 = data['CostFixed'][target_year, target_tech, target_year]
+    ic0 = data['cost_invest'][target_tech, target_year]
+    fc0 = data['cost_fixed'][target_year, target_tech, target_year]
     all_periods = data['time_future']
 
     obj = dict()
@@ -879,7 +877,7 @@ def sen_range(tech, vintage, scales, dat):
 
     for algorithm in ['barrier', 'dual simplex', 'primal simplex']:
         optimizer.options['lpmethod'] = algmap[algorithm]
-        print('Algorithm: {}'.format(algorithm))
+        print(f'Algorithm: {algorithm}')
 
         obj_alg = list()
         cap_alg = defaultdict(list)
@@ -891,26 +889,26 @@ def sen_range(tech, vintage, scales, dat):
         ic_alg = defaultdict(list)
         fc_alg = defaultdict(list)
         for s in scales:
-            print('[{:>9.2f}] Scale: {:>.3f} starts'.format(time_mark(), s))
-            data['CostInvest'][target_tech, target_year] = s * ic0
+            print(f'[{time_mark():>9.2f}] Scale: {s:>.3f} starts')
+            data['cost_invest'][target_tech, target_year] = s * ic0
             for y in data['time_future']:
-                if (y, target_tech, target_year) in data['CostFixed']:
-                    data['CostFixed'][y, target_tech, target_year] = s * fc0
+                if (y, target_tech, target_year) in data['cost_fixed']:
+                    data['cost_fixed'][y, target_tech, target_year] = s * fc0
             instance = model.create_instance(data)
             instance.preprocess()
             results = optimizer.solve(instance, suffixes=['dual', 'urc', 'slack', 'lrc'])
             instance.solutions.load_from(results)
 
-            obj_alg.append(value(instance.TotalCost))
+            obj_alg.append(value(instance.total_cost))
             for y in instance.time_optimize:
                 key = str(y)
                 c_vector = return_c_vector(instance, [])
-                coefficient = c_vector[('V_Capacity', (target_tech, y))]
-                capacity = value(instance.V_Capacity[target_tech, y])
-                lower_rc = value(instance.lrc[instance.V_Capacity[target_tech, y]])
-                upper_rc = value(instance.urc[instance.V_Capacity[target_tech, y]])
-                cost_i = value(instance.CostInvest[target_tech, y])
-                cost_f = value(instance.CostFixed[y, target_tech, y])
+                coefficient = c_vector[('v_capacity', (target_tech, y))]
+                capacity = value(instance.v_capacity[target_tech, y])
+                lower_rc = value(instance.lrc[instance.v_capacity[target_tech, y]])
+                upper_rc = value(instance.urc[instance.v_capacity[target_tech, y]])
+                cost_i = value(instance.cost_invest[target_tech, y])
+                cost_f = value(instance.cost_fixed[y, target_tech, y])
                 s_be = (coefficient - lower_rc) / coefficient  # Break-even scale
 
                 cap_alg[key].append(capacity)
@@ -933,7 +931,7 @@ def sen_range(tech, vintage, scales, dat):
         fc[algorithm] = fc_alg
 
         # Write to Excel spreadsheet
-        print('[{:>9.2f}] Saving to Excel spreadsheet'.format(time_mark()))
+        print(f'[{time_mark():>9.2f}] Saving to Excel spreadsheet')
         row_title = ['scale', 'obj', 'cap', 'lrc', 'coef', 'urc', 'bic', 'bfc', 'ic', 'fc']
         wb = Workbook()
         # for ws_title in cap_alg:
@@ -987,7 +985,7 @@ def explore_Cost_marginal(dat):
     instance = model.create_instance(data)
 
     # Deactivate the DemandActivity constraint
-    # instance.DemandActivityConstraint.deactivate()
+    # instance.demand_activity_constraint.deactivate()
     # instance.preprocess()
 
     optimizer = SolverFactory('cplex')
@@ -1011,7 +1009,7 @@ def explore_Cost_marginal(dat):
     #     for p in instance.time_optimize:
     #         for s in instance.time_season:
     #             for tod in instance.time_of_day:
-    #                 print(p, s, tod, instance.dual[instance.DemandConstraint[p,s,tod,c]], instance.slack[instance.DemandConstraint[p,s,tod,c]])
+    #                 print(p, s, tod, instance.dual[instance.demand_constraint[p,s,tod,c]], instance.slack[instance.demand_constraint[p,s,tod,c]])
 
 
 def plot_breakeven(years, bic, ic):

@@ -72,7 +72,7 @@ def test_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -96,7 +96,7 @@ def test_emissions_costs_undiscounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -121,7 +121,7 @@ def test_emissions_costs_discounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(d_emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -146,7 +146,7 @@ def test_embodied_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -170,7 +170,7 @@ def test_embodied_emissions_costs_undiscounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -195,7 +195,7 @@ def test_embodied_emissions_costs_discounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(d_emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -222,7 +222,7 @@ def test_endoflife_emissions(solved_connection):
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.OutputEmission WHERE tech LIKE '{tech}' AND period == 2005"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2005"
         )
         .fetchone()[0]
     )
@@ -246,7 +246,7 @@ def test_endoflife_emissions_costs_undiscounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2005"
+            f"SELECT SUM(emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND period == 2005"
         )
         .fetchone()[0]
     )
@@ -271,7 +271,7 @@ def test_endoflife_emissions_costs_discounted(solved_connection):
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(d_emiss) FROM main.OutputCost WHERE tech LIKE '{tech}' AND period == 2005"
+            f"SELECT SUM(d_emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND period == 2005"
         )
         .fetchone()[0]
     )
@@ -305,7 +305,7 @@ def test_curtailment(solved_connection):
     curt = (
         con.cursor()
         .execute(
-            f"SELECT SUM(curtailment) FROM main.OutputCurtailment WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(curtailment) FROM main.output_curtailment WHERE tech LIKE '{tech}' AND period == 2000"
         )
         .fetchone()[0]
     )

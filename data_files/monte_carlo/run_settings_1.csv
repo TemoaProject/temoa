@@ -1,5 +1,5 @@
 run,param,index,mod,value,notes
 1,MaxCapacity,utopia|2010|TXD,a,-1.0,reduce the max capacity of TXD in region Utopia in period 2010 by 1.0 units (absolute)
 2,Demand,utopia|*|RH,r,0.5,make Res Heat costlier by 50% in all 3 periods
-2,CostVariable,*|1990/2000|IMPOIL1|*,s,20.0,substitute cost of 20.0 for var cost of IMPOIL in periods 1990/2000 in all regions (just utopia exists) for all vintages
-3,CostVariable,china|1990|IMPOIL1|*,s,1000,bad input: unknown region (china) should fail and be logged
+2,cost_variable,*|1990/2000|IMPOIL1|*,s,20.0,substitute cost of 20.0 for var cost of IMPOIL in periods 1990/2000 in all regions (just utopia exists) for all vintages
+3,cost_variable,china|1990|IMPOIL1|*,s,1000,bad input: unknown region (china) should fail and be logged

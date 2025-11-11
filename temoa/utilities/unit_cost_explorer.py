@@ -33,42 +33,42 @@ rtv = ('A', 'battery', 2020)  # rtv
 rptv = ('A', 2020, 'battery', 2020)  # rptv
 model.time_future.construct([2020, 2025, 2030])  # needs to go 1 period beyond optimize horizon
 model.time_optimize.construct([2020, 2025])
-model.PeriodLength.construct()
+model.period_length.construct()
 model.tech_all.construct(data=['battery'])
 model.regions.construct(data=['A'])
-model.regionalIndices.construct(data=['A'])
+model.regional_indices.construct(data=['A'])
 
 # make SETS
-model.NewCapacityVar_rtv.construct(data=rtv)
-model.CapacityVar_rptv.construct(data=rptv)
-model.CostInvest_rtv.construct(data=rtv)
-model.CostFixed_rptv.construct(data=rptv)
-model.LoanLifetimeProcess_rtv.construct(data=rtv)
+model.new_capacity_var_rtv.construct(data=rtv)
+model.capacity_var_rptv.construct(data=rptv)
+model.cost_invest_rtv.construct(data=rtv)
+model.cost_fixed_rptv.construct(data=rptv)
+model.loan_lifetime_process_rtv.construct(data=rtv)
 # M.Loan_rtv.construct(data=rtv)
-# M.LoanRate_rtv.construct(data=rtv)
-model.LifetimeProcess_rtv.construct(data=rtv)
-model.MyopicDiscountingYear.construct(data={None: 0})
+# M.loan_rate_rtv.construct(data=rtv)
+model.lifetime_process_rtv.construct(data=rtv)
+model.myopic_discounting_year.construct(data={None: 0})
 # M.ModelProcessLife_rptv.construct(data=rptv)
 
 
 # make PARAMS
-model.CostInvest.construct(data={rtv: 1300})  # US_9R_8D
-model.CostFixed.construct(data={rptv: 20})  # US_9R_8D
-model.LoanLifetimeProcess.construct(data={rtv: 10})
-model.LoanRate.construct(data={rtv: 0.05})
-model.LoanAnnualize.construct()
-model.LifetimeTech.construct(data={('A', 'battery'): 20})
-model.LifetimeProcess.construct(data={rtv: 40})
+model.cost_invest.construct(data={rtv: 1300})  # US_9R_8D
+model.cost_fixed.construct(data={rptv: 20})  # US_9R_8D
+model.loan_lifetime_process.construct(data={rtv: 10})
+model.loan_rate.construct(data={rtv: 0.05})
+model.loan_annualize.construct()
+model.lifetime_tech.construct(data={('A', 'battery'): 20})
+model.lifetime_process.construct(data={rtv: 40})
 # M.ModelProcessLife.construct(data={rptv: 20})
-model.GlobalDiscountRate.construct(data={None: 0.05})
-model.isSurvivalCurveProcess[rtv] = False
+model.global_discount_rate.construct(data={None: 0.05})
+model.is_survival_curve_process[rtv] = False
 
 # make/fix VARS
-model.V_NewCapacity.construct()
-model.V_NewCapacity[rtv].set_value(1)
+model.v_new_capacity.construct()
+model.v_new_capacity[rtv].set_value(1)
 
-model.V_Capacity.construct()
-model.V_Capacity[rptv].set_value(1)
+model.v_capacity.construct()
+model.v_capacity[rptv].set_value(1)
 
 # run the total cost rule on our "model":
 tot_cost_expr = total_cost_rule(model)
@@ -95,50 +95,56 @@ print(f'price_per_kwh: ${price_per_kwh: 0.2f}\n')
 print('building storage level constraint...')
 
 # More SETS
-model.time_season.construct(['winter', 'summer'])
-model.TimeSeason.construct(data={2020: {'winter', 'summer'}, 2025: {'winter', 'summer'}})
-model.DaysPerPeriod.construct(data={None: 365})
+model.time_season_all.construct(['winter', 'summer'])
+model.time_season.construct(data={2020: {'winter', 'summer'}, 2025: {'winter', 'summer'}})
+model.days_per_period.construct(data={None: 365})
 tod_slices = 2
 model.time_of_day.construct(data=range(1, tod_slices + 1))
 model.tech_storage.construct(data=['battery'])
-model.ProcessLifeFrac_rptv.construct(data=[rptv])
-model.StorageLevel_rpsdtv.construct(
+model.process_life_frac_rptv.construct(data=[rptv])
+model.storage_level_rpsdtv.construct(
     data=[
         ('A', 2020, 'winter', 1, 'battery', 2020),
     ]
 )
-model.StorageConstraints_rpsdtv.construct(
+model.storage_constraints_rpsdtv.construct(
     data=[
         ('A', 2020, 'winter', 1, 'battery', 2020),
     ]
 )
 
 # More PARAMS
-model.CapacityToActivity.construct(data={('A', 'battery'): 31.536})
-model.StorageDuration.construct(data={('A', 'battery'): 4})
+model.capacity_to_activity.construct(data={('A', 'battery'): 31.536})
+model.storage_duration.construct(data={('A', 'battery'): 4})
 seasonal_fractions = {'winter': 0.4, 'summer': 0.6}
-model.SegFrac.construct(
+model.segment_fraction.construct(
     data={
         (p, s, d): seasonal_fractions[s] / tod_slices
         for d in model.time_of_day
         for p in model.time_optimize
-        for s in model.TimeSeason[p]
+        for s in model.time_season[p]
     }
 )
 # QA the total
-print(f'quality check.  Total of all SegFrac: {sum(model.SegFrac.values()):0.3f}')
-model.ProcessLifeFrac.construct(data={('A', 2020, 'battery', 2020): 1.0})
+print(f'quality check.  Total of all segment_fraction: {sum(model.segment_fraction.values()):0.3f}')
+model.process_life_frac.construct(data={('A', 2020, 'battery', 2020): 1.0})
 
 # More VARS
-model.V_StorageLevel.construct()
-model.SegFracPerSeason.construct()
+model.v_storage_level.construct()
+model.segment_fraction_per_season.construct()
 
-model.isSeasonalStorage['battery'] = False
+model.is_seasonal_storage['battery'] = False
 upper_limit = storage_energy_upper_bound_constraint(model, 'A', 2020, 'winter', 1, 'battery', 2020)
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...
-mulitplier = storage_dur * model.SegFracPerSeason[2020, 'winter'] * model.DaysPerPeriod * c2a * c
+mulitplier = (
+    storage_dur
+    * model.segment_fraction_per_season[2020, 'winter']
+    * model.days_per_period
+    * c2a
+    * c
+)
 print(f'The multiplier for the storage should be: {mulitplier}')
 
-model.StorageEnergyUpperBoundConstraint.construct()
+model.storage_energy_upper_bound_constraint.construct()

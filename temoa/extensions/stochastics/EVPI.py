@@ -86,12 +86,12 @@ def solve_pf(p_model, p_data):
     ctpTree = dict()  # Child to parent dict, one to one mapping
 
     to_process = deque()
-    to_process.extend(sStructure.Children.keys())
+    to_process.extend(sStructure.children.keys())
     while to_process:
         node = to_process.pop()
-        if node in sStructure.Children:
+        if node in sStructure.children:
             # it's a parent!
-            new_nodes = set(sStructure.Children[node])
+            new_nodes = set(sStructure.children[node])
             to_process.extend(new_nodes)
             ctpTree.update({n: node for n in new_nodes})
 
@@ -104,7 +104,7 @@ def solve_pf(p_model, p_data):
     # ptcTree = dict( ptcTree )   # be slightly defensive; catch any additions
 
     # leaf_nodes = set(ctpTree.keys()) - set(ctpTree.values())
-    leaf_nodes = set(sStructure.ScenarioLeafNode.values())  # Try to hack Kevin's code
+    leaf_nodes = set(sStructure.scenario_leaf_node.values())  # Try to hack Kevin's code
 
     scenario_nodes = dict()  # Map from leafnode to 'node path'
     for node in leaf_nodes:  # e.g.: {Rs0s0: [R, Rs0, Rs0s0]}
@@ -117,22 +117,22 @@ def solve_pf(p_model, p_data):
         s.reverse()
     ###########################################################################
 
-    for s in sStructure.Scenarios:
+    for s in sStructure.scenarios:
         cp = 1.0  # Starting probability
-        for n in scenario_nodes[sStructure.ScenarioLeafNode[s]]:
-            cp = cp * sStructure.ConditionalProbability[n]
-            if not sStructure.ScenarioBasedData.value:
+        for n in scenario_nodes[sStructure.scenario_leaf_node[s]]:
+            cp = cp * sStructure.conditional_probability[n]
+            if not sStructure.scenario_based_data.value:
                 s2fp_dict[s].append(n + '.dat')
         s2cd_dict[s] = cp
 
-    if sStructure.ScenarioBasedData.value:
-        for s in sStructure.Scenarios:
+    if sStructure.scenario_based_data.value:
+        for s in sStructure.scenarios:
             s2fp_dict[s].append(s + '.dat')
     # IP()
     model_module = __import__(tail[:-3], globals(), locals())
     model = model_module.model
     pf_result = {'cost': list(), 'cd': list()}
-    for s in sStructure.Scenarios:
+    for s in sStructure.scenarios:
         pf_result['cd'].append(s2cd_dict[s])
         data = DataPortal(model=model)
         for dat in s2fp_dict[s]:
@@ -145,8 +145,8 @@ def solve_pf(p_model, p_data):
         # instance.load(results)
         obj_val = return_obj(instance)
         pf_result['cost'].append(obj_val)
-        sys.stdout.write('\nSolved .dat(s) {}\n'.format(s2fp_dict[s]))
-        sys.stdout.write('    Total cost: {}\n'.format(obj_val))
+        sys.stdout.write(f'\nSolved .dat(s) {s2fp_dict[s]}\n')
+        sys.stdout.write(f'    Total cost: {obj_val}\n')
     os.chdir(pwd)
     return pf_result
 
@@ -205,7 +205,7 @@ def solve_ef(p_model, p_data, dummy_temoa_options=None):
                 temoa_options.output_file = os.path.join(
                     options.scenario_tree_location, dummy_temoa_options.output_file
                 )
-                msg = '\nStoring results from scenario {} to database.\n'.format(s.name)
+                msg = f'\nStoring results from scenario {s.name} to database.\n'
                 sys.stderr.write(msg)
                 formatted_results = pformat_results(ins, ef_result, temoa_options)
 
@@ -226,16 +226,16 @@ def do_test(p_model, p_data, temoa_config=None):
         sys.stderr.write('\nSolving perfect sight mode\n')
         sys.stdout.write('-' * 25 + '\n')
         pf_result = solve_pf(p_model, this_data)
-        msg = 'Time: {} s\n'.format(timeit())
+        msg = f'Time: {timeit()} s\n'
         sys.stderr.write(msg)
 
         sys.stderr.write('\nSolving extensive form\n')
         sys.stdout.write('-' * 25 + '\n')
         ef_result = solve_ef(p_model, this_data, temoa_config)
 
-        msg = '\nTime: {} s\n'.format(timeit())
-        msg += 'runef objective value: {}\n'.format(ef_result)
-        msg += 'EVPI: {}\n'.format(compute_evpi(ef_result, pf_result))
+        msg = f'\nTime: {timeit()} s\n'
+        msg += f'runef objective value: {ef_result}\n'
+        msg += f'EVPI: {compute_evpi(ef_result, pf_result)}\n'
         sys.stderr.write(msg)
 
 

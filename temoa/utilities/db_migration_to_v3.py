@@ -114,7 +114,7 @@ units_added_tables = [
 
 sequence_added_tables = [
     ('time_season',         'TimeSeason'),
-    ('time_periods',        'TimePeriod'),
+    ('time_periods',        'time_period'),
     ('time_of_day',         'TimeOfDay'),
 ]
 # fmt: on

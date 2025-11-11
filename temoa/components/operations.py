@@ -35,9 +35,9 @@ def baseload_diurnal_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     indices = {
         (r, p, s, d, t, v)
-        for r, p, t in model.baseloadVintages
-        for v in model.baseloadVintages[r, p, t]
-        for s in model.TimeSeason[p]
+        for r, p, t in model.baseload_vintages
+        for v in model.baseload_vintages[r, p, t]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
@@ -49,9 +49,9 @@ def ramp_up_day_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     indices = {
         (r, p, s, d, t, v)
-        for r, p, t in model.rampUpVintages
-        for v in model.rampUpVintages[r, p, t]
-        for s in model.TimeSeason[p]
+        for r, p, t in model.ramp_up_vintages
+        for v in model.ramp_up_vintages[r, p, t]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
@@ -63,9 +63,9 @@ def ramp_down_day_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     indices = {
         (r, p, s, d, t, v)
-        for r, p, t in model.rampDownVintages
-        for v in model.rampDownVintages[r, p, t]
-        for s in model.TimeSeason[p]
+        for r, p, t in model.ramp_down_vintages
+        for v in model.ramp_down_vintages[r, p, t]
+        for s in model.time_season[p]
         for d in model.time_of_day
     }
 
@@ -75,14 +75,14 @@ def ramp_down_day_constraint_indices(
 def ramp_up_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.TimeSequencing.first() == 'consecutive_days':
+    if model.time_sequencing.first() == 'consecutive_days':
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
     indices = {
         (r, p, s, s_next, t, v)
-        for r, p, t in model.rampUpVintages
-        for v in model.rampUpVintages[r, p, t]
+        for r, p, t in model.ramp_up_vintages
+        for v in model.ramp_up_vintages[r, p, t]
         for _p, s_seq, s in model.ordered_season_sequential
         if _p == p
         for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
@@ -95,14 +95,14 @@ def ramp_up_season_constraint_indices(
 def ramp_down_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.TimeSequencing.first() == 'consecutive_days':
+    if model.time_sequencing.first() == 'consecutive_days':
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
     indices = {
         (r, p, s, s_next, t, v)
-        for r, p, t in model.rampDownVintages
-        for v in model.rampDownVintages[r, p, t]
+        for r, p, t in model.ramp_down_vintages
+        for v in model.ramp_down_vintages[r, p, t]
         for _p, s_seq, s in model.ordered_season_sequential
         if _p == p
         for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
@@ -178,19 +178,19 @@ def baseload_diurnal_constraint(
     #   computationally, however, multiplication is cheaper than division, so:
     #       (ActA * SegB) == (ActB * SegA)
     activity_sd = sum(
-        model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
     activity_sd_0 = sum(
-        model.V_FlowOut[r, p, s, d_0, S_i, t, v, S_o]
-        for S_i in model.processInputs[r, p, t, v]
-        for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+        model.v_flow_out[r, p, s, d_0, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    expr = activity_sd * value(model.SegFrac[p, s, d_0]) == activity_sd_0 * value(
-        model.SegFrac[p, s, d]
+    expr = activity_sd * value(model.segment_fraction[p, s, d_0]) == activity_sd_0 * value(
+        model.segment_fraction[p, s, d]
     )
 
     return expr
@@ -207,34 +207,34 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
     operational characteristics like curtailment, baseload, storage, ramping, and reserves.
 
     Populates:
-        - M.curtailmentVintages, M.baseloadVintages, M.storageVintages,
-          M.rampUpVintages, M.rampDownVintages: Dictionaries mapping (r, p, t)
+        - M.curtailment_vintages, M.baseload_vintages, M.storage_vintages,
+          M.ramp_up_vintages, M.ramp_down_vintages: Dictionaries mapping (r, p, t)
           to a set of vintages `v`.
-        - M.processReservePeriods: Dictionary mapping (r, p) to a set of (t, v) tuples.
-        - M.isSeasonalStorage: A boolean lookup for seasonal storage technologies.
+        - M.process_reserve_periods: Dictionary mapping (r, p) to a set of (t, v) tuples.
+        - M.is_seasonal_storage: A boolean lookup for seasonal storage technologies.
     """
     logger.debug('Creating vintage sets for operational constraints.')
 
-    for r, p, t in model.processVintages:
-        for v in model.processVintages[r, p, t]:
+    for r, p, t in model.process_vintages:
+        for v in model.process_vintages[r, p, t]:
             key_rpt = (r, p, t)
             key_rp = (r, p)
             if t in model.tech_curtailment:
-                model.curtailmentVintages.setdefault(key_rpt, set()).add(v)
+                model.curtailment_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_baseload:
-                model.baseloadVintages.setdefault(key_rpt, set()).add(v)
+                model.baseload_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_storage:
-                model.storageVintages.setdefault(key_rpt, set()).add(v)
+                model.storage_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_upramping:
-                model.rampUpVintages.setdefault(key_rpt, set()).add(v)
+                model.ramp_up_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_downramping:
-                model.rampDownVintages.setdefault(key_rpt, set()).add(v)
+                model.ramp_down_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_reserve:
-                model.processReservePeriods.setdefault(key_rp, set()).add((t, v))
+                model.process_reserve_periods.setdefault(key_rp, set()).add((t, v))
 
     # A dictionary of whether a storage tech is seasonal, just to speed things up
     for t in model.tech_storage:
-        model.isSeasonalStorage[t] = t in model.tech_seasonal_storage
+        model.is_seasonal_storage[t] = t in model.tech_seasonal_storage
 
 
 def ramp_up_day_constraint(
@@ -247,8 +247,8 @@ def ramp_up_day_constraint(
     v: Vintage,
 ) -> ExprLike:
     r"""
-    One of two constraints built from the RampUpHourly table, along with the
-    RampUpSeason_Constraint. RampUpDay constrains ramp rates between time slices
+    One of two constraints built from the ramp_up_hourly table, along with the
+    RampUpSeason_constraint. RampUpDay constrains ramp rates between time slices
     within each season and RampUpSeason constrains ramp rates between sequential
     seasons. If the :code:`time_sequencing` parameter is set to :code:`consecutive_days`
     then the RampUpSeason constraint is skipped as seasons already connect together.
@@ -300,23 +300,25 @@ def ramp_up_day_constraint(
     s_next, d_next = model.time_next[p, s, d]
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
-    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
+    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust_next = (
+        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+    )
 
     hourly_activity_sd = (
         sum(
-            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust
     )
 
     hourly_activity_sd_next = (
         sum(
-            model.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust_next
     )
@@ -326,11 +328,12 @@ def ramp_up_day_constraint(
         24
         / 2
         * (
-            value(model.SegFrac[p, s, d]) / value(model.SegFracPerSeason[p, s])
-            + value(model.SegFrac[p, s_next, d_next]) / value(model.SegFracPerSeason[p, s_next])
+            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
+            + value(model.segment_fraction[p, s_next, d_next])
+            / value(model.segment_fraction_per_season[p, s_next])
         )
     )
-    ramp_fraction = hours_elapsed * value(model.RampUpHourly[r, t])
+    ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
@@ -342,7 +345,7 @@ def ramp_up_day_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.V_Capacity[r, p, t, v] * value(model.CapacityToActivity[r, t])
+        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
     )
     expr = activity_increase <= rampable_activity
 
@@ -386,23 +389,25 @@ def ramp_down_day_constraint(
     s_next, d_next = model.time_next[p, s, d]
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
-    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
+    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust_next = (
+        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+    )
 
     hourly_activity_sd = (
         sum(
-            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust
     )
 
     hourly_activity_sd_next = (
         sum(
-            model.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust_next
     )
@@ -412,11 +417,12 @@ def ramp_down_day_constraint(
         24
         / 2
         * (
-            value(model.SegFrac[p, s, d]) / value(model.SegFracPerSeason[p, s])
-            + value(model.SegFrac[p, s_next, d_next]) / value(model.SegFracPerSeason[p, s_next])
+            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
+            + value(model.segment_fraction[p, s_next, d_next])
+            / value(model.segment_fraction_per_season[p, s_next])
         )
     )
-    ramp_fraction = hours_elapsed * value(model.RampDownHourly[r, t])
+    ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
@@ -428,7 +434,7 @@ def ramp_down_day_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.V_Capacity[r, p, t, v] * value(model.CapacityToActivity[r, t])
+        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
     )
     expr = activity_decrease <= rampable_activity
 
@@ -449,30 +455,32 @@ def ramp_up_season_constraint(
     of sequential seasons. Same as RampUpDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    TimeSeason table.
+    time_season table.
     """
 
     d = model.time_of_day.last()
     d_next = model.time_of_day.first()
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
-    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
+    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust_next = (
+        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+    )
 
     hourly_activity_sd = (
         sum(
-            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust
     )
 
     hourly_activity_sd_next = (
         sum(
-            model.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust_next
     )
@@ -482,11 +490,12 @@ def ramp_up_season_constraint(
         24
         / 2
         * (
-            value(model.SegFrac[p, s, d]) / value(model.SegFracPerSeason[p, s])
-            + value(model.SegFrac[p, s_next, d_next]) / value(model.SegFracPerSeason[p, s_next])
+            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
+            + value(model.segment_fraction[p, s_next, d_next])
+            / value(model.segment_fraction_per_season[p, s_next])
         )
     )
-    ramp_fraction = hours_elapsed * value(model.RampUpHourly[r, t])
+    ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
@@ -498,7 +507,7 @@ def ramp_up_season_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.V_Capacity[r, p, t, v] * value(model.CapacityToActivity[r, t])
+        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
     )
     expr = activity_increase <= rampable_activity
 
@@ -519,30 +528,32 @@ def ramp_down_season_constraint(
     of sequential seasons. Same as RampDownDay but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    TimeSeason table.
+    time_season table.
     """
 
     d = model.time_of_day.last()
     d_next = model.time_of_day.first()
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.SegFrac[p, s, d]) * value(model.DaysPerPeriod) * 24
-    hours_adjust_next = value(model.SegFrac[p, s_next, d_next]) * value(model.DaysPerPeriod) * 24
+    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust_next = (
+        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+    )
 
     hourly_activity_sd = (
         sum(
-            model.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust
     )
 
     hourly_activity_sd_next = (
         sum(
-            model.V_FlowOut[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.processInputs[r, p, t, v]
-            for S_o in model.processOutputsByInput[r, p, t, v, S_i]
+            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
+            for S_i in model.process_inputs[r, p, t, v]
+            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         / hours_adjust_next
     )
@@ -552,11 +563,12 @@ def ramp_down_season_constraint(
         24
         / 2
         * (
-            value(model.SegFrac[p, s, d]) / value(model.SegFracPerSeason[p, s])
-            + value(model.SegFrac[p, s_next, d_next]) / value(model.SegFracPerSeason[p, s_next])
+            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
+            + value(model.segment_fraction[p, s_next, d_next])
+            / value(model.segment_fraction_per_season[p, s_next])
         )
     )
-    ramp_fraction = hours_elapsed * value(model.RampDownHourly[r, t])
+    ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
         msg = (
@@ -568,7 +580,7 @@ def ramp_down_season_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.V_Capacity[r, p, t, v] * value(model.CapacityToActivity[r, t])
+        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
     )
     expr = activity_decrease <= rampable_activity
 

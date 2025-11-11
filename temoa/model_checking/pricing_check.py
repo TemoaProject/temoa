@@ -4,7 +4,7 @@ a build check item to test for anomalies in pricing.
 Intent is to identify several possible errors.  Note:  These will need to be enhanced as this
 will likely generate many false positives initially.
 
-1.  Technologies that have an entry in Efficiency table that have no corresponding
+1.  Technologies that have an entry in efficiency table that have no corresponding
     (or inconsistent) fixed-cost / inv cost pairs.  The primary motivation is that
     things without either an FC or IC have no downward pressure on activity in the model,
     which is regulated by cost
@@ -40,11 +40,11 @@ def price_checker(model: TemoaModel) -> bool:
     warnings = False  # flag
     # some sets for x-checking
     registered_inv_costs = {
-        (region, tech, vintage) for (region, tech, vintage) in model.CostInvest.sparse_iterkeys()
+        (region, tech, vintage) for (region, tech, vintage) in model.cost_invest.sparse_iterkeys()
     }
     efficiency_rtv = {
         (region, tech, vintage)
-        for (region, _, tech, vintage, __) in model.Efficiency.sparse_iterkeys()
+        for (region, _, tech, vintage, __) in model.efficiency.sparse_iterkeys()
     }
     sorted_efficiency_rtv = sorted(efficiency_rtv, key=lambda rtv: (rtv[1], rtv[0], rtv[2]))
 
@@ -58,11 +58,11 @@ def price_checker(model: TemoaModel) -> bool:
     # var costs for the period = vintage year
     base_year_variable_cost_rtv = set()
 
-    for r, p, t, v in model.CostFixed.sparse_iterkeys():
+    for r, p, t, v in model.cost_fixed.sparse_iterkeys():
         fixed_costs[r, t, v].add(p)
         if p == v:
             base_year_fixed_cost_rtv.add((r, t, v))
-    for r, p, t, v in model.CostVariable.sparse_iterkeys():
+    for r, p, t, v in model.cost_variable.sparse_iterkeys():
         var_costs[r, t, v].add(p)
         if p == v:
             base_year_variable_cost_rtv.add((r, t, v))
@@ -81,7 +81,7 @@ def price_checker(model: TemoaModel) -> bool:
     # Check 1 looks for missing (1a) and inconsistent (1b) fixed cost - investment cost pairings
     logger.debug('  Starting price check #1a')
     # Check 1a:  Look for "missing" FC/IC (no fixed or investment cost) based on what is in the
-    #            Efficiency set
+    #            efficiency set
     techs_without_fc_or_ic = set()
     # pull the details...
     for region, tech, vintage in sorted_efficiency_rtv:
@@ -130,7 +130,7 @@ def price_checker(model: TemoaModel) -> bool:
                     err += f'      ({r}, {v})\n'
                 err += '    available (r, v):\n'
                 for r, tt, v in comparable_fc:
-                    err += f'       ({r}, {v}): {model.CostFixed[r, v, tt, v]}\n'
+                    err += f'       ({r}, {v}): {model.cost_fixed[r, v, tt, v]}\n'
             if err:
                 logger.warning(err)
                 warnings = True
@@ -156,7 +156,7 @@ def price_checker(model: TemoaModel) -> bool:
                     err += f'      ({r}, {v})\n'
                 err += '    available (r, v):\n'
                 for r, tt, v in compaprable_ic:
-                    err += f'       ({r}, {v}): {model.CostInvest[r, tt, v]}\n'
+                    err += f'       ({r}, {v}): {model.cost_invest[r, tt, v]}\n'
             if err:
                 logger.warning(err)
                 warnings = True
@@ -209,7 +209,7 @@ def price_checker(model: TemoaModel) -> bool:
         #     continue
 
         # get the lifetime of the tech, or default
-        lifetime = value(model.LifetimeProcess[region, tech, vintage])
+        lifetime = value(model.lifetime_process[region, tech, vintage])
         # get all applicable future periods that should be priced for this item
         expected_periods = {p for p in model.time_optimize if vintage <= p < vintage + lifetime}
         missing_fixed_costs = (
@@ -258,7 +258,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     Check that the tech_uncap set members...
     1.  do not have fixed or invest costs
     2.  Either have no Var cost, or a Var cost in every year of their lifespan (similar to check #3 above)
-    3.  Are not in the LimitCapacity parameters
+    3.  Are not in the limit_capacity parameters
 
     :param M:
     :return: True if "clean" (no warnings), else False
@@ -268,11 +268,11 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     logger.debug('starting price check #4:  uncapacitated techs')
     efficiency_rtv = {
         (region, tech, vintage)
-        for (region, _, tech, vintage, __) in model.Efficiency.sparse_iterkeys()
+        for (region, _, tech, vintage, __) in model.efficiency.sparse_iterkeys()
         if tech in model.tech_uncap
     }
 
-    fixed_cost_periods = {(r, t, v): p for r, p, t, v in model.CostFixed.sparse_iterkeys()}
+    fixed_cost_periods = {(r, t, v): p for r, p, t, v in model.cost_fixed.sparse_iterkeys()}
     rtv_with_fixed_cost = efficiency_rtv & set(fixed_cost_periods.keys())
     if rtv_with_fixed_cost:
         logger.error(
@@ -281,7 +281,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
         for rtv in rtv_with_fixed_cost:
             logger.error('%s: %s', rtv, fixed_cost_periods[rtv])
 
-    rtv_with_invest_cost = efficiency_rtv & set(model.CostInvest.sparse_iterkeys())
+    rtv_with_invest_cost = efficiency_rtv & set(model.cost_invest.sparse_iterkeys())
     if rtv_with_invest_cost:
         logger.error(
             'The following technologies are labeled as unlimited capacity, but have an INVEST cost'
@@ -291,14 +291,14 @@ def check_tech_uncap(model: TemoaModel) -> bool:
 
     var_cost_periods = defaultdict(set)
     # by starting from the cost side, we will naturally omit anything with NO var costs at all.
-    for r, p, t, v in model.CostVariable.sparse_iterkeys():
+    for r, p, t, v in model.cost_variable.sparse_iterkeys():
         if (r, t, v) in efficiency_rtv:
             var_cost_periods[(r, t, v)].add(p)
     # use it to check for all/none var costs in viable periods
     all_periods = model.time_optimize
     bad_var_costs = False
     for r, t, v in var_cost_periods:
-        lifetime = model.LifetimeProcess[r, t, v]
+        lifetime = model.lifetime_process[r, t, v]
         expected_periods = {p for p in all_periods if v <= p < v + lifetime}
         missing_periods = expected_periods - var_cost_periods[r, t, v]
         if missing_periods:
@@ -319,7 +319,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
                 extra_periods,
             )
 
-    capacity_params = (model.ExistingCapacity,)
+    capacity_params = (model.existing_capacity,)
     bad_cap_entries = False
     for param in capacity_params:
         bad_entries = {(r, t, v) for r, t, v in param.sparse_iterkeys() if t in model.tech_uncap}

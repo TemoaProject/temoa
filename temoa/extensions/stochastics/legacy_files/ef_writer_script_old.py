@@ -427,7 +427,7 @@ def CreateExtensiveFormInstance(options, scenario_tree):
     return binding_instance
 
 
-class ExtensiveFormAlgorithm(object):
+class ExtensiveFormAlgorithm:
     def __init__(
         self,
         options,
@@ -514,7 +514,7 @@ class ExtensiveFormAlgorithm(object):
 
         print('Storing solution in scenario tree')
         self._scenario_tree.pullScenarioSolutionsFromInstances()
-        self._scenario_tree.snapshotSolutionFromScenarios()
+        self._scenario_tree.snapshotSolutionFromscenarios()
         # TODO
         # self._scenario_tree.update_variable_statistics()
 

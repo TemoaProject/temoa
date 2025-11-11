@@ -51,15 +51,15 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'align': 'left'})
 
     query_all_techs = """
-        SELECT DISTINCT Efficiency.region, Efficiency.tech, Technology.sector
-        FROM Efficiency
-        INNER JOIN Technology ON Efficiency.tech = Technology.tech
+        SELECT DISTINCT efficiency.region, efficiency.tech, Technology.sector
+        FROM efficiency
+        INNER JOIN Technology ON efficiency.tech = Technology.tech
     """
     all_techs = pd.read_sql_query(query_all_techs, con)
 
     query_capacity = """
         SELECT region, tech, sector, period, SUM(capacity) as capacity
-        FROM OutputNetCapacity WHERE scenario = ?
+        FROM output_net_capacity WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
     df_capacity = pd.read_sql_query(query_capacity, con, params=(scenario_name,))
@@ -88,7 +88,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_activity = """
         SELECT region, tech, sector, period, SUM(flow) as vflow_out
-        FROM OutputFlowOut WHERE scenario = ?
+        FROM output_flow_out WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
     df_activity = pd.read_sql_query(query_activity, con, params=(scenario_name,))
@@ -117,7 +117,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_all_emis = """
         SELECT DISTINCT ea.region, ea.tech, ea.emis_comm, t.sector
-        FROM EmissionActivity ea
+        FROM emission_activity ea
         INNER JOIN Technology t ON ea.tech = t.tech
     """
     try:
@@ -127,7 +127,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_emissions = """
         SELECT region, tech, sector, period, emis_comm, SUM(emission) as emissions
-        FROM OutputEmission WHERE scenario = ?
+        FROM output_emission WHERE scenario = ?
         GROUP BY region, tech, sector, period, emis_comm
     """
     df_emissions_raw = pd.read_sql_query(query_emissions, con, params=(scenario_name,))
@@ -164,7 +164,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
     query_costs = """
         SELECT region, oc.tech, t.sector, vintage,
                d_invest + d_var + d_fixed + d_emiss as cost
-        FROM OutputCost oc
+        FROM output_cost oc
         JOIN Technology t ON oc.tech = t.tech
         WHERE scenario = ?
     """

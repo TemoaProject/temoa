@@ -29,11 +29,10 @@ Created on:  4/16/24
 import queue
 import sqlite3
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from logging import getLogger
 from pathlib import Path
 from queue import Queue
-from typing import Iterable
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -134,14 +133,14 @@ class TechActivityVectorManager(VectorManager):
             logger.debug('Category %s members: %d', cat, len(self.category_mapping[cat]))
 
         # now pull the flow variables and map them
-        for idx in self.base_model.activeFlow_rpsditvo:
+        for idx in self.base_model.active_flow_rpsditvo:
             tech = idx[5]
             self.technology_size[tech] += 1
-            self.variable_index_mapping[tech][self.base_model.V_FlowOut.name].append(idx)
-        for idx in self.base_model.activeFlow_rpitvo:
+            self.variable_index_mapping[tech][self.base_model.v_flow_out.name].append(idx)
+        for idx in self.base_model.active_flow_rpitvo:
             tech = idx[3]
             self.technology_size[tech] += 1
-            self.variable_index_mapping[tech][self.base_model.V_FlowOutAnnual.name].append(idx)
+            self.variable_index_mapping[tech][self.base_model.v_flow_out_annual.name].append(idx)
         logger.debug('Catalogued %d Technology Variables', sum(self.technology_size.values()))
 
     @property

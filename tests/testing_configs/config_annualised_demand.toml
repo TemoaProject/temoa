@@ -26,22 +26,22 @@ save_lp_file = false
 # What seasons represent in the model
 # Options:
 #   'consecutive_days'
-#       Seasons are a set of days in order, with each season representing only one day. Examples 
+#       Seasons are a set of days in order, with each season representing only one day. Examples
 #       might be a model of a representative week with 7 days or a whole-year model with 365 days.
-#       Seasonal storage need not be tagged and the TimeSeasonSequential table can be left empty.
+#       Seasonal storage need not be tagged and the time_season_sequential table can be left empty.
 #   'representative_periods'
 #       Each season represents a number of days, though not necessarily in any particular order.
 #       If using inter-season constraints like seasonal storage or ramp rates, the true sequence
-#       must be defined using the TimeSeasonSequential table. Seasonal storage must also be tagged in
-#       the Technology table.
+#       must be defined using the time_season_sequential table. Seasonal storage must also be tagged in
+#       the technology table.
 #   'seasonal_timeslices'
 #       Each season represents a sequential slice of the year, with one or many days represented per
-#       season. We assume that the true sequence is the same as the TimeSeason sequence, so the 
-#       TimeSeasonSequential table can be left empty. Seasonal storage must still be tagged.
+#       season. We assume that the true sequence is the same as the TimeSeason sequence, so the
+#       time_season_sequential table can be left empty. Seasonal storage must still be tagged.
 #   'manual'
 #       The sequence of time slices is defined manually in the TimeNext table (which is commented out
 #       in the schema). This is an advanced feature and not recommended for most users. Seasonal
-#       storage must be tagged and the TimeSeasonSequential table filled.
+#       storage must be tagged and the time_season_sequential table filled.
 time_sequencing = 'representative_periods'
 
 # How contributions to the planning reserve margin are calculated
@@ -51,7 +51,7 @@ time_sequencing = 'representative_periods'
 #                   capacity value = net capacity * capacity credit
 #   'dynamic'
 #       Contributions are available output including a capacity derate factor (e.g., forced outage rate).
-#       For most generators, contributions are available (derated) output in each time slice: 
+#       For most generators, contributions are available (derated) output in each time slice:
 #                   capacity value = net capacity * reserve capacity derate * capacity factor
 #       For storage, contributions are (derated) actual output in each time slice:
 #                   capacity value = flow out * reserve capacity derate
@@ -71,7 +71,3 @@ weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight 
 
 [myopic]
 myopic_view = 2  # number of periods seen at one iteration
-
-
-
-

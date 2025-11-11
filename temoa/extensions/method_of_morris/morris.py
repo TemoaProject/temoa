@@ -28,11 +28,11 @@ def evaluate(param_names, param_values, data: dict, k):
         names = param_names[j]
 
         match names[0]:
-            case 'CostInvest':
+            case 'cost_invest':
                 data[names[0]][tuple(names[1:4])] = param_values[j]
-            case 'CostVariable':
+            case 'cost_variable':
                 data[names[0]][tuple(names[1:5])] = param_values[j]
-            case 'Efficiency':
+            case 'efficiency':
                 data[names[0]][tuple(names[1:6])] = param_values[j]
             case _:
                 raise ValueError(f'Unrecognized parameter: {names[0]}')
@@ -48,11 +48,11 @@ def evaluate(param_names, param_values, data: dict, k):
 
     con = sqlite3.connect(db_file)
     cur = con.cursor()
-    cur.execute('SELECT * FROM OutputObjective')
+    cur.execute('SELECT * FROM output_objective')
     output_query = cur.fetchall()
     for row in output_query:
         Y_OF = row[-1]
-    cur.execute("SELECT emis_comm, SUM(emission) FROM OutputEmission WHERE emis_comm='co2'")
+    cur.execute("SELECT emis_comm, SUM(emission) FROM output_emissionn WHERE emis_comm='co2'")
     output_query = cur.fetchall()
     for row in output_query:
         Y_CumulativeCO2 = row[-1]
@@ -73,13 +73,13 @@ with sqlite3.connect(db_file) as con:
         param_names = {}
         cur = con.cursor()
         cur.execute(
-            'SELECT region, period, tech, vintage, cost, MMAnalysis FROM CostVariable WHERE MMAnalysis is not NULL'
+            'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE MMAnalysis is not NULL'
         )
         output_query = cur.fetchall()
         g1 = len(output_query)
         for i in range(0, len(output_query)):
             param_names[i] = [
-                'CostVariable',
+                'cost_variable',
                 *output_query[i][:4],
                 'cost_variable',
             ]
@@ -94,12 +94,12 @@ with sqlite3.connect(db_file) as con:
             file.write('\n')
 
         cur.execute(
-            'SELECT region, tech, vintage, cost, MMAnalysis FROM CostInvest WHERE MMAnalysis is not NULL'
+            'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis is not NULL'
         )
         output_query = cur.fetchall()
         g2 = len(output_query)
         for i in range(0, len(output_query)):
-            param_names[i + g1] = ['CostInvest', *output_query[i][:3], 'cost_invest']
+            param_names[i + g1] = ['cost_invest', *output_query[i][:3], 'cost_invest']
 
             file.write('x' + str(i + g1))
             file.write(' ')
@@ -110,13 +110,13 @@ with sqlite3.connect(db_file) as con:
             file.write(output_query[i][-1])
             file.write('\n')
         cur.execute(
-            'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, MMAnalysis FROM Efficiency WHERE MMAnalysis is not NULL'
+            'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, MMAnalysis FROM efficiency WHERE MMAnalysis is not NULL'
         )
         output_query = cur.fetchall()
         g3 = len(output_query)
         for i in range(0, len(output_query)):
             param_names[i + g1 + g2] = [
-                'Efficiency',
+                'efficiency',
                 *output_query[i][:5],
                 'efficiency',
             ]

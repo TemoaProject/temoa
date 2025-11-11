@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS MetaDataReal
 REPLACE INTO MetaDataReal
 VALUES ('global_discount_rate', 0.05, 'Discount Rate for future costs');
 REPLACE INTO MetaDataReal
-VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in LoanRate table');
+VALUES ('default_loan_rate', 0.05, 'Default Loan Rate if not specified in loan_rate table');
 
 CREATE TABLE IF NOT EXISTS Commodity
 (
@@ -45,7 +45,7 @@ REPLACE INTO CommodityType
 VALUES ('p', 'physical commodity');
 REPLACE INTO CommodityType
 VALUES ('d', 'demand commodity');
-CREATE TABLE IF NOT EXISTS CostFixed
+CREATE TABLE IF NOT EXISTS cost_fixed
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS CostFixed
     notes   TEXT,
     PRIMARY KEY (region, period, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS CostInvest
+CREATE TABLE IF NOT EXISTS cost_invest
 (
     region  TEXT,
     tech    TEXT
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS CostInvest
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS CostVariable
+CREATE TABLE IF NOT EXISTS cost_variable
 (
     region  TEXT    NOT NULL,
     period  INTEGER NOT NULL
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS Demand
     notes     TEXT,
     PRIMARY KEY (region, period, commodity)
 );
-CREATE TABLE IF NOT EXISTS Efficiency
+CREATE TABLE IF NOT EXISTS efficiency
 (
     region      TEXT,
     input_comm  TEXT
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS Efficiency
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
-CREATE TABLE IF NOT EXISTS LifetimeProcess
+CREATE TABLE IF NOT EXISTS lifetime_process
 (
     region   TEXT,
     tech     TEXT
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS LifetimeProcess
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS LifetimeTech
+CREATE TABLE IF NOT EXISTS lifetime_tech
 (
     region   TEXT,
     tech     TEXT
