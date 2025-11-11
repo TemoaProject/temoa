@@ -8,7 +8,6 @@ import typer
 from rich.logging import RichHandler
 from rich.text import Text
 
-from definitions import set_OUTPUT_PATH
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
@@ -87,7 +86,6 @@ def _setup_sequencer(
     # Pass the silent flag to the logging setup
     _setup_logging(final_output_path, debug=debug, silent=silent)
 
-    set_OUTPUT_PATH(final_output_path)
     config = TemoaConfig.build_config(
         config_file=config_file, output_path=final_output_path, silent=silent
     )

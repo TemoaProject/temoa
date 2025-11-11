@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/9/24
 
 """
 
@@ -34,7 +10,6 @@ from pathlib import Path
 
 from pyomo.dataportal import DataPortal
 
-from definitions import PROJECT_ROOT
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
@@ -222,14 +197,14 @@ class MCRunFactory:
         self.config = config
         self.data_store = data_store
         self.tweak_factory = TweakFactory(data_store)
-        self.settings_file = PROJECT_ROOT / Path(self.config.monte_carlo_inputs['run_settings'])
+        self.settings_file = Path(self.config.monte_carlo_inputs['run_settings'])
 
     def prescreen_input_file(self):
         """
         read the input csv file and screen common errors
         :return: True if file passes, false otherwise with log entries
         """
-        with open(self.settings_file, 'r') as f:
+        with open(self.settings_file) as f:
             header = f.readline().strip()
             assert header == 'run,param,index,mod,value,notes', (
                 'header should be: run,param,index,mod,value,notes'
@@ -252,7 +227,7 @@ class MCRunFactory:
         A generator to read lines from thr run settings file
         :return:
         """
-        with open(self.settings_file, 'r') as f:
+        with open(self.settings_file) as f:
             # burn header
             f.readline()
             idx = 2
@@ -314,7 +289,7 @@ class MCRunFactory:
         matches = [
             k
             for k in raw_indices
-            if all((k[idx] == target_index[idx] for idx in non_wildcard_locs))
+            if all(k[idx] == target_index[idx] for idx in non_wildcard_locs)
         ]
         return matches
 

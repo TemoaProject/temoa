@@ -2,10 +2,13 @@
 tool for writing outputs to database tables
 """
 
+from __future__ import annotations
+
 import sqlite3
 import sys
 from collections import defaultdict
 from collections.abc import Iterable
+from importlib import resources
 from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -13,7 +16,6 @@ from typing import TYPE_CHECKING, cast
 from pyomo.core import value
 from pyomo.opt import SolverResults
 
-from definitions import PROJECT_ROOT
 from temoa._internal.data_brick import DataBrick
 from temoa._internal.exchange_tech_cost_ledger import CostType
 from temoa._internal.table_data_puller import (
@@ -39,30 +41,6 @@ if TYPE_CHECKING:
     pass
 
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  2/9/24
 
 Note:  This file borrows heavily from the legacy pformat_results.py, and is somewhat of a restructure of that code
        to accommodate the run modes more cleanly
@@ -85,10 +63,11 @@ basic_output_tables = [
 ]
 optional_output_tables = ['output_flow_out_summary', 'output_mc_delta', 'output_storage_level']
 
-flow_summary_file_loc = Path(
-    PROJECT_ROOT, 'temoa/extensions/modeling_to_generate_alternatives/make_flow_summary_table.sql'
+flow_summary_file_loc = (
+    resources.files('temoa.extensions.modeling_to_generate_alternatives')
+    / 'make_flow_summary_table.sql'
 )
-mc_tweaks_file_loc = Path(PROJECT_ROOT, 'temoa/extensions/monte_carlo/make_deltas_table.sql')
+mc_tweaks_file_loc = resources.files('temoa.extensions.monte_carlo') / 'make_deltas_table.sql'
 
 
 class TableWriter:
@@ -652,13 +631,16 @@ class TableWriter:
         # make the table for monte carlo tweaks, if needed...
         self.execute_script(mc_tweaks_file_loc)
 
-    def execute_script(self, script_file: str | Path) -> None:
+    def execute_script(self, script_file: str | Path | resources.abc.Traversable) -> None:
         """
         A utility to execute a sql script on the current db connection
         :return:
         """
-        with open(script_file) as table_script:
-            sql_commands = table_script.read()
+        if isinstance(script_file, resources.abc.Traversable):
+            sql_commands = script_file.read_text()
+        else:
+            with open(script_file) as table_script:
+                sql_commands = table_script.read()
         logger.debug('Executing sql from file: %s ', script_file)
 
         self.con.executescript(sql_commands)

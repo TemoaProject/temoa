@@ -1,31 +1,7 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/9/24
 
 A sequencer for Monte Carlo Runs
-.
+
 """
 
 import logging
@@ -36,11 +12,11 @@ import tomllib
 from datetime import datetime
 from logging import getLogger
 from multiprocessing import Queue
+from importlib import resources
 from pathlib import Path
 
 from pyomo.dataportal import DataPortal
 
-from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.data_brick import DataBrick
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
@@ -50,7 +26,9 @@ from temoa.extensions.monte_carlo.mc_worker import MCWorker
 
 logger = getLogger(__name__)
 
-solver_options_path = Path(PROJECT_ROOT, 'temoa/extensions/monte_carlo/MC_solver_options.toml')
+solver_options_path = (
+    resources.files('temoa.extensions.monte_carlo') / 'MC_solver_options.toml'
+)
 
 
 class MCSequencer:
@@ -63,8 +41,9 @@ class MCSequencer:
 
         # read in the options
         try:
-            with open(solver_options_path, 'rb') as f:
-                all_options = tomllib.load(f)
+            with resources.as_file(solver_options_path) as path:
+                with open(path, 'rb') as f:
+                    all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 
@@ -130,7 +109,7 @@ class MCSequencer:
             'solver_options': self.worker_solver_options,
         }
         # construct path for the solver logs
-        s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
+        s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
         for i in range(num_workers):

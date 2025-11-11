@@ -1,32 +1,7 @@
 """
 Basic-level atomic functions that can be used by a sequencer, as needed
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/15/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os
 import sqlite3
 import sys
 from logging import getLogger
@@ -46,7 +21,6 @@ from pyomo.environ import (
 )
 from pyomo.opt import SolverResults
 
-import definitions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
@@ -157,21 +131,9 @@ def build_instance(
     if not silent:
         try:
             # Check for warnings in log file to notify user. Ugly but it works
-            log_file = os.path.join(definitions.get_OUTPUT_PATH(), 'log.log')
-            with open(log_file) as f:
-                warnings_found = any(
-                    '| WARNING |' in line or '| ERROR |' in line or '| CRITICAL |' in line
-                    for line in f
-                )
-                if warnings_found:
-                    sys.stderr.write(
-                        '\r[%8.2f] Instance created with warnings. Check log file.\n'
-                        % (time() - hack)
-                    )
-                else:
-                    sys.stderr.write(
-                        '\r[%8.2f] Instance created.       \n' % (time() - hack)
-                    )  # needs spaces to clear previous line
+            sys.stderr.write(
+                '\r[%8.2f] Instance created.       \n' % (time() - hack)
+            )  # needs spaces to clear previous line
             sys.stderr.flush()
         except Exception:
             sys.stderr.write(

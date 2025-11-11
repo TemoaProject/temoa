@@ -7,7 +7,6 @@ from typing import Any
 import pytest
 from pyomo.opt import SolverResults
 
-from definitions import PROJECT_ROOT, set_OUTPUT_PATH
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
@@ -15,14 +14,14 @@ from temoa.core.model import TemoaModel
 logger = logging.getLogger(__name__)
 
 # set the target folder for output from testing
-output_path = os.path.join(PROJECT_ROOT, 'tests', 'testing_log')
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+output_path = Path(__file__).parent / 'testing_log'
+if not output_path.exists():
+    output_path.mkdir()
 
 # set up logger in conftest.py so that it is properly anchored in the test folder.
 filename = 'testing.log'
 logging.basicConfig(
-    filename=os.path.join(output_path, filename),
+    filename=output_path / filename,
     filemode='w',
     format='%(asctime)s | %(module)s | %(levelname)s | %(message)s',
     datefmt='%d-%b-%y %H:%M:%S',
@@ -36,8 +35,8 @@ logging.getLogger('pyutilib').setLevel(logging.WARNING)
 
 def refresh_databases() -> None:
     """make new databases from source for testing...  removes possibility of contamination by earlier runs"""
-    data_output_path = Path(PROJECT_ROOT, 'tests', 'testing_outputs')
-    data_source_path = Path(PROJECT_ROOT, 'tests', 'testing_data')
+    data_output_path = Path(__file__).parent / 'testing_outputs'
+    data_source_path = Path(__file__).parent / 'testing_data'
     databases = (
         ('utopia.sql', 'utopia.sqlite'),
         ('utopia.sql', 'myo_utopia.sqlite'),
@@ -66,7 +65,7 @@ refresh_databases()
 
 @pytest.fixture()
 def system_test_run(
-    request, tmp_path
+    request: Any, tmp_path: Path
 ) -> tuple[Any, SolverResults | None, TemoaModel | None, TemoaSequencer]:
     """
     spin up the model, solve it, and hand over the model and result for inspection
@@ -74,9 +73,7 @@ def system_test_run(
     data_name = request.param['name']
     logger.info('Setting up and solving: %s', data_name)
     filename = request.param['filename']
-    config_file = Path(PROJECT_ROOT, 'tests', 'testing_configs', filename)
-
-    set_OUTPUT_PATH(tmp_path)
+    config_file = Path(__file__).parent / 'testing_configs' / filename
 
     config = TemoaConfig.build_config(
         config_file=config_file,

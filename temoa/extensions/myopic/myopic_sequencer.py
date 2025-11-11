@@ -7,10 +7,10 @@ import logging
 import sqlite3
 import sys
 from collections import deque
+from importlib import resources
 from pathlib import Path
 from sqlite3 import Connection
 
-import definitions
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
@@ -23,9 +23,7 @@ from temoa.model_checking.pricing_check import price_checker
 
 logger = logging.getLogger(__name__)
 
-table_script_file = Path(
-    definitions.PROJECT_ROOT, 'temoa/extensions/myopic', 'make_myopic_tables.sql'
-)
+table_script_file = resources.files('temoa.extensions.myopic') / 'make_myopic_tables.sql'
 
 
 class MyopicSequencer:
@@ -141,7 +139,8 @@ class MyopicSequencer:
         self.characterize_run()
 
         # create the Myopic Output tables, if they don't already exist.
-        self.execute_script(table_script_file)
+        with resources.as_file(table_script_file) as script_path:
+            self.execute_script(script_path)
 
         # clear out the old riff-raff
         self.clear_old_results()

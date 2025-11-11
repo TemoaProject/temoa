@@ -9,7 +9,6 @@ import pathlib
 import pytest
 from pyomo import environ as pyo
 
-from definitions import PROJECT_ROOT
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
@@ -44,7 +43,7 @@ def test_set_consistency(data_name, config_file, set_file, tmp_path):
     model_sets = {k: set(v) for k, v in model_sets.items()}
 
     # retrieve the cache and convert the set values from list -> set (json can't store sets)
-    cache_file = pathlib.Path(PROJECT_ROOT, 'tests', 'testing_data', set_file)
+    cache_file = pathlib.Path(__file__).parent / 'testing_data' / set_file
     with open(cache_file) as src:
         cached_sets = json.load(src)
     cached_sets = {

@@ -1,35 +1,6 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-This code is modified from original work on Method of Morris framework
-by Hadi Eshragi.  Original morris.py file can be located in the energysystem
-branch
-
-Modified/Refactored by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  5/30/24
-
 An event sequencer to control the flow of a Method of Morris calculation.  This code uses multiprocessing via
 the joblib library
-
 """
 
 import csv
@@ -39,6 +10,7 @@ import sqlite3
 import sys
 import tomllib
 from logging.handlers import QueueListener
+from importlib import resources
 from pathlib import Path
 
 from joblib import Parallel, delayed
@@ -47,7 +19,6 @@ from SALib.analyze import morris
 from SALib.sample.morris import sample
 from SALib.util import compute_groups_matrix, read_param_file
 
-from definitions import PROJECT_ROOT, get_OUTPUT_PATH
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.data_io.hybrid_loader import HybridLoader
@@ -55,8 +26,8 @@ from temoa.extensions.method_of_morris.morris_evaluate import evaluate
 
 logger = logging.getLogger(__name__)
 
-solver_options_file = Path(
-    PROJECT_ROOT, 'temoa/extensions/method_of_morris/morris_solver_options.toml'
+solver_options_file = (
+    resources.files('temoa.extensions.method_of_morris') / 'morris_solver_options.toml'
 )
 
 
@@ -87,8 +58,9 @@ class MorrisSequencer:
 
         # read in the options
         try:
-            with open(solver_options_file, 'rb') as f:
-                all_options = tomllib.load(f)
+            with resources.as_file(solver_options_file) as path:
+                with open(path, 'rb') as f:
+                    all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 
@@ -98,7 +70,7 @@ class MorrisSequencer:
 
         # output handling
         self.verbose = False  # for troubleshooting
-        self.mm_output_folder = get_OUTPUT_PATH() / 'MM_outputs'
+        self.mm_output_folder = self.config.output_path / 'MM_outputs'
         self.mm_output_folder.mkdir(exist_ok=True)
         self.param_file: Path = self.mm_output_folder / 'params.csv'
 
