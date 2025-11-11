@@ -10,6 +10,7 @@ from pathlib import Path
 import pyomo.environ as pyo
 
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,14 @@ t = input('Type "Y" to continue, any other key to exit now.')
 if t not in {'y', 'Y'}:
     sys.exit(0)
 output_file = Path(__file__).parent.parent / 'testing_data' / 'US_9R_8D_set_sizes.json'
-config_file = Path(__file__).parent / 'config_US_9R_8D.toml'
-options = {'silent': True, 'debug': True}
-sequencer = TemoaSequencer(
-    config_file=config_file, output_path=Path(__file__).parent.parent / 'testing_log', **options
+config_file_path = Path(__file__).parent / 'config_US_9R_8D.toml'
+output_path = Path(__file__).parent.parent / 'testing_log'
+options = {'silent': True}
+config = TemoaConfig.build_config(
+    config_file=config_file_path, output_path=output_path, silent=options['silent']
 )
-instance = sequencer.start()
+sequencer = TemoaSequencer(config=config)
+instance = sequencer.build_model()  # catch the built model
 
 model_sets = instance.component_map(ctype=pyo.Set)
 sets_dict = {k: len(v) for k, v in model_sets.items() if '_index' not in k}

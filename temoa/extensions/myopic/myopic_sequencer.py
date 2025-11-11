@@ -139,7 +139,8 @@ class MyopicSequencer:
         self.characterize_run()
 
         # create the Myopic Output tables, if they don't already exist.
-        self.execute_script(table_script_file)
+        with resources.as_file(table_script_file) as script_path:
+            self.execute_script(script_path)
 
         # clear out the old riff-raff
         self.clear_old_results()

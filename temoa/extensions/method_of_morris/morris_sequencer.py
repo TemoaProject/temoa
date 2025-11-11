@@ -58,8 +58,9 @@ class MorrisSequencer:
 
         # read in the options
         try:
-            with open(solver_options_file, 'rb') as f:
-                all_options = tomllib.load(f)
+            with resources.as_file(solver_options_file) as path:
+                with open(path, 'rb') as f:
+                    all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 

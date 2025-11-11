@@ -11,6 +11,7 @@ from pathlib import Path
 import pyomo.environ as pyo
 
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
 from tests.conftest import refresh_databases
 
 print(
@@ -47,9 +48,12 @@ scenarios = [
 refresh_databases()
 
 for scenario in scenarios:
-    ts = TemoaSequencer(config_file=scenario['config_file'], output_path=output_path)
+    config = TemoaConfig.build_config(
+        config_file=scenario['config_file'], output_path=output_path, silent=True
+    )
+    ts = TemoaSequencer(config=config)
 
-    built_instance = ts.start()  # catch the built model
+    built_instance = ts.build_model()  # catch the built model
 
     model_sets = built_instance.component_map(ctype=pyo.Set)
     sets_dict = {k: list(v) for k, v in model_sets.items()}

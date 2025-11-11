@@ -66,9 +66,12 @@ def evaluate(param_names, param_values, data: dict, k):
 morris_root = Path(__file__).parent
 perturbation_coefficient = 0.2  # minus plus 10% of the baseline values
 param_file = morris_root / 'm_params.txt'
-db_file = resources.files('data_files.untracked_data.morris') / 'morris_utopia.sqlite'
-config_path = resources.files('data_files.untracked_data.morris') / 'morris_utopia.toml'
-with sqlite3.connect(db_file) as con:
+
+db_resource = resources.files('data_files.untracked_data.morris') / 'morris_utopia.sqlite'
+config_resource = resources.files('data_files.untracked_data.morris') / 'morris_utopia.toml'
+with resources.as_file(db_resource) as db_file, \
+     resources.as_file(config_resource) as config_path, \
+     sqlite3.connect(str(db_file)) as con:
     with open(param_file, 'w') as file:
         param_names = {}
         cur = con.cursor()

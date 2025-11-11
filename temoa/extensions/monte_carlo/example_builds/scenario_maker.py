@@ -21,7 +21,6 @@ Let's make a set of 500 runs and explore output
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from importlib import resources
 import numpy as np
 
 # distro for the related cost vars
@@ -44,7 +43,7 @@ plt.show()
 nuc_dev = np.random.binomial(n=1, p=0.20, size=num_runs) * -0.4
 
 # put it together...
-file_loc = resources.files('data_files.monte_carlo') / 'run_settings_2.csv'
+file_loc = Path.cwd() / 'run_settings_2.csv'
 with open(file_loc, 'w') as f:
     f.write('run,param,index,mod,value,notes\n')
     for run_idx in range(num_runs):
