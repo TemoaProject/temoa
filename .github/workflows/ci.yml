@@ -9,6 +9,7 @@ on:
         "ci_testing",
         "1.0.0-dev-operator",
         "temoa_davey_code",
+        "unstable",
       ]
   pull_request:
     branches:
@@ -18,6 +19,7 @@ on:
         "ci_testing",
         "1.0.0-dev-operator",
         "temoa_davey_code",
+        "unstable",
       ]
 
 jobs:
@@ -26,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v5
