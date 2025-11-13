@@ -1,11 +1,13 @@
 import argparse
 import logging
+import shutil
 from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
 from typing import Annotated
 
 import rich
+import tomlkit
 import typer
 from rich.logging import RichHandler
 from rich.text import Text
@@ -435,6 +437,166 @@ def migrate(
             'Use --type sql, --type db, or ensure file has a .sql, .db, or .sqlite extension.[/red]'
         )
         raise typer.Exit(1)
+
+
+def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None:
+    """
+    Copy tutorial resource files directly to target locations.
+
+    Args:
+        target_config: Path where configuration file should be copied
+        target_database: Path where database file should be copied
+    """
+    try:
+        # Try to copy resources directly from the package using resources.files()
+        base = resources.files('temoa') / 'tutorial_assets'
+        config_resource = base / 'config_sample.toml'
+        db_resource = base / 'utopia.sqlite'
+
+        # Copy configuration file
+        with config_resource.open('rb') as source:
+            with open(target_config, 'wb') as target:
+                shutil.copyfileobj(source, target)
+
+        # Copy database file
+        with db_resource.open('rb') as source:
+            with open(target_database, 'wb') as target:
+                shutil.copyfileobj(source, target)
+
+    except (ModuleNotFoundError, FileNotFoundError, AttributeError) as e:
+        logger.exception('Failed to load tutorial resources from package')
+        # Fallback to development paths (for development environments)
+        fallback_config = Path(__file__).parent / 'tutorial_assets' / 'config_sample.toml'
+        fallback_database = Path(__file__).parent / 'tutorial_assets' / 'utopia.sqlite'
+
+        if not fallback_config.exists() or not fallback_database.exists():
+            raise FileNotFoundError(
+                f'Tutorial resources not found. Tried package resources and fallback paths:\n'
+                f'Config: {fallback_config}\n'
+                f'Database: {fallback_database}'
+            ) from e
+
+        # Copy files using fallback paths
+        shutil.copy2(fallback_config, target_config)
+        shutil.copy2(fallback_database, target_database)
+
+
+def _update_toml_database_paths(config_path: Path, new_database_name: str) -> None:
+    """
+    Update database paths in a TOML configuration file using tomlkit.
+
+    Args:
+        config_path: Path to the configuration file
+        new_database_name: Base name for the new database (without extension)
+    """
+    try:
+        # Load TOML document with tomlkit
+        with open(config_path, 'rb') as f:
+            doc = tomlkit.load(f)
+
+        # Update database paths safely
+        if 'input_database' in doc:
+            doc['input_database'] = f'{new_database_name}.sqlite'
+
+        if 'output_database' in doc:
+            doc['output_database'] = f'{new_database_name}.sqlite'
+
+        # Write back with tomlkit
+        with open(config_path, 'w', encoding='utf-8') as f:
+            tomlkit.dump(doc, f)
+
+    except Exception as _e:
+        logger.warning('Failed to update TOML configuration %s', config_path)
+        raise
+
+
+@app.command()
+def tutorial(
+    config_name: Annotated[
+        str, typer.Argument(help='Name for the tutorial configuration file (without extension).')
+    ] = 'tutorial_config',
+    database_name: Annotated[
+        str, typer.Argument(help='Name for the tutorial database file (without extension).')
+    ] = 'tutorial_database',
+    force: Annotated[
+        bool, typer.Option('--force', '-f', help='Overwrite existing files without prompting.')
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option('--verbose', '-v', help='Show detailed information about the tutorial setup.'),
+    ] = False,
+) -> None:
+    """
+    Create tutorial configuration and database files in the current directory with guidance.
+
+    This command creates:
+    - A configuration file (.toml)
+    - A sample database (.sqlite)
+
+    Both files will be configured to work together for running your first Temoa model.
+    """
+    current_dir = Path.cwd()
+
+    target_config = current_dir / f'{config_name}.toml'
+    target_database = current_dir / f'{database_name}.sqlite'
+
+    # Check for existing files and handle conflicts
+    existing_files = []
+    if target_config.exists():
+        existing_files.append(str(target_config))
+    if target_database.exists():
+        existing_files.append(str(target_database))
+
+    if existing_files and not force:
+        rich.print('[yellow]Tutorial files already exist:[/yellow]')
+        for file in existing_files:
+            rich.print(f'  - {file}')
+
+        try:
+            typer.confirm('Do you want to overwrite these files?', abort=True)
+        except typer.Abort:
+            rich.print('[yellow]Tutorial setup cancelled.[/yellow]')
+            raise typer.Exit() from None
+
+    try:
+        # Copy tutorial resources directly to target locations
+        if verbose:
+            rich.print('Copying tutorial resources...')
+        _copy_tutorial_resources(target_config, target_database)
+
+        # Update database paths using tomlkit (preserves formatting/comments)
+        if verbose:
+            rich.print('Updating database paths in configuration...')
+
+        _update_toml_database_paths(target_config, database_name)
+
+        if verbose:
+            rich.print('\n[bold green]✅ Tutorial files created successfully![/bold green]')
+
+        rich.print('\n[bold]Tutorial Setup Complete![/bold]')
+        rich.print(f'Configuration file: [cyan]{target_config.name}[/cyan]')
+        rich.print(f'Database file: [cyan]{target_database.name}[/cyan]')
+
+        rich.print('\n[bold]Next Steps:[/bold]')
+        rich.print(f'1. Review the configuration: [cyan]{target_config.name}[/cyan]')
+        rich.print('2. Run your first model:')
+        rich.print(f'   [green]uv run temoa run {target_config.name}[/green]')
+        rich.print('   or')
+        rich.print(f'   [green]python -m temoa run {target_config.name}[/green]')
+        rich.print(
+            f'\nTo learn more about the configuration options, see the comments in [cyan]{target_config.name}[/cyan]'
+        )
+
+        if verbose:
+            rich.print(
+                f"\n[dim]The configuration file points to your local '{database_name}.sqlite' database.[/dim]"
+            )
+            rich.print("[dim]Results will be saved in the 'output_files' directory.[/dim]")
+
+    except Exception as e:
+        logger.exception('Failed to create tutorial files')
+        rich.print(f'\n[bold red]❌ Failed to create tutorial files:[/bold red] {e}')
+        raise typer.Exit(1) from e
 
 
 def _is_writable(path: Path) -> bool:

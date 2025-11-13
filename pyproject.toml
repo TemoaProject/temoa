@@ -1,6 +1,6 @@
 [project]
 name = "temoa"
-version = "4.0.0a1"
+version = "4.0.0a1.dev20251113"
 description = "Tools for Energy Model Optimization and Analysis"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -30,6 +30,7 @@ dependencies = [
     "scipy>=1.14.1",
     "typer>=0.20.0",
     "rich>=14.2.0",
+    "tomlkit>=0.12.0",
 ]
 
 
@@ -74,7 +75,7 @@ build-backend = "hatchling.build"
 include = [
     "temoa",
 ]
-package-data = { "temoa" = ["db_schema/*.sql"] }
+package-data = { "temoa" = ["db_schema/*.sql", "tutorial_assets/*"] }
 
 
 [tool.ruff]
