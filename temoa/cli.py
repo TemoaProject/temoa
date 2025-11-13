@@ -1,5 +1,7 @@
+import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+from importlib import resources
 from pathlib import Path
 from typing import Annotated
 
@@ -11,6 +13,7 @@ from rich.text import Text
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
+from temoa.utilities import db_migration_v3_1_to_v4, sql_migration_v3_1_to_v4
 from temoa.version_information import TEMOA_MAJOR, TEMOA_MINOR
 
 # =============================================================================
@@ -106,7 +109,6 @@ def _version_callback(value: bool) -> None:
 def _cite_callback(value: bool) -> None:
     if value:
         citation_text = Text()
-        citation_text.append('[bold]How to Cite Temoa:[/bold]\n\n', style='bold')
         citation_text.append(
             'If you use Temoa in your research, please cite the following publication:\n\n'
         )
@@ -126,6 +128,34 @@ def _cite_callback(value: bool) -> None:
 
         rich.print(citation_text)
         raise typer.Exit()
+
+
+def get_default_schema() -> Path:
+    """Get the default path to the v4 schema file, handling both installed and development cases."""
+    try:
+        schema_path = resources.files('temoa.db_schema') / 'temoa_schema_v4.sql'
+
+        if not schema_path.is_file():
+            raise FileNotFoundError(
+                f'Schema file not found at expected resource path: {schema_path}'
+            )
+        return Path(str(schema_path))  # Convert Traversable to concrete Path
+    except Exception as e:
+        logger.exception('Failed to load schema from resources')
+        # The fallback for development needs to reflect the current repository structure
+        # assuming `cli.py` is in `temoa/` and `db_schema/` is a sibling of `cli.py` within `temoa/`.
+        fallback_path = Path(__file__).parent / 'db_schema' / 'temoa_schema_v4.sql'
+        if fallback_path.is_file():
+            logger.warning(
+                'Using fallback schema path: %s. '
+                'This might indicate an issue with package installation or resource setup.',
+                fallback_path,
+            )
+            return fallback_path
+        else:
+            raise FileNotFoundError(
+                f'Schema file not found using resource system or fallback at {fallback_path}'
+            ) from e
 
 
 app = typer.Typer(
@@ -158,7 +188,7 @@ def validate(
         typer.Option('--output', '-o', help='Directory to save validation log.'),
     ] = None,
     silent: Annotated[
-        bool, typer.Option('--silent', '-s', help='Suppress informational output on success.')
+        bool, typer.Option('--silent', '-q', help='Suppress informational output on success.')
     ] = False,
     debug: Annotated[
         bool, typer.Option('--debug', '-d', help='Enable debug-level logging.')
@@ -212,7 +242,7 @@ def run(
     silent: Annotated[
         bool,
         typer.Option(
-            '--silent', '-s', help='Silent run. No interactive prompts or INFO logs on console.'
+            '--silent', '-q', help='Silent run. No interactive prompts or INFO logs on console.'
         ),
     ] = False,
     debug: Annotated[
@@ -253,6 +283,169 @@ def run(
         logger.exception('An unhandled error occurred during the Temoa run.')
         rich.print(f'\n[bold red]❌ An error occurred:[/bold red] {e}')
         raise typer.Exit(code=1) from e
+
+
+@app.command()
+def migrate(
+    input_path: Annotated[
+        Path,
+        typer.Argument(
+            help='Path to input file to migrate (SQL dump or SQLite DB).',
+            exists=True,
+            resolve_path=True,
+        ),
+    ],
+    output_path: Annotated[
+        Path | None,
+        typer.Option(
+            '--output',
+            '-o',
+            help='Output path for the migrated file. If not provided, a default name '
+            '(e.g., input_v4.sql or input_v4.sqlite) will be used in a writable location.',
+        ),
+    ] = None,
+    schema_path: Annotated[
+        Path | None,
+        typer.Option('--schema', '-s', help='Path to v4 schema SQL file.'),
+    ] = None,
+    migration_type: Annotated[
+        str | None,
+        typer.Option(
+            '--type',
+            help='Migration type: "sql" for SQL dump to SQLite dump, "db" for SQLite DB in-place migration, if omitted, infers from input extension.',
+        ),
+    ] = None,
+    silent: Annotated[
+        bool, typer.Option('--silent', '-q', help='Suppress informational output on success.')
+    ] = False,
+    debug: Annotated[bool, typer.Option('--debug', '-d', help='Enable debug output.')] = False,
+) -> None:
+    """
+    Migrate a single Temoa database file (SQL dump or SQLite DB) from v3.1 to v4 format.
+    """
+    if schema_path is None:
+        schema_path = get_default_schema()
+    if not schema_path.is_file():
+        rich.print(f'[red]Error: Schema file {schema_path} does not exist or is not a file.[/red]')
+        raise typer.Exit(1)
+
+    # Validate that input_path is a file, not a directory
+    if not input_path.is_file():
+        rich.print(f'[red]Error: Input path must be a file, not a directory: {input_path}[/red]')
+        raise typer.Exit(1)
+
+    ext = input_path.suffix.lower()
+
+    # Determine the effective output directory and file
+    effective_output_dir: Path
+    final_output_file: Path
+
+    if output_path:
+        # If explicit output_path is provided, its parent is the desired directory
+        effective_output_dir = output_path.parent
+        # Ensure the explicitly provided output_path parent exists
+        try:
+            effective_output_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            rich.print(
+                f'[red]Error: Could not create output directory "{effective_output_dir}": {e}[/red]'
+            )
+            raise typer.Exit(1) from e
+        final_output_file = effective_output_dir / output_path.name
+    else:
+        # Try to use the input file's directory
+        input_dir = input_path.parent
+        if _is_writable(input_dir):
+            effective_output_dir = input_dir
+        else:
+            # Fallback to current working directory if input_dir is not writable
+            current_dir = Path.cwd()
+            if _is_writable(current_dir):
+                effective_output_dir = current_dir
+                if not silent:
+                    rich.print(
+                        f'[yellow]Warning: Input directory "{input_dir}" is not writable. '
+                        f'Saving output to current directory: "{current_dir}"[/yellow]'
+                    )
+            else:
+                rich.print(
+                    f'[red]Error: Neither input directory "{input_dir}" '
+                    f'nor current working directory "{current_dir}" are writable. '
+                    'Please specify a writable output path with --output.[/red]'
+                )
+                raise typer.Exit(1)
+
+        # Ensure the chosen output directory exists
+        try:
+            effective_output_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            rich.print(
+                f'[red]Error: Could not create auto-generated output directory "{effective_output_dir}": {e}[/red]'
+            )
+            raise typer.Exit(1) from e
+
+        # For auto-output, derive filename from input_path, place in effective_output_dir
+        # Determine output file extension based on migration type
+        if migration_type == 'db' or (migration_type is None and ext in ['.db', '.sqlite']):
+            # If migrating to DB, output should be .sqlite
+            final_output_file = effective_output_dir / (input_path.stem + '_v4.sqlite')
+        else:
+            # Default to .sql if migrating SQL dump or type 'auto' for .sql input
+            final_output_file = effective_output_dir / (input_path.stem + '_v4.sql')
+
+    # --- Execute the migration based on type ---
+    if migration_type == 'sql' or (migration_type is None and ext == '.sql'):
+        # SQL dump to SQL dump migration
+        args_namespace = argparse.Namespace(
+            input=str(input_path),
+            schema=str(schema_path),
+            output=str(final_output_file),
+            debug=debug,
+        )
+        try:
+            sql_migration_v3_1_to_v4.migrate_dump_to_sqlite(args_namespace)
+            if not silent:
+                rich.print(f'[green]SQL dump migration completed: {final_output_file}[/green]')
+        except Exception as e:
+            logger.exception('SQL dump migration failed for %s', input_path)
+            rich.print(
+                f'[red]SQL dump migration failed for {input_path} -> {final_output_file}: {e}[/red]'
+            )
+            raise typer.Exit(1) from e
+    elif migration_type == 'db' or (migration_type is None and ext in ['.db', '.sqlite']):
+        # SQLite DB to SQLite DB migration
+        args_namespace = argparse.Namespace(
+            source=str(input_path),
+            schema=str(schema_path),
+            out=str(final_output_file),
+        )
+        try:
+            db_migration_v3_1_to_v4.migrate_all(args_namespace)
+            if not silent:
+                rich.print(f'[green]Database migration completed: {final_output_file}[/green]')
+        except Exception as e:
+            logger.exception('Database migration failed for %s', input_path)
+            rich.print(
+                f'[red]Database migration failed for {input_path} -> {final_output_file}: {e}[/red]'
+            )
+            raise typer.Exit(1) from e
+    else:
+        rich.print(
+            f'[red]Error: Cannot determine migration type for {input_path}. '
+            'Use --type sql, --type db, or ensure file has a .sql, .db, or .sqlite extension.[/red]'
+        )
+        raise typer.Exit(1)
+
+
+def _is_writable(path: Path) -> bool:
+    """Check if a path is writable."""
+    try:
+        test_file = path / f'.temoa_write_test_{datetime.now(timezone.utc).timestamp()}'
+        test_file.touch()
+        test_file.unlink()  # Clean up
+        return True
+    except OSError:
+        return False
 
 
 # =============================================================================
