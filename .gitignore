@@ -21,6 +21,7 @@
 !CHANGELOG.md
 !CONTRIBUTING.md
 !.pre-commit-config.yaml
+!.readthedocs.yaml
 !.coderabbit.yaml
 !CITATION.cff
 
