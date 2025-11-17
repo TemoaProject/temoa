@@ -9,7 +9,6 @@ authors = [
     { name = "TemoaProject Team", email = "info@temoaproject.org" }
 ]
 
-
 dependencies = [
     "pyomo>=6.8.0",
     "matplotlib==3.9.2",
@@ -96,6 +95,7 @@ select = [
     "I",  # isort
     "B",  # flake8-bugbear
     "N",  # flake8-naming
+    "G004" # logging-f-string
 ]
 ignore = [
     "E501",  # line too long temporarily ignored
@@ -126,7 +126,7 @@ python_version = "3.12"
 mypy_path = "stubs"
 
 # Exclude specific directories from type checking will try to add them back gradually
-exclude = "(?x)(^tests/|^temoa/extensions/|^temoa/utilities/)"
+exclude = "(?x)(^temoa/extensions/|^temoa/utilities/|^stubs/)"
 
 # Strict typing for our own code
 disallow_untyped_defs = true
@@ -169,6 +169,10 @@ check_untyped_defs = true
 module = "temoa.types.*"
 disallow_any_explicit = false
 
+# More lenient settings for test files to accommodate pytest decorators and test-specific patterns
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_any_decorated = false
 
 
 [project.urls]

@@ -1,44 +1,23 @@
 """
 Tests for the validators for regions, linked regions, and region groups
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  9/28/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
 """
+
+from typing import cast
 
 import pyomo.environ as pyo
 import pytest
 
+from temoa.core.model import TemoaModel
 from temoa.model_checking.validators import (
     linked_region_check,
     no_slash_or_pipe,
     region_check,
     region_group_check,
 )
+from temoa.types.core_types import Region
 
 
-def test_region_check():
+def test_region_check() -> None:
     """
     Test good region names
     """
@@ -50,12 +29,14 @@ def test_region_check():
         '  R12',  # leading spaces
         'global',  # illegal for individual region
     }
-    assert all(region_check(None, region=r) for r in good_names)
+    assert all(region_check(cast(TemoaModel, None), region=cast(Region, r)) for r in good_names)
     for bad_name in bad_names:
-        assert not region_check(None, region=bad_name), f'This should fail {bad_name}'
+        assert not region_check(cast(TemoaModel, None), region=cast(Region, bad_name)), (
+            f'This should fail {bad_name}'
+        )
 
 
-def test_linked_region_check():
+def test_linked_region_check() -> None:
     """
     Test legal pairings for linked regions
     """
@@ -72,12 +53,14 @@ def test_linked_region_check():
         'AZ - Mexico',  # bad spacing
         'AZ-R2-Mexico',  # triples not allowed
     }
-    assert all(linked_region_check(m, region_pair=rp) for rp in good_names)
+    assert all(linked_region_check(cast(TemoaModel, m), region_pair=rp) for rp in good_names)
     for bad_name in bad_names:
-        assert not linked_region_check(m, region_pair=bad_name), f'This should fail {bad_name}'
+        assert not linked_region_check(cast(TemoaModel, m), region_pair=bad_name), (
+            f'This should fail {bad_name}'
+        )
 
 
-def test_region_group_check():
+def test_region_group_check() -> None:
     """
     Test legal multi-region groupings
     """
@@ -92,9 +75,13 @@ def test_region_group_check():
         'Region3',  # singleton not in m.R
     }
     for name in good_names:
-        assert region_group_check(m, name), f'This name should have been good: {name}'
+        assert region_group_check(cast(TemoaModel, m), rg=name), (
+            f'This name should have been good: {name}'
+        )
     for name in bad_names:
-        assert not region_group_check(m, name), f'This name should have failed: {name}'
+        assert not region_group_check(cast(TemoaModel, m), rg=name), (
+            f'This name should have failed: {name}'
+        )
 
 
 params = [
@@ -107,5 +94,5 @@ params = [
 
 
 @pytest.mark.parametrize('value, expected', params)
-def test_no_slash(value, expected):
-    assert no_slash_or_pipe(model=None, element=value) == expected
+def test_no_slash(value: str | int, *, expected: bool) -> None:
+    assert no_slash_or_pipe(model=cast(TemoaModel, None), element=value) == expected
