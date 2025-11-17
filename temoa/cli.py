@@ -13,7 +13,7 @@ from rich.logging import RichHandler
 from rich.text import Text
 
 from temoa._internal.temoa_sequencer import TemoaSequencer
-from temoa.core.config import TemoaConfig
+from temoa.core.config import SOLVER_DOC_LINKS, TemoaConfig
 from temoa.core.modes import TemoaMode
 from temoa.utilities import db_migration_v3_1_to_v4, sql_migration_v3_1_to_v4
 from temoa.version_information import TEMOA_MAJOR, TEMOA_MINOR
@@ -96,6 +96,14 @@ def _setup_sequencer(
     )
     sequencer = TemoaSequencer(config=config, mode_override=mode_override)
     return sequencer, final_output_path
+
+
+def _check_cbc_availability() -> bool:
+    """
+    Checks if the CBC solver is available in the system's PATH.
+    Returns True if found, False otherwise.
+    """
+    return shutil.which('cbc') is not None
 
 
 # =============================================================================
@@ -592,6 +600,16 @@ def tutorial(
                 f"\n[dim]The configuration file points to your local '{database_name}.sqlite' database.[/dim]"
             )
             rich.print("[dim]Results will be saved in the 'output_files' directory.[/dim]")
+
+        if not _check_cbc_availability():
+            cbc_doc_link = SOLVER_DOC_LINKS.get('cbc')
+            rich.print('\n[bold yellow]⚠️ Important: CBC Solver Not Found[/bold yellow]')
+            rich.print(
+                'The default tutorial configuration uses the [bold]CBC[/bold] solver, '
+                "which was not found in your system's PATH.\n"
+                'To run the tutorial model successfully, please install CBC. '
+                f'Refer to this link for installation guidance: [link={cbc_doc_link}]{cbc_doc_link}[/link]\n'
+            )
 
     except Exception as e:
         logger.exception('Failed to create tutorial files')

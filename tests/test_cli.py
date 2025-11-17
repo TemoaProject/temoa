@@ -1,4 +1,6 @@
+import re
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -24,6 +26,27 @@ def create_test_config(tmp_path: Path, db_path: Path) -> Path:
     replacement = f'input_database = "{db_path.as_posix()}"'
     config_content = template_content.replace(placeholder, replacement)
     test_config_path = tmp_path / 'test_config.toml'
+    test_config_path.write_text(config_content)
+    return test_config_path
+
+
+def create_config_with_solver(tmp_path: Path, db_path: Path, solver_name: str) -> Path:
+    """
+    Creates a test config file that points to a specific solver.
+    """
+    test_config_path = create_test_config(tmp_path, db_path)
+    config_content = test_config_path.read_text()
+    if re.search(r'^\s*solver_name\s*=', config_content, re.MULTILINE):
+        config_content = re.sub(
+            r'^\s*solver_name\s*=\s*".*?"',
+            f'solver_name = "{solver_name}"',
+            config_content,
+            flags=re.MULTILINE,
+        )
+    else:
+        # Add to the end if not found
+        config_content += f'\nsolver_name = "{solver_name}"\n'
+
     test_config_path.write_text(config_content)
     return test_config_path
 
@@ -318,8 +341,6 @@ def test_cli_migrate_sql_file_silent(tmp_path: Path) -> None:
 
 def test_cli_migrate_db_file_silent(tmp_path: Path) -> None:
     """Test migrating a DB file with --silent flag."""
-    import sqlite3  # Ensure sqlite3 is imported for this test if not already at top level
-
     input_file = tmp_path / 'test_v3_1_silent.sqlite'
     conn = sqlite3.connect(input_file)
     conn.execute('CREATE TABLE MetaData (name TEXT, value TEXT)')
@@ -377,3 +398,144 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd_si
     expected_output_in_cwd = tmp_path / (input_file.stem + '_v4.sql')
     assert expected_output_in_cwd.exists()
     assert not (non_writable_mock_parent / (input_file.stem + '_v4.sql')).exists()
+
+
+# =============================================================================
+# Tests for Solver Checks
+# =============================================================================
+
+
+def test_cli_tutorial_warns_if_cbc_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Test that the tutorial command warns if CBC is not found.
+    """
+    # Ensure fallback tutorial_assets exists so _copy_tutorial_resources() works via fallback.
+    fallback_assets = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets'
+    if not fallback_assets.exists():
+        pytest.skip("Skipping tutorial tests as 'temoa/tutorial_assets' directory not found.")
+
+    # Mock shutil.which to simulate CBC not being found
+    def mock_which_no_cbc(cmd: str) -> None | str:
+        if cmd == 'cbc':
+            return None
+        return shutil.which(cmd)
+
+    monkeypatch.setattr(shutil, 'which', mock_which_no_cbc)
+    monkeypatch.setattr('temoa.cli._check_cbc_availability', lambda: False)
+
+    # Run the tutorial command in tmp_path as CWD
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ['tutorial', 'test_config', 'test_db', '--force'],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0, (
+        f'Tutorial command failed: {result.exception}\n{result.stderr}\n{result.stdout}'
+    )
+    assert 'Tutorial Setup Complete!' in result.stdout
+    assert 'Important: CBC Solver Not Found' in result.stdout
+    assert 'The default tutorial configuration uses the CBC solver' in result.stdout
+
+    # Just assert that the known URL is present, ignoring line breaks / extra text
+    assert 'https://github.com/coin-or/Cbc#download' in result.stdout
+
+    # Files should be created in the current working directory (= tmp_path)
+    assert (tmp_path / 'test_config.toml').exists()
+    assert (tmp_path / 'test_db.sqlite').exists()
+
+
+def test_cli_tutorial_no_warn_if_cbc_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Test that the tutorial command does NOT warn if CBC is found.
+    """
+    fallback_assets = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets'
+    if not fallback_assets.exists():
+        pytest.skip("Skipping tutorial tests as 'temoa/tutorial_assets' directory not found.")
+
+    # Mock shutil.which to simulate CBC being found
+    def mock_which_with_cbc(cmd: str) -> str | None:
+        if cmd == 'cbc':
+            return '/usr/local/bin/cbc'
+        return shutil.which(cmd)
+
+    monkeypatch.setattr(shutil, 'which', mock_which_with_cbc)
+    monkeypatch.setattr('temoa.cli._check_cbc_availability', lambda: True)
+
+    # Run in tmp_path so tutorial files are created there
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ['tutorial', 'test_config', 'test_db', '--force'],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0, (
+        f'Tutorial command failed: {result.exception}\n{result.stderr}\n{result.stdout}'
+    )
+    assert 'Tutorial Setup Complete!' in result.stdout
+    assert 'Important: CBC Solver Not Found' not in result.stdout
+
+    assert (tmp_path / 'test_config.toml').exists()
+    assert (tmp_path / 'test_db.sqlite').exists()
+
+
+def test_cli_validate_fails_if_solver_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Test that the validate command fails with SolverNotAvailableError if the configured solver is missing.
+    """
+    db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
+    test_config_path = create_config_with_solver(tmp_path, db_path, 'nonexistent_solver')
+
+    # Mock shutil.which to always return None for any solver check
+    monkeypatch.setattr(shutil, 'which', lambda _: None)
+
+    args = ['validate', str(test_config_path), '--output', str(tmp_path)]
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code != 0, (
+        f'Validate should have failed: {result.exception}\n{result.stderr}\n{result.stdout}'
+    )
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
+    assert '❌ Validation failed:' in result.stdout
+    assert 'nonexistent_solver' in result.stdout
+    # Use the more robust phrase for checking installation instructions
+    assert (
+        'Please ensure the solver is installed and its executable is accessible.' in result.stdout
+    )
+    assert (tmp_path / 'temoa-run.log').exists()
+
+
+def test_cli_run_fails_if_solver_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Test that the run command fails with SolverNotAvailableError if the configured solver is missing.
+    """
+    db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
+    test_config_path = create_config_with_solver(tmp_path, db_path, 'another_nonexistent_solver')
+
+    # Mock shutil.which to always return None for any solver check
+    monkeypatch.setattr(shutil, 'which', lambda _: None)
+
+    args = ['run', str(test_config_path), '--output', str(tmp_path)]
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code != 0, (
+        f'Run should have failed: {result.exception}\n{result.stderr}\n{result.stdout}'
+    )
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
+    assert '❌ An error occurred:' in result.stdout
+    assert 'another_nonexistent_solver' in result.stdout
+    # Use the more robust phrase for checking installation instructions
+    assert (
+        'Please ensure the solver is installed and its executable is accessible.' in result.stdout
+    )
+    assert (tmp_path / 'temoa-run.log').exists()
