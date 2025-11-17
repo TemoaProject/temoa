@@ -1,12 +1,12 @@
+import copy
 import os
-import shutil  # Added for cleanup
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from typing import Any
 
 import boto3
-import tomli
-import tomli_w
+import tomlkit
 from botocore.exceptions import ClientError
 
 # --- Configuration (from environment variables) ---
@@ -66,8 +66,8 @@ def run_command(
 
 def get_current_temoa_version() -> str:
     """Reads the base version from pyproject.toml."""
-    with open('pyproject.toml', 'rb') as f:
-        data = tomli.load(f)
+    with open('pyproject.toml') as f:
+        data = tomlkit.parse(f.read())
     return data['project']['version']
 
 
@@ -119,6 +119,8 @@ def deploy_dumb_pypi_index(nightly_version: str) -> None:
             R2_PACKAGES_PUBLIC_URL,
             '--output-dir',
             os.path.join(TEMPORARY_OUTPUT_DIR, 'simple/'),
+            '--title',
+            'Temoa Nightly PyPI Index',
         ]
     )
     print('dumb-pypi index generated.')
@@ -217,17 +219,17 @@ def main() -> None:
     # 2. Store original pyproject.toml data for restoration
 
     original_pyproject_data: dict[str, Any]
-    with open('pyproject.toml', 'rb') as f:
-        original_pyproject_data = tomli.load(f)
+    with open('pyproject.toml') as f:
+        original_pyproject_data = tomlkit.parse(f.read())
 
     # Use try-finally to guarantee restoration
     try:
         # 3. Create a copy to modify for the build version
-        modified_data = original_pyproject_data.copy()
+        modified_data = copy.deepcopy(original_pyproject_data)
         modified_data['project']['version'] = nightly_version
 
-        with open('pyproject.toml', 'wb') as f:
-            tomli_w.dump(modified_data, f)
+        with open('pyproject.toml', 'w') as f:
+            f.write(tomlkit.dumps(modified_data))
         print(f'Temporarily updated pyproject.toml version to {nightly_version}')
 
         # 4. Build sdist and wheel
@@ -245,8 +247,8 @@ def main() -> None:
 
     finally:
         # 7. Restore original pyproject.toml unconditionally
-        with open('pyproject.toml', 'wb') as f:
-            tomli_w.dump(original_pyproject_data, f)
+        with open('pyproject.toml', 'w') as f:
+            f.write(tomlkit.dumps(original_pyproject_data))
         print('Restored original pyproject.toml.')
 
     print('✅ Temoa nightly PyPI deployment complete.')

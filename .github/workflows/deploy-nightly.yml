@@ -125,8 +125,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Install deploy script specific dependencies (boto3, dumb-pypi, tomli_w)
-        run: uv pip install boto3 dumb-pypi tomli tomli_w
+      - name: Install deploy script specific dependencies (boto3, dumb-pypi, tomlkit)
+        run: uv pip install boto3 dumb-pypi tomlkit
 
       - name: Run Python Deployment Script
         run: uv run python .github/scripts/deploy_nightly_pypi.py
