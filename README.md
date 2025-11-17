@@ -26,6 +26,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 Bleeding-edge nightly development installation:
 
+In a directory initialized with uv (e.g., `uv init .`) run:
+
 ```bash
 uv add temoa --default-index https://pypi.temoaproject.org/simple/ --index https://pypi.org/simple/
 
@@ -46,7 +48,7 @@ uv sync --all-extras --dev
 
 # Run your first model
 uv run temoa tutorial my_first_model
-uv run temoa run my_first_model_config.toml
+uv run temoa run my_first_model.toml
 ```
 
 ### Standard Installation
@@ -66,7 +68,7 @@ pip install -e .
 temoa tutorial quick_start
 
 # Run the model
-temoa run quick_start_config.toml
+temoa run quick_start.toml
 ```
 
 ## Package Structure
