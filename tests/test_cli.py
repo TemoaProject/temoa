@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from temoa.cli import _is_writable, app
@@ -27,14 +28,14 @@ def create_test_config(tmp_path: Path, db_path: Path) -> Path:
     return test_config_path
 
 
-def test_cli_version():
+def test_cli_version() -> None:
     """Test the `temoa --version` command."""
     result = runner.invoke(app, ['--version'])
     assert result.exit_code == 0
     assert 'Temoa Version' in result.stdout
 
 
-def test_cli_run_command_success_silent(tmp_path):
+def test_cli_run_command_success_silent(tmp_path: Path) -> None:
     """Test a successful silent run of the `temoa run` command."""
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_test_config(tmp_path, db_path)
@@ -47,7 +48,7 @@ def test_cli_run_command_success_silent(tmp_path):
     assert (tmp_path / 'temoa-run.log').exists()
 
 
-def test_cli_run_build_only_silent(tmp_path):
+def test_cli_run_build_only_silent(tmp_path: Path) -> None:
     """Test the `temoa run --build-only --silent` flags."""
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_test_config(tmp_path, db_path)
@@ -65,7 +66,7 @@ def test_cli_run_build_only_silent(tmp_path):
 # =============================================================================
 
 
-def test_cli_validate_success_verbose(tmp_path):
+def test_cli_validate_success_verbose(tmp_path: Path) -> None:
     """Test a successful verbose run of the `temoa validate` command."""
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_test_config(tmp_path, db_path)
@@ -77,7 +78,7 @@ def test_cli_validate_success_verbose(tmp_path):
     assert (tmp_path / 'temoa-run.log').exists()
 
 
-def test_cli_validate_success_silent(tmp_path):
+def test_cli_validate_success_silent(tmp_path: Path) -> None:
     """Test a successful silent run of the `temoa validate` command."""
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_test_config(tmp_path, db_path)
@@ -89,7 +90,7 @@ def test_cli_validate_success_silent(tmp_path):
     assert (tmp_path / 'temoa-run.log').exists()
 
 
-def test_cli_validate_failure_on_invalid_db(tmp_path):
+def test_cli_validate_failure_on_invalid_db(tmp_path: Path) -> None:
     """Test a failing run of `temoa validate` with an invalid database."""
     # Create a file that is not a valid Temoa database (an empty file).
     # This will cause the version check inside the sequencer to fail.
@@ -108,7 +109,7 @@ def test_cli_validate_failure_on_invalid_db(tmp_path):
     assert (tmp_path / 'temoa-run.log').exists()
 
 
-def test_cli_run_missing_config():
+def test_cli_run_missing_config() -> None:
     """Test graceful failure for a missing config file."""
     args = ['run', 'non_existent_file.toml']
     result = runner.invoke(app, args)
@@ -123,7 +124,7 @@ def test_cli_run_missing_config():
 # =============================================================================
 
 
-def test_cli_migrate_help():
+def test_cli_migrate_help() -> None:
     """Test the `temoa migrate --help` command."""
     result = runner.invoke(app, ['migrate', '--help'])
     assert result.exit_code == 0
@@ -131,7 +132,7 @@ def test_cli_migrate_help():
     assert 'Migrate a single Temoa database file' in result.stdout
 
 
-def test_cli_migrate_sql_file(tmp_path):
+def test_cli_migrate_sql_file(tmp_path: Path) -> None:
     """Test migrating a SQL file with explicit --output."""
     # Ensure input file is available in the test environment (e.g., copied from data_files)
     input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
@@ -147,7 +148,7 @@ def test_cli_migrate_sql_file(tmp_path):
     assert output_file.exists()
 
 
-def test_cli_migrate_rejects_directory_input(tmp_path):
+def test_cli_migrate_rejects_directory_input(tmp_path: Path) -> None:
     """Test that the migrate command rejects a directory as input."""
     dummy_dir = tmp_path / 'my_dummy_dir'
     dummy_dir.mkdir()
@@ -159,7 +160,7 @@ def test_cli_migrate_rejects_directory_input(tmp_path):
     assert str(dummy_dir) in result.stdout
 
 
-def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path):
+def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path: Path) -> None:
     """
     Test migrating a SQL file without --output,
     where the input directory is writable.
@@ -183,8 +184,8 @@ def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path):
 
 
 def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
-    tmp_path, monkeypatch
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Test migrating a SQL file without --output,
     where the input directory is NOT writable.
@@ -230,7 +231,9 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
     assert not (non_writable_mock_parent / (input_file.stem + '_v4.sql')).exists()
 
 
-def test_cli_migrate_sql_file_auto_output_no_writable_location(tmp_path, monkeypatch):
+def test_cli_migrate_sql_file_auto_output_no_writable_location(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Test migrating a SQL file without --output,
     where neither the input directory nor the CWD are writable.
@@ -261,7 +264,7 @@ def test_cli_migrate_sql_file_auto_output_no_writable_location(tmp_path, monkeyp
     ).exists()  # No output created
 
 
-def test_cli_migrate_invalid_file():
+def test_cli_migrate_invalid_file() -> None:
     """Test migrating a non-existent file."""
     args = ['migrate', 'non_existent.sql']
     result = runner.invoke(app, args)
@@ -271,7 +274,7 @@ def test_cli_migrate_invalid_file():
     assert 'does not exist' in result.stderr or 'does not exist' in str(result.exception)
 
 
-def test_cli_migrate_unknown_type(tmp_path):
+def test_cli_migrate_unknown_type(tmp_path: Path) -> None:
     """Test migrating a file with unknown extension."""
     unknown_file = tmp_path / 'unknown.txt'
     unknown_file.write_text('dummy')
@@ -282,7 +285,7 @@ def test_cli_migrate_unknown_type(tmp_path):
     assert 'Cannot determine migration type' in result.stdout
 
 
-def test_cli_migrate_override_type(tmp_path):
+def test_cli_migrate_override_type(tmp_path: Path) -> None:
     """Test migrating with explicit type override."""
     input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
     input_file = tmp_path / 'test_input_override.sql'
@@ -297,7 +300,7 @@ def test_cli_migrate_override_type(tmp_path):
     assert output_file.exists()
 
 
-def test_cli_migrate_sql_file_silent(tmp_path):
+def test_cli_migrate_sql_file_silent(tmp_path: Path) -> None:
     """Test migrating a SQL file with --silent flag."""
     input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
     input_file = tmp_path / 'test_input_silent.sql'
@@ -313,7 +316,7 @@ def test_cli_migrate_sql_file_silent(tmp_path):
     assert output_file.exists()
 
 
-def test_cli_migrate_db_file_silent(tmp_path):
+def test_cli_migrate_db_file_silent(tmp_path: Path) -> None:
     """Test migrating a DB file with --silent flag."""
     import sqlite3  # Ensure sqlite3 is imported for this test if not already at top level
 
@@ -335,8 +338,8 @@ def test_cli_migrate_db_file_silent(tmp_path):
 
 
 def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd_silent(
-    tmp_path, monkeypatch
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Test migrating a SQL file with --silent, where input dir is not writable.
     Output should fall back to CWD, and the warning should NOT be printed.

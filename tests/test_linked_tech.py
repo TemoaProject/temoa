@@ -10,6 +10,10 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from pyomo.opt import SolverResults
+
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.model import TemoaModel
 
 logger = logging.getLogger(__name__)
 config_files = [
@@ -23,7 +27,9 @@ config_files = [
     indirect=True,
     ids=[d['name'] for d in config_files],
 )
-def test_linked_tech(system_test_run):
+def test_linked_tech(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
     """Check a few known values.  See the note above in header regarding scenario reference"""
     data_name, res, mdl, _ = system_test_run
     # test emission of CO2

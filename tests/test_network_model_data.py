@@ -1,10 +1,19 @@
 import sqlite3
+from typing import TypedDict, cast
 from unittest.mock import MagicMock
 
 import pytest
 
 from temoa.model_checking import network_model_data
 from temoa.model_checking.commodity_network import CommodityNetwork
+from temoa.types.core_types import Period, Region
+
+
+class ScenarioType(TypedDict):
+    name: str
+    db_data: dict[str, object]
+    expected: dict[str, object]
+
 
 # ==============================================================================
 # Test Scenarios
@@ -14,7 +23,7 @@ from temoa.model_checking.commodity_network import CommodityNetwork
 # This makes the mock robust against changes in the order of execution,
 # ensuring backwards compatibility with older versions of the code.
 # ==============================================================================
-test_scenarios = [
+test_scenarios: list[ScenarioType] = [
     # Scenario 1: A basic network with several orphan technologies.
     {
         'name': 'basic',
@@ -147,7 +156,7 @@ test_scenarios = [
 # Fixtures
 # ==============================================================================
 @pytest.fixture
-def mock_db_connection(request):
+def mock_db_connection(request: pytest.FixtureRequest) -> tuple[MagicMock, dict[str, object]]:
     """
     A robust mock of a database connection.
 
@@ -182,7 +191,9 @@ def mock_db_connection(request):
 @pytest.mark.parametrize(
     'mock_db_connection', test_scenarios, indirect=True, ids=[d['name'] for d in test_scenarios]
 )
-def test_network_build_and_analysis(mock_db_connection) -> None:
+def test_network_build_and_analysis(
+    mock_db_connection: tuple[MagicMock, dict[str, object]],
+) -> None:
     """Tests both data model construction and network analysis in one go."""
     conn, expected = mock_db_connection
 
@@ -193,10 +204,15 @@ def test_network_build_and_analysis(mock_db_connection) -> None:
     assert (
         sum(len(s) for s in network_data.demand_commodities.values()) == expected['demands_count']
     )
-    assert len(network_data.available_techs[('R1', 2020)]) == expected['techs_count']
+    assert (
+        len(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
+        == expected['techs_count']
+    )
 
     # --- 3. Perform network analysis ---
-    cn = CommodityNetwork(region='R1', period=2020, model_data=network_data)
+    cn = CommodityNetwork(
+        region=cast(Region, 'R1'), period=cast(Period, 2020), model_data=network_data
+    )
     cn.analyze_network()
 
     # --- 4. Test analysis results ---
@@ -213,7 +229,7 @@ def test_network_build_and_analysis(mock_db_connection) -> None:
 
 
 @pytest.mark.parametrize('mock_db_connection', [test_scenarios[0]], indirect=True)
-def test_clone(mock_db_connection):
+def test_clone(mock_db_connection: tuple[MagicMock, dict[str, object]]) -> None:
     """Verifies that the clone() method creates a deep enough copy."""
     conn, _ = mock_db_connection
     network_data = network_model_data._build_from_db(conn)
@@ -225,7 +241,7 @@ def test_clone(mock_db_connection):
         'Data should be identical after cloning'
     )
 
-    clone.available_techs.pop(('R1', 2020))
+    clone.available_techs.pop((cast(Region, 'R1'), cast(Period, 2020)))
     assert network_data.available_techs != clone.available_techs, (
         'Modifying clone should not affect original'
     )
@@ -307,7 +323,7 @@ def test_sector_handling_with_sectors() -> None:
     network_data = network_model_data._build_from_db(mock_con)
 
     # Verify sectors are included in efficiencyTuple
-    techs = list(network_data.available_techs[('R1', 2020)])
+    techs = list(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
     assert len(techs) == 2
     # Fields: region, ic, tech, vintage, oc, lifetime, sector
     assert all(len(tech) == 7 for tech in techs)
@@ -391,7 +407,7 @@ def test_sector_handling_without_sectors() -> None:
     network_data = network_model_data._build_from_db(mock_con)
 
     # Verify sectors default to None
-    techs = list(network_data.available_techs[('R1', 2020)])
+    techs = list(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
     assert len(techs) == 2
     # Fields: region, ic, tech, vintage, oc, lifetime, sector (sector None here)
     assert all(len(tech) == 7 for tech in techs)
