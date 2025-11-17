@@ -26,7 +26,9 @@ params = [
 @pytest.mark.parametrize(
     argnames='data_name config_file set_file'.split(), argvalues=params, ids=[t[0] for t in params]
 )
-def test_set_consistency(data_name, config_file, set_file, tmp_path):
+def test_set_consistency(
+    data_name: str, config_file: str, set_file: str, tmp_path: pathlib.Path
+) -> None:
     """
     test the set membership of the utopia model against cached values to ensure consistency
     """

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pyomo.environ import ConcreteModel
@@ -22,8 +23,13 @@ run_params = [
 ]
 
 
-@pytest.mark.parametrize('run_data', run_params, ids=lambda p: p['name'])
-def test_sequencer_start(run_data, tmp_path):
+def id_func(p: dict[str, Any]) -> str:
+    return p['name']
+
+
+# Suppress mypy error for pytest.mark.parametrize by using a more specific ignore
+@pytest.mark.parametrize('run_data', run_params, ids=id_func)
+def test_sequencer_start(run_data: dict[str, Any], tmp_path: Path) -> None:
     """
     Tests the main `start()` method for various run modes.
     """
@@ -42,13 +48,12 @@ def test_sequencer_start(run_data, tmp_path):
         mode_override=run_data['mode'],
     )
 
-    # Step 3: Call the `start()` method and assert it returns None on success.
+    # Step 3: Call the `start()` method.
     # Any failure will raise an exception, which pytest will catch.
-    result = sequencer.start()
-    assert result is None, 'sequencer.start() should return None on success'
+    sequencer.start()
 
 
-def test_sequencer_build_model(tmp_path):
+def test_sequencer_build_model(tmp_path: Path) -> None:
     """
     Tests the dedicated `build_model()` method for the BUILD_ONLY mode.
     """
