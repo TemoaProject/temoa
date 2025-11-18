@@ -1,0 +1,132 @@
+# .github/workflows/deploy-nightly.yml
+name: Deploy Temoa Nightlies
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger (e.g., hotfix, test)"
+        required: false
+        default: "Manual deploy"
+  schedule:
+    - cron: "0 0 * * *" # Every day at 00:00 UTC
+
+jobs:
+  check_for_changes_and_test:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check_changes.outputs.should_deploy }}
+      unstable_branch_sha: ${{ steps.get_unstable_sha.outputs.sha }}
+
+    env:
+      NIGHTLIES_GH_TOKEN: ${{ secrets.NIGHTLIES_GH_TOKEN }}
+      GH_PAGES_REPO: ${{ vars.GH_PAGES_REPO }}
+      GH_PAGES_BRANCH: ${{ vars.GH_PAGES_BRANCH }}
+      SOURCE_BRANCH_FOR_NIGHTLIES: unstable
+
+    steps:
+      - name: Checkout the source branch for nightlies (unstable)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_BRANCH_FOR_NIGHTLIES }}
+          fetch-depth: 0
+
+      - name: Get SHA of the unstable branch
+        id: get_unstable_sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch last deployed SHA from nightlies repo
+        id: get_last_deployed
+        run: |
+          git clone "https://x-access-token:${{ env.NIGHTLIES_GH_TOKEN }}@github.com/${{ env.GH_PAGES_REPO }}.git" /tmp/nightlies_repo_check
+          cd /tmp/nightlies_repo_check
+          git checkout ${{ env.GH_PAGES_BRANCH }} || git checkout --orphan ${{ env.GH_PAGES_BRANCH }}
+          LAST_DEPLOYED_SHA=$(git log -1 --pretty=format:%H || echo "")
+
+          echo "LAST_DEPLOYED_SHA=$LAST_DEPLOYED_SHA" >> "$GITHUB_OUTPUT"
+          echo "Current source branch (${{ env.SOURCE_BRANCH_FOR_NIGHTLIES }} HEAD): ${{ steps.get_unstable_sha.outputs.sha }}"
+
+      - name: Determine if deployment is needed
+        id: check_changes
+        run: |
+          CURRENT_SOURCE_SHA="${{ steps.get_unstable_sha.outputs.sha }}"
+          LAST_DEPLOYED_SHA="${{ steps.get_last_deployed.outputs.LAST_DEPLOYED_SHA }}"
+
+          SHOULD_DEPLOY="false"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Triggered manually, attempting deployment."
+            SHOULD_DEPLOY="true"
+          elif [[ "$CURRENT_SOURCE_SHA" != "$LAST_DEPLOYED_SHA" ]]; then
+            echo "Changes detected on source branch (${{ env.SOURCE_BRANCH_FOR_NIGHTLIES }} HEAD: $CURRENT_SOURCE_SHA, last deployed: $LAST_DEPLOYED_SHA). Attempting deployment."
+            SHOULD_DEPLOY="true"
+          else
+            echo "No new changes on source branch since last deployment ($CURRENT_SOURCE_SHA == $LAST_DEPLOYED_SHA). Skipping deployment."
+          fi
+
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.6"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install the project (with all extras for comprehensive testing)
+        run: uv sync --locked --all-extras --dev
+
+      - name: Install CBC solver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y coinor-cbc
+
+      - name: Run tests
+        env:
+          CI: 1
+        run: uv run pytest tests
+
+      - name: Run type check (mypy)
+        run: uv run mypy --config-file=pyproject.toml temoa/
+
+  deploy_nightly_artifacts:
+    needs: check_for_changes_and_test
+    if: success() && needs.check_for_changes_and_test.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+      NIGHTLIES_GH_TOKEN: ${{ secrets.NIGHTLIES_GH_TOKEN }}
+
+      R2_BUCKET_NAME: ${{ vars.R2_BUCKET_NAME }}
+      R2_PACKAGES_PUBLIC_URL: ${{ vars.R2_PACKAGES_PUBLIC_URL }}
+      GH_PAGES_INDEX_BASE_URL: ${{ vars.GH_PAGES_INDEX_BASE_URL }}
+      GH_PAGES_REPO: ${{ vars.GH_PAGES_REPO }}
+      GH_PAGES_BRANCH: ${{ vars.GH_PAGES_BRANCH }}
+      SOURCE_COMMIT_SHA: ${{ needs.check_for_changes_and_test.outputs.unstable_branch_sha }}
+      SOURCE_BRANCH_FOR_NIGHTLIES: unstable # Also define here for the checkout action
+
+    steps:
+      - name: Checkout the source branch for nightlies (unstable)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_BRANCH_FOR_NIGHTLIES }}
+          fetch-depth: 0
+
+      - name: Install uv and project dependencies for deployment script
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.6"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install deploy script specific dependencies (boto3, dumb-pypi, tomlkit)
+        run: uv pip install boto3 dumb-pypi tomlkit
+
+      - name: Run Python Deployment Script
+        run: uv run python .github/scripts/deploy_nightly_pypi.py
