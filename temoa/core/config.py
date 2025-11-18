@@ -110,27 +110,7 @@ class TemoaConfig:
         self.neos = neos
         if self.neos:
             raise NotImplementedError('Neos is currently not supported.')
-
         self.solver_name = solver_name
-
-        if self.solver_name:
-            solver_executable = shutil.which(self.solver_name)
-            if solver_executable is None:
-                error_message = (
-                    f"The specified solver '{self.solver_name}' was not found in your system's PATH.\n"
-                    'Please ensure the solver is installed and its executable is accessible.\n'
-                )
-                if self.solver_name.lower() in SOLVER_DOC_LINKS:
-                    error_message += f'For installation instructions, refer to: {SOLVER_DOC_LINKS[self.solver_name.lower()]}\n'
-                else:
-                    error_message += "Refer to the solver's official documentation for installation instructions."
-                raise SolverNotAvailableError(error_message)
-            else:
-                logger.info('Using solver: %s found at %s', self.solver_name, solver_executable)
-        else:
-            logger.warning(
-                'No solver name specified in the configuration. This may lead to errors if a solver is required.'
-            )
 
         self.save_excel = save_excel
         self.save_duals = save_duals
@@ -177,6 +157,23 @@ class TemoaConfig:
         """
         with open(config_file, 'rb') as f:
             data = tomllib.load(f)
+
+        if 'solver_name' in data:
+            solver_executable = shutil.which(data['solver_name'])
+            if solver_executable is None:
+                error_message = (
+                    f"The specified solver '{data['solver_name']}' was not found in your system's PATH.\n"
+                    'Please ensure the solver is installed and its executable is accessible.\n'
+                )
+                if data['solver_name'].lower() in SOLVER_DOC_LINKS:
+                    error_message += f'For installation instructions, refer to: {SOLVER_DOC_LINKS[data["solver_name"].lower()]}\n'
+                else:
+                    error_message += "Refer to the solver's official documentation for installation instructions."
+                raise SolverNotAvailableError(error_message)
+            else:
+                logger.info('Using solver: %s found at %s', data['solver_name'], solver_executable)
+        else:
+            raise SolverNotAvailableError('No solver name specified in the configuration.')
 
         tc = TemoaConfig(output_path=output_path, config_file=config_file, silent=silent, **data)
         logger.info('Scenario Name:  %s', tc.scenario)
