@@ -1,24 +1,4 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users expanding this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-"""
-
+import shutil
 import sys
 import tomllib
 from logging import getLogger
@@ -27,6 +7,20 @@ from pathlib import Path
 from temoa.core.modes import TemoaMode
 
 logger = getLogger(__name__)
+
+
+class SolverNotAvailableError(Exception):
+    """Raised when a required solver executable cannot be found in the system's PATH."""
+
+
+# Dictionary to store installation documentation links for common solvers
+SOLVER_DOC_LINKS = {
+    'cbc': 'https://github.com/coin-or/Cbc#download (refer to temoa documentation for specific OS steps)',
+    'gurobi': 'https://www.gurobi.com/downloads/ (requires license and installation)',
+    'cplex': 'https://www.ibm.com/products/ilog-cplex-optimization-studio (requires license and installation)',
+    'highs': 'https://ergo-code.github.io/HiGHS/dev/installation/ (refer to documentation for specific OS steps)',
+    'glpk': 'https://www.gnu.org/software/glpk/',
+}
 
 
 class TemoaConfig:
@@ -116,8 +110,8 @@ class TemoaConfig:
         self.neos = neos
         if self.neos:
             raise NotImplementedError('Neos is currently not supported.')
-
         self.solver_name = solver_name
+
         self.save_excel = save_excel
         self.save_duals = save_duals
         self.save_storage_levels = save_storage_levels
@@ -163,6 +157,23 @@ class TemoaConfig:
         """
         with open(config_file, 'rb') as f:
             data = tomllib.load(f)
+
+        if 'solver_name' in data:
+            solver_executable = shutil.which(data['solver_name'])
+            if solver_executable is None:
+                error_message = (
+                    f"The specified solver '{data['solver_name']}' was not found in your system's PATH.\n"
+                    'Please ensure the solver is installed and its executable is accessible.\n'
+                )
+                if data['solver_name'].lower() in SOLVER_DOC_LINKS:
+                    error_message += f'For installation instructions, refer to: {SOLVER_DOC_LINKS[data["solver_name"].lower()]}\n'
+                else:
+                    error_message += "Refer to the solver's official documentation for installation instructions."
+                raise SolverNotAvailableError(error_message)
+            else:
+                logger.info('Using solver: %s found at %s', data['solver_name'], solver_executable)
+        else:
+            raise SolverNotAvailableError('No solver name specified in the configuration.')
 
         tc = TemoaConfig(output_path=output_path, config_file=config_file, silent=silent, **data)
         logger.info('Scenario Name:  %s', tc.scenario)
