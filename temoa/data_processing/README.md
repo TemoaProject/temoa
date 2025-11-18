@@ -13,6 +13,7 @@ This folder contains files used to manage Temoa output data processing and visua
 Python script that queries database output tables to create an Excel file containing scenario-specific results.
 
 **Usage:**
+
 ```bash
 uv run python temoa/data_processing/db_to_excel.py -i path/to/database.sqlite -s scenario_name
 ```
@@ -24,11 +25,13 @@ uv run python temoa/data_processing/db_to_excel.py -i path/to/database.sqlite -s
 Python script that creates Graphviz diagrams for visualizing the energy system network.
 
 **Basic usage** - View the full energy system map:
+
 ```bash
 uv run python temoa/data_processing/make_graphviz.py -i data_files/temoa_utopia.sqlite
 ```
 
 **Advanced usage** - Capacitated flow graph for a specific period:
+
 ```bash
 uv run python temoa/data_processing/make_graphviz.py \
   -i data_files/temoa_utopia.sqlite \
@@ -39,6 +42,7 @@ uv run python temoa/data_processing/make_graphviz.py \
 ```
 
 **Options:**
+
 - `-i` : Input database file path
 - `-r` : Region name
 - `-s` : Scenario name
@@ -46,6 +50,7 @@ uv run python temoa/data_processing/make_graphviz.py \
 - `-y` : Specific year to visualize
 
 For all available options:
+
 ```bash
 uv run python temoa/data_processing/make_graphviz.py --help
 ```
@@ -53,6 +58,7 @@ uv run python temoa/data_processing/make_graphviz.py --help
 ## Output Files
 
 The scripts generate output files in the current directory or a specified output location. Graphviz creates both:
+
 - **SVG/PNG files** - Viewable images of the network
 - **DOT files** - Source files for Graphviz (useful for debugging and archiving)
 

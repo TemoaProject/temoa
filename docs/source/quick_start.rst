@@ -104,13 +104,11 @@ repo <https://github.com/TemoaProject/data>`_.
 
 The installation procedures above are meant to be generic and should work across
 different platforms. Nonetheless, system-specific ambiguities and unexpected
-conditions inevitably arise. Please use the `Temoa forum
-<https://groups.google.com/forum/#!forum/temoa-project>`_ to ask for help.
+conditions inevitably arise. Please use
+`GitHub Issues <https://github.com/TemoaProject/temoa/issues>`_ to ask for help.
 
 Running Temoa
 -------------
-Temoa should always be run from the top-level from the top-level
-:code:`temoa` directory.
 
 To run the model, a configuration (‘config’) file is needed. An
 example config file called :code:`config_sample.toml` resides within the

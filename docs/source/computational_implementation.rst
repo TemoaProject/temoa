@@ -849,10 +849,10 @@ should meet a basic standard of quality:
 
    This indicates that you retain all rights to any intellectual property your
    (set of) commit(s) creates, but that you license it to the Temoa Project
-   under the terms of the GNU Public License, version 2.  If
+   under the terms of the MIT license.  If
    the Temoa Project incorporates your commit, then Temoa may not relicense
    your (set of) patch(es), other than to increase the version number of the
-   GPL license.  In short, the intellectual property remains yours, and the
+   MIT license.  In short, the intellectual property remains yours, and the
    Temoa Project would be but a licensee using your code similarly under the
    terms of MIT.
 

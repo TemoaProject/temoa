@@ -937,7 +937,7 @@ ramp down rate can be specified via the :code:`ramp_down` parameter. The specifi
 value represents the fraction of installed capacity that can be ramped down when moving
 from one time slice to the next. There is an equivalent :code:`ramp_up` parameter, to
 specify ramping limits in the upward direction. This parameter is used in the
-:code:`ramp_downDay_constraint` and `ramp_downSeason_constraint`. The former constrains
+:code:`ramp_down_day_constraint` and `ramp_down_season_constraint`. The former constrains
 the downward ramp rate between time-of-day slices, and the latter constrains the downward
 ramp rate between the last time-of-day slice in a given season and the first time-of-day
 slice in the next season.
@@ -953,7 +953,7 @@ ramp up rate can be specified via the :code:`ramp_up` parameter. The specified
 value represents the fraction of installed capacity that can be ramped up when moving
 from one time slice to the next. There is an equivalent :code:`ramp_down` parameter, to
 specify ramping limits in the downward direction. This parameter is used in the
-:code:`ramp_upDay_constraint` and `ramp_upSeason_constraint`. The former constrains
+:code:`ramp_up_day_constraint` and `ramp_up_season_constraint`. The former constrains
 the upward ramp rate between time-of-day slices, and the latter constrains the upward
 ramp rate between the last time-of-day slice in a given season and the first time-of-day
 slice in the next season.

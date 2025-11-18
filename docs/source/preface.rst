@@ -79,7 +79,7 @@ Temoa Origin and Pronunciation
 While we use 'Temoa' as an acronym, it is an actual word in the Nahuatl (Aztec)
 language, meaning "to seek something."
 
-.. Figure:: images/temoa_definition.*
+.. figure:: images/temoa_definition.*
    :align: center
    :figclass: center
    :figwidth: 50%
