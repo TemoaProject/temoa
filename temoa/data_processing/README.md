@@ -1,36 +1,67 @@
 # Overview
 
-This folder contains files used to manage Temoa input/output data. Included files are:
+This folder contains files used to manage Temoa output data processing and visualization.
 
-1. `db_to_excel.py/`
+> **⚠️ Note:** These tools have not been fully tested with Temoa v4.0. They may require updates or fixes. Please report any issues on [GitHub Issues](https://github.com/TemoaProject/temoa/issues).
+
+## Available Tools
+
+### 1. `db_to_excel.py`
+
+**Status:** ⚠️ Untested in v4.0
+
 Python script that queries database output tables to create an Excel file containing scenario-specific results.
 
-2. `make_graphviz.py/`
-Python script that creates a Graphviz diagram for the database.
-The most basic way to use graphviz is to view the full energy system map:
-```$ python make_graphviz.py -i temoa_utopia.sqlite```  Other options include a capacitated
-flow graph for a specific period:  ```-i ../../data_files/utopia.sqlite -r utopia -s <scenario name> -c -y 2010```
-note how this input file passes a relative link up to the data_files directory, assuming standard location in the project
+**Usage:**
+```bash
+uv run python temoa/data_processing/db_to_excel.py -i path/to/database.sqlite -s scenario_name
+```
 
-3. `Network_diagrams.ipynb/`
-Notebook to interactively view network diagrams for a user-specified database.
-Create and activate the Temoa environment, as follows:
+### 2. `make_graphviz.py`
 
- ```$ conda env create```
+**Status:** ⚠️ Untested in v4.0
 
- ```$ source activate temoa-py3```
+Python script that creates Graphviz diagrams for visualizing the energy system network.
 
- Once the Temoa environment is created and activated, enable the following extensions from the command line.
- This will need to be done only once, before using notebooks within the Temoa environment.
+**Basic usage** - View the full energy system map:
+```bash
+uv run python temoa/data_processing/make_graphviz.py -i data_files/temoa_utopia.sqlite
+```
 
- ```(temoa-py3) $ jupyter nbextension enable init_cell/main```
+**Advanced usage** - Capacitated flow graph for a specific period:
+```bash
+uv run python temoa/data_processing/make_graphviz.py \
+  -i data_files/temoa_utopia.sqlite \
+  -r utopia \
+  -s scenario_name \
+  -c \
+  -y 2010
+```
 
- ```(temoa-py3) $ jupyter nbextension enable hide_input/main```
+**Options:**
+- `-i` : Input database file path
+- `-r` : Region name
+- `-s` : Scenario name
+- `-c` : Include capacity information
+- `-y` : Specific year to visualize
 
- Once these extensions are enabled, navigate to the `temoa/data_processing/` folder and then open notebooks as follows.
+For all available options:
+```bash
+uv run python temoa/data_processing/make_graphviz.py --help
+```
 
- ```(temoa-py3) $ jupyter notebook```
+## Output Files
 
- Navigate to the `Network_diagrams.ipynb/` file and select technology/commodity options to interactively view their network diagrams.
- The notebook also includes an interactive technology/commodity lookup tool.
- The "Toggle selected cell input display" button (below and to the right of the Help menu) can be used to view hidden code cells.
+The scripts generate output files in the current directory or a specified output location. Graphviz creates both:
+- **SVG/PNG files** - Viewable images of the network
+- **DOT files** - Source files for Graphviz (useful for debugging and archiving)
+
+## Environment Setup
+
+These tools are included in the main Temoa installation. If you're working from the repository:
+
+```bash
+uv sync --all-extras
+```
+
+This ensures all required dependencies (pandas, graphviz, xlsxwriter, etc.) are installed.
