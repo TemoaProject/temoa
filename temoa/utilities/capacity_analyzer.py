@@ -1,6 +1,6 @@
 """
 Quick utility script to analyze the distribution of capacities within a scenario database
-Note:  this uses the MaxCapacity table for analysis, which depending on if/how that table
+Note:  this uses the max_capacity table for analysis, which depending on if/how that table
 is populated will influence the utility of using this method
 """
 
@@ -8,9 +8,8 @@ import itertools
 import os.path
 import sqlite3
 
-from matplotlib import pyplot as plt
-
 from definitions import PROJECT_ROOT
+from matplotlib import pyplot as plt
 
 # Written by:  J. F. Hyink
 # jeff@westernspark.us
@@ -27,7 +26,7 @@ res = []
 try:
     con = sqlite3.connect(source_db_file)
     cur = con.cursor()
-    cur.execute('SELECT max_cap  FROM MaxCapacity')
+    cur.execute('SELECT max_cap  FROM max_capacity')
     for row in cur:
         res.append(row)
 
