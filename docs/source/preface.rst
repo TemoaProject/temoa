@@ -99,3 +99,10 @@ inconsistency, or general "that could be improved", we want to hear about it.
 If you are a software developer-type, feel free to open an issue on our `GitHub
 Issue tracker`_\ .  If you would rather not create a GitHub account, feel free
 to let us know the issue on our `mailing list`_\ .
+
+.. _PDF: https://temoacloud.com/wp-content/uploads/2020/02/toolsforenergymodeloptimizationandanalysistemoa.pdf
+.. _HTML: http://temoaproject.org/docs/
+.. _GitHub Issues: https://github.com/TemoaProject/temoa/issues
+.. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
+.. _mailing list: https://groups.google.com/forum/#!forum/temoa-project
+

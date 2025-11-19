@@ -8,9 +8,17 @@ written in `Python <http://www.python.org/>`_. Consequently, Temoa will run on
 Linux, Mac, Windows, or any operating system that Pyomo supports. There are
 several open source software elements required to run Temoa.
 
-**Using pip (Recommended for most users)**:
+**Using pip**:
 
 The standard way to install Temoa:
+
+First, it is highly recommended to use a Python virtual environment to manage dependencies:
+
+.. parsed-literal::
+  $ python -m venv temoa_env
+  $ source temoa_env/bin/activate
+
+Then, install Temoa:
 
 .. parsed-literal::
   # Install from PyPI (when 4.0 is released)
@@ -20,8 +28,8 @@ The standard way to install Temoa:
   $ pip install --index-url https://temoaproject.github.io/temoa-nightlies/simple/ temoa --extra-index-url https://pypi.org/simple/
 
   # Get started
-  $ temoa tutorial my_first_model
-  $ temoa run my_first_model.toml
+  $ python -m temoa tutorial my_first_model
+  $ python -m temoa run my_first_model.toml
 
 **Using uv (Alternative)**:
 
@@ -31,12 +39,17 @@ For faster dependency resolution:
   # Install uv
   $ curl -LsSf https://astral.sh/uv/install.sh | sh
 
-  # Install Temoa from nightlies
-  $ uv pip install --index-url https://temoaproject.github.io/temoa-nightlies/simple/ temoa --extra-index-url https://pypi.org/simple/
+  # Create a uv initialized virtual environment
+  $ uv init <dir_name>
+  $ cd <dir_name>
+
+
+  # add Temoa from nightlies to pyproject.toml
+  $ uv add temoa --default-index https://pypi.temoaproject.org/simple --index https://pypi.org/simple
 
   # Get started
-  $ temoa tutorial my_first_model
-  $ temoa run my_first_model.toml
+  $ uv run temoa tutorial my_first_model
+  $ uv run temoa run my_first_model.toml
 
 **For Contributors (Development Installation)**:
 
@@ -49,9 +62,6 @@ If you want to contribute to Temoa or modify the code:
 
   # Install in development mode with uv (recommended)
   $ uv sync --all-extras --dev
-
-  # Or with pip
-  $ pip install -e ".[docs,plotting]"
 
 For detailed contribution guidelines, see CONTRIBUTING.md in the repository.
 
@@ -71,41 +81,6 @@ Each of the respective websites contains installation instructions for the indiv
 solvers.  For those wishing to run the internal tests on Temoa, the :code:`CBC` solver
 is required.
 
-There are three ways to run the model, each of which is detailed below. Note that
-the example commands utilize 'temoa_utopia', a commonly used test case for ESOMs.
-
-Obtaining Temoa
----------------
-
-Now that you have functioning environment, you need to obtain the source code
-for Temoa. There are a couple of options for obtaining and running Temoa from
-GitHub. If you want to simply run the model, you can download Temoa from GitHub
-as a zip file. Navigate to our `Github repo <https://github.com/TemoaProject/temoa>`__,
-and click the green ‘clone or download’ button near the top-right corner. Select
-‘Download ZIP,’ and you can download the entire Temoa :code:`main` (our main branch)
-to your local machine. The second option creates a local copy of the model source
-code in our GitHub repository. This is a two step process: first install git and
-then ‘clone’ the repository. Under Linux, git can be installed through the default
-package manager. Git for Windows and Mac can be downloaded from the `Git website
-<https://git-scm.com/download/>`_. To clone the Temoa repository, navigate to
-the directory where you want the model to reside and type the following from the
-prompt:
-
-.. parsed-literal::
-  $ git clone https://github.com/TemoaProject/temoa/
-
-Note that cloning the repository will supply the latest version of the code, and
-allow you to archive changes to the code and data in your own local git
-repository.
-
-A few basic input data files are included in the :code:`temoa/data_files`` folder.
-Additional Temoa-compatible datasets are available in `this separate GitHub
-repo <https://github.com/TemoaProject/data>`_.
-
-The installation procedures above are meant to be generic and should work across
-different platforms. Nonetheless, system-specific ambiguities and unexpected
-conditions inevitably arise. Please use
-`GitHub Issues <https://github.com/TemoaProject/temoa/issues>`_ to ask for help.
 
 Running Temoa
 -------------
@@ -329,12 +304,13 @@ may be produced by endogenous decisions in myopic runs.
 
 Commodity Network Visualization
 -------------------------------
+
 The output of the Source Tracing operation can be visualized by enabling the commodity network plots
 in the config file.  This will add a set of region-period specific html files to the Outputs folder.
 These files *should* be open-able in any web browser.  (See the note in the main `README.md` for trouble
 with Windows OS systems).
 
-.. Figure:: images/utopia_commodity_network.png
+.. figure:: images/utopia_commodity_network.png
    :align: center
    :figclass: center
    :figwidth: 60%
@@ -353,4 +329,4 @@ The color legend for Commodity Networks is as follows:
 * Red arc:  Demand-Side Orphan (shown, but suppressed when model built)
 * Green arc:  Any Tech with a Negative Variable Cost
 
-=============
+.. _sqlite: https://www.sqlite.org/

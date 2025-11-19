@@ -31,7 +31,7 @@ In the command above, note that we have to point the Graphviz module to the
 :code:`temoa_utopia` database file, which resides in the :code:`data_files`
 directory. The resultant system map will look like this:
 
-.. Figure:: images/simple_model.*
+.. figure:: images/simple_model.*
    :align: center
    :figclass: center
    :figwidth: 60%
@@ -85,7 +85,7 @@ commodity or technology. For example:
 Output Graphs
 -------------
 
-Temoa can also be used to generate output graphs using `matplotlib <https://matplotlib.org/>`.
+Temoa can also be used to generate output graphs using `matplotlib <https://matplotlib.org/>`_.
 From the command line, navigate to the :code:`data_processing` folder and execute the following command:
 
 .. parsed-literal::
@@ -108,5 +108,7 @@ Here is the result:
    associated with each technology in the electric sector from the 'test_run'
    scenario drawn from the 'temoa_utopia' database. Because the :code:`super`
    flag was specified, technologies are grouped together based on user-specified
-   categories in the :code:`tech_category`` column of the :code:`technologies`
+   categories in the :code:`tech_category` column of the :code:`technologies`
    table of the database.
+
+.. _Graphviz: http://www.graphviz.org/

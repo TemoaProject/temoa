@@ -37,7 +37,7 @@ version = cast(str, project_metadata['version']).rsplit('.', 1)[
     0
 ]  # '4.0.0a1.dev20251113' -> '4.0.0a1'
 # The full version, including alpha/beta/rc tags
-release = cast(str, project_metadata['version'])
+release = str(project_metadata['version'])
 
 
 # -- General configuration ---------------------------------------------------
@@ -90,6 +90,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Suppress warnings for duplicate labels and objects (intentional due to file inclusion and autodoc)
+suppress_warnings = [
+    'ref.duplicate',      # Duplicate labels between included RST files
+    'autosummary',        # Autodoc duplicate object descriptions
+    'ref.footnote',       # Unreferenced footnotes
+]
 
 
 # -- Options for HTML output -------------------------------------------------

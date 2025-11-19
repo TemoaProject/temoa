@@ -105,9 +105,9 @@ Conventions
          \cdot \text{SEG}_{s, d}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
-       =
+    =
        \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-       +
+    +
        \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
        \\
@@ -337,9 +337,9 @@ the :code:`Capacity` :eq:`Capacity` Constraint:
          \cdot \text{SEG}_{s, d}
        \right )
        \cdot \textbf{CAP}_{r, t, v}
-   =
+    =
        \sum_{I, O} \textbf{FO}_{r, p, s, d,i, t, v, o}
-       +
+    +
        \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
    \\
@@ -431,7 +431,7 @@ and will provide the user a warning with pointed debugging information.
 .. _capacity_factor_tech:
 
 capacity_credit
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 :math:`{CC}_{r \in R, p \in P, t \in T, v \in V}`
 
@@ -441,7 +441,7 @@ electricity demand occurs. This parameter is used in the :math:`reserve_margin`
 constraint.
 
 capacity_factor_tech
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 :math:`{CFT}_{r \in R, s \in S, d \in D, t \in T}`
 
@@ -449,7 +449,7 @@ Temoa indexes the :code:`capacity_factor_tech` parameter by season, time-of-day,
 and technology.
 
 capacity_factor_process
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`{CFP}_{r \in R, s \in S, d \in D, t \in T, v \in V}`
 
@@ -492,7 +492,7 @@ used 100% of the time?"
 
 
 cost_fixed
-^^^^^^^^^
+^^^^^^^^^^
 
 :math:`{CF}_{r \in R, p \in P, t \in T, v \in V}`
 
@@ -510,7 +510,7 @@ Cap}`).
 
 
 cost_invest
-^^^^^^^^^^
+^^^^^^^^^^^
 
 :math:`{CI}_{r \in R, t \in T, v \in P}`
 
@@ -523,7 +523,7 @@ only used in the default objective function (:math:`\tfrac{Dollars}{Unit Cap}`).
 
 
 cost_variable
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 :math:`{CV}_{r \in R, p \in P,t \in T,v \in V}`
 
@@ -533,7 +533,7 @@ of the process.
 
 
 construction_input
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :math:`{CON}_{r \in R, i \in C^p,t \in T \setminus T^u,v \in V}`
 
@@ -593,7 +593,7 @@ DDD must be 1.
 
 
 demand_specific_distribution
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`{DSD}_{r \in R, s \in S, d \in D, c \in C^d}`
 
@@ -608,7 +608,7 @@ in the Demand constraint.
 
 
 emission_activity
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`{EAC}_{e \in C_e,\{r,i,t,v,o\} \in \Theta_{\text{efficiency}}}`
 
@@ -623,7 +623,7 @@ to account for emissions per unit activity, but it more accurately describes
 
 
 emission_embodied
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`{EE}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
 
@@ -633,7 +633,7 @@ over each year in the deployment vintage.
 
 
 emission_end_of_life
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 :math:`{EEOL}_{r \in R,t \in T \setminus T^u, v \in V,e \in C_e}`
 
@@ -643,7 +643,7 @@ life occur evenly over years in that period.
 
 
 end_of_life_output
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :math:`{EOLO}_{r \in R,t \in T \setminus T^u, v \in V,o \in C_p}`
 
@@ -663,7 +663,7 @@ life occur evenly over years in that period.
 
 
 existing_capacity
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`{ECAP}_{r \in R, t \in T, v \in \text{P}^e}`
 
@@ -685,7 +685,7 @@ with the exception of an investment cost.
 .. _GDR:
 
 global_discount_rate
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 :math:`{GDR}`
 
@@ -710,7 +710,7 @@ the vintage year, not as a string of payments.
 The Global Discount Rate is entered in the metadata_real table in the database.
 
 growth_rate_max
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 :math:`{GRM}_{r \in R, t \in T}`
 
@@ -720,7 +720,7 @@ but rather across all vintages of a given technology.
 
 
 growth_rate_seed
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{GRS}_{r \in R, t \in T}`
 
@@ -730,7 +730,7 @@ capacity seed in subsequent time periods.
 
 
 loan_lifetime_process
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 :math:`{LLP}_{r \in R, t \in T, v \in P}`
 
@@ -744,7 +744,7 @@ assigns the technology lifetime to the loan period in :code:`temoa/components/te
 
 
 loan_lifetime_tech
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :math:`{LLT}_{r \in R, t \in T}`
 
@@ -754,7 +754,7 @@ vintages of a given technology are assumed to have the same loan term, then
 
 
 lifetime_process
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{LTP}_{r \in R, t \in T, v \in P}`
 
@@ -762,7 +762,7 @@ This parameter specifies the total useful life of a given process in years.
 
 
 lifetime_tech
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 :math:`{LTT}_{r \in R, t \in T}`
 
@@ -772,7 +772,7 @@ lifetime, then :code:`LifeTimeTech` can be used instead of :code:`LifeTimeProces
 
 
 linked_techs
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{LIT}_{r \in R, t \in T, e \in C^e, t \in T}`
 
@@ -787,7 +787,7 @@ which is represented by the second :code:`t` index.
 
 
 loan_rate
-^^^^^^^^
+^^^^^^^^^
 
 :math:`{LR}_{r \in r, t \in T, v \in V}`
 
@@ -799,7 +799,7 @@ loan rate is accessible in the metadata_real table in the database.
 
 
 max_activity
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{MAA}_{r \in R, p \in P, t \in T}`
 
@@ -810,7 +810,7 @@ is used in the :code:`max_activity_constraint`.
 
 
 max_capacity
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{MAC}_{r \in R, p \in P, t \in T}`
 
@@ -821,7 +821,7 @@ used in the :code:`max_capacity_constraint`.
 
 
 max_capacity_sum
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{MCS}_{t \in T}`
 
@@ -833,7 +833,7 @@ in the :code:`tech_capacity_max` subset. This parameter is used in the
 
 
 max_resource
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{MAR}_{r \in R, t \in T}`
 
@@ -847,7 +847,7 @@ model time period.
 
 
 min_activity
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{MIA}_{r \in R, p \in P, t \in T}`
 
@@ -858,7 +858,7 @@ is used in the :code:`min_activity_constraint`.
 
 
 min_capacity
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{MIC}_{r \in R, p \in P,t \in T}`
 
@@ -869,7 +869,7 @@ used in the :code:`min_capacity_constraint`.
 
 
 min_capacity_sum
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{MCS}_{t \in T}`
 
@@ -879,7 +879,7 @@ This parameter is used in the :code:`min_activityGroup_constraint`.
 
 
 min_gen_group_target
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 :math:`{MGT}_{r \in R}`
 
@@ -890,7 +890,7 @@ in the :code:`min_activityGroup_constraint`.
 
 
 min_gen_group_weight
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 :math:`{MGW}_{r \in R, t \in T}`
 
@@ -901,7 +901,7 @@ technology-specific activity shares that can count towards meeting the
 
 
 myopic_base_year
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`MBY`
 
@@ -914,7 +914,7 @@ table in the database.
 
 
 planning_reserve_margin
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`{PRM}_{r \in R}`
 
@@ -928,7 +928,7 @@ to estimate the peak electricity demand. This parameter is used in
 
 
 ramp_down
-^^^^^^^^
+^^^^^^^^^
 
 :math:`{RMD}_{r \in R, t \in T}`
 
@@ -944,7 +944,7 @@ slice in the next season.
 
 
 ramp_up
-^^^^^^
+^^^^^^^
 
 :math:`{RMU}_{r \in R, t \in T}`
 
@@ -960,7 +960,7 @@ slice in the next season.
 
 
 resource_bound
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 :math:`{RSC}_{r \in R, p \in P, c \in C_p}`
 
@@ -976,7 +976,7 @@ cumulative resource consumption across all model time periods.
 .. _segment_fraction:
 
 segment_fraction
-^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{SEG}_{s \in S,d \in D}`
 
@@ -986,7 +986,7 @@ each combination of season and time of day.  The sum of all combinations within
 
 
 storage_duration
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{SD}_{r \in R, t \in T^{S}}`
 
@@ -996,7 +996,7 @@ until empty. The parameter value defaults to 4 hours if not specified by the use
 
 
 storage_init
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 :math:`{SI}_{r \in R, t \in T^{S}, v \in P}`
 
@@ -1024,7 +1024,7 @@ across all model time slices. This parameter is used in
 
 
 tech_input_split_average
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`{TISA}_{r \in R, p \in P, i \in C_p, t \in T}`
 
@@ -1036,7 +1036,7 @@ parameter is used in :code:`TechInputSplitAverage_constraint`.
 
 
 tech_output_split
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`{TOS}_{t \in T, o \in C_c}`
 
@@ -1048,7 +1048,7 @@ across all model time slices. This parameter is used in
 
 
 \*loan_annualize
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 :math:`{LA}_{r \in R, t \in T, v \in P}`
 
@@ -1065,11 +1065,11 @@ calculated via the formula:
 
 
 model_process_life
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :math:`{MPL}_{r \in R, p \in P, t \in T, v \in P}`
 
-The :code:`model_process_life` parameter is internally-derived by the model calcuated in
+The :code:`model_process_life` parameter is internally-derived by the model calculated in
 :code:`ParamModelProcessLife_rule` and which makes use of the :code:`lifetime_process`
 parameter. For a given technology vintage in a given model time period, it returns the
 lesser of the period length and the remaining process lifetime. This parameter is used
@@ -1078,7 +1078,7 @@ a given time period.
 
 
 \*period_length
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 :math:`{LEN}_{p \in P}`
 
@@ -1118,7 +1118,7 @@ specifically not defined for the final element in :math:`\text{P}^f`.
 
 
 \*process_life_frac
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 :math:`{PLF}_{r \in R, p \in P,t \in T,v \in P}`
 
@@ -1175,7 +1175,7 @@ Variables
    ":math:`NCAP_{r,t,v}`","v_new_capacity",":math:`\mathbb{R}^+_0`","New deployed capacity"
 
 v_flow_out
-^^^^^^^^^
+^^^^^^^^^^
 
 :math:`FO_{r,p,s,d,i,t,v,o}`
 
@@ -1188,7 +1188,7 @@ process can be calculated as
 /EFF_{c,t,v,o}`.
 
 v_flow_out_annual
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`FOA_{r,p,i,t,v,o}`
 
@@ -1220,7 +1220,7 @@ the excess production in the :code:`CommodityBalanceAnnual_constraint`.
 
 
 v_flex_annual
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 :math:`FLXA_{r,p,i,t,v,o}`
 
@@ -1255,7 +1255,7 @@ curtailment is 3 units (0.8 x 10 - 5).
 
 
 v_flow_in_storage
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 :math:`FIS_{r,p,s,d,i,t,v,o}`
 
@@ -1275,7 +1275,7 @@ constrains the capacity variable to be able to meet the total commodity flow out
 of that process in all time slices in which it is active :eq:`Capacity`.
 
 v_capacity_available_by_period_and_tech
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`CAPAVL_{r,p,t}`
 
@@ -1285,7 +1285,7 @@ are not warranted (e.g. in calculating the maximum or minimum total capacity
 allowed in a given time period).
 
 v_storage_init
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 :math:`SI_{r,t,v}`
 
@@ -1296,7 +1296,7 @@ this value also determines the ending storage charge level at the end of the
 last time slice within each model time period.
 
 v_storage_level
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 :math:`SL_{r,p,s,d,t,v}`
 
