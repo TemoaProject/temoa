@@ -74,7 +74,7 @@ build-backend = "hatchling.build"
 include = [
     "temoa",
 ]
-package-data = { "temoa" = ["db_schema/*.sql", "tutorial_assets/*"] }
+package-data = { "temoa" = ["db_schema/*.sql", "tutorial_assets/*", "py.typed"] }
 
 
 [tool.ruff]
