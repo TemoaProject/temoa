@@ -1,7 +1,7 @@
 import argparse
 import logging
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 from typing import Annotated
@@ -620,7 +620,7 @@ def tutorial(
 def _is_writable(path: Path) -> bool:
     """Check if a path is writable."""
     try:
-        test_file = path / f'.temoa_write_test_{datetime.now(timezone.utc).timestamp()}'
+        test_file = path / f'.temoa_write_test_{datetime.now(UTC).timestamp()}'
         test_file.touch()
         test_file.unlink()  # Clean up
         return True

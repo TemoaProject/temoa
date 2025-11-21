@@ -265,9 +265,9 @@ def create_survival_curve(model: TemoaModel) -> None:
             lsc_prev = value(model.lifetime_survival_curve[r, p_prev, t, v])
             if lsc - lsc_prev > 0.0001:
                 msg = (
-                    'lifetime_survival_curve fraction increases going forward in time from {} to {}. '
+                    f'lifetime_survival_curve fraction increases going forward in time from {(r, p_prev, t, v)} to {(r, p, t, v)}. '
                     'This is not allowed.'
-                ).format((r, p_prev, t, v), (r, p, t, v))
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -323,8 +323,8 @@ def create_survival_curve(model: TemoaModel) -> None:
         msg = (
             'For the purposes of investment cost accounting, lifetime_survival_curve must be defined '
             'for each individual year. Gaps between defined years will be filled by linear interpolation. '
-            'Otherwise, these individual years can be defined manually. Interpolated processes: {}'
-        ).format([rtv for rtv in rtv_interpolated])
+            f'Otherwise, these individual years can be defined manually. Interpolated processes: {[rtv for rtv in rtv_interpolated]}'
+        )
         logger.info(msg)
 
 

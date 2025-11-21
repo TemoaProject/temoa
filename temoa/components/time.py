@@ -102,10 +102,10 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
             missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
             msg: str = (
-                'time_segment_fraction elements for period {} do not match time_season and time_of_day.'
-                '\n\nIndices missing from time_segment_fraction:\n{}'
-                '\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n{}'
-            ).format(p, missing, extra)
+                f'time_segment_fraction elements for period {p} do not match time_season and time_of_day.'
+                f'\n\nIndices missing from time_segment_fraction:\n{missing}'
+                f'\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n{extra}'
+            )
             logger.error(msg)
             raise ValueError(msg)
 
@@ -129,10 +129,10 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             items: str = '\n   '.join(f'{str(k):<{key_padding}} = {v}' for k, v in items_list)
 
             msg = (
-                'The values of time_segment_fraction do not sum to 1 for period {}. '
+                f'The values of time_segment_fraction do not sum to 1 for period {p}. '
                 'Each item in segment_fraction represents a fraction of a year, so they must '
-                'total to 1.  Current values:\n   {}\n\tsum = {}'
-            ).format(p, items, total)
+                f'total to 1.  Current values:\n   {items}\n\tsum = {total}'
+            )
             logger.error(msg)
             raise Exception(msg)
 
@@ -162,9 +162,9 @@ def validate_time_manual(model: TemoaModel) -> None:
     if missing_psd or missing_psd_next:
         msg: str = (
             'Failed to build state sequence. '
-            '\nThese states from time_segment_fraction were not given a next state:\n{}\n'
-            '\nThese states from time_segment_fraction do not follow any state:\n{}'
-        ).format(missing_psd, missing_psd_next)
+            f'\nThese states from time_segment_fraction were not given a next state:\n{missing_psd}\n'
+            f'\nThese states from time_segment_fraction do not follow any state:\n{missing_psd_next}'
+        )
         logger.error(msg)
         raise ValueError(msg)
 

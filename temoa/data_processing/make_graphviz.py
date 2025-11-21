@@ -269,9 +269,9 @@ class GraphvizDiagramGenerator:
 
             if row['input_comm'] != 'ethos':
                 enodes.add((row['input_comm'], enode_attr_fmt % (row['input_comm'], period)))
-                iedges.add((row['input_comm'], vnode, 'label="%.2f"' % row['flow_in']))
+                iedges.add((row['input_comm'], vnode, 'label="{:.2f}"'.format(row['flow_in'])))
             enodes.add((row['output_comm'], enode_attr_fmt % (row['output_comm'], period)))
-            oedges.add((vnode, row['output_comm'], 'label="%.2f"' % row['flow_out']))
+            oedges.add((vnode, row['output_comm'], 'label="{:.2f}"'.format(row['flow_out'])))
 
         output_path = output_name + '.' + output_format
         if vnodes:
@@ -340,7 +340,7 @@ class GraphvizDiagramGenerator:
             t = flow_in.iloc[i]['tech']
             f = flow_in.iloc[i]['flow']
             enodes.add((t, node_attr_fmt % (t, period)))
-            eedges.add((comm, t, 'label="%.2f"' % f))
+            eedges.add((comm, t, f'label="{f:.2f}"'))
         for t in output_total - otechs:
             dnodes.add((t, ''))
             dedges.add((comm, t, ''))
@@ -348,7 +348,7 @@ class GraphvizDiagramGenerator:
             t = flow_out.iloc[i]['tech']
             f = flow_out.iloc[i]['flow']
             enodes.add((t, node_attr_fmt % (t, period)))
-            eedges.add((t, comm, 'label="%.2f"' % f))
+            eedges.add((t, comm, f'label="{f:.2f}"'))
         for t in input_total - itechs:
             dnodes.add((t, ''))
             dedges.add((t, comm, ''))

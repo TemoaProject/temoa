@@ -39,7 +39,7 @@ else:
     GraphType = TypeVar('GraphType', nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)
 
 
-def convert_graph_to_json(
+def convert_graph_to_json[GraphType: (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)](
     nx_graph: GraphType,
     override_node_properties: dict[str, Any] | None,
     override_edge_properties: dict[str, Any] | None,
