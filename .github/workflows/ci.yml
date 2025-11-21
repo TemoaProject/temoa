@@ -48,6 +48,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y coinor-cbc
 
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
       - name: Run tests
         env:
           CI: 1
