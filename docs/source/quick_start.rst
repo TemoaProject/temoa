@@ -302,31 +302,6 @@ the data to prevent network corruption.
 Note that the myopic mode *requires* the use of Source Tracing to ensure accuracy as some orphans
 may be produced by endogenous decisions in myopic runs.
 
-Commodity Network Visualization
--------------------------------
-
-The output of the Source Tracing operation can be visualized by enabling the commodity network plots
-in the config file.  This will add a set of region-period specific html files to the Outputs folder.
-These files *should* be open-able in any web browser.  (See the note in the main `README.md` for trouble
-with Windows OS systems).
-
-.. figure:: images/utopia_commodity_network.png
-   :align: center
-   :figclass: center
-   :figwidth: 60%
-
-   An example of the Commodity Network for Utopia (interactive view in web browser by opening
-   the generated html file)
-
-The color legend for Commodity Networks is as follows:
-
-* Green dot:  Source Commodity
-* Orange dot:  Demand Commodity
-* Violet dot:  Intermediate Commodity
-* Black arc:  Technology
-* Blue arc:  Linked Technology (the driven tech, *not* the driver)
-* Yellow arc:  Supply-Side Orphan (shown, but suppressed when model built)
-* Red arc:  Demand-Side Orphan (shown, but suppressed when model built)
-* Green arc:  Any Tech with a Negative Variable Cost
 
 .. _sqlite: https://www.sqlite.org/
+

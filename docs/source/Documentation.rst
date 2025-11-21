@@ -15,7 +15,111 @@ Quick Start
 Visualization
 =============
 
-.. include:: visualization.rst
+Network Diagrams
+----------------
+
+Since the Temoa model consists of an energy network in which technologies are connected
+by the flow of energy commodities, a directed network graph represents an excellent way
+to visualize a given energy system representation in a Temoa-compatible input database.
+
+Temoa provides two types of network visualizations:
+
+1. **Interactive HTML Network Graphs** - Dynamic, explorable visualizations showing commodity flows and technology connections
+2. **Graphviz Diagrams** - Static SVG/DOT format diagrams showing the energy system structure
+
+Generating Network Visualizations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to generate these diagrams is to enable visualization options in your
+configuration TOML file. Add the following to your config file:
+
+.. parsed-literal::
+  # Enable interactive HTML network graphs (requires source_trace = true)
+  source_trace = true
+  plot_commodity_network = true
+
+  # Enable Graphviz static diagrams
+  graphviz_output = true
+
+When these options are enabled, Temoa will automatically generate visualization files
+in the output directory during model execution.
+
+**Interactive Network Graphs** will be created as HTML files (one per time period) that
+you can open in a web browser. These provide an interactive view where you can:
+
+- Pan and zoom the network
+- Click on nodes to see details
+- Toggle between commodity-centric and technology-centric views
+- Filter by sector using color-coded legends
+
+**Graphviz Diagrams** will be created as both ``.dot`` (source) and ``.svg`` (rendered)
+files in a subdirectory within your output folder. These provide static visualizations
+showing:
+
+- Full energy system maps
+- Capacity and activity results per model time period
+- Technology interconnections via commodity flows
+
+Example Visualizations
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Interactive Network Graph**
+
+The interactive HTML network graphs provide dynamic exploration with pan, zoom, and filtering capabilities:
+
+.. raw:: html
+
+   <iframe src="_static/Network_Graph_utopia_1990.html" width="100%" height="600px" style="border:1px solid #ccc;"></iframe>
+
+*Interactive network graph for the 'utopia' test system in 1990. You can pan, zoom, click nodes for details, and toggle between commodity-centric and technology-centric views. These files are automatically generated when* ``source_trace = true`` *and* ``plot_commodity_network = true`` *are set in the configuration file.*
+
+**Static Graphviz Diagram**
+
+Graphviz also generates static SVG diagrams showing the energy system structure:
+
+.. figure:: images/graphviz_examples/results1990.svg
+   :align: center
+   :figclass: center
+   :width: 100%
+
+   Static Graphviz diagram showing the optimal installed capacity and commodity flows
+   for the 'utopia' test system in 1990. Technologies are shown as boxes,
+   commodities as circles, with arrows indicating energy flows. These diagrams
+   are automatically generated when ``graphviz_output = true`` is set in the
+   configuration file.
+
+Output Graphs
+-------------
+
+.. warning::
+   The ``make_output_plots.py`` script has not been fully tested with Temoa v4.0
+   and is currently unsupported. Use at your own risk and please report any issues
+   on `GitHub Issues`_.
+
+Temoa can also be used to generate output graphs using `matplotlib <https://matplotlib.org/>`_.
+From the command line, navigate to the :code:`data_processing` folder and execute the
+following command:
+
+.. parsed-literal::
+  $ uv run python temoa/data_processing/make_output_plots.py --help
+
+The command above will specify all of the flags required to create a stacked bar
+or line plot. For example, consider the following command:
+
+.. parsed-literal::
+  $ uv run python temoa/data_processing/make_output_plots.py -i data_files/temoa_utopia.sqlite -s test_run -p capacity -c electric --super
+
+.. figure:: images/output_flow_example.*
+   :align: center
+   :figclass: center
+   :figwidth: 60%
+
+   This stacked bar plot represents the activity (i.e., output commodity flow)
+   associated with each technology in the electric sector from the 'test_run'
+   scenario drawn from the 'temoa_utopia' database. Because the :code:`super`
+   flag was specified, technologies are grouped together based on user-specified
+   categories in the :code:`tech_category` column of the :code:`technologies`
+   table of the database.
 
 =====================
 The Math Behind Temoa
