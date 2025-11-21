@@ -5,11 +5,13 @@ these functions can be called on a model instance without any DB interactions.  
 by Workers who shouldn't interact with DB).  Dev Note:  In future, if transition away from sqlite, this
 could all be refactored to perform tasks within workers, but concurrent access to sqlite is a no-go
 """
+from __future__ import annotations
+
 
 import functools
 import logging
 from collections import defaultdict
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 from pyomo.common.numeric_types import value
 from pyomo.core import Objective
@@ -17,9 +19,11 @@ from pyomo.core import Objective
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
 from temoa.components.utils import get_variable_efficiency
-from temoa.core.model import TemoaModel
-from temoa.types.core_types import Commodity, Period, Region, Technology, Vintage
 from temoa.types.model_types import EI, FI, SLI, CapData, FlowType
+
+if TYPE_CHECKING:
+    from temoa.types.core_types import Commodity, Period, Region, Technology, Vintage
+    from temoa.core.model import TemoaModel
 
 logger = logging.getLogger(__name__)
 

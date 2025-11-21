@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # temoa/data_io/hybrid_loader.py
 """
 Defines the main data loading engine for the Temoa model.
@@ -21,23 +23,25 @@ Architecture:
 
 import time
 from collections import defaultdict
-from collections.abc import Sequence
 from logging import getLogger
 from sqlite3 import Connection, Cursor, OperationalError
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
 
-from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
 from temoa.data_io.component_manifest import build_manifest
-from temoa.data_io.loader_manifest import LoadItem
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
 from temoa.model_checking.element_checker import ValidationPrimitive, ViableSet
+
+if TYPE_CHECKING:
+    from temoa.core.config import TemoaConfig
+    from temoa.data_io.loader_manifest import LoadItem
+    from collections.abc import Sequence
 
 logger = getLogger(__name__)
 

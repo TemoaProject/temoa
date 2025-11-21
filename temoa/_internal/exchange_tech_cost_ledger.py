@@ -16,7 +16,8 @@ from pyomo.common.numeric_types import value
 
 
 if TYPE_CHECKING:
-    from temoa.types.core_types import Period, Region, Technology, Vintage
+    from temoa.types.core_types import Region
+    from temoa.types.core_types import Period, Technology, Vintage
     from temoa.core.model import TemoaModel
     from tests.utilities.namespace_mock import Namespace
 

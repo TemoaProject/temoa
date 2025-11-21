@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, cast
 from pyomo.environ import value
 
 if TYPE_CHECKING:
-    from temoa.types import Period, Region, Technology, Vintage
+    from temoa.types import Period, Technology
+    from temoa.types import Region, Vintage
     from collections.abc import Iterable
     from temoa.core.model import TemoaModel
 

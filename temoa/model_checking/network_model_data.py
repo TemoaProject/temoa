@@ -21,7 +21,8 @@ from temoa.core.model import TemoaModel
 from temoa.types.core_types import ParameterValue
 
 if TYPE_CHECKING:
-    from temoa.types import Commodity, Period, Region, Sector, Technology, Vintage
+    from temoa.types import Commodity, Period, Region, Sector, Technology
+    from temoa.types import Vintage
     from temoa.extensions.myopic.myopic_index import MyopicIndex
     from collections.abc import Callable
 

@@ -20,7 +20,8 @@ from pyomo.environ import value
 
 
 if TYPE_CHECKING:
-    from ..types import Commodity, ExprLike, Period, Region
+    from ..types import Region
+    from ..types import Commodity, ExprLike, Period
     from temoa.types.core_types import Season, Technology, TimeOfDay, Vintage
     from temoa.core.model import TemoaModel
 
