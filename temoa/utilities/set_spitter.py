@@ -5,9 +5,8 @@ Quick utility to spit out the set members of a pyomo model
 from typing import TYPE_CHECKING
 
 import pyomo.environ as pyo
+from temoa.core.model import TemoaModel
 
-if TYPE_CHECKING:
-    from temoa.core.model import TemoaModel
 
 
 def spit_sets(model: TemoaModel, index_sets: bool = False) -> None:

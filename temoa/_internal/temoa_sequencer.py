@@ -9,7 +9,6 @@ for multiple runs, and the Temoa Sequencer may hand off to a mode-specific seque
 import sqlite3
 from logging import getLogger
 
-import pyomo.opt
 
 from temoa._internal.run_actions import (
     build_instance,
@@ -35,6 +34,10 @@ from temoa.version_information import (
     MIN_PYTHON_MAJOR,
     MIN_PYTHON_MINOR,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pyomo.opt
 
 logger = getLogger(__name__)
 

@@ -10,12 +10,12 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import deprecated
-from pyomo.core import Set
 from pyomo.environ import NonNegativeReals
 
-from temoa.types.core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 if TYPE_CHECKING:
+    from temoa.types.core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
+    from pyomo.core import Set
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)

@@ -340,7 +340,7 @@ class HybridLoader:
         if validator is None:
             return values
 
-        typed_values = cast(Sequence[tuple[ValidationPrimitive, ...]], values)
+        typed_values = cast('Sequence[tuple[ValidationPrimitive, ...]]', values)
         return element_checker.filter_elements(
             values=typed_values, validation=validator, value_locations=item.validation_map
         )
@@ -542,7 +542,7 @@ class HybridLoader:
         """
         model = TemoaModel()
         mi = self.myopic_index
-        time_optimize = cast(list[int], data.get('time_optimize', []))
+        time_optimize = cast('list[int]', data.get('time_optimize', []))
 
         rows_to_load: list[tuple[object, ...]] = []
         if not raw_data:
@@ -647,7 +647,7 @@ class HybridLoader:
         model = TemoaModel()
         base_year = self.myopic_index.base_year if self.myopic_index else None
         data_to_load = [
-            row for row in filtered_data if base_year is None or cast(int, row[2]) >= base_year
+            row for row in filtered_data if base_year is None or cast('int', row[2]) >= base_year
         ]
         self._load_component_data(data, model.cost_invest, data_to_load)
 
@@ -674,7 +674,7 @@ class HybridLoader:
         model = TemoaModel()
         days = 365
         if filtered_data:
-            days = cast(int, filtered_data[0][0])
+            days = cast('int', filtered_data[0][0])
         else:
             logger.info('No value for days_per_period found. Assuming 365 days per period.')
         data[model.days_per_period.name] = {None: days}
@@ -688,7 +688,7 @@ class HybridLoader:
         """Loads the required singleton global_discount_rate."""
         model = TemoaModel()
         if filtered_data:
-            data[model.global_discount_rate.name] = {None: cast(float, filtered_data[0][0])}
+            data[model.global_discount_rate.name] = {None: cast('float', filtered_data[0][0])}
         else:
             raise ValueError(
                 "Missing required parameter: 'global_discount_rate' not found in MetaDataReal table."
@@ -703,7 +703,7 @@ class HybridLoader:
         """Loads the optional singleton default_loan_rate."""
         model = TemoaModel()
         if filtered_data:
-            data[model.default_loan_rate.name] = {None: cast(float, filtered_data[0][0])}
+            data[model.default_loan_rate.name] = {None: cast('float', filtered_data[0][0])}
 
     # --- Operational Constraints and Parameters ---
     def _load_efficiency(

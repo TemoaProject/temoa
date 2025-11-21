@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from temoa.types import ExprLike
-from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
 
 if TYPE_CHECKING:
+    from temoa.types import ExprLike
+    from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)

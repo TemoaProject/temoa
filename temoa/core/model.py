@@ -22,7 +22,6 @@ from pyomo.environ import (
     minimize,
 )
 
-from temoa import types as t
 from temoa.components import (
     capacity,
     commodities,
@@ -47,7 +46,11 @@ from temoa.model_checking.validators import (
     validate_reserve_margin,
     validate_tech_sets,
 )
-from temoa.types.core_types import Technology
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from temoa.types.core_types import Technology
+    from temoa import types as t
 
 logger = logging.getLogger(__name__)
 

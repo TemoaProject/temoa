@@ -2,19 +2,21 @@
 Tests for the validators for regions, linked regions, and region groups
 """
 
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 import pyomo.environ as pyo
 import pytest
 
-from temoa.core.model import TemoaModel
 from temoa.model_checking.validators import (
     linked_region_check,
     no_slash_or_pipe,
     region_check,
     region_group_check,
 )
-from temoa.types.core_types import Region
+
+if TYPE_CHECKING:
+    from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Region
 
 
 def test_region_check() -> None:
@@ -29,9 +31,9 @@ def test_region_check() -> None:
         '  R12',  # leading spaces
         'global',  # illegal for individual region
     }
-    assert all(region_check(cast(TemoaModel, None), region=cast(Region, r)) for r in good_names)
+    assert all(region_check(cast('TemoaModel', None), region=cast('Region', r)) for r in good_names)
     for bad_name in bad_names:
-        assert not region_check(cast(TemoaModel, None), region=cast(Region, bad_name)), (
+        assert not region_check(cast('TemoaModel', None), region=cast('Region', bad_name)), (
             f'This should fail {bad_name}'
         )
 
@@ -53,9 +55,9 @@ def test_linked_region_check() -> None:
         'AZ - Mexico',  # bad spacing
         'AZ-R2-Mexico',  # triples not allowed
     }
-    assert all(linked_region_check(cast(TemoaModel, m), region_pair=rp) for rp in good_names)
+    assert all(linked_region_check(cast('TemoaModel', m), region_pair=rp) for rp in good_names)
     for bad_name in bad_names:
-        assert not linked_region_check(cast(TemoaModel, m), region_pair=bad_name), (
+        assert not linked_region_check(cast('TemoaModel', m), region_pair=bad_name), (
             f'This should fail {bad_name}'
         )
 
@@ -75,11 +77,11 @@ def test_region_group_check() -> None:
         'Region3',  # singleton not in m.R
     }
     for name in good_names:
-        assert region_group_check(cast(TemoaModel, m), rg=name), (
+        assert region_group_check(cast('TemoaModel', m), rg=name), (
             f'This name should have been good: {name}'
         )
     for name in bad_names:
-        assert not region_group_check(cast(TemoaModel, m), rg=name), (
+        assert not region_group_check(cast('TemoaModel', m), rg=name), (
             f'This name should have failed: {name}'
         )
 
@@ -95,4 +97,4 @@ params = [
 
 @pytest.mark.parametrize('value, expected', params)
 def test_no_slash(value: str | int, *, expected: bool) -> None:
-    assert no_slash_or_pipe(model=cast(TemoaModel, None), element=value) == expected
+    assert no_slash_or_pipe(model=cast('TemoaModel', None), element=value) == expected

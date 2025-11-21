@@ -21,10 +21,10 @@ from pyomo.environ import Constraint, quicksum, value
 import temoa.components.geography as geography
 import temoa.components.technology as technology
 from temoa.components.utils import Operator, get_variable_efficiency, operator_expression
-from temoa.types import ExprLike, Period, Region, Technology, Vintage
-from temoa.types.core_types import Commodity, Season, TimeOfDay
 
 if TYPE_CHECKING:
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
+    from temoa.types.core_types import Commodity, Season, TimeOfDay
     from temoa.core.model import TemoaModel
 
 logger = getLogger(__name__)
@@ -419,7 +419,7 @@ def limit_new_capacity_share_constraint(
         model.v_new_capacity[_r, _t, p]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, cast(Vintage, p)) in model.process_periods
+        if (_r, _t, cast('Vintage', p)) in model.process_periods
     )
 
     super_group = technology.gather_group_techs(model, g2)
@@ -427,7 +427,7 @@ def limit_new_capacity_share_constraint(
         model.v_new_capacity[_r, _t, p]
         for _t in super_group
         for _r in regions
-        if (_r, _t, cast(Vintage, p)) in model.process_periods
+        if (_r, _t, cast('Vintage', p)) in model.process_periods
     )
 
     share_lim = value(model.limit_new_capacity_share[r, p, g1, g2, op])

@@ -14,23 +14,23 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from temoa.types.core_types import (
-    Commodity,
-    Period,
-    Region,
-    Season,
-    Technology,
-    TimeOfDay,
-    Vintage,
-)
 
 if TYPE_CHECKING:
+    from temoa.types.core_types import (
+        Commodity,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
+    from temoa.types import (
+        ActiveFlexAnnualSet,
+        ActiveFlowAnnualSet,
+    )
     from temoa.core.model import TemoaModel
 
-from temoa.types import (
-    ActiveFlexAnnualSet,
-    ActiveFlowAnnualSet,
-)
 
 logger = getLogger(__name__)
 

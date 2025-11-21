@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING
 from deprecated import deprecated
 from pyomo.environ import value
 
-from temoa.types import ExprLike
 
 if TYPE_CHECKING:
+    from temoa.types import ExprLike
     from temoa.core.model import TemoaModel
     from temoa.types import (
         Period,

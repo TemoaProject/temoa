@@ -1,10 +1,12 @@
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 import pytest
 from pyomo.environ import Any, ConcreteModel, Param, Set
 
-from temoa.core.model import TemoaModel
 from temoa.model_checking.pricing_check import check_tech_uncap
+
+if TYPE_CHECKING:
+    from temoa.core.model import TemoaModel
 
 
 @pytest.fixture
@@ -35,7 +37,7 @@ def test_check_tech_uncap(
     :param mock_model:
     :return:
     """
-    model = cast(TemoaModel, mock_model)
+    model = cast('TemoaModel', mock_model)
 
     assert check_tech_uncap(model), 'should pass for no fixed/invest/variable costs'
     model.cost_variable[('CA', 2020, 'refinery', 2020)] = 42
@@ -53,7 +55,7 @@ def test_detect_fixed_cost(
     :param mock_model:
     :return:
     """
-    model = cast(TemoaModel, mock_model)
+    model = cast('TemoaModel', mock_model)
     assert check_tech_uncap(model), 'should have cleared and passed again'
     model.cost_fixed[('CA', 2020, 'refinery', 2020)] = 42
     assert not check_tech_uncap(model), 'should fail with any fixed cost'
@@ -67,6 +69,6 @@ def test_detect_invest_cost(
     :param mock_model:
     :return:
     """
-    model = cast(TemoaModel, mock_model)
+    model = cast('TemoaModel', mock_model)
     model.cost_invest['CA', 'refinery', 2020] = 42
     assert not check_tech_uncap(model), 'should fail with any investment cost'

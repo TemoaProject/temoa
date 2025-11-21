@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.common.numeric_types import value
 
-from temoa.core.model import TemoaModel
-from temoa.types.core_types import Period, Region, Technology, Vintage
 
 if TYPE_CHECKING:
+    from temoa.types.core_types import Period, Region, Technology, Vintage
+    from temoa.core.model import TemoaModel
     from tests.utilities.namespace_mock import Namespace
 
 
@@ -54,7 +54,7 @@ class ExchangeTechCostLedger:
         add a cost associated with an exchange tech
         :return:
         """
-        r1, r2 = (cast(Region, r) for r in link.split('-'))
+        r1, r2 = (cast('Region', r) for r in link.split('-'))
         if not r1 and r2:
             raise ValueError(f'problem splitting region-region: {link}')
         # add to the "seen" records for appropriate cost type
@@ -74,10 +74,10 @@ class ExchangeTechCostLedger:
         """
         # Cast to TemoaModel for type checking - at runtime this will be either TemoaModel or Namespace
         # Both have the same attributes, but mypy doesn't know about Namespace's dynamic attributes
-        model = cast(TemoaModel, self.model)
+        model = cast('TemoaModel', self.model)
         # need to temporarily reconstitute the names
-        rr1 = cast(Region, '-'.join([exporter, importer]))
-        rr2 = cast(Region, '-'.join([importer, exporter]))
+        rr1 = cast('Region', '-'.join([exporter, importer]))
+        rr2 = cast('Region', '-'.join([importer, exporter]))
         if any(
             (
                 period >= vintage + value(model.lifetime_process[rr1, tech, vintage]),

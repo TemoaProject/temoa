@@ -15,11 +15,11 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from temoa.types.core_types import Period, Region, Season, TimeOfDay
 
 from .utils import get_variable_efficiency
 
 if TYPE_CHECKING:
+    from temoa.types.core_types import Period, Region, Season, TimeOfDay
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike
 
