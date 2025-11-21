@@ -105,7 +105,7 @@ class OutputPlotGenerator:
         for row in data:
             sectors.add(str(row[0]))
 
-        res = sorted(list(sectors))
+        res = sorted(sectors)
         res.insert(0, 'all')
         return res
 
@@ -132,8 +132,8 @@ class OutputPlotGenerator:
                 periods_set.add(int(row[1]))
                 techs_set.add(str(row[2]))
 
-        periods = sorted(list(periods_set))
-        techs = sorted(list(techs_set))
+        periods = sorted(periods_set)
+        techs = sorted(techs_set)
 
         output_values: PlotData = {}
         for tech in techs:

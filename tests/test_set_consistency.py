@@ -53,8 +53,8 @@ def test_set_consistency(
     }
 
     # compare sets where they exist in the model.
-    overage_in_model = dict()
-    shortage_in_model = dict()
+    overage_in_model = {}
+    shortage_in_model = {}
     for set_name, s in model_sets.items():
         if set_name == 'cost_emission_rpe':
             pass

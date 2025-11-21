@@ -116,7 +116,7 @@ class CommodityNetworkManager:
         """
         self.filtered_data = self.orig_data.clone()
         # Identify regions to analyze (excluding exchange pseudo-regions)
-        self.regions = set(sorted({r for (r, p) in self.orig_data.available_techs if '-' not in r}))
+        self.regions = set({r for (r, p) in self.orig_data.available_techs if '-' not in r})
 
         for region in self.regions:
             logger.info('Starting network analysis for region %s', region)

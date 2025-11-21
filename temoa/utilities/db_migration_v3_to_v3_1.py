@@ -234,7 +234,7 @@ time_all = [
 time_all = sorted(time_all)[0:-1] # Exclude horizon end
 
 # get lifetimes. Major headache but needs to be done
-lifetime_process = dict()
+lifetime_process = {}
 data = cur.execute('SELECT region, tech, vintage FROM Efficiency').fetchall()
 for rtv in data:
     lifetime_process[rtv] = TemoaModel.default_lifetime_tech
@@ -283,7 +283,7 @@ for old_name, new_name in period_added_tables:
             for r, t, v in data[['region','tech','vintage']]
         ]
     elif 'tech' in cols:
-        periods = dict()
+        periods = {}
         for r, t in data[['region','tech']].drop_duplicates().values:
             periods[r, t] = [
                 p for p in time_optimize

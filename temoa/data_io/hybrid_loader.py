@@ -639,7 +639,7 @@ class HybridLoader:
 
         self._load_component_data(data, model.existing_capacity, rows_to_load)
         if rows_to_load:
-            tech_exist_data = sorted(list({(row[1],) for row in rows_to_load}))
+            tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
 
     def _load_cost_invest(
@@ -753,7 +753,7 @@ class HybridLoader:
         model = TemoaModel()
         self._load_component_data(data, model.ramp_down_hourly, filtered_data)
         if filtered_data:
-            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            tech_data = sorted({(row[1],) for row in filtered_data})
             tech_filtered = self._filter_data(
                 tech_data, self.manifest_map[model.tech_downramping.name], use_raw_data=False
             )
@@ -769,7 +769,7 @@ class HybridLoader:
         model = TemoaModel()
         self._load_component_data(data, model.ramp_up_hourly, filtered_data)
         if filtered_data:
-            tech_data = sorted(list({(row[1],) for row in filtered_data}))
+            tech_data = sorted({(row[1],) for row in filtered_data})
             tech_filtered = self._filter_data(
                 tech_data, self.manifest_map[model.tech_upramping.name], use_raw_data=False
             )

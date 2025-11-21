@@ -324,7 +324,7 @@ def create_survival_curve(model: TemoaModel) -> None:
         msg = (
             'For the purposes of investment cost accounting, lifetime_survival_curve must be defined '
             'for each individual year. Gaps between defined years will be filled by linear interpolation. '
-            f'Otherwise, these individual years can be defined manually. Interpolated processes: {[rtv for rtv in rtv_interpolated]}'
+            f'Otherwise, these individual years can be defined manually. Interpolated processes: {list(rtv_interpolated)}'
         )
         logger.info(msg)
 
