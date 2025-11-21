@@ -800,7 +800,7 @@ def create_demands(model: TemoaModel) -> None:
 
             key_padding = max(map(get_str_padding, keys))
 
-            fmt = '%%-%ds = %%s' % key_padding
+            fmt = '%%-%ds = %%s' % key_padding  # noqa: UP031
             # Works out to something like "%-25s = %s"
 
             items_list: list[tuple[Any, Any]] = sorted(
