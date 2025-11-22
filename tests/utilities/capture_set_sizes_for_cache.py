@@ -15,9 +15,10 @@ from temoa.core.config import TemoaConfig
 logger = logging.getLogger(__name__)
 
 print(
-    'WARNING:  Continuing to execute this file will update the cached values for the set sizes for US_9R model in '
-    'the testing_data folder from the sqlite databases in the same folder.  This should only need to be done if the '
-    'schema or model have changed and that database has been updated.'
+    'WARNING:  Continuing to execute this file will update the cached values for the set sizes '
+    'for US_9R model in the testing_data folder from the sqlite databases in the same folder.  '
+    'This should only need to be done if the schema or model have changed and that database has '
+    'been updated.'
 )
 
 t = input('Type "Y" to continue, any other key to exit now.')

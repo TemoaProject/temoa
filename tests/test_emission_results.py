@@ -86,7 +86,8 @@ def test_emissions(solved_connection: SolvedConnection) -> None:
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND "
+            f"tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -112,7 +113,8 @@ def test_emissions_costs_undiscounted(
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND "
+            f"tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -139,7 +141,8 @@ def test_emissions_costs_discounted(
     ec = (
         con.cursor()
         .execute(
-            f"SELECT SUM(d_emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND tech != 'TechEmbodied' AND period == 2000"
+            f"SELECT SUM(d_emiss) FROM main.output_cost WHERE tech LIKE '{tech}' AND "
+            f"tech != 'TechEmbodied' AND period == 2000"
         )
         .fetchone()[0]
     )
@@ -158,13 +161,15 @@ def test_emissions_costs_discounted(
 )
 def test_embodied_emissions(solved_connection: SolvedConnection) -> None:
     """
-    Test that the embodied emissions from each technology archetype are correct, and check total emissions
+    Test that the embodied emissions from each technology archetype are correct, and check total
+    emissions
     """
     con, name, tech, emis_target = solved_connection
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND "
+            f'period == 2000'
         )
         .fetchone()[0]
     )
@@ -196,7 +201,8 @@ def test_embodied_emissions_costs_undiscounted(
     )
     cost_target = 0.7 * emis_target  # emission cost x embodied emissions
     assert ec == pytest.approx(cost_target), (
-        f'{name} undiscounted embodied emission costs were incorrect. Should be {cost_target}, got {ec}'
+        f'{name} undiscounted embodied emission costs were incorrect. Should be {cost_target}, '
+        f'got {ec}'
     )
 
 
@@ -238,13 +244,15 @@ def test_embodied_emissions_costs_discounted(
 )
 def test_endoflife_emissions(solved_connection: SolvedConnection) -> None:
     """
-    Test that the end of life emissions from each technology archetype are correct, and check total emissions
+    Test that the end of life emissions from each technology archetype are correct, and check total
+    emissions
     """
     con, name, tech, emis_target = solved_connection
     emis = (
         con.cursor()
         .execute(
-            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND period == 2005"
+            f"SELECT SUM(emission) FROM main.output_emission WHERE tech LIKE '{tech}' AND "
+            f'period == 2005'
         )
         .fetchone()[0]
     )
@@ -276,7 +284,8 @@ def test_endoflife_emissions_costs_undiscounted(
     )
     cost_target = 0.7 * emis_target  # emission cost x end of life emissions
     assert ec == pytest.approx(cost_target), (
-        f'{name} undiscounted end of life emission costs were incorrect. Should be {cost_target}, got {ec}'
+        f'{name} undiscounted end of life emission costs were incorrect. Should be {cost_target}, '
+        f'got {ec}'
     )
 
 
@@ -331,7 +340,8 @@ def test_curtailment(solved_connection: SolvedConnection) -> None:
     curt = (
         con.cursor()
         .execute(
-            f"SELECT SUM(curtailment) FROM main.output_curtailment WHERE tech LIKE '{tech}' AND period == 2000"
+            f"SELECT SUM(curtailment) FROM main.output_curtailment WHERE tech LIKE '{tech}' AND "
+            f'period == 2000'
         )
         .fetchone()[0]
     )
