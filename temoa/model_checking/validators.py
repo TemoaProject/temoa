@@ -12,11 +12,19 @@ from typing import TYPE_CHECKING
 import deprecated
 from pyomo.environ import NonNegativeReals
 
-
 if TYPE_CHECKING:
-    from temoa.types.core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
     from pyomo.core import Set
+
     from temoa.core.model import TemoaModel
+    from temoa.types.core_types import (
+        Commodity,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
 
 logger = getLogger(__name__)
 

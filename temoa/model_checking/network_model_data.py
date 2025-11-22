@@ -12,7 +12,7 @@ import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import NamedTuple, Self, TypedDict, cast, overload, TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple, Self, TypedDict, cast, overload
 
 import deprecated
 from pyomo.core.base import ConcreteModel
@@ -21,10 +21,10 @@ from temoa.core.model import TemoaModel
 from temoa.types.core_types import ParameterValue
 
 if TYPE_CHECKING:
-    from temoa.types import Commodity, Period, Region, Sector, Technology
-    from temoa.types import Vintage
-    from temoa.extensions.myopic.myopic_index import MyopicIndex
     from collections.abc import Callable
+
+    from temoa.extensions.myopic.myopic_index import MyopicIndex
+    from temoa.types import Commodity, Period, Region, Sector, Technology, Vintage
 
 
 # --- Type Definitions ---
@@ -448,7 +448,9 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
-        construction_lifetime = basic_data['period_length'].get(cast('Period', v), cast('Period', 1))
+        construction_lifetime = basic_data['period_length'].get(
+            cast('Period', v), cast('Period', 1)
+        )
         res.available_techs[r, cast('Period', v)].add(
             EdgeTuple(
                 region=r,

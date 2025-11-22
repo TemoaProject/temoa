@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import networkx as nx
 
@@ -13,11 +13,11 @@ from temoa.utilities.graph_utils import (
 from temoa.utilities.visualizer import make_nx_graph, nx_to_vis
 
 if TYPE_CHECKING:
-    from temoa.types.core_types import Technology
+    from collections.abc import Iterable
+
     from temoa.core.config import TemoaConfig
     from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
-    from temoa.types.core_types import Commodity, Period, Region, Sector
-    from collections.abc import Iterable
+    from temoa.types.core_types import Commodity, Period, Region, Sector, Technology
 
 logger = logging.getLogger(__name__)
 

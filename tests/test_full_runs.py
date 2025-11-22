@@ -4,6 +4,7 @@ Test a couple full-runs to match objective function value and some internals
 
 import logging
 import sqlite3
+from typing import TYPE_CHECKING
 
 import pytest
 from pyomo.core import Constraint, Var
@@ -13,7 +14,6 @@ from pyomo.opt import SolverResults
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.model import TemoaModel
 from tests.legacy_test_values import ExpectedVals, test_vals
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import pyomo.environ as pyo

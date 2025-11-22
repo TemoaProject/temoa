@@ -18,12 +18,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pyomo.environ import value
 
-
 if TYPE_CHECKING:
-    from ..types import Region
-    from ..types import Commodity, ExprLike, Period
-    from temoa.types.core_types import Season, Technology, TimeOfDay, Vintage
     from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Season, Technology, TimeOfDay, Vintage
+
+    from ..types import Commodity, ExprLike, Period, Region
 
 from .utils import get_variable_efficiency
 
@@ -446,14 +445,18 @@ def commodity_balance_constraint(
     if (r, p, c) in model.export_regions:
         consumed += sum(
             model.v_flow_out[r + '-' + reg, p, s, d, c, s_t, s_v, S_o]
-            / get_variable_efficiency(model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            / get_variable_efficiency(
+                model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o
+            )
             for reg, s_t, s_v, S_o in model.export_regions[r, p, c]
             if s_t not in model.tech_annual
         )
         consumed += sum(
             value(model.segment_fraction[p, s, d])
             * model.v_flow_out_annual[r + '-' + reg, p, c, s_t, s_v, S_o]
-            / get_variable_efficiency(model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            / get_variable_efficiency(
+                model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o
+            )
             for reg, s_t, s_v, S_o in model.export_regions[r, p, c]
             if s_t in model.tech_annual
         )

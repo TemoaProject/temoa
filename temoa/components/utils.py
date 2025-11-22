@@ -14,13 +14,13 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import value
 
-
 if TYPE_CHECKING:
-    from temoa.types import ExprLike
     from pyomo.core import Expression
+
     from temoa.core.model import TemoaModel
     from temoa.types import (
         Commodity,
+        ExprLike,
         Period,
         Region,
         Season,

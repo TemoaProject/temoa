@@ -1,4 +1,4 @@
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from pyomo.environ import Any, ConcreteModel, Param, Set

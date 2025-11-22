@@ -19,10 +19,10 @@ from deprecated import deprecated
 from pyomo.environ import value
 
 if TYPE_CHECKING:
-    from temoa.types import Region
-    from temoa.types import ExprLike, Period, Technology, Vintage
     from collections.abc import Iterable
+
     from temoa.core.model import TemoaModel
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
 # Import type annotations
 

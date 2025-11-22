@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
@@ -46,11 +47,10 @@ from temoa.model_checking.validators import (
     validate_reserve_margin,
     validate_tech_sets,
 )
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from temoa.types.core_types import Technology
     from temoa import types as t
+    from temoa.types.core_types import Technology
 
 logger = logging.getLogger(__name__)
 

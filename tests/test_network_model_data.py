@@ -1,5 +1,5 @@
 import sqlite3
-from typing import TypedDict, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict, cast
 from unittest.mock import MagicMock
 
 import pytest

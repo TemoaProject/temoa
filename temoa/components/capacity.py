@@ -18,11 +18,10 @@ from typing import TYPE_CHECKING
 from deprecated import deprecated
 from pyomo.environ import value
 
-
 if TYPE_CHECKING:
-    from temoa.types import ExprLike
     from temoa.core.model import TemoaModel
     from temoa.types import (
+        ExprLike,
         Period,
         Region,
         Season,

@@ -6,7 +6,7 @@ import random
 import sqlite3
 import sys
 from collections.abc import Callable
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import matplotlib
 from matplotlib import cm as cmx

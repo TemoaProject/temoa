@@ -18,15 +18,15 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import networkx as nx
 
-
 logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from temoa.types.core_types import Commodity
-    from temoa.types.core_types import Sector, Technology
-    from temoa.model_checking.network_model_data import EdgeTuple
     from collections.abc import Iterable, Sequence
+
+    from temoa.model_checking.network_model_data import EdgeTuple
+    from temoa.types.core_types import Commodity, Sector, Technology
+
     GraphType = TypeVar(
         'GraphType',
         nx.Graph[Commodity | Technology | str],

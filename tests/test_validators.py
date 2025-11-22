@@ -2,7 +2,7 @@
 Tests for the validators for regions, linked regions, and region groups
 """
 
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pyomo.environ as pyo
 import pytest

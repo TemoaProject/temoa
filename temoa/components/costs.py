@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING, Any
 from deprecated import deprecated
 from pyomo.environ import quicksum, value
 
-
 if TYPE_CHECKING:
     from pyomo.core import Expression, Var
-    from temoa.types.core_types import Period, Region, Technology, Vintage
     from pyomo.core.base.component import ComponentData
+
     from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Period, Region, Technology, Vintage
 
 from logging import getLogger
 

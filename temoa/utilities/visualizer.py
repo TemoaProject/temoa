@@ -18,7 +18,7 @@ import logging
 import uuid
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 
@@ -28,8 +28,9 @@ from temoa.utilities.graph_utils import (
 )
 
 if TYPE_CHECKING:
-    from temoa.types.core_types import Commodity, Sector, Technology
     from collections.abc import Iterable, Sequence
+
+    from temoa.types.core_types import Commodity, Sector, Technology
 
 logger = logging.getLogger(__name__)
 

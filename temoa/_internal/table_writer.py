@@ -30,14 +30,17 @@ from temoa._internal.table_data_puller import (
 from temoa.core.modes import TemoaMode
 
 if TYPE_CHECKING:
-    from temoa._internal.data_brick import DataBrick
-    from temoa.extensions.monte_carlo.mc_run import ChangeRecord
-    from pyomo.opt import SolverResults
-    from temoa.types.core_types import Period, Region, Technology, Vintage
-    from temoa.core.model import TemoaModel
-    from temoa.core.config import TemoaConfig
-    from pathlib import Path
     from collections.abc import Iterable
+    from pathlib import Path
+
+    from pyomo.opt import SolverResults
+
+    from temoa._internal.data_brick import DataBrick
+    from temoa.core.config import TemoaConfig
+    from temoa.core.model import TemoaModel
+    from temoa.extensions.monte_carlo.mc_run import ChangeRecord
+    from temoa.types.core_types import Period, Region, Technology, Vintage
+
     pass
 
 """

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 # temoa/data_io/hybrid_loader.py
 """
 Defines the main data loading engine for the Temoa model.
@@ -21,11 +19,13 @@ Architecture:
     `HybridLoader` class.
 """
 
+from __future__ import annotations
+
 import time
 from collections import defaultdict
 from logging import getLogger
 from sqlite3 import Connection, Cursor, OperationalError
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.core import Param, Set
 from pyomo.dataportal import DataPortal
@@ -39,9 +39,10 @@ from temoa.model_checking.commodity_network_manager import CommodityNetworkManag
 from temoa.model_checking.element_checker import ValidationPrimitive, ViableSet
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from temoa.core.config import TemoaConfig
     from temoa.data_io.loader_manifest import LoadItem
-    from collections.abc import Sequence
 
 logger = getLogger(__name__)
 

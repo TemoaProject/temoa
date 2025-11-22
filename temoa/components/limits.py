@@ -23,10 +23,9 @@ import temoa.components.technology as technology
 from temoa.components.utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
-    from temoa.types import Vintage
-    from temoa.types import ExprLike, Period, Region, Technology
-    from temoa.types.core_types import Commodity, Season, TimeOfDay
     from temoa.core.model import TemoaModel
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
+    from temoa.types.core_types import Commodity, Season, TimeOfDay
 
 logger = getLogger(__name__)
 

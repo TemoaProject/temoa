@@ -20,8 +20,9 @@ from pyomo.environ import Constraint, value
 from .utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
-    from ..types import ExprLike, Period, Region, Season, Technology, TimeOfDay, Vintage
     from temoa.core.model import TemoaModel
+
+    from ..types import ExprLike, Period, Region, Season, Technology, TimeOfDay, Vintage
 
 
 # ============================================================================
