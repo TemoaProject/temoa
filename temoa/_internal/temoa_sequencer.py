@@ -62,7 +62,7 @@ class TemoaSequencer:
         if mode_override and mode_override != self.config.scenario_mode:
             self.temoa_mode = mode_override
             self.config.scenario_mode = mode_override
-            logger.info(f'Temoa Mode overridden by caller to: {self.temoa_mode}')
+            logger.info('Temoa Mode overridden by caller to: %s', self.temoa_mode)
 
         # for results catching for perfect_foresight or testing
         self.pf_results: pyomo.opt.SolverResults | None = None
@@ -131,7 +131,7 @@ class TemoaSequencer:
         self._run_preliminary_checks()
 
         # The mode is now definitively set, so we can proceed.
-        logger.info(f'Executing scenario in mode: {self.temoa_mode}')
+        logger.info('Executing scenario in mode: %s', self.temoa_mode)
 
         # Select execution path based on mode
         match self.temoa_mode:

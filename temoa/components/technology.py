@@ -153,27 +153,33 @@ def populate_core_dictionaries(model: TemoaModel) -> None:
         if v in model.vintage_exist:
             if process not in exist_indices and t not in model.tech_uncap:
                 logger.warning(
-                    f'Warning: {process} has a specified efficiency, but does not '
-                    f'have any existing install base (existing_capacity).'
+                    'Warning: %s has a specified efficiency, but does not '
+                    'have any existing install base (existing_capacity).',
+                    process,
                 )
                 continue
             if t not in model.tech_uncap and model.existing_capacity[process] == 0:
                 logger.warning(
-                    f'Notice: Unnecessary specification of existing_capacity for {process}. '
-                    f'Declaring a capacity of zero may be omitted.'
+                    'Notice: Unnecessary specification of existing_capacity for %s. '
+                    'Declaring a capacity of zero may be omitted.',
+                    process,
                 )
                 continue
             if v + lifetime <= first_period:
                 logger.info(
-                    f'{process} specified as existing_capacity, but its '
-                    f'lifetime ({lifetime} years) does not extend past the '
-                    f'beginning of time_future ({first_period}).'
+                    '%s specified as existing_capacity, but its '
+                    'lifetime (%s years) does not extend past the '
+                    'beginning of time_future (%s).',
+                    process,
+                    lifetime,
+                    first_period,
                 )
 
         if model.efficiency[r, i, t, v, o] == 0:
             logger.info(
-                f'Notice: Unnecessary specification of efficiency for {(r, i, t, v, o)}. '
-                f'Specifying an efficiency of zero may be omitted.'
+                'Notice: Unnecessary specification of efficiency for %s. '
+                'Specifying an efficiency of zero may be omitted.',
+                (r, i, t, v, o),
             )
             continue
 
@@ -321,12 +327,12 @@ def create_survival_curve(model: TemoaModel) -> None:
         model.survival_curve_periods[r, t, v].update(between_periods)
 
     if rtv_interpolated:
-        msg = (
+        logger.info(
             'For the purposes of investment cost accounting, lifetime_survival_curve must be defined '
             'for each individual year. Gaps between defined years will be filled by linear interpolation. '
-            f'Otherwise, these individual years can be defined manually. Interpolated processes: {list(rtv_interpolated)}'
+            'Otherwise, these individual years can be defined manually. Interpolated processes: %s',
+            list(rtv_interpolated),
         )
-        logger.info(msg)
 
 
 def check_efficiency_indices(model: TemoaModel) -> None:
