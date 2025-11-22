@@ -171,11 +171,13 @@ for name_pair in units_added_tables:
     # quick check for expected number of fields...
     if len(data[0]) != 5:
         print(
-            f'\nWARNING:  unexpected number of fields in table: {old_name}.  Was expecting 5:  region, period, group, value, notes'
+            f'\nWARNING:  unexpected number of fields in table: {old_name}.  Was expecting 5:  '
+            'region, period, group, value, notes'
         )
         print(
-            '\nIt is possible that the older table you have was not indexed by REGION, which might be common'
-            'for old datasets.  If so, that cannot be moved automatically.  You will need to do it manually.'
+            '\nIt is possible that the older table you have was not indexed by REGION, which might '
+            'be common for old datasets.  If so, that cannot be moved automatically.  You will '
+            'need to do it manually.'
         )
         print(f'\n  *** IGNORING TABLE:  {old_name} in transfer!! ***\n')
         continue
@@ -211,7 +213,8 @@ con_new.commit()
 
 # More complicated stuff.... fixing the groups
 print(
-    '\n --- comparing RPS groups to a common set to see if they can be combined into 1 (except global) ---'
+    '\n --- comparing RPS groups to a common set to see if they can be combined into 1 '
+    '(except global) ---'
 )
 
 groups: dict[str, set[str]] = defaultdict(set)
@@ -239,7 +242,8 @@ if not skip_rps:
             techs_common &= not common ^ techs
             if not techs_common:
                 print(
-                    'combining RPS techs failed.  Some regions are not same.  Must be done manually.'
+                    'combining RPS techs failed.  Some regions are not same.  Must be done '
+                    'manually.'
                 )
 
     if techs_common:
@@ -299,8 +303,8 @@ except ValueError as e:
     skip_tech_groups = True
 if not skip_tech_groups:
     # ------- FIX TABLES THAT USED TO USE tech_groups -----------
-    # We'll do this by modifying the group names similar to above (smashing the region-name together to match
-    # the newly renamed groups
+    # We'll do this by modifying the group names similar to above (smashing the region-name
+    # together to match the newly renamed groups
     tables_using_groups = [
         'MaxActivityGroup',
         'MaxActivityShare',

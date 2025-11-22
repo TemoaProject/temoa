@@ -1,8 +1,8 @@
 """
 
 The purpose of this module is to provide a ledger for all costs for exchange techs.  The main reason
-for the need is that in many cases, the costs need to be apportioned by use ratio so it is helpful to
-separately gather all of the costs and then use a usage ratio to generate entries when asked for
+for the need is that in many cases, the costs need to be apportioned by use ratio so it is helpful
+to separately gather all of the costs and then use a usage ratio to generate entries when asked for
 
 """
 
@@ -71,7 +71,8 @@ class ExchangeTechCostLedger:
         :param vintage:
         :return: the proportion to assign to the IMPORTER, or 0.5 if no usage
         """
-        # Cast to TemoaModel for type checking - at runtime this will be either TemoaModel or Namespace
+        # Cast to TemoaModel for type checking - at runtime this will be either TemoaModel or
+        # Namespace
         # Both have the same attributes, but mypy doesn't know about Namespace's dynamic attributes
         model = cast('TemoaModel', self.model)
         # need to temporarily reconstitute the names
@@ -130,7 +131,8 @@ class ExchangeTechCostLedger:
         region_costs: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]] = (
             defaultdict(dict)
         )
-        # iterate through each region pairing, pull the cost records and decide if/how to split each one
+        # iterate through each region pairing, pull the cost records and decide if/how to split
+        # each one
         for cost_type in self.cost_records:
             # make a copy, this will be destructive operation
             records = self.cost_records[cost_type].copy()

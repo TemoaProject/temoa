@@ -15,10 +15,19 @@ class SolverNotAvailableError(Exception):
 
 # Dictionary to store installation documentation links for common solvers
 SOLVER_DOC_LINKS = {
-    'cbc': 'https://github.com/coin-or/Cbc#download (refer to temoa documentation for specific OS steps)',
+    'cbc': (
+        'https://github.com/coin-or/Cbc#download '
+        '(refer to temoa documentation for specific OS steps)'
+    ),
     'gurobi': 'https://www.gurobi.com/downloads/ (requires license and installation)',
-    'cplex': 'https://www.ibm.com/products/ilog-cplex-optimization-studio (requires license and installation)',
-    'highs': 'https://ergo-code.github.io/HiGHS/dev/installation/ (refer to documentation for specific OS steps)',
+    'cplex': (
+        'https://www.ibm.com/products/ilog-cplex-optimization-studio '
+        '(requires license and installation)'
+    ),
+    'highs': (
+        'https://ergo-code.github.io/HiGHS/dev/installation/ '
+        '(refer to documentation for specific OS steps)'
+    ),
     'glpk': 'https://www.gnu.org/software/glpk/',
 }
 
@@ -164,13 +173,18 @@ class TemoaConfig:
             solver_executable = shutil.which(data['solver_name'])
             if solver_executable is None:
                 error_message = (
-                    f"The specified solver '{data['solver_name']}' was not found in your system's PATH.\n"
+                    f"The specified solver '{data['solver_name']}' was not found in your system's "
+                    'PATH.\n'
                     'Please ensure the solver is installed and its executable is accessible.\n'
                 )
                 if data['solver_name'].lower() in SOLVER_DOC_LINKS:
-                    error_message += f'For installation instructions, refer to: {SOLVER_DOC_LINKS[data["solver_name"].lower()]}\n'
+                    link = SOLVER_DOC_LINKS[data['solver_name'].lower()]
+                    error_message += f'For installation instructions, refer to: {link}\n'
                 else:
-                    error_message += "Refer to the solver's official documentation for installation instructions."
+                    error_message += (
+                        "Refer to the solver's official documentation for "
+                        'installation instructions.'
+                    )
                 raise SolverNotAvailableError(error_message)
             else:
                 logger.info('Using solver: %s found at %s', data['solver_name'], solver_executable)

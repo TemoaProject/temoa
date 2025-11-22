@@ -122,7 +122,9 @@ class TemoaModel(AbstractModel):
         self.active_activity_rptv: t.ActiveActivitySet = set()
         self.storage_level_indices_rpsdtv: t.StorageLevelIndicesSet = set()
         self.seasonal_storage_level_indices_rpstv: t.SeasonalStorageLevelIndicesSet = set()
-        """currently available (within lifespan) (r, p, t, v) tuples (from model.process_vintages)"""
+        """
+        currently available (within lifespan) (r, p, t, v) tuples (from model.process_vintages)
+        """
 
         self.active_regions_for_tech: t.ActiveRegionsForTechDict = {}
         """currently available regions by period and tech {(p, t) : r}"""
@@ -136,18 +138,24 @@ class TemoaModel(AbstractModel):
         self.commodity_balance_rpc: t.CommodityBalancedSet = (
             set()
         )  # Set of valid region-period-commodity indices to balance
-        self.commodity_down_stream_process: t.CommodityStreamProcessDict = {}  # The downstream process of a commodity during a period
-        self.commodity_up_stream_process: t.CommodityStreamProcessDict = {}  # The upstream process of a commodity during a period
-        self.capacity_consumption_techs: t.CapacityConsumptionTechsDict = {}  # New capacity consuming a commodity during a period [r,p,c] -> t
-        self.retirement_production_processes: t.RetirementProductionProcessesDict = {}  # Retired capacity producing a commodity during a period [r,p,c] -> t,v
+        # The downstream process of a commodity during a period
+        self.commodity_down_stream_process: t.CommodityStreamProcessDict = {}
+        # The upstream process of a commodity during a period
+        self.commodity_up_stream_process: t.CommodityStreamProcessDict = {}
+        # New capacity consuming a commodity during a period [r,p,c] -> t
+        self.capacity_consumption_techs: t.CapacityConsumptionTechsDict = {}
+        # Retired capacity producing a commodity during a period [r,p,c] -> t,v
+        self.retirement_production_processes: t.RetirementProductionProcessesDict = {}
         self.process_inputs_by_output: t.ProcessInputsByOutputDict = {}
         self.process_outputs_by_input: t.ProcessOutputsByInputDict = {}
         self.process_techs: t.ProcessTechsDict = {}
         self.process_reserve_periods: t.ProcessReservePeriodsDict = {}
         self.process_periods: t.ProcessPeriodsDict = {}  # {(r, t, v): set(p)}
-        self.retirement_periods: t.RetirementPeriodsDict = {}  # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
+        # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
+        self.retirement_periods: t.RetirementPeriodsDict = {}
         self.process_vintages: t.ProcessVintagesDict = {}
-        self.survival_curve_periods: t.SurvivalCurvePeriodsDict = {}  # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
+        # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
+        self.survival_curve_periods: t.SurvivalCurvePeriodsDict = {}
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         self.baseload_vintages: t.BaseloadVintagesDict = {}
@@ -164,19 +172,26 @@ class TemoaModel(AbstractModel):
         self.import_regions: t.ImportRegionsDict = {}
 
         # These establish time sequencing
-        self.time_next: t.TimeNextDict = {}  # {(p, s, d): (s_next, d_next)} sequence of following time slices
-        self.time_next_sequential: t.TimeNextSequentialDict = {}  # {(p, s_seq): (s_seq_next)} next virtual storage season
-        self.sequential_to_season: t.SequentialToSeasonDict = {}  # {(p, s_seq): (s)} season matching this virtual storage season
+        # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        self.time_next: t.TimeNextDict = {}
+        # {(p, s_seq): (s_seq_next)} next virtual storage season
+        self.time_next_sequential: t.TimeNextSequentialDict = {}
+        # {(p, s_seq): (s)} season matching this virtual storage season
+        self.sequential_to_season: t.SequentialToSeasonDict = {}
 
         ################################################
         #             Switching Sets                   #
         #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        self.is_efficiency_variable: t.EfficiencyVariableDict = {}  # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
-        self.is_capacity_factor_process: t.CapacityFactorProcessDict = {}  # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
-        self.is_seasonal_storage: t.SeasonalStorageDict = {}  # {t: bool} whether a storage tech is seasonal storage
-        self.is_survival_curve_process: t.SurvivalCurveProcessDict = {}  # {(r, t, v): bool} whether a process uses survival curves.
+        # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
+        self.is_efficiency_variable: t.EfficiencyVariableDict = {}
+        # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
+        self.is_capacity_factor_process: t.CapacityFactorProcessDict = {}
+        # {t: bool} whether a storage tech is seasonal storage
+        self.is_seasonal_storage: t.SeasonalStorageDict = {}
+        # {(r, t, v): bool} whether a process uses survival curves.
+        self.is_survival_curve_process: t.SurvivalCurveProcessDict = {}
 
         ################################################
         #                 Model Sets                   #
@@ -510,9 +525,11 @@ class TemoaModel(AbstractModel):
             self.time_of_day,
             self.tech_with_capacity,
             self.vintage_all,
-            # validate=validate_capacity_factor_process, # opting for a quicker validation, just 0->1
+            # validate=validate_capacity_factor_process,
+            # opting for a quicker validation, just 0->1
             validate=validate_0to1,
-            default=capacity.get_default_capacity_factor,  # slow but only called if a value is missing
+            # slow but only called if a value is missing
+            default=capacity.get_default_capacity_factor,
         )
 
         self.capacity_constraint_rpsdtv = Set(

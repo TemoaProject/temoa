@@ -97,7 +97,8 @@ class MCSequencer:
         num_workers = self.num_workers
         work_queue: Queue[tuple[str, DataPortal] | str] = Queue(
             num_workers + 1
-        )  # must be able to hold all shutdowns at once (could be changed later to not lock on insertion...)
+        )  # must be able to hold all shutdowns at once (could be changed later to not lock on
+        # insertion...)
         result_queue: Queue[DataBrick | str] = Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
@@ -265,7 +266,8 @@ class MCSequencer:
         # get the instance number from the model name, if provided
         if '-' not in brick.name:
             raise ValueError(
-                'Instance name does not appear to contain a -idx value.  The manager should be tagging/updating this'
+                'Instance name does not appear to contain a -idx value.  The manager should be '
+                'tagging/updating this'
             )
         idx = int(brick.name.split('-')[-1])
         if idx in self.seen_instance_indices:

@@ -94,20 +94,22 @@ class Hull:
             return
         try:
             self.cv_hull = ConvexHull(self.all_points, qhull_options='Q12 QJ')
-            # Q12:  Allow "wide" facets, which seems to happen with large disparity in scale in model
-            # QJ:  option to "joggle" inputs if errors arise from singularities, etc.  This seems to slow things down
-            #      a moderate amount.
-            # Dev Note:  After significant experiments with building new each time or allowing "incremental"
-            #            additions to the hull, it appears more ROBUST to just rebuild.  More frequent
-            #            abnormal exits when trying to use incremental, and time difference is negligible
-            #            for this few pts.
+            # Q12:  Allow "wide" facets, which seems to happen with large disparity in scale in
+            #       model
+            # QJ:  option to "joggle" inputs if errors arise from singularities, etc.  This seems
+            #      to slow things down a moderate amount.
+            # Dev Note:  After significant experiments with building new each time or allowing
+            #            "incremental" additions to the hull, it appears more ROBUST to just
+            #            rebuild.  More frequent abnormal exits when trying to use incremental, and
+            #            time difference is negligible for this few pts.
             self.good_points = self.cv_hull.points
             logger.info('Hull updated')
             self.volume = self.cv_hull.volume
         except scipy.spatial._qhull.QhullError as e:
             logger.error(
                 'Attempt at hull construction from basis vectors failed.'
-                '\nMay be non-recoverable.  Possibly try a set of random vectors to initialize the Hull.'
+                '\nMay be non-recoverable.  Possibly try a set of random vectors to initialize the '
+                'Hull.'
             )
             logger.error(e)
             raise RuntimeError('Hull construction from vectors failed.  See log file')

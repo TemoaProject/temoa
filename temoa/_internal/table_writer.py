@@ -45,7 +45,8 @@ if TYPE_CHECKING:
 
 """
 
-Note:  This file borrows heavily from the legacy pformat_results.py, and is somewhat of a restructure of that code
+Note:  This file borrows heavily from the legacy pformat_results.py, and is somewhat of a
+       restructure of that code
        to accommodate the run modes more cleanly
 
 """
@@ -97,10 +98,13 @@ class TableWriter:
     ) -> None:
         """
         Write results to output database
-        :param iteration: An interation count for repeated runs, to be passed to tables that support it
-        :param results_with_duals: if provided, this will trigger the writing of dual variables, pulled from the SolverResults
+        :param iteration: An interation count for repeated runs, to be passed to tables that
+                          support it
+        :param results_with_duals: if provided, this will trigger the writing of dual variables,
+                                   pulled from the SolverResults
         :param M: the model
-        :param append: append whatever is already in the tables.  If False (default), clear existing tables by scenario name
+        :param append: append whatever is already in the tables.  If False (default), clear
+                       existing tables by scenario name
         :return:
         """
         if not append:
@@ -198,7 +202,8 @@ class TableWriter:
     def clear_iterative_runs(self) -> None:
         """
         clear runs that are iterative extensions to the scenario name
-        Ex:  scenario = 'Red Monkey" ... will clear "Red Monkey-1, Red Monkey-2, Red Monkey-3, Red Monkey-4'
+        Ex:  scenario = 'Red Monkey" ... will clear "Red Monkey-1, Red Monkey-2, Red Monkey-3,
+             Red Monkey-4'
         :return: None
         """
         target = self.config.scenario + '-%'  # the dash followed by wildcard for anything after
@@ -381,7 +386,8 @@ class TableWriter:
     def write_summary_flow(self, model: TemoaModel, iteration: int | None = None) -> None:
         """
         This is normally called from MGA (other?)
-        iterative solves where capturing the annual summary of flow out is desired vs. flows by season, tod for
+        iterative solves where capturing the annual summary of flow out is desired vs. flows by
+        season, tod for
         single instances
         :param iteration: the number of the sequential iteration
         :param M: The solved model
@@ -500,7 +506,8 @@ class TableWriter:
             elif flows[fi][FlowType.IN] == 0 and abs(deltas[fi]) > 0.02:
                 all_good = False
                 logger.warning(
-                    'Flow balance check failed for index: %s, delta: %0.2f.  Flows happening with 0 input',
+                    'Flow balance check failed for index: %s, delta: %0.2f.  Flows happening with '
+                    '0 input',
                     fi,
                     deltas[fi],
                 )
@@ -526,7 +533,8 @@ class TableWriter:
         """
 
         # P_0 is usually the first optimization year, but if running myopic, we could assign it via
-        # table entry.  Perhaps in future it is just always the first optimization year of the 1st iter.
+        # table entry.  Perhaps in future it is just always the first optimization year of the
+        # 1st iter.
         if self.config.scenario_mode == TemoaMode.MYOPIC:
             p_0 = model.myopic_discounting_year
         else:

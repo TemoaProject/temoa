@@ -93,7 +93,13 @@ def my_ef_writer(scenario_tree):
         V_Activity_ptv = rows['V_ActivityByPeriodAndProcess']
         V_Activity_pt = OrderedDict()
         for row in V_Activity_ptv:
-            key = (row[0], row[1], row[2], row[3], row[4])  # (Stage, Node, var_name, p, t)
+            key = (
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                row[4],
+            )  # (Stage, Node, var_name, p, t)
             if key not in V_Activity_pt:
                 V_Activity_pt[key] = float(row[6])
             else:
@@ -146,7 +152,9 @@ def solve_ef_fix(ef_options, avg_instance):
 
     time_fut = avg_instance.time_future.data()
     techs = avg_instance.tech_all.data()
-    dv_capacity = avg_instance.v_capacity.get_values()  # Getting dec vars that matters to be fixed
+    dv_capacity = (
+        avg_instance.v_capacity.get_values()
+    )  # Getting dec vars that matters to be fixed
     # dV_HydroStorage = avg_instance.V_HydroStorage.get_values()
 
     # Storing techs and future time periods in vector for easy access
@@ -156,11 +164,13 @@ def solve_ef_fix(ef_options, avg_instance):
         vtime_fut[k] = iaux
         k = k + 1
 
-    # Fixing Capacity values for first stage at the ef instance with values from the deterministic instance
+    # Fixing Capacity values for first stage at the ef instance with values from
+    # the deterministic instance
     for iaux1, iaux2 in dv_capacity:
         if iaux2 == vtime_fut[0]:
             ef._binding_instance.S0s0s0.v_capacity[iaux1, iaux2].fix(dv_capacity[iaux1, iaux2])
-            # ef._binding_instance.S0.v_capacity[iaux1, iaux2].fix(3)  #just for checking if fixing at one scen also fix in the other - ok for now
+            # ef._binding_instance.S0.v_capacity[iaux1, iaux2].fix(3)
+            # just for checking if fixing at one scen also fix in the other - ok for now
 
     # Fixing Hydro Storage values for first stage
     # for iaux1 , iaux2 in dV_HydroStorage:
@@ -227,7 +237,9 @@ def solve_dm(p_model, p_data, opt_solver):
     dm_result['cost'].append(obj_val)
 
     # Writting to the Shell
-    sys.stdout.write('\nSolved deterministic model with uncertainty at average valures \n')
+    sys.stdout.write(
+        '\nSolved deterministic model with uncertainty at average valures \n'
+    )
     sys.stdout.write(f'    Total cost: {obj_val}\n')
     os.chdir(pwd)
     return instance  # Returning instance solved, values will be used later
@@ -248,9 +260,10 @@ def runECIU():
 
 
 def runVSS():
-    # This is the main function. It calls 1) Extensive Form 2)Deterministic LP 3)Fixed Extensive Form
-    # After results of 1) and 3) are obtained it computes the VSS
-    # As input, this function requires the path of the stochastic folder and temoa_stochastic.py file
+    # This is the main function. It calls 1) Extensive Form 2)Deterministic LP
+    # 3)Fixed Extensive Form. After results of 1) and 3) are obtained it computes the VSS
+    # As input, this function requires the path of the stochastic folder and
+    # temoa_stochastic.py file
     # It assumes that an instance named ReferenceModel.dat is located inside the stochastic folder
 
     import sys

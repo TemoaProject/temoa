@@ -227,7 +227,8 @@ def nx_to_vis(
         js_template = (template_dir / 'graph_script.js').read_text(encoding='utf-8')
     except FileNotFoundError:
         logger.exception(
-            "Template files not found. Ensure the 'network_vis_templates' directory exists next to visualizer.py."
+            "Template files not found. Ensure the 'network_vis_templates' directory exists next to "
+            'visualizer.py.'
         )
         return None
 

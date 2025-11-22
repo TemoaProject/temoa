@@ -266,7 +266,8 @@ def _fetch_all_tech_definitions(
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime,
                 COALESCE(tech_dim.sector, 'Other') AS sector
             FROM main.{table} AS eff
-            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage
+            AND eff.region = lp.region
             LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
             LEFT JOIN main.technology AS tech_dim ON eff.tech = tech_dim.tech
             JOIN main.time_period AS tp ON eff.vintage = tp.period
@@ -277,7 +278,8 @@ def _fetch_all_tech_definitions(
                 eff.region, eff.input_comm, eff.tech, eff.vintage, eff.output_comm,
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
             FROM main.{table} AS eff
-            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage AND eff.region = lp.region
+            LEFT JOIN main.lifetime_process AS lp ON eff.tech = lp.tech AND eff.vintage = lp.vintage
+            AND eff.region = lp.region
             LEFT JOIN main.lifetime_tech AS lt ON eff.tech = lt.tech AND eff.region = lt.region
             JOIN main.time_period AS tp ON eff.vintage = tp.period
         """

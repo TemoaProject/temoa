@@ -19,7 +19,8 @@ def get_tperiods(inp_f):
     periods_set = set()
 
     con = sqlite3.connect(inp_f)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+    cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+    # the records in a database
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
@@ -28,7 +29,9 @@ def get_tperiods(inp_f):
     for row in cur:
         x.append(row[0])
     for y in x:
-        cur.execute("SELECT DISTINCT period FROM output_flow_out WHERE scenario is '" + str(y) + "'")
+        cur.execute(
+            "SELECT DISTINCT period FROM output_flow_out WHERE scenario is '" + str(y) + "'"
+        )
         periods_list[y] = []
         for per in cur:
             z = per[0]
@@ -52,7 +55,8 @@ def get_scenario(inp_f):
     scene_set = set()
 
     con = sqlite3.connect(inp_f)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+    cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+    # the records in a database
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
@@ -73,7 +77,8 @@ def get_comm(inp_f, db_dat):
 
     if not db_dat:
         con = sqlite3.connect(inp_f)
-        cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+        cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+        # the records in a database
         con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
         print(inp_f)
@@ -87,7 +92,8 @@ def get_comm(inp_f, db_dat):
 
         if not is_query_empty:
             cur.execute(
-                'SELECT input_comm FROM output_flow_out UNION SELECT output_comm FROM output_flow_out'
+                'SELECT input_comm FROM output_flow_out UNION SELECT output_comm FROM '
+                'output_flow_out'
             )
 
         for row in cur:
@@ -105,7 +111,8 @@ def get_comm(inp_f, db_dat):
                 if eff_flag is False and re.search(
                     r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the
+                    # commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
@@ -138,7 +145,8 @@ def get_tech(inp_f, db_dat):
 
     if not db_dat:
         con = sqlite3.connect(inp_f)
-        cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+        cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+        # the records in a database
         con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
         print(inp_f)
@@ -166,7 +174,8 @@ def get_tech(inp_f, db_dat):
                 if eff_flag is False and re.search(
                     r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the
+                    # commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
@@ -208,7 +217,8 @@ def is_db_overwritten(db_file, inp_dat_file):
     for elem in cur:
         is_db_empty = True  # True for non-empty db file
         break
-    # This file could be schema with populated results from previous run. Or it could be a normal db file.
+    # This file could be schema with populated results from previous run. Or it could be a normal
+    # db file.
     if is_db_empty:
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='input_file';")
         does_input_file_table_exist = False

@@ -1,8 +1,9 @@
 """
-Objective of this module is to build a lightweight container to hold a selection of model results from a
-Worker process with the intent to send this back via multiprocessing queue in lieu of sending the entire
-model back (which is giant and slow).  It will probably be a "superset" of data elements required to report
-for MC and MGA right now, and maybe others
+Objective of this module is to build a lightweight container to hold a selection of model results
+from a Worker process with the intent to send this back via multiprocessing queue in lieu of
+sending the entire
+model back (which is giant and slow).  It will probably be a "superset" of data elements required
+to report for MC and MGA right now, and maybe others
 
 """
 
@@ -21,7 +22,8 @@ from temoa.types.model_types import EI, FI, CapData, FlowType
 
 class DataBrick:
     """
-    A utility container for bundling assorted data structures for solved models done by Worker objects.
+    A utility container for bundling assorted data structures for solved models done by Worker
+    objects.
     """
 
     def __init__(

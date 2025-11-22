@@ -206,7 +206,8 @@ class HybridLoader:
                 (myopic_index.base_year,),
             ).fetchall()
             raw_future = cur.execute(
-                'SELECT period FROM time_period WHERE flag = "f" AND period >= ? AND period <= ? ORDER BY sequence',
+                'SELECT period FROM time_period WHERE flag = "f" AND period >= ? AND period <= ? '
+                'ORDER BY sequence',
                 (myopic_index.base_year, myopic_index.last_year),
             ).fetchall()
         else:
@@ -319,7 +320,8 @@ class HybridLoader:
         except OperationalError as e:
             if not item.is_table_required:
                 logger.info(
-                    'Could not load optional component %s, likely due to older schema. Skipping. Error: %s',
+                    'Could not load optional component %s, likely due to older schema. Skipping. '
+                    'Error: %s',
                     item.component.name,
                     e,
                 )
@@ -378,7 +380,8 @@ class HybridLoader:
             if len(values[0]) == 1:
                 if len(values) > 1:
                     logger.warning(
-                        "Component '%s' appears to be a scalar Param but has multiple values. Using only the first value.",
+                        "Component '%s' appears to be a scalar Param but has multiple values. "
+                        'Using only the first value.',
                         component.name,
                     )
                 data[component.name] = {None: values[0][0]}
@@ -443,7 +446,8 @@ class HybridLoader:
             ).fetchall()
         else:
             contents = cur.execute(
-                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, NULL FROM main.efficiency'
+                'SELECT region, input_comm, tech, vintage, output_comm, efficiency, NULL FROM '
+                'main.efficiency'
             ).fetchall()
 
         if use_raw_data:
@@ -628,7 +632,8 @@ class HybridLoader:
             ).fetchone()
             prev_period = prev_period_res[0] if prev_period_res else -1
             rows_to_load = cur.execute(
-                'SELECT region, tech, vintage, capacity FROM output_built_capacity WHERE vintage <= ? AND scenario = ? '
+                'SELECT region, tech, vintage, capacity FROM output_built_capacity WHERE '
+                'vintage <= ? AND scenario = ? '
                 'UNION SELECT region, tech, vintage, capacity FROM existing_capacity',
                 (prev_period, self.config.scenario),
             ).fetchall()
@@ -696,7 +701,8 @@ class HybridLoader:
             data[model.global_discount_rate.name] = {None: cast('float', filtered_data[0][0])}
         else:
             raise ValueError(
-                "Missing required parameter: 'global_discount_rate' not found in MetaDataReal table."
+                "Missing required parameter: 'global_discount_rate' not found in MetaDataReal "
+                'table.'
             )
 
     def _load_default_loan_rate(
@@ -737,7 +743,8 @@ class HybridLoader:
                 p_tech, d_tech = entry[1], entry[3]
                 if p_tech in valid_techs or d_tech in valid_techs:
                     msg = (
-                        'A LinkedTech entry %s was invalidated, but one of its component technologies '
+                        'A LinkedTech entry %s was invalidated, but one of its component '
+                        'technologies '
                         'remains viable. This could lead to incorrect model behavior.'
                     )
                     logger.error(msg, entry)
@@ -786,7 +793,8 @@ class HybridLoader:
         self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
         if filtered_data:
             logger.warning(
-                'The renewable_portfolio_standard constraint is deprecated. Use limit_activity_share instead. '
+                'The renewable_portfolio_standard constraint is deprecated. Use '
+                'limit_activity_share instead. '
                 'The constraint has been applied but this feature may be removed in the future.'
             )
 
@@ -894,16 +902,24 @@ class HybridLoader:
             model.demand.name: model.demand_constraint_rpc.name,
             model.limit_emission.name: model.limit_emission_constraint_rpe.name,
             model.limit_activity.name: model.limit_activity_constraint_rpt.name,
-            model.limit_seasonal_capacity_factor.name: model.limit_seasonal_capacity_factor_constraint_rpst.name,
+            model.limit_seasonal_capacity_factor.name: (
+                model.limit_seasonal_capacity_factor_constraint_rpst.name
+            ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
-            model.limit_annual_capacity_factor.name: model.limit_annual_capacity_factor_constraint_rpto.name,
+            model.limit_annual_capacity_factor.name: (
+                model.limit_annual_capacity_factor_constraint_rpto.name
+            ),
             model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
             model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
             model.limit_new_capacity.name: model.limit_new_capacity_constraint_rpt.name,
-            model.limit_new_capacity_share.name: model.limit_new_capacity_share_constraint_rpgg.name,
+            model.limit_new_capacity_share.name: (
+                model.limit_new_capacity_share_constraint_rpgg.name
+            ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
             model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,
-            model.renewable_portfolio_standard.name: model.renewable_portfolio_standard_constraint_rpg.name,
+            model.renewable_portfolio_standard.name: (
+                model.renewable_portfolio_standard_constraint_rpg.name
+            ),
         }
 
         res: dict[str, object] = {}

@@ -172,7 +172,8 @@ def deploy_dumb_pypi_index(nightly_version: str) -> None:
             shutil.rmtree(item_path)  # Use shutil for robust directory deletion
 
     print(
-        f'Copying generated index from {TEMPORARY_OUTPUT_DIR}/simple/ to {NIGHTLIES_REPO_CLONE_DIR}...'
+        f'Copying generated index from {TEMPORARY_OUTPUT_DIR}/simple/ to '
+        f'{NIGHTLIES_REPO_CLONE_DIR}...'
     )
     for item in os.listdir(os.path.join(TEMPORARY_OUTPUT_DIR, 'simple')):
         src_path = os.path.join(TEMPORARY_OUTPUT_DIR, 'simple', item)

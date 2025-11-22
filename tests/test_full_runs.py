@@ -66,7 +66,8 @@ def test_against_legacy_outputs(
         len(tuple(efficiency_param.sparse_iterkeys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
     ), 'should match legacy numbers'
 
-    # check the size of the domain.  NOTE:  The build of the domain here may be "expensive" for large models
+    # check the size of the domain.  NOTE:  The build of the domain here may be "expensive" for
+    # large models
     assert (
         len(efficiency_param.index_set().domain) == expected_vals[ExpectedVals.EFF_DOMAIN_SIZE]
     ), 'should match legacy numbers'

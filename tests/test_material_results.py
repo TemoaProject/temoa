@@ -66,7 +66,8 @@ def test_flows(solved_connection: tuple[sqlite3.Connection, str, str, int, float
         'SELECT SUM(flow) FROM main.output_flow_out WHERE tech = ? AND period = ?',
         (tech, period),
     ).fetchone()
-    # If the query returns no rows, row will be None. If it finds rows but the sum is NULL, row[0] will be None.
+    # If the query returns no rows, row will be None. If it finds rows but the sum is NULL, row[0]
+    # will be None.
     flow = row[0] if row and row[0] is not None else 0.0
 
     assert flow == pytest.approx(

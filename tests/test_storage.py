@@ -86,7 +86,8 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
         next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
 
         assert state + charge - discharge == pytest.approx(next_state, abs=1e-5), (
-            f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} to {s_next, d_next}'
+            f'model fails to correctly sequence storage states {r, p, s, t, v} sequenced {s, d} '
+            f'to {s_next, d_next}'
         )
 
 

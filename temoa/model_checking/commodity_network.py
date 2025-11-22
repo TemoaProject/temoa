@@ -153,7 +153,8 @@ class CommodityNetwork:
                     self.viable_linked_tech.add((driver, driven))
                 elif driver_exists and not driven_exists:
                     logger.info(
-                        'No driven linked tech for driver %s in region %s, period %s. Driver REMOVED.',
+                        'No driven linked tech for driver %s in region %s, period %s. Driver '
+                        'REMOVED.',
                         driver,
                         self.region,
                         self.period,
@@ -161,7 +162,8 @@ class CommodityNetwork:
                     self.remove_tech_by_name(driver)
                 elif not driver_exists and driven_exists:
                     logger.warning(
-                        'Driven linked tech %s has no active driver in region %s, period %s. Driven tech REMOVED.',
+                        'Driven linked tech %s has no active driver in region %s, period %s. '
+                        'Driven tech REMOVED.',
                         driven,
                         self.region,
                         self.period,
@@ -207,7 +209,8 @@ class CommodityNetwork:
 
             for driver, driven in sour_links:
                 logger.warning(
-                    'Both members of link (%s, %s) are not valid. Removing both in region %s, period %s.',
+                    'Both members of link (%s, %s) are not valid. Removing both in region %s, '
+                    'period %s.',
                     driver,
                     driven,
                     self.region,
@@ -279,7 +282,8 @@ class CommodityNetwork:
         """Helper to log discovered orphaned processes."""
         if self.other_orphans:
             logger.info(
-                "Source tracing revealed %s 'other' (non-demand) orphaned processes in region %s, period %s.",
+                "Source tracing revealed %s 'other' (non-demand) orphaned processes in region %s, "
+                'period %s.',
                 len(self.other_orphans),
                 self.region,
                 self.period,
@@ -289,7 +293,8 @@ class CommodityNetwork:
 
         if self.demand_orphans:
             logger.info(
-                'Source tracing revealed %s demand-side orphaned processes in region %s, period %s.',
+                'Source tracing revealed %s demand-side orphaned processes in region %s, '
+                'period %s.',
                 len(self.demand_orphans),
                 self.region,
                 self.period,

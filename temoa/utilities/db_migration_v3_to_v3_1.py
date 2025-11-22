@@ -68,7 +68,8 @@ def column_check(old_name: str, new_name: str) -> bool:
     missing = [c for c in new_columns if c not in old_columns and c not in ('period', 'notes')]
     if len(missing) > 0:
         msg = (
-            f'Columns of {new_name} in the new database missing from {old_name} in old database. Try adding or renaming the column in the old database:'
+            f'Columns of {new_name} in the new database missing from {old_name} in old database. '
+            'Try adding or renaming the column in the old database:'
             f'\n{missing}\n'
         )
         print(msg)
@@ -182,7 +183,9 @@ for old_name, (new_name, operator) in operator_added_tables.items():
         print('No data for: ' + old_name)
         continue
 
-    new_cols: list[str] = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    new_cols: list[str] = [
+        c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()
+    ]
     op_index = new_cols.index('operator')
     data = [(*row[0:op_index], operator, *row[op_index:len(new_cols)-1]) for row in data]
 
@@ -291,7 +294,8 @@ for old_name, new_name in period_added_tables:
                     v <= p < v+lifetime_process[r, t, v]
                     for v in [
                         t[0] for t in con_old.execute(
-                            f'SELECT vintage FROM Efficiency WHERE region == "{r}" AND tech == "{t}"'
+                            f'SELECT vintage FROM Efficiency WHERE region == "{r}" AND '
+                            f'tech == "{t}"'
                         ).fetchall()
                     ]
                 )
@@ -342,7 +346,9 @@ if n_del > 0:
         "WHERE (region, period, demand_name) "
         "NOT IN (SELECT region, period, commodity FROM Demand)"
     )
-    print(f"{n_del} extraneous rows removed from DemandSpecificDistribution after adding period index")
+    print(
+        f"{n_del} extraneous rows removed from DemandSpecificDistribution after adding period index"
+    )
 
 # TimeSeason unique seasons to SeasonLabel
 con_new.execute("INSERT OR REPLACE INTO SeasonLabel(season) SELECT DISTINCT season FROM TimeSeason")
@@ -363,7 +369,12 @@ if not data:
 else:
     new_data = []
     for row in data:
-        vints = [v[0] for v in con_old.execute(f'SELECT vintage FROM Efficiency WHERE region=="{row[0]}" AND tech="{row[1]}"').fetchall()]
+        vints = [
+            v[0]
+            for v in con_old.execute(
+                f'SELECT vintage FROM Efficiency WHERE region=="{row[0]}" AND tech="{row[1]}"'
+            ).fetchall()
+        ]
         for v in vints:
             new_data.append((row[0], row[1], v, row[2], row[3]))
     query = 'INSERT OR REPLACE INTO LoanLifetimeProcess VALUES (?,?,?,?,?)'
@@ -372,7 +383,10 @@ else:
 
 
 # Warn about incompatible changes
-print('\n --- The following transfers were impossible due to incompatible changes. Transfer manually. ---')
+print(
+    '\n --- The following transfers were impossible due to incompatible changes. Transfer '
+    'manually. ---'
+)
 for old_name, new_name in no_transfer.items():
     print(f'{old_name} to {new_name}')
 

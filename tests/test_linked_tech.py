@@ -46,7 +46,8 @@ def test_linked_tech(
         'the linked processes should remove have an aggregate -30 units of co2 emissions'
     )
 
-    # check the flow out of captured carbon from the driven tech, which should output the captured carbon
+    # check the flow out of captured carbon from the driven tech, which should output the captured
+    # carbon
     flow_out = conn.execute(
         "SELECT SUM(flow) FROM output_flow_out WHERE tech = 'CCS' and output_comm = 'CO2_CAP'"
     ).fetchone()[0]

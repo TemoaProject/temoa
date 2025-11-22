@@ -489,7 +489,8 @@ def test_cli_validate_fails_if_solver_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    Test that the validate command fails with SolverNotAvailableError if the configured solver is missing.
+    Test that the validate command fails with SolverNotAvailableError if the configured solver is
+    missing.
     """
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_config_with_solver(tmp_path, db_path, 'nonexistent_solver')
@@ -516,7 +517,8 @@ def test_cli_validate_fails_if_solver_missing(
 
 def test_cli_run_fails_if_solver_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Test that the run command fails with SolverNotAvailableError if the configured solver is missing.
+    Test that the run command fails with SolverNotAvailableError if the configured solver is
+    missing.
     """
     db_path = Path(__file__).parent / 'testing_outputs' / 'utopia.sqlite'
     test_config_path = create_config_with_solver(tmp_path, db_path, 'another_nonexistent_solver')

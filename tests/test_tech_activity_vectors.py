@@ -20,7 +20,8 @@ def test__vector_engine() -> None:
     }
     var_map = {'dog': ['red', 'blue'], 'pig': ['yellow', 'green'], 'cat': ['blue', 'gold']}
     tech_sizes = {k: len(v) for k, v in var_map.items()}
-    # below is just to show the mapping back to variables.... test just want the coefficients from res_values
+    # below is just to show the mapping back to variables.... test just want the coefficients from
+    # res_values
     # res = [
     #     {'red': 0.25, 'blue': 0.25, 'yellow': 0.25, 'green': 0.25},
     #     {'red': -0.25, 'blue': -0.25, 'yellow': -0.25, 'green': -0.25},

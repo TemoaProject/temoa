@@ -34,7 +34,10 @@ logging.getLogger('pyutilib').setLevel(logging.WARNING)
 
 
 def refresh_databases() -> None:
-    """make new databases from source for testing...  removes possibility of contamination by earlier runs"""
+    """
+    make new databases from source for testing...  removes possibility of contamination by earlier
+    runs
+    """
     data_output_path = Path(__file__).parent / 'testing_outputs'
     data_source_path = Path(__file__).parent / 'testing_data'
     databases = (

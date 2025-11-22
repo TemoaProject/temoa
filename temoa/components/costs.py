@@ -142,8 +142,8 @@ def loan_cost(
     vintage: int,
 ) -> float | Expression:
     """
-    function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
-    pyomo variables/params to make a pyomo Expression
+    function to calculate the loan cost.  It can be used with fixed values to produce a hard number
+    or pyomo variables/params to make a pyomo Expression
     :param capacity: The capacity to use to calculate cost
     :param invest_cost: the cost/capacity
     :param loan_annualize: parameter
@@ -408,8 +408,10 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     # result with processInput
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
-    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
+    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.  (See
+    # commodity balance constr)
+    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed
+    # either
     # Earlier versions of this code had accounting for flex & curtailment that have been removed.
 
     base = [
@@ -446,7 +448,8 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
 
     # 2. flex emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
 
-    # 3. curtailment emissions -- removed (curtailment is no-flow, for accounting only, so no emissions)
+    # 3. curtailment emissions -- removed (curtailment is no-flow, for accounting only, so no
+    # emissions)
 
     # 4. annual emissions
     var_annual_emissions = quicksum(
@@ -463,7 +466,8 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
         if t not in model.tech_flex
     )
 
-    # 5. flex annual emissions -- removed (double counting, flex wastes are SUBTRACTIVE from flowout)
+    # 5. flex annual emissions -- removed (double counting, flex wastes are SUBTRACTIVE from
+    # flowout)
 
     # 6. embodied - treated as a fixed cost distributed over the deployment period (vintage)
     embodied_emissions = quicksum(
@@ -472,9 +476,9 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             * value(model.emission_embodied[r, e, t, v])
             / value(model.period_length[p]),
             cost_factor=value(model.cost_emission[r, p, e]),
-            cost_years=value(
-                model.period_length[v]
-            ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=value(model.period_length[v]),
+            # We assume the embodied emissions are emitted in the same year as the capacity is
+            # installed.
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
@@ -490,9 +494,9 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             cap_or_flow=model.v_annual_retirement[r, p, t, v]
             * value(model.emission_end_of_life[r, e, t, v]),
             cost_factor=value(model.cost_emission[r, p, e]),
-            cost_years=value(
-                model.period_length[p]
-            ),  # We assume the embodied emissions are emitted in the same year as the capacity is installed.
+            cost_years=value(model.period_length[p]),
+            # We assume the embodied emissions are emitted in the same year as the capacity is
+            # installed.
             global_discount_rate=global_discount_rate,
             p_0=p_0,
             p=p,
@@ -546,32 +550,38 @@ def total_cost_rule(model: TemoaModel) -> Expression:
 
     Note that capital costs (:math:`{CI}_{r,t,v}`) are handled in several steps.
 
-        1. Each capital cost is amortized using the loan rate (i.e., technology-specific discount rate) and loan period.
+        1. Each capital cost is amortized using the loan rate (i.e., technology-specific discount
+           rate) and loan period.
 
-        2. The annual stream of payments is converted into a lump sum using the global discount rate and loan period.
+        2. The annual stream of payments is converted into a lump sum using the global discount
+           rate and loan period.
 
         3. The new lump sum is amortized at the global discount rate over the process lifetime.
 
         4. Loan payments beyond the model time horizon are removed and the lump sum recalculated.
 
-        5. Finally, the lump sum is discounted back to the beginning of the horizon (:math:`P_0`) using the global discount rate.
+        5. Finally, the lump sum is discounted back to the beginning of the horizon (:math:`P_0`)
+           using the global discount rate.
 
     Steps 3 and 4 serve to correctly balance the cost-benefit of technologies whose useful lives
-    would extend beyond the planning horizon. While an explicit salvage term is not included, this approach properly
-    captures the capital costs incurred within the model time horizon, accounting for process-specific loan rates
-    and periods.
+    would extend beyond the planning horizon. While an explicit salvage term is not included, this
+    approach properly captures the capital costs incurred within the model time horizon, accounting
+    for process-specific loan rates and periods.
 
-    In the case of processes using survival curves, steps 3 and 4 do not reamortise costs uniformly over the process lifetime.
-    Instead, costs are amortised over the life of the process in proportion to the survival fraction in each year.
-    Note that, for this calculation, a survival curve :math:`{LSC}_{r,y,t,v}` must be defined out to the year in which the
-    surviving fraction is zero, even if that extends beyond the planning horizon. It must also be defined for each integer
-    year between model periods and, if not, these gaps will be filled by linear interpolation ahead of this calculation.
+    In the case of processes using survival curves, steps 3 and 4 do not reamortise costs uniformly
+    over the process lifetime. Instead, costs are amortised over the life of the process in
+    proportion to the survival fraction in each year. Note that, for this calculation, a survival
+    curve :math:`{LSC}_{r,y,t,v}` must be defined out to the year in which the surviving fraction
+    is zero, even if that extends beyond the planning horizon. It must also be defined for each
+    integer year between model periods and, if not, these gaps will be filled by linear
+    interpolation ahead of this calculation.
 
     .. math::
         :label: obj_invest_survival_curve
 
         \begin{aligned}
-            C_{loans,LSC} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot \textbf{NCAP}_{r, t, v}
+            C_{loans,LSC} =& \sum_{r, t, v \in \Theta_{CI}} CI_{r, t, v} \cdot
+            \textbf{NCAP}_{r, t, v}
             && \text{(overnight capital cost)} \\
             &\cdot \frac{A}{P}(i=\text{LR}_{r,t,v}, N=\text{LLP}_{r,t,v})
             && \text{(overnight cost amortised into annual loan payments)} \\
@@ -603,7 +613,8 @@ def total_cost_rule(model: TemoaModel) -> Expression:
        :label: annual_fixed_variable_emission
 
         \begin{aligned}
-            C_{fixed} =& \sum_{r, p, t, v \in \Theta_{CF}} CF_{r, p, t, v} \cdot \textbf{CAP}_{r, p, t, v}
+            C_{fixed} =& \sum_{r, p, t, v \in \Theta_{CF}} CF_{r, p, t, v} \cdot
+            \textbf{CAP}_{r, p, t, v}
             && \text{(annual fixed cost)} \\
             \\
             C_{variable} =& \sum_{r, p, t \notin T^a, v \in \Theta_{CV}}
@@ -617,7 +628,8 @@ def total_cost_rule(model: TemoaModel) -> Expression:
             & \text{where } t \in T^a \\
             &+\\
             C_{emissions} =& \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
-            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{S, D, I, O} \mathbf{FO}_{r, p, s, d, i, t, v, o}
+            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{S, D, I, O}
+            \mathbf{FO}_{r, p, s, d, i, t, v, o}
             && \text{(annual emission cost on flow)} \\
             & \text{where } t \notin T^a \\
             &+\\

@@ -180,7 +180,8 @@ def price_checker(model: TemoaModel) -> bool:
         if missing_fixed_costs:
             logger.warning(
                 'Check 2: The following have registered variable costs in '
-                'the periods listed and at least 1 fixed cost, but not fixed & var in all periods: %s',
+                'the periods listed and at least 1 fixed cost, but not fixed & var in all periods: '
+                '%s',
                 missing_fixed_costs,
             )
             warnings = True
@@ -260,7 +261,8 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     """
     Check that the tech_uncap set members...
     1.  do not have fixed or invest costs
-    2.  Either have no Var cost, or a Var cost in every year of their lifespan (similar to check #3 above)
+    2.  Either have no Var cost, or a Var cost in every year of their lifespan (similar to check #3
+        above)
     3.  Are not in the limit_capacity parameters
 
     :param M:
@@ -279,7 +281,9 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     rtv_with_fixed_cost = efficiency_rtv & set(fixed_cost_periods.keys())
     if rtv_with_fixed_cost:
         logger.error(
-            'The following technologies are labeled as unlimited capacity, but have a FIXED cost in periods'
+            'The following technologies are labeled as unlimited capacity, but have a FIXED cost '
+            'in '
+            'periods'
         )
         for rtv in rtv_with_fixed_cost:
             logger.error('%s: %s', rtv, fixed_cost_periods[rtv])
@@ -306,7 +310,9 @@ def check_tech_uncap(model: TemoaModel) -> bool:
         missing_periods = expected_periods - var_cost_periods[r, t, v]
         if missing_periods:
             logger.warning(
-                'Unlimited capacity tech %s has some Variable costs, but is missing cost in periods: %s',
+                'Unlimited capacity tech %s has some Variable costs, but is missing cost in '
+                'periods: '
+                '%s',
                 t,
                 missing_periods,
             )
@@ -314,7 +320,9 @@ def check_tech_uncap(model: TemoaModel) -> bool:
         extra_periods = var_cost_periods[r, t, v] - expected_periods
         if extra_periods:
             logger.warning(
-                'Unlimited capacity region-tech-vintage %s-%s-%s has some variable costs outside of its '
+                'Unlimited capacity region-tech-vintage %s-%s-%s has some variable costs outside '
+                'of '
+                'its '
                 'lifespan: %s',
                 r,
                 t,

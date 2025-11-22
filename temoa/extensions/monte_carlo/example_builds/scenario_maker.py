@@ -6,12 +6,14 @@ runs for a Monte Carlo simulation.
 This scenario is based on Utopia with the following random variables:
 
 Cost of Imported Oil will have a normal distribution of *relative changes* applied in all periods
-Residential Heating (RH) will have a similar distribution, with some negative correlation (seems logical that
-there is some hidden price sensitivity, even though RH could be satisfied from electricity as well.)
+Residential Heating (RH) will have a similar distribution, with some negative correlation (seems
+logical that there is some hidden price sensitivity, even though RH could be satisfied from
+electricity as well.)
 
-Additionally, we will assume there is an independent 20% chance that the govt will subsidize new nuclear
-power by:
-  (a) subsidizing the cost of any Investment Cost by 40%, in the out-years of 2000, 2010 (but not 1990)
+Additionally, we will assume there is an independent 20% chance that the govt will subsidize new
+nuclear power by:
+  (a) subsidizing the cost of any Investment Cost by 40%, in the out-years of 2000, 2010 (but not
+  1990)
   (b) paying all fixed costs in the same years.
 
 Let's make a set of 500 runs and explore output
@@ -48,13 +50,15 @@ with open(file_loc, 'w') as f:
     f.write('run,param,index,mod,value,notes\n')
     for run_idx in range(num_runs):
         f.write(
-            f'{run_idx + 1},cost_variable,*|*|IMPOIL1|*,r,{price_devs[run_idx, 0]},oil relative change\n'
+            f'{run_idx + 1},cost_variable,*|*|IMPOIL1|*,r,{price_devs[run_idx, 0]},oil relative '
+            'change\n'
         )
         f.write(
             f'{run_idx + 1},Demand,*|*|RH,r,{price_devs[run_idx, 1]},res heat relative change\n'
         )
         f.write(
-            f'{run_idx + 1},cost_invest,*|E21|2000/2010,r,{nuc_dev[run_idx]},nuclear invest relative discount\n'
+            f'{run_idx + 1},cost_invest,*|E21|2000/2010,r,{nuc_dev[run_idx]},nuclear invest '
+            'relative discount\n'
         )
         if nuc_dev[run_idx] < 0:
             f.write(f'{run_idx + 1},cost_fixed,*|*|E21|2000/2010,s,0.0,nuclear op cost covered\n')

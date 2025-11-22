@@ -48,12 +48,14 @@ def validate_linked_tech(model: TemoaModel) -> bool:
     """
     A validation that for all the linked techs, they have the same lifetime in each possible vintage
 
-    The Constraint that this check supports is indexed by a set that fundamentally expands the (r, t, e)
+    The Constraint that this check supports is indexed by a set that fundamentally expands the
+    (r, t, e)
     index of the LinkedTech data table (where t==driver tech) to include valid vintages.
     The implication is that there is a driven tech in the same region, of
     the same vintage, with the same lifetime as the driver tech.  We should check that.
 
-    We can filter the index down to (r, t_driver, v, e) and then query the lifetime of the driver and driven
+    We can filter the index down to (r, t_driver, v, e) and then query the lifetime of the driver
+    and driven
     to ensure they are the same
 
     :param M:
@@ -74,7 +76,8 @@ def validate_linked_tech(model: TemoaModel) -> bool:
             driven_lifetime = model.lifetime_process[r, t_driven, v]
         except KeyError:
             logger.error(
-                'Linked Tech Error:  Driven tech %s does not have a vintage entry %d to match driver %s',
+                'Linked Tech Error:  Driven tech %s does not have a vintage entry %d to match '
+                'driver %s',
                 t_driven,
                 v,
                 t_driver,
@@ -83,7 +86,8 @@ def validate_linked_tech(model: TemoaModel) -> bool:
             return False
         if driven_lifetime != driver_lifetime:
             logger.error(
-                'Linked Tech Error:  Driven tech %s has lifetime %d in vintage %d while driver tech %s has lifetime %d',
+                'Linked Tech Error:  Driven tech %s has lifetime %d in vintage %d while driver '
+                'tech %s has lifetime %d',
                 t_driven,
                 driven_lifetime,
                 v,
@@ -178,8 +182,10 @@ def tech_groups_set_check(model: TemoaModel, rg: str, g: str, t: str) -> bool:
 
 
 # TODO:  Several of these param checkers below are not in use because the params cannot
-#        accept new values for the indexing sets that aren't in an already-constructed set.  Now that we are
-#        making the GlobalRegionalIndices, we can probably come back and employ them instead of using
+#        accept new values for the indexing sets that aren't in an already-constructed set.  Now
+#        that we are
+#        making the GlobalRegionalIndices, we can probably come back and employ them instead of
+#        using
 #        the buildAction approach
 
 
@@ -337,7 +343,9 @@ def validate_reserve_margin(model: TemoaModel) -> None:
     for r in model.planning_reserve_margin.sparse_iterkeys():
         if all((r, p) not in model.process_reserve_periods for p in model.time_optimize):
             logger.warning(
-                'Planning reserve margin provided but there are no reserve technologies serving this region: %s',
+                'Planning reserve margin provided but there are no reserve technologies serving '
+                'this '
+                'region: %s',
                 (r, model.planning_reserve_margin[r]),
             )
 
@@ -364,7 +372,10 @@ def validate_tech_sets(model: TemoaModel) -> None:
 def check_no_intersection(set_one: Set, set_two: Set) -> bool:
     violations = set_one & set_two
     if violations:
-        msg = f'The following are in both {set_one} and {set_two}, which is not permitted:\n{list(violations)}'
+        msg = (
+            f'The following are in both {set_one} and {set_two}, which is not permitted:\n'
+            f'{list(violations)}'
+        )
         logger.error(msg)
         return False
     return True

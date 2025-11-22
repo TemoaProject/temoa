@@ -139,7 +139,8 @@ class TemoaSequencer:
                 # The `start` method's contract is to run to completion, not return a model.
                 # Raise an error to guide the developer to the correct API.
                 raise RuntimeError(
-                    "For BUILD_ONLY mode, please use the 'build_model()' method instead of 'start()'."
+                    "For BUILD_ONLY mode, please use the 'build_model()' method instead of "
+                    "'start()'."
                 )
 
             case TemoaMode.CHECK:
@@ -155,7 +156,8 @@ class TemoaSequencer:
             case TemoaMode.MGA:
                 if self.config.solver_name == 'appsi_highs':
                     raise ValueError(
-                        'MGA mode is not compatible with the HiGHS solver due to a multiprocessing issue.'
+                        'MGA mode is not compatible with the HiGHS solver due to a multiprocessing '
+                        'issue.'
                     )
                 mga_sequencer = MgaSequencer(config=self.config)
                 mga_sequencer.start()
@@ -228,7 +230,8 @@ class TemoaSequencer:
         """Encapsulated logic for the MONTE_CARLO mode."""
         if self.config.solver_name == 'appsi_highs':
             raise ValueError(
-                'Monte Carlo mode is not compatible with the HiGHS solver due to a multiprocessing issue.'
+                'Monte Carlo mode is not compatible with the HiGHS solver due to a multiprocessing '
+                'issue.'
             )
 
         # Disable features not typically used in Monte Carlo runs to reduce noise/overhead

@@ -225,9 +225,11 @@ def demand_activity_constraint(
     .. math::
        :label: DemandActivity
 
-          DEM_{r, p, s, d, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s_0, d_0, i, t \not \in T^{a}, v, dem}
+          DEM_{r, p, s, d, dem} \cdot \sum_{I}
+          \textbf{FO}_{r, p, s_0, d_0, i, t \not \in T^{a}, v, dem}
        =
-          DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I} \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem}
+          DEM_{r, p, s_0, d_0, dem} \cdot \sum_{I}
+          \textbf{FO}_{r, p, s, d, i, t \not \in T^{a}, v, dem}
 
        \\
        \forall \{r, p, s, d, t, v, dem, s_0, d_0\} \in \Theta_{\text{DemandActivity}}
@@ -316,7 +318,8 @@ def commodity_balance_constraint(
     Finally, for annual commodities, AnnualCommodityBalance is used which balances
     the sum of flows over each year.
 
-    *process outputs + imports + end of life outputs = process inputs + construction inputs + exports + flex waste*
+    *process outputs + imports + end of life outputs = process inputs + construction inputs +
+    exports + flex waste*
 
     .. math::
        :label: CommodityBalance
@@ -324,26 +327,33 @@ def commodity_balance_constraint(
             \begin{aligned}
             &\sum_{I, t \notin T^a, V} \mathbf{FO}_{r, p, s, d, i, t, v, c}
             && \text{(processes outputting commodity)} \\
-            &+ SEG_{s,d} \cdot \sum_{I, t \in T^a, V} \frac{\mathbf{FOA}_{r, p, i, t, v, c}}{EFF_{r, i, t, v, c}}
+            &+ SEG_{s,d} \cdot \sum_{I, t \in T^a, V}
+            \frac{\mathbf{FOA}_{r, p, i, t, v, c}}{EFF_{r, i, t, v, c}}
             && \text{(annual processes outputting commodity)} \\
-            &+ \sum_{\text{reg} \neq r, I, t \in T^x, V} \mathbf{FIM}_{r - \text{reg}, p, s, d, i, t, v, c}
+            &+ \sum_{\text{reg} \neq r, I, t \in T^x, V}
+            \mathbf{FIM}_{r - \text{reg}, p, s, d, i, t, v, c}
             && \text{(inter-regional imports of commodity)} \\
-            &+ SEG_{s,d} \sum_{T, V} \left ( EOLO_{r, t, v, c} \cdot \textbf{ART}_{r, p, t, v} \right )
+            &+ SEG_{s,d} \sum_{T, V} \left ( EOLO_{r, t, v, c} \cdot \textbf{ART}_{r, p, t, v}
+            \right )
             && \text{(end-of-life outputs of commodity)} \\
             &\begin{cases}
             &= \text{if } c \notin C^w \\
             &\geq \text{if } c \in C^w \end{cases} \\
             &\sum_{t \in T^s, V, O} \mathbf{FIS}_{r, p, s, d, c, t, v, o}
             && \text{(commodity stored)} \\
-            &+ \sum_{t \notin T^s, V, O} \frac{\mathbf{FO}_{r, p, s, d, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            &+ \sum_{t \notin T^s, V, O}
+            \frac{\mathbf{FO}_{r, p, s, d, c, t, v, o}}{EFF_{r, c, t, v, o}}
             && \text{(commodity consumed by processes)} \\
-            &+ SEG_{s,d} \cdot \sum_{t \in T^a, V, O} \frac{\mathbf{FOA}_{r, p, c, t, v, o}}{EFF_{r, c, t, v, o}}
+            &+ SEG_{s,d} \cdot \sum_{t \in T^a, V, O}
+            \frac{\mathbf{FOA}_{r, p, c, t, v, o}}{EFF_{r, c, t, v, o}}
             && \text{(commodity consumed by annual processes)} \\
-            &+ \sum_{\text{reg} \neq r, t \in T^x, V, O} \mathbf{FEX}_{r - \text{reg}, p, s, d, c, t, v, o}
+            &+ \sum_{\text{reg} \neq r, t \in T^x, V, O}
+            \mathbf{FEX}_{r - \text{reg}, p, s, d, c, t, v, o}
             && \text{(inter-regional exports of commodity)} \\
             &+ \sum_{I, t \in T^f, V} \mathbf{FLX}_{r, p, s, d, i, t, v, c}
             && \text{(flex wastes of commodity)} \\
-            &+ SEG_{s,d} \cdot \sum_{T, V} \left ( CON_{r, c, t, v} \cdot \frac{\textbf{NCAP}_{r, t, v}}{LEN_p} \right )
+            &+ SEG_{s,d} \cdot \sum_{T, V} \left ( CON_{r, c, t, v} \cdot
+            \frac{\textbf{NCAP}_{r, t, v}}{LEN_p} \right )
             && \text{(consumed annually by construction inputs)}
             \end{aligned}
 

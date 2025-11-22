@@ -180,16 +180,23 @@ def reserve_margin_static(
     .. math::
         :label: reserve_margin_static
 
-            &\sum_{t \in T^{res} \setminus T^{x}} {CC_{t,r} \cdot \textbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
-            &+ \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r_i-r} \cdot \textbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
-            &- \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r-r_i} \cdot \textbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*} \cdot C2A_{r-r_i,t} }\\
-            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x},V,I,O } \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
+            &\sum_{t \in T^{res} \setminus T^{x}} {CC_{t,r} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
+            &+ \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r_i-r} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
+            &- \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r-r_i} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r-r_i,t} }\\
+            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x},V,I,O }
+            \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
             &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
             &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
-            &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}  \right]  \cdot (1 + PRM_r)\\
+            &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}
+            \right]
+            \cdot (1 + PRM_r)\\
 
             \\
-            &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall r_i \in R
+            &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall
+            r_i \in R
     """
     if (not model.tech_reserve) or (
         (r, p) not in model.process_reserve_periods
@@ -255,7 +262,10 @@ def reserve_margin_constraint(
         case 'dynamic':
             available = reserve_margin_dynamic(model, r, p, s, d)
         case _:
-            msg = f"Invalid reserve margin parameter '{model.reserve_margin_method.first()}'. Check the config file."
+            msg = (
+                f"Invalid reserve margin parameter '{model.reserve_margin_method.first()}'. "
+                'Check the config file.'
+            )
             logger.error(msg)
             raise ValueError(msg)
 

@@ -28,8 +28,9 @@ Class to contain Workers that execute solves in separate processes
 
 dev note:
 This class is derived from the original Worker class in MGA extension, but is just different enough
-that it is a separate class.  In future, it may make sense to re-combine these.  RN, this worker will
-ingest DataPortal objects to make new models.  The MGA will (in future) likely just take in new obj functions
+that it is a separate class.  In future, it may make sense to re-combine these.  RN, this worker
+will ingest DataPortal objects to make new models.  The MGA will (in future) likely just take in
+new obj functions
 
 """
 
@@ -61,7 +62,7 @@ class MCWorker(Process):
         solver_log_path: Path | None = None,
         **kwargs,
     ):
-        super(MCWorker, self).__init__(daemon=True)
+        super().__init__(daemon=True)
         self.worker_number = MCWorker.worker_idx
         MCWorker.worker_idx += 1
         self.dp_queue: Queue[DataPortal | str] = dp_queue
