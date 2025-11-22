@@ -24,8 +24,8 @@ jeff@westernspark.us
 https://westernspark.us
 Created on:  6/2/24
 
-This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated (outside
-of class) to enable parallelization.
+This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated
+(outside of class) to enable parallelization.
 """
 
 import logging
@@ -122,7 +122,8 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
         Y_CumulativeCO2 = 0.0
     elif len(output_query) > 1:
         raise RuntimeError(
-            'Multiple outputs found in output_emissions table matching scenario name.  Coding error.'
+            'Multiple outputs found in output_emissions table matching scenario name.  Coding '
+            'error.'
         )
     else:
         Y_CumulativeCO2 = output_query[0][0]

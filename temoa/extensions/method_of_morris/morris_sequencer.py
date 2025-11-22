@@ -1,6 +1,6 @@
 """
-An event sequencer to control the flow of a Method of Morris calculation.  This code uses multiprocessing via
-the joblib library
+An event sequencer to control the flow of a Method of Morris calculation.  This code uses
+multiprocessing via the joblib library
 """
 
 import csv
@@ -51,7 +51,8 @@ class MorrisSequencer:
             config.save_excel = False
         if config.price_check:
             logger.warning(
-                'Price check is disabled during Morris runs.  If you wish to check costs, run "CHECK" on model before MM'
+                'Price check is disabled during Morris runs.  If you wish to check costs, run '
+                '"CHECK" on model before MM'
             )
             config.price_check = False
         self.config = config
@@ -105,7 +106,8 @@ class MorrisSequencer:
             logger.warning(
                 'No value received for trajectories, using default: %d', self.trajectories
             )
-        # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox (which aren't super)
+        # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox (which
+        # aren't super)
 
         seed = config.morris_inputs.get('seed')
         self.seed = seed if seed else None
@@ -119,14 +121,17 @@ class MorrisSequencer:
         logger.info('Morris number of cores: %d', self.num_cores)
         logger.info('Initialized Morris Sequencer')
         logger.info(
-            'Currently, MM only logs ERROR level messages during model build, which is done repeatedly.'
-            '  If there are issues building the model, run Temoa in CHECK separately to get more detail on the model.'
+            'Currently, MM only logs ERROR level messages during model build, which is done '
+            'repeatedly.'
+            '  If there are issues building the model, run Temoa in CHECK separately to get more '
+            'detail on the model.'
         )
 
     def start(self):
         """
         run the sequence of steps to do a MM analysis
-        0.  clear any prior results with this scenario name.  this sequencer appends the DB, so start fresh
+        0.  clear any prior results with this scenario name.  this sequencer appends the DB, so
+            start fresh
         1.  gather the parameters from items marked in the DB
         2.  build a data portal as a basis
         3.  use SALib to construct the sample
@@ -139,7 +144,8 @@ class MorrisSequencer:
         tw = TableWriter(config=self.config)
         tw.clear_scenario()
 
-        # 1.  Gather param info from the DB and construct the param file, which will be basis of the 'problem'
+        # 1.  Gather param info from the DB and construct the param file, which will be basis of
+        # the 'problem'
         param_names = self.gather_parameters()
 
         # 2.  Use the loader to get raw access to the model's data (dictionary)
@@ -270,7 +276,8 @@ class MorrisSequencer:
         with open(self.param_file, 'w') as f:
             v_idx = 4  # index of variable to perturb
             raw = cur.execute(
-                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE '
+                'MMAnalysis IS NOT NULL'
             ).fetchall()
             g1 = len(raw)
             for i in range(0, len(raw)):
@@ -289,7 +296,8 @@ class MorrisSequencer:
 
             v_idx = 3
             raw = cur.execute(
-                'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis '
+                'IS NOT NULL'
             ).fetchall()
             g2 = len(raw)
             for i in range(0, len(raw)):

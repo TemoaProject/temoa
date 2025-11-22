@@ -244,7 +244,8 @@ def sensitivity(dat, techs):
             lrc = instance.lrc[instance.v_capacity[t, v]]
             urc = instance.urc[instance.v_capacity[t, v]]
 
-            # print("{:>s}\t{:>g}\t{:>.0f}\t{:>.0f}\t{:>.0f}\t{:>.3f}\t{:>.1f}\t{:>.1f}\t{:>.0f}\t{:>.0f}\t{:>.3f}".format()
+            # print("{:>s}\t{:>g}\t{:>.0f}\t{:>.0f}\t{:>.0f}\t{:>.3f}\t{:>.1f}\t{:>.1f}\t{:>.0f}\t"
+            #       "{:>.0f}\t{:>.3f}".format()
             print(
                 '{:>10s}\t{:>7g}\t{:>6.0f}\t{:>4.0f}\t{:>6.0f}\t{:>5.3f}\t{:>7.1f}\t{:>7.1f}\t{:>5.0f}\t{:>3.0f}\t{:>5.3f}'.format(
                     t,
@@ -423,16 +424,19 @@ def sensitivity_api(instance, techs, algorithm=None):
                 )
             )
 
-            msg += '{:>10s}\t{:>7g}\t{:>6.0f}\t{:>4.0f}\t{:>6.0f}\t{:>5.3f}\t{:>7.1f}\t{:>5.0f}\t{:>5.3f}'.format(
-                t,
-                v,
-                clb_s[t, v],
-                coef_CAP[t, v],
-                cub_s[t, v],
-                scal_CAP[t, v],
-                bic_s[t][vintages.index(v)],
-                value(instance.cost_invest[t, v]),
-                cap_s[t][vintages.index(v)],
+            msg += (
+                '{:>10s}\t{:>7g}\t{:>6.0f}\t{:>4.0f}\t{:>6.0f}\t{:>5.3f}\t{:>7.1f}\t{:>5.0f}\t'
+                '{:>5.3f}'.format(
+                    t,
+                    v,
+                    clb_s[t, v],
+                    coef_CAP[t, v],
+                    cub_s[t, v],
+                    scal_CAP[t, v],
+                    bic_s[t][vintages.index(v)],
+                    value(instance.cost_invest[t, v]),
+                    cap_s[t][vintages.index(v)],
+                )
             )
             msg += '\n'
 
@@ -1009,7 +1013,13 @@ def explore_Cost_marginal(dat):
     #     for p in instance.time_optimize:
     #         for s in instance.time_season:
     #             for tod in instance.time_of_day:
-    #                 print(p, s, tod, instance.dual[instance.demand_constraint[p,s,tod,c]], instance.slack[instance.demand_constraint[p,s,tod,c]])
+    #                 print(
+    #                     p,
+    #                     s,
+    #                     tod,
+    #                     instance.dual[instance.demand_constraint[p, s, tod, c]],
+    #                     instance.slack[instance.demand_constraint[p, s, tod, c]],
+    #                 )
 
 
 def plot_breakeven(years, bic, ic):
@@ -1109,4 +1119,6 @@ if __name__ == '__main__':
     sen_range('ECOALIGCCS', 2020, scales, ['reference.dat'])
     # do_sensitivity_new()
     # do_sensitivity_old()
-    # explore_Cost_marginal(['/afs/unity.ncsu.edu/users/b/bli6/TEMOA_NC/sql20170417/results/R/NCreference.R.dat'])
+    # explore_Cost_marginal(
+    #     ['/afs/unity.ncsu.edu/users/b/bli6/TEMOA_NC/sql20170417/results/R/NCreference.R.dat']
+    # )

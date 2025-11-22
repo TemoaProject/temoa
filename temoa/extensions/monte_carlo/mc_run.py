@@ -42,7 +42,10 @@ class Tweak:
         self.value = value
 
     def __repr__(self):
-        return f'<param: {self.param_name}, indices: {self.indices}, adjustment: {self.adjustment}, value: {self.value}>'
+        return (
+            f'<param: {self.param_name}, indices: {self.indices}, adjustment: {self.adjustment}, '
+            f'value: {self.value}>'
+        )
 
 
 class TweakFactory:
@@ -114,7 +117,8 @@ class TweakFactory:
         # check length
         if len(tokens) != 6:
             raise ValueError(
-                f'Incorrect number of tokens for row {row_number}.  Did you omit notes / trailing comma for no notes or have a comma in your note?'
+                f'Error parsing line {row_number}.  Did you omit notes / trailing comma for no '
+                'notes or have a comma in your note?'
             )
         # convert the run number
         try:
@@ -132,14 +136,16 @@ class TweakFactory:
         if rd.param_name not in self.val_data:
             # the param name should be a key value in the data dictionary
             raise ValueError(
-                f'param_name at index: {row_number} is either invalid or not represented in the input dataset'
+                f'param_name at index: {row_number} is either invalid or not represented in the '
+                'input dataset'
             )
         if rd.adjustment not in {'r', 'a', 's'}:
             raise ValueError(f'adjustment at index {row_number} must be either r/a/s')
         # check for no "empty" indices in the index
         if '||' in rd.indices:
             raise ValueError(
-                f'indices at index {row_number} cannot contain empty marker: ||.  Did you mean to put in wildcard "*"?'
+                f'indices at index {row_number} cannot contain empty marker: ||.  Did you mean to '
+                'put in wildcard "*"?'
             )
         return rd
 
@@ -283,7 +289,8 @@ class MCRunFactory:
         first_index = tuple(param_data.keys())[0]
         if len(target_index) != len(first_index):
             raise ValueError(
-                f'length of search index {target_index} for parameter {param} does not match data ex: {first_index}'
+                f'length of search index {target_index} for parameter {param} does not match data '
+                f'ex: {first_index}'
             )
         raw_indices = param_data.keys()
         matches = [
@@ -343,7 +350,8 @@ class MCRunFactory:
 
             for tweak in failed_tweaks:
                 logger.warning('Failed tweak: %s', tweak)
-            # skip the creation of the run if no tweaks were successful (it would just be the baseline run...)
+            # skip the creation of the run if no tweaks were successful (it would just be the
+            # baseline run...)
             if not good_tweaks:
                 logger.warning(f'Aborting run: {run}.  No good tweaks found')
                 continue

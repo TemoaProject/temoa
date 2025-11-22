@@ -122,10 +122,13 @@ class MyopicSequencer:
             logger.info('Connected to database: %s', input_file)
         else:
             msg = (
-                'Myopic Mode processing only supports a single database (i.e. input_file = output_db).\n'
+                'Myopic Mode processing only supports a single database (i.e. input_file = '
+                'output_db).\n'
                 'This is due to the linkage between input and output and the use of Myopic tables\n'
-                'in the database to orchestrate the run.  Either reset both input and output to point\n'
-                'to the same db or make a copy to preserve the original and point both input/output\n'
+                'in the database to orchestrate the run.  Either reset both input and output to '
+                'point\n'
+                'to the same db or make a copy to preserve the original and point both '
+                'input/output\n'
                 'to the copy.'
             )
             sys.stderr.write(msg)
@@ -178,10 +181,11 @@ class MyopicSequencer:
                 if new_start_idx < 0:
                     logger.error('Failed myopic iteration.  Cannot back up any further.')
                     raise RuntimeError(
-                        'Myopic iteration failed during attempt to back up recursively before start of optimization '
-                        'period.'
+                        'Myopic iteration failed during attempt to back up recursively before '
+                        'start of optimization period.'
                     )
-                # roll back the start year by making a new index, increase the depth, keep the same last year
+                # roll back the start year by making a new index, increase the depth, keep the
+                # same last year
                 base_year = self.optimization_periods[new_start_idx]
                 idx = MyopicIndex(
                     base_year=base_year,
@@ -241,7 +245,8 @@ class MyopicSequencer:
             logger.info('Completed myopic iteration on %s', idx)
 
             # 9, 10.  Update the output tables...
-            # first, clear any possible previous results that overlap, we might have been backtracking...
+            # first, clear any possible previous results that overlap, we might have been
+            # backtracking...
             self.clear_results_after(idx.base_year)
             # add the new results...
             if not self.config.silent:
@@ -266,7 +271,8 @@ class MyopicSequencer:
 
         # Total system cost is, theoretically, sum of discounted costs from output_cost table
         total_cost = self.output_con.execute(
-            f'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM output_cost WHERE scenario == "{self.config.scenario}"'
+            'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM output_cost '
+            f'WHERE scenario == "{self.config.scenario}"'
         ).fetchone()[0]
         self.output_con.execute(
             f"""INSERT INTO
@@ -293,12 +299,15 @@ class MyopicSequencer:
         # the -1 for base year is used to indicate "existing" for flag purposes
         # we will just use the "existing" flag in the orig db to set this up and capture
         # all values in those vintages as "existing"
-        # the "coalesce" is an if-else structure to pluck out the correct lifetime value, precedence left->right
+        # the "coalesce" is an if-else structure to pluck out the correct lifetime value,
+        # precedence left->right
         default_lifetime = TemoaModel.default_lifetime_tech
         query = (
             'INSERT INTO myopic_efficiency '
-            '  SELECT -1, main.efficiency.region, input_comm, efficiency.tech, efficiency.vintage, output_comm, efficiency, '
-            f'  coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, {default_lifetime}) AS lifetime '
+            '  SELECT -1, main.efficiency.region, input_comm, efficiency.tech, '
+            'efficiency.vintage, output_comm, efficiency, '
+            f'  coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, '
+            f'{default_lifetime}) AS lifetime '
             '   FROM main.efficiency '
             '    LEFT JOIN main.lifetime_process '
             '       ON main.efficiency.tech = lifetime_process.tech '
@@ -354,7 +363,9 @@ class MyopicSequencer:
 
         base = myopic_index.base_year
         last_demand_year = myopic_index.last_demand_year
-        logger.info('Starting update of myopic_efficiency Table retaining [%s, %s)', prev_base, base)
+        logger.info(
+            'Starting update of myopic_efficiency Table retaining [%s, %s)', prev_base, base
+        )
 
         # 0.  Clear any future things past the base year for housekeeping
         #     ease with steps, depth, etc.  These may have been added if we are stepping less
@@ -398,15 +409,15 @@ class MyopicSequencer:
             self.output_con.commit()
 
         # 2.  Add the new stuff now visible
-        # dev note:  the `coalesce()` command is a nested if-else.  The first hit wins, so it is priority:
-        #            process lifetime > tech lifetime > lifetime default
+        # dev note:  the `coalesce()` command is a nested if-else.  The first hit wins, so it is
+        #            priority: process lifetime > tech lifetime > lifetime default
         lifetime = TemoaModel.default_lifetime_tech
         query = (
             'INSERT INTO myopic_efficiency '
             f'SELECT {base}, efficiency.region, input_comm, '
             '      efficiency.tech, efficiency.vintage, output_comm, efficiency, '
-            f'     coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, {lifetime}) '
-            f'     AS lifetime '
+            f'     coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, '
+            f'{lifetime}) AS lifetime '
             ' FROM main.efficiency '
             '    LEFT JOIN main.lifetime_process '
             '       ON main.efficiency.tech = lifetime_process.tech '
@@ -419,7 +430,8 @@ class MyopicSequencer:
             f'  AND efficiency.vintage <= {last_demand_year}'
         )
         if self.debugging:
-            # note:  the debug query below omits the lifetime computation for brevity, but is very useful without...
+            # note:  the debug query below omits the lifetime computation for brevity, but is very
+            # useful without...
             raw = self.cursor.execute(
                 f'SELECT {base}, region, input_comm, tech, vintage, output_comm, efficiency '
                 'FROM efficiency '
@@ -540,7 +552,8 @@ class MyopicSequencer:
 
         # special case... new capacity has vintage only...
         self.cursor.execute(
-            'DELETE FROM main.output_built_capacity WHERE main.output_built_capacity.vintage >= (?) AND scenario = (?)',
+            'DELETE FROM main.output_built_capacity WHERE '
+            'main.output_built_capacity.vintage >= (?) AND scenario = (?)',
             (period, self.config.scenario),
         )
         self.output_con.commit()

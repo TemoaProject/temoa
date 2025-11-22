@@ -76,7 +76,8 @@ with resources.as_file(db_resource) as db_file, \
         param_names = {}
         cur = con.cursor()
         cur.execute(
-            'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE MMAnalysis is not NULL'
+            'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE '
+            'MMAnalysis is not NULL'
         )
         output_query = cur.fetchall()
         g1 = len(output_query)
@@ -97,7 +98,8 @@ with resources.as_file(db_resource) as db_file, \
             file.write('\n')
 
         cur.execute(
-            'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis is not NULL'
+            'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis is '
+            'not NULL'
         )
         output_query = cur.fetchall()
         g2 = len(output_query)
@@ -112,8 +114,10 @@ with resources.as_file(db_resource) as db_file, \
             file.write(' ')
             file.write(output_query[i][-1])
             file.write('\n')
+
         cur.execute(
-            'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, MMAnalysis FROM efficiency WHERE MMAnalysis is not NULL'
+            'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, '
+            'MMAnalysis FROM efficiency WHERE MMAnalysis is not NULL'
         )
         output_query = cur.fetchall()
         g3 = len(output_query)

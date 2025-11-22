@@ -219,7 +219,8 @@ class TechActivityVectorManager(VectorManager):
 
     # noinspection PyTypeChecker
     def _make_basis_objective_vector(self, M: TemoaModel) -> Iterable[Expression] | None:
-        """generator for basis vectors which will be the coefficients in the obj expression in the basis solves"""
+        """generator for basis vectors which will be the coefficients in the obj expression in the
+        basis solves"""
         if self.basis_coefficients.empty():
             return None
         try:
@@ -262,7 +263,8 @@ class TechActivityVectorManager(VectorManager):
         return quicksum(c * v for v, c in zip(obj_vars, coeffs, strict=False))
 
     def var_vector(self, M: TemoaModel) -> list[Var]:
-        """Produce a properly sequenced array of variables from the current model for use in obj vector"""
+        """Produce a properly sequenced array of variables from the current model for use in obj
+        vector"""
         res = []
         for cat in self.category_mapping:
             for tech in self.category_mapping[cat]:
@@ -299,7 +301,8 @@ class TechActivityVectorManager(VectorManager):
 
     @staticmethod
     def _generate_basis_coefficients(category_mapping: dict, technology_size: dict) -> Queue:
-        # Sequentially build the coefficient vector in the order of the categories and associated techs
+        # Sequentially build the coefficient vector in the order of the categories and associated
+        # techs
         q = Queue()
         for selected_cat in category_mapping:
             res = []

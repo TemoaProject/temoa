@@ -34,7 +34,8 @@ from temoa.model_checking.pricing_check import price_checker
 logger = getLogger(__name__)
 
 solver_options_path = (
-    resources.files('temoa.extensions.modeling_to_generate_alternatives') / 'MGA_solver_options.toml'
+    resources.files('temoa.extensions.modeling_to_generate_alternatives')
+    / 'MGA_solver_options.toml'
 )
 
 
@@ -335,7 +336,8 @@ class MgaSequencer:
         # get the instance number from the model name, if provided
         if '-' not in instance.name:
             raise ValueError(
-                'Instance name does not appear to contain a -idx value.  The manager should be tagging/updating this'
+                'Instance name does not appear to contain a -idx value.  The manager should be '
+                'tagging/updating this'
             )
         idx = int(instance.name.split('-')[-1])
         if idx in self.seen_instance_indices:

@@ -151,7 +151,10 @@ class SvMgaSequencer:
 
         # check for an empty objective
         if isinstance(new_obj, int):  # no variables found
-            msg = 'Construction of the alternative OBJ in SVMGA failed to locate any variables.  Exiting'
+            msg = (
+                'Construction of the alternative OBJ in SVMGA failed to locate any variables.  '
+                'Exiting'
+            )
             logger.error(msg)
             print(msg)
             sys.exit(1)
@@ -242,9 +245,12 @@ class SvMgaSequencer:
             categories_used += 1
         if categories_used > 1:
             msg = (
-                'Warning:  Using labels in multiple categories during SVMGA may lead to odd results.\n'
-                'The catagories are not specifically designed to work together, but rather add flexibility.\n'
-                'The new OBJ function will be an *unweighted* sum of everything found, so outputs in \n'
+                'Warning:  Using labels in multiple categories during SVMGA may lead to odd '
+                'results.\n'
+                'The catagories are not specifically designed to work together, but rather add '
+                'flexibility.\n'
+                'The new OBJ function will be an *unweighted* sum of everything found, so outputs '
+                'in \n'
                 'differing categories with vastly different scale may have odd interactions.'
             )
 
