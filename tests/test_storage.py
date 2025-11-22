@@ -132,7 +132,7 @@ def test_storage_flow_balance(system_test_run: tuple[str, Any, TemoaModel, Any])
         )
 
 
-# devnote: the StorageInit constraint was reworked into LimitStorageLevelFraction
+# devnote: the storage_init constraint was reworked into LimitStorageLevelFraction
 # @pytest.mark.skip('not ready for primetime')
 # def test_hard_initialization():
 #     filename = 'config_storageville.toml'

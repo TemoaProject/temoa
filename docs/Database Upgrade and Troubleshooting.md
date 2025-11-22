@@ -78,5 +78,5 @@ WHERE base.tech IS NULL;
 easily by commenting out the read-in process for parameter data in `hybrid_loader.py`.
 It should be possible to search for the table name and then just comment out the
 entire block that reads in that table.  Much easier than manipulating the database.
-Consideration for excluding MinActivity, MaxActivity, EmissionLimit, etc. is
+Consideration for excluding min_activity, max_activity, EmissionLimit, etc. is
 suggested.

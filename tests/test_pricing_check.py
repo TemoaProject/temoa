@@ -22,8 +22,8 @@ def mock_model() -> ConcreteModel:
     model.cost_fixed = Param(Any, Any, Any, Any, mutable=True)
     model.cost_invest = Param(Any, Any, Any, mutable=True)
     model.cost_variable = Param(Any, Any, Any, Any, mutable=True)
-    model.MaxCapacity = Param(Any, Any, Any, mutable=True)
-    model.MinCapacity = Param(Any, Any, Any, mutable=True)
+    model.max_capacity = Param(Any, Any, Any, mutable=True)
+    model.min_capacity = Param(Any, Any, Any, mutable=True)
     return model
 
 

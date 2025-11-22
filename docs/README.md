@@ -1,31 +1,104 @@
-This directory contains the source files necessary to generate the Temoa documentation in [ReST](https://en.wikipedia.org/wiki/ReStructuredText) format.
+# Temoa Documentation
 
-## Required Software
+This directory contains the source files for generating the Temoa documentation in [ReStructuredText](https://en.wikipedia.org/wiki/ReStructuredText) format.
 
-The required software elements to produce the documentation are included in the Temoa [environment file](https://github.com/TemoaProject/temoa/blob/energysystem/environment.yml).
+## Building the Documentation
 
-The only additional software element required is LaTex. On a Mac, [MacTeX](https://www.tug.org/mactex/mactex-download.html) is a good option, and must be installed manually. [MiKTeX](https://miktex.org/download) is also available across platforms and is installed manually. On a Windows machine, MikTeX can also be installed through `conda` with the following command:
+### Prerequisites
 
-```$ conda install -c conda-forge miktex```
+The documentation build requires Sphinx and related packages. These are included in the `docs` extra dependency group.
 
-## Producing documentation
-The Temoa documentation draws from a couple of sources: (1) the static descriptions of model elements included in [Documentation.rst](source//Documentation.rst), and (2) the doc strings
-embedded in [temoa_rules.py](../temoa_model/temoa_rules.py) that document the objective function and constraints. Sphinx retrieves these doc strings and generates LaTeX-formatted equations in the "Equations" section of the documentation.
+### Setup
 
+Install the documentation dependencies using uv (recommended):
 
-From this folder, execute the following to generate the html documentation:
+```bash
+cd /path/to/temoa
+uv sync --extra docs
+```
 
-```$ make html```
+Or using pip:
 
-To generate the PDF documentation, from the same folder, execute the following:
+```bash
+pip install -e ".[docs]"
+```
 
-```$ make latexpdf```
+### Generating HTML Documentation
 
-Sometimes this automatic PDF generation fails. If that is the case, navigate to `/tmp/TemoaDocumentationBuild/` and manually generate the pdf:
+From the `docs` directory, execute:
 
-```$ pdflatex toolsforenergymodeloptimizationandanalysistemoa.pdf```
+```bash
+uv run sphinx-build source _build/html
+```
 
-## In Windows
-With the Temoa virtual environment active and the current directory set to the Temoa root directory (see README in root dir), build the documentation with Sphinx:
+Or from the repository root:
 
-```python -m sphinx docs/source docs/_build/html``
+```bash
+uv run sphinx-build docs/source docs/_build/html
+```
+
+The generated HTML files will be in `docs/_build/html/`. Open `index.html` in your browser to view the documentation.
+
+### Generating PDF Documentation
+
+To generate PDF documentation, you'll need LaTeX installed on your system:
+- **macOS**: [MacTeX](https://www.tug.org/mactex/mactex-download.html)
+- **Windows/Linux**: [MiKTeX](https://miktex.org/download)
+
+Then run:
+
+```bash
+uv run sphinx-build -b latexpdf source _build/latex
+```
+
+The PDF will be generated in `docs/_build/latex/`.
+
+If automatic PDF generation fails, navigate to the build directory and manually generate the PDF:
+
+```bash
+cd docs/_build/latex
+pdflatex toolsforenergymodeloptimizationandanalysistemoa.tex
+```
+
+## Documentation Structure
+
+The Temoa documentation draws from two main sources:
+
+1. **Static descriptions** - Model elements and concepts described in `source/Documentation.rst`
+2. **Code docstrings** - Objective function and constraint documentation from module docstrings in:
+   - `temoa/components/costs.py` - Objective function
+   - `temoa/components/*.py` - Constraint implementations
+
+Sphinx retrieves these docstrings and generates LaTeX-formatted equations in the "Equations" section of the documentation.
+
+## Checking for Issues
+
+### Link Checking
+
+To check for broken links in the documentation:
+
+```bash
+uv run sphinx-build -b linkcheck source _build/linkcheck
+```
+
+Review the output in `docs/_build/linkcheck/output.txt`.
+
+### Build Warnings
+
+To treat warnings as errors (useful for CI):
+
+```bash
+uv run sphinx-build -W -b html source _build/html
+```
+
+## Contributing to Documentation
+
+When contributing to the documentation:
+
+1. Follow ReStructuredText formatting guidelines
+2. Ensure all code examples are tested and working
+3. Build the documentation locally to check for warnings
+4. Run the link checker to verify external links
+5. Update docstrings in code when changing model equations
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for general contribution guidelines.

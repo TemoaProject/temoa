@@ -248,10 +248,10 @@ def ramp_up_day_constraint(
 ) -> ExprLike:
     r"""
     One of two constraints built from the ramp_up_hourly table, along with the
-    RampUpSeason_constraint. RampUpDay constrains ramp rates between time slices
-    within each season and RampUpSeason constrains ramp rates between sequential
+    ramp_up_season_constraint. ramp_up_day constrains ramp rates between time slices
+    within each season and ramp_up_season constrains ramp rates between sequential
     seasons. If the :code:`time_sequencing` parameter is set to :code:`consecutive_days`
-    then the RampUpSeason constraint is skipped as seasons already connect together.
+    then the ramp_up_season constraint is skipped as seasons already connect together.
 
     The ramp rate constraint is utilized to limit the rate of electricity generation
     increase and decrease between two adjacent time slices in order to account for
@@ -266,7 +266,7 @@ def ramp_up_day_constraint(
     is the beginning of the same season, :math:`(s,d_{first})`
 
     .. math::
-       :label: RampUpDay
+       :label: ramp_up_day
 
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s_{next},d_{next},i,t,v,o}
@@ -282,7 +282,7 @@ def ramp_up_day_constraint(
             \leq
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampUpDay}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp_up_day}}
             \\
             \text{where: } \Delta H_{r,p,s,d,s_{next},d_{next}} = \frac{24}{2}
             \left ( \frac{SEG_{r,p,s,d}}{\sum_{D} SEG_{r,p,s,d'}} +
@@ -363,11 +363,11 @@ def ramp_down_day_constraint(
 ) -> ExprLike:
     r"""
 
-    Similar to the :code`RampUpDay` constraint, we use the :code:`RampDownDay`
+    Similar to the :code`ramp_up_day` constraint, we use the :code:`ramp_down_day`
     constraint to limit ramp down rates between any two adjacent time slices.
 
     .. math::
-       :label: RampDownDay
+       :label: ramp_down_day
 
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
@@ -383,7 +383,7 @@ def ramp_down_day_constraint(
             \leq
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{RampDownDay}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp_down_day}}
     """
 
     s_next, d_next = model.time_next[p, s, d]
@@ -452,7 +452,7 @@ def ramp_up_season_constraint(
 ) -> ExprLike:
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary
-    of sequential seasons. Same as RampUpDay but only applies to the boundary
+    of sequential seasons. Same as ramp_up_day but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     time_season table.
@@ -525,7 +525,7 @@ def ramp_down_season_constraint(
 ) -> ExprLike:
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary
-    of sequential seasons. Same as RampDownDay but only applies to the boundary
+    of sequential seasons. Same as ramp_down_day but only applies to the boundary
     between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     time_season table.

@@ -79,8 +79,9 @@ def create_sparse_dicts(model: 'TemoaModel') -> None:
     if unused_techs:
         for tech in sorted(unused_techs):
             logger.warning(
-                f"Notice: '{tech}' is specified as a technology but is not "
-                'utilized in the efficiency parameter.'
+                "Notice: '%s' is specified as a technology but is not "
+                'utilized in the efficiency parameter.',
+                tech,
             )
 
     logger.debug('Completed creation of SparseDicts')
@@ -261,7 +262,7 @@ class TemoaModel(AbstractModel):
         # Note:  Storage techs cannot (currently) be retired due to linkage to initialization
         #        process, which is currently incapable of reducing initializations on retirements.
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
-        #        it was the old StorageInit constraint
+        #        it was the old storage_init constraint
         self.tech_retirement = Set(within=self.tech_with_capacity)  # - M.tech_storage)
 
         self.validate_techs = BuildAction(rule=validate_tech_sets)
@@ -343,7 +344,7 @@ class TemoaModel(AbstractModel):
         # limit_resource IS implemented but sums cumulatively for a technology rather than
         # resource commodity
         # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
-        # M.ResourceBound = Param(M.ResourceConstraint_rpr)
+        # M.resource_bound = Param(M.ResourceConstraint_rpr)
 
         # Define technology performance parameters
         self.capacity_to_activity = Param(self.regional_indices, self.tech_all, default=1)
