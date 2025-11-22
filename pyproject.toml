@@ -100,6 +100,12 @@ select = [
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
     "C4",  # flake8-comprehensions
+    "Q",  # flake8-quotes
+]
+
+ignore = [
+    "Q000", # the formatter deals with this
+    "Q003" # the formatter deals with this
 ]
 
 [tool.ruff.lint.pep8-naming]
