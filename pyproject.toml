@@ -101,12 +101,12 @@ select = [
     "UP",  # pyupgrade
     "C4",  # flake8-comprehensions
 ]
-ignore = [
-    "E501",  # line too long temporarily ignored
-]
 
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["MGA", "SVMGA"]  # Allow these names to violate naming conventions
+
+[tool.ruff.lint.per-file-ignores]
+"temoa/extensions/stochastics/legacy_files/**/*.py" = ["E501"]
 
 
 [tool.pytest.ini_options]
