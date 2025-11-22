@@ -344,7 +344,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             msg = (
                 f'No data in time_season_sequential but time_sequencing parameter set to {model.time_sequencing.first()} '
                 'and inter-season features used. time_season_sequential must be filled for this type of time '
-                'sequencing if seasonal storage or inter-season constraints like RampUp/RampDown are used. Check '
+                'sequencing if seasonal storage or inter-season constraints like ramp_up/ramp_down are used. Check '
                 'the config file.'
             )
             logger.error(msg)
@@ -381,9 +381,12 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         count_total[p] = sum(sequential[p, s] for _p, s in sequential if _p == p)
         if abs(count_total[p] - value(model.days_per_period)) >= 0.001:
             logger.warning(
-                f'Sum of num_days in time_season_sequential ({count_total[p]}) '
-                f'for period {p} does not sum to days_per_period ({value(model.days_per_period)}) '
-                'from the MetaData table.'
+                'Sum of num_days in time_season_sequential (%s) '
+                'for period %s does not sum to days_per_period (%s) '
+                'from the MetaData table.',
+                count_total[p],
+                p,
+                value(model.days_per_period),
             )
 
     # Check that seasons using in storage seasons are actual seasons

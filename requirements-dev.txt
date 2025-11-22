@@ -20,6 +20,7 @@ dill==0.4.0
     # via multiprocess
 docutils==0.21.2
     # via
+    #   myst-parser
     #   pybtex-docutils
     #   sphinx
     #   sphinx-rtd-theme
@@ -41,15 +42,20 @@ imagesize==1.4.1
 iniconfig==2.1.0
     # via pytest
 jinja2==3.1.6
-    # via sphinx
+    # via
+    #   myst-parser
+    #   sphinx
 joblib==1.5.1
     # via temoa (pyproject.toml)
 kiwisolver==1.4.8
     # via matplotlib
 latexcodec==3.0.1
     # via pybtex
-markdown-it-py==4.0.0
-    # via rich
+markdown-it-py==3.0.0
+    # via
+    #   mdit-py-plugins
+    #   myst-parser
+    #   rich
 markupsafe==3.0.2
     # via jinja2
 matplotlib==3.9.2
@@ -57,10 +63,14 @@ matplotlib==3.9.2
     #   temoa (pyproject.toml)
     #   salib
     #   seaborn
+mdit-py-plugins==0.5.0
+    # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
 multiprocess==0.70.18
     # via salib
+myst-parser==4.0.1
+    # via temoa (pyproject.toml)
 networkx==3.5
     # via temoa (pyproject.toml)
 numpy==2.3.1
@@ -118,7 +128,9 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
     # via pandas
 pyyaml==6.0.2
-    # via pybtex
+    # via
+    #   myst-parser
+    #   pybtex
 requests==2.32.4
     # via sphinx
 rich==14.2.0
@@ -145,6 +157,7 @@ snowballstemmer==3.0.1
 sphinx==8.2.3
     # via
     #   temoa (pyproject.toml)
+    #   myst-parser
     #   sphinx-rtd-theme
     #   sphinxcontrib-bibtex
     #   sphinxcontrib-jquery

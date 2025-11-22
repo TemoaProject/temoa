@@ -2,7 +2,10 @@
 import os
 import sys
 import time
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
+
+import tomlkit
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -15,16 +18,26 @@ sys.path.insert(0, os.path.abspath('../../'))
 sys.path.insert(1, os.path.abspath('../../temoa/temoa_model'))
 
 
-# -- Project information -----------------------------------------------------
+# -- Project information from pyproject.toml ---------------------------------
 
+# Read version and metadata from pyproject.toml for single source of truth
+pyproject_path = Path(__file__).parent.parent.parent / 'pyproject.toml'
+with open(pyproject_path) as f:
+    pyproject_data = tomlkit.load(f)
+
+project_metadata = cast(dict[str, Any], pyproject_data['project'])
 project = 'Tools for Energy Model Optimization and Analysis (Temoa)'
-copyright = '2020, NC State University'
-author = 'Joe DeCarolis, Kevin Hunter'
+author = ', '.join(
+    author['name'] for author in cast(list[dict[str, Any]], project_metadata.get('authors', []))
+)
+copyright = f'2011-{time.strftime("%Y")}, NC State University'
 
 # The short X.Y version
-version = '3.0'
+version = cast(str, project_metadata['version']).rsplit('.', 1)[
+    0
+]  # '4.0.0a1.dev20251113' -> '4.0.0a1'
 # The full version, including alpha/beta/rc tags
-release = time.strftime('%F', time.gmtime())
+release = str(project_metadata['version'])
 
 
 # -- General configuration ---------------------------------------------------
@@ -45,6 +58,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'myst_parser',  # Enable Markdown support
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,10 +67,11 @@ templates_path = ['_templates']
 bibtex_bibfiles = ['References.bib']
 
 # The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-#
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+# Support both reStructuredText and Markdown
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The master toctree document.
 master_doc = 'index'
@@ -75,6 +90,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Suppress warnings for duplicate labels and objects (intentional due to file inclusion and autodoc)
+suppress_warnings = [
+    'ref.duplicate',      # Duplicate labels between included RST files
+    'autosummary',        # Autodoc duplicate object descriptions
+    'ref.footnote',       # Unreferenced footnotes
+]
 
 
 # -- Options for HTML output -------------------------------------------------
