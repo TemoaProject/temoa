@@ -14,18 +14,19 @@ import logging
 import math
 import random
 import uuid
-from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import networkx as nx
-
-from temoa.model_checking.network_model_data import EdgeTuple
-from temoa.types.core_types import Commodity, Sector, Technology
 
 logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from temoa.model_checking.network_model_data import EdgeTuple
+    from temoa.types.core_types import Commodity, Sector, Technology
+
     GraphType = TypeVar(
         'GraphType',
         nx.Graph[Commodity | Technology | str],
@@ -158,7 +159,7 @@ def calculate_initial_positions(
     positions: dict[str, dict[str, Any]] = {}
 
     # Prepare to lay out the remaining (non-fixed) nodes: all layers except 1
-    nodes_to_place = {cast(Commodity, n) for n, layer in node_layer_map.items() if layer != 1}
+    nodes_to_place = {cast('Commodity', n) for n, layer in node_layer_map.items() if layer != 1}
     if not nodes_to_place:
         return positions
 

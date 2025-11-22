@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from collections.abc import Iterable
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import networkx as nx
 
-from temoa.core.config import TemoaConfig
-from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
-from temoa.types.core_types import Commodity, Period, Region, Sector, Technology
 from temoa.utilities.graph_utils import (
     calculate_initial_positions,
     calculate_tech_graph_positions,
 )
 from temoa.utilities.visualizer import make_nx_graph, nx_to_vis
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from temoa.core.config import TemoaConfig
+    from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
+    from temoa.types.core_types import Commodity, Period, Region, Sector, Technology
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +50,7 @@ def generate_technology_graph(
 
     # Pass 2: Create a single, correctly styled node for each unique technology.
     for tech_name, info in tech_info.items():
-        pos_attrs = tech_positions.get(cast(Technology, tech_name)) or {}
+        pos_attrs = tech_positions.get(cast('Technology', tech_name)) or {}
         sector = info['sector']
 
         color_obj: dict[str, str] = {}
@@ -290,7 +293,7 @@ def visualize_graph(
         output_filename=output_file,
         html_title=f'Network Graphs - {region} {period}',
         sectors=unique_sectors,
-        color_legend_map=cast(dict[str, str], sector_colors),
+        color_legend_map=cast('dict[str, str]', sector_colors),
         style_legend_map=style_legend_map,
         show_browser=False,
     )

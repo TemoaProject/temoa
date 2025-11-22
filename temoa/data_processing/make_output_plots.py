@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import argparse
 import os
 import random
 import sqlite3
 import sys
 from collections.abc import Callable
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import matplotlib
 from matplotlib import cm as cmx
 from matplotlib import colors
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.legend import Legend
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from matplotlib.legend import Legend
 
 matplotlib.use('Agg')
 
@@ -241,7 +245,7 @@ class OutputPlotGenerator:
             # library's type stubs, but matplotlib's to_rgba function correctly
             # handles scalar inputs at runtime. This is a known limitation of the stubs.
             rgba_value = scalar_map.to_rgba(index)  # type: ignore[arg-type]
-            return cast(Color, rgba_value)
+            return cast('Color', rgba_value)
 
         return wrapper
 

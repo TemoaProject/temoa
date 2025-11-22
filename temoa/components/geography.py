@@ -12,7 +12,6 @@ including:
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
 
@@ -20,10 +19,12 @@ from deprecated import deprecated
 from pyomo.environ import value
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from temoa.core.model import TemoaModel
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
 # Import type annotations
-from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
 logger = getLogger(name=__name__)
 
@@ -37,7 +38,7 @@ def gather_group_regions(model: TemoaModel, region: Region) -> Iterable[Region]:
     if region == 'global':
         regions = list(model.regions)
     elif '+' in region:
-        regions = [cast(Region, r) for r in region.split('+')]
+        regions = [cast('Region', r) for r in region.split('+')]
     else:
         regions = [region]
     return regions
@@ -59,7 +60,7 @@ def create_regional_indices(model: TemoaModel) -> list[Region]:
             if r_i == r_j:
                 regional_indices.add(r_i)
             else:
-                regional_indices.add(cast(Region, r_i + '-' + r_j))
+                regional_indices.add(cast('Region', r_i + '-' + r_j))
     # dev note:  Sorting these passed them to pyomo in an ordered container and prevents warnings
     return sorted(regional_indices)
 
@@ -72,8 +73,8 @@ def regional_global_initialized_indices(model: TemoaModel) -> set[Region]:
     for n in range(1, len(model.regions) + 1):
         regional_perms = permutations(model.regions, n)
         for i in regional_perms:
-            indices.add(cast(Region, '+'.join(i)))
-    indices.add(cast(Region, 'global'))
+            indices.add(cast('Region', '+'.join(i)))
+    indices.add(cast('Region', 'global'))
     indices = indices.union(model.regional_indices)
 
     return indices
@@ -138,8 +139,8 @@ def create_geography_sets(model: TemoaModel) -> None:
             raise ValueError(msg)
 
         region_from_str, region_to_str = r.split('-', 1)
-        region_from = cast(Region, region_from_str)
-        region_to = cast(Region, region_to_str)
+        region_from = cast('Region', region_from_str)
+        region_to = cast('Region', region_to_str)
 
         lifetime: float = value(model.lifetime_process[r, t, v])
         for p in model.time_optimize:

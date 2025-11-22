@@ -25,15 +25,15 @@ pyproject_path = Path(__file__).parent.parent.parent / 'pyproject.toml'
 with open(pyproject_path) as f:
     pyproject_data = tomlkit.load(f)
 
-project_metadata = cast(dict[str, Any], pyproject_data['project'])
+project_metadata = cast('dict[str, Any]', pyproject_data['project'])
 project = 'Tools for Energy Model Optimization and Analysis (Temoa)'
 author = ', '.join(
-    author['name'] for author in cast(list[dict[str, Any]], project_metadata.get('authors', []))
+    author['name'] for author in cast('list[dict[str, Any]]', project_metadata.get('authors', []))
 )
 copyright = f'2011-{time.strftime("%Y")}, NC State University'
 
 # The short X.Y version
-version = cast(str, project_metadata['version']).rsplit('.', 1)[
+version = cast('str', project_metadata['version']).rsplit('.', 1)[
     0
 ]  # '4.0.0a1.dev20251113' -> '4.0.0a1'
 # The full version, including alpha/beta/rc tags
@@ -93,9 +93,9 @@ pygments_style = 'sphinx'
 
 # Suppress warnings for duplicate labels and objects (intentional due to file inclusion and autodoc)
 suppress_warnings = [
-    'ref.duplicate',      # Duplicate labels between included RST files
-    'autosummary',        # Autodoc duplicate object descriptions
-    'ref.footnote',       # Unreferenced footnotes
+    'ref.duplicate',  # Duplicate labels between included RST files
+    'autosummary',  # Autodoc duplicate object descriptions
+    'ref.footnote',  # Unreferenced footnotes
 ]
 
 

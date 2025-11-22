@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pyomo.environ import value
 
-from temoa.types.core_types import Season, Technology, TimeOfDay, Vintage
-
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Season, Technology, TimeOfDay, Vintage
 
-from ..types import Commodity, ExprLike, Period, Region
+    from ..types import Commodity, ExprLike, Period, Region
+
 from .utils import get_variable_efficiency
 
 logger = getLogger(name=__name__)
@@ -445,14 +445,18 @@ def commodity_balance_constraint(
     if (r, p, c) in model.export_regions:
         consumed += sum(
             model.v_flow_out[r + '-' + reg, p, s, d, c, s_t, s_v, S_o]
-            / get_variable_efficiency(model, cast(Region, r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            / get_variable_efficiency(
+                model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o
+            )
             for reg, s_t, s_v, S_o in model.export_regions[r, p, c]
             if s_t not in model.tech_annual
         )
         consumed += sum(
             value(model.segment_fraction[p, s, d])
             * model.v_flow_out_annual[r + '-' + reg, p, c, s_t, s_v, S_o]
-            / get_variable_efficiency(model, cast(Region, r + '-' + reg), p, s, d, c, s_t, s_v, S_o)
+            / get_variable_efficiency(
+                model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o
+            )
             for reg, s_t, s_v, S_o in model.export_regions[r, p, c]
             if s_t in model.tech_annual
         )
@@ -588,9 +592,9 @@ def annual_commodity_balance_constraint(
     # export of commodity c from region r to other regions
     if (r, p, c) in model.export_regions:
         consumed += sum(
-            model.v_flow_out[cast(Region, r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o]
+            model.v_flow_out[cast('Region', r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o]
             / get_variable_efficiency(
-                model, cast(Region, r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o
+                model, cast('Region', r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o
             )
             for s_s in model.time_season[p]
             for s_d in model.time_of_day
@@ -598,8 +602,8 @@ def annual_commodity_balance_constraint(
             if s_t not in model.tech_annual
         )
         consumed += sum(
-            model.v_flow_out_annual[cast(Region, r + '-' + s_r), p, c, s_t, s_v, s_o]
-            / model.efficiency[cast(Region, r + '-' + s_r), c, s_t, s_v, s_o]
+            model.v_flow_out_annual[cast('Region', r + '-' + s_r), p, c, s_t, s_v, s_o]
+            / model.efficiency[cast('Region', r + '-' + s_r), c, s_t, s_v, s_o]
             for s_r, s_t, s_v, s_o in model.export_regions[r, p, c]
             if s_t in model.tech_annual
         )
@@ -607,14 +611,14 @@ def annual_commodity_balance_constraint(
     # import of commodity c from other regions into region r
     if (r, p, c) in model.import_regions:
         produced += sum(
-            model.v_flow_out[cast(Region, s_r + '-' + r), p, s_s, S_d, s_i, s_t, s_v, c]
+            model.v_flow_out[cast('Region', s_r + '-' + r), p, s_s, S_d, s_i, s_t, s_v, c]
             for s_s in model.time_season[p]
             for S_d in model.time_of_day
             for s_r, s_t, s_v, s_i in model.import_regions[r, p, c]
             if s_t not in model.tech_annual
         )
         produced += sum(
-            model.v_flow_out_annual[cast(Region, s_r + '-' + r), p, s_i, s_t, s_v, c]
+            model.v_flow_out_annual[cast('Region', s_r + '-' + r), p, s_i, s_t, s_v, c]
             for s_r, s_t, s_v, s_i in model.import_regions[r, p, c]
             if s_t in model.tech_annual
         )

@@ -12,15 +12,16 @@ This module is the foundation of the model, responsible for:
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import value
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from temoa.core.model import TemoaModel
-from temoa.types import Period, Region, Technology, Vintage
+    from temoa.types import Period, Region, Technology, Vintage
 
 logger = getLogger(__name__)
 
@@ -33,7 +34,7 @@ def gather_group_techs(model: TemoaModel, t_or_g: Technology) -> Iterable[Techno
     if t_or_g in model.tech_group_names:
         return model.tech_group_members[t_or_g]
     elif '+' in t_or_g:
-        return [cast(Technology, tech) for tech in t_or_g.split('+')]
+        return [cast('Technology', tech) for tech in t_or_g.split('+')]
     else:
         return (t_or_g,)
 
@@ -272,7 +273,7 @@ def create_survival_curve(model: TemoaModel) -> None:
                 raise ValueError(msg)
 
             if p - p_prev > 1:
-                _between_periods = [cast(Period, _p) for _p in range(p_prev + 1, p, 1)]
+                _between_periods = [cast('Period', _p) for _p in range(p_prev + 1, p, 1)]
                 for _p in _between_periods:
                     x = (_p - p_prev) / (p - p_prev)
                     lsc_x = lsc_prev + x * (lsc - lsc_prev)

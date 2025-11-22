@@ -6,10 +6,12 @@ by Workers who shouldn't interact with DB).  Dev Note:  In future, if transition
 could all be refactored to perform tasks within workers, but concurrent access to sqlite is a no-go
 """
 
+from __future__ import annotations
+
 import functools
 import logging
 from collections import defaultdict
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from pyomo.common.numeric_types import value
 from pyomo.core import Objective
@@ -17,9 +19,11 @@ from pyomo.core import Objective
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
 from temoa.components.utils import get_variable_efficiency
-from temoa.core.model import TemoaModel
-from temoa.types.core_types import Commodity, Period, Region, Technology, Vintage
 from temoa.types.model_types import EI, FI, SLI, CapData, FlowType
+
+if TYPE_CHECKING:
+    from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Commodity, Period, Region, Technology, Vintage
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +188,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         )
         for s in model.time_season[v]:
             for d in model.time_of_day:
-                fi = FI(r, v, s, d, i, t, v, cast(Commodity, 'construction_input'))
+                fi = FI(r, v, s, d, i, t, v, cast('Commodity', 'construction_input'))
                 flow = annual * value(model.segment_fraction[v, s, d])
                 if abs(flow) < epsilon:
                     continue
@@ -200,7 +204,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             )
             for s in model.time_season[p]:
                 for d in model.time_of_day:
-                    fi = FI(r, p, s, d, cast(Commodity, 'end_of_life_output'), t, v, o)
+                    fi = FI(r, p, s, d, cast('Commodity', 'end_of_life_output'), t, v, o)
                     flow = annual * value(model.segment_fraction[p, s, d])
                     if abs(flow) < epsilon:
                         continue
@@ -349,7 +353,7 @@ def poll_cost_results(
             )
         else:
             # The period `p` for an investment cost is its vintage `v`.
-            key = (cast(Region, r), cast(Period, v), cast(Technology, t), cast(Vintage, v))
+            key = (cast('Region', r), cast('Period', v), cast('Technology', t), cast('Vintage', v))
             entries[key].update(
                 {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
@@ -660,28 +664,28 @@ def poll_emissions(
             flows[ei] = 0.0
             continue
         # screen to see if there is an associated cost
-        cost_index = (ei.r, cast(Period, ei.v), ei.e)
+        cost_index = (ei.r, cast('Period', ei.v), ei.e)
         if cost_index not in model.cost_emission:
             continue
         undiscounted_emiss_cost = (
             embodied_flows[ei]
-            * model.cost_emission[ei.r, cast(Period, ei.v), ei.e]
+            * model.cost_emission[ei.r, cast('Period', ei.v), ei.e]
             * model.period_length[
-                cast(Period, ei.v)
+                cast('Period', ei.v)
             ]  # treat as fixed cost distributed over construction period
         )
         discounted_emiss_cost = costs.fixed_or_variable_cost(
             cap_or_flow=embodied_flows[ei],
-            cost_factor=value(model.cost_emission[ei.r, cast(Period, ei.v), ei.e]),
+            cost_factor=value(model.cost_emission[ei.r, cast('Period', ei.v), ei.e]),
             cost_years=model.period_length[
-                cast(Period, ei.v)
+                cast('Period', ei.v)
             ],  # treat as fixed cost distributed over construction period
             global_discount_rate=global_discount_rate,
             p_0=p_0_true,
-            p=cast(Period, ei.v),
+            p=cast('Period', ei.v),
         )
-        ud_costs[ei.r, cast(Period, ei.v), ei.t, ei.v] += float(value(undiscounted_emiss_cost))
-        d_costs[ei.r, cast(Period, ei.v), ei.t, ei.v] += float(value(discounted_emiss_cost))
+        ud_costs[ei.r, cast('Period', ei.v), ei.t, ei.v] += float(value(undiscounted_emiss_cost))
+        d_costs[ei.r, cast('Period', ei.v), ei.t, ei.v] += float(value(discounted_emiss_cost))
 
     ###########################
     #   End of life Emissions

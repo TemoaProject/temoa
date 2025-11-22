@@ -1,12 +1,14 @@
 import sqlite3
-from typing import TypedDict, cast
+from typing import TYPE_CHECKING, TypedDict, cast
 from unittest.mock import MagicMock
 
 import pytest
 
 from temoa.model_checking import network_model_data
 from temoa.model_checking.commodity_network import CommodityNetwork
-from temoa.types.core_types import Period, Region
+
+if TYPE_CHECKING:
+    from temoa.types.core_types import Period, Region
 
 
 class ScenarioType(TypedDict):
@@ -205,13 +207,13 @@ def test_network_build_and_analysis(
         sum(len(s) for s in network_data.demand_commodities.values()) == expected['demands_count']
     )
     assert (
-        len(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
+        len(network_data.available_techs[(cast('Region', 'R1'), cast('Period', 2020))])
         == expected['techs_count']
     )
 
     # --- 3. Perform network analysis ---
     cn = CommodityNetwork(
-        region=cast(Region, 'R1'), period=cast(Period, 2020), model_data=network_data
+        region=cast('Region', 'R1'), period=cast('Period', 2020), model_data=network_data
     )
     cn.analyze_network()
 
@@ -241,7 +243,7 @@ def test_clone(mock_db_connection: tuple[MagicMock, dict[str, object]]) -> None:
         'Data should be identical after cloning'
     )
 
-    clone.available_techs.pop((cast(Region, 'R1'), cast(Period, 2020)))
+    clone.available_techs.pop((cast('Region', 'R1'), cast('Period', 2020)))
     assert network_data.available_techs != clone.available_techs, (
         'Modifying clone should not affect original'
     )
@@ -323,7 +325,7 @@ def test_sector_handling_with_sectors() -> None:
     network_data = network_model_data._build_from_db(mock_con)
 
     # Verify sectors are included in efficiencyTuple
-    techs = list(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
+    techs = list(network_data.available_techs[(cast('Region', 'R1'), cast('Period', 2020))])
     assert len(techs) == 2
     # Fields: region, ic, tech, vintage, oc, lifetime, sector
     assert all(len(tech) == 7 for tech in techs)
@@ -407,7 +409,7 @@ def test_sector_handling_without_sectors() -> None:
     network_data = network_model_data._build_from_db(mock_con)
 
     # Verify sectors default to None
-    techs = list(network_data.available_techs[(cast(Region, 'R1'), cast(Period, 2020))])
+    techs = list(network_data.available_techs[(cast('Region', 'R1'), cast('Period', 2020))])
     assert len(techs) == 2
     # Fields: region, ic, tech, vintage, oc, lifetime, sector (sector None here)
     assert all(len(tech) == 7 for tech in techs)

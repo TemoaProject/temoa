@@ -7,16 +7,12 @@ from __future__ import annotations
 import sqlite3
 import sys
 from collections import defaultdict
-from collections.abc import Iterable
 from importlib import resources
 from logging import getLogger
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from pyomo.core import value
-from pyomo.opt import SolverResults
 
-from temoa._internal.data_brick import DataBrick
 from temoa._internal.exchange_tech_cost_ledger import CostType
 from temoa._internal.table_data_puller import (
     EI,
@@ -31,13 +27,20 @@ from temoa._internal.table_data_puller import (
     poll_objective,
     poll_storage_level_results,
 )
-from temoa.core.config import TemoaConfig
-from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
-from temoa.extensions.monte_carlo.mc_run import ChangeRecord
-from temoa.types.core_types import Period, Region, Technology, Vintage
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+    from pyomo.opt import SolverResults
+
+    from temoa._internal.data_brick import DataBrick
+    from temoa.core.config import TemoaConfig
+    from temoa.core.model import TemoaModel
+    from temoa.extensions.monte_carlo.mc_run import ChangeRecord
+    from temoa.types.core_types import Period, Region, Technology, Vintage
+
     pass
 
 """
@@ -272,9 +275,9 @@ class TableWriter:
             if abs(val) < self.epsilon:
                 continue
             if hasattr(ei, 'p'):  # emissions from flows
-                entry = (scenario, ei.r, sector, cast(int, ei.p), ei.e, ei.t, ei.v, val)
+                entry = (scenario, ei.r, sector, cast('int', ei.p), ei.e, ei.t, ei.v, val)
             else:  # embodied emissions
-                entry = (scenario, ei.r, sector, cast(int, ei.v), ei.e, ei.t, ei.v, val)
+                entry = (scenario, ei.r, sector, cast('int', ei.v), ei.e, ei.t, ei.v, val)
             data.append(entry)
         qry = f'INSERT INTO output_emission VALUES {_marks(8)}'
         self.con.executemany(qry, data)

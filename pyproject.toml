@@ -97,6 +97,7 @@ select = [
     "B",  # flake8-bugbear
     "N",  # flake8-naming
     "G004", # logging-f-string
+    "TC",  # flake8-type-checking
     "UP",  # pyupgrade
 ]
 ignore = [

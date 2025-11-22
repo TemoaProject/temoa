@@ -16,14 +16,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deprecated import deprecated
-from pyomo.core import Expression, Var
-from pyomo.core.base.component import ComponentData
 from pyomo.environ import quicksum, value
 
-from temoa.types.core_types import Period, Region, Technology, Vintage
-
 if TYPE_CHECKING:
+    from pyomo.core import Expression, Var
+    from pyomo.core.base.component import ComponentData
+
     from temoa.core.model import TemoaModel
+    from temoa.types.core_types import Period, Region, Technology, Vintage
 
 from logging import getLogger
 

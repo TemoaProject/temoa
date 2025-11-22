@@ -17,17 +17,20 @@ import json
 import logging
 import uuid
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 
-from temoa.types.core_types import Commodity, Sector, Technology
 from temoa.utilities.graph_utils import (
     GraphType,
     convert_graph_to_json,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from temoa.types.core_types import Commodity, Sector, Technology
 
 logger = logging.getLogger(__name__)
 

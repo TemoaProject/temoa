@@ -1,19 +1,21 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
-from temoa.types.core_types import Period, Region, Technology, Vintage
 from tests.utilities.namespace_mock import Namespace
 
+if TYPE_CHECKING:
+    from temoa.types.core_types import Period, Region, Technology, Vintage
+
 # Module-level typed constants
-TEST_REGION_A = cast(Region, 'A')
-TEST_REGION_B = cast(Region, 'B')
-TEST_REGION_AB = cast(Region, 'A-B')
-TEST_PERIOD_1 = cast(Period, 1)
-TEST_PERIOD_2000 = cast(Period, 2000)
-TEST_TECH_T1 = cast(Technology, 't1')
-TEST_VINTAGE_2000 = cast(Vintage, 2000)
+TEST_REGION_A = cast('Region', 'A')
+TEST_REGION_B = cast('Region', 'B')
+TEST_REGION_AB = cast('Region', 'A-B')
+TEST_PERIOD_1 = cast('Period', 1)
+TEST_PERIOD_2000 = cast('Period', 2000)
+TEST_TECH_T1 = cast('Technology', 't1')
+TEST_VINTAGE_2000 = cast('Vintage', 2000)
 
 # these are the necessary Temoa elements to make the ledger work
 data = {

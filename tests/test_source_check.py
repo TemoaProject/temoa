@@ -206,8 +206,8 @@ def test_network_analysis(
     """
     # 1. Setup mock model data for the test case
     mock_model_data = MagicMock()
-    region = cast(Region, 'test_region')
-    period = cast(Period, 2025)
+    region = cast('Region', 'test_region')
+    period = cast('Period', 2025)
 
     # The mock needs to return the correct data for the (region, period) key
     mock_model_data.demand_commodities = defaultdict(set, {(region, period): start_nodes})
@@ -218,7 +218,7 @@ def test_network_analysis(
     # Convert the connections dict into a set of Tech namedtuples
     available_techs = {
         EdgeTuple(
-            input_comm=ic, output_comm=oc, tech=tech, vintage=cast(Vintage, period), region=region
+            input_comm=ic, output_comm=oc, tech=tech, vintage=cast('Vintage', period), region=region
         )
         for oc, links in connections.items()
         for ic, tech in links

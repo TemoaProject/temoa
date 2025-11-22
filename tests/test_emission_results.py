@@ -35,7 +35,7 @@ def solved_connection(
     Spins up the model, solves it, and hands over a connection to the results db.
     This fixture is now updated to use the refactored TemoaSequencer API.
     """
-    param = cast(TechTestParams, request.param)
+    param = cast('TechTestParams', request.param)
     logger.info('Setting up and solving for test case: %s', param['name'])
 
     config_file = Path(__file__).parent / 'testing_configs' / 'config_emissions.toml'
