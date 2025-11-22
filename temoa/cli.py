@@ -125,7 +125,8 @@ def _cite_callback(value: bool) -> None:
 
         citation_text.append(
             """Hunter, K., Sreepathi, S., & DeCarolis, J. F. (2013). """
-            """Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa). """
+            """Modeling for insight using Tools for Energy Model Optimization and Analysis """
+            """(Temoa). """
             """Energy Economics, 40, 339-349. """
             """https://doi.org/10.1016/j.eneco.2013.07.014""",
             style='italic',
@@ -153,7 +154,8 @@ def get_default_schema() -> Path:
     except Exception as e:
         logger.exception('Failed to load schema from resources')
         # The fallback for development needs to reflect the current repository structure
-        # assuming `cli.py` is in `temoa/` and `db_schema/` is a sibling of `cli.py` within `temoa/`.
+        # assuming `cli.py` is in `temoa/` and `db_schema/` is a sibling of `cli.py` within
+        # `temoa/`.
         fallback_path = Path(__file__).parent / 'db_schema' / 'temoa_schema_v4.sql'
         if fallback_path.is_file():
             logger.warning(
@@ -322,7 +324,8 @@ def migrate(
         str | None,
         typer.Option(
             '--type',
-            help='Migration type: "sql" for SQL dump to SQLite dump, "db" for SQLite DB in-place migration, if omitted, infers from input extension.',
+            help='Migration type: "sql" for SQL dump to SQLite dump, "db" for SQLite DB in-place '
+            'migration, if omitted, infers from input extension.',
         ),
     ] = None,
     silent: Annotated[
@@ -390,7 +393,8 @@ def migrate(
             effective_output_dir.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             rich.print(
-                f'[red]Error: Could not create auto-generated output directory "{effective_output_dir}": {e}[/red]'
+                f'[red]Error: Could not create auto-generated output directory '
+                f'"{effective_output_dir}": {e}[/red]'
             )
             raise typer.Exit(1) from e
 
@@ -592,12 +596,14 @@ def tutorial(
         rich.print('   or')
         rich.print(f'   [green]python -m temoa run {target_config.name}[/green]')
         rich.print(
-            f'\nTo learn more about the configuration options, see the comments in [cyan]{target_config.name}[/cyan]'
+            f'\nTo learn more about the configuration options, see the comments in '
+            f'[cyan]{target_config.name}[/cyan]'
         )
 
         if verbose:
             rich.print(
-                f"\n[dim]The configuration file points to your local '{database_name}.sqlite' database.[/dim]"
+                f"\n[dim]The configuration file points to your local '{database_name}.sqlite' "
+                'database.[/dim]'
             )
             rich.print("[dim]Results will be saved in the 'output_files' directory.[/dim]")
 
@@ -608,7 +614,8 @@ def tutorial(
                 'The default tutorial configuration uses the [bold]CBC[/bold] solver, '
                 "which was not found in your system's PATH.\n"
                 'To run the tutorial model successfully, please install CBC. '
-                f'Refer to this link for installation guidance: [link={cbc_doc_link}]{cbc_doc_link}[/link]\n'
+                f'Refer to this link for installation guidance: '
+                f'[link={cbc_doc_link}]{cbc_doc_link}[/link]\n'
             )
 
     except Exception as e:
