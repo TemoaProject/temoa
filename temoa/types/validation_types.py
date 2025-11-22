@@ -40,7 +40,8 @@ class ValidationError:
         severity: The severity level of the validation issue
         message: Human-readable description of the issue
         location: Optional location information (e.g., file, line, component)
-        context: Optional additional context about the issue (e.g., {'variable': 'x', 'expected': 10, 'actual': 5})
+        context: Optional additional context about the issue
+                 (e.g., {'variable': 'x', 'expected': 10, 'actual': 5})
     """
 
     severity: ValidationSeverity
