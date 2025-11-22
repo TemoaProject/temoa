@@ -1,9 +1,10 @@
 """
-A companion module to the table writer to hold some data-pulling functions and small utilities and separate them
-from the writing process for organization and to isolate the DB access in the writer such that
-these functions can be called on a model instance without any DB interactions.  (Intended to support use
-by Workers who shouldn't interact with DB).  Dev Note:  In future, if transition away from sqlite, this
-could all be refactored to perform tasks within workers, but concurrent access to sqlite is a no-go
+A companion module to the table writer to hold some data-pulling functions and small utilities and
+separate them from the writing process for organization and to isolate the DB access in the writer
+such that these functions can be called on a model instance without any DB interactions.  (Intended
+to support use by Workers who shouldn't interact with DB).  Dev Note:  In future, if transition
+away from sqlite, this could all be refactored to perform tasks within workers, but concurrent
+access to sqlite is a no-go
 """
 
 from __future__ import annotations
@@ -76,7 +77,8 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     for r, t, v in model.retirement_periods:
         lifetime = value(model.lifetime_process[r, t, v])
         for p in model.retirement_periods[r, t, v]:
-            # We want to output period retirement, not annual retirement, so multiply by PeriodLength
+            # We want to output period retirement, not annual retirement, so multiply by
+            # PeriodLength
             eol = value(model.period_length[p]) * value(model.v_annual_retirement[r, p, t, v])
             early = 0
             if t in model.tech_retirement and v < p <= v + lifetime - value(model.period_length[p]):
@@ -277,7 +279,8 @@ def poll_cost_results(
     """
     Poll a solved model for all cost results
     :param M: Solved Model
-    :param p_0: a base year for discounting of loans, typically only used in MYOPIC.  If none, first optimization year used
+    :param p_0: a base year for discounting of loans, typically only used in MYOPIC.  If none,
+                first optimization year used
     :param epsilon: epsilon (default 1e-5)
     :return: tuple of cost_dict, exchange_cost_dict (for exchange techs)
     """
@@ -568,7 +571,8 @@ def poll_emissions(
     :return: cost_dict, flow_dict
     """
 
-    # UPDATE:  older versions brought forward had some accounting errors here for flex/curtailed emissions
+    # UPDATE:  older versions brought forward had some accounting errors here for flex/curtailed
+    #          emissions
     #          see the note on emissions in the Cost function in temoa_rules
     p_0_true: Period
     if p_0 is None:

@@ -75,10 +75,12 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
             db_minor = db_minor[0] if db_minor else -1
         except sqlite3.OperationalError:
             logger.error(
-                'Database does not appear to have MetaData table with required versioning info.  See schema for v3+.'
+                'Database does not appear to have MetaData table with required versioning info.  '
+                'See schema for v3+.'
             )
             sys.stderr.write(
-                'Database does not appear to have MetaData table with required.  Is this version 3+ compatible?\n'
+                'Database does not appear to have MetaData table with required.  Is this version '
+                '3+ compatible?\n'
                 'If required, see dox on using the database migrator to move to v3.'
             )
             db_major, db_minor = -1, -1
@@ -88,7 +90,8 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
         good_version = db_major == db_major_reqd and db_minor >= min_db_minor
         if not good_version:
             logger.error(
-                'Database %s version %d.%d does not match the major version %d and have at least minor version %d',
+                'Database %s version %d.%d does not match the major version %d and have at least '
+                'minor version %d',
                 str(name),
                 db_major,
                 db_minor,
@@ -242,9 +245,10 @@ def solve_instance(
         elif solver_name == 'appsi_highs':
             pass
 
-        # dev note:  The handling of suffixes is pretty weak.  As of today 4/4/2024, highspy crashes if
-        #            the keyword suffixes is passed in (regardless if there are any requested).  CBC only
-        #            supports some.  Perhaps in the future, this will be easier.  For now, we need a different
+        # dev note:  The handling of suffixes is pretty weak.  As of today 4/4/2024, highspy
+        #            crashes if the keyword suffixes is passed in (regardless if there are any
+        #            requested).  CBC only supports some.  Perhaps in the future, this will be
+        #            easier.  For now, we need a different
         #            solve command for highspy and no suffixes because it works so well.
         if solver_suffixes:
             solver_suffixes_set = set(solver_suffixes)
@@ -301,7 +305,8 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
     """
     Check the status of the solve.
     :param result: the results object returned by the solver
-    :return: tuple of status boolean (True='optimal', others False), and string message if not optimal
+    :return: tuple of status boolean (True='optimal', others False), and string message if not
+             optimal
     """
     soln = result['Solution']
 
