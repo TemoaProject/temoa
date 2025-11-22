@@ -361,4 +361,36 @@ def handle_results(
     # normal (non-MGA) run will have a total_cost as the OBJ:
     if hasattr(instance, 'total_cost'):
         logger.info('total_cost value: %0.2f', value(instance.total_cost))
+
+    if config.graphviz_output:
+        try:
+            from temoa.utilities.graphviz_generator import GraphvizDiagramGenerator
+
+            logger.info('Generating Graphviz plots...')
+            # Determine output directory (same as other outputs)
+            out_dir = str(config.output_path)
+
+            # Initialize generator
+            graph_gen = GraphvizDiagramGenerator(
+                db_file=str(config.output_database),
+                scenario=config.scenario,
+                out_dir=out_dir,
+                verbose=0,  # Less verbose for integrated run
+            )
+            graph_gen.connect()
+
+            # Get periods from the model instance
+            periods = sorted(instance.time_optimize)
+
+            for period in periods:
+                # Generate main results diagram for the period
+                # We pass None for region to generate for all/default
+                graph_gen.create_main_results_diagram(period=period, region=None)
+
+            graph_gen.close()
+            logger.info('Graphviz plots generated in %s', graph_gen.out_dir)
+
+        except Exception as e:
+            logger.error('Failed to generate Graphviz plots: %s', e, exc_info=True)
+
     return

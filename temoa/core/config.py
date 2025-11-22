@@ -54,6 +54,7 @@ class TemoaConfig:
         price_check: bool = True,
         source_trace: bool = False,
         plot_commodity_network: bool = False,
+        graphviz_output: bool = False,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -134,6 +135,7 @@ class TemoaConfig:
                 'Both are required to produce plots.'
             )
         self.plot_commodity_network = plot_commodity_network and self.source_trace
+        self.graphviz_output = graphviz_output
 
         # warn if output db != input db
         if self.input_database.suffix == self.output_database.suffix:  # they are both .db/.sqlite
@@ -198,6 +200,7 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Price check', width, self.price_check)
         msg += '{:>{}s}: {}\n'.format('Source trace', width, self.source_trace)
         msg += '{:>{}s}: {}\n'.format('Commodity network plots', width, self.plot_commodity_network)
+        msg += '{:>{}s}: {}\n'.format('Graphviz output', width, self.graphviz_output)
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Selected solver', width, self.solver_name)
