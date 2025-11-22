@@ -78,7 +78,8 @@ def get_default_survival(
 
 def get_default_process_lifetime(model: TemoaModel, r: Region, t: Technology, v: Vintage) -> int:
     """
-    This initializer used to initialize the lifetime_process parameter from lifetime_tech where needed
+    This initializer used to initialize the lifetime_process parameter from lifetime_tech where
+    needed
 
     Priority:
         1.  Specified in lifetime_process data (provided as a fill and would not call this function)
@@ -272,7 +273,8 @@ def create_survival_curve(model: TemoaModel) -> None:
             lsc_prev = value(model.lifetime_survival_curve[r, p_prev, t, v])
             if lsc - lsc_prev > 0.0001:
                 msg = (
-                    f'lifetime_survival_curve fraction increases going forward in time from {(r, p_prev, t, v)} to {(r, p, t, v)}. '
+                    f'lifetime_survival_curve fraction increases going forward in time from '
+                    f'{(r, p_prev, t, v)} to {(r, p, t, v)}. '
                     'This is not allowed.'
                 )
                 logger.error(msg)
@@ -297,17 +299,19 @@ def create_survival_curve(model: TemoaModel) -> None:
                 # Make sure the lifetime for this process aligns with survival curve end
                 if value(model.lifetime_process[r, t, v]) < p - v:
                     msg = (
-                        f'The lifetime_process parameter for process ({r, t, v}) with survival curve  '
-                        f'does not extend beyond the end of that survival curve in {p}. To agree with '
+                        f'The lifetime_process parameter for process ({r, t, v}) with survival '
+                        f'curve does not extend beyond the end of that survival curve in {p}. To '
+                        'agree with '
                         f'the survival curve, set lifetime_process[{r, t, v}] >= {p - v}'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
                 elif value(model.lifetime_process[r, t, v]) != p - v:
                     msg = (
-                        f'The lifetime_process parameter for process ({r, t, v}) with survival curve  '
-                        f'does match the end of that survival curve in {p}. This will waste compute. '
-                        'To agree with the survival curve and suppress this warning, set '
+                        f'The lifetime_process parameter for process ({r, t, v}) with survival '
+                        'curve '
+                        f'does match the end of that survival curve in {p}. This will waste '
+                        'compute. To agree with the survival curve and suppress this warning, set '
                         f'lifetime_process[{r, t, v}] = {p - v}'
                     )
                     logger.warning(msg)
@@ -328,9 +332,10 @@ def create_survival_curve(model: TemoaModel) -> None:
 
     if rtv_interpolated:
         logger.info(
-            'For the purposes of investment cost accounting, lifetime_survival_curve must be defined '
-            'for each individual year. Gaps between defined years will be filled by linear interpolation. '
-            'Otherwise, these individual years can be defined manually. Interpolated processes: %s',
+            'For the purposes of investment cost accounting, lifetime_survival_curve must be '
+            'defined for each individual year. Gaps between defined years will be filled by '
+            'linear interpolation. Otherwise, these individual years can be defined manually. '
+            'Interpolated processes: %s',
             list(rtv_interpolated),
         )
 
@@ -426,8 +431,8 @@ def check_efficiency_variable(model: TemoaModel) -> None:
             model.is_efficiency_variable[r, p, i, t, v, o] = True
             if count < num_seg:
                 logger.info(
-                    'Some but not all efficiency_variable values were set (%i out of a possible %i) for: %s'
-                    ' Missing values will default to value set in efficiency table.',
+                    'Some but not all efficiency_variable values were set (%i out of a possible '
+                    '%i) for: %s Missing values will default to value set in efficiency table.',
                     count,
                     num_seg,
                     (r, p, i, t, v, o),

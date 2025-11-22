@@ -65,8 +65,9 @@ def check_capacity_factor_process(model: TemoaModel) -> None:
             model.is_capacity_factor_process[r, p, t, v] = True
             if count < num_seg:
                 logger.info(
-                    'Some but not all processes were set in capacity_factor_process (%i out of a possible %i) for: %s'
-                    ' Missing values will default to capacity_factor_tech value or 1 if that is not set either.',
+                    'Some but not all processes were set in capacity_factor_process (%i out of a '
+                    'possible %i) for: %s Missing values will default to capacity_factor_tech '
+                    'value or 1 if that is not set either.',
                     count,
                     num_seg,
                     (r, p, t, v),
@@ -118,7 +119,8 @@ def get_default_capacity_factor(
     model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> float:
     """
-    This initializer is used to fill the capacity_factor_process from the capacity_factor_tech where needed.
+    This initializer is used to fill the capacity_factor_process from the capacity_factor_tech
+    where needed.
 
     Priority:
         1.  As specified in data input (this function not called)
@@ -290,7 +292,8 @@ def annual_retirement_constraint(
                 \frac{1}{\text{LEN}_p} \cdot
                 \left(
                 \frac{\text{LSC}_{r,p,t,v}}{\text{PLF}_{r,p,t,v}} \cdot \textbf{CAP}_{r,p,t,v}
-                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot \textbf{CAP}_{r,p_{next},t,v}
+                - \frac{\text{LSC}_{r,p_{next},t,v}}{\text{PLF}_{r,p_{next},t,v}} \cdot
+                \textbf{CAP}_{r,p_{next},t,v}
                 \right)
                 & \text{otherwise} \\
             \end{cases}
@@ -329,7 +332,8 @@ def annual_retirement_constraint(
         p_next = model.time_future.next(p)
 
         if p == model.time_optimize.last() or p_next == v + value(model.lifetime_process[r, t, v]):
-            # No v_capacity or v_retired_capacity for next period so just continue down the survival curve
+            # No v_capacity or v_retired_capacity for next period so just continue down the
+            # survival curve
             cap_end = (
                 cap_begin
                 * value(model.lifetime_survival_curve[r, p_next, t, v])
@@ -496,13 +500,13 @@ def adjusted_capacity_constraint(
         :figclass: align-center
         :figwidth: 50%
 
-        For processes reaching end of life mid-period, the process life fraction adjustment is applied,
-        distributing the effective capacity over the whole period.
+        For processes reaching end of life mid-period, the process life fraction adjustment is
+        applied, distributing the effective capacity over the whole period.
 
     For processes using survival curves, the yearly survival curve :math:`\text{LSC}_{r,p,t,v}` is
     averaged over the period to get the effective remaining capacity for that period  Because this
-    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for both
-    phenomena.
+    implicitly handles mid-period end of life, :math:`\text{PLF}_{r,p,t,v}` is used to account for
+    both phenomena.
 
     .. figure:: images/adjusted_capacity_sc.*
         :align: center
@@ -594,7 +598,8 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
           processes that produce commodity `o` at end-of-life.
         - model.new_capacity_rtv: set of (r, t, v) for new capacity investments.
         - model.active_capacity_available_rpt: set of (r, p, t) where capacity is active.
-        - model.active_capacity_available_rptv: set of (r, p, t, v) where vintage capacity is active.
+        - model.active_capacity_available_rptv: set of (r, p, t, v) where vintage capacity is
+          active.
     """
 
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')

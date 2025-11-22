@@ -134,7 +134,10 @@ def create_geography_sets(model: TemoaModel) -> None:
             continue
 
         if '-' not in r:
-            msg = f"Exchange technology {t} has an invalid region '{r}'. Must be 'region_from-region_to'."
+            msg = (
+                f"Exchange technology {t} has an invalid region '{r}'. Must be "
+                "'region_from-region_to'."
+            )
             logger.error(msg)
             raise ValueError(msg)
 

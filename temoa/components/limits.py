@@ -51,7 +51,8 @@ def limit_tech_input_split_constraint_indices(
     if len(ann_indices) > 0:
         msg = (
             'Warning: Annual technologies included in limit_tech_input_split table. '
-            'Use limit_tech_input_split_annual table instead or these constraints will be ignored: {}'
+            'Use limit_tech_input_split_annual table instead or these constraints will '
+            'be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -100,7 +101,8 @@ def limit_tech_output_split_constraint_indices(
     if len(ann_indices) > 0:
         msg = (
             'Warning: Annual technologies included in limit_tech_output_split table. '
-            'Use limit_tech_output_split_annual table instead or these constraints will be ignored: {}'
+            'Use limit_tech_output_split_annual table instead or these constraints will '
+            'be ignored: {}'
         )
         logger.warning(msg.format(ann_indices))
 
@@ -253,10 +255,10 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
        \le LR_{r, t}
 
        \forall \{r, t\} \in \Theta_{\text{limit_resource}}"""
-    # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a tech"
-    #            regardless of whatever "resources" are consumed.
-    # dev note:  this would generally be applied to a "dummy import" technology to restrict something like
-    #            oil/mineral extraction across all model periods. Looks fine to me.
+    # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a
+    #            tech" regardless of whatever "resources" are consumed.
+    # dev note:  this would generally be applied to a "dummy import" technology to restrict
+    #            something like oil/mineral extraction across all model periods. Looks fine to me.
 
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
@@ -302,9 +304,11 @@ def limit_activity_share_constraint(
     .. math::
         :label: Limit Activity Share
 
-        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_1} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_1} \subseteq T,\ V,\ O}
+        \mathbf{FO}_{r,p,s,d,i,t,v,o}
         \leq LAS_{r,p,g_1,g_2} \cdot
-        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O}
+        \mathbf{FO}_{r,p,s,d,i,t,v,o}
 
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit_activity_share}}
     """
@@ -450,15 +454,18 @@ def limit_annual_capacity_factor_constraint(
     .. math::
         :label: limit_annual_capacity_factor
 
-            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot
+            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
             \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
 
-            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot
+            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
             \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
     """
-    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
+    # r can be an individual region (r='US'), or a combination of regions separated by plus
+    # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
     # we need to screen here because it is possible that the restriction extends beyond the
@@ -509,15 +516,19 @@ def limit_seasonal_capacity_factor_constraint(
     .. math::
         :label: Limit Seasonal Capacity Factor
 
-        \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+        \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot
+        \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
         \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
 
-        \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d} \le LIMSCF_{r, p, s, t} \cdot \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+        \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d}
+        \le LIMSCF_{r, p, s, t} \cdot
+        \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
         \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
     """
-    # r can be an individual region (r='US'), or a combination of regions separated by plus (r='Mexico+US+Canada'), or 'global'.
+    # r can be an individual region (r='US'), or a combination of regions separated by plus
+    # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
     # we need to screen here because it is possible that the restriction extends beyond the
@@ -728,9 +739,11 @@ def limit_tech_output_split_annual_constraint(
 
             \sum_{I, T^{a}} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
             \geq
-            TOS_{r, p, t, o} \cdot \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
+            TOS_{r, p, t, o} \cdot
+            \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
-            \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{limit_tech_output_split_annual}}"""
+            \forall \{r, p, t \in T^{a}, v, o\} \in
+            \Theta_{\text{limit_tech_output_split_annual}}"""
     out = quicksum(
         model.v_flow_out_annual[r, p, S_i, t, v, o]
         for S_i in model.process_inputs_by_output[r, p, t, v, o]
@@ -812,17 +825,19 @@ def limit_emission_constraint(
     """
     emission_limit = value(model.limit_emission[r, p, e, op])
 
-    # r can be an individual region (r='US'), or a combination of regions separated by a + (r='Mexico+US+Canada'),
-    # or 'global'.  Note that regions!=M.regions. We iterate over regions to find actual_emissions
-    # and actual_emissions_annual.
+    # r can be an individual region (r='US'), or a combination of regions separated by a +
+    # (r='Mexico+US+Canada'), or 'global'.  Note that regions!=M.regions. We iterate over regions
+    # to find actual_emissions and actual_emissions_annual.
 
     # if r == 'global', the constraint is system-wide
 
     regions = geography.gather_group_regions(model, r)
 
     # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.  (See commodity balance constr)
-    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed either
+    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.
+    # (See commodity balance constr)
+    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed
+    # either
 
     process_emissions = quicksum(
         model.v_flow_out[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
@@ -867,7 +882,8 @@ def limit_emission_constraint(
         process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
         # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
         # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
-        # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already accounted
+        # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already
+        # accounted
     )
     expr = operator_expression(lhs, Operator(op), emission_limit)
 
@@ -1151,7 +1167,8 @@ def limit_growth_new_capacity_delta(
 
             \begin{aligned}\text{Growth:}\\
             &\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}}
-            \leq S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}})
+            \leq S_{r,t} + (1+R_{r,t}) \cdot
+            (\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}})
             \end{aligned}
 
             \text{ where } v_i=p
@@ -1188,8 +1205,8 @@ def limit_growth_new_capacity_delta(
     if len(periods) == 0:
         if p == model.time_optimize.first():
             msg = (
-                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where this '
-                'technology can be built in this region. Constraint skipped.'
+                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where '
+                'this technology can be built in this region. Constraint skipped.'
             ).format('Deg' if degrowth else 'G', (r, t))
             logger.warning(msg)
         return Constraint.Skip
@@ -1210,9 +1227,9 @@ def limit_growth_new_capacity_delta(
         ]
         if gaps:
             msg = (
-                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in which'
-                'new capacity cannot be built in this region ({}). New capacity in these periods '
-                'will be treated as zero which may cause infeasibility or other problems.'
+                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in '
+                'which new capacity cannot be built in this region ({}). New capacity in these '
+                'periods will be treated as zero which may cause infeasibility or other problems.'
             ).format('Deg' if degrowth else 'G', (r, t), gaps)
             logger.warning(msg)
 
@@ -1329,8 +1346,8 @@ def limit_new_capacity_constraint(
 ) -> ExprLike:
     r"""
     The limit_new_capacity constraint sets a limit on the newly installed capacity of a
-    given technology or group in a given year. Note that the indices for these constraints are region,
-    period and tech.
+    given technology or group in a given year. Note that the indices for these constraints are
+    region, period and tech.
 
     .. math::
         :label: limit_new_capacity

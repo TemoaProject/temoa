@@ -292,7 +292,8 @@ def ramp_up_day_constraint(
     - :math:`SEG_{r,p,s,d}` is the fraction of the period in time slice :math:`(s,d)`
     - :math:`DPP` is the number of days in each period
     - :math:`R_{r,t}` is the ramp rate per hour
-    - :math:`\Delta H_{r,p,s,d,s_{next},d_{next}}` is the number of elapsed hours between midpoints of time slices
+    - :math:`\Delta H_{r,p,s,d,s_{next},d_{next}}` is the number of elapsed hours between midpoints
+      of time slices
     - :math:`CAP \cdot C2A` gives the maximum hourly change in activity
     """
 
@@ -336,7 +337,8 @@ def ramp_up_day_constraint(
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from '
+            '({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -425,7 +427,8 @@ def ramp_down_day_constraint(
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from '
+            '({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -452,7 +455,8 @@ def ramp_up_season_constraint(
     r"""
     Constrains the ramp up rate of activity between time slices at the boundary
     of sequential seasons. Same as ramp_up_day but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to
+    :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     time_season table.
     """
@@ -498,7 +502,8 @@ def ramp_up_season_constraint(
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from '
+            '({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
@@ -525,7 +530,8 @@ def ramp_down_season_constraint(
     r"""
     Constrains the ramp down rate of activity between time slices at the boundary
     of sequential seasons. Same as ramp_down_day but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to :math:`(s^{seq}_{next},d_{first})`
+    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to
+    :math:`(s^{seq}_{next},d_{first})`
     and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
     time_season table.
     """
@@ -571,7 +577,8 @@ def ramp_down_season_constraint(
 
     if ramp_fraction >= 1:
         msg = (
-            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from ({}, {}, {}) to ({}, {}, {}). '
+            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from '
+            '({}, {}, {}) to ({}, {}, {}). '
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))

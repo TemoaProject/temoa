@@ -102,9 +102,11 @@ def validate_segment_fraction(model: TemoaModel) -> None:
             extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
             missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
             msg: str = (
-                f'time_segment_fraction elements for period {p} do not match time_season and time_of_day.'
+                f'time_segment_fraction elements for period {p} do not match time_season and '
+                'time_of_day.'
                 f'\n\nIndices missing from time_segment_fraction:\n{missing}'
-                f'\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n{extra}'
+                f'\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n'
+                f'{extra}'
             )
             logger.error(msg)
             raise ValueError(msg)
@@ -162,8 +164,10 @@ def validate_time_manual(model: TemoaModel) -> None:
     if missing_psd or missing_psd_next:
         msg: str = (
             'Failed to build state sequence. '
-            f'\nThese states from time_segment_fraction were not given a next state:\n{missing_psd}\n'
-            f'\nThese states from time_segment_fraction do not follow any state:\n{missing_psd_next}'
+            f'\nThese states from time_segment_fraction were not given a next state:\n'
+            f'{missing_psd}\n'
+            f'\nThese states from time_segment_fraction do not follow any state:\n'
+            f'{missing_psd_next}'
         )
         logger.error(msg)
         raise ValueError(msg)
@@ -290,7 +294,10 @@ def create_time_sequence(model: TemoaModel) -> None:
                 model.time_next[p, s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader
-            msg = f"Invalid time sequencing parameter loaded '{model.time_sequencing.first()}'. Likely code error."
+            msg = (
+                f"Invalid time sequencing parameter loaded '{model.time_sequencing.first()}'. "
+                'Likely code error.'
+            )
             logger.error(msg)
             raise ValueError(msg)
 
@@ -342,9 +349,11 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
 
         else:
             msg = (
-                f'No data in time_season_sequential but time_sequencing parameter set to {model.time_sequencing.first()} '
-                'and inter-season features used. time_season_sequential must be filled for this type of time '
-                'sequencing if seasonal storage or inter-season constraints like ramp_up/ramp_down are used. Check '
+                f'No data in time_season_sequential but time_sequencing parameter set to '
+                f'{model.time_sequencing.first()} and inter-season features used. '
+                'time_season_sequential must be filled for this type of time sequencing if '
+                'seasonal storage or inter-season constraints like ramp_up/ramp_down are used. '
+                'Check '
                 'the config file.'
             )
             logger.error(msg)
@@ -360,8 +369,9 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             and abs(num_days - prev_n) >= 0.001
         ):
             msg = (
-                'time_sequencing set to consecutive_days but two consecutive seasons do not represent the same '
-                f'number of days. This discontinuity will lead to bad model behaviour: {p, s}, days: {num_days}. '
+                'time_sequencing set to consecutive_days but two consecutive seasons do not '
+                'represent the same number of days. This discontinuity will lead to bad model '
+                f'behaviour: {p, s}, days: {num_days}. '
                 f'Previous number of days: {prev_n}. Check the config file for more information.'
             )
             logger.error(msg)

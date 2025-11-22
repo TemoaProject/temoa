@@ -188,7 +188,8 @@ def seasonal_storage_energy_constraint(
     s_seq_next: Season = model.time_next_sequential[p, s_seq]
     s_next: Season = model.sequential_to_season[p, s_seq_next]
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
+    # so must
     # be adjusted to the number of days in the sequential season
     days_adjust = value(model.time_season_sequential[p, s_seq, s]) / (
         value(model.segment_fraction_per_season[p, s]) * value(model.days_per_period)
@@ -335,13 +336,15 @@ def seasonal_storage_energy_upper_bound_constraint(
         * (value(model.storage_duration[r, t]) / (24 * value(model.days_per_period)))
     )
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season, so must
+    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
+    # so must
     # be adjusted to the number of days in the sequential season
     days_adjust = value(model.time_season_sequential[p, s_seq, s]) / (
         value(model.segment_fraction_per_season[p, s]) * value(model.days_per_period)
     )
 
-    # v_storage_level tracks the running cumulative delta in the non-sequential season, so must be adjusted
+    # v_storage_level tracks the running cumulative delta in the non-sequential season,
+    # so must be adjusted
     # to the size of the sequential season
     running_day_delta = model.v_storage_level[r, p, s, d, t, v] * days_adjust
 
