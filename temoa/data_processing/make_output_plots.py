@@ -233,7 +233,7 @@ class OutputPlotGenerator:
         self.make_line_plot(output_values.copy(), 'Emissions', title)
         return relative_path
 
-    # --------------------------- Plot Generation related functions --------------------------------------
+    # --------------------------- Plot Generation related functions ------------------------------
 
     def get_cmap(self, size: int) -> ColorMapFunc:
         """Returns a function that maps an index to a distinct RGB color."""

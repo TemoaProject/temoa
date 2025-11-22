@@ -1,4 +1,5 @@
-# Dev Note:  This module is unused and appears to be just a query executor.  Retained for now.  12JUN2024
+# Dev Note:  This module is unused and appears to be just a query executor.  Retained for now.
+# 12JUN2024
 """
 A command-line utility for sending a direct SQL query to a Temoa database.
 
