@@ -261,7 +261,10 @@ class GraphvizDiagramGenerator:
 
         self.__log__('CreateMainResultsDiagram: database fetched successfully')
 
-        tech_attr_fmt = 'label="%s\\nCapacity: %.2f", href="#", onclick="loadNextGraphvizGraph(\'results\', \'%s\', \'%s\')"'
+        tech_attr_fmt = (
+            'label="%s\\nCapacity: %.2f", href="#", '
+            "onclick=\"loadNextGraphvizGraph('results', '%s', '%s')\""
+        )
         commodity_fmt = "href=\"#\", onclick=\"loadNextGraphvizGraph('results', '%s', '%s')\""
         flow_fmt = 'label="%.2f"'
         epsilon = 0.005

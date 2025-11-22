@@ -138,7 +138,10 @@ class DatabaseUtil:
             inp_comm_sql = 'NOT NULL'
             inp_tech_sql = 'NOT NULL'
 
-        where_clause = f'(input_comm IS {inp_comm_sql} OR output_comm IS {inp_comm_sql} OR tech IS {inp_tech_sql})'
+        where_clause = (
+            f'(input_comm IS {inp_comm_sql} OR output_comm IS {inp_comm_sql} OR tech IS '
+            f'{inp_tech_sql})'
+        )
         if region:
             where_clause = f"region LIKE '%{region}%' AND {where_clause}"
 
@@ -194,7 +197,10 @@ class DatabaseUtil:
             raise ValueError('A scenario must be set for output-related queries')
 
         columns = ['tech', 'period', 'SUM(capacity)', 'region']
-        query = f"SELECT {', '.join(columns)} FROM output_net_capacity WHERE scenario IS '{self.scenario}'"
+        query = (
+            f'SELECT {", ".join(columns)} FROM output_net_capacity WHERE scenario IS '
+            f"'{self.scenario}'"
+        )
 
         if region:
             query += f" AND region LIKE '{region}%'"
@@ -242,7 +248,10 @@ class DatabaseUtil:
                 columns.append('output_comm')
         columns.append('tech')
 
-        query = f"SELECT DISTINCT {', '.join(columns)}, SUM(flow) AS flow FROM {table} WHERE scenario IS '{self.scenario}'"
+        query = (
+            f'SELECT DISTINCT {", ".join(columns)}, SUM(flow) AS flow FROM {table} WHERE '
+            f"scenario IS '{self.scenario}'"
+        )
 
         if region:
             query += f" AND region LIKE '{region}%'"
@@ -297,12 +306,14 @@ class DatabaseUtil:
                 SUM(OFO.vflow_out) AS vflow_out,
                 OC.capacity
             FROM (
-                SELECT region, scenario, period, input_comm, tech, vintage, output_comm, SUM(flow) AS vflow_in
+                SELECT region, scenario, period, input_comm, tech, vintage, output_comm,
+                SUM(flow) AS vflow_in
                 FROM output_flow_in
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OF
             INNER JOIN (
-                SELECT region, scenario, period, input_comm, tech, vintage, output_comm, SUM(flow) AS vflow_out
+                SELECT region, scenario, period, input_comm, tech, vintage, output_comm,
+                SUM(flow) AS vflow_out
                 FROM output_flow_out
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OFO ON

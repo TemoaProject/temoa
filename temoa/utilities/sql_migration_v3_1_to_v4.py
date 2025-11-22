@@ -196,12 +196,14 @@ def migrate_dump_to_sqlite(args) -> None:
             if len(candidates) == 1:
                 chosen_table = candidates[0]
                 print(
-                    f'NOTE: Mapped target {mapped_new_table_name} not found for {old_table_name}; using candidate {chosen_table}'
+                    f'NOTE: Mapped target {mapped_new_table_name} not found for {old_table_name}; '
+                    f'using candidate {chosen_table}'
                 )
                 mapped_new_table_name = chosen_table
             else:
                 print(
-                    f'SKIP: No target table for {old_table_name} -> {mapped_new_table_name} (candidates: {candidates})'
+                    f'SKIP: No target table for {old_table_name} -> {mapped_new_table_name} '
+                    f'(candidates: {candidates})'
                 )
                 continue
 
@@ -232,7 +234,8 @@ def migrate_dump_to_sqlite(args) -> None:
         if not selectable_old_cols_for_query:
             if args.debug:
                 print(
-                    f'DEBUG: No common/mappable columns from {old_table_name} to {mapped_new_table_name}. Skipping data copy.'
+                    f'DEBUG: No common/mappable columns from {old_table_name} to '
+                    f'{mapped_new_table_name}. Skipping data copy.'
                 )
             continue
 
@@ -252,7 +255,10 @@ def migrate_dump_to_sqlite(args) -> None:
             continue
 
         placeholders = ','.join(['?'] * len(insert_target_cols_for_query))
-        insert_query = f'INSERT OR REPLACE INTO {mapped_new_table_name} ({",".join(insert_target_cols_for_query)}) VALUES ({placeholders})'
+        insert_query = (
+            f'INSERT OR REPLACE INTO {mapped_new_table_name} '
+            f'({",".join(insert_target_cols_for_query)}) VALUES ({placeholders})'
+        )
 
         con_new_in_memory.executemany(insert_query, filtered_rows_for_insert)
         rows_copied_this_table = len(filtered_rows_for_insert)
