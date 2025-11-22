@@ -303,7 +303,7 @@ def visualize_graph(
     else:
         logger.error('Failed to generate network graphs')
 
-    # 7. Perform cycle detection on the commodity graph
+    # 8. Perform cycle detection on the commodity graph
     try:
         for cycle in nx.simple_cycles(G=commodity_graph):
             if len(cycle) < 2:

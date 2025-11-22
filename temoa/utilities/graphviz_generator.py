@@ -1,16 +1,139 @@
+import argparse
 import os
-import sys
 from subprocess import call
 from typing import Any, TextIO
 
-from .database_util import DatabaseUtil
-from .graphviz_formats import (
+from temoa.utilities.graphviz_formats import (
     commodity_dot_fmt,
     quick_run_dot_fmt,
     results_dot_fmt,
     tech_results_dot_fmt,
 )
-from .graphviz_util import create_text_edges, create_text_nodes, get_color_config, process_input
+from temoa.utilities.graphviz_util import (
+    create_text_edges,
+    create_text_nodes,
+    get_color_config,
+)
+
+from .database_util import DatabaseUtil
+
+
+def process_input(args: list[str]) -> dict[str, Any]:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='Generate Output Plot')
+    parser.add_argument(
+        '-i',
+        '--input',
+        action='store',
+        dest='ifile',
+        help='Input Database Filename <path>',
+        required=True,
+    )
+    parser.add_argument(
+        '-f',
+        '--format',
+        action='store',
+        dest='image_format',
+        help='Graphviz output format (Default: svg)',
+        default='svg',
+    )
+    parser.add_argument(
+        '-c',
+        '--show_capacity',
+        action='store_true',
+        dest='show_capacity',
+        help='Whether capacity shows up in subgraphs (Default: not shown)',
+        default=False,
+    )
+    parser.add_argument(
+        '-v',
+        '--splinevar',
+        action='store_true',
+        dest='splinevar',
+        help='Whether subgraph edges to be straight or curved (Default: Straight)',
+        default=False,
+    )
+    parser.add_argument(
+        '-t',
+        '--graph_type',
+        action='store',
+        dest='graph_type',
+        help='Type of subgraph (Default: separate_vintages)',
+        choices=['separate_vintages', 'explicit_vintages'],
+        default='separate_vintages',
+    )
+    parser.add_argument(
+        '-g',
+        '--gray',
+        action='store_true',
+        dest='grey_flag',
+        help='If specified, generates graph in graycale',
+        default=False,
+    )
+    parser.add_argument(
+        '-n',
+        '--name',
+        action='store',
+        dest='quick_name',
+        help='Specify the extension you wish to give your quick run',
+    )
+    parser.add_argument(
+        '-o',
+        '--output',
+        action='store',
+        dest='res_dir',
+        help='Optional output file path (to dump the images folder)',
+        default='./',
+    )
+
+    group1 = parser.add_mutually_exclusive_group()
+    group1.add_argument(
+        '-b',
+        '--technology',
+        action='store',
+        dest='inp_technology',
+        help='Technology for which graph to be generated',
+    )
+    group1.add_argument(
+        '-a',
+        '--commodity',
+        action='store',
+        dest='inp_commodity',
+        help='Commodity for which graph to be generated',
+    )
+
+    parser.add_argument(
+        '-s',
+        '--scenario',
+        action='store',
+        dest='scenario_name',
+        help='Model run scenario name',
+        default=None,
+    )
+    parser.add_argument(
+        '-y',
+        '--year',
+        action='store',
+        dest='period',
+        type=int,
+        help='The period for which the graph is to be generated (Used only for output plots)',
+    )
+    parser.add_argument(
+        '-r',
+        '--region',
+        action='store',
+        dest='region',
+        help='The region for which the graph is to be generated',
+        default=None,
+    )
+
+    options = parser.parse_args(args)
+
+    if (options.scenario_name is not None) ^ (options.period is not None):
+        parser.print_help()
+        raise ValueError('Scenario and input year must both be present or not present together')
+
+    return vars(options)
 
 
 class GraphvizDiagramGenerator:
@@ -82,7 +205,7 @@ class GraphvizDiagramGenerator:
         """Generate a graph from a DOT format string."""
         dot_args.update(self.colors)
         with open(output_name + '.dot', 'w') as f:
-            f.write(dot_format % dot_args)
+            f.write(dot_format.format(**dot_args))
         cmd = (
             'dot',
             f'-T{output_format}',
@@ -97,7 +220,7 @@ class GraphvizDiagramGenerator:
         """Set graphic options for the diagrams."""
         if grey_flag is not None:
             self.grey_flag = grey_flag
-            self.colors.update(get_color_config(self.grey_flag))
+            self.colors.update(get_color_config(grey_flag=self.grey_flag))
         if splinevar is not None:
             self.colors['splinevar'] = 'spline' if splinevar else 'line'
         self.__log__(
@@ -442,33 +565,3 @@ class GraphvizDiagramGenerator:
         self.__generate_graph__(quick_run_dot_fmt, args, output_name, output_format)
         self.__log__('createCompleteInputGraph: graph generated, returning')
         return self.out_dir, output_path
-
-
-if __name__ == '__main__':
-    cli_input = process_input(sys.argv[1:])
-    graph_gen = GraphvizDiagramGenerator(
-        cli_input['ifile'],
-        cli_input['scenario_name'],
-        cli_input['region'],
-        out_dir=cli_input['res_dir'],
-    )
-    graph_gen.connect()
-    graph_gen.set_graphic_options(
-        grey_flag=cli_input['grey_flag'], splinevar=cli_input['splinevar']
-    )
-    if cli_input['scenario_name'] is None:
-        result = graph_gen.create_complete_input_graph(
-            cli_input['region'], cli_input['inp_technology'], cli_input['inp_commodity']
-        )
-    elif cli_input['inp_technology'] is None and cli_input['inp_commodity'] is None:
-        result = graph_gen.create_main_results_diagram(cli_input['period'], cli_input['region'])
-    elif cli_input['inp_commodity'] is None:
-        result = graph_gen.create_tech_results_diagrams(
-            cli_input['period'], cli_input['region'], cli_input['inp_technology']
-        )
-    else:  # 'inp_technology' is None
-        result = graph_gen.create_commodity_partial_results(
-            cli_input['period'], cli_input['region'], cli_input['inp_commodity']
-        )
-    graph_gen.close()
-    print(f'Check graph generated at {result[1]} and all results at {result[0]}')
