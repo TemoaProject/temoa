@@ -1,41 +1,36 @@
-"""
-Set types for Temoa energy model.
+"""Type aliases for Temoa set types."""
 
-This module contains set type definitions used for sparse indexing
-and various collections in the Temoa model.
-"""
-
-from typing import Optional
-
-from .core_types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
+from temoa.types.core_types import (
+    Commodity,
+    Period,
+    Region,
+    Season,
+    Technology,
+    TimeOfDay,
+    Vintage,
+)
 
 # Set types for sparse indexing
-ActiveFlowSet = Optional[
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveFlowAnnualSet = Optional[
-    set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveFlexSet = Optional[
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveFlexAnnualSet = Optional[
-    set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveFlowInStorageSet = Optional[
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveCurtailmentSet = Optional[
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]
-]
-ActiveActivitySet = Optional[set[tuple[Region, Period, Technology, Vintage]]]
-StorageLevelIndicesSet = Optional[
-    set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]
-]
-SeasonalStorageLevelIndicesSet = Optional[set[tuple[Region, Period, Season, Technology, Vintage]]]
-NewCapacitySet = Optional[set[tuple[Region, Technology, Vintage]]]
-ActiveCapacityAvailableSet = Optional[set[tuple[Region, Period, Technology]]]
-ActiveCapacityAvailableVintageSet = Optional[set[tuple[Region, Period, Technology, Vintage]]]
-GroupRegionActiveFlowSet = Optional[set[tuple[Region, Period, Technology]]]
+ActiveFlowSet = (
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
+)
+ActiveFlowAnnualSet = set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]] | None
+ActiveFlexSet = (
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
+)
+ActiveFlexAnnualSet = set[tuple[Region, Period, Commodity, Technology, Vintage, Commodity]] | None
+ActiveFlowInStorageSet = (
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
+)
+ActiveCurtailmentSet = (
+    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
+)
+ActiveActivitySet = set[tuple[Region, Period, Technology, Vintage]] | None
+StorageLevelIndicesSet = set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None
+SeasonalStorageLevelIndicesSet = set[tuple[Region, Period, Season, Technology, Vintage]] | None
+NewCapacitySet = set[tuple[Region, Technology, Vintage]] | None
+ActiveCapacityAvailableSet = set[tuple[Region, Period, Technology]] | None
+ActiveCapacityAvailableVintageSet = set[tuple[Region, Period, Technology, Vintage]] | None
+GroupRegionActiveFlowSet = set[tuple[Region, Period, Technology]] | None
 
 CommodityBalancedSet = set[tuple[Region, Period, Commodity]]

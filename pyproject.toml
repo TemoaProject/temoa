@@ -96,7 +96,8 @@ select = [
     "I",  # isort
     "B",  # flake8-bugbear
     "N",  # flake8-naming
-    "G004" # logging-f-string
+    "G004", # logging-f-string
+    "UP",  # pyupgrade
 ]
 ignore = [
     "E501",  # line too long temporarily ignored

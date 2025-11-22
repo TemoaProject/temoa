@@ -2,7 +2,7 @@ import copy
 import os
 import shutil
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -73,7 +73,7 @@ def get_current_temoa_version() -> str:
 
 def generate_nightly_version(base_version: str) -> str:
     """Generates a PEP 440 compliant nightly version string."""
-    today = datetime.now(timezone.utc).strftime('%Y%m%d')
+    today = datetime.now(UTC).strftime('%Y%m%d')
     return f'{base_version}.dev{today}'
 
 

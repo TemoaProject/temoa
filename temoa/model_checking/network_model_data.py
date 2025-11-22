@@ -146,7 +146,7 @@ def build(data: ModelBlock | DbConnection, *args: object, **kwargs: object) -> N
 
 def _get_builder(data: ModelBlock | DbConnection) -> Callable[..., NetworkModelData]:
     """Selects the appropriate builder function based on the input data type."""
-    if isinstance(data, (TemoaModel, ConcreteModel)):
+    if isinstance(data, TemoaModel | ConcreteModel):
         return _build_from_model
     if isinstance(data, sqlite3.Connection):
         return _build_from_db
