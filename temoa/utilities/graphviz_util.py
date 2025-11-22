@@ -1,7 +1,7 @@
 from collections.abc import Callable, Iterable, Sequence, Sized
 
 
-def get_color_config(grey_flag: bool) -> dict[str, str | tuple[str, ...]]:
+def get_color_config(*, grey_flag: bool) -> dict[str, str | tuple[str, ...]]:
     """Return a dictionary of color configurations for the graph."""
 
     is_colored = not grey_flag
@@ -70,7 +70,7 @@ def create_text_nodes(nodes: Iterable[tuple[str, str]], indent: int = 1) -> str:
     # Convert to list to avoid consuming iterable multiple times if it's an iterator
     nodes_list = list(nodes)
     if not nodes_list:
-        return '// no nodes in this section'
+        return '// no nodes in this section\n'
 
     # Step 1: for alignment, get max item length in node list
     # The `+ 2` accounts for the two extra quotes that will be added.
@@ -105,7 +105,7 @@ def create_text_edges(edges: Iterable[tuple[str, str, str]], indent: int = 1) ->
     # Convert to list
     edges_list = list(edges)
     if not edges_list:
-        return '// no edges in this section'
+        return '// no edges in this section\n'
 
     # Step 1: for alignment, get max length of items on left and right side of
     # graph operator token ('->'). The `+ 2` accounts for the two extra quotes.

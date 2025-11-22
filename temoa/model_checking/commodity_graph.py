@@ -10,17 +10,10 @@ from temoa.utilities.graph_utils import (
     calculate_initial_positions,
     calculate_tech_graph_positions,
 )
-from temoa.utilities.graphviz_formats import results_dot_fmt
-from temoa.utilities.graphviz_util import (
-    create_text_edges,
-    create_text_nodes,
-    get_color_config,
-)
 from temoa.utilities.visualizer import make_nx_graph, nx_to_vis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-    from pathlib import Path
 
     from temoa.core.config import TemoaConfig
     from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
@@ -238,114 +231,6 @@ def generate_commodity_graph(
     return dg, sector_colors
 
 
-logger = logging.getLogger(__name__)
-
-
-def generate_graphviz_files(
-    period: Period,
-    region: Region,
-    network_data: NetworkModelData,
-    all_techs: Iterable[EdgeTuple],
-    sector_colors: dict[Sector, str],
-    output_dir: Path,
-) -> None:
-    """
-    Generates Graphviz .dot and .svg files matching the legacy format.
-    """
-    import subprocess
-
-    # Prepare data structures for Graphviz
-    # We need to categorize techs, commodities, and flows.
-
-    # Sets to hold unique strings for Graphviz
-    etechs: set[tuple[str, str]] = set()  # Used techs
-    dtechs: set[tuple[str, str]] = (
-        set()
-    )  # Unused techs (we might not have this info easily, maybe skip or infer)
-    ecarriers: set[tuple[str, str]] = set()  # Used carriers
-    dcarriers: set[tuple[str, str]] = set()  # Unused carriers
-    eemissions: set[tuple[str, str]] = set()  # Used emissions
-    demissions: set[tuple[str, str]] = set()  # Unused emissions
-    eflowsi: set[tuple[str, str, str]] = set()  # Input flows (Comm -> Tech)
-    eflowso: set[tuple[str, str, str]] = set()  # Output flows (Tech -> Comm)
-    dflows: set[tuple[str, str, str]] = set()  # Unused flows
-    xnodes: set[tuple[str, str]] = set()  # Ethos nodes?
-
-    # Helper to format attributes
-    def get_tech_attr(tech: str, cap: float = 0.0) -> str:
-        # We might not have capacity info here easily without querying DB or passing it in.
-        # For now, we'll just show the label.
-        return f'label="{tech}"'
-
-    def get_comm_attr(comm: str) -> str:
-        return f'label="{comm}"'
-
-    def get_flow_attr(flow: float = 0.0) -> str:
-        return f'label="{flow:.2f}"' if flow > 0 else ''
-
-    # Iterate over all active technologies/edges
-    used_techs = set()
-    used_comms = set()
-
-    for edge in all_techs:
-        tech = edge.tech
-        ic = edge.input_comm
-        oc = edge.output_comm
-
-        used_techs.add(tech)
-
-        # Input Flow: Comm -> Tech
-        if ic != 'ethos':
-            used_comms.add(ic)
-            ecarriers.add((ic, get_comm_attr(ic)))
-            eflowsi.add((ic, tech, ''))  # No flow value for now
-
-        # Output Flow: Tech -> Comm
-        if oc != 'ethos':
-            used_comms.add(oc)
-            ecarriers.add((oc, get_comm_attr(oc)))
-            eflowso.add((tech, oc, ''))  # No flow value for now
-
-        # Tech Node
-        etechs.add((tech, get_tech_attr(tech)))
-
-    # Generate the DOT content
-    colors = get_color_config(False)  # Default to color
-
-    args = {
-        'period': period,
-        'splinevar': 'true',  # Default
-        'dtechs': create_text_nodes(dtechs, indent=2),
-        'etechs': create_text_nodes(etechs, indent=2),
-        'xnodes': create_text_nodes(xnodes, indent=2),
-        'dcarriers': create_text_nodes(dcarriers, indent=2),
-        'ecarriers': create_text_nodes(ecarriers, indent=2),
-        'demissions': create_text_nodes(demissions, indent=2),
-        'eemissions': create_text_nodes(eemissions, indent=2),
-        'dflows': create_text_edges(dflows, indent=2),
-        'eflowsi': create_text_edges(eflowsi, indent=3),
-        'eflowso': create_text_edges(eflowso, indent=3),
-        **colors,
-    }
-
-    dot_content = results_dot_fmt.format(**args)
-
-    output_name = output_dir / f'results_{region}_{period}'
-    dot_file = output_name.with_suffix('.dot')
-    svg_file = output_name.with_suffix('.svg')
-
-    with open(dot_file, 'w') as f:
-        f.write(dot_content)
-
-    try:
-        subprocess.call(['dot', '-Tsvg', f'-o{svg_file}', str(dot_file)])
-        logger.info('Generated Graphviz plot: %s', svg_file)
-    except FileNotFoundError:
-        logger.error("Graphviz 'dot' command not found. Please install Graphviz.")
-    except Exception as e:
-        logger.error('Failed to run Graphviz: %s', e)
-
-
 def visualize_graph(
     region: Region,
     period: Period,
@@ -417,12 +302,6 @@ def visualize_graph(
         logger.info('Generated network graphs at: %s', graph_path)
     else:
         logger.error('Failed to generate network graphs')
-
-    # 7. Generate Graphviz output if requested
-    if config.graphviz_output:
-        generate_graphviz_files(
-            period, region, network_data, all_techs_for_period, sector_colors, config.output_path
-        )
 
     # 8. Perform cycle detection on the commodity graph
     try:

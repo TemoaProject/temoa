@@ -4,6 +4,7 @@ Test a couple full-runs to match objective function value and some internals
 
 import logging
 import sqlite3
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -12,6 +13,7 @@ from pyomo.opt import SolverResults
 
 # from src.temoa_model.temoa_model import temoa_create_model
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from tests.legacy_test_values import ExpectedVals, test_vals
 
@@ -106,3 +108,41 @@ def test_myopic_utopia(
     # increased after rework of inter-season sequencing
     assert invest_sum == pytest.approx(11004.8335), 'sum of investment costs did not match expected'
     con.close()
+
+
+def test_graphviz_integration(tmp_path: Path) -> None:
+    """
+    Test that graphviz diagrams are generated during a full run when enabled.
+    """
+    # Use utopia config as a base
+    config_file = Path(__file__).parent / 'testing_configs' / 'config_utopia.toml'
+
+    # Build config with graphviz output enabled
+    config = TemoaConfig.build_config(
+        config_file=config_file,
+        output_path=tmp_path,
+        silent=True,
+    )
+
+    # Enable graphviz output
+    config.graphviz_output = True
+
+    # Run the sequencer
+    sequencer = TemoaSequencer(config=config)
+    sequencer.start()
+
+    # The graphviz generator creates a subdirectory like: {db_name}_{scenario}_graphviz
+    # Find any directory matching the pattern *_graphviz
+    graphviz_dirs = list(tmp_path.glob('*_graphviz'))
+    assert len(graphviz_dirs) > 0, 'Graphviz output directory should be created'
+
+    graphviz_dir = graphviz_dirs[0]
+    assert graphviz_dir.is_dir(), 'Graphviz output should be a directory'
+
+    # Check that at least some output files were generated (DOT or SVG files)
+    output_files = list(graphviz_dir.rglob('*.svg')) + list(graphviz_dir.rglob('*.dot'))
+    assert len(output_files) > 0, 'At least one diagram file should be generated'
+
+    # Check that the files are not empty
+    for output_file in output_files:
+        assert output_file.stat().st_size > 0, f'{output_file.name} should not be empty'

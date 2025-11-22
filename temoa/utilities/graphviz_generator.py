@@ -129,7 +129,7 @@ def process_input(args: list[str]) -> dict[str, Any]:
 
     options = parser.parse_args(args)
 
-    if bool(options.scenario_name) ^ bool(options.period):
+    if (options.scenario_name is not None) ^ (options.period is not None):
         parser.print_help()
         raise ValueError('Scenario and input year must both be present or not present together')
 
@@ -220,7 +220,7 @@ class GraphvizDiagramGenerator:
         """Set graphic options for the diagrams."""
         if grey_flag is not None:
             self.grey_flag = grey_flag
-            self.colors.update(get_color_config(self.grey_flag))
+            self.colors.update(get_color_config(grey_flag=self.grey_flag))
         if splinevar is not None:
             self.colors['splinevar'] = 'spline' if splinevar else 'line'
         self.__log__(
