@@ -204,20 +204,20 @@ class GraphvizDiagramGenerator:
         demissions = {(ee, '') for ee in commodity_emissions if ee not in usede}
 
         self.__log__('CreateMainResultsDiagram: creating diagrams')
-        args = dict(
-            period=period,
-            splinevar=self.colors['splinevar'],
-            dtechs=create_text_nodes(dtechs, indent=2),
-            etechs=create_text_nodes(etechs, indent=2),
-            xnodes=create_text_nodes(xnodes, indent=2),
-            dcarriers=create_text_nodes(dcarriers, indent=2),
-            ecarriers=create_text_nodes(ecarriers, indent=2),
-            demissions=create_text_nodes(demissions, indent=2),
-            eemissions=create_text_nodes(eemissions, indent=2),
-            dflows=create_text_edges(dflows, indent=2),
-            eflowsi=create_text_edges(eflowsi, indent=3),
-            eflowso=create_text_edges(eflowso, indent=3),
-        )
+        args = {
+            'period': period,
+            'splinevar': self.colors['splinevar'],
+            'dtechs': create_text_nodes(dtechs, indent=2),
+            'etechs': create_text_nodes(etechs, indent=2),
+            'xnodes': create_text_nodes(xnodes, indent=2),
+            'dcarriers': create_text_nodes(dcarriers, indent=2),
+            'ecarriers': create_text_nodes(ecarriers, indent=2),
+            'demissions': create_text_nodes(demissions, indent=2),
+            'eemissions': create_text_nodes(eemissions, indent=2),
+            'dflows': create_text_edges(dflows, indent=2),
+            'eflowsi': create_text_edges(eflowsi, indent=3),
+            'eflowso': create_text_edges(eflowso, indent=3),
+        }
 
         output_path = output_name + '.' + output_format
         self.__generate_graph__(results_dot_fmt, args, output_name, output_format)
@@ -276,16 +276,16 @@ class GraphvizDiagramGenerator:
         output_path = output_name + '.' + output_format
         if vnodes:
             self.__log__('CreateTechResultsDiagrams: creating diagrams')
-            args: dict[str, Any] = dict(
-                cluster_vintage_url='#',
-                total_cap=total_cap,
-                inp_technology=tech,
-                period=period,
-                vnodes=create_text_nodes(vnodes, indent=2),
-                enodes=create_text_nodes(enodes, indent=2),
-                iedges=create_text_edges(iedges, indent=2),
-                oedges=create_text_edges(oedges, indent=2),
-            )
+            args: dict[str, Any] = {
+                'cluster_vintage_url': '#',
+                'total_cap': total_cap,
+                'inp_technology': tech,
+                'period': period,
+                'vnodes': create_text_nodes(vnodes, indent=2),
+                'enodes': create_text_nodes(enodes, indent=2),
+                'iedges': create_text_edges(iedges, indent=2),
+                'oedges': create_text_edges(oedges, indent=2),
+            }
             self.__generate_graph__(tech_results_dot_fmt, args, output_name, output_format)
         else:
             self.__log__('CreateTechResultsDiagrams: nothing to create')
@@ -354,15 +354,15 @@ class GraphvizDiagramGenerator:
             dedges.add((t, comm, ''))
 
         self.__log__('CreateCommodityPartialResults: creating diagrams')
-        args = dict(
-            inp_commodity=comm,
-            period=period,
-            resource_node=create_text_nodes(rcnode),
-            used_nodes=create_text_nodes(enodes, indent=2),
-            unused_nodes=create_text_nodes(dnodes, indent=2),
-            used_edges=create_text_edges(eedges, indent=2),
-            unused_edges=create_text_edges(dedges, indent=2),
-        )
+        args = {
+            'inp_commodity': comm,
+            'period': period,
+            'resource_node': create_text_nodes(rcnode),
+            'used_nodes': create_text_nodes(enodes, indent=2),
+            'unused_nodes': create_text_nodes(dnodes, indent=2),
+            'used_edges': create_text_edges(eedges, indent=2),
+            'unused_edges': create_text_edges(dedges, indent=2),
+        }
         output_path = output_name + '.' + output_format
         self.__generate_graph__(commodity_dot_fmt, args, output_name, output_format)
         self.__log__('CreateCommodityPartialResults: graph generated, returning')
@@ -431,13 +431,13 @@ class GraphvizDiagramGenerator:
 
         self.__log__('createCompleteInputGraph: creating diagrams')
 
-        args = dict(
-            enodes=''.join(f'"{x}";\n\t\t' for x in nodes),
-            tnodes=''.join(f'"{x}";\n\t\t' for x in tech),
-            iedges=''.join(f'{x};\n\t\t' for x in to_tech),
-            oedges=''.join(f'{x};\n\t\t' for x in from_tech),
-            snodes=';'.join(f'"{x}"' for x in ltech),
-        )
+        args = {
+            'enodes': ''.join(f'"{x}";\n\t\t' for x in nodes),
+            'tnodes': ''.join(f'"{x}";\n\t\t' for x in tech),
+            'iedges': ''.join(f'{x};\n\t\t' for x in to_tech),
+            'oedges': ''.join(f'{x};\n\t\t' for x in from_tech),
+            'snodes': ';'.join(f'"{x}"' for x in ltech),
+        }
         output_path = output_name + '.' + output_format
         self.__generate_graph__(quick_run_dot_fmt, args, output_name, output_format)
         self.__log__('createCompleteInputGraph: graph generated, returning')

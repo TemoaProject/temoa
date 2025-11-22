@@ -355,7 +355,7 @@ if unlim_cap_present:
     # need to convert null -> 0 for unlim_cap to match new schema that does not allow null
     new_data = []
     for row in data:
-        new_row = [t for t in row]
+        new_row = list(row)
         if new_row[4] is None:
             new_row[4] = 0
         new_data.append(tuple(new_row))

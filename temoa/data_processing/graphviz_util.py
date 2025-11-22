@@ -124,27 +124,27 @@ def process_input(args: list[str]) -> dict[str, Any]:
 def get_color_config(grey_flag: bool) -> dict[str, str | tuple[str, ...]]:
     """Return a dictionary of color configurations for the graph."""
     grey_flag = not (grey_flag)
-    kwargs: dict[str, str | tuple[str, ...]] = dict(
-        tech_color='darkseagreen' if grey_flag else 'black',
-        commodity_color='lightsteelblue' if grey_flag else 'black',
-        unused_color='powderblue' if grey_flag else 'gray75',
-        arrowheadout_color='forestgreen' if grey_flag else 'black',
-        arrowheadin_color='firebrick' if grey_flag else 'black',
-        usedfont_color='black',
-        unusedfont_color='chocolate' if grey_flag else 'gray75',
-        menu_color='hotpink',
-        home_color='gray75',
-        font_color='black' if grey_flag else 'white',
-        fill_color='lightsteelblue' if grey_flag else 'white',
+    kwargs: dict[str, str | tuple[str, ...]] = {
+        'tech_color': 'darkseagreen' if grey_flag else 'black',
+        'commodity_color': 'lightsteelblue' if grey_flag else 'black',
+        'unused_color': 'powderblue' if grey_flag else 'gray75',
+        'arrowheadout_color': 'forestgreen' if grey_flag else 'black',
+        'arrowheadin_color': 'firebrick' if grey_flag else 'black',
+        'usedfont_color': 'black',
+        'unusedfont_color': 'chocolate' if grey_flag else 'gray75',
+        'menu_color': 'hotpink',
+        'home_color': 'gray75',
+        'font_color': 'black' if grey_flag else 'white',
+        'fill_color': 'lightsteelblue' if grey_flag else 'white',
         # MODELDETAILED,
-        md_tech_color='hotpink',
-        sb_incom_color='lightsteelblue' if grey_flag else 'black',
-        sb_outcom_color='lawngreen' if grey_flag else 'black',
-        sb_vpbackg_color='lightgrey',
-        sb_vp_color='white',
-        sb_arrow_color='forestgreen' if grey_flag else 'black',
+        'md_tech_color': 'hotpink',
+        'sb_incom_color': 'lightsteelblue' if grey_flag else 'black',
+        'sb_outcom_color': 'lawngreen' if grey_flag else 'black',
+        'sb_vpbackg_color': 'lightgrey',
+        'sb_vp_color': 'white',
+        'sb_arrow_color': 'forestgreen' if grey_flag else 'black',
         # SUBGRAPH 1 ARROW COLORS
-        color_list=(
+        'color_list': (
             (
                 'red',
                 'orange',
@@ -163,7 +163,7 @@ def get_color_config(grey_flag: bool) -> dict[str, str | tuple[str, ...]]:
             if grey_flag
             else ('black', 'black')
         ),
-    )
+    }
     return kwargs
 
 

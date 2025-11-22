@@ -99,6 +99,7 @@ select = [
     "G004", # logging-f-string
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
 ]
 ignore = [
     "E501",  # line too long temporarily ignored
