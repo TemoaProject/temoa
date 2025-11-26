@@ -24,10 +24,7 @@ SOLVER_DOC_LINKS = {
         'https://www.ibm.com/products/ilog-cplex-optimization-studio '
         '(requires license and installation)'
     ),
-    'highs': (
-        'https://ergo-code.github.io/HiGHS/dev/installation/ '
-        '(refer to documentation for specific OS steps)'
-    ),
+    'highs': ('Did you mean to use appsi_highs? '),
     'glpk': 'https://www.gnu.org/software/glpk/',
 }
 
@@ -158,6 +155,45 @@ class TemoaConfig:
                     sys.stderr.write('Warning: ' + msg)
 
     @staticmethod
+    def _check_solver_availability(solver_name: str) -> tuple[bool, str | None]:
+        """
+        Check if a solver is available, supporting both Python-based and system executable solvers.
+
+        Args:
+            solver_name: Name of the solver to check
+
+        Returns:
+            Tuple of (is_available, location_or_message)
+        """
+        # First, try to check if it's available through Pyomo (works for Python-based solvers)
+        try:
+            import pyomo.environ as pyo
+
+            solver = pyo.SolverFactory(solver_name)
+            if solver.available():
+                # For Python-based solvers like appsi_highs
+                if solver_name.startswith('appsi_'):
+                    return True, 'available via Pyomo (Python package)'
+                # For other solvers, try to get the executable path
+                try:
+                    exec_path = solver.executable()
+                    return True, exec_path.name if hasattr(exec_path, 'name') else str(exec_path)
+                except Exception as e:
+                    logger.debug('Could not get executable path for %s: %s', solver_name, e)
+                    return True, 'available via Pyomo'
+
+        except Exception as e:
+            logger.debug('Could not check solver availability for %s: %s', solver_name, e)
+            pass
+
+        # Fallback: check if it's a system executable
+        solver_executable = shutil.which(solver_name)
+        if solver_executable is not None:
+            return True, solver_executable
+
+        return False, None
+
+    @staticmethod
     def build_config(config_file: Path, output_path: Path, silent: bool = False) -> 'TemoaConfig':
         """
         build a Temoa Config from a config file
@@ -170,12 +206,11 @@ class TemoaConfig:
             data = tomllib.load(f)
 
         if 'solver_name' in data:
-            solver_executable = shutil.which(data['solver_name'])
-            if solver_executable is None:
+            is_available, location = TemoaConfig._check_solver_availability(data['solver_name'])
+            if not is_available:
                 error_message = (
-                    f"The specified solver '{data['solver_name']}' was not found in your system's "
-                    'PATH.\n'
-                    'Please ensure the solver is installed and its executable is accessible.\n'
+                    f"The specified solver '{data['solver_name']}' was not found.\n"
+                    'Please ensure the solver is installed and accessible.\n'
                 )
                 if data['solver_name'].lower() in SOLVER_DOC_LINKS:
                     link = SOLVER_DOC_LINKS[data['solver_name'].lower()]
@@ -187,7 +222,7 @@ class TemoaConfig:
                     )
                 raise SolverNotAvailableError(error_message)
             else:
-                logger.info('Using solver: %s found at %s', data['solver_name'], solver_executable)
+                logger.info('Using solver: %s (%s)', data['solver_name'], location)
         else:
             raise SolverNotAvailableError('No solver name specified in the configuration.')
 
