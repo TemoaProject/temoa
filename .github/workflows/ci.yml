@@ -44,19 +44,6 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
-      - name: Install CBC solver (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y coinor-cbc
-
-      - name: Install CBC solver (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew tap coin-or-tools/coinor
-          brew install coin-or-tools/coinor/cbc
-          echo "/opt/homebrew/opt/cbc/bin" >> $GITHUB_PATH
-
       - name: Install Graphviz (Ubuntu)
         if: runner.os == 'Linux'
         run: sudo apt-get install -y graphviz
