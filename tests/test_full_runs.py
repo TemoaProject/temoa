@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from pyomo.core import Constraint, Var
+from pyomo.environ import check_optimal_termination, value
 from pyomo.opt import SolverResults
 
 # from src.temoa_model.temoa_model import temoa_create_model
@@ -48,21 +49,24 @@ def test_against_legacy_outputs(
     """
     data_name, res, mdl, _ = system_test_run
     logger.info('Starting output test on scenario: %s', data_name)
+
+    # Defensive checks for test fixture results
     assert res is not None, f'No solver results for {data_name}'
+    assert isinstance(res, SolverResults), (
+        f'Expected SolverResults object for {data_name}, got {type(res)}'
+    )
     assert mdl is not None, f'No model for {data_name}'
+
     expected_vals = test_vals.get(data_name)  # a dictionary of expected results
     assert expected_vals is not None, f'No expected values for {data_name}'
 
     # Inspect some summary results
     # Use check_optimal_termination instead of checking raw status string
     # Different solvers report status differently (e.g., HiGHS reports 'unknown' but is optimal)
-    from pyomo.environ import check_optimal_termination
-
     assert check_optimal_termination(res), f'Solver did not terminate optimally for {data_name}'
+
     # Get objective value from the model instance instead of results object
     # HiGHS doesn't populate the results object the same way as CBC
-    from pyomo.environ import value
-
     obj_value = value(mdl.total_cost)
     assert obj_value == pytest.approx(expected_vals[ExpectedVals.OBJ_VALUE], 0.00001)
 
