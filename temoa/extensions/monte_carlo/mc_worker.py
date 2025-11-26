@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  5/5/24
 
 Class to contain Workers that execute solves in separate processes
 
@@ -39,12 +15,15 @@ from datetime import datetime
 from logging import getLogger
 from multiprocessing import Process, Queue
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from pyomo.dataportal import DataPortal
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
 from temoa._internal.data_brick import DataBrick, data_brick_factory
 from temoa.core.model import TemoaModel
+
+if TYPE_CHECKING:
+    from pyomo.dataportal import DataPortal
 
 verbose = False  # for T/S or monitoring...
 
@@ -56,9 +35,9 @@ class MCWorker(Process):
         self,
         dp_queue: Queue,
         results_queue: Queue,
-        log_root_name,
-        log_queue,
-        log_level,
+        log_root_name: str,
+        log_queue: Queue,
+        log_level: int = logging.INFO,
         solver_log_path: Path | None = None,
         **kwargs,
     ):
@@ -69,7 +48,7 @@ class MCWorker(Process):
         self.results_queue: Queue[DataBrick | str] = results_queue
         self.solver_name = kwargs['solver_name']
         self.solver_options = kwargs['solver_options']
-        self.opt = SolverFactory(self.solver_name, options=self.solver_options)
+        self.opt = None # Initialize in run()
         self.log_queue = log_queue
         self.log_level = log_level
         self.root_logger_name = log_root_name
@@ -85,6 +64,11 @@ class MCWorker(Process):
         handler = logging.handlers.QueueHandler(self.log_queue)
         logger.addHandler(handler)
         logger.info('Worker %d spun up', self.worker_number)
+
+        # Initialize the solver here in the child process to avoid pickling issues
+        # Note: We do not set the options here because appsi_highs does not accept options in
+        # __init__. We can set them later via self.opt.options
+        self.opt = SolverFactory(self.solver_name)
 
         # update the solver options to pass in a log location
         while True:
