@@ -516,9 +516,7 @@ def test_cli_validate_fails_if_solver_missing(
     assert '❌ Validation failed:' in result.stdout
     assert 'nonexistent_solver' in result.stdout
     # Use the more robust phrase for checking installation instructions
-    assert (
-        'Please ensure the solver is installed and its executable is accessible.' in result.stdout
-    )
+    assert 'Please ensure the solver is installed and accessible.' in result.stdout
     assert (tmp_path / 'temoa-run.log').exists()
 
 
@@ -544,7 +542,5 @@ def test_cli_run_fails_if_solver_missing(tmp_path: Path, monkeypatch: pytest.Mon
     assert '❌ An error occurred:' in result.stdout
     assert 'another_nonexistent_solver' in result.stdout
     # Use the more robust phrase for checking installation instructions
-    assert (
-        'Please ensure the solver is installed and its executable is accessible.' in result.stdout
-    )
+    assert 'Please ensure the solver is installed and accessible.' in result.stdout
     assert (tmp_path / 'temoa-run.log').exists()
