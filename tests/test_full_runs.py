@@ -54,10 +54,17 @@ def test_against_legacy_outputs(
     assert expected_vals is not None, f'No expected values for {data_name}'
 
     # Inspect some summary results
-    assert res['Solution'][0]['Status'] == 'optimal'
-    assert res['Solution'][0]['Objective']['total_cost']['Value'] == pytest.approx(
-        expected_vals[ExpectedVals.OBJ_VALUE], 0.00001
-    )
+    # Use check_optimal_termination instead of checking raw status string
+    # Different solvers report status differently (e.g., HiGHS reports 'unknown' but is optimal)
+    from pyomo.environ import check_optimal_termination
+
+    assert check_optimal_termination(res), f'Solver did not terminate optimally for {data_name}'
+    # Get objective value from the model instance instead of results object
+    # HiGHS doesn't populate the results object the same way as CBC
+    from pyomo.environ import value
+
+    obj_value = value(mdl.total_cost)
+    assert obj_value == pytest.approx(expected_vals[ExpectedVals.OBJ_VALUE], 0.00001)
 
     # inspect a couple set sizes
     efficiency_param: pyo.Param = mdl.efficiency
