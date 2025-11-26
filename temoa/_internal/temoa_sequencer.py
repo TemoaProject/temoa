@@ -154,11 +154,6 @@ class TemoaSequencer:
                 myopic_sequencer.start()
 
             case TemoaMode.MGA:
-                if self.config.solver_name == 'appsi_highs':
-                    raise ValueError(
-                        'MGA mode is not compatible with the HiGHS solver due to a multiprocessing '
-                        'issue.'
-                    )
                 mga_sequencer = MgaSequencer(config=self.config)
                 mga_sequencer.start()
 
@@ -228,11 +223,6 @@ class TemoaSequencer:
 
     def _run_monte_carlo(self) -> None:
         """Encapsulated logic for the MONTE_CARLO mode."""
-        if self.config.solver_name == 'appsi_highs':
-            raise ValueError(
-                'Monte Carlo mode is not compatible with the HiGHS solver due to a multiprocessing '
-                'issue.'
-            )
 
         # Disable features not typically used in Monte Carlo runs to reduce noise/overhead
         if self.config.plot_commodity_network:
