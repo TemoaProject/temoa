@@ -58,7 +58,7 @@ neos = false
 # solver (Mandatory)
 # Depending on what client machine has installed.
 #  [cbc, appsi_highs, gurobi, cplex, ...]
-solver_name = "cbc"
+solver_name = "appsi_highs"
 
 # ------------------------------------
 #             OUTPUTS

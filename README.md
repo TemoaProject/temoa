@@ -182,7 +182,7 @@ config = TemoaConfig(
     input_database=Path("path/to/input.db"),
     output_database=Path("path/to/output.db"),
     output_path=Path("path/to/output"),
-    solver_name="cbc"
+    solver_name="appsi_highs"
 )
 
 # Build and solve model
@@ -230,7 +230,7 @@ scenario = "tutorial"
 scenario_mode = "perfect_foresight"
 input_database = "tutorial_database.sqlite"
 output_database = "tutorial_database.sqlite"
-solver_name = "cbc"
+solver_name = "appsi_highs"
 ```
 
 ### Configuration Options
@@ -243,7 +243,7 @@ solver_name = "cbc"
 | Price Checking | Run pricing analysis on built model |
 | Source Tracing | Verify commodity flow network integrity |
 | Plot Network | Generate HTML network visualizations |
-| Solver | Solver executable name (cbc, gurobi, cplex, etc.) |
+| Solver | Solver executable name (appsi_highs, cbc, gurobi, cplex, etc.) |
 | Save Excel | Export core output to Excel files |
 | Save LP | Save LP model files for external solving |
 
@@ -325,9 +325,13 @@ Temoa includes optional extensions for advanced analysis:
 
 TEMOA requires at least one optimization solver:
 
+- **Free**: [HiGHS](https://ergo-code.github.io/HiGHS/)
+  - Included via the `highspy` Python package (automatically installed with Temoa)
+  - Default solver for tutorial and testing
+
 - **Free**: [CBC](https://github.com/coin-or/Cbc)
   - Requires separate installation (see [CBC documentation](https://github.com/coin-or/Cbc))
-  - Required for tutorial and testing
+  - Alternative free solver option
 
 - **Commercial**: Gurobi, CPLEX, or Xpress
   - Requires separate license and installation

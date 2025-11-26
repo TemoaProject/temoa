@@ -75,11 +75,8 @@ commercial linear solvers such as `CPLEX
 <https://www.ibm.com/analytics/cplex-optimizer>`_ or `Gurobi
 <https://www.gurobi.com/>`_. Both offer free academic licenses.
 
-For smaller models, Temoa has been tested with both the `CBC <https://github.com/coin-or/Cbc>`_
-solver and the more recently released `HiGHS <https://pypi.org/project/highspy/>`_ solver.
-Each of the respective websites contains installation instructions for the individual
-solvers.  For those wishing to run the internal tests on Temoa, the :code:`CBC` solver
-is required.
+For smaller models, Temoa has been tested with the `HiGHS <https://pypi.org/project/highspy/>`_
+solver. HiGHS is automatically available when you install Temoa and requires no additional setup.
 
 
 Running Temoa
@@ -304,4 +301,3 @@ may be produced by endogenous decisions in myopic runs.
 
 
 .. _sqlite: https://www.sqlite.org/
-
