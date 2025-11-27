@@ -7,7 +7,7 @@ output_database = "tests/testing_outputs/utopia.sqlite"
 neos = false
 
 # solver
-solver_name = "cbc"
+solver_name = "appsi_highs"
 
 # generate an excel file in the output_files folder
 save_excel = false

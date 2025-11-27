@@ -303,18 +303,54 @@ def solve_instance(
 
 def check_solve_status(result: SolverResults) -> tuple[bool, str]:
     """
-    Check the status of the solve.
+    Check the status of the solve in a solver-agnostic way.
+    Handles both legacy solver results and APPSI solver results.
+
     :param result: the results object returned by the solver
     :return: tuple of status boolean (True='optimal', others False), and string message if not
              optimal
     """
-    soln = result['Solution']
+    # Use check_optimal_termination for solver-agnostic checking
+    # Different solvers report status differently (e.g., HiGHS reports 'unknown' but is optimal)
+    is_optimal = check_optimal_termination(result)
 
-    logger.info('The solver reported status as: %s', soln.Status)
-    if check_optimal_termination(result):
+    # Safely extract termination condition for logging (works for both legacy and APPSI solvers)
+    termination_condition = 'unknown'
+    if hasattr(result, 'solver') and hasattr(result.solver, 'termination_condition'):
+        termination_condition = result.solver.termination_condition
+    elif hasattr(result, 'termination_condition'):
+        # Some APPSI solvers expose this directly
+        termination_condition = result.termination_condition
+
+    logger.info('Solver termination condition: %s (optimal: %s)', termination_condition, is_optimal)
+
+    if is_optimal:
         return True, ''
     else:
-        return False, f'{soln.Status} was returned from solve'
+        # Safely extract status for error message
+        status_msg = 'unknown status'
+
+        # Try legacy solver result format first
+        if hasattr(result, '__getitem__'):
+            try:
+                soln = result.get('Solution') if hasattr(result, 'get') else result['Solution']
+                if soln and hasattr(soln, 'Status'):
+                    status_msg = str(soln.Status)
+            except (KeyError, TypeError, AttributeError):
+                pass
+
+        # Try APPSI result format
+        if status_msg == 'unknown status':
+            for attr in ['status', 'problem_status', 'solver_status']:
+                if hasattr(result, attr):
+                    status_msg = str(getattr(result, attr))
+                    break
+
+        # Final fallback
+        if status_msg == 'unknown status':
+            status_msg = str(result) if result else 'no solution returned'
+
+        return False, f'{status_msg} was returned from solve'
 
 
 def handle_results(
