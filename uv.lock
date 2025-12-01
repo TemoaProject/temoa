@@ -1334,7 +1334,6 @@ wheels = [
 
 [[package]]
 name = "temoa"
-version = "4.0.0a1.dev20251113"
 source = { editable = "." }
 dependencies = [
     { name = "deprecated" },

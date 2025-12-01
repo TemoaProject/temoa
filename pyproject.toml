@@ -1,6 +1,6 @@
 [project]
 name = "temoa"
-version = "4.0.0a1.dev20251113"
+dynamic = ["version"]
 description = "Tools for Energy Model Optimization and Analysis"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -77,6 +77,9 @@ include = [
 ]
 package-data = { "temoa" = ["db_schema/*.sql", "tutorial_assets/*", "py.typed"] }
 
+
+[tool.hatch.version]
+path = "temoa/__about__.py"
 
 [tool.ruff]
 line-length = 100
