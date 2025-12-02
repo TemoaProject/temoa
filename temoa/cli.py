@@ -12,11 +12,11 @@ import typer
 from rich.logging import RichHandler
 from rich.text import Text
 
+from temoa.__about__ import __version__
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
 from temoa.utilities import db_migration_v3_1_to_v4, sql_migration_v3_1_to_v4
-from temoa.version_information import TEMOA_MAJOR, TEMOA_MINOR
 
 # =============================================================================
 # Logging & Helper Setup
@@ -103,7 +103,7 @@ def _setup_sequencer(
 # =============================================================================
 def _version_callback(value: bool) -> None:
     if value:
-        version = f'{TEMOA_MAJOR}.{TEMOA_MINOR}'
+        version = __version__
         rich.print(f'Temoa Version: [bold green]{version}[/bold green]')
         raise typer.Exit()
 

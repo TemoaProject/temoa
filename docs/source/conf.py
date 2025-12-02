@@ -17,10 +17,12 @@ sys.path.insert(0, os.path.abspath('../../'))
 # this addition provided direct abbreviated link to the modules in the model
 sys.path.insert(1, os.path.abspath('../../temoa/temoa_model'))
 
+# Import version from source (after sys.path setup)
+from temoa.__about__ import __version__
 
 # -- Project information from pyproject.toml ---------------------------------
 
-# Read version and metadata from pyproject.toml for single source of truth
+# Read metadata from pyproject.toml
 pyproject_path = Path(__file__).parent.parent.parent / 'pyproject.toml'
 with open(pyproject_path) as f:
     pyproject_data = tomlkit.load(f)
@@ -32,12 +34,11 @@ author = ', '.join(
 )
 copyright = f'2011-{time.strftime("%Y")}, NC State University'
 
-# The short X.Y version
-version = cast('str', project_metadata['version']).rsplit('.', 1)[
-    0
-]  # '4.0.0a1.dev20251113' -> '4.0.0a1'
-# The full version, including alpha/beta/rc tags
-release = str(project_metadata['version'])
+
+# The short version
+version = __version__.rsplit('.', 1)[0]
+# The full version
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

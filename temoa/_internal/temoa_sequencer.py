@@ -10,6 +10,12 @@ import sqlite3
 from logging import getLogger
 from typing import TYPE_CHECKING
 
+from temoa.__about__ import (
+    DB_MAJOR_VERSION,
+    MIN_DB_MINOR_VERSION,
+    MIN_PYTHON_MAJOR,
+    MIN_PYTHON_MINOR,
+)
 from temoa._internal.run_actions import (
     build_instance,
     check_database_version,
@@ -28,12 +34,6 @@ from temoa.extensions.monte_carlo.mc_sequencer import MCSequencer
 from temoa.extensions.myopic.myopic_sequencer import MyopicSequencer
 from temoa.extensions.single_vector_mga.sv_mga_sequencer import SvMgaSequencer
 from temoa.model_checking.pricing_check import price_checker
-from temoa.version_information import (
-    DB_MAJOR_VERSION,
-    MIN_DB_MINOR_VERSION,
-    MIN_PYTHON_MAJOR,
-    MIN_PYTHON_MINOR,
-)
 
 if TYPE_CHECKING:
     import pyomo.opt
