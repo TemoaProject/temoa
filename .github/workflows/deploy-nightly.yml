@@ -1,0 +1,12 @@
+# .github/workflows/deploy-nightly.yml stub to get it working on the unstable branch
+name: Deploy Temoa Nightlies
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger (e.g., hotfix, test)"
+        required: false
+        default: "Manual deploy"
+  schedule:
+    - cron: "0 0 * * *" # This will activate the nightly schedule
