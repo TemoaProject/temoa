@@ -1,0 +1,25 @@
+# Auto-detect text files and normalize them to LF on checkin.
+# Force LF on checkout for all text files to avoid Windows CRLF issues.
+* text=auto eol=lf
+
+# Explicitly force LF for text files, redundant but explicit
+*.toml text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.rst text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
+
+# Explicitly declare binary files to avoid accidental corruption
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.sqlite binary
+*.db binary
+*.pyc binary
