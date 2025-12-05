@@ -13,6 +13,7 @@
 
 # unignore files
 !.gitignore
+!.gitattributes
 !README.md
 !pyproject.toml
 !uv.lock
