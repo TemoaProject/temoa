@@ -3,11 +3,12 @@ Basic-level atomic functions that can be used by a sequencer, as needed
 """
 
 import sqlite3
-import sys
+from collections.abc import Generator, Iterable
+from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
 from sys import version_info
-from time import time
+from time import perf_counter
 
 from pyomo.environ import (
     Constraint,
@@ -27,6 +28,25 @@ from temoa.core.model import TemoaModel
 from temoa.data_processing.db_to_excel import make_excel
 
 logger = getLogger(__name__)
+
+
+@contextmanager
+def task_timer(action_name: str, *, silent: bool = False) -> Generator[None, None, None]:
+    """
+    Context manager to time blocks of code using the standard logger.
+    """
+    if not silent:
+        logger.info('Started: %s', action_name)
+
+    start_time = perf_counter()
+
+    try:
+        yield
+    finally:
+        duration = perf_counter() - start_time
+        if not silent:
+            # sample output: [10:30:35] INFO Finished: Creating model instance (Time taken: 0.07s)
+            logger.info('Finished: %s (Time taken: %.2fs)', action_name, duration)
 
 
 def check_python_version(min_major: int, min_minor: int) -> bool:
@@ -50,38 +70,33 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
     :param min_db_minor: the required minimum minor version (GTE test)
     :return: T/F
     """
-    input_conn, input_path = sqlite3.connect(config.input_database), config.input_database
-    if config.input_database == config.output_database:
-        output_conn = None
-    else:
-        output_conn = sqlite3.connect(config.output_database)
-    cons = [
-        (input_conn, input_path),
-    ]
-    if output_conn is not None:
-        cons.append((output_conn, config.output_database))
+    db_paths = [config.input_database]
+    if config.input_database != config.output_database:
+        db_paths.append(config.output_database)
+
     # check for correct version
     all_good = True
 
-    for con, name in cons:
+    for name in db_paths:
+        con = sqlite3.connect(name)
         try:
-            db_major = con.execute(
-                "SELECT value from MetaData where element = 'DB_MAJOR'"
+            db_major_row = con.execute(
+                "SELECT value from metadata where element = 'DB_MAJOR'"
             ).fetchone()
-            db_minor = con.execute(
-                "SELECT value from MetaData where element = 'DB_MINOR'"
+            db_minor_row = con.execute(
+                "SELECT value from metadata where element = 'DB_MINOR'"
             ).fetchone()
-            db_major = db_major[0] if db_major else -1
-            db_minor = db_minor[0] if db_minor else -1
+            db_major = int(db_major_row[0]) if db_major_row else -1
+            db_minor = int(db_minor_row[0]) if db_minor_row else -1
         except sqlite3.OperationalError:
             logger.error(
-                'Database does not appear to have MetaData table with required versioning info.  '
-                'See schema for v3+.'
-            )
-            sys.stderr.write(
-                'Database does not appear to have MetaData table with required.  Is this version '
-                '3+ compatible?\n'
-                'If required, see dox on using the database migrator to move to v3.'
+                'Database %s does not appear to have metadata table. Is this v%d.%d+ compatible?'
+                'If required, see docs on using the database migrator to move to v%d.%d.',
+                str(name),
+                db_major_reqd,
+                min_db_minor,
+                db_major_reqd,
+                min_db_minor,
             )
             db_major, db_minor = -1, -1
         finally:
@@ -90,8 +105,8 @@ def check_database_version(config: TemoaConfig, db_major_reqd: int, min_db_minor
         good_version = db_major == db_major_reqd and db_minor >= min_db_minor
         if not good_version:
             logger.error(
-                'Database %s version %d.%d does not match the major version %d and have at least '
-                'minor version %d',
+                'Database %s version %d.%d does not match the major version %d and have '
+                'at least minor version %d',
                 str(name),
                 db_major,
                 db_minor,
@@ -125,38 +140,18 @@ def build_instance(
     # self.model.rc = Suffix(direction=Suffix.IMPORT)
     # self.model.slack = Suffix(direction=Suffix.IMPORT)
 
-    hack = time()
-    if not silent:
-        sys.stderr.write('[        ] Creating model instance.')
-        sys.stderr.flush()
-    logger.info('Started creating model instance from data')
-    instance = model.create_instance(loaded_portal, name=model_name)
-    if not silent:
-        try:
-            # Check for warnings in log file to notify user. Ugly but it works
-            sys.stderr.write(
-                '\r[%8.2f] Instance created.       \n' % (time() - hack)
-            )  # needs spaces to clear previous line
-            sys.stderr.flush()
-        except Exception:
-            sys.stderr.write(
-                '\r[%8.2f] Instance created.       \n' % (time() - hack)
-            )  # needs spaces to clear previous line
-            sys.stderr.flush()
-    logger.info('Finished creating model instance from data')
+    with task_timer('Creating model instance', silent=silent):
+        instance = model.create_instance(loaded_portal, name=model_name)
 
     # save LP if requested
     if keep_lp_file and lp_path is not None:
         save_lp(instance, lp_path)
 
     # gather some stats...
-    c_count = 0
-    v_count = 0
-    for constraint in instance.component_objects(ctype=Constraint):
-        c_count += len(constraint)
-    for var in instance.component_objects(ctype=Var):
-        v_count += len(var)
-    logger.info('model built...  Variables: %d, Constraints: %d', v_count, c_count)
+    c_count = sum(len(c) for c in instance.component_objects(ctype=Constraint))
+    v_count = sum(len(v) for v in instance.component_objects(ctype=Var))
+
+    logger.info('Model built... Variables: %d, Constraints: %d', v_count, c_count)
     return instance
 
 
@@ -168,17 +163,16 @@ def save_lp(instance: TemoaModel, lp_path: Path) -> None:
     if not lp_path:
         logger.warning('Requested "keep LP file", but no path is provided...skipped')
     else:
-        if not Path.is_dir(lp_path):
-            Path.mkdir(lp_path)
+        lp_path.mkdir(parents=True, exist_ok=True)
         filename = lp_path / 'model.lp'
-        instance.write(filename, format='lp', io_options={'symbolic_solver_labels': True})
+        instance.write(str(filename), format='lp', io_options={'symbolic_solver_labels': True})
 
 
 def solve_instance(
     instance: TemoaModel,
     solver_name: str,
     silent: bool = False,
-    solver_suffixes: list[str] | None = None,
+    solver_suffixes: Iterable[str] | None = None,
 ) -> tuple[TemoaModel, SolverResults]:
     """
     Solve the instance and return a loaded instance
@@ -194,6 +188,7 @@ def solve_instance(
     if not solver_name:
         logger.error('No solver specified in solve sequence')
         raise TypeError('Error occurred during solve, see log')
+
     optimizer = SolverFactory(solver_name)
     if isinstance(optimizer, UnknownSolver):
         logger.error(
@@ -203,100 +198,78 @@ def solve_instance(
         )
         raise TypeError('Failed to make Solver instance.  See log.')
 
-    hack = time()
-    if not silent:
-        sys.stderr.write('[        ] Solving.')
-        sys.stderr.flush()
-
-    logger.info(
-        'Starting the solve process using %s solver on model %s', solver_name, instance.name
-    )
     if solver_name == 'neos':
         raise NotImplementedError('Neos based solve is not currently supported')
 
-    else:
-        if solver_name == 'cbc':
-            pass
-            # dev note:  I think these options are outdated.  Getting decent results without them...
-            #            preserved for now.
-            # Solver options. Reference:
-            # https://genxproject.github.io/GenX/dev/solver_configuration/
-            # optimizer.options["dualTolerance"] = 1e-6
-            # optimizer.options["primalTolerance"] = 1e-6
-            # optimizer.options["zeroTolerance"] = 1e-12
-            # optimizer.options["crossover"] = 'off'
+    # Solver Configuration
+    if solver_name == 'cbc':
+        pass
 
-        elif solver_name == 'cplex':
-            # Note: these parameter values are taken to be the same as those in PyPSA
-            # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-            optimizer.options['lpmethod'] = 4  # barrier
-            optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
-            optimizer.options['barrier convergetol'] = 1.0e-5
-            optimizer.options['feasopt tolerance'] = 1.0e-6
+    elif solver_name == 'cplex':
+        # Note: these parameter values are taken to be the same as those in PyPSA
+        # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
+        optimizer.options['lpmethod'] = 4  # barrier
+        optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
+        optimizer.options['barrier convergetol'] = 1.0e-5
+        optimizer.options['feasopt tolerance'] = 1.0e-6
 
-        elif solver_name == 'gurobi':
-            # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-            optimizer.options['Method'] = 2  # barrier
-            optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
-            optimizer.options['BarConvTol'] = 1.0e-5
-            optimizer.options['FeasibilityTol'] = 1.0e-6
-            # optimizer.options["BarOrder"] = 0 # if solve times seem unusually long, try 0 or 1
+    elif solver_name == 'gurobi':
+        # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
+        optimizer.options['Method'] = 2  # barrier
+        optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
+        optimizer.options['BarConvTol'] = 1.0e-5
+        optimizer.options['FeasibilityTol'] = 1.0e-6
+        # optimizer.options["BarOrder"] = 0 # if solve times seem unusually long, try 0 or 1
 
-        elif solver_name == 'appsi_highs':
-            pass
+    elif solver_name == 'appsi_highs':
+        pass
 
-        # dev note:  The handling of suffixes is pretty weak.  As of today 4/4/2024, highspy
-        #            crashes if the keyword suffixes is passed in (regardless if there are any
-        #            requested).  CBC only supports some.  Perhaps in the future, this will be
-        #            easier.  For now, we need a different
-        #            solve command for highspy and no suffixes because it works so well.
-        if solver_suffixes:
-            solver_suffixes_set = set(solver_suffixes)
-            legit_suffixes = {'dual', 'slack', 'rc'}
-            bad_apples = solver_suffixes_set - legit_suffixes
-            solver_suffixes_set &= legit_suffixes
-            if bad_apples:
-                logger.warning(
-                    'Solver suffix %s is not in pyomo standards (see pyomo dox).  Removed',
-                    bad_apples,
-                )
-            # convert back to list...
-            solver_suffixes = list(solver_suffixes_set)
-        else:
-            solver_suffixes = []
-        result: SolverResults | None = None
+    # Suffix Handling
+    solver_suffixes_list: list[str] = []
+    if solver_suffixes:
+        solver_suffixes_set = set(solver_suffixes)
+        legit_suffixes = {'dual', 'slack', 'rc'}
+        bad_apples = solver_suffixes_set - legit_suffixes
+        solver_suffixes_set &= legit_suffixes
+        if bad_apples:
+            logger.warning(
+                'Solver suffix %s is not in pyomo standards (see pyomo dox).  Removed',
+                bad_apples,
+            )
+        solver_suffixes_list = list(solver_suffixes_set)
+
+    result: SolverResults | None = None
+
+    with task_timer(f'Solving model {instance.name}', silent=silent):
         try:
-            # currently, the highs solver call will puke if the suffixes are passed, so we need to
-            # differentiate...
+            # currently, the highs solver call will puke if the suffixes are passed
             if solver_name == 'appsi_highs':
                 result = optimizer.solve(instance)
             else:
-                result = optimizer.solve(instance, suffixes=solver_suffixes)
+                result = optimizer.solve(instance, suffixes=solver_suffixes_list)
         except RuntimeError as error:
-            logger.error('Solver failed to solve and returned an error: %s', error)
+            logger.exception('Solver failed to solve and returned an error: %s', error)
             logger.error(
                 'This may be due to asking for suffixes (duals) for an incompatible solver.  '
                 "Try de-selecting 'save_duals' in the config.  (see note in run_actions.py code)"
             )
             if result:
+                try:
+                    _ok, status_msg = check_solve_status(result)
+                except Exception:
+                    status_msg = '<unable to extract status>'
                 logger.error(
-                    'Solver reported termination condition (if any): %s', result['Solution'].Status
+                    'Solver reported termination/status (if any): %s',
+                    status_msg,
                 )
-            sys.stderr.write('solver failure.  See log file.')
-            sys.exit(-1)
+            raise RuntimeError('Solver failure. See log file.') from error
 
-        if check_optimal_termination(result):
-            if solver_suffixes:
-                instance.solutions.store_to(
-                    result
-                )  # this is needed to capture the duals/suffixes from the Solutions obj
+    if check_optimal_termination(result):
+        if solver_suffixes_list:
+            # Needed to capture the duals/suffixes from the Solutions obj
+            instance.solutions.store_to(result)
 
-        logger.info('Solve process complete')
-        logger.debug('Solver results: \n %s', result.solver)
-
-    if not silent:
-        sys.stderr.write('\r[%8.2f] Model solved.\n' % (time() - hack))
-        sys.stderr.flush()
+    logger.debug('Solver results: \n %s', result.solver)
 
     return instance, result
 
@@ -311,10 +284,9 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
              optimal
     """
     # Use check_optimal_termination for solver-agnostic checking
-    # Different solvers report status differently (e.g., HiGHS reports 'unknown' but is optimal)
     is_optimal = check_optimal_termination(result)
 
-    # Safely extract termination condition for logging (works for both legacy and APPSI solvers)
+    # Safely extract termination condition for logging
     termination_condition = 'unknown'
     if hasattr(result, 'solver') and hasattr(result.solver, 'termination_condition'):
         termination_condition = result.solver.termination_condition
@@ -322,35 +294,39 @@ def check_solve_status(result: SolverResults) -> tuple[bool, str]:
         # Some APPSI solvers expose this directly
         termination_condition = result.termination_condition
 
-    logger.info('Solver termination condition: %s (optimal: %s)', termination_condition, is_optimal)
+    logger.info(
+        'Solver termination condition: %s (optimal: %s)',
+        termination_condition,
+        is_optimal,
+    )
 
     if is_optimal:
         return True, ''
-    else:
-        # Safely extract status for error message
-        status_msg = 'unknown status'
 
-        # Try legacy solver result format first
-        if hasattr(result, '__getitem__'):
-            try:
-                soln = result.get('Solution') if hasattr(result, 'get') else result['Solution']
-                if soln and hasattr(soln, 'Status'):
-                    status_msg = str(soln.Status)
-            except (KeyError, TypeError, AttributeError):
-                pass
+    # Safely extract status for error message
+    status_msg = 'unknown status'
 
-        # Try APPSI result format
-        if status_msg == 'unknown status':
-            for attr in ['status', 'problem_status', 'solver_status']:
-                if hasattr(result, attr):
-                    status_msg = str(getattr(result, attr))
-                    break
+    # Try legacy solver result format first
+    if hasattr(result, '__getitem__'):
+        try:
+            soln = result.get('Solution') if hasattr(result, 'get') else result['Solution']
+            if soln and hasattr(soln, 'Status'):
+                status_msg = str(soln.Status)
+        except (KeyError, TypeError, AttributeError):
+            pass
 
-        # Final fallback
-        if status_msg == 'unknown status':
-            status_msg = str(result) if result else 'no solution returned'
+    # Try APPSI result format
+    if status_msg == 'unknown status':
+        for attr in ['status', 'problem_status', 'solver_status']:
+            if hasattr(result, attr):
+                status_msg = str(getattr(result, attr))
+                break
 
-        return False, f'{status_msg} was returned from solve'
+    # Final fallback
+    if status_msg == 'unknown status':
+        status_msg = str(result) if result else 'no solution returned'
+
+    return False, f'{status_msg} was returned from solve'
 
 
 def handle_results(
@@ -360,48 +336,27 @@ def handle_results(
     append: bool = False,
     iteration: int | None = None,
 ) -> None:
-    hack = time()
-    if not config.silent:
-        msg = '[        ] Calculating reporting variables and formatting results.'
-        # yield 'Calculating reporting variables and formatting results.'
-        sys.stderr.write(msg)
-        sys.stderr.flush()
-
-    table_writer = TableWriter(config=config)
-    if config.save_duals:
+    with task_timer('Processing results', silent=config.silent):
+        table_writer = TableWriter(config=config)
         table_writer.write_results(
             model=instance,
-            results_with_duals=results,
+            results_with_duals=results if config.save_duals else None,
             save_storage_levels=config.save_storage_levels,
             append=append,
             iteration=iteration,
         )
-    else:
-        table_writer.write_results(
-            model=instance,
-            append=append,
-            save_storage_levels=config.save_storage_levels,
-            iteration=iteration,
-        )
-
-    if not config.silent:
-        sys.stderr.write(
-            '\r[%8.2f] Results processed.                                    \n' % (time() - hack)
-        )
-        sys.stderr.flush()
 
     if config.save_excel:
         scenario_name = (
-            config.scenario + f'-{iteration}' if iteration is not None else config.scenario
+            f'{config.scenario}-{iteration}' if iteration is not None else config.scenario
         )
-        temp_scenario = set()
-        temp_scenario.add(scenario_name)
+        temp_scenario = {scenario_name}
         excel_filename = config.output_path / scenario_name
         make_excel(str(config.output_database), excel_filename, temp_scenario)
 
     # normal (non-MGA) run will have a total_cost as the OBJ:
     if hasattr(instance, 'total_cost'):
-        logger.info('total_cost value: %0.2f', value(instance.total_cost))
+        logger.info('Total Cost value: %0.2f', value(instance.total_cost))
 
     if config.graphviz_output:
         try:
@@ -420,18 +375,19 @@ def handle_results(
             )
             graph_gen.connect()
 
-            # Get periods from the model instance
-            periods = sorted(instance.time_optimize)
+            try:
+                # Get periods from the model instance
+                periods = sorted(instance.time_optimize)
 
-            for period in periods:
-                # Generate main results diagram for the period
-                # We pass None for region to generate for all/default
-                graph_gen.create_main_results_diagram(period=period, region=None)
-
-            graph_gen.close()
+                for period in periods:
+                    # Generate main results diagram for the period
+                    # We pass None for region to generate for all/default
+                    graph_gen.create_main_results_diagram(period=period, region=None)
+            except Exception as e:
+                logger.error('Failed to generate Graphviz plots: %s', e, exc_info=True)
+            finally:
+                graph_gen.close()
             logger.info('Graphviz plots generated in %s', graph_gen.out_dir)
 
         except Exception as e:
             logger.error('Failed to generate Graphviz plots: %s', e, exc_info=True)
-
-    return

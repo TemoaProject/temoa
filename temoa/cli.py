@@ -50,6 +50,7 @@ def _setup_logging(output_path: Path, debug: bool = False, silent: bool = False)
         level=console_level,
         rich_tracebacks=True,
         show_path=False,
+        show_time=True,
         log_time_format='[%X]',
     )
 
