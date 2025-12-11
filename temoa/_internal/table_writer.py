@@ -9,7 +9,7 @@ import sys
 from collections import defaultdict
 from importlib import resources
 from logging import getLogger
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any
 
 from pyomo.core import value
 
@@ -19,7 +19,6 @@ from temoa._internal.table_data_puller import (
     FI,
     CapData,
     FlowType,
-    _marks,
     poll_capacity_results,
     poll_cost_results,
     poll_emissions,
@@ -32,6 +31,7 @@ from temoa.core.modes import TemoaMode
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
+    from types import TracebackType
 
     from pyomo.opt import SolverResults
 
@@ -41,19 +41,10 @@ if TYPE_CHECKING:
     from temoa.extensions.monte_carlo.mc_run import ChangeRecord
     from temoa.types.core_types import Period, Region, Technology, Vintage
 
-    pass
-
-"""
-
-Note:  This file borrows heavily from the legacy pformat_results.py, and is somewhat of a
-       restructure of that code
-       to accommodate the run modes more cleanly
-
-"""
-
 logger = getLogger(__name__)
 
-basic_output_tables = [
+# Basic tables that are always cleared on run
+BASIC_OUTPUT_TABLES = [
     'output_built_capacity',
     'output_cost',
     'output_curtailment',
@@ -65,28 +56,151 @@ basic_output_tables = [
     'output_objective',
     'output_retired_capacity',
 ]
-optional_output_tables = ['output_flow_out_summary', 'output_mc_delta', 'output_storage_level']
 
-flow_summary_file_loc = (
+OPTIONAL_OUTPUT_TABLES = [
+    'output_flow_out_summary',
+    'output_mc_delta',
+    'output_storage_level',
+]
+
+FLOW_SUMMARY_FILE_LOC = (
     resources.files('temoa.extensions.modeling_to_generate_alternatives')
     / 'make_flow_summary_table.sql'
 )
-mc_tweaks_file_loc = resources.files('temoa.extensions.monte_carlo') / 'make_deltas_table.sql'
+MC_TWEAKS_FILE_LOC = resources.files('temoa.extensions.monte_carlo') / 'make_deltas_table.sql'
 
 
 class TableWriter:
+    con: sqlite3.Connection | None
+
     def __init__(self, config: TemoaConfig, epsilon: float = 1e-5) -> None:
         self.config = config
         self.epsilon = epsilon
         self.tech_sectors: dict[str, str] | None = None
         self.flow_register: dict[FI, dict[FlowType, float]] = {}
         self.emission_register: dict[EI, float] | None = None
+        self.con = None
+
+        # Cache for table columns to avoid repeated PRAGMA calls
+        self._table_columns_cache: dict[str, set[str]] = {}
+
         try:
             self.con = sqlite3.connect(config.output_database)
-        except sqlite3.OperationalError as e:
-            logger.error('Failed to connect to output database: %s', config.output_database)
-            logger.error(e)
+            self.con.execute('PRAGMA foreign_keys = OFF')
+        except sqlite3.OperationalError as _:
+            logger.exception('Failed to connect to output database: %s', config.output_database)
             sys.exit(-1)
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """
+        Returns the active database connection.
+        Raises RuntimeError if the connection is closed or not initialized.
+        This serves as a central type guard for Mypy.
+        """
+        if self.con is None:
+            raise RuntimeError('Database connection is closed')
+        return self.con
+
+    def __enter__(self) -> TableWriter:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Explicitly close the database connection."""
+        if self.con:
+            try:
+                self.con.close()
+            except (sqlite3.Error, OSError) as e:
+                logger.warning('Error closing database connection: %s', e)
+            finally:
+                self.con = None
+
+    def _validate_foreign_keys(self) -> None:
+        """
+        Re-enables foreign keys, runs a check, and logs any violations.
+        This is essentially a "soft" integrity check that won't crash the write process
+        but will alert the user to data consistency issues.
+        """
+        if self.con is None:
+            return
+
+        try:
+            # Re-enable foreign keys to check for violations
+            self.connection.execute('PRAGMA foreign_keys = ON')
+
+            # Check for violations
+            cursor = self.connection.execute('PRAGMA foreign_key_check')
+            violations = cursor.fetchall()
+
+            if violations:
+                logger.error('Foreign key constraint violations found in output database:')
+                for violation in violations:
+                    # violation tuple: (table, rowid, parent, fkid)
+                    table_name = violation[0]
+                    row_id = violation[1]
+                    parent_table = violation[2]
+                    logger.error(
+                        "  Table '%s' (row %s) violates FK to parent '%s'",
+                        table_name,
+                        row_id,
+                        parent_table,
+                    )
+        except sqlite3.Error as _:
+            logger.exception('Error during foreign key validation')
+
+    def _get_table_columns(self, table_name: str) -> set[str]:
+        """Returns a set of column names for the given table."""
+        if table_name not in self._table_columns_cache:
+            cursor = self.connection.execute(f'PRAGMA table_info({table_name})')
+            # row[1] is the column name in sqlite PRAGMA table_info
+            columns = {row[1] for row in cursor.fetchall()}
+            self._table_columns_cache[table_name] = columns
+        return self._table_columns_cache[table_name]
+
+    def _bulk_insert(self, table_name: str, records: list[dict[str, Any]]) -> None:
+        """
+        Dynamically inserts records into a table.
+
+        1. Checks the DB schema to see which columns exist.
+        2. Filters the input dictionary to match existing columns.
+        3. Handles the optional 'units' column automatically.
+        """
+        if not records:
+            return
+
+        valid_columns = self._get_table_columns(table_name)
+
+        # Determine the columns we will actually write to based on the first record
+        # and the valid schema columns.
+        data_keys = set(records[0].keys())
+
+        # Intersection: keys present in data AND present in database table
+        target_columns = list(data_keys.intersection(valid_columns))
+        target_columns.sort()  # Sort to ensure consistent order
+
+        if not target_columns:
+            logger.warning('No matching columns found for table %s. Skipping insert.', table_name)
+            return
+
+        # Prepare SQL statement
+        cols_str = ', '.join(target_columns)
+        placeholders = ', '.join(['?'] * len(target_columns))
+        query = f'INSERT INTO {table_name} ({cols_str}) VALUES ({placeholders})'
+
+        # Prepare values tuple generator
+        rows_to_insert = []
+        for rec in records:
+            rows_to_insert.append(tuple(rec[col] for col in target_columns))
+
+        self.connection.executemany(query, rows_to_insert)
 
     def write_results(
         self,
@@ -96,425 +210,385 @@ class TableWriter:
         append: bool = False,
         iteration: int | None = None,
     ) -> None:
-        """
-        Write results to output database
-        :param iteration: An interation count for repeated runs, to be passed to tables that
-                          support it
-        :param results_with_duals: if provided, this will trigger the writing of dual variables,
-                                   pulled from the SolverResults
-        :param M: the model
-        :param append: append whatever is already in the tables.  If False (default), clear
-                       existing tables by scenario name
-        :return:
-        """
-        if not append:
-            self.clear_scenario()
-        if not self.tech_sectors:
-            self._set_tech_sectors()
-        self.write_objective(model, iteration=iteration)
-        self.write_capacity_tables(model, iteration=iteration)
-        # analyze the emissions to get the costs and flows
-        if self.config.scenario_mode == TemoaMode.MYOPIC:
-            p_0 = model.myopic_discounting_year
-        else:
-            p_0 = None  # min year will be used in poll
-        e_costs, e_flows = poll_emissions(model=model, p_0=value(p_0))
+        try:
+            if not append:
+                self.clear_scenario()
 
-        self.emission_register = e_flows
-        self.write_emissions(iteration=iteration)
-        self.write_costs(model, emission_entries=e_costs, iteration=iteration)
-        self.flow_register = self.calculate_flows(model)
-        self.check_flow_balance(model)
-        self.write_flow_tables(iteration=iteration)
-        if results_with_duals:  # write the duals
-            self.write_dual_variables(results_with_duals, iteration=iteration)
-        if save_storage_levels:
-            self.write_storage_level(model, iteration=iteration)
-        # catch-all
-        self.con.commit()
-        self.con.execute('VACUUM')
+            if not self.tech_sectors:
+                self._set_tech_sectors()
+
+            self.write_objective(model, iteration=iteration)
+            self.write_capacity_tables(model, iteration=iteration)
+
+            # Poll and Write Emissions
+            if self.config.scenario_mode == TemoaMode.MYOPIC:
+                p_0 = model.myopic_discounting_year
+            else:
+                p_0 = None
+
+            e_costs, e_flows = poll_emissions(model=model, p_0=value(p_0))
+            self.emission_register = e_flows
+            self.write_emissions(iteration=iteration)
+
+            # Costs and Flows
+            self.write_costs(model, emission_entries=e_costs, iteration=iteration)
+
+            self.flow_register = self.calculate_flows(model)
+            self.check_flow_balance(model)
+            self.write_flow_tables(iteration=iteration)
+
+            if results_with_duals:
+                self.write_dual_variables(results_with_duals, iteration=iteration)
+
+            if save_storage_levels:
+                self.write_storage_level(model, iteration=iteration)
+
+        finally:
+            self._validate_foreign_keys()
+            self.connection.commit()
 
     def write_mm_results(self, model: TemoaModel, iteration: int) -> None:
-        """
-        tailored writer function for Method of Morris which:
-        (a) appends data (so scenario needs to be cleared elsewhere
-        (b) requires an iteration number to separate results
-        (c) only writes to MM required tables (obj, emissions right now)
-        :param M: solved model
-        :param iteration: an iteration index for scenario labeling
-        :return:
-        """
-        if not self.tech_sectors:
-            self._set_tech_sectors()
-        self.write_objective(model, iteration=iteration)
-        # analyze the emissions to get the costs and flows
-        e_costs, e_flows = poll_emissions(model=model)
-        self.emission_register = e_flows
-        self.write_emissions(iteration=iteration)
-        self.con.commit()
-        self.con.execute('VACUUM')
+        try:
+            if not self.tech_sectors:
+                self._set_tech_sectors()
+            self.write_objective(model, iteration=iteration)
+            _e_costs, e_flows = poll_emissions(model=model)
+            self.emission_register = e_flows
+            self.write_emissions(iteration=iteration)
+        finally:
+            self._validate_foreign_keys()
+            self.connection.commit()
 
     def write_mc_results(self, brick: DataBrick, iteration: int) -> None:
-        """
-        tailored write function to capture appropriate monte carlo results
-        :param M: solve model
-        :param iteration: iteration number
-        :return:
-        """
-        if not self.tech_sectors:
-            self._set_tech_sectors()
-        # analyze the emissions to get the costs and flows
-        e_costs, e_flows = brick.emission_cost_data, brick.emission_flows
-        self.emission_register = e_flows
-        self.write_emissions(iteration=iteration)
+        try:
+            if not self.tech_sectors:
+                self._set_tech_sectors()
 
-        # the rest can be directly inserted from the data_brick
-        self._insert_capacity_results(brick.capacity_data, iteration=iteration)
-        self._insert_summary_flow_results(flow_data=brick.flow_data, iteration=iteration)
-        self._insert_cost_results(
-            regular_entries=brick.cost_data,
-            exchange_entries=brick.exchange_cost_data,
-            emission_entries=e_costs,
-            iteration=iteration,
-        )
-        self._insert_objective_results(brick.obj_data, iteration=iteration)
-        self.con.commit()
-        self.con.execute('VACUUM')
+            e_costs, e_flows = brick.emission_cost_data, brick.emission_flows
+            self.emission_register = e_flows
+            self.write_emissions(iteration=iteration)
+
+            self._insert_capacity_results(brick.capacity_data, iteration=iteration)
+            self._insert_summary_flow_results(flow_data=brick.flow_data, iteration=iteration)
+            self._insert_cost_results(
+                regular_entries=brick.cost_data,
+                exchange_entries=brick.exchange_cost_data,
+                emission_entries=e_costs,
+                iteration=iteration,
+            )
+            self._insert_objective_results(brick.obj_data, iteration=iteration)
+        finally:
+            self._validate_foreign_keys()
+            self.connection.commit()
 
     def _set_tech_sectors(self) -> None:
-        """pull the sector info and fill the mapping"""
         qry = 'SELECT tech, sector FROM Technology'
-        data = self.con.execute(qry).fetchall()
+        data = self.connection.execute(qry).fetchall()
         self.tech_sectors = dict(data)
 
+    def _get_scenario_name(self, iteration: int | None) -> str:
+        if iteration is not None:
+            return f'{self.config.scenario}-{iteration}'
+        return self.config.scenario
+
     def clear_scenario(self) -> None:
-        cur = self.con.cursor()
-        for table in basic_output_tables:
+        cur = self.connection.cursor()
+        for table in BASIC_OUTPUT_TABLES:
             cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
-        for table in optional_output_tables:
+        for table in OPTIONAL_OUTPUT_TABLES:
             try:
                 cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
             except sqlite3.OperationalError:
                 pass
-        self.con.commit()
+        self.connection.commit()
         self.clear_iterative_runs()
 
     def clear_iterative_runs(self) -> None:
-        """
-        clear runs that are iterative extensions to the scenario name
-        Ex:  scenario = 'Red Monkey" ... will clear "Red Monkey-1, Red Monkey-2, Red Monkey-3,
-             Red Monkey-4'
-        :return: None
-        """
-        target = self.config.scenario + '-%'  # the dash followed by wildcard for anything after
-        cur = self.con.cursor()
-        for table in basic_output_tables:
-            cur.execute(f'DELETE FROM {table} WHERE scenario like ?', (target,))
-        self.con.commit()
-        for table in optional_output_tables:
+        target = self.config.scenario + '-%'
+        cur = self.connection.cursor()
+        tables = BASIC_OUTPUT_TABLES + OPTIONAL_OUTPUT_TABLES
+        for table in tables:
             try:
                 cur.execute(f'DELETE FROM {table} WHERE scenario like ?', (target,))
             except sqlite3.OperationalError:
                 pass
-        self.con.commit()
+        self.connection.commit()
+
+    # -------------------------------------------------------------------------
+    # WRITE IMPLEMENTATIONS
+    # -------------------------------------------------------------------------
 
     def write_storage_level(self, model: TemoaModel, iteration: int | None = None) -> None:
-        """Write the storage level table to the DB"""
+        if self.tech_sectors is None:
+            raise RuntimeError('tech sectors not available... code error')
 
         storage_levels = poll_storage_level_results(model=model)
+        scenario = self._get_scenario_name(iteration)
 
-        scenario_name = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )
-
-        data = []
-        for sli, storage_level in storage_levels.items():
-            if self.tech_sectors is None:
-                raise RuntimeError('tech sectors not available... code error')
-            sector = self.tech_sectors[sli.t]
-            data.append(
-                (scenario_name, sli.r, sector, sli.p, sli.s, sli.d, sli.t, sli.v, storage_level)
+        records = []
+        for sli, val in storage_levels.items():
+            records.append(
+                {
+                    'scenario': scenario,
+                    'region': sli.r,
+                    'sector': self.tech_sectors.get(sli.t),
+                    'period': sli.p,
+                    'season': sli.s,
+                    'tod': sli.d,
+                    'tech': sli.t,
+                    'vintage': sli.v,
+                    'level': val,
+                    'units': None,
+                }
             )
 
-        qry = f'INSERT INTO output_storage_level VALUES {_marks(9)}'
-        self.con.executemany(qry, data)
-        self.con.commit()
+        self._bulk_insert('output_storage_level', records)
+        self.connection.commit()
 
     def write_objective(self, model: TemoaModel, iteration: int | None = None) -> None:
-        """Write the value of all ACTIVE objectives to the DB"""
         obj_vals = poll_objective(model=model)
         self._insert_objective_results(obj_vals, iteration=iteration)
 
     def _insert_objective_results(
         self, obj_vals: list[tuple[str, float]], iteration: int | None
     ) -> None:
-        scenario_name = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )
-        for obj_name, obj_value in obj_vals:
-            qry = 'INSERT INTO output_objective VALUES (?, ?, ?)'
-            data = (scenario_name, obj_name, obj_value)
-            self.con.execute(qry, data)
-            self.con.commit()
+        scenario = self._get_scenario_name(iteration)
+        records = [
+            {
+                'scenario': scenario,
+                'objective_name': obj_name,
+                'total_system_cost': obj_value,
+            }
+            for obj_name, obj_value in obj_vals
+        ]
+        self._bulk_insert('output_objective', records)
+        self.connection.commit()
 
     def write_emissions(self, iteration: int | None = None) -> None:
-        """Write the emission table to the DB"""
-        if self.tech_sectors is None:
-            raise RuntimeError('tech sectors not available... code error')
-        if self.emission_register is None:
-            raise RuntimeError('emission register not available... code error')
+        if self.tech_sectors is None or self.emission_register is None:
+            raise RuntimeError('Dependencies missing (tech_sectors or emission_register)')
 
-        data = []
-        scenario = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )
-        for ei in self.emission_register:
-            sector = self.tech_sectors[ei.t]
-            val = self.emission_register[ei]
+        scenario = self._get_scenario_name(iteration)
+        records = []
+
+        for ei, val in self.emission_register.items():
             if abs(val) < self.epsilon:
                 continue
+
+            row = {
+                'scenario': scenario,
+                'region': ei.r,
+                'sector': self.tech_sectors.get(ei.t),
+                'emission': val,
+                'emis_comm': ei.e,
+                'tech': ei.t,
+                'vintage': ei.v,
+                'units': None,
+            }
+
             if hasattr(ei, 'p'):  # emissions from flows
-                entry = (scenario, ei.r, sector, cast('int', ei.p), ei.e, ei.t, ei.v, val)
-            else:  # embodied emissions
-                entry = (scenario, ei.r, sector, cast('int', ei.v), ei.e, ei.t, ei.v, val)
-            data.append(entry)
-        qry = f'INSERT INTO output_emission VALUES {_marks(8)}'
-        self.con.executemany(qry, data)
-        self.con.commit()
+                row['period'] = ei.p
+            else:  # embodied emissions (use vintage as period)
+                row['period'] = ei.v
 
-    def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:
-        if not self.tech_sectors:
-            raise RuntimeError('tech sectors not available... code error')
-        scenario = self.config.scenario
-        if iteration is not None:
-            scenario = scenario + f'-{iteration}'
+            records.append(row)
 
-        # Built Capacity
-        data: list[tuple[str, str, str | None, str, int, float]] = []
-        for r, t, v, val in cap_data.built:
-            s = self.tech_sectors.get(t)
-            new_cap = (scenario, r, s, t, v, val)
-            data.append(new_cap)
-        qry = 'INSERT INTO output_built_capacity VALUES (?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, data)
-
-        # NetCapacity
-        data_net: list[tuple[str, str, str | None, int, str, int, float]] = []
-        for r, p, t, v, val in cap_data.net:
-            s = self.tech_sectors.get(t)
-            new_net_cap: tuple[str, str, str | None, int, str, int, float] = (
-                scenario,
-                r,
-                s,
-                p,
-                t,
-                v,
-                val,
-            )
-            data_net.append(new_net_cap)
-        qry = 'INSERT INTO output_net_capacity VALUES (?, ?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, data_net)
-
-        # Retired Capacity
-        data_ret: list[tuple[str, str, str | None, int, str, int, float, float]] = []
-        for r, p, t, v, eol, early in cap_data.retired:
-            s = self.tech_sectors.get(t)
-            new_retired_cap: tuple[str, str, str | None, int, str, int, float, float] = (
-                scenario,
-                r,
-                s,
-                p,
-                t,
-                v,
-                eol,
-                early,
-            )
-            data_ret.append(new_retired_cap)
-        qry = 'INSERT INTO output_retired_capacity VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, data_ret)
-        self.con.commit()
+        self._bulk_insert('output_emission', records)
+        self.connection.commit()
 
     def write_capacity_tables(self, model: TemoaModel, iteration: int | None = None) -> None:
-        """Write the capacity tables to the DB"""
         cap_data = poll_capacity_results(model=model)
         self._insert_capacity_results(cap_data=cap_data, iteration=iteration)
 
-    def write_flow_tables(self, iteration: int | None = None) -> None:
-        """Write the flow tables"""
-        if not self.tech_sectors:
+    def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:
+        if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
-        if not self.flow_register:
-            raise RuntimeError('flow_register not available... code error')
-        # sort the flows
-        flows_by_type: dict[
-            FlowType, list[tuple[str, str, str | None, int, str, str, str, str, int, str, float]]
-        ] = defaultdict(list)
-        scenario = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )
 
-        for fi in self.flow_register:
-            sector = self.tech_sectors.get(fi.t)
-            for flow_type in self.flow_register[fi]:
-                val = self.flow_register[fi][flow_type]
-                if abs(val) < self.epsilon:
-                    continue
-                entry = (scenario, fi.r, sector, fi.p, fi.s, fi.d, fi.i, fi.t, fi.v, fi.o, val)
-                flows_by_type[flow_type].append(entry)
+        scenario = self._get_scenario_name(iteration)
 
-        table_associations = {
+        # 1. Built Capacity
+        built_recs = []
+        for r, t, v, val in cap_data.built:
+            built_recs.append(
+                {
+                    'scenario': scenario,
+                    'region': r,
+                    'sector': self.tech_sectors.get(t),
+                    'tech': t,
+                    'vintage': v,
+                    'capacity': val,
+                    'units': None,
+                }
+            )
+        self._bulk_insert('output_built_capacity', built_recs)
+
+        # 2. Net Capacity
+        net_recs = []
+        for r, p, t, v, val in cap_data.net:
+            net_recs.append(
+                {
+                    'scenario': scenario,
+                    'region': r,
+                    'sector': self.tech_sectors.get(t),
+                    'period': p,
+                    'tech': t,
+                    'vintage': v,
+                    'capacity': val,
+                    'units': None,
+                }
+            )
+        self._bulk_insert('output_net_capacity', net_recs)
+
+        # 3. Retired Capacity
+        ret_recs = []
+        for r, p, t, v, eol, early in cap_data.retired:
+            ret_recs.append(
+                {
+                    'scenario': scenario,
+                    'region': r,
+                    'sector': self.tech_sectors.get(t),
+                    'period': p,
+                    'tech': t,
+                    'vintage': v,
+                    'cap_eol': eol,
+                    'cap_early': early,
+                    'units': None,
+                }
+            )
+        self._bulk_insert('output_retired_capacity', ret_recs)
+
+        self.connection.commit()
+
+    def write_flow_tables(self, iteration: int | None = None) -> None:
+        if not self.tech_sectors or not self.flow_register:
+            raise RuntimeError('Dependencies missing (tech_sectors or flow_register)')
+
+        scenario = self._get_scenario_name(iteration)
+
+        # Structure to hold list of dicts for each table type
+        table_data: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+
+        map_flow_to_table = {
             FlowType.OUT: 'output_flow_out',
             FlowType.IN: 'output_flow_in',
             FlowType.CURTAIL: 'output_curtailment',
-            FlowType.FLEX: 'output_curtailment',  # devnote: should flex have its own table?
+            FlowType.FLEX: 'output_curtailment',
         }
 
-        for flow_type, table_name in table_associations.items():
-            qry = f'INSERT INTO {table_name} VALUES {_marks(11)}'
-            self.con.executemany(qry, flows_by_type[flow_type])
+        for fi, flows in self.flow_register.items():
+            sector = self.tech_sectors.get(fi.t)
 
-        self.con.commit()
+            for flow_type, val in flows.items():
+                if abs(val) < self.epsilon:
+                    continue
+
+                table_name = map_flow_to_table.get(flow_type)
+                if not table_name:
+                    continue
+
+                row: dict[str, Any] = {
+                    'scenario': scenario,
+                    'region': fi.r,
+                    'sector': sector,
+                    'period': fi.p,
+                    'season': fi.s,
+                    'tod': fi.d,
+                    'input_comm': fi.i,
+                    'tech': fi.t,
+                    'vintage': fi.v,
+                    'output_comm': fi.o,
+                    'units': None,
+                }
+
+                # Assign value to correct column name based on table/type
+                if table_name == 'output_curtailment':
+                    row['curtailment'] = val
+                else:
+                    row['flow'] = val
+
+                table_data[table_name].append(row)
+
+        for table_name, records in table_data.items():
+            self._bulk_insert(table_name, records)
+
+        self.connection.commit()
 
     def write_summary_flow(self, model: TemoaModel, iteration: int | None = None) -> None:
-        """
-        This is normally called from MGA (other?)
-        iterative solves where capturing the annual summary of flow out is desired vs. flows by
-        season, tod for
-        single instances
-        :param iteration: the number of the sequential iteration
-        :param M: The solved model
-        :return: None
-        """
         flow_data = self.calculate_flows(model=model)
         self._insert_summary_flow_results(flow_data=flow_data, iteration=iteration)
 
     def _insert_summary_flow_results(
         self, flow_data: dict[FI, dict[FlowType, float]], iteration: int | None
     ) -> None:
-        if not self.tech_sectors:
+        if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
 
+        scenario = self._get_scenario_name(iteration)
         self.flow_register = flow_data
-        if isinstance(iteration, int):
-            scenario = self.config.scenario + f'-{iteration}'
-        elif iteration is None:
-            scenario = self.config.scenario
-        else:
-            raise ValueError(f'Illegal (non integer) value received for iteration: {iteration}')
 
-        # iterate through all elements of the flow register, look for output flows only,
-        # and gather the total by index (region, period, input_comm, tech, vintage, output_comm)
-        # this is summing across season, tod
-        output_flows: dict[tuple[str, str, str | None, int, str, str, int, str], float] = (
+        # Aggregate flows (sum across seasons/time of day)
+        output_flows: defaultdict[tuple[str, Period, str, Technology, Vintage, str], float] = (
             defaultdict(float)
         )
-        for fi in self.flow_register:
-            sector = self.tech_sectors.get(fi.t)
-            # get the output flow for this index, if it exists...
-            flow_out_value = self.flow_register[fi].get(FlowType.OUT, None)
-            if flow_out_value:
-                idx: tuple[str, str, str | None, int, str, str, int, str] = (
-                    scenario,
-                    fi.r,
-                    sector,
-                    fi.p,
-                    fi.i,
-                    fi.t,
-                    fi.v,
-                    fi.o,
-                )
-                output_flows[idx] += flow_out_value
 
-        # convert to entries, if the sum is non-negligible
-        entries: list[tuple[str, str, str | None, int, str, str, int, str, float]] = []
-        for idx, flow in output_flows.items():
-            if abs(flow) < self.epsilon:
+        for fi, flows in self.flow_register.items():
+            val = flows.get(FlowType.OUT)
+            if val:
+                key = (fi.r, fi.p, fi.i, fi.t, fi.v, fi.o)
+                output_flows[key] += val
+
+        records = []
+        for (r, p, i, t, v, o), val in output_flows.items():
+            if abs(val) < self.epsilon:
                 continue
-            entry: tuple[str, str, str | None, int, str, str, int, str, float] = (*idx, flow)
-            entries.append(entry)
+            records.append(
+                {
+                    'scenario': scenario,
+                    'region': r,
+                    'sector': self.tech_sectors.get(t),
+                    'period': p,
+                    'input_comm': i,
+                    'tech': t,
+                    'vintage': v,
+                    'output_comm': o,
+                    'flow': val,
+                    'units': None,
+                }
+            )
 
-        qry = f'INSERT INTO output_flow_out_summary VALUES {_marks(9)}'
-        self.con.executemany(qry, entries)
-
-        self.con.commit()
-
-    # @staticmethod
-    # def poll_summary_flow_results( M:TemoaModel) -> dict:
-    #     flow_data = self.calculate_flows(M)
+        self._bulk_insert('output_flow_out_summary', records)
+        self.connection.commit()
 
     def check_flow_balance(self, model: TemoaModel) -> bool:
-        """
-        An easy sanity check to ensure that the flow tables are balanced, except for storage
-        and construction/end of life flows
-        """
+        """Sanity check to ensure that the flow tables are balanced."""
         flows = self.flow_register
         all_good = True
-        deltas = defaultdict(float)
-        for fi in flows:
+
+        for fi, flow_vals in flows.items():
             if fi.t in model.tech_storage:
                 continue
-            if fi.i == 'end_of_life_output':
-                continue
-            if fi.o == 'construction_input':
+            if fi.i == 'end_of_life_output' or fi.o == 'construction_input':
                 continue
 
-            # some conveniences for the players...
-            fin = flows[fi][FlowType.IN]
-            fout = flows[fi][FlowType.OUT]
-            fcurt = flows[fi][FlowType.CURTAIL]
-            fflex = flows[fi][FlowType.FLEX]
-            flost = flows[fi][FlowType.LOST]
-            # some identifiers
-            tech = fi.t
-            flex_tech = fi.t in model.tech_flex
-            annual_tech = fi.t in model.tech_annual
+            fin = flow_vals.get(FlowType.IN, 0)
+            fout = flow_vals.get(FlowType.OUT, 0)
+            flost = flow_vals.get(FlowType.LOST, 0)
+            fflex = flow_vals.get(FlowType.FLEX, 0)
 
-            #  ----- flow balance equation -----
-            deltas[fi] = fin - fout - flost - fflex
-            # dev note:  in constraint, flex is taken out of flow_out, but in output processing,
-            #            we are treating flow out as "net of flex" so this is not double-counting
+            delta = fin - fout - flost - fflex
 
-            if (
-                flows[fi][FlowType.IN] != 0 and abs(deltas[fi] / flows[fi][FlowType.IN]) > 0.02
-            ):  # 2% of input is missing / surplus
+            # Check logic
+            if fin != 0:
+                if abs(delta / fin) > 0.02:
+                    all_good = False
+                    logger.warning('Flow imbalance > 2%% for %s: delta=%.2f', fi, delta)
+            elif abs(delta) > 0.02:
                 all_good = False
-                logger.warning(
-                    'Flow balance check failed for index: %s, delta: %0.2f', fi, deltas[fi]
-                )
-                logger.info(
-                    'Tech: %s, Flex: %s, Annual: %s',
-                    tech,
-                    flex_tech,
-                    annual_tech,
-                )
-                logger.info(
-                    'IN: %0.6f, OUT: %0.6f, LOST: %0.6f, CURT: %0.6f, FLEX: %0.6f',
-                    fin,
-                    fout,
-                    flost,
-                    fcurt,
-                    fflex,
-                )
-            elif flows[fi][FlowType.IN] == 0 and abs(deltas[fi]) > 0.02:
-                all_good = False
-                logger.warning(
-                    'Flow balance check failed for index: %s, delta: %0.2f.  Flows happening with '
-                    '0 input',
-                    fi,
-                    deltas[fi],
-                )
+                logger.warning('Flow imbalance (zero input) for %s: delta=%.2f', fi, delta)
+
         return all_good
 
     def calculate_flows(self, model: TemoaModel) -> dict[FI, dict[FlowType, float]]:
-        """Gather all flows by Flow Index and Type"""
         return poll_flow_results(model, self.epsilon)
 
     def write_costs(
@@ -524,25 +598,12 @@ class TableWriter:
         | None = None,
         iteration: int | None = None,
     ) -> None:
-        """
-        Gather the cost data vars
-        :param iteration: tag for iteration in scenario name
-        :param emission_entries: cost dictionary for emissions
-        :param M: the Temoa Model
-        :return: dictionary of results of format variable name -> {idx: value}
-        """
-
-        # P_0 is usually the first optimization year, but if running myopic, we could assign it via
-        # table entry.  Perhaps in future it is just always the first optimization year of the
-        # 1st iter.
         if self.config.scenario_mode == TemoaMode.MYOPIC:
             p_0 = model.myopic_discounting_year
         else:
             p_0 = min(model.time_optimize)
 
         entries, exchange_entries = poll_cost_results(model, value(p_0), self.epsilon)
-
-        # write to table
         self._insert_cost_results(entries, exchange_entries, emission_entries, iteration)
 
     def _insert_cost_results(
@@ -553,106 +614,106 @@ class TableWriter:
         | None,
         iteration: int | None,
     ) -> None:
-        # add the emission costs to the same row data, if provided
         if emission_entries:
-            for k in emission_entries:
-                regular_entries[k].update(emission_entries[k])
-        self._write_cost_rows(regular_entries, iteration=iteration)
-        self._write_cost_rows(exchange_entries, iteration=iteration)
+            # Create a copy to avoid mutating the input
+            regular_entries = dict(regular_entries)
+
+            for k, v in emission_entries.items():
+                if k in regular_entries:
+                    regular_entries[k].update(v)
+                else:
+                    regular_entries[k] = v
+
+        self._write_cost_rows(regular_entries, iteration)
+        self._write_cost_rows(exchange_entries, iteration)
 
     def _write_cost_rows(
         self,
         entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]],
         iteration: int | None = None,
     ) -> None:
-        """Write the entries to the output_cost table"""
         if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
-        cur = self.con.cursor()
-        scenario_name = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )
-        rows = [
-            (
-                scenario_name,
-                r,
-                self.tech_sectors[t],
-                p,
-                t,
-                v,
-                entries[r, p, t, v].get(CostType.D_INVEST, 0),
-                entries[r, p, t, v].get(CostType.D_FIXED, 0),
-                entries[r, p, t, v].get(CostType.D_VARIABLE, 0),
-                entries[r, p, t, v].get(CostType.D_EMISS, 0),
-                entries[r, p, t, v].get(CostType.INVEST, 0),
-                entries[r, p, t, v].get(CostType.FIXED, 0),
-                entries[r, p, t, v].get(CostType.VARIABLE, 0),
-                entries[r, p, t, v].get(CostType.EMISS, 0),
+
+        scenario = self._get_scenario_name(iteration)
+        records = []
+
+        sorted_keys = sorted(entries.keys())
+
+        for r, p, t, v in sorted_keys:
+            costs = entries[(r, p, t, v)]
+            records.append(
+                {
+                    'scenario': scenario,
+                    'region': r,
+                    'sector': self.tech_sectors.get(t),
+                    'period': p,
+                    'tech': t,
+                    'vintage': v,
+                    'd_invest': costs.get(CostType.D_INVEST, 0),
+                    'd_fixed': costs.get(CostType.D_FIXED, 0),
+                    'd_var': costs.get(CostType.D_VARIABLE, 0),
+                    'd_emiss': costs.get(CostType.D_EMISS, 0),
+                    'invest': costs.get(CostType.INVEST, 0),
+                    'fixed': costs.get(CostType.FIXED, 0),
+                    'var': costs.get(CostType.VARIABLE, 0),
+                    'emiss': costs.get(CostType.EMISS, 0),
+                    'units': None,
+                }
             )
-            for (r, p, t, v) in entries
-        ]
-        rows.sort(key=lambda r: (r[0:5]))
-        qry = 'INSERT INTO output_cost VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        cur.executemany(qry, rows)
-        self.con.commit()
+
+        self._bulk_insert('output_cost', records)
+        self.connection.commit()
 
     def write_dual_variables(self, results: SolverResults, iteration: int | None = None) -> None:
-        """Write the dual variables to the output_dual_variable table"""
-        scenario_name = (
-            self.config.scenario + f'-{iteration}'
-            if iteration is not None
-            else self.config.scenario
-        )  # collect the values
+        scenario = self._get_scenario_name(iteration)
         constraint_data = results['Solution'].Constraint.items()
-        dual_data = [(scenario_name, t[0], t[1]['Dual']) for t in constraint_data]
-        qry = 'INSERT INTO output_dual_variable VALUES (?, ?, ?)'
-        self.con.executemany(qry, dual_data)
-        self.con.commit()
 
-    # MONTE CARLO stuff
+        records = [
+            {
+                'scenario': scenario,
+                'constraint_name': name,
+                'dual': data['Dual'],
+            }
+            for name, data in constraint_data
+        ]
+        self._bulk_insert('output_dual_variable', records)
+        self.connection.commit()
 
     def write_tweaks(self, iteration: int, change_records: Iterable[ChangeRecord]) -> None:
-        scenario = f'{self.config.scenario}-{iteration}'
+        scenario = self._get_scenario_name(iteration)
         records = []
-        for change_record in change_records:
-            element = (
-                scenario,
-                iteration,
-                change_record.param_name,
-                str(change_record.param_index).replace("'", ''),
-                change_record.old_value,
-                change_record.new_value,
+
+        for cr in change_records:
+            records.append(
+                {
+                    'scenario': scenario,
+                    'iteration': iteration,
+                    'param_name': cr.param_name,
+                    'param_index': str(cr.param_index).replace("'", ''),
+                    'old_value': cr.old_value,
+                    'new_value': cr.new_value,
+                }
             )
-            records.append(element)
-        qry = 'INSERT INTO output_mc_delta VALUES (?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, records)
-        self.con.commit()
 
-    def __del__(self) -> None:
-        if self.con:
-            self.con.close()
-
-    def make_summary_flow_table(self) -> None:
-        # make the additional output table, if needed...
-        self.execute_script(flow_summary_file_loc)
-
-    def make_mc_tweaks_table(self) -> None:
-        # make the table for monte carlo tweaks, if needed...
-        self.execute_script(mc_tweaks_file_loc)
+        self._bulk_insert('output_mc_delta', records)
+        self.connection.commit()
 
     def execute_script(self, script_file: str | Path | resources.abc.Traversable) -> None:
-        """
-        A utility to execute a sql script on the current db connection
-        :return:
-        """
         if isinstance(script_file, resources.abc.Traversable):
             sql_commands = script_file.read_text()
         else:
             with open(script_file) as table_script:
                 sql_commands = table_script.read()
-        logger.debug('Executing sql from file: %s ', script_file)
 
-        self.con.executescript(sql_commands)
-        self.con.commit()
+        self.connection.executescript(sql_commands)
+        self.connection.commit()
+
+    def make_summary_flow_table(self) -> None:
+        self.execute_script(FLOW_SUMMARY_FILE_LOC)
+
+    def make_mc_tweaks_table(self) -> None:
+        self.execute_script(MC_TWEAKS_FILE_LOC)
+
+    def __del__(self) -> None:
+        self.close()
