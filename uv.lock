@@ -927,16 +927,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pydoe"
-version = "0.3.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/ac/91fe4c039e2744466621343d3b8af4a485193ed0aab53af5b1db03be0989/pyDOE-0.3.8.zip", hash = "sha256:cbd6f14ae26d3c9f736013205f53ea1191add4567033c3ee77b7dd356566c4b6", size = 22283, upload-time = "2015-07-13T20:56:28.603Z" }
-
-[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1385,7 +1375,6 @@ dependencies = [
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pint" },
-    { name = "pydoe" },
     { name = "pyomo" },
     { name = "pytest" },
     { name = "rich" },
@@ -1442,7 +1431,6 @@ requires-dist = [
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.2" },
     { name = "pint", specifier = ">=0.25.2" },
-    { name = "pydoe", specifier = ">=0.3.8" },
     { name = "pyomo", specifier = ">=6.8.0" },
     { name = "pytest", specifier = ">=8.3.2" },
     { name = "rich", specifier = ">=14.2.0" },
