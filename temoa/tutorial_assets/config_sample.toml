@@ -46,6 +46,11 @@ source_trace = true
 # Produce HTML files for Commodity Networks.  Requires source_trace above
 plot_commodity_network = true
 
+# Check units consistency in the database
+# Validates that units are properly formatted and consistent across related tables
+# Recommended for production runs after units are populated in the database
+check_units = true
+
 # ------------------------------------
 #             SOLVER
 #        Solver Selection
