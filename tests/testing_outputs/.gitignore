@@ -1,5 +1,4 @@
-# ignore the databases here.  They are just used to catch output
+/*
 
-*.sqlite
-*.dat
-*.xlsx
+
+!README.txt
