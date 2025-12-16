@@ -12,6 +12,10 @@ dill==0.4.0
     # via multiprocess
 et-xmlfile==2.0.0
     # via openpyxl
+flexcache==0.3
+    # via pint
+flexparser==0.4
+    # via pint
 fonttools==4.59.0
     # via matplotlib
 graphviz==0.21
@@ -61,6 +65,10 @@ pandas==2.3.1
     #   seaborn
 pillow==11.3.0
     # via matplotlib
+pint==0.25.2
+    # via temoa (pyproject.toml)
+platformdirs==4.5.1
+    # via pint
 pluggy==1.6.0
     # via pytest
 ply==3.11
@@ -107,7 +115,11 @@ tomlkit==0.13.3
 typer==0.20.0
     # via temoa (pyproject.toml)
 typing-extensions==4.15.0
-    # via typer
+    # via
+    #   flexcache
+    #   flexparser
+    #   pint
+    #   typer
 tzdata==2025.2
     # via pandas
 wrapt==1.17.2
