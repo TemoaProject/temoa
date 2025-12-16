@@ -69,9 +69,30 @@ class TemoaSequencer:
         self.pf_solved_instance: TemoaModel | None = None
 
     def _run_preliminary_checks(self) -> None:
-        """Runs pre-flight checks and raises an error if any fail."""
-        checks_ok = True
-        checks_ok &= check_python_version(MIN_PYTHON_MAJOR, MIN_PYTHON_MINOR)
+        """Runs pre-flight system checks and (optionally) a non-fatal units check.
+
+        Raises an error if Python or database version checks fail; unit-check
+        failures are logged but do not abort the run.
+        """
+        # Unit checking - runs on database before model build
+        if self.config.check_units:
+            from temoa.model_checking.unit_checking.screener import screen
+
+            logger.info('Running units consistency check on input database...')
+            report_dir = self.config.output_path / 'unit_check_reports'
+            success = screen(self.config.input_database, report_dir=report_dir)
+
+            if not success:
+                logger.warning(
+                    'Units check found errors. See detailed report at: %s',
+                    report_dir,
+                )
+                logger.warning('Continuing with model build despite unit check warnings...')
+            else:
+                logger.info('Units check completed successfully - no errors found.')
+
+        # System checks (Python version, database version)
+        checks_ok = check_python_version(MIN_PYTHON_MAJOR, MIN_PYTHON_MINOR)
         checks_ok &= check_database_version(
             self.config, db_major_reqd=DB_MAJOR_VERSION, min_db_minor=MIN_DB_MINOR_VERSION
         )
