@@ -1057,16 +1057,7 @@ CREATE TABLE time_season
 );
 INSERT INTO "time_season" VALUES(2000,1,'summer',NULL);
 INSERT INTO "time_season" VALUES(2000,2,'winter',NULL);
-CREATE TABLE time_season_all
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT
-        REFERENCES season_label (season),
-    notes TEXT,
-    PRIMARY KEY (period, sequence, season)
-);
+
 CREATE TABLE time_season_sequential
 (
     period INTEGER REFERENCES time_period (period),
@@ -1078,19 +1069,7 @@ CREATE TABLE time_season_sequential
     PRIMARY KEY (period, sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
-CREATE TABLE time_season_to_sequential
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    seas_seq TEXT,
-    season TEXT
-        REFERENCES season_label (season),
-    num_days REAL NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
+
 CREATE TABLE time_segment_fraction
 (
     period INTEGER

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sql_migration_v_3_1_to_v4.py (Robust version)
+sql_migration_v_3_1_to_v4.py
 
 Converts a v3.1 SQL dump (text) into a valid v4 SQL dump.
 This script:
@@ -28,14 +28,14 @@ import sys
 # ------------------ Mapping configuration (mirror sqlite migrator) ------------------
 CUSTOM_MAP: dict[str, str] = {
     'TimeSeason': 'time_season',
-    'time_season': 'time_season_all',  # exact-only: only exact old token -> ..._all
+    'time_season': 'time_season',
     'TimeSeasonSequential': 'time_season_sequential',
-    'time_season_sequential': 'time_season_to_sequential',  # exact-only
+    'time_season_sequential': 'time_season_sequential',
     'TimeNext': 'time_manual',
     'CommodityDStreamProcess': 'commodity_down_stream_process',
     'commodityUStreamProcess': 'commodity_up_stream_process',
     'SegFrac': 'segment_fraction',
-    'segfrac': 'segment_fraction',  # canonical column name for column 'segfrac'
+    'segfrac': 'segment_fraction',
     'MetaDataReal': 'metadata_real',
     'MetaData': 'metadata',
     'Myopicefficiency': 'myopic_efficiency',
