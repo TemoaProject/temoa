@@ -84,7 +84,6 @@ numpy==2.3.1
     #   highspy
     #   matplotlib
     #   pandas
-    #   pydoe
     #   salib
     #   scipy
     #   seaborn
@@ -116,8 +115,6 @@ pybtex==0.25.1
     #   sphinxcontrib-bibtex
 pybtex-docutils==1.0.3
     # via sphinxcontrib-bibtex
-pydoe==0.3.8
-    # via temoa (pyproject.toml)
 pygments==2.19.2
     # via
     #   pytest
@@ -152,7 +149,6 @@ salib==1.5.1
 scipy==1.16.0
     # via
     #   temoa (pyproject.toml)
-    #   pydoe
     #   salib
 seaborn==0.13.2
     # via temoa (pyproject.toml)
