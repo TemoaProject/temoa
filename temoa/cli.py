@@ -289,6 +289,110 @@ def run(
         raise typer.Exit(code=1) from e
 
 
+@app.command('check-units')
+def check_units(
+    database: Annotated[
+        Path,
+        typer.Argument(
+            help='Path to the Temoa database file to check.',
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=True,
+        ),
+    ],
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            '--output',
+            '-o',
+            help='Directory to save the unit check report. '
+            'Defaults to current directory/unit_check_reports.',
+        ),
+    ] = None,
+    silent: Annotated[
+        bool,
+        typer.Option('--silent', '-q', help='Suppress informational output.'),
+    ] = False,
+) -> None:
+    """
+    Check units consistency in a Temoa database.
+
+    Validates that units are properly defined and consistent across all tables
+    in the database. Generates a detailed report of any issues found.
+
+    The unit checker verifies:
+    - Units format and registry compliance
+    - Technology input/output unit alignment
+    - Commodity unit consistency
+    - Cost table unit alignment
+    """
+    from temoa.model_checking.unit_checking.screener import screen
+
+    if not silent:
+        rich.print(f'Checking units in database: [cyan]{database}[/cyan]')
+
+    # Determine output directory
+    if output_dir is None:
+        output_dir = Path.cwd() / 'unit_check_reports'
+    else:
+        output_dir = output_dir.resolve()
+
+    # Create output directory if it doesn't exist
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        rich.print(f'[red]Error: Could not create output directory: {e}[/red]')
+        raise typer.Exit(1) from e
+
+    # Run the unit checker
+    try:
+        all_clear = screen(database, report_dir=output_dir)
+
+        if all_clear:
+            if not silent:
+                rich.print('\n[bold green]✅ All unit checks passed![/bold green]')
+                rich.print('No unit inconsistencies found in the database.')
+        else:
+            # Find the most recent report
+            reports = sorted(output_dir.glob('units_check_*.txt'), reverse=True)
+            if reports:
+                report_file = reports[0]
+                if not silent:
+                    rich.print('\n[bold yellow]⚠ Unit check found issues.[/bold yellow]')
+                    rich.print(f'Detailed report saved to: [cyan]{report_file}[/cyan]')
+                # Brief summary of the report
+                if not silent:
+                    rich.print('\n[bold]Report Summary:[/bold]')
+                    shown = 0
+                    with open(report_file, encoding='utf-8') as f:
+                        for idx, line in enumerate(f):
+                            if idx >= 40:
+                                break
+                            if shown > 0 and line.strip() == '':
+                                break
+                            if line.strip():
+                                rich.print(f'  {line.rstrip()}')
+                                shown += 1
+            else:
+                if not silent:
+                    rich.print(
+                        '\n[yellow]Unit check completed but no report was generated.[/yellow]'
+                    )
+
+    except FileNotFoundError as e:
+        rich.print(f'[red]Error: Database file not found: {e}[/red]')
+        raise typer.Exit(1) from e
+    except Exception as e:
+        logger.exception('Unit check failed')
+        rich.print(f'\n[bold red]❌ Unit check failed:[/bold red] {e}')
+        raise typer.Exit(1) from e
+
+    if not all_clear:
+        raise typer.Exit(1)
+
+
 @app.command()
 def migrate(
     input_path: Annotated[
@@ -447,42 +551,63 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
     """
     Copy tutorial resource files directly to target locations.
 
+    The database is generated from the SQL source file to ensure it uses
+    the latest schema with unit-compliant data (single source of truth).
+
     Args:
         target_config: Path where configuration file should be copied
-        target_database: Path where database file should be copied
+        target_database: Path where database file should be created
     """
+    import sqlite3
+
     try:
-        # Try to copy resources directly from the package using resources.files()
+        # Try to load resources from the package using resources.files()
         base = resources.files('temoa') / 'tutorial_assets'
         config_resource = base / 'config_sample.toml'
-        db_resource = base / 'utopia.sqlite'
+        sql_resource = base / 'utopia.sql'
 
         # Copy configuration file
         with config_resource.open('rb') as source:
             with open(target_config, 'wb') as target:
                 shutil.copyfileobj(source, target)
 
-        # Copy database file
-        with db_resource.open('rb') as source:
-            with open(target_database, 'wb') as target:
-                shutil.copyfileobj(source, target)
+        # Delete existing database if it exists (required for overwrite to work)
+        if target_database.exists():
+            target_database.unlink()
+
+        # Generate database from SQL source (single source of truth)
+        sql_content = sql_resource.read_text(encoding='utf-8')
+        with sqlite3.connect(target_database) as conn:
+            conn.executescript(sql_content)
 
     except (ModuleNotFoundError, FileNotFoundError, AttributeError) as e:
         logger.exception('Failed to load tutorial resources from package')
         # Fallback to development paths (for development environments)
         fallback_config = Path(__file__).parent / 'tutorial_assets' / 'config_sample.toml'
-        fallback_database = Path(__file__).parent / 'tutorial_assets' / 'utopia.sqlite'
+        fallback_sql = Path(__file__).parent / 'tutorial_assets' / 'utopia.sql'
 
-        if not fallback_config.exists() or not fallback_database.exists():
+        if not fallback_config.exists():
             raise FileNotFoundError(
-                f'Tutorial resources not found. Tried package resources and fallback paths:\n'
-                f'Config: {fallback_config}\n'
-                f'Database: {fallback_database}'
+                f'Tutorial config not found. Tried package resources and fallback path:\n'
+                f'Config: {fallback_config}'
             ) from e
 
-        # Copy files using fallback paths
+        if not fallback_sql.exists():
+            raise FileNotFoundError(
+                f'Tutorial SQL source not found. Tried package resources and fallback path:\n'
+                f'SQL: {fallback_sql}'
+            ) from e
+
+        # Copy config file using fallback path
         shutil.copy2(fallback_config, target_config)
-        shutil.copy2(fallback_database, target_database)
+
+        # Delete existing database if it exists (required for overwrite to work)
+        if target_database.exists():
+            target_database.unlink()
+
+        # Generate database from SQL source
+        with sqlite3.connect(target_database) as conn:
+            conn.executescript(fallback_sql.read_text(encoding='utf-8'))
 
 
 def _update_toml_database_paths(config_path: Path, new_database_name: str) -> None:

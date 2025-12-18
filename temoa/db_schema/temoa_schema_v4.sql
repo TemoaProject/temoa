@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS capacity_to_activity
     tech   TEXT
         REFERENCES technology (tech),
     c2a    REAL,
+    units  TEXT,
     notes  TEXT,
     PRIMARY KEY (region, tech)
 );
@@ -112,7 +113,8 @@ CREATE TABLE IF NOT EXISTS commodity
         PRIMARY KEY,
     flag        TEXT
         REFERENCES commodity_type (label),
-    description TEXT
+    description TEXT,
+    units       TEXT
 );
 CREATE TABLE IF NOT EXISTS commodity_type
 (
@@ -256,6 +258,7 @@ CREATE TABLE IF NOT EXISTS efficiency
     output_comm TEXT
         REFERENCES commodity (name),
     efficiency  REAL,
+    units       TEXT,
     notes       TEXT,
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
@@ -354,6 +357,7 @@ CREATE TABLE IF NOT EXISTS loan_lifetime_process
     vintage  INTEGER
         REFERENCES time_period (period),
     lifetime REAL,
+    units    TEXT,
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
@@ -376,6 +380,7 @@ CREATE TABLE IF NOT EXISTS lifetime_process
     vintage  INTEGER
         REFERENCES time_period (period),
     lifetime REAL,
+    units    TEXT,
     notes    TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
@@ -385,6 +390,7 @@ CREATE TABLE IF NOT EXISTS lifetime_tech
     tech     TEXT
         REFERENCES technology (tech),
     lifetime REAL,
+    units    TEXT,
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
@@ -714,6 +720,7 @@ CREATE TABLE IF NOT EXISTS output_curtailment
     output_comm TEXT
         REFERENCES commodity (name),
     curtailment REAL,
+    units       TEXT,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE IF NOT EXISTS output_net_capacity
@@ -729,6 +736,7 @@ CREATE TABLE IF NOT EXISTS output_net_capacity
     vintage  INTEGER
         REFERENCES time_period (period),
     capacity REAL,
+    units    TEXT,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS output_built_capacity
@@ -742,6 +750,7 @@ CREATE TABLE IF NOT EXISTS output_built_capacity
     vintage  INTEGER
         REFERENCES time_period (period),
     capacity REAL,
+    units    TEXT,
     PRIMARY KEY (region, scenario, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS output_retired_capacity
@@ -758,6 +767,7 @@ CREATE TABLE IF NOT EXISTS output_retired_capacity
         REFERENCES time_period (period),
     cap_eol REAL,
     cap_early REAL,
+    units     TEXT,
     PRIMARY KEY (region, scenario, period, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS output_flow_in
@@ -781,6 +791,7 @@ CREATE TABLE IF NOT EXISTS output_flow_in
     output_comm TEXT
         REFERENCES commodity (name),
     flow        REAL,
+    units       TEXT,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE IF NOT EXISTS output_flow_out
@@ -804,6 +815,7 @@ CREATE TABLE IF NOT EXISTS output_flow_out
     output_comm TEXT
         REFERENCES commodity (name),
     flow        REAL,
+    units       TEXT,
     PRIMARY KEY (region, scenario, period, season, tod, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE IF NOT EXISTS output_storage_level
@@ -823,6 +835,7 @@ CREATE TABLE IF NOT EXISTS output_storage_level
     vintage INTEGER
         REFERENCES time_period (period),
     level REAL,
+    units TEXT,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS planning_reserve_margin
@@ -994,6 +1007,7 @@ CREATE TABLE IF NOT EXISTS output_emission
     vintage   INTEGER
         REFERENCES time_period (period),
     emission  REAL,
+    units     TEXT,
     PRIMARY KEY (region, scenario, period, emis_comm, tech, vintage)
 );
 CREATE TABLE IF NOT EXISTS rps_requirement
@@ -1049,6 +1063,7 @@ CREATE TABLE IF NOT EXISTS output_cost
     fixed    REAL,
     var      REAL,
     emiss    REAL,
+    units    TEXT,
     PRIMARY KEY (scenario, region, period, tech, vintage),
     FOREIGN KEY (vintage) REFERENCES time_period (period),
     FOREIGN KEY (tech) REFERENCES technology (tech)

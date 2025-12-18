@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from temoa.core.config import TemoaConfig
     from temoa.core.model import TemoaModel
     from temoa.extensions.monte_carlo.mc_run import ChangeRecord
+    from temoa.model_checking.unit_checking.unit_propagator import UnitPropagator
     from temoa.types.core_types import Period, Region, Technology, Vintage
 
 logger = getLogger(__name__)
@@ -91,6 +92,9 @@ class TableWriter:
             logger.exception('Failed to connect to output database: %s', config.output_database)
             sys.exit(-1)
 
+        # Unit propagator for populating units in output tables (lazy init)
+        self._unit_propagator: UnitPropagator | None = None
+
     @property
     def connection(self) -> sqlite3.Connection:
         """
@@ -122,6 +126,28 @@ class TableWriter:
                 logger.warning('Error closing database connection: %s', e)
             finally:
                 self.con = None
+
+    @property
+    def unit_propagator(self) -> UnitPropagator | None:
+        """
+        Lazily initialize and return the unit propagator.
+
+        Returns None if initialization fails, ensuring graceful fallback
+        for databases without unit information.
+        """
+        if self._unit_propagator is None:
+            try:
+                from temoa.model_checking.unit_checking.unit_propagator import (
+                    UnitPropagator,
+                )
+
+                self._unit_propagator = UnitPropagator(self.connection)
+                if not self._unit_propagator.has_unit_data:
+                    logger.debug('No unit data available in database')
+            except (ImportError, sqlite3.Error, RuntimeError) as e:
+                logger.debug('Could not initialize unit propagator: %s', e, exc_info=True)
+                # Leave as None - units will be None in output
+        return self._unit_propagator
 
     def _validate_foreign_keys(self) -> None:
         """
@@ -324,6 +350,7 @@ class TableWriter:
 
         storage_levels = poll_storage_level_results(model=model)
         scenario = self._get_scenario_name(iteration)
+        unit_prop = self.unit_propagator
 
         records = []
         for sli, val in storage_levels.items():
@@ -338,7 +365,7 @@ class TableWriter:
                     'tech': sli.t,
                     'vintage': sli.v,
                     'level': val,
-                    'units': None,
+                    'units': unit_prop.get_storage_units(sli.t) if unit_prop else None,
                 }
             )
 
@@ -369,6 +396,7 @@ class TableWriter:
             raise RuntimeError('Dependencies missing (tech_sectors or emission_register)')
 
         scenario = self._get_scenario_name(iteration)
+        unit_prop = self.unit_propagator
         records = []
 
         for ei, val in self.emission_register.items():
@@ -383,7 +411,7 @@ class TableWriter:
                 'emis_comm': ei.e,
                 'tech': ei.t,
                 'vintage': ei.v,
-                'units': None,
+                'units': unit_prop.get_emission_units(ei.e) if unit_prop else None,
             }
 
             if hasattr(ei, 'p'):  # emissions from flows
@@ -405,6 +433,7 @@ class TableWriter:
             raise RuntimeError('tech sectors not available... code error')
 
         scenario = self._get_scenario_name(iteration)
+        unit_prop = self.unit_propagator
 
         # 1. Built Capacity
         built_recs = []
@@ -417,7 +446,7 @@ class TableWriter:
                     'tech': t,
                     'vintage': v,
                     'capacity': val,
-                    'units': None,
+                    'units': unit_prop.get_capacity_units(t) if unit_prop else None,
                 }
             )
         self._bulk_insert('output_built_capacity', built_recs)
@@ -434,7 +463,7 @@ class TableWriter:
                     'tech': t,
                     'vintage': v,
                     'capacity': val,
-                    'units': None,
+                    'units': unit_prop.get_capacity_units(t) if unit_prop else None,
                 }
             )
         self._bulk_insert('output_net_capacity', net_recs)
@@ -452,7 +481,7 @@ class TableWriter:
                     'vintage': v,
                     'cap_eol': eol,
                     'cap_early': early,
-                    'units': None,
+                    'units': unit_prop.get_capacity_units(t) if unit_prop else None,
                 }
             )
         self._bulk_insert('output_retired_capacity', ret_recs)
@@ -497,7 +526,7 @@ class TableWriter:
                     'tech': fi.t,
                     'vintage': fi.v,
                     'output_comm': fi.o,
-                    'units': None,
+                    'units': self._get_flow_units(flow_type, fi.i, fi.o),
                 }
 
                 # Assign value to correct column name based on table/type
@@ -512,6 +541,31 @@ class TableWriter:
             self._bulk_insert(table_name, records)
 
         self.connection.commit()
+
+    def _get_flow_units(self, flow_type: FlowType, input_comm: str, output_comm: str) -> str | None:
+        """
+        Get units for flow based on flow type.
+
+        For output flows and curtailment, uses the output commodity units.
+        For input flows, uses the input commodity units.
+
+        Args:
+            flow_type: Type of flow (IN, OUT, CURTAIL, FLEX).
+            input_comm: Input commodity name.
+            output_comm: Output commodity name.
+
+        Returns:
+            Unit string or None if not available.
+        """
+        unit_prop = self.unit_propagator
+        if not unit_prop:
+            return None
+
+        if flow_type == FlowType.IN:
+            return unit_prop.get_flow_in_units(input_comm)
+        else:
+            # OUT, CURTAIL, FLEX all use output commodity units
+            return unit_prop.get_flow_out_units(output_comm)
 
     def write_summary_flow(self, model: TemoaModel, iteration: int | None = None) -> None:
         flow_data = self.calculate_flows(model=model)
@@ -636,6 +690,7 @@ class TableWriter:
             raise RuntimeError('tech sectors not available... code error')
 
         scenario = self._get_scenario_name(iteration)
+        unit_prop = self.unit_propagator
         records = []
 
         sorted_keys = sorted(entries.keys())
@@ -658,7 +713,7 @@ class TableWriter:
                     'fixed': costs.get(CostType.FIXED, 0),
                     'var': costs.get(CostType.VARIABLE, 0),
                     'emiss': costs.get(CostType.EMISS, 0),
-                    'units': None,
+                    'units': unit_prop.get_cost_units() if unit_prop else None,
                 }
             )
 
