@@ -20,9 +20,9 @@ from pathlib import Path
 # ---------- Mapping configuration ----------
 CUSTOM_MAP: dict[str, str] = {
     'TimeSeason': 'time_season',
-    'time_season': 'time_season_all',
+    'time_season': 'time_season',
     'TimeSeasonSequential': 'time_season_sequential',
-    'time_season_sequential': 'time_season_to_sequential',
+    'time_season_sequential': 'time_season_sequential',
     'TimeNext': 'time_manual',
     'CommodityDStreamProcess': 'commodity_down_stream_process',
     'commodityUStreamProcess': 'commodity_up_stream_process',
