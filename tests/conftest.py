@@ -1,5 +1,4 @@
 import logging
-import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -34,83 +33,77 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('pyutilib').setLevel(logging.WARNING)
 
 
+# Central paths
+TEST_DATA_PATH = Path(__file__).parent / 'testing_data'
+TEST_OUTPUT_PATH = Path(__file__).parent / 'testing_outputs'
+SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
+
+
+def _build_test_db(
+    db_file: Path,
+    data_scripts: list[Path],
+    modifications: list[tuple[str, tuple[Any, ...]]] | None = None,
+) -> None:
+    """Helper to build a test database from central schema + data scripts + mods."""
+    if db_file.exists():
+        db_file.unlink()
+
+    with sqlite3.connect(db_file) as con:
+        con.execute('PRAGMA foreign_keys = OFF')
+        # 1. Load central schema
+        con.executescript(SCHEMA_PATH.read_text(encoding='utf-8'))
+        # Force FK OFF again as schema file might turn it on at the end
+        con.execute('PRAGMA foreign_keys = OFF')
+
+        # 2. Load data scripts
+        for script_path in data_scripts:
+            with open(script_path) as f:
+                con.executescript(f.read())
+
+        # 3. Apply modifications
+        if modifications:
+            for sql, params in modifications:
+                con.execute(sql, params)
+
+        # 4. Turn foreign keys back on
+        con.execute('PRAGMA foreign_keys = ON')
+        con.commit()
+
+
 def refresh_databases() -> None:
     """
     make new databases from source for testing...  removes possibility of contamination by earlier
     runs
     """
-    data_output_path = Path(__file__).parent / 'testing_outputs'
-    data_source_path = Path(__file__).parent / 'testing_data'
-    # utopia.sql is in tutorial_assets (single source of truth for unit-compliant data)
-    tutorial_assets_path = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets'
-
     # Map source files to their locations
-    # (source_dir, source_file, output_file)
     databases = [
-        # Utopia uses the tutorial_assets source (unit-compliant)
-        (tutorial_assets_path, 'utopia.sql', 'utopia.sqlite'),
-        (tutorial_assets_path, 'utopia.sql', 'myo_utopia.sqlite'),
-        # Other test databases use testing_data
-        (data_source_path, 'test_system.sql', 'test_system.sqlite'),
-        (data_source_path, 'storageville.sql', 'storageville.sqlite'),
-        (data_source_path, 'mediumville.sql', 'mediumville.sqlite'),
-        (data_source_path, 'emissions.sql', 'emissions.sqlite'),
-        (data_source_path, 'materials.sql', 'materials.sqlite'),
-        (data_source_path, 'simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
-        (data_source_path, 'seasonal_storage.sql', 'seasonal_storage.sqlite'),
-        (data_source_path, 'survival_curve.sql', 'survival_curve.sqlite'),
-        (data_source_path, 'annualised_demand.sql', 'annualised_demand.sqlite'),
+        # Utopia uses the unit-compliant data-only script
+        ('utopia_data.sql', 'utopia.sqlite'),
+        ('utopia_data.sql', 'myo_utopia.sqlite'),
+        # Other test databases
+        ('test_system.sql', 'test_system.sqlite'),
+        ('mediumville.sql', 'mediumville.sqlite'),
+        ('seasonal_storage.sql', 'seasonal_storage.sqlite'),
+        ('survival_curve.sql', 'survival_curve.sqlite'),
+        ('annualised_demand.sql', 'annualised_demand.sqlite'),
+        # Feature tests (separate for temporal consistency)
+        ('emissions.sql', 'emissions.sqlite'),
+        ('materials.sql', 'materials.sqlite'),
+        ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
+        ('storageville.sql', 'storageville.sqlite'),
     ]
-    for source_dir, src, db in databases:
-        if Path.exists(data_output_path / db):
-            os.remove(data_output_path / db)
-        # make a new one and fill it
-        con = sqlite3.connect(data_output_path / db)
-        with open(source_dir / src) as script:
-            con.executescript(script.read())
-        con.close()
 
-
-def create_unit_test_db_from_sql(
-    source_sql_path: Path, output_db_path: Path, modifications: list[tuple[str, tuple[Any, ...]]]
-) -> None:
-    """Create a unit test database from SQL source with specific modifications.
-
-    Args:
-        source_sql_path: Path to the source SQL file
-        output_db_path: Path where the database should be created
-        modifications: List of (sql, params) tuples to apply after creation
-    """
-    if output_db_path.exists():
-        output_db_path.unlink()
-
-    # Generate database from SQL source and apply modifications
-    with sqlite3.connect(output_db_path) as conn:
-        # Execute the SQL source to create the database
-        conn.executescript(source_sql_path.read_text(encoding='utf-8'))
-
-        # Apply modifications
-        for sql, params in modifications:
-            conn.execute(sql, params)
-        conn.commit()
+    for src, db in databases:
+        _build_test_db(TEST_OUTPUT_PATH / db, [TEST_DATA_PATH / src])
 
 
 def create_unit_test_dbs() -> None:
     """Create unit test databases from SQL source for unit checking tests.
 
-    Generates databases from the single SQL source of truth (tutorial_assets/utopia.sql),
+    Generates databases from the single SQL source of truth (utopia_data.sql),
     applying modifications for each test case.
     """
-    test_output_dir = Path(__file__).parent / 'testing_outputs'
-    test_output_dir.mkdir(exist_ok=True)
-
-    # Source SQL file path (single source of truth)
-    source_sql = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets' / 'utopia.sql'
-
-    if not source_sql.exists():
-        raise FileNotFoundError(
-            f'Source SQL not found at: {source_sql}. Please ensure the Utopia tutorial SQL exists.'
-        )
+    TEST_OUTPUT_PATH.mkdir(exist_ok=True)
 
     # Define unit test variations with their modifications
     unit_test_variations = [
@@ -169,8 +162,11 @@ def create_unit_test_dbs() -> None:
     ]
 
     for db_name, modifications in unit_test_variations:
-        output_path = test_output_dir / db_name
-        create_unit_test_db_from_sql(source_sql, output_path, modifications)
+        _build_test_db(
+            TEST_OUTPUT_PATH / db_name,
+            [TEST_DATA_PATH / 'utopia_data.sql'],
+            modifications,
+        )
         logger.info('Created unit test DB: %s', db_name)
 
 

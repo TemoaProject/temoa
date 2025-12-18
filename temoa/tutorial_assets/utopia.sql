@@ -458,7 +458,7 @@ CREATE TABLE demand
 );
 INSERT INTO "demand" VALUES('utopia',1990,'RH',25.2,'PJ','');
 INSERT INTO "demand" VALUES('utopia',2000,'RH',37.8,'PJ','');
-INSERT INTO "demand" VALUES('utopia',2010,'RH',5.669999999999999574e+01,'PJ','');
+INSERT INTO "demand" VALUES('utopia',2010,'RH',56.7,'PJ','');
 INSERT INTO "demand" VALUES('utopia',1990,'RL',5.6,'PJ','');
 INSERT INTO "demand" VALUES('utopia',2000,'RL',8.4,'PJ','');
 INSERT INTO "demand" VALUES('utopia',2010,'RL',12.6,'PJ','');
