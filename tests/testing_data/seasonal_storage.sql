@@ -1085,16 +1085,7 @@ CREATE TABLE time_season
 );
 INSERT INTO "time_season" VALUES(2000,0,'charge',NULL);
 INSERT INTO "time_season" VALUES(2000,1,'discharge',NULL);
-CREATE TABLE time_season_all
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT
-        REFERENCES season_label (season),
-    notes TEXT,
-    PRIMARY KEY (period, sequence, season)
-);
+
 CREATE TABLE time_season_sequential
 (
     period INTEGER REFERENCES time_period (period),
