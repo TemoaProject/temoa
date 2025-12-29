@@ -82,14 +82,13 @@ solver. HiGHS is automatically available when you install Temoa and requires no 
 Running Temoa
 -------------
 
-To run the model, a configuration (‘config’) file is needed. An
+To run the model, a configuration (``config``) file is needed. An
 example config file called :code:`config_sample.toml` resides within the
 :code:`data_files/my_configs` folder. Running the model with a config file allows
-the user to (1) use a sqlite
-database for storing input and output data, (2) create a formatted Excel output
-file, (2) specify the solver to use, (3) return the log file produced during
-model execution, (4) return the lp file utilized by the solver, and (5) to
-execute several of the modeling extensions.
+the user to (1) use a sqlite database for storing input and output data, (2)
+create a formatted Excel output file, (2) specify the solver to use, (3) return
+the log file produced during model execution, (4) return the lp file utilized by
+the solver, and (5) to execute several of the modeling extensions.
 
 .. parsed-literal::
   $ temoa run config.toml
@@ -127,53 +126,53 @@ execute several of the modeling extensions.
 Database Construction
 ====================================
 
-Input datasets in Temoa can be constructed either as text files or relational
-databases. Input text files are referred to as 'DAT' files and follow a specific
-format. Take a look at the example DAT files in the :code:`temoa/data_files`
-directory.
-
-While DAT files work fine for small datasets, relational databases are preferred
-for larger datasets. To first order, you can think of a database as a collection
-of tables, where a 'primary key' within each table defines a unique entry (i.e.,
-row) within the table. In addition, a 'foreign key' defines a table element drawn
-from another table. Foreign keys enforce the defined relationships between
-different sets and parameters.
+Input datasets in Temoa are stored in a relational database management system.
+For those unfamiliar with databases, you can think of them as collections of
+tables. Within each table, a 'primary key' uniquely identifies each row. A
+'foreign key' is a column in one table that references the primary key of
+another table, thereby establishing relationships between tables and ensuring
+data consistency across the database.
 
 Temoa uses `sqlite`_, a widely used, self-contained database
 system. Building a database first requires constructing a sql file, which is
 simply a text file that defines the structure of different database tables and
-includes the input data. The snippet below is from the technology table used to
-define the 'temoa_utopia' dataset:
-
-**NOTE**:  *As of Version 3, the below table format is dated, but still shows the general structure of
-the SQL files used to create the database.*
+includes the input data. The snippet below is from the ``time_period`` table
+used to define the ``test_system`` dataset:
 
 .. parsed-literal::
-  CREATE TABLE technologies (
-  tech text primary key,
-  flag text,
-  sector text,
-  tech_desc text,
-  tech_category text,
-  FOREIGN KEY(flag) REFERENCES technology_labels(tech_labels),
-  FOREIGN KEY(sector) REFERENCES sector_labels(sector));
-  INSERT INTO "technologies" VALUES('IMPDSL1','r','supply',' imported diesel','petroleum');
-  INSERT INTO "technologies" VALUES('IMPGSL1','r','supply',' imported gasoline','petroleum');
-  INSERT INTO "technologies" VALUES('IMPHCO1','r','supply',' imported coal','coal');
+  1   CREATE TABLE time_period
+  2   (
+  3     sequence INTEGER UNIQUE,
+  4     period   INTEGER
+  5         PRIMARY KEY,
+  6     flag     TEXT
+  7         REFERENCES time_period_type (label)
+  8   );
+  9   INSERT INTO "time_period" VALUES(1,2015,'e');
+  10  INSERT INTO "time_period" VALUES(2,2020,'f');
+  11  INSERT INTO "time_period" VALUES(3,2025,'f');
+  12  INSERT INTO "time_period" VALUES(4,2030,'f');
+  13  INSERT INTO "time_period" VALUES(5,2035,'f');
 
-The first line creates the table. **Lines 2-6** define the columns within this table.
-Note that the the technology ('tech') name defines the primary key. Therefore, the
-same technology name cannot be entered twice; each technology name must be unique.
-**Lines 7-8** define foreign keys within the table. For example, each technology
-should be specified with a label (e.g., 'r' for 'resource'). Those labels must
-come from the 'technology_labels' table. Likewise, the sector name must be defined
-in the 'sector_labels' table. This enforcement of names across tables using
-foreign keys helps immediately catch typos. (As you can imagine, typos happen in
-plain text files and Excel when defining thousands of rows of data.) Another big
-advantage of using databases is that the model run outputs are stored in
-separate database output tables. The outputs by model run are indexed by a scenario name,
-which makes it possible to perform thousands of runs, programatically store all
-the results, and execute arbitrary queries that instantaneously return the requested
+The first line creates the table. **Lines 3-7** define the columns within this
+table. Note that ``period`` is the primary key. Therefore, the same time period
+cannot be entered twice; each name must be unique. **Line 7**, which helps
+define the ``flag`` column, declares a foreign key reference to the ``label``
+column of the ``time_period_type`` table. As a result, if the user tries to
+enter a label in this table that does not exist in the ``time_period_type``
+table, it will fail with an error. This foreign reference ensures that the
+modeler doesn't accidently type the wrong label in this table. For reference,
+there are two basic types of time periods in Temoa, ``e``, which defines
+pre-existing periods, and ``f``, which defines future time periods that are to
+be optimized. 
+
+This enforcement of names across tables using foreign keys helps immediately
+catch typos. As you can imagine, typos happen in plain text files and Excel when
+defining thousands of rows of data. Another big advantage of using databases is
+that the model run outputs are stored in separate database output tables. The
+outputs by model run are indexed by a scenario name, which makes it possible to
+perform thousands of runs, programatically store all the results, and execute
+arbitrary queries that instantaneously return the requested
 data.
 
 Because some database table elements serve as foreign keys in other tables, we
@@ -224,12 +223,12 @@ recommend that you populate input tables in the following order:
   * limit_tech_input_split
   * limit_tech_output_split
 
-For help getting started, take a look at how :code:`data_files/temoa_utopia.sql` is
-constructed. Use :code:`data_files/temoa_schema.sql` (a database file with the requisite
-structure but no data added) to begin building your own database file. We recommend
-leaving the database structure intact, and simply adding data to the schema file, or
-constructing an empty database from the schema file and then using a database editor
-to import data.
+For help getting started, take a look at how ``data_files/example_dbs/utopia.sql``
+is constructed. To begin building your own database file, use
+``data_files/temoa_schema_v4.sql``, which is a database file with the requisite
+structure but no data added. We recommend leaving the database structure intact,
+and simply adding data to the schema file, or constructing an empty database
+from the schema file and then using a script ordatabase editor to import data.
 Once the sql file is complete, you can convert it into a binary sqlite file by
 installing sqlite3 and executing the following command:
 
