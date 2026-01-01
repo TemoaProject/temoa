@@ -141,6 +141,9 @@ Conventions
 Sets
 ----
 
+.. include:: db_model_comparison.rst
+
+
 .. _table_set:
 
 .. csv-table:: List of all Temoa sets with which a modeler might interact.  The
