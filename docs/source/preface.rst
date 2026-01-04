@@ -16,61 +16,76 @@ soon as possible.
 
 What is Temoa?
 --------------
+Temoa is an energy system optimization model (ESOM) developed over many years
+to support transparent, data-driven analysis of energy systems. ESOMs
+serve as an important planning tool because they allow users to examine energy
+futures using a self-consistent framework for evaluation. Temoa is implemented
+as a linear program that minimizes the total cost of energy supply by optimizing
+the installation and operation of energy technologies over a user-defined
+planning horizon. Energy supply must meet end-use demands subject to physical
+and technical constraints governing system operation, along with user-defined
+policy scenarios.
 
-Temoa is an energy system optimization model (ESOM).  Briefly, ESOMs optimize the
-installation and utilization of energy technology capacity over a user-defined
-time horizon. Optimal decisions are driven by an objective function that minimizes
-the cost of energy supply. Conceptually, one may think of an ESOM as a "left-to-right"
-network graph, with a set of energy sources on the lefthand side of the graph that
-are transformed into consumable energy commodities by a set of energy technologies,
-which are ultimately used to meet demands on the righthand side of the network graph.
-[#esom_definition]_
+The energy system on which Temoa and other ESOMs operate can be visualized as
+a directed graph. Primary energy sources represent the points of origin, which
+are transformed by a network of energy conversion and delivery technologies, and
+ultimately produce consumable energy commodities that satisfy end-use demands.
+[#esom_definition]_. Temoa provides tools to explicitly represent this network,
+visualize system structure, and trace energy flows through time.
 
-Key features of the core Temoa model include:
+A defining strength of Temoa is its flexible treatment of time. Users may
+define arbitrary model periods of varying length and represent intra-period
+operations using seasonal and time-of-day slices, full chronological hours, or
+representative days. Capacity expansion can be solved under perfect foresight
+or using a rolling-horizon. In addition, Temoa supports technology
+vintaging, separate loan periods and physical lifetimes, and both global and
+technology-specific discount rates. Beyond deterministic optimization, Temoa
+supports stochastic optimization as well as modeling-to-generate alternatives
+(MGA) to explore near-optimal solution spaces. All of Temoa's features were
+driven by specific analytic needs over a decade of model development and
+policy-focused application.
 
-  * Flexible time slicing by season and time-of-day
-  * Variable length model time periods
-  * Technology vintaging
-  * Separate technology loan periods and lifetimes
-  * Global and technology-specific discount rates
-  * Capability to perform stochastic optimization
-  * Capability to perform modeling-to-generate alternatives (MGA)
+Temoa is implemented within an open-source software stack and is released under
+the MIT license, with source code available on GitHub [#open_source_realities]_.
+The model is written in Python and seamlessly integrates with the broader Python
+ecosystem. Input data are stored in a relational SQLite database, enabling
+transparency, reproducibility, and easy modification. The model maintains a
+strict distinction between source code and the input data on which it operates.
+The model can be executed on single machines, multi-core systems, or
+high-performance computing environments.
 
+The name Temoa (Tools for Energy Model Optimization and Analysis) reflects the
+project's broader scope. The platform comprises four interrelated components:
+the underlying mathematical formulation, its software implementation, a suite
+of supporting tools for data management, analysis, and visualization, and an
+online presence that supports documentation, dissemination, and community
+engagement. Together, these elements are designed to foster collaboration,
+extensibility, and trust in energy system modeling results.
 
-Temoa design features include:
-
-  * Source code licensed under MIT, available through Github [#open_source_realities]_
-  * Open source software stack
-  * Part of a rich Python ecosystem
-  * Data stored in a relational database system (sqlite)
-  * Ability to utilize multi-core and compute cluster environments
-
-The word 'Temoa' is actually an acronym for "Tools for Energy Model Optimization
-and Analysis," currently composed of four (major) pieces of infrastructure:
-
-   * The mathematical model
-   * The implemented model (code)
-   * Surrounding tools
-   * An online presence
-
-Each of these pieces is fundamental to creating a transparent and usable model
-with a community oriented around collaboration.
 
 
 Why Temoa?
 ----------
+In 2009, when the idea for Temoa was born, most options for energy systems
+modeling were geared towards government institutions that could afford the
+expensive commercial software licenses. Closed source code and data also
+meant that it was impossible for third parties to verify published model
+results, even though those results were being used to inform public policy
+decisions involving significant transfers of wealth and direct consequences for
+people's lives. In addition, models were typically used to run a limited number
+of scenarios that did not address the true underlying uncertainty about the
+future.
 
-In short, because we believe that ESOM-based analyses should be repeatable by
-independent third parties.  The only way to make this happen is to
-have a freely available model, and to create an ecosystem of freely shared data
-and model inputs.
+Today's vibrant open source energy modeling community did not exist at
+that time. We were motivated to build Temoa around three high-level objectives:
+(1) make the model code and data open source to enable third party replication
+of results, (2) use an open source software stack to minimize the barriers to
+entry in energy modeling, and (3) build a toolkit to evaluate future uncertainty
+in different ways, depending on the question at hand.
 
-For a longer explanation, please see :cite:`Hunter_etal_2013`.  In summary,
-ESOM-based analyses are (1) impossible to validate, (2) complex enough as to be
-non-repeatable without electronic access to **exact** versions of code *and* data
-input, and (3) often do a poor job addressing uncertainty. We believe that
-ESOM-based analyses should be completely open, independently reproducible,
-electronically available, and address uncertainty about the future.
+Temoa remains one of the most fully-featured, open source energy system models
+focused on projecting changes across the whole energy system.
+
 
 
 Temoa Origin and Pronunciation
