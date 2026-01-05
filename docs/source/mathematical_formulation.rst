@@ -1064,7 +1064,7 @@ calculated via the formula:
 
    LA_{t,v} = \frac{DR_{r,t,v}}{1 - (1 + DR_{r,t,v})^{{}^- LLN_{r,t,v}}}
 
-   \forall \{t, v\} \in \Theta_\text{cost_invest}
+   \forall \{t, v\} \in \Theta_{\text{cost\_invest}}
 
 
 model_process_life

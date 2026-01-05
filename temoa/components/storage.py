@@ -503,13 +503,13 @@ def limit_storage_fraction_constraint(
        :label: limit_storage_fraction
 
           \textbf{SF}_{r,p,s,d,t,v} \le
-          \ SF_{r,p,s,d,t,v}
+          SF_{r,p,s,d,t,v}
           \cdot
-          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{(24 \cdot DPP hrs/yr}
-          \cdot \sum_{d} SEG_{s,d} \cdot M.days_per_period days/yr \cdot MPL_{r,p,t,v}
+          \textbf{CAP}_{r,p,t,v} \cdot \text{C2A}_{r,t} \cdot \frac {SD_{r,t}}{24 \cdot \text{DPP}}
+          \cdot \sum_{d} \text{SEG}_{s,d} \cdot \text{days\_per\_period} \cdot \text{MPL}_{r,p,t,v}
 
           \\
-          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{limit_storage_fraction}}
+          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{limit\_storage\_fraction}}
     """
 
     energy_limit = (

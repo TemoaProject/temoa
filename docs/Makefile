@@ -5,9 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = build
-# The below doesn't seem to work properly....  changed to 'build' directory (above) within the docs folder
-# BUILDDIR      = /tmp/TemoaDocumentationBuild
+BUILDDIR      = _build
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -108,9 +106,22 @@ latex:
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through pdflatex..."
-	$(MAKE) -C $(BUILDDIR)/latex \
-	  LATEXOPTS='-interaction=nonstopmode -file-line-error -halt-on-error' \
-	  all-pdf
+	@if command -v latexmk > /dev/null 2>&1; then \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			LATEXOPTS='-interaction=nonstopmode -file-line-error -halt-on-error' \
+			all-pdf; \
+	else \
+		echo "latexmk not found, falling back to manual pdflatex..."; \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			PDFLATEX="pdflatex -interaction=nonstopmode -file-line-error -halt-on-error" \
+			LATEXMKOPTS="" \
+			all-pdf || true; \
+		echo "Running pdflatex again for references..."; \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			PDFLATEX="pdflatex -interaction=nonstopmode -file-line-error -halt-on-error" \
+			LATEXMKOPTS="" \
+			all-pdf; \
+	fi
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
 text:
@@ -156,4 +167,3 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
-

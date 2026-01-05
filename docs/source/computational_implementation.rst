@@ -378,18 +378,18 @@ The Temoa model code is organized into clear, purpose-driven packages:
 
 * ``temoa.data_processing`` - Output analysis and visualization
 
-  * ``db_to_excel.py`` - Excel output generation (⚠️ untested in v4.0)
-  * ``make_graphviz.py`` - Network diagram generation (⚠️ untested in v4.0)
+  * ``db_to_excel.py`` - Excel output generation ([!] untested in v4.0)
+  * ``make_graphviz.py`` - Network diagram generation ([!] untested in v4.0)
   * Result processing utilities
 
 * ``temoa.extensions`` - Optional extensions for advanced analysis
 
-  * ``modeling_to_generate_alternatives`` - MGA analysis for exploring near-optimal solutions (⚠️ untested in v4.0)
-  * ``method_of_morris`` - Sensitivity analysis (⚠️ untested in v4.0)
-  * ``monte_carlo`` - Uncertainty quantification (⚠️ untested in v4.0)
+  * ``modeling_to_generate_alternatives`` - MGA analysis for exploring near-optimal solutions ([!] untested in v4.0)
+  * ``method_of_morris`` - Sensitivity analysis ([!] untested in v4.0)
+  * ``monte_carlo`` - Uncertainty quantification ([!] untested in v4.0)
   * ``myopic`` - Sequential decision making with limited foresight
-  * ``single_vector_mga`` - Focused MGA on specific variables (⚠️ untested in v4.0)
-  * ``stochastics`` - Stochastic programming capabilities (⚠️ untested in v4.0)
+  * ``single_vector_mga`` - Focused MGA on specific variables ([!] untested in v4.0)
+  * ``stochastics`` - Stochastic programming capabilities ([!] untested in v4.0)
 
 * ``temoa._internal`` - Internal utilities (not part of public API)
 

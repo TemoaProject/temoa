@@ -164,7 +164,7 @@ table, it will fail with an error. This foreign key reference ensures that the
 modeler doesn't accidently type the wrong label in this table. For context,
 there are two basic types of time periods in Temoa, ``e``, which defines
 pre-existing periods, and ``f``, which defines future time periods that are to
-be optimized. 
+be optimized.
 
 This enforcement of names across tables using foreign keys helps immediately
 catch typos. As you can imagine, typos happen in plain text files and Excel when
