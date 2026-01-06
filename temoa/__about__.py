@@ -1,6 +1,6 @@
 import re
 
-__version__ = '4.0.0a1.dev20251201'
+__version__ = '4.0.0a1'
 
 # Parse the version string to get major and minor versions
 # We use a regex to be robust against versions like "4.1a1" or "4.0.0.dev1"
