@@ -386,7 +386,7 @@ The Temoa model code is organized into clear, purpose-driven packages:
 
   * ``modeling_to_generate_alternatives`` - MGA analysis for exploring near-optimal solutions ([!] untested in v4.0)
   * ``method_of_morris`` - Sensitivity analysis ([!] untested in v4.0)
-  * ``monte_carlo`` - Uncertainty quantification ([!] untested in v4.0)
+  * ``monte_carlo`` - :doc:`monte_carlo` (Uncertainty quantification)
   * ``myopic`` - Sequential decision making with limited foresight
   * ``single_vector_mga`` - Focused MGA on specific variables ([!] untested in v4.0)
   * ``stochastics`` - Stochastic programming capabilities ([!] untested in v4.0)
