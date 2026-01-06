@@ -281,7 +281,7 @@ def ramp_up_day_constraint(
             \leq
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp_up_day}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_up\_day}}
             \\
             \text{where: } \Delta H_{r,p,s,d,s_{next},d_{next}} = \frac{24}{2}
             \left ( \frac{SEG_{r,p,s,d}}{\sum_{D} SEG_{r,p,s,d'}} +
@@ -384,7 +384,7 @@ def ramp_down_day_constraint(
             \leq
             R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp_down_day}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down\_day}}
     """
 
     s_next, d_next = model.time_next[p, s, d]

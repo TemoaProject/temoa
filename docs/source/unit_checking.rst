@@ -100,10 +100,10 @@ Units in **efficiency** and **cost** tables MUST use ratio format:
 
    Numerator / (Denominator)
 
-   ✅ CORRECT:   PJ / (PJ)
-   ✅ CORRECT:   Mdollar / (PJ^2 / GW)
-   ❌ WRONG:     PJ/PJ              (no parentheses)
-   ❌ WRONG:     Mdollar * GW / (PJ^2)   (denominator incomplete)
+   [V] CORRECT:   PJ / (PJ)
+   [V] CORRECT:   Mdollar / (PJ^2 / GW)
+   [X] WRONG:     PJ/PJ              (no parentheses)
+   [X] WRONG:     Mdollar * GW / (PJ^2)   (denominator incomplete)
 
 The denominator **MUST be fully enclosed in parentheses**. The regex only captures content
 within ``( )`` after the ``/``.
@@ -112,10 +112,10 @@ Other tables should use plain entries:
 
 .. code-block:: text
 
-   ✅  PJ
-   ✅  petajoules
-   ✅  GW
-   ✅  Mt / (GW)    (if ratio needed)
+   [V]  PJ
+   [V]  petajoules
+   [V]  GW
+   [V]  Mt / (GW)    (if ratio needed)
 
 Custom Units Registry
 ~~~~~~~~~~~~~~~~~~~~~
@@ -138,7 +138,7 @@ Common Footguns and Pitfalls
 
 .. code-block:: text
 
-   ❌ cost_invest units: "Mdollar / PJ^2 / GW"
+   [X] cost_invest units: "Mdollar / PJ^2 / GW"
 
    Error: RATIO_ELEMENT regex doesn't match, only "PJ^2" captured
 
@@ -146,7 +146,7 @@ Common Footguns and Pitfalls
 
 .. code-block:: text
 
-   ✅ cost_invest units: "Mdollar / (PJ^2 / GW)"
+   [V] cost_invest units: "Mdollar / (PJ^2 / GW)"
 
 2. Capacity vs Energy Units
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,7 +155,7 @@ Common Footguns and Pitfalls
 
 .. code-block:: text
 
-   ❌ existing_capacity units: "GW * year"
+   [X] existing_capacity units: "GW * year"
 
    Error: Energy units (not capacity) in capacity table
 
@@ -163,12 +163,12 @@ Common Footguns and Pitfalls
 
 .. code-block:: text
 
-   ✅ existing_capacity units: "GW"    ([time]^-3 = power)
-   ❌ existing_capacity units: "GWh"   ([time]^-2 = energy)
+   [V] existing_capacity units: "GW"    ([time]^-3 = power)
+   [X] existing_capacity units: "GWh"   ([time]^-2 = energy)
 
 **Physics**:
-- Capacity = Power (W, kW, MW, GW) → ``[time]^-3``
-- Energy = Power × Time (Wh, kWh) → ``[time]^-2``
+- Capacity = Power (W, kW, MW, GW) -> ``[time]^-3``
+- Energy = Power × Time (Wh, kWh) -> ``[time]^-2``
 
 3. Cost Table Units and C2A
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +179,7 @@ For capacity-based costs, the expected denominator is:
 
 .. math::
 
-   \text{expected_measure} = \text{output_units} \times \text{C2A} \times \text{year}
+   \text{expected\_measure} = \text{output\_units} \times \text{C2A} \times \text{year}
 
 **Example**:
 - Output commodity: ``ELC`` = ``PJ``
@@ -188,8 +188,8 @@ For capacity-based costs, the expected denominator is:
 
 .. code-block:: text
 
-   ✅ cost_invest: "Mdollar / (PJ^2 / GW)"
-   ✅ cost_fixed:  "Mdollar / (PJ^2 / GW / year)"   (adds /year for period-based)
+   [V] cost_invest: "Mdollar / (PJ^2 / GW)"
+   [V] cost_fixed:  "Mdollar / (PJ^2 / GW / year)"   (adds /year for period-based)
 
 4. period_based Flag
 ~~~~~~~~~~~~~~~~~~~~
@@ -241,11 +241,11 @@ Tables affected: ``limit_activity``, ``limit_capacity``, ``limit_new_capacity``
 
 .. code-block:: text
 
-   ❌ WRONG:
+   [X] WRONG:
    tech E01, output ELC: PJ
    tech E01, output HEAT: GJ    (different units!)
 
-   ✅ CORRECT:
+   [V] CORRECT:
    tech E01, output ELC: PJ
    tech E01, output HEAT: PJ    (same units)
 
@@ -278,16 +278,16 @@ Common Error Messages
 .. code-block:: text
 
    "Units lack currency dimension"
-   → Cost table units don't contain currency (dollar/euro)
+   -> Cost table units don't contain currency (dollar/euro)
 
    "Energy units (not capacity) in capacity table"
-   → Using energy units (kWh, GWh, etc.) instead of capacity units (GW, MW)
+   -> Using energy units (kWh, GWh, etc.) instead of capacity units (GW, MW)
 
    "Non-matching measure unit"
-   → Units don't match expected format after accounting for C2A/period
+   -> Units don't match expected format after accounting for C2A/period
 
    "failed to process query: no such column: tech"
-   → Using old SQL queries on v4.0 schema (should auto-fix now)
+   -> Using old SQL queries on v4.0 schema (should auto-fix now)
 
 Reading Unit Check Reports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -329,28 +329,28 @@ v4.0 Schema Coverage
    :header: "Table", "Has Units", "Check 2", "Check 3", "Check 4", "Check 5"
    :widths: 25, 12, 10, 12, 15, 10
 
-   "capacity_to_activity", "✓", "✓", "", "(used)", "(used)"
-   "commodity", "✓", "✓", "✓", "", ""
-   "construction_input", "✓", "✓", "", "", ""
-   "cost_emission", "✓", "✓", "", "", "✓"
-   "cost_fixed", "✓", "✓", "", "", "✓"
-   "cost_invest", "✓", "✓", "", "", "✓"
-   "cost_variable", "✓", "✓", "", "", "✓"
-   "demand", "✓", "✓", "", "✓", ""
-   "efficiency", "✓", "✓", "✓", "", ""
-   "emission_activity", "✓", "✓", "", "", ""
-   "emission_embodied", "✓", "✓", "", "", ""
-   "emission_end_of_life", "✓", "✓", "", "", ""
-   "end_of_life_output", "✓", "✓", "", "", ""
-   "existing_capacity", "✓", "✓", "", "✓", ""
-   "lifetime_process", "✓", "✓", "", "", ""
-   "lifetime_tech", "✓", "✓", "", "", ""
-   "loan_lifetime_process", "✓", "✓", "", "", ""
-   "limit_activity", "✓", "✓", "", "✓", ""
-   "limit_capacity", "✓", "✓", "", "✓", ""
-   "limit_emission", "✓", "✓", "", "", ""
-   "limit_new_capacity", "✓", "✓", "", "✓", ""
-   "limit_resource", "✓", "✓", "", "", ""
+   "capacity_to_activity", "[V]", "[V]", "", "(used)", "(used)"
+   "commodity", "[V]", "[V]", "[V]", "", ""
+   "construction_input", "[V]", "[V]", "", "", ""
+   "cost_emission", "[V]", "[V]", "", "", "[V]"
+   "cost_fixed", "[V]", "[V]", "", "", "[V]"
+   "cost_invest", "[V]", "[V]", "", "", "[V]"
+   "cost_variable", "[V]", "[V]", "", "", "[V]"
+   "demand", "[V]", "[V]", "", "[V]", ""
+   "efficiency", "[V]", "[V]", "[V]", "", ""
+   "emission_activity", "[V]", "[V]", "", "", ""
+   "emission_embodied", "[V]", "[V]", "", "", ""
+   "emission_end_of_life", "[V]", "[V]", "", "", ""
+   "end_of_life_output", "[V]", "[V]", "", "", ""
+   "existing_capacity", "[V]", "[V]", "", "[V]", ""
+   "lifetime_process", "[V]", "[V]", "", "", ""
+   "lifetime_tech", "[V]", "[V]", "", "", ""
+   "loan_lifetime_process", "[V]", "[V]", "", "", ""
+   "limit_activity", "[V]", "[V]", "", "[V]", ""
+   "limit_capacity", "[V]", "[V]", "", "[V]", ""
+   "limit_emission", "[V]", "[V]", "", "", ""
+   "limit_new_capacity", "[V]", "[V]", "", "[V]", ""
+   "limit_resource", "[V]", "[V]", "", "", ""
 
 **Check Legend**:
 - Check 2: Standard validation (format, characters, registry)

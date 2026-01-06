@@ -77,7 +77,7 @@ The interactive HTML network graphs provide dynamic exploration with pan, zoom, 
 
 Graphviz also generates static SVG diagrams showing the energy system structure:
 
-.. figure:: images/graphviz_examples/results1990.svg
+.. figure:: images/results1990.*
    :align: center
    :figclass: center
    :width: 100%

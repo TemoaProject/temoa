@@ -41,14 +41,14 @@ The generated HTML files will be in `docs/_build/html/`. Open `index.html` in yo
 
 ### Generating PDF Documentation
 
-To generate PDF documentation, you'll need LaTeX installed on your system:
+To generate PDF documentation, you'll need LaTeX installed. latexmk is recommended for automatic PDF generation:
 - **macOS**: [MacTeX](https://www.tug.org/mactex/mactex-download.html)
-- **Windows/Linux**: [MiKTeX](https://miktex.org/download)
+- **Windows/Linux**: [MiKTeX](https://miktex.org/download) or TeX Live
 
 Then run:
 
 ```bash
-uv run sphinx-build -b latexpdf source _build/latex
+uv run make latexpdf
 ```
 
 The PDF will be generated in `docs/_build/latex/`.

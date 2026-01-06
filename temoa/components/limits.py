@@ -254,7 +254,7 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
 
        \le LR_{r, t}
 
-       \forall \{r, t\} \in \Theta_{\text{limit_resource}}"""
+       \forall \{r, t\} \in \Theta_{\text{limit\_resource}}"""
     # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a
     #            tech" regardless of whatever "resources" are consumed.
     # dev note:  this would generally be applied to a "dummy import" technology to restrict
@@ -310,7 +310,7 @@ def limit_activity_share_constraint(
         \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O}
         \mathbf{FO}_{r,p,s,d,i,t,v,o}
 
-        \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit_activity_share}}
+        \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit\_activity\_share}}
     """
 
     regions = geography.gather_group_regions(model, r)
@@ -457,12 +457,12 @@ def limit_annual_capacity_factor_constraint(
             \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot
             \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
+            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
 
             \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot
             \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_annual_capacity_factor}}
+            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus
     # (r='Mexico+US+Canada'), or 'global'.
@@ -519,13 +519,13 @@ def limit_seasonal_capacity_factor_constraint(
         \sum_{D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMSCF_{r, p, s, t} \cdot
         \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-        \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
+        \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit\_seasonal\_capacity\_factor}}
 
         \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \cdot \sum_{D} SEG_{s,d}
         \le LIMSCF_{r, p, s, t} \cdot
         \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
 
-        \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit_seasonal_capacity_factor}}
+        \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit\_seasonal\_capacity\_factor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus
     # (r='Mexico+US+Canada'), or 'global'.
@@ -708,7 +708,7 @@ def limit_tech_output_split_constraint(
        \geq
          TOS_{r, p, t, o} \cdot \sum_{I, O, t \not \in T^{a}} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{limit_tech_output_split}}"""
+       \forall \{r, p, s, d, t, v, o\} \in \Theta_{\text{limit\_tech\_output\_split}}"""
     out = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, o]
         for S_i in model.process_inputs_by_output[r, p, t, v, o]
@@ -743,7 +743,7 @@ def limit_tech_output_split_annual_constraint(
             \sum_{I, O, T^{a}} \textbf{FOA}_{r, p, s, d, i, t \in T^{a}, v, o}
 
             \forall \{r, p, t \in T^{a}, v, o\} \in
-            \Theta_{\text{limit_tech_output_split_annual}}"""
+            \Theta_{\text{limit\_tech\_output\_split\_annual}}"""
     out = quicksum(
         model.v_flow_out_annual[r, p, S_i, t, v, o]
         for S_i in model.process_inputs_by_output[r, p, t, v, o]
@@ -820,7 +820,7 @@ def limit_emission_constraint(
            ELM_{r, p, e}
 
            \\
-           & \forall \{r, p, e\} \in \Theta_{\text{limit_emission}}
+           & \forall \{r, p, e\} \in \Theta_{\text{limit\_emission}}
 
     """
     emission_limit = value(model.limit_emission[r, p, e, op])
@@ -932,7 +932,7 @@ def limit_growth_capacity(
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p_{prev},t}
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity}}
 
 
             \begin{aligned}\text{Degrowth:}\\
@@ -940,7 +940,7 @@ def limit_growth_capacity(
             \leq S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p,t}
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity}}
     """
 
     regions = geography.gather_group_regions(model, r)
@@ -1053,7 +1053,7 @@ def limit_growth_new_capacity(
             \text{ where } v=p
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{prev}}
@@ -1061,7 +1061,7 @@ def limit_growth_new_capacity(
             \text{ where } v=p
             \end{aligned}
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacity}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity}}
     """
 
     regions = geography.gather_group_regions(model, r)
@@ -1173,7 +1173,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_growth_capacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacityDelta}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
@@ -1182,7 +1182,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit_degrowth_capacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacityDelta}}
     """
 
     regions = geography.gather_group_regions(model, r)
@@ -1298,11 +1298,11 @@ def limit_activity_constraint(
 
        \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o}
 
-       \forall \{r, p, t \notin T^{a}\} \in \Theta_{\text{limit_activity}}
+       \forall \{r, p, t \notin T^{a}\} \in \Theta_{\text{limit\_activity}}
 
        +\sum_{I,V,O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
-       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{limit_activity}}
+       \forall \{r, p, t \in T^{a}\} \in \Theta_{\text{limit\_activity}}
 
        \le LA_{r, p, t}
     """
@@ -1378,7 +1378,7 @@ def limit_capacity_constraint(
 
        \textbf{CAPAVL}_{r, p, t} \le LC_{r, p, t}
 
-       \forall \{r, p, t\} \in \Theta_{\text{limit_capacity}}"""
+       \forall \{r, p, t\} \in \Theta_{\text{limit\_capacity}}"""
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_capacity[r, p, t, op])
