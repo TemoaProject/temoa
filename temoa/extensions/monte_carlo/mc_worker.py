@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 verbose = False  # for T/S or monitoring...
 
 
-class MCWorker(Process):
+class MCWorker:
     worker_idx = 1
 
     def __init__(
@@ -41,7 +41,6 @@ class MCWorker(Process):
         solver_log_path: Path | None = None,
         **kwargs,
     ):
-        super().__init__(daemon=True)
         self.worker_number = MCWorker.worker_idx
         MCWorker.worker_idx += 1
         self.dp_queue: Queue[DataPortal | str] = dp_queue
@@ -70,34 +69,19 @@ class MCWorker(Process):
         # __init__. We can set them later via self.opt.options
         self.opt = SolverFactory(self.solver_name)
 
-        # update the solver options to pass in a log location
         while True:
-            if self.solver_log_path:
-                # add the solver log path to options, if one is provided
-                log_location = Path(
-                    self.solver_log_path,
-                    f'solver_log_{str(self.worker_number)}_{self.solve_count}.log',
-                )
-                log_location = str(log_location)
-                match self.solver_name:
-                    case 'gurobi':
-                        self.solver_options.update({'LogFile': log_location})
-                    # case 'appsi_highs':
-                    #     self.solver_options.update({'log_file': log_location})
-                    case _:
-                        pass
-
-            self.opt.options = self.solver_options
-
             # wait for a DataPortal object to show up, then get to work
             tic = datetime.now()
             data = self.dp_queue.get()
             toc = datetime.now()
+
+            # log data pull
             logger.debug(
                 'Worker %d waited for and pulled a DataPortal from work queue in %0.2f seconds',
                 self.worker_number,
                 (toc - tic).total_seconds(),
             )
+
             if data == 'ZEBRA':  # shutdown signal
                 if verbose:
                     print(f'worker {self.worker_number} got shutdown signal')
@@ -105,13 +89,43 @@ class MCWorker(Process):
                 self.results_queue.put('COYOTE')
                 break
             name, dp = data
+
+            # update the solver options
+            self.opt.options = self.solver_options
+            if self.solver_name.startswith('appsi_'):
+                for k, v in self.solver_options.items():
+                    try:
+                        setattr(self.opt.config, k, v)
+                    except (ValueError, AttributeError):
+                        # Key not defined in ConfigDict, skip it
+                        pass
+
+                # Handle solver log path for appsi
+                if self.solver_log_path:
+                    log_location = (
+                        self.solver_log_path
+                        / f'solver_log_{self.worker_number}_{self.solve_count}.log'
+                    )
+                    try:
+                        setattr(self.opt.config, 'log_file', str(log_location))
+                    except (ValueError, AttributeError):
+                        pass
+
             abstract_model = TemoaModel()
             model: TemoaModel = abstract_model.create_instance(data=dp)
             model.name = name  # set the name from the input
             tic = datetime.now()
             try:
                 self.solve_count += 1
-                res: SolverResults | None = self.opt.solve(model)
+                if self.solver_name.startswith('appsi_'):
+                    # For appsi, we can set tee on the config
+                    try:
+                        self.opt.config.tee = True
+                    except (ValueError, AttributeError):
+                        pass
+                    res: SolverResults | None = self.opt.solve(model)
+                else:
+                    res: SolverResults | None = self.opt.solve(model, tee=True)
 
             except Exception as e:
                 if verbose:
@@ -122,6 +136,11 @@ class MCWorker(Process):
                     model.name,
                     e,
                 )
+                # Try to get more info if it's a known solver error
+                if hasattr(self.opt, 'results') and self.opt.results:
+                    logger.warning(
+                        'Solver results status: %s', self.opt.results.solver.termination_condition
+                    )
                 res = None
             toc = datetime.now()
 
@@ -141,7 +160,9 @@ class MCWorker(Process):
                 else:
                     status = res['Solver'].termination_condition
                     logger.info(
-                        'Worker %d did not solve.  Results status: %s', self.worker_number, status
+                        'Worker %d did not solve.  Results status: %s',
+                        self.worker_number,
+                        status,
                     )
             except AttributeError:
                 pass

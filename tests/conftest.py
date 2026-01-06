@@ -80,6 +80,7 @@ def refresh_databases() -> None:
         # Utopia uses the unit-compliant data-only script
         ('utopia_data.sql', 'utopia.sqlite'),
         ('utopia_data.sql', 'myo_utopia.sqlite'),
+        ('utopia_data.sql', 'utopia_mc.sqlite'),
         # Other test databases
         ('test_system.sql', 'test_system.sqlite'),
         ('mediumville.sql', 'mediumville.sqlite'),

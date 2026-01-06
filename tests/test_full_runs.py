@@ -33,6 +33,7 @@ legacy_config_files = [
 ]
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]
+mc_files = [{'name': 'utopia mc', 'filename': 'config_utopia_mc.toml'}]
 
 
 @pytest.mark.parametrize(
@@ -158,3 +159,45 @@ def test_graphviz_integration(tmp_path: Path) -> None:
     # Check that the files are not empty
     for output_file in output_files:
         assert output_file.stat().st_size > 0, f'{output_file.name} should not be empty'
+
+
+@pytest.mark.parametrize(
+    'system_test_run', argvalues=mc_files, indirect=True, ids=[d['name'] for d in mc_files]
+)
+def test_mc_utopia(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
+    """
+    Test Monte Carlo run logic and output database contents
+    """
+    data_name, _, _, sequencer = system_test_run
+
+    # Connect to the output database
+    con = sqlite3.connect(sequencer.config.output_database)
+    cur = con.cursor()
+
+    # 1. Check output_mc_delta table
+    res = cur.execute('SELECT run, param, old_val, new_val FROM main.output_mc_delta').fetchall()
+    assert len(res) == 2, 'Should have 2 tweaks recorded'
+
+    # Tweak 1: cost_invest, utopia|TXD|2010, a, -44.0
+    # The old value for TXD cost_invest in 2010 in Utopia is 1044.0
+    # New value should be 1000.0
+    assert res[0][0] == 1
+    assert res[0][1] == 'cost_invest'
+    assert res[0][3] == pytest.approx(1000.0)
+
+    # Tweak 2: demand, utopia|2010|RH, r, 0.1
+    # Old value for RH demand in 2010 in Utopia is approx 56.7
+    # New value should be approx 62.37
+    assert res[1][0] == 2
+    assert res[1][1] == 'demand'
+    assert res[1][3] == pytest.approx(56.7 * 1.1, rel=1e-3)
+
+    # 2. Check output_objective table
+    res = cur.execute('SELECT scenario FROM main.output_objective').fetchall()
+    scenarios = [r[0] for r in res]
+    assert 'utopia_mc-1' in scenarios
+    assert 'utopia_mc-2' in scenarios
+
+    con.close()

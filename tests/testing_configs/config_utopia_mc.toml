@@ -1,0 +1,16 @@
+# MC config for testing in test_full_runs.py
+scenario = "utopia_mc"
+scenario_mode = "monte_carlo"
+
+input_database = "tests/testing_outputs/utopia_mc.sqlite"
+output_database = "tests/testing_outputs/utopia_mc.sqlite"
+neos = false
+
+# solver
+solver_name = "appsi_highs"
+
+time_sequencing = 'seasonal_timeslices'
+reserve_margin = 'static'
+
+[monte_carlo]
+run_settings = "tests/testing_data/mc_settings_utopia.csv"
