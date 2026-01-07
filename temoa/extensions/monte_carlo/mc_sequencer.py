@@ -39,16 +39,34 @@ class MCSequencer:
     def __init__(self, config: TemoaConfig):
         self.config = config
 
+        # determine the path to the solver options file
+        custom_path = self.config.monte_carlo_inputs.get('solver_options')
+        if custom_path:
+            options_file_path = Path(custom_path)
+            # if the path is relative, make it relative to the config file location if possible
+            if not options_file_path.is_absolute() and self.config.config_file:
+                options_file_path = self.config.config_file.parent / options_file_path
+            logger.info('Using custom Monte Carlo solver options from: %s', options_file_path)
+        else:
+            options_file_path = None
+
         # read in the options
         try:
-            with resources.as_file(solver_options_path) as path:
-                with open(path, 'rb') as f:
+            if options_file_path:
+                with open(options_file_path, 'rb') as f:
                     all_options = tomllib.load(f)
+            else:
+                with resources.as_file(solver_options_path) as path:
+                    with open(path, 'rb') as f:
+                        all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 
         except FileNotFoundError:
-            logger.warning('Unable to find solver options toml file.  Using default options.')
+            if options_file_path:
+                logger.error('Unable to find custom solver options file at: %s', options_file_path)
+            else:
+                logger.warning('Unable to find default solver options toml file.')
             s_options = {}
             all_options = {}
 
@@ -84,7 +102,7 @@ class MCSequencer:
         # 1. Load data
         with sqlite3.connect(self.config.input_database) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
-        data_store = hybrid_loader.create_data_dict(myopic_index=None)
+            data_store = hybrid_loader.create_data_dict(myopic_index=None)
         mc_run = MCRunFactory(config=self.config, data_store=data_store)
 
         # 2. Screen the input file
@@ -94,15 +112,18 @@ class MCSequencer:
         run_gen = mc_run.run_generator()
 
         # 4. Set up the workers
+        import multiprocessing
+        ctx = multiprocessing.get_context('spawn')
+
         num_workers = self.num_workers
-        work_queue: Queue[tuple[str, DataPortal] | str] = Queue(
+        work_queue: Queue[tuple[str, DataPortal] | str] = ctx.Queue(
             num_workers + 1
         )  # must be able to hold all shutdowns at once (could be changed later to not lock on
         # insertion...)
-        result_queue: Queue[DataBrick | str] = Queue(
+        result_queue: Queue[DataBrick | str] = ctx.Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue = Queue()
+        log_queue = ctx.Queue()
         # make workers
         workers = []
         kwargs = {
@@ -123,8 +144,9 @@ class MCSequencer:
                 solver_log_path=s_path,
                 **kwargs,
             )
-            w.start()
-            workers.append(w)
+            p = ctx.Process(target=w.run, daemon=True)
+            p.start()
+            workers.append(p)
         # workers now running and waiting for jobs...
 
         # 6.  Start the iterative solve process and let the manager run the show

@@ -743,11 +743,11 @@ class TableWriter:
             records.append(
                 {
                     'scenario': scenario,
-                    'iteration': iteration,
-                    'param_name': cr.param_name,
+                    'run': iteration,
+                    'param': cr.param_name,
                     'param_index': str(cr.param_index).replace("'", ''),
-                    'old_value': cr.old_value,
-                    'new_value': cr.new_value,
+                    'old_val': cr.old_value,
+                    'new_val': cr.new_value,
                 }
             )
 
