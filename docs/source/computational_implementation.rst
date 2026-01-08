@@ -389,7 +389,7 @@ The Temoa model code is organized into clear, purpose-driven packages:
   * ``monte_carlo`` - :doc:`monte_carlo` (Uncertainty quantification)
   * ``myopic`` - Sequential decision making with limited foresight
   * ``single_vector_mga`` - Focused MGA on specific variables ([!] untested in v4.0)
-  * ``stochastics`` - Stochastic programming capabilities ([!] untested in v4.0)
+  * ``stochastics`` - :doc:`stochastics` (Stochastic programming capabilities)
 
 * ``temoa._internal`` - Internal utilities (not part of public API)
 
