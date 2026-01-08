@@ -6,3 +6,4 @@ Temoa Project Documentation
    Documentation
    monte_carlo
    unit_checking
+   stochastics

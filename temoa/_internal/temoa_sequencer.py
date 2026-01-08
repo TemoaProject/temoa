@@ -33,6 +33,7 @@ from temoa.extensions.modeling_to_generate_alternatives.mga_sequencer import Mga
 from temoa.extensions.monte_carlo.mc_sequencer import MCSequencer
 from temoa.extensions.myopic.myopic_sequencer import MyopicSequencer
 from temoa.extensions.single_vector_mga.sv_mga_sequencer import SvMgaSequencer
+from temoa.extensions.stochastics.stochastic_sequencer import StochasticSequencer
 from temoa.model_checking.pricing_check import price_checker
 
 if TYPE_CHECKING:
@@ -67,6 +68,7 @@ class TemoaSequencer:
         # for results catching for perfect_foresight or testing
         self.pf_results: pyomo.opt.SolverResults | None = None
         self.pf_solved_instance: TemoaModel | None = None
+        self.stochastic_sequencer: StochasticSequencer | None = None
 
     def _run_preliminary_checks(self) -> None:
         """Runs pre-flight system checks and (optionally) a non-fatal units check.
@@ -188,6 +190,10 @@ class TemoaSequencer:
 
             case TemoaMode.MONTE_CARLO:
                 self._run_monte_carlo()
+
+            case TemoaMode.STOCHASTIC:
+                self.stochastic_sequencer = StochasticSequencer(config=self.config)
+                self.stochastic_sequencer.start()
 
             case _:
                 raise NotImplementedError(

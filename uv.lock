@@ -572,6 +572,20 @@ wheels = [
 ]
 
 [[package]]
+name = "mpi-sppy"
+version = "0.12.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pyomo" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a5/d2/1df67d240fb6f9b07d550fc6d8477a74dd220e17f24fce6ccac9d5316ad2/mpi-sppy-0.12.1.tar.gz", hash = "sha256:c405b88f3ab69c67dd564789cf156c0cfb704a9eb74d0645f29a1058c19bed27", size = 246281, upload-time = "2024-01-11T16:41:08.311Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/29/5d104b54a67d088f0df34801dcc891c702da6dcbb0a1764708a0488f800d/mpi_sppy-0.12.1-py3-none-any.whl", hash = "sha256:0fdf71087f4c5cd9ae22f93ff9ec1feb724ae6bc8e12f9a194154b97dddc750e", size = 310166, upload-time = "2024-01-11T16:41:06.816Z" },
+]
+
+[[package]]
 name = "multiprocess"
 version = "0.70.18"
 source = { registry = "https://pypi.org/simple" }
@@ -1370,6 +1384,7 @@ dependencies = [
     { name = "highspy" },
     { name = "joblib" },
     { name = "matplotlib" },
+    { name = "mpi-sppy" },
     { name = "networkx" },
     { name = "numpy" },
     { name = "openpyxl" },
@@ -1425,6 +1440,7 @@ requires-dist = [
     { name = "joblib" },
     { name = "matplotlib", specifier = "==3.9.2" },
     { name = "matplotlib", marker = "extra == 'plotting'", specifier = ">=3.9.2" },
+    { name = "mpi-sppy", specifier = ">=0.12.1" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=2.0.0" },
     { name = "networkx", specifier = ">=3.3" },
     { name = "numpy", specifier = ">=2.1.0" },

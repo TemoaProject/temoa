@@ -17,3 +17,4 @@ class TemoaMode(Enum):
     CHECK = 6  # build and run price check, source trace it
     SVMGA = 7  # single-vector MGA
     MONTE_CARLO = 8  # MC optimization
+    STOCHASTIC = 9  # Stochastic optimization

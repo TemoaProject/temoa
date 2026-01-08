@@ -71,6 +71,8 @@ mdit-py-plugins==0.5.0
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
+mpi-sppy==0.12.1
+    # via temoa (pyproject.toml)
 multiprocess==0.70.18
     # via salib
 myst-parser==4.0.1
@@ -83,6 +85,7 @@ numpy==2.3.1
     #   contourpy
     #   highspy
     #   matplotlib
+    #   mpi-sppy
     #   pandas
     #   salib
     #   scipy
@@ -121,7 +124,9 @@ pygments==2.19.2
     #   rich
     #   sphinx
 pyomo==6.9.2
-    # via temoa (pyproject.toml)
+    # via
+    #   temoa (pyproject.toml)
+    #   mpi-sppy
 pyparsing==3.2.3
     # via matplotlib
 pytest==8.4.1
@@ -149,6 +154,7 @@ salib==1.5.1
 scipy==1.16.0
     # via
     #   temoa (pyproject.toml)
+    #   mpi-sppy
     #   salib
 seaborn==0.13.2
     # via temoa (pyproject.toml)

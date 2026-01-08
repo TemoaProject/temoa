@@ -1,1 +1,0 @@
-temoa_stochastic.py
