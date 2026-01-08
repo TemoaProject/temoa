@@ -1,5 +1,6 @@
-# TEMOA Version 4.0.0a1
+# TEMOA
 
+[![PyPI](https://img.shields.io/pypi/v/temoa?label=pypi%20package)](https://pypi.org/project/temoa/)
 [![CI](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml/badge.svg?branch=unstable)](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/temoa/badge/?version=latest)](https://temoa.readthedocs.io/en/latest/?badge=latest)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://pyreadiness.org/3.12/)
@@ -14,57 +15,28 @@ TEMOA (Tools for Energy Model Optimization and Analysis) is a sophisticated ener
 
 ## Quick Start
 
-### Using uv (Recommended)
-
-The fastest way to get started with Temoa:
-
-```bash
-# Install uv if you haven't already
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-```
-
-Bleeding-edge nightly development installation:
-
-In a directory initialized with uv (e.g., `uv init .`) run:
-
-```bash
-uv add temoa --default-index https://pypi.temoaproject.org/simple/ --index https://pypi.org/simple/
-
-# or
-
-pip install --index-url https://temoaproject.github.io/temoa-nightlies/simple/ temoa --extra-index-url https://pypi.org/simple/
-
-```
-
-Or clone the repository and install in development mode:
-
-```bash
-
-# Clone and setup development environment
-git clone https://github.com/TemoaProject/temoa.git
-cd temoa
-uv sync --all-extras --dev
-
-# Run your first model
-uv run temoa tutorial my_first_model
-uv run temoa run my_first_model.toml
-```
-
 ### Standard Installation
 
 ```bash
-# Install from PyPI (not yet available)
-pip install temoa
+# Install from PyPI in a virtual environment
+python -m venv .venv
 
-# Or install from source
-pip install -e .
+# Activate virtual environment
+# On Linux/Mac:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+
+# Install temoa
+pip install temoa
 ```
 
 ### Get Started in 30 Seconds
 
+In a virtual env with temoa installed, run:
+
 ```bash
-# Create tutorial files
+# Create tutorial files in the current directory
 temoa tutorial quick_start
 
 # Run the model
@@ -92,7 +64,13 @@ The Temoa package is organized into clear modules:
 
 ### Development Installation
 
-For users who want to contribute or modify Temoa should install in development mode using `uv`:
+For users who want to contribute to or modify Temoa should install in development mode using `uv`:
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+```
 
 ```bash
 # Clone repository
