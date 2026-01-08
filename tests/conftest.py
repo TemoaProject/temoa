@@ -92,10 +92,12 @@ def refresh_databases() -> None:
         ('materials.sql', 'materials.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
+        (None, 'utopia_stochastic.sqlite'),
     ]
 
     for src, db in databases:
-        _build_test_db(TEST_OUTPUT_PATH / db, [TEST_DATA_PATH / src])
+        src_scripts = [TEST_DATA_PATH / src] if src else []
+        _build_test_db(TEST_OUTPUT_PATH / db, src_scripts)
 
 
 def create_unit_test_dbs() -> None:

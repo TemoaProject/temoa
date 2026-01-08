@@ -5,7 +5,7 @@ Test a couple full-runs to match objective function value and some internals
 import logging
 import sqlite3
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pyomo.core import Constraint, Var
@@ -34,6 +34,7 @@ legacy_config_files = [
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]
 mc_files = [{'name': 'utopia mc', 'filename': 'config_utopia_mc.toml'}]
+stochastic_files = [{'name': 'stochastic utopia', 'filename': 'config_utopia_stochastic.toml'}]
 
 
 @pytest.mark.parametrize(
@@ -121,6 +122,27 @@ def test_myopic_utopia(
     # increased after rework of inter-season sequencing
     assert invest_sum == pytest.approx(11004.8335), 'sum of investment costs did not match expected'
     con.close()
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=stochastic_files,
+    indirect=True,
+    ids=[d['name'] for d in stochastic_files],
+)
+def test_stochastic_utopia(
+    system_test_run: tuple[str, Any, Any, TemoaSequencer],
+) -> None:
+    """
+    Test the stochastic integration for the utopia model.
+    """
+    _, _, _, sequencer = system_test_run
+
+    # Stochastic Expected Value for current utopia configuration
+    expected_obj = 34389.9878
+
+    assert sequencer.stochastic_sequencer is not None
+    assert sequencer.stochastic_sequencer.objective_value == pytest.approx(expected_obj, rel=1e-5)
 
 
 def test_graphviz_integration(tmp_path: Path) -> None:
