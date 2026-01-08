@@ -21,11 +21,8 @@ First, it is highly recommended to use a Python virtual environment to manage de
 Then, install Temoa:
 
 .. parsed-literal::
-  # Install from PyPI (when 4.0 is released)
+  # Install from PyPI
   $ pip install temoa
-
-  # Or install from nightlies (alpha/development versions)
-  $ pip install --index-url https://temoaproject.github.io/temoa-nightlies/simple/ temoa --extra-index-url https://pypi.org/simple/
 
   # Get started
   $ python -m temoa tutorial my_first_model
@@ -43,9 +40,8 @@ For faster dependency resolution:
   $ uv init <dir_name>
   $ cd <dir_name>
 
-
-  # add Temoa from nightlies to pyproject.toml
-  $ uv add temoa --default-index https://pypi.temoaproject.org/simple --index https://pypi.org/simple
+  # add Temoa from PyPI to pyproject.toml
+  $ uv add temoa
 
   # Get started
   $ uv run temoa tutorial my_first_model
@@ -62,6 +58,9 @@ If you want to contribute to Temoa or modify the code:
 
   # Install in development mode with uv (recommended)
   $ uv sync --all-extras --dev
+
+  # Install pre-commit hooks
+  $ uv run pre-commit install
 
 For detailed contribution guidelines, see CONTRIBUTING.md in the repository.
 
