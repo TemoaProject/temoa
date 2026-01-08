@@ -54,6 +54,7 @@ class TemoaConfig:
         myopic: dict[str, object] | None = None,
         morris: dict[str, object] | None = None,
         monte_carlo: dict[str, object] | None = None,
+        stochastic_config: Path | None = None,
         config_file: Path | None = None,
         silent: bool = False,
         stream_output: bool = False,
@@ -144,6 +145,7 @@ class TemoaConfig:
             )
         self.plot_commodity_network = plot_commodity_network and self.source_trace
         self.graphviz_output = graphviz_output
+        self.stochastic_config = stochastic_config
 
         # warn if output db != input db
         if self.input_database.suffix == self.output_database.suffix:  # they are both .db/.sqlite
@@ -227,6 +229,21 @@ class TemoaConfig:
                 logger.info('Using solver: %s (%s)', data['solver_name'], location)
         else:
             raise SolverNotAvailableError('No solver name specified in the configuration.')
+
+        if 'stochastic' in data:
+            stoch_data = data.pop('stochastic')
+            if 'stochastic_config' in stoch_data:
+                # Resolve relative to config file Path
+                sc = config_file.parent / stoch_data['stochastic_config']
+                data['stochastic_config'] = sc
+
+        # Pop other sections that are not top-level arguments in __init__
+        for section in ['execution', 'model', 'pricing', 'monte_carlo_tweaks']:
+            if section in data:
+                data.pop(section)
+
+        if 'output_path' in data:
+            data.pop('output_path')
 
         tc = TemoaConfig(output_path=output_path, config_file=config_file, silent=silent, **data)
         logger.info('Scenario Name:  %s', tc.scenario)
