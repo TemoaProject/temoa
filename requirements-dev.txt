@@ -141,6 +141,7 @@ pyyaml==6.0.2
     # via
     #   myst-parser
     #   pybtex
+    #   sphinxcontrib-mermaid
 requests==2.32.4
     # via sphinx
 rich==14.2.0
@@ -171,6 +172,7 @@ sphinx==8.2.3
     #   sphinx-rtd-theme
     #   sphinxcontrib-bibtex
     #   sphinxcontrib-jquery
+    #   sphinxcontrib-mermaid
 sphinx-rtd-theme==3.0.2
     # via temoa (pyproject.toml)
 sphinxcontrib-applehelp==2.0.0
@@ -187,6 +189,8 @@ sphinxcontrib-jquery==4.1
     # via sphinx-rtd-theme
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
+sphinxcontrib-mermaid==1.2.3
+    # via temoa (pyproject.toml)
 sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0

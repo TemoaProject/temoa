@@ -57,6 +57,7 @@ docs = [
     "sphinxcontrib-serializinghtml>=2.0.0",
     "sphinxcontrib-bibtex>=2.6.2",
     "myst-parser>=2.0.0",
+    "sphinxcontrib-mermaid>=1.2.3",
 ]
 
 plotting = [

@@ -60,6 +60,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'myst_parser',  # Enable Markdown support
+    'sphinxcontrib.mermaid',  # Enable Mermaid diagrams
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -141,3 +142,12 @@ def setup(app: Any) -> None:
 html_theme = 'sphinx_rtd_theme'
 html_logo = 'images/Temoa_logo_color_small.png'
 latex_logo = 'images/TemoaLogo_grayscale.png'
+
+
+myst_enable_extensions = ['amsmath', 'colon_fence', 'dollarmath', 'html_image']
+myst_fence_as_directive = ['mermaid']
+
+mermaid_d3_zoom = True
+mermaid_fullscreen = True
+mermaid_include_elk = True
+mermaid_include_mindmap = True

@@ -331,6 +331,86 @@ understanding of what a constraint does requires only the last line of code:
 "Supply must meet demand."
 
 
+Execution Flow
+--------------
+
+The Temoa execution flow is designed to be modular and consistent across different modeling modes. It begins with the Command Line Interface (CLI), which parses user input and sets up the execution environment. The following sequence diagram illustrates the execution flow of a Temoa run, from the initial command-line invocation to the final processing of results.
+
+.. mermaid::
+   :alt: Temoa Execution Flow
+   :zoom:
+
+    sequenceDiagram
+        participant User
+        participant CLI as temoa/cli.py
+        participant Config as TemoaConfig
+        participant Sequencer as TemoaSequencer
+        participant HL as HybridLoader
+        participant Model as TemoaModel Instance
+        participant RA as run_actions.py
+        participant DB as Database
+
+        rect rgb(220,230,250)
+            Note over CLI: User invokes CLI (run/validate)
+            User->>CLI: temoa run/validate config.toml
+        end
+
+        rect rgb(230,250,220)
+            Note over CLI: Environment Setup
+            CLI->>CLI: _create_output_folder()
+            CLI->>CLI: _setup_logging()
+            CLI->>Config: build_config(config_file, output_path, silent)
+            Config-->>CLI: TemoaConfig instance
+        end
+
+        rect rgb(250,240,220)
+            Note over CLI,Sequencer: Sequencer Initialization
+            CLI->>Sequencer: TemoaSequencer(config, mode_override?)
+            Sequencer-->>CLI: Ready
+        end
+
+        rect rgb(240,220,250)
+            Note over Sequencer: Model Building & Execution
+            alt build-only / validate
+                CLI->>Sequencer: build_model()
+                Sequencer->>Sequencer: _run_preliminary_checks()
+                Sequencer->>RA: check_database_version()
+                Sequencer->>HL: HybridLoader(db_con, config)
+                HL->>HL: load_data_portal()
+                Sequencer->>RA: build_instance(data_portal)
+                RA-->>Sequencer: TemoaModel instance
+                Sequencer-->>CLI: TemoaModel instance
+            else full run (e.g., perfect_foresight)
+                CLI->>Sequencer: start()
+                Sequencer->>Sequencer: _run_preliminary_checks()
+                Sequencer->>Sequencer: _run_perfect_foresight()
+                Sequencer->>HL: HybridLoader(db_con, config)
+                HL->>HL: load_data_portal()
+                Sequencer->>RA: build_instance(data_portal)
+                RA-->>Sequencer: instance
+                Sequencer->>RA: solve_instance(instance, solver_name)
+                RA->>RA: check_solve_status(results)
+                Sequencer->>RA: handle_results(instance, results, config)
+                RA->>DB: Persist results
+                Sequencer-->>CLI: Success / Error
+            end
+        end
+
+        rect rgb(220,250,240)
+            CLI->>User: report log path and output folder
+        end
+
+The execution flow involves several key stages:
+
+1. **CLI Entry**: The user interacts with :file:`temoa/cli.py` to initiate a run or validation.
+2. **Environment Setup**: The CLI creates a timestamped output directory, initializes logging, and uses :class:`TemoaConfig` to parse the provided TOML configuration file. This includes checking for the availability of the specified optimization solver.
+3. **Sequencing**: A :class:`TemoaSequencer` is created. This object is the main coordinator, selecting the appropriate execution path based on the modeling mode (e.g., Perfect Foresight, Myopic, MGA).
+4. **Data Loading**: The sequencer uses a :class:`HybridLoader` to pull data from the SQLite database. This data is organized into a Pyomo :class:`DataPortal`.
+5. **Model Construction**: Using the :class:`DataPortal`, Temoa constructs a :class:`TemoaModel` instance. This stage builds all the mathematical sets, parameters, variables, and constraints.
+6. **Solving**: The model instance is passed to :func:`solve_instance`, which invokes the chosen solver (like HiGHS, CBC, or Gurobi).
+7. **Result Processing**: After the solver completes, :func:`handle_results` extracts the solution, checks for optimality, and persists the results back to the database. It also generates any requested auxiliary outputs like Excel files or network plots.
+
+
 Project Structure
 -----------------
 

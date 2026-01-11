@@ -121,9 +121,9 @@ the solver, and (5) to execute several of the modeling extensions.
     `Temoa on the cloud <https://model.temoacloud.com>`, which
     is explained in `this video tutorial <https://youtu.be/fxYO_kIs364>`.
 
-====================================
+=====================
 Database Construction
-====================================
+=====================
 
 Input datasets in Temoa are stored in a relational database management system.
 For those unfamiliar with databases, you can think of them as collections of
@@ -131,6 +131,13 @@ tables. Within each table, a 'primary key' uniquely identifies each row. A
 'foreign key' is a column in one table that references the primary key of
 another table, thereby establishing relationships between tables and ensuring
 data consistency across the database.
+
+The following Entity-Relationship (ER) diagram provides a visual overview of the
+Temoa v4 database schema and the relationships between its various tables:
+
+.. mermaid:: database_schema.mmd
+   :alt: Temoa Database Schema ER Diagram
+   :align: center
 
 Temoa uses `sqlite`_, a widely used, self-contained database
 system. Building a database first requires constructing a sql file, which is
