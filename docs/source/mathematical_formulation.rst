@@ -122,24 +122,13 @@ Conventions
    (:math:`\{t,v\}`). For example, solar PV (technology) installed in 2030
    (vintage).
 
-
- * Mathematical notation:
-
-   * We use the symbol :math:`\mathbb{I}` to represent the unit interval ([0,
-     1]).
-
-   * We use the symbol :math:`\mathbb{Z}` to represent "the set of all
-     integers."
-
-   * We use the symbol :math:`\mathbb{N}` to represent natural numbers (i.e.,
-     integers greater than zero: 1, 2, 3, :math:`\ldots`).
-
-   * We use the symbol :math:`\mathbb{R}` to denote the set of real numbers, and
-     :math:`\mathbb{R}^+_0` to denote non-negative real numbers.
-
-
 Sets
 ----
+In a mathematical model like Temoa, sets are used to index parameters and
+variables. Below we define the sets used in Temoa, which are grouped into logical
+components. In each case, we provide the mathematical notation used in the
+mathematical formulation of the model, as well as the associated names in the
+python code and database schema.
 
 .. include:: db_model_comparison.rst
 
