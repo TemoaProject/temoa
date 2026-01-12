@@ -1,18 +1,23 @@
 """
 
 """
+from __future__ import annotations
 
 from collections import defaultdict, namedtuple
-from collections.abc import Generator
 from itertools import product
 from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from pyomo.dataportal import DataPortal
-
-from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from pyomo.dataportal import DataPortal
+
+    from temoa.core.config import TemoaConfig
 
 logger = getLogger(__name__)
 
@@ -22,13 +27,20 @@ ChangeRecord = namedtuple('ChangeRecord', ['param_name', 'param_index', 'old_val
 """a record of a data element change, for an element acted on by a Tweak"""
 
 
+
+
 class Tweak:
     """
     objects of this class represent individual tweaks to single (or wildcard)
     data elements for a Monte Carlo run
     """
 
-    def __init__(self, param_name: str, indices: tuple, adjustment: str, value: float):
+    param_name: str
+    indices: tuple[Any, ...]
+    adjustment: str
+    value: float
+
+    def __init__(self, param_name: str, indices: tuple[Any, ...], adjustment: str, value: float):
         if not isinstance(indices, tuple):
             raise TypeError('indices must be a tuple')
         if adjustment not in {'r', 'a', 's'}:
@@ -41,7 +53,7 @@ class Tweak:
         self.adjustment = adjustment
         self.value = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f'<param: {self.param_name}, indices: {self.indices}, adjustment: {self.adjustment}, '
             f'value: {self.value}>'
@@ -53,7 +65,9 @@ class TweakFactory:
     factor (likely a singleton) to manufacture Tweaks from input data
     """
 
-    def __init__(self, data_store: dict):
+    val_data: dict[str, Any]
+
+    def __init__(self, data_store: dict[str, Any]):
         """
         make a new factor and use data_store as a validation tool
         :param data_store: the data dictionary holding the base values for the model
@@ -61,7 +75,6 @@ class TweakFactory:
         if not isinstance(data_store, dict):
             raise TypeError('data_store must be a dict')
         self.val_data = data_store
-        tweak_dict: dict[int, list[Tweak]] = defaultdict(list)
 
     def make_tweaks(self, row_number: int, row: str) -> tuple[int, list[Tweak]]:
         """
@@ -75,9 +88,8 @@ class TweakFactory:
         p_index = rd.indices.replace('(', '').replace(')', '')  # remove any optional parens
         tokens = p_index.split('|')
         tokens = [t.strip() for t in tokens]
-        tweaks = []
         # locate all 'multi' indices...
-        index_vals: dict[int, list] = defaultdict(list)
+        index_vals: dict[int, list[Any]] = defaultdict(list)
         for pos, token in enumerate(tokens):
             if '/' in token:  # it is a multi-token
                 sub_tokens = token.split('/')
@@ -122,15 +134,15 @@ class TweakFactory:
             )
         # convert the run number
         try:
-            tokens[0] = int(tokens[0])
-        except ValueError:
-            raise ValueError(f'run number at row {row_number} must be an integer')
+            run_num = int(tokens[0])
+        except ValueError as err:
+            raise ValueError(f'run number at row {row_number} must be an integer') from err
         # convert the value
         try:
-            tokens[-2] = float(tokens[-2])
-        except ValueError:
-            raise ValueError('value at row {idx} must be numeric')
-        rd = RowData(*tokens)
+            val = float(tokens[-2])
+        except ValueError as err:
+            raise ValueError(f'value at line {row_number} must be numeric') from err
+        rd = RowData(run_num, tokens[1], tokens[2], tokens[3], val, tokens[5])
 
         # make other checks...
         if rd.param_name not in self.val_data:
@@ -155,11 +167,16 @@ class MCRun:
     A Container class to hold the data (and more?) to support a model build + run
     """
 
+    scenario_name: str
+    run_index: int
+    data_store: dict[str, Any]
+    included_tweaks: dict[Tweak, list[ChangeRecord]]
+
     def __init__(
         self,
         scenario_name: str,
         run_index: int,
-        data_store: dict,
+        data_store: dict[str, Any],
         included_tweaks: dict[Tweak, list[ChangeRecord]],
     ):
         self.scenario_name = scenario_name
@@ -199,13 +216,18 @@ class MCRunFactory:
     They will hold the "data tweaks" gathered from input file for application to the base data
     """
 
-    def __init__(self, config: TemoaConfig, data_store: dict):
+    config: TemoaConfig
+    data_store: dict[str, Any]
+    tweak_factory: TweakFactory
+    settings_file: Path
+
+    def __init__(self, config: TemoaConfig, data_store: dict[str, Any]):
         self.config = config
         self.data_store = data_store
         self.tweak_factory = TweakFactory(data_store)
-        self.settings_file = Path(self.config.monte_carlo_inputs['run_settings'])
+        self.settings_file = Path(self.config.monte_carlo_inputs['run_settings'])  # type: ignore
 
-    def prescreen_input_file(self):
+    def prescreen_input_file(self) -> bool:
         """
         read the input csv file and screen common errors
         :return: True if file passes, false otherwise with log entries
@@ -225,10 +247,10 @@ class MCRunFactory:
                     raise ValueError(f'Run sequence violation at row {idx}')
                 elif current_run < rd.run:
                     current_run = rd.run
-        logger.info(f'Pre-screen of data file: {self.settings_file} successful.')
+        logger.info('Pre-screen of data file: %s successful.', self.settings_file)
         return True
 
-    def _next_row_generator(self) -> Generator[tuple[int, str], None, None]:
+    def _next_row_generator(self) -> Generator[tuple[int, str]]:
         """
         A generator to read lines from thr run settings file
         :return:
@@ -241,7 +263,7 @@ class MCRunFactory:
                 yield idx, line
                 idx += 1
 
-    def tweak_set_generator(self) -> tuple[int, list[Tweak]]:
+    def tweak_set_generator(self) -> Generator[tuple[int, list[Tweak]]]:
         """
         generator for lists of tweaks per run
         :return:
@@ -268,7 +290,9 @@ class MCRunFactory:
             current_run = run_number
 
     @staticmethod
-    def element_locator(data_store: dict, param: str, target_index: tuple) -> list[tuple]:
+    def element_locator(
+        data_store: dict[str, Any], param: str, target_index: tuple[Any, ...]
+    ) -> list[tuple[Any, ...]]:
         """
         find the associated indices that match the index, which may
         contain wildcards
@@ -313,7 +337,7 @@ class MCRunFactory:
                 raise ValueError(f'Unsupported adjustment type {adjust_type}')
         return res
 
-    def run_generator(self) -> Generator[MCRun, None, None]:
+    def run_generator(self) -> Generator[MCRun]:
         """
         make a new MC Run, log problems with tweaks and write successful
         tweaks to the DB Output
@@ -335,9 +359,10 @@ class MCRunFactory:
                     failed_tweaks.append(tweak)
                 else:
                     for index in matching_indices:
-                        old_value = data_store.get(tweak.param_name)[index]
+                        param_vals = data_store[tweak.param_name]
+                        old_value = param_vals[index]
                         new_value = self._adjust_value(old_value, tweak.adjustment, tweak.value)
-                        data_store[tweak.param_name][index] = new_value
+                        param_vals[index] = new_value
                         good_tweaks[tweak].append(
                             ChangeRecord(tweak.param_name, index, old_value, new_value)
                         )
@@ -353,7 +378,7 @@ class MCRunFactory:
             # skip the creation of the run if no tweaks were successful (it would just be the
             # baseline run...)
             if not good_tweaks:
-                logger.warning(f'Aborting run: {run}.  No good tweaks found')
+                logger.warning('Aborting run: %s.  No good tweaks found', run)
                 continue
             mc_run = MCRun(
                 scenario_name=self.config.scenario,

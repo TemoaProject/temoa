@@ -1,13 +1,14 @@
 """
 Class to contain Workers that execute solves in separate processes
 """
+from __future__ import annotations
 
 import logging.handlers
 from datetime import datetime
 from logging import getLogger
 from multiprocessing import Process, Queue
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
@@ -18,24 +19,35 @@ verbose = False  # for T/S or monitoring...
 
 
 class Worker(Process):
-    worker_idx = 1
+    worker_idx: int = 1
+    worker_number: int
+    model_queue: Queue[Any]
+    results_queue: Queue[Any]
+    log_queue: Queue[logging.LogRecord]
+    solver_name: str
+    solver_options: dict[str, Any]
+    solver_log_path: Path | None
+    opt: Any
+    log_root_name: str
+    log_level: int
+    solve_count: int
 
     def __init__(
         self,
-        model_queue: Queue,
-        results_queue: Queue,
+        model_queue: Queue[Any],
+        results_queue: Queue[Any],
         log_root_name: str,
-        log_queue: Queue,
+        log_queue: Queue[logging.LogRecord],
         log_level: int = logging.INFO,
         solver_name: str = 'appsi_highs',
-        solver_options: dict | None = None,
+        solver_options: dict[str, Any] | None = None,
         solver_log_path: Path | None = None,
     ):
         super().__init__(daemon=True)
         self.worker_number = Worker.worker_idx
         Worker.worker_idx += 1
-        self.model_queue: Queue = model_queue
-        self.results_queue: Queue = results_queue
+        self.model_queue = model_queue
+        self.results_queue = results_queue
         self.log_queue = log_queue
         self.solver_name = solver_name
         self.solver_options = solver_options or {}
@@ -46,8 +58,9 @@ class Worker(Process):
         self.log_level = log_level
         self.solve_count = 0
 
-    def run(self):
-        logger = getLogger('.'.join((self.log_root_name, 'worker', str(self.worker_number))))
+    def run(self) -> None:
+        logger: logging.Logger = getLogger('.'.join(
+            (self.log_root_name, 'worker', str(self.worker_number))))
         logger.propagate = False  # prevent duplicate logs
         # add a handler that pushes to the queue
         handler = logging.handlers.QueueHandler(self.log_queue)
@@ -68,10 +81,10 @@ class Worker(Process):
                     self.solver_log_path,
                     f'solver_log_{str(self.worker_number)}_{self.solve_count}.log',
                 )
-                log_location = str(log_location)
+                log_location_str = str(log_location)
                 match self.solver_name:
                     case 'gurobi':
-                        self.solver_options.update({'LogFile': log_location})
+                        self.solver_options.update({'LogFile': log_location_str})
                     # case 'appsi_highs':
                     #     self.solver_options.update({'log_file': log_location})
                     case _:
@@ -89,7 +102,7 @@ class Worker(Process):
             tic = datetime.now()
             try:
                 self.solve_count += 1
-                res: SolverResults | None = self.opt.solve(model)
+                solve_res: SolverResults | None = self.opt.solve(model)
 
             except Exception as e:
                 if verbose:
@@ -100,12 +113,12 @@ class Worker(Process):
                     model.name,
                     e,
                 )
-                res = None
+                solve_res = None
             toc = datetime.now()
 
             # guard against a bad "res" object...
             try:
-                good_solve = check_optimal_termination(res)
+                good_solve = check_optimal_termination(solve_res)
                 if good_solve:
                     self.results_queue.put(model)
                     logger.info(
@@ -116,9 +129,11 @@ class Worker(Process):
                     if verbose:
                         print(f'Worker {self.worker_number} completed a successful solve')
                 else:
-                    status = res['Solver'].termination_condition
-                    logger.info(
-                        'Worker %d did not solve.  Results status: %s', self.worker_number, status
-                    )
+                    if solve_res is not None:
+                        status = solve_res['Solver'].termination_condition
+                        logger.info(
+                            'Worker %d did not solve.  Results status: %s',
+                            self.worker_number, status
+                        )
             except AttributeError:
                 pass

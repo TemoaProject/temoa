@@ -9,42 +9,54 @@ will ingest DataPortal objects to make new models.  The MGA will (in future) lik
 new obj functions
 
 """
+from __future__ import annotations
 
 import logging.handlers
 from datetime import datetime
 from logging import getLogger
-from multiprocessing import Process, Queue
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
 from temoa._internal.data_brick import DataBrick, data_brick_factory
 from temoa.core.model import TemoaModel
 
-if TYPE_CHECKING:
-    from pyomo.dataportal import DataPortal
-
 verbose = False  # for T/S or monitoring...
+
+if TYPE_CHECKING:
+    from multiprocessing import Queue
+    from pathlib import Path
 
 
 class MCWorker:
     worker_idx = 1
 
+    worker_number: int
+    dp_queue: Queue[Any]
+    results_queue: Queue[DataBrick | str]
+    solver_name: str
+    solver_options: dict[str, Any]
+    opt: Any
+    log_queue: Queue[logging.LogRecord]
+    log_level: int
+    root_logger_name: str
+    solver_log_path: Path | None
+    solve_count: int
+
     def __init__(
         self,
-        dp_queue: Queue,
-        results_queue: Queue,
+        dp_queue: Queue[Any],
+        results_queue: Queue[DataBrick | str],
         log_root_name: str,
-        log_queue: Queue,
+        log_queue: Queue[logging.LogRecord],
         log_level: int = logging.INFO,
         solver_log_path: Path | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.worker_number = MCWorker.worker_idx
         MCWorker.worker_idx += 1
-        self.dp_queue: Queue[DataPortal | str] = dp_queue
-        self.results_queue: Queue[DataBrick | str] = results_queue
+        self.dp_queue = dp_queue
+        self.results_queue = results_queue
         self.solver_name = kwargs['solver_name']
         self.solver_options = kwargs['solver_options']
         self.opt = None # Initialize in run()
@@ -54,8 +66,9 @@ class MCWorker:
         self.solver_log_path = solver_log_path
         self.solve_count = 0
 
-    def run(self):
-        logger = getLogger('.'.join((self.root_logger_name, 'worker', str(self.worker_number))))
+    def run(self) -> None:
+        msg = '.'.join((self.root_logger_name, 'worker', str(self.worker_number)))
+        logger: logging.Logger = getLogger(msg)
         logger.setLevel(self.log_level)
         logger.propagate = (
             False  # not propagating up the chain fixes issue on TRACE where we were getting dupes.
@@ -107,7 +120,7 @@ class MCWorker:
                         / f'solver_log_{self.worker_number}_{self.solve_count}.log'
                     )
                     try:
-                        setattr(self.opt.config, 'log_file', str(log_location))
+                        self.opt.config.log_file = str(log_location)
                     except (ValueError, AttributeError):
                         pass
 
@@ -117,15 +130,16 @@ class MCWorker:
             tic = datetime.now()
             try:
                 self.solve_count += 1
+                solve_res: SolverResults | None
                 if self.solver_name.startswith('appsi_'):
                     # For appsi, we can set tee on the config
                     try:
                         self.opt.config.tee = True
                     except (ValueError, AttributeError):
                         pass
-                    res: SolverResults | None = self.opt.solve(model)
+                    solve_res = self.opt.solve(model)
                 else:
-                    res: SolverResults | None = self.opt.solve(model, tee=True)
+                    solve_res = self.opt.solve(model, tee=True)
 
             except Exception as e:
                 if verbose:
@@ -141,12 +155,12 @@ class MCWorker:
                     logger.warning(
                         'Solver results status: %s', self.opt.results.solver.termination_condition
                     )
-                res = None
+                solve_res = None
             toc = datetime.now()
 
             # guard against a bad "res" object...
             try:
-                good_solve = check_optimal_termination(res)
+                good_solve = check_optimal_termination(solve_res)
                 if good_solve:
                     data_brick = data_brick_factory(model)
                     self.results_queue.put(data_brick)
@@ -158,12 +172,13 @@ class MCWorker:
                     if verbose:
                         print(f'Worker {self.worker_number} completed a successful solve')
                 else:
-                    status = res['Solver'].termination_condition
-                    logger.info(
-                        'Worker %d did not solve.  Results status: %s',
-                        self.worker_number,
-                        status,
-                    )
+                    if solve_res is not None:
+                        status = solve_res['Solver'].termination_condition
+                        logger.info(
+                            'Worker %d did not solve.  Results status: %s',
+                            self.worker_number,
+                            status,
+                        )
             except AttributeError:
                 pass
         logger.info('Worker %d finished', self.worker_number)

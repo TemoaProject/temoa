@@ -9,9 +9,9 @@ import logging
 import sqlite3
 import sys
 from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 from pyomo.core import Constraint, Expression, Objective, value
-from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
 from temoa._internal.run_actions import build_instance, handle_results, save_lp, solve_instance
@@ -22,6 +22,9 @@ from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.single_vector_mga.output_summary import summarize
 from temoa.model_checking.pricing_check import price_checker
+
+if TYPE_CHECKING:
+    from pyomo.dataportal import DataPortal
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +49,13 @@ class SvMgaSequencer:
         self.writer.clear_scenario()
         self.verbose = False  # for troubleshooting
 
-        self.cost_epsilon = config.svmga_inputs.get('cost_epsilon', 0.05)
+        svmga_inputs = config.svmga_inputs or {}
+        self.cost_epsilon: float = float(svmga_inputs.get('cost_epsilon', 0.05))  # type: ignore[arg-type]
         logger.info('Set SVMGA cost (relaxation) epsilon to: %0.3f', self.cost_epsilon)
 
         logger.info('Initialized SVMGA sequencer.')
 
-    def start(self):
+    def start(self) -> None:
         """Run the sequencer...
 
         This should look pretty similar to 2 PF runs, back-to-back
@@ -118,11 +122,15 @@ class SvMgaSequencer:
         instance.del_component(instance.total_cost)
 
         # 4.  Reconstruct the OBJ function...
-        emission_labels = self.config.svmga_inputs.get('emission_labels', [])
-        capacity_labels = self.config.svmga_inputs.get('capacity_labels', [])
-        activity_labels = self.config.svmga_inputs.get('activity_labels', [])
+        svmga_inputs = self.config.svmga_inputs or {}
+        emission_labels = svmga_inputs.get('emission_labels', [])
+        capacity_labels = svmga_inputs.get('capacity_labels', [])
+        activity_labels = svmga_inputs.get('activity_labels', [])
         new_obj = SvMgaSequencer.construct_obj(
-            instance, emission_labels, capacity_labels, activity_labels
+            instance,
+            emission_labels,  # type: ignore[arg-type]
+            capacity_labels,  # type: ignore[arg-type]
+            activity_labels,  # type: ignore[arg-type]
         )
 
         # check for an empty objective
@@ -171,7 +179,9 @@ class SvMgaSequencer:
             summarize(self.config, tot_cost, value(total_cost_rule(instance)))
 
     @staticmethod
-    def flow_idxs_from_eac_idx(model: TemoaModel, reitvo: tuple) -> tuple[list[tuple], ...]:
+    def flow_idxs_from_eac_idx(
+        model: TemoaModel, reitvo: tuple[Any, ...]
+    ) -> tuple[list[tuple[Any, ...]], list[tuple[Any, ...]]]:
         """
         From the emission index, expand to create the full list of possible flow indices
         for regular and annual flows.  These may/may not be valid and must be screened
@@ -195,7 +205,7 @@ class SvMgaSequencer:
         emission_labels: Iterable[str],
         capacity_labels: Iterable[str],
         activity_labels: Iterable[str],
-        verbose=True,
+        verbose: bool = True,
     ) -> Expression | int:
         """
         Construct an alternative OBJ statement from the config data

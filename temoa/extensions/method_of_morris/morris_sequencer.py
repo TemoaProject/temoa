@@ -2,6 +2,7 @@
 An event sequencer to control the flow of a Method of Morris calculation.  This code uses
 multiprocessing via the joblib library
 """
+from __future__ import annotations
 
 import csv
 import logging
@@ -9,20 +10,26 @@ import multiprocessing
 import sqlite3
 import sys
 import tomllib
-from logging.handlers import QueueListener
 from importlib import resources
-from pathlib import Path
+from logging.handlers import QueueListener
+from typing import TYPE_CHECKING, Any, cast
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed  # type: ignore[import-untyped]
 from numpy import array
-from SALib.analyze import morris
-from SALib.sample.morris import sample
-from SALib.util import compute_groups_matrix, read_param_file
+from SALib.analyze import morris  # type: ignore[import-untyped]
+from SALib.sample.morris import sample  # type: ignore[import-untyped]
+from SALib.util import compute_groups_matrix, read_param_file  # type: ignore[import-untyped]
 
 from temoa._internal.table_writer import TableWriter
-from temoa.core.config import TemoaConfig
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from temoa.core.config import TemoaConfig
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,10 +83,11 @@ class MorrisSequencer:
         self.param_file: Path = self.mm_output_folder / 'params.csv'
 
         # MM Options
+        morris_inputs = config.morris_inputs or {}
         # the amount to perturb the marked params
-        pert = config.morris_inputs.get('perturbation')
+        pert = morris_inputs.get('perturbation')
         if pert:
-            self.mm_perturbation = pert
+            self.mm_perturbation = float(cast(str | float, pert))
             logger.info('Morris perturbation: %0.2f', self.mm_perturbation)
         else:
             self.mm_perturbation = 0.10
@@ -87,9 +95,9 @@ class MorrisSequencer:
                 'No value received for perturbation, using default: %0.2f', self.mm_perturbation
             )
 
-        levels = config.morris_inputs.get('levels')
+        levels = morris_inputs.get('levels')
         if levels:
-            self.num_levels = levels
+            self.num_levels = int(cast('Any', levels))
             logger.info('Morris levels: %d', self.num_levels)
         else:
             self.num_levels = (
@@ -97,9 +105,9 @@ class MorrisSequencer:
             )
             logger.warning('No value received for levels, using default: %d', self.num_levels)
 
-        traj = config.morris_inputs.get('trajectories')
+        traj = morris_inputs.get('trajectories')
         if traj:
-            self.trajectories = traj
+            self.trajectories = int(cast('Any', traj))
             logger.info('Morris trajectories: %d', self.trajectories)
         else:
             self.trajectories = 4  # number of morris trajectories to generate
@@ -109,13 +117,13 @@ class MorrisSequencer:
         # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox (which
         # aren't super)
 
-        seed = config.morris_inputs.get('seed')
-        self.seed = seed if seed else None
+        seed = morris_inputs.get('seed')
+        self.seed = int(cast('Any', seed)) if seed else None
         logger.info('Morris Seed (None indicates system generated): %s', self.seed)
 
         self.conf_level = 0.95  # confidence level for mu_star analysis
 
-        self.num_cores = config.morris_inputs.get('cores', 0)
+        self.num_cores = morris_inputs.get('cores', 0)
         if self.num_cores == 0:
             self.num_cores = multiprocessing.cpu_count()
         logger.info('Morris number of cores: %d', self.num_cores)
@@ -127,7 +135,7 @@ class MorrisSequencer:
             'detail on the model.'
         )
 
-    def start(self):
+    def start(self) -> Any:
         """
         run the sequence of steps to do a MM analysis
         0.  clear any prior results with this scenario name.  this sequencer appends the DB, so
@@ -193,7 +201,8 @@ class MorrisSequencer:
         # 7.  Return the cost objective Mu_Star for testing purposes...
         return cost_mu_star
 
-    def process_results(self, problem, mm_samples, morris_results):
+    def process_results(self, problem: dict[str, Any], mm_samples: Any,
+                            morris_results: list[Any]) -> Any:
         """
         Process the results of the runs on the mm_samples
         :param problem: the problem structure
@@ -264,7 +273,7 @@ class MorrisSequencer:
                     writer.writerow(row)
         return analysis['cost']
 
-    def gather_parameters(self):
+    def gather_parameters(self) -> dict[int, list[Any]]:
         """
         Scan the annotated DB tables for marked parameters and capture them
         in the parameters file.  Also capture the names in the param_info data
@@ -339,5 +348,5 @@ class MorrisSequencer:
 
         return param_names
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.con.close()

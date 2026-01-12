@@ -28,6 +28,7 @@ def iterate(
             which you can use to read/write data as needed.
     """
 
+    assert idx is not None
     logger.info(f"Running myopic iteration updater for base year {idx.base_year}")
 
     # Update your myopic database here.

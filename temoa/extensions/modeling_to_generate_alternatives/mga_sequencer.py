@@ -1,6 +1,7 @@
 """
 Performs top-level control over an MGA model run
 """
+from __future__ import annotations
 
 import logging
 import queue
@@ -8,26 +9,36 @@ import sqlite3
 import time
 import tomllib
 from datetime import datetime
+from importlib import resources
 from logging import getLogger
 from multiprocessing import Queue
-from importlib import resources
-from pathlib import Path
 from queue import Empty
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from multiprocessing.process import BaseProcess
+
+    from pyomo.contrib.solver.common.results import Results
+    from pyomo.dataportal import DataPortal
+
+    from temoa.core.config import TemoaConfig
+    from temoa.core.model import TemoaModel
+    from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
+
+
+
+
+
 
 import pyomo.environ as pyo
-from pyomo.contrib.solver.common.results import Results
-from pyomo.dataportal import DataPortal
 from pyomo.opt import check_optimal_termination
 
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
 from temoa.components.costs import total_cost_rule
-from temoa.core.config import TemoaConfig
-from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
-from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
 from temoa.extensions.modeling_to_generate_alternatives.worker import Worker
 from temoa.model_checking.pricing_check import price_checker
 
@@ -40,6 +51,23 @@ solver_options_path = (
 
 
 class MgaSequencer:
+    con: sqlite3.Connection
+    config: TemoaConfig
+    opt: Any
+    worker_solver_options: dict[str, Any]
+    internal_stop: bool
+    mga_axis: MgaAxis
+    mga_weighting: MgaWeighting
+    num_workers: int
+    iteration_limit: int
+    time_limit_hrs: float
+    cost_epsilon: float
+    solve_count: int
+    seen_instance_indices: set[int]
+    orig_label: str
+    writer: TableWriter
+    verbose: bool
+
     def __init__(self, config: TemoaConfig):
         # PRELIMINARIES...
         # let's start with the assumption that input db = output db...  this may change?
@@ -81,27 +109,28 @@ class MgaSequencer:
 
         # some defaults, etc.
         self.internal_stop = False
-        axis_label = config.mga_inputs.get('axis', '').upper()
+        mga_inputs = self.config.mga_inputs or {}
+        axis_label = str(mga_inputs.get('axis', '')).upper()
         try:
             self.mga_axis = MgaAxis[axis_label]
             logger.info('MGA axis is set to %s.', self.mga_axis.name)
         except KeyError:
             logger.warning('No/bad MGA Axis specified.  Using default: Activity by Tech Category')
             self.mga_axis = MgaAxis.TECH_CATEGORY_ACTIVITY
-        weighting_label = config.mga_inputs.get('weighting', '').upper()
+        weighting_label = str(mga_inputs.get('weighting', '')).upper()
         try:
             self.mga_weighting = MgaWeighting[weighting_label]
             logger.info('MGA weighting set to %s', self.mga_weighting.name)
         except KeyError:
             logger.warning('No/bad MGA Weighting specified.  Using default: Hull Expansion')
             self.mga_weighting = MgaWeighting.HULL_EXPANSION
-        self.num_workers = all_options.get('num_workers', 1)
+        self.num_workers = int(cast(str | int, all_options.get('num_workers', 1)))
         logger.info('MGA workers are set to %s', self.num_workers)
-        self.iteration_limit = config.mga_inputs.get('iteration_limit', 20)
+        self.iteration_limit = int(cast(str | int, mga_inputs.get('iteration_limit', 20)))
         logger.info('Set MGA iteration limit to: %d', self.iteration_limit)
-        self.time_limit_hrs = config.mga_inputs.get('time_limit_hrs', 12)
+        self.time_limit_hrs = float(cast(str | float, mga_inputs.get('time_limit_hrs', 12)))
         logger.info('Set MGA time limit hours to: %0.1f', self.time_limit_hrs)
-        self.cost_epsilon = config.mga_inputs.get('cost_epsilon', 0.05)
+        self.cost_epsilon = float(cast(str | float, mga_inputs.get('cost_epsilon', 0.05)))
         logger.info('Set MGA cost (relaxation) epsilon to: %0.3f', self.cost_epsilon)
 
         # internal records
@@ -120,7 +149,7 @@ class MgaSequencer:
             self.mga_weighting.name,
         )
 
-    def start(self):
+    def start(self) -> None:
         """Run the sequencer"""
         # ==== basic sequence ====
         # 1. Load the model data, which may involve filtering it down if source tracing
@@ -152,7 +181,7 @@ class MgaSequencer:
         toc = datetime.now()
         elapsed = toc - tic
         self.solve_count += 1
-        logger.info(f'Initial solve time: {elapsed.total_seconds():.4f}')
+        logger.info('Initial solve time: %0.4f', elapsed.total_seconds())
         status = res.solver.termination_condition
         logger.debug('Termination condition: %s', status.name)
         if not check_optimal_termination(res):
@@ -190,17 +219,13 @@ class MgaSequencer:
 
         # 5.  Set up the Workers
         num_workers = self.num_workers
-        work_queue = Queue(1)  # restrict the queue to hold just 1 models in it max
-        result_queue = Queue(
+        work_queue: Queue[Any] = Queue(1)  # restrict the queue to hold just 1 models in it max
+        result_queue: Queue[Any] = Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue = Queue(50)
+        log_queue: Queue[Any] = Queue(50)
         # make workers
-        workers = []
-        kwargs = {
-            'solver_name': self.config.solver_name,
-            'solver_options': self.worker_solver_options,
-        }
+        workers: list[BaseProcess] = []
         # construct path for the solver logs
         s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
@@ -212,8 +237,9 @@ class MgaSequencer:
                 log_root_name=__name__,
                 log_queue=log_queue,
                 log_level=logging.INFO,
+                solver_name=self.config.solver_name,
+                solver_options=self.worker_solver_options,
                 solver_log_path=s_path,
-                **kwargs,
             )
             w.start()
             workers.append(w)
@@ -237,7 +263,7 @@ class MgaSequencer:
                 next_result = None
                 # print('no result')
             if next_result is not None:
-                vector_manager.process_results(M=next_result)
+                vector_manager.process_results(model=next_result)
                 self.process_solve_results(next_result)
                 logger.info('Solve count: %d', self.solve_count)
                 self.solve_count += 1
@@ -281,7 +307,7 @@ class MgaSequencer:
                 next_result = None
             if next_result is not None and next_result != 'COYOTE':
                 logger.debug('bagged a result post-shutdown')
-                vector_manager.process_results(M=next_result)
+                vector_manager.process_results(model=next_result)
                 self.process_solve_results(next_result)
                 logger.info('Solve count: %d', self.solve_count)
                 self.solve_count += 1
@@ -297,8 +323,8 @@ class MgaSequencer:
             if empty == num_workers:
                 break
 
-        for w in workers:
-            w.join()
+        for proc_join in workers:
+            proc_join.join()
             logger.debug('worker wrapped up...')
 
         log_queue.close()
@@ -329,9 +355,10 @@ class MgaSequencer:
             elapsed.total_seconds(),
             status.name,
         )
-        return status == pyo.TerminationCondition.convergenceCriteriaSatisfied
+        return status == pyo.TerminationCondition.optimal or \
+            str(status) == 'convergenceCriteriaSatisfied'
 
-    def process_solve_results(self, instance: TemoaModel):
+    def process_solve_results(self, instance: TemoaModel) -> None:
         """write the results as required"""
         # get the instance number from the model name, if provided
         if '-' not in instance.name:
@@ -346,5 +373,5 @@ class MgaSequencer:
         self.writer.write_capacity_tables(model=instance, iteration=idx)
         self.writer.write_summary_flow(instance, iteration=idx)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.con.close()

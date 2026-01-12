@@ -2,20 +2,25 @@
 This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated
 (outside of class) to enable parallelization.
 """
+from __future__ import annotations
 
 import logging
 import sqlite3
 import sys
 from logging.handlers import QueueHandler
+from typing import TYPE_CHECKING, Any
 
 from pyomo.dataportal import DataPortal
 
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
-from temoa.core.config import TemoaConfig
+
+if TYPE_CHECKING:
+    from temoa.core.config import TemoaConfig
 
 
-def configure_worker_logger(log_queue, log_level):
+
+def configure_worker_logger(log_queue: Any, log_level: int) -> logging.Logger:
     """configure the logger"""
     worker_logger = logging.getLogger('MM evaluate')
     if not worker_logger.hasHandlers():
@@ -30,7 +35,8 @@ def configure_worker_logger(log_queue, log_level):
     return worker_logger
 
 
-def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log_level):
+def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, Any],
+            i: int, config: TemoaConfig, log_queue: Any, log_level: int) -> list[float]:
     """
     Run model for params provided and return objective value and emission value
     Note:  This function needs to be a static instance to enable the parallel
@@ -49,19 +55,14 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
     log_entry = ['']
     for j in range(0, len(mm_sample)):
         param_name, *set_idx, _ = param_info[j]
-        set_idx = tuple(set_idx)
+        set_idx_tuple = tuple(set_idx)
         # tweak the parameter
         if data.get(param_name) is None:
             raise ValueError(f'Unrecognized parameter: {param_name}')
-        if data[param_name].get(set_idx) is None:
+        if data[param_name].get(set_idx_tuple) is None:
             raise ValueError('index mismatch from data read-in')
-        data[param_name][set_idx] = mm_sample[j]
-        setting_entry = 'run # %d:  Setting param %s[%s] to value:  %f' % (
-            i + 1,
-            param_name,
-            set_idx,
-            mm_sample[j],
-        )
+        data[param_name][set_idx_tuple] = mm_sample[j]
+        setting_entry = 'run # %d:  Setting param %s[%s] to value:  %f'
         log_entry.append(setting_entry)
     logger.debug('\n  '.join(log_entry))
 
@@ -87,23 +88,23 @@ def evaluate(param_info, mm_sample, data, i, config: TemoaConfig, log_queue, log
             'Multiple outputs found in Objective table matching scenario name.  Coding error.'
         )
     else:
-        Y_OF = output_query[0][0]
+        y_of = output_query[0][0]
     cur.execute(
         "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
         (scenario_name,),
     )
     output_query = cur.fetchall()
     if len(output_query) == 0:
-        Y_CumulativeCO2 = 0.0
+        y_cumulative_co2 = 0.0
     elif len(output_query) > 1:
         raise RuntimeError(
             'Multiple outputs found in output_emissions table matching scenario name.  Coding '
             'error.'
         )
     else:
-        Y_CumulativeCO2 = output_query[0][0]
-    morris_objectives = [float(Y_OF), float(Y_CumulativeCO2)]
-    logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, Y_OF)
+        y_cumulative_co2 = output_query[0][0]
+    morris_objectives = [float(y_of), float(y_cumulative_co2)]
+    logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, y_of)
     if not config.silent:
         sys.stdout.write(f'Completed MM run {i + 1}\n')
         sys.stdout.flush()
