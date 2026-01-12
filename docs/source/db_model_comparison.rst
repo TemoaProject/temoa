@@ -1,84 +1,90 @@
-Database Tables vs Model Sets/Parameters Comparison
-======================================================
+Our discussion of sets is broken down into several logical categories to make it
+easier to parse. The first group of sets pertains to Temoa's treatment of time,
+as shown below. **Note:** Some entries in the "Database Table" column are
+comma-separated. In those cases, the first element refers to the name of the database
+table, and the second refers to specific column within the database column used to
+identify a specific subset. For example, in the first table below, :code:`time_period`
+is the master set and :code:`time_exist` is a subset that defines the user-defined
+model time periods to define historical technology vintages that exist prior to
+the model's time horizon for optimization.
 
-Direct Mappings: Sets
----------------------
+Note: In instances where the "Database Table" column contains two comma-separated
+elements, the first element refers to the name of the dtabase table and the second
+refers to a specific column within the database table.
 
-Time-Related Sets
-^^^^^^^^^^^^^^^^^
+.. csv-table::
+   :header: "Set", "Database Table", "Model Code", "Notes"
+   :widths: 15, 20, 25, 40
+
+   ":math:`\text{P}^e`", ":code:`time_period, flag = e`", ":code:`time_exist`", "model periods prior to the beginning of the optimization time horizon"
+   ":math:`\text{P}^f`", ":code:`time_period, flag = f`", ":code:`time_future`", "model periods within the optimization time horizon"
+   ":math:`{}^*\text{P}^o`", ":code:`time_period`", ":code:`time_optimize`", "model time periods to optimize, (:math:`\text{P}^f - \text{max}(\text{P}^f)`); the last time period is removed as it represents the end of the final period"
+   ":math:`{}^*\text{V}`", ":code:`time_period`", ":code:`vintage_exist`, :code:`vintage_optimize`, :code:`vintage_all`", "tech vintages, (:math:`\text{P}^e \cup \text{P}^o`), derived from time period set"
+   ":math:`\text{D}`", ":code:`time_of_day`", ":code:`time_of_day`", "intraday time divisions"
+   ":math:`\text{S}`", ":code:`season_label`", ":code:`time_season`", "intra-annual divisions, e.g., different seasons or different representative days"
+   "", ":code:`time_season`", ":code:`time_season`", "ordered tuple of seasons by time period"
+   "", ":code:`time_season_sequential`", ":code:`time_season_to_sequential, ordered_season_sequential`", "NEED HELP"
+
+The sets in the table below define Temoa's representation of regions.
 
 .. csv-table::
    :header: "Set", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{P}^e`", "time_period", "time_exist", "model periods before optimization begins; partitioned by period type flag"
-   ":math:`\text{P}^f`", "time_period", "time_future", "model time scale of interest; the last year is not optimized; partitioned by period type flag"
-   ":math:`{}^*\text{P}^o`", "time_period", "time_optimize", "model time periods to optimize; (:math:`\text{P}^f - \text{max}(\text{P}^f)`); partitioned by period type flag"
-   ":math:`{}^*\text{V}`", "time_period", "vintage_exist, vintage_optimize, vintage_all", "possible tech vintages; (:math:`\text{P}^e \cup \text{P}^o`); same data, used for vintage tracking"
-   ":math:`\text{D}`", "time_of_day", "time_of_day", "time-of-day divisions (e.g. morning); direct mapping"
-   ":math:`\text{S}`", "season_label", "time_season_all, time_season", "seasonal divisions (e.g. winter, summer); direct mapping"
-   "", "time_season", "time_season", "seasons by period"
-   "", "time_season_sequential", "time_season_to_sequential, ordered_season_sequential", "sequential season ordering"
+   ":math:`\text{R}`", ":code:`region`", ":code:`regions`", "distinct geographical regions; direct mapping"
+   "", ":code:`region`", ":code:`regional_indices`", "set of all the possible combinations of interregional exchanges plus original region indices"
+   "", ":code:`region`", ":code:`regional_global_indices`", "NEED HELP - is this set required? It appears to be deprecated?"
 
-Geography Sets
-^^^^^^^^^^^^^^
+The sets below define how technologies are represented within Temoa. Because technologies
+can serve many different functions across an energy system, we need to define a large
+number of technology subsets.
 
 .. csv-table::
    :header: "Set", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{R}`", "region", "regions", "distinct geographical regions; direct mapping"
-   "", "region", "regional_indices", "derived with exchange logic"
-   "", "region", "regional_global_indices", "regional groups"
+   ":math:`{}^*\text{T}`", ":code:`technology`", ":code:`tech_all`", "all technologies to be modeled; (:math:`{T}^r \cup {T}^p`)"
+   ":math:`\text{T}^p`", ":code:`technology`", ":code:`tech_production`", "techs producing intermediate commodities, like electricity"
+   ":math:`\text{T}^b`", ":code:`technology, flag = pb`", ":code:`tech_baseload`", "baseload electric generators, (:math:`{T}^b \subset T`)"
+   ":math:`\text{T}^s`", ":code:`technology, flag = ps`", ":code:`tech_storage`", "all storage technologies, (:math:`{T}^s \subset T`)"
+   ":math:`\text{T}^a`", ":code:`technology, annual = 1`", ":code:`tech_annual`", "technologies that produce constant annual output, (:math:`{T}^a \subset T`)"
+   ":math:`\text{T}^{res}`", ":code:`technology, reserve = 1`", ":code:`tech_reserve`", "electric generators contributing to the reserve margin requirement, (:math:`{T}^{res} \subset T`)"
+   ":math:`\text{T}^c`", ":code:`technology, curtail = 1`", ":code:`tech_curtailment`", "technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset (T - T^{res})`)"
+   ":math:`\text{T}^f`", ":code:`technology, flex = 1`", ":code:`tech_flex`", "technologies producing excess commodity flows, (:math:`{T}^f \subset T`)"
+   ":math:`\text{T}^x`", ":code:`technology, exchange = 1`", ":code:`tech_exchange`", "technologies used for interregional commodity flows, (:math:`{T}^x \subset T`)"
+   ":math:`\text{T}^{ret}`", ":code:`technology, retire = 1`", ":code:`tech_retirement`", "technologies allowed to retire before end of life, (:math:`{T}^{ret} \subset (T - T^{u})`)"
+   ":math:`\text{T}^u`", ":code:`technology, unlim_cap = 1`", ":code:`tech_uncap`", "technologies that have no bound on capacity, (:math:`{T}^u \subset (T - T^{res})`)"
+   ":math:`\text{T}^{ss}`", ":code:`technology, seas_stor = 1`", ":code:`tech_seasonal_storage`", "seasonal storage technologies, (:math:`{T}^{ss} \subset T^s`)"
+   "", ":code:`tech_group`", ":code:`tech_group_names`", "named groups for use in group constraints"
+   "", ":code:`tech_group_member`", ":code:`tech_group_members`", "each technology belonging to each group"
+   ":math:`\text{T}^e`", ":code:`existing_capacity`", ":code:`tech_exist`", "technologies constructed in an existing (past) vintage; (:math:`{T}^e \subset T`)"
 
-Technology Sets
-^^^^^^^^^^^^^^^
-
-.. csv-table::
-   :header: "Set", "Database Table", "Model Element", "Notes"
-   :widths: 15, 20, 25, 40
-
-   ":math:`{}^*\text{T}`", "technology", "tech_all", "all technologies to be modeled; (:math:`{T}^r \cup {T}^p`); all technologies"
-   ":math:`\text{T}^p`", "technology", "tech_production", "techs producing intermediate commodities"
-   ":math:`\text{T}^b`", "technology (flag='pb')", "tech_baseload", "baseload electric generators; (:math:`{T}^b \subset T`); filtered by flag"
-   ":math:`\text{T}^s`", "technology (flag='ps')", "tech_storage", "all storage technologies; (:math:`{T}^s \subset T`); filtered by flag"
-   ":math:`\text{T}^a`", "technology (annual=1)", "tech_annual", "technologies that produce constant annual output; (:math:`{T}^a \subset T`); filtered by annual flag"
-   ":math:`\text{T}^{res}`", "technology (reserve=1)", "tech_reserve", "electric generators contributing to the reserve margin requirement; (:math:`{T}^{res} \subset T`); filtered by reserve flag"
-   ":math:`\text{T}^c`", "technology (curtail=1)", "tech_curtailment", "technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset (T - T^{res})`); filtered by curtail flag"
-   ":math:`\text{T}^f`", "technology (flex=1)", "tech_flex", "technologies producing excess commodity flows; (:math:`{T}^f \subset T`); filtered by flex flag"
-   ":math:`\text{T}^x`", "technology (exchange=1)", "tech_exchange", "technologies used for interregional commodity flow; (:math:`{T}^x \subset T`); filtered by exchange flag"
-   ":math:`\text{T}^{ret}`", "technology (retire=1)", "tech_retirement", "technologies allowed to retire before end of life; (:math:`{T}^{ret} \subset (T - T^{u})`); filtered by retire flag"
-   ":math:`\text{T}^u`", "technology (unlim_cap=1)", "tech_uncap", "technologies that have no bound on capacity; (:math:`{T}^u \subset (T - T^{res})`); filtered by unlim_cap flag"
-   ":math:`\text{T}^{ss}`", "technology (seas_stor=1)", "tech_seasonal_storage", "seasonal storage technologies; (:math:`{T}^{ss} \subset T^s`); filtered by seas_stor flag"
-   "", "tech_group", "tech_group_names", "named groups for use in group constraints; group names"
-   "", "tech_group_member", "tech_group_members", "each technology belonging to each group; group membership"
-   ":math:`\text{T}^e`", "existing_capacity", "tech_exist", "technologies constructed in an existing (past) vintage; (:math:`{T}^e \subset T`); derived from existing_capacity table"
-
-Commodity Sets
-^^^^^^^^^^^^^^
+The sets below define commodities that are consumed and produced by different energy
+technologies.
 
 .. csv-table::
    :header: "Set", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{C}^d`", "commodity (flag='d')", "commodity_demand", "end-use demand commodities; filtered by flag"
-   ":math:`\text{C}^e`", "commodity (flag='e')", "commodity_emissions", "emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`); filtered by flag"
-   ":math:`\text{C}^p`", "commodity (flag='p')", "commodity_physical", "general energy forms (e.g. electricity, coal, uranium, oil); filtered by flag"
-   ":math:`\text{C}^w`", "commodity (flag='w','wa','wp')", "commodity_waste", "production can be greater than consumption; can be physical, annual, or neither (not balanced); filtered by waste flags"
-   ":math:`\text{C}^a`", "commodity (flag='a')", "commodity_annual", "same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`); filtered by flag"
-   ":math:`\text{C}^s`", "commodity (flag='s')", "commodity_source", "input sources (not balanced by CommodityBalance_constraint); filtered by flag"
-   ":math:`{}^*\text{C}^k`", "", "commodity_sink", "commodities that exit the process network (:math:`\text{C}_d \cup \text{C}_w`); union of demand and waste commodities"
-   ":math:`{}^*\text{C}^c`", "", "commodity_carrier", "physical energy carriers and sinks (:math:`\text{C}_p \cup \text{C}_k`); union of physical and sink commodities"
-   ":math:`{}^*\text{C}`", "", "commodity_all", "union of all commodity sets; union of carrier and emissions commodities"
+   ":math:`\text{C}^d`", ":code:`commodity, flag = d`", ":code:`commodity_demand`", "end-use demand commodities, representing the final consumer demands"
+   ":math:`\text{C}^e`", ":code:`commodity, flag = e`", ":code:`commodity_emissions`", "emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`); filtered by flag"
+   ":math:`\text{C}^p`", ":code:`commodity, flag = p`", ":code:`commodity_physical`", "physical energy commodities (e.g. electricity, coal, uranium, oil) produced and consumed across the energy system"
+   ":math:`\text{C}^w`", ":code:`commodity, flag = w, wa , wp`", ":code:`commodity_waste`", "production can be greater than consumption; can be physical, annual, or neither (not balanced)"
+   ":math:`\text{C}^a`", ":code:`commodity, flag = a`", ":code:`commodity_annual`", "same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`)"
+   ":math:`\text{C}^s`", ":code:`commodity, flag = s`", ":code:`commodity_source`", "primary source commodities, not balanced by :code:`CommodityBalance_constraint`"
+   ":math:`{}^*\text{C}^k`", "", ":code:`commodity_sink`", "commodities that exit the process network (:math:`\text{C}_d \cup \text{C}_w`); union of demand and waste commodities"
+   ":math:`{}^*\text{C}^c`", "", ":code:`commodity_carrier`", "physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`); union of physical, demand, and waste commodities"
+   ":math:`{}^*\text{C}`", "", ":code:`commodity_all`", "union of all commodity sets; union of carrier and emissions commodities"
 
-Other Sets
-^^^^^^^^^^
+There is one additional set that defines operators (=, <, >). While not strictly
+necessary, defing these operators as a set allows modelers to express constraints
+more efficiently.
 
 .. csv-table::
    :header: "Set", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   "", "operator", "operator", "constraint operators"
+   "", ":code:`operator`", ":code:`operator`", "constraint operators"
 
 
 Direct Mappings: Parameters
