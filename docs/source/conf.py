@@ -61,6 +61,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'myst_parser',  # Enable Markdown support
     'sphinxcontrib.mermaid',  # Enable Mermaid diagrams
+    'sphinx.ext.imgconverter',  # Support SVG to PDF conversion for LaTeX
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -119,30 +120,17 @@ suppress_warnings = [
 html_static_path = ['default/static']
 
 
-# this stylesheet eliminates fixed width and is located in the _static directory
-def setup(app: Any) -> None:
-    app.add_css_file('my_theme.css')
-
-
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# The default sidebars (for documents that don't match any pattern) are
-# defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-# html_sidebars = {}
-# import sphinx_rtd_theme
-
-# extensions = [
-#    "sphinx_rtd_theme"
-# ]
-
-html_theme = 'sphinx_rtd_theme'
-html_logo = 'images/Temoa_logo_color_small.png'
-latex_logo = 'images/TemoaLogo_grayscale.png'
-
+html_theme = 'sphinx_book_theme'
+html_theme_options = {
+    'repository_url': 'https://github.com/TemoaProject/temoa',
+    'use_repository_button': True,
+    'use_issues_button': True,
+    'use_edit_page_button': True,
+    'path_to_docs': 'docs/source',
+    'show_navbar_depth': 2,
+}
+latex_logo = 'assets/logo_bottom_text.pdf'
+html_logo = 'assets/logo_bottom_text.svg'
 
 myst_enable_extensions = ['amsmath', 'colon_fence', 'dollarmath', 'html_image']
 myst_fence_as_directive = ['mermaid']
