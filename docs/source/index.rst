@@ -5,5 +5,6 @@ Temoa Project Documentation
 
    Documentation
    monte_carlo
+   myopic
    unit_checking
    stochastics
