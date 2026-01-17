@@ -66,3 +66,18 @@ Backtracking and Roll-back
 --------------------------
 
 If the solver fails to find an optimal solution for a given window (e.g., due to infeasibility caused by previous decisions), the Myopic sequencer has a built-in roll-back mechanism. It will attempt to back up to the previous window and re-solve with an expanded ``view_depth`` to find a feasible path forward. If it cannot back up further, the run will abort with an error.
+
+Notes and Caveats
+-----------------
+
+Performance and Discounting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Reduced Compute**: Myopic mode dramatically reduces compute requirements compared to perfect foresight by using a "divide and conquer" approach, solving several smaller problems instead of one large global optimization.
+* **Discounting**: All costs are discounted to the first optimization period in the database (period ``p0`` of the first myopic window).
+
+Modeling Considerations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Investment Amortization**: Investment costs in Temoa are amortized over the useful life of a built technology. This harmonizes how the model perceives costs and benefits within the ``view_depth``: since the model only sees the benefits of a technology for the portion of its life that falls within the current window, the costs are similarly distributed. Consequently, discounted investment costs reported in summary logs may be significantly higher than those reported in the ``output_cost`` table.
+* **Limited Foresight**: Myopic mode cannot see beyond the specified ``view_depth``, including constraints. If a constraint only becomes active later in the planning horizon, the model may make "stupid but cost-saving" decisions in early windows. This can lead to unexpected rollbacks when those constraints finally enter the visibility window, which can complicate the interpretation of the results. Modeler caution is advised when setting the ``view_depth`` relative to known future constraints.
