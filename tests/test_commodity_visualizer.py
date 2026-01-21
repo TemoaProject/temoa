@@ -1,11 +1,9 @@
-from unittest.mock import MagicMock
-
 from temoa.model_checking.commodity_graph import generate_commodity_graph
 from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
-from temoa.types.core_types import Period, Region, Sector, Technology, Vintage
+from temoa.types.core_types import Commodity, Period, Region, Sector, Technology, Vintage
 
 
-def test_special_items_styling():
+def test_special_items_styling() -> None:
     """
     Test that demand orphans, other orphans, and driven techs
     are correctly styled in the commodity graph.
@@ -13,42 +11,40 @@ def test_special_items_styling():
     region = Region('test_region')
     period = Period(2025)
 
-    # Mock NetworkModelData
-    network_data = MagicMock(spec=NetworkModelData)
-    network_data.physical_commodities = {'comm_inter'}
-    network_data.source_commodities = {(region, period): {'comm_source'}}
-    network_data.demand_commodities = {(region, period): {'comm_demand'}}
-    network_data.available_techs = {(region, period): {}}
-    network_data.tech_data = {}
+    # Concrete NetworkModelData
+    network_data = NetworkModelData()
+    network_data.physical_commodities = {Commodity('comm_inter')}
+    network_data.source_commodities[(region, period)] = {Commodity('comm_source')}
+    network_data.demand_commodities[(region, period)] = {Commodity('comm_demand')}
 
     # Define some special items
     demand_orphans = [
         EdgeTuple(
             region,
-            'comm_inter',
+            Commodity('comm_inter'),
             Technology('tech_demand_orphan'),
             Vintage(2020),
-            'comm_demand',
+            Commodity('comm_demand'),
             sector=Sector('S1'),
         )
     ]
     other_orphans = [
         EdgeTuple(
             region,
-            'comm_source',
+            Commodity('comm_source'),
             Technology('tech_other_orphan'),
             Vintage(2020),
-            'comm_inter',
+            Commodity('comm_inter'),
             sector=Sector('S2'),
         )
     ]
     driven_techs = [
         EdgeTuple(
             region,
-            'comm_source',
+            Commodity('comm_source'),
             Technology('tech_driven'),
             Vintage(2020),
-            'comm_demand',
+            Commodity('comm_demand'),
             sector=Sector('S3'),
         )
     ]
@@ -77,14 +73,17 @@ def test_special_items_styling():
     # 2. Check Edge Styling
     edges = list(dg.edges(data=True))
 
-    edge_do = next(e for e in edges if (e[0] == 'comm_inter' and e[1] == 'comm_demand'))
-    assert edge_do[2]['dashes'] is True
-    assert edge_do[2]['color'] == '#d62728'
+    edge_do = next((e for e in edges if (e[0] == 'comm_inter' and e[1] == 'comm_demand')), None)
+    assert edge_do is not None, 'Edge (comm_inter -> comm_demand) not found'
+    assert edge_do[2].get('dashes') is True
+    assert edge_do[2].get('color') == '#d62728'
 
-    edge_oo = next(e for e in edges if (e[0] == 'comm_source' and e[1] == 'comm_inter'))
-    assert edge_oo[2]['dashes'] is True
-    assert edge_oo[2]['color'] == '#ff7f0e'
+    edge_oo = next((e for e in edges if (e[0] == 'comm_source' and e[1] == 'comm_inter')), None)
+    assert edge_oo is not None, 'Edge (comm_source -> comm_inter) not found'
+    assert edge_oo[2].get('dashes') is True
+    assert edge_oo[2].get('color') == '#ff7f0e'
 
-    edge_dt = next(e for e in edges if (e[0] == 'comm_source' and e[1] == 'comm_demand'))
-    assert edge_dt[2]['dashes'] is True
-    assert edge_dt[2]['color'] == '#1f77b4'
+    edge_dt = next((e for e in edges if (e[0] == 'comm_source' and e[1] == 'comm_demand')), None)
+    assert edge_dt is not None, 'Edge (comm_source -> comm_demand) not found'
+    assert edge_dt[2].get('dashes') is True
+    assert edge_dt[2].get('color') == '#1f77b4'

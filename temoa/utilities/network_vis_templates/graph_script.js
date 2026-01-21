@@ -29,40 +29,58 @@ document.addEventListener('DOMContentLoaded', function () {
         secondary_view_name: secondaryViewName,
     } = data;
 
-    const optionsObject =
-        typeof optionsRaw === "string" ? JSON.parse(optionsRaw) : optionsRaw;
+    let optionsObject = {};
+    if (typeof optionsRaw === "string") {
+        try {
+            optionsObject = JSON.parse(optionsRaw);
+        } catch (e) {
+            console.error('Failed to parse graph options JSON:', e);
+            optionsObject = {};
+        }
+    } else {
+        optionsObject = optionsRaw || {};
+    }
 
-    window.__graph = {
-        data,
-        allNodesPrimary,
-        allEdgesPrimary,
-        allNodesSecondary,
-        allEdgesSecondary,
-        optionsObject,
-    };
-    // --- Visual State ---
-    let currentView = 'primary';
-    let primaryViewPositions = null;
-    let secondaryViewPositions = null;
-    let visualState = {
-        fontSize: 14
-    };
-
+    // Expose for debugging only — enable in production.
+    const isDebug = (typeof window !== 'undefined' && window.DEBUG_GRAPH) ||
+                    (typeof URLSearchParams !== 'undefined' && new URLSearchParams(window.location.search).has('debugGraph'));
+    if (isDebug) {
+        window.__graph = {
+            data,
+            allNodesPrimary,
+            allEdgesPrimary,
+            allNodesSecondary,
+            allEdgesSecondary,
+            optionsObject,
+        };
+    }
     // --- DOM Elements ---
+    const fontSizeSlider = document.getElementById('font-size-slider');
     const configWrapper = document.getElementById('config-panel-wrapper');
     const configHeader = document.querySelector('.config-panel-header');
     const configToggleButton = document.querySelector('.config-toggle-btn');
     const advancedControlsToggle = document.getElementById('advanced-controls-toggle');
     const visConfigContainer = document.getElementById('vis-config-container');
-    const fontSizeSlider = document.getElementById('font-size-slider');
     const searchInput = document.getElementById('search-input');
+
+    // --- Visual State ---
+    let currentView = 'primary';
+    let primaryViewPositions = null;
+    let secondaryViewPositions = null;
+    let visualState = {
+        fontSize: (optionsObject?.nodes?.font?.size) || 14
+    };
+
+    if (fontSizeSlider) {
+        fontSizeSlider.value = String(visualState.fontSize);
+    }
     const resetButton = document.getElementById('reset-view-btn');
     const sectorTogglesContainer = document.getElementById('sector-toggles');
     const viewToggleButton = document.getElementById('view-toggle-btn');
     const graphContainer = document.getElementById('mynetwork');
 
     // --- Config Panel Toggle ---
-    if (optionsObject.configure && optionsObject.configure.enabled) {
+    if (optionsObject?.configure?.enabled) {
         optionsObject.configure.container = visConfigContainer;
         configHeader.addEventListener('click', () => {
             const isCollapsed = configWrapper.classList.toggle('collapsed');
@@ -77,24 +95,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Visual Settings Sliders ---
+    let pendingRaf = null;
     function updateVisualSettings() {
         if (fontSizeSlider) visualState.fontSize = parseInt(fontSizeSlider.value, 10);
 
-        // Use setOptions for global font size - works for edges with smooth enabled
-        // Note: Don't set per-edge font as it breaks rendering with smooth edges
-        network.setOptions({
-          nodes: { font: { size: visualState.fontSize } },
-          edges: { font: { size: visualState.fontSize, align: 'top' } }
+        if (pendingRaf) return;
+
+        pendingRaf = requestAnimationFrame(() => {
+            pendingRaf = null;
+
+            // Use setOptions for global font size - works for edges with smooth enabled
+            // Note: Don't set per-edge font as it breaks rendering with smooth edges
+            network.setOptions({
+              nodes: { font: { size: visualState.fontSize } },
+              edges: { font: { size: visualState.fontSize, align: 'top' } }
+            });
+
+            // Also update nodes individually since they have per-node font from addWithCurrentFontSize
+            // Note: Per-node font properties must be overwritten because they would otherwise take precedence over the global setting
+            const nodeUpdates = nodes.get().map(n => ({
+              id: n.id,
+              font: { ...(n.font ?? {}), size: visualState.fontSize }
+            }));
+            nodes.update(nodeUpdates);
+
+            network.redraw();
         });
-
-        // Also update nodes individually since they have per-node font from addWithCurrentFontSize
-        const nodeUpdates = nodes.get().map(n => ({
-          id: n.id,
-          font: { ...(n.font ?? {}), size: visualState.fontSize }
-        }));
-        nodes.update(nodeUpdates);
-
-        network.redraw();
     }
 
     if (fontSizeSlider) fontSizeSlider.addEventListener('input', updateVisualSettings);
