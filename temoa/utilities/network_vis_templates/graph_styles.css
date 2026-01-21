@@ -24,6 +24,9 @@ body, html {
 .legend-item { display: flex; align-items: center; margin-bottom: 6px; }
 .legend-color-swatch { width: 18px; height: 18px; margin-right: 8px; flex-shrink: 0; border: 1px solid #ccc; background-color: #f0f0f0; box-sizing: border-box; }
 .legend-label { font-size: 13px; }
+.control-group { display: flex; align-items: center; gap: 15px; margin-bottom: 8px; }
+.control-group label { min-width: 120px; font-size: 13px; font-weight: 500; }
+.control-group input[type=range] { flex-grow: 1; max-width: 250px; }
 #advanced-controls-toggle { font-size: 12px; color: #007bff; cursor: pointer; text-decoration: none; margin-top: 15px; display: block; }
 .view-toggle-panel { padding: 8px 15px; background-color: #343a40; color: white; display: flex; justify-content: center; align-items: center; }
 .view-toggle-panel button { font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 5px; border: 1px solid #6c757d; background-color: #495057; color: white; cursor: pointer; }

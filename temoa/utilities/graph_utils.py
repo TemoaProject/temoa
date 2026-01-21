@@ -175,10 +175,15 @@ def calculate_initial_positions(
         return positions
 
     # Arrange sector "anchors" in a large circle
-    layout_radius = 2000  # The radius of the main circle for sectors
-    jitter_radius = 1000  # How far nodes can be from their sector anchor
-    sector_anchors = {}
+    # Scale radius based on the number of sectors and nodes to handle small models better
     num_sectors = len(sectors_to_place)
+    num_nodes = len(nodes_to_place)
+
+    # Base radius + incremental scaling
+    layout_radius = max(800, min(2000, 400 + 200 * num_sectors + 2 * num_nodes))
+    jitter_radius = layout_radius // 2
+
+    sector_anchors = {}
 
     for i, sector in enumerate(sectors_to_place):
         angle = (i / num_sectors) * 2 * math.pi
@@ -226,10 +231,14 @@ def calculate_tech_graph_positions(
         return {}
 
     # 2. Arrange sector "anchors" in a large circle
-    layout_radius = 2500  # Use a large radius to ensure initial separation
-    jitter_radius = 600  # Controls the size of the initial clusters
-    sector_anchors = {}
+    # Scale radius based on the number of sectors and edges
     num_sectors = len(sectors_to_place)
+    num_edges = sum(1 for _ in all_edges)
+
+    layout_radius = max(1000, min(2500, 500 + 300 * num_sectors + num_edges))
+    jitter_radius = layout_radius // 4
+
+    sector_anchors = {}
 
     for i, sector in enumerate(sectors_to_place):
         angle = (i / num_sectors) * 2 * math.pi
