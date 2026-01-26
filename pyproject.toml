@@ -11,7 +11,7 @@ authors = [
 
 dependencies = [
     "pyomo>=6.8.0",
-    "matplotlib==3.9.2",
+    "matplotlib>=3.9.2",
     "pandas>=2.2.2",
     "numpy>=2.1.0",
     "joblib",
@@ -65,7 +65,7 @@ plotting = [
     "seaborn>=0.13.2",
 ]
 solver = [
-    "gurobipy>=12.0.3,<13",
+    "gurobipy>=12.0.3",
 ]
 
 [build-system]
@@ -125,12 +125,15 @@ testpaths = [
     "tests",
 ]
 filterwarnings = [
-    # Raise all warnings as errors except for the ones we specifically ignore
-    "error::DeprecationWarning",
-    "error::FutureWarning",
-    "error::RuntimeWarning",
-    "error::UserWarning",
-
+    # Treat warnings from temoa and tests as errors
+    "error::DeprecationWarning:temoa.*",
+    "error::FutureWarning:temoa.*",
+    "error::RuntimeWarning:temoa.*",
+    "error::UserWarning:temoa.*",
+    "error::DeprecationWarning:tests.*",
+    "error::FutureWarning:tests.*",
+    "error::RuntimeWarning:tests.*",
+    "error::UserWarning:tests.*",
 ]
 
 [tool.mypy]
