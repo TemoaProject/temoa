@@ -128,7 +128,7 @@ In a mathematical model like Temoa, sets are used to index parameters and
 variables. Below we define the sets used in Temoa, which are grouped into logical
 components. In each case, we provide the mathematical notation used in the
 mathematical formulation of the model, as well as the associated names in the
-python code and database schema.
+Python code and database schema.
 
 .. include:: db_model_comparison.rst
 
@@ -366,6 +366,7 @@ Parameters
    ":math:`\text{CV}_{r,p,t,v}`","cost_variable",":math:`\mathbb{R}`","Variable operations \& maintenance cost"
    ":math:`\text{CON}_{r,i,t,v}`","construction_input",":math:`\mathbb{R}`","Commodities consumed by creation of process capacity"
    ":math:`\text{DEM}_{r,p,c}`","demand",":math:`\mathbb{R}^+_0`","End-use demands, by period"
+   ":math:`\text{DPP}`","days_per_period",":math:`\mathbb{R}^+_0`","Days per period"
    ":math:`\text{DDD}_{p,s,d}`","demand_default_distribution",":math:`\mathbb{I}`","Default demand distribution (currently not supported)"
    ":math:`\text{DSD}_{r,p,s,d,c}`","demand_specific_distribution",":math:`\mathbb{I}`","Demand-specific distribution"
    ":math:`\text{EFF}_{r,i,t,v,o}`","efficiency",":math:`\mathbb{R}^+_0`","Tech- and commodity-specific efficiency"
@@ -384,7 +385,19 @@ Parameters
    ":math:`\text{LE}_{r,p,e}`","limit_emission",":math:`\mathbb{R}^+_0`","Limit emissions by region and period"
    ":math:`\text{LA}_{r,p,t}`","limit_activity",":math:`\mathbb{R}^+_0`","Limit tech-specific activity by region and period"
    ":math:`\text{LC}_{r,p,t}`","limit_capacity",":math:`\mathbb{R}^+_0`","Limit tech-specific capacity by period"
-   ":math:`\text{LR}_{r,t}`","limit_resource",":math:`\mathbb{R}^+_0`","Limit resource production by tech across time periods"
+   ":math:`\text{LNC}_{r,p,t}`","limit_new_capacity",":math:`\mathbb{R}^+_0`","Limit new capacity deployment by period"
+   ":math:`\text{LR}_{r,t}`","limit_resource",":math:`\mathbb{R}^+_0`","Cumulative activity limit across time periods (not supported in myopic)"
+   ":math:`\text{LGC}_{r,t}`","limit_growth_capacity",":math:`\mathbb{I}`","Capacity growth rate limits"
+   ":math:`\text{LDGC}_{r,t}`","limit_degrowth_capacity",":math:`\mathbb{I}`","Capacity degrowth rate limits"
+   ":math:`\text{LGNC}_{r,t}`","limit_growth_new_capacity",":math:`\mathbb{I}`","New capacity growth rate limits"
+   ":math:`\text{LDGNC}_{r,t}`","limit_degrowth_new_capacity",":math:`\mathbb{I}`","New capacity degrowth rate limits"
+   ":math:`\text{LGNC}_{\Delta,r,t}`","limit_growth_new_capacity_delta",":math:`\mathbb{I}`","New capacity growth acceleration limits"
+   ":math:`\text{LDGNC}_{\Delta,r,t}`","limit_degrowth_new_capacity_delta",":math:`\mathbb{I}`","New capacity degrowth deceleration limits"
+   ":math:`\text{LACF}_{r,p,t,o}`","limit_annual_capacity_factor",":math:`\mathbb{I}`","Annual capacity factor limits"
+   ":math:`\text{LSCF}_{r,p,s,t}`","limit_seasonal_capacity_factor",":math:`\mathbb{I}`","Seasonal capacity factor limits"
+   ":math:`\text{LCS}_{r,p,g_1,g_2}`","limit_capacity_share",":math:`\mathbb{I}`","Capacity share limits between technology groups"
+   ":math:`\text{LAS}_{r,p,g_1,g_2}`","limit_activity_share",":math:`\mathbb{I}`","Activity share limits between technology groups"
+   ":math:`\text{LNCS}_{r,p,g_1,g_2}`","limit_new_capacity_share",":math:`\mathbb{I}`","New capacity share limits"
    ":math:`\text{LSF}_{r,p,s,d,t,v}`","limit_storage_level_fraction",":math:`\mathbb{R}^+_0`","Limit storage level in any time slice"
    ":math:`\text{MDY}`","myopic_discounting_year",":math:`\mathbb{N}`","Objective function NPV year when running myopically"
    ":math:`\text{PRM}_{r}`","planning_reserve_margin",":math:`\mathbb{I}`","Margin used to ensure sufficient generating capacity"
@@ -392,12 +405,13 @@ Parameters
    ":math:`\text{RUH}_{r,t}`","ramp_up_hourly",":math:`\mathbb{R}`","Hourly rate at which generation techs can ramp output up"
    ":math:`\text{SD}_{r,t}`","storage_duration",":math:`\mathbb{N}`","Storage duration per technology, specified in hours"
    ":math:`\text{SEG}_{s,d}`","segment_fraction",":math:`\mathbb{I}`","Fraction of year represented by each (s, d) tuple"
+   ":math:`\text{SFPS}_{p,s}`","segment_fraction_per_season",":math:`\mathbb{I}`","computed from segment fractions"
    ":math:`\text{TIS}_{r,i,t}`","tech_input_split",":math:`\mathbb{I}`","Technology input fuel ratio at time slice level"
    ":math:`\text{TISA}_{r,i,t}`","tech_input_split_annual",":math:`\mathbb{I}`","Average annual technology input fuel ratio"
    ":math:`\text{TOS}_{r,t,o}`","tech_output_split",":math:`\mathbb{I}`","Technology output fuel ratio at time slice level"
-   ":math:`\text{TISA}_{r,i,t}`","tech_output_split_annual",":math:`\mathbb{I}`","Average annual technology output fuel ratio"
+   ":math:`\text{TOSA}_{r,t,o}`","tech_output_split_annual",":math:`\mathbb{I}`","Average annual technology output fuel ratio"
    ":math:`{}^*\text{LA}_{t,v}`","loan_annualize",":math:`\mathbb{R}^+_0`","Loan amortization by tech and vintage; based on :math:`DR_t`"
-   ":math:`{}^*\text{MPL}_{p,t,v}`","model_process_life",":math:`\mathbb{N}`","Smaller of remaining model horizon or process tech life"
+   ":math:`{}^*\text{MPL}_{p,t,v}`","model_process_life",":math:`\mathbb{N}`","**[Deprecated]** Smaller of remaining model horizon or process tech life"
    ":math:`{}^*\text{PLF}_{r,p,t,v}`","process_life_frac",":math:`\mathbb{I}`","Fraction of available process capacity by region and period "
    ":math:`{}^*\text{LEN}_p`","period_length",":math:`\mathbb{N}`","Number of years in period :math:`p`"
 
