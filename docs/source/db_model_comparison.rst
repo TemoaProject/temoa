@@ -8,12 +8,9 @@ is the master set and :code:`time_exist` is a subset that defines the user-defin
 model time periods to define historical technology vintages that exist prior to
 the model's time horizon for optimization.
 
-Note: In instances where the "Database Table" column contains two comma-separated
-elements, the first element refers to the name of the dtabase table and the second
-refers to a specific column within the database table.
 
 .. csv-table::
-   :header: "Set", "Database Table", "Model Code", "Notes"
+   :header: "Set", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
    ":math:`\text{P}^e`", ":code:`time_period, flag = e`", ":code:`time_exist`", "model periods prior to the beginning of the optimization time horizon"
@@ -23,7 +20,7 @@ refers to a specific column within the database table.
    ":math:`\text{D}`", ":code:`time_of_day`", ":code:`time_of_day`", "intraday time divisions"
    ":math:`\text{S}`", ":code:`season_label`", ":code:`time_season`", "intra-annual divisions, e.g., different seasons or different representative days"
    "", ":code:`time_season`", ":code:`time_season`", "ordered tuple of seasons by time period"
-   "", ":code:`time_season_sequential`", ":code:`time_season_to_sequential, ordered_season_sequential`", "NEED HELP"
+   "", ":code:`time_season_sequential`", ":code:`time_season_to_sequential, ordered_season_sequential`", "superimposed sequential seasons used for seasonal storage and inter-season ramping"
 
 The sets in the table below define Temoa's representation of regions.
 
@@ -33,7 +30,7 @@ The sets in the table below define Temoa's representation of regions.
 
    ":math:`\text{R}`", ":code:`region`", ":code:`regions`", "distinct geographical regions; direct mapping"
    "", ":code:`region`", ":code:`regional_indices`", "set of all the possible combinations of interregional exchanges plus original region indices"
-   "", ":code:`region`", ":code:`regional_global_indices`", "NEED HELP - is this set required? It appears to be deprecated?"
+   "", ":code:`region_group_check`", ":code:`regional_global_indices`", "set used to validate regional group constraints; includes individual regions, exchange pairs, and groups"
 
 The sets below define how technologies are represented within Temoa. Because technologies
 can serve many different functions across an energy system, we need to define a large
@@ -44,7 +41,7 @@ number of technology subsets.
    :widths: 15, 20, 25, 40
 
    ":math:`{}^*\text{T}`", ":code:`technology`", ":code:`tech_all`", "all technologies to be modeled; (:math:`{T}^r \cup {T}^p`)"
-   ":math:`\text{T}^p`", ":code:`technology`", ":code:`tech_production`", "techs producing intermediate commodities, like electricity"
+   ":math:`\text{T}^p`", ":code:`technology, flag = p`", ":code:`tech_production`", "techs producing intermediate commodities, like electricity"
    ":math:`\text{T}^b`", ":code:`technology, flag = pb`", ":code:`tech_baseload`", "baseload electric generators, (:math:`{T}^b \subset T`)"
    ":math:`\text{T}^s`", ":code:`technology, flag = ps`", ":code:`tech_storage`", "all storage technologies, (:math:`{T}^s \subset T`)"
    ":math:`\text{T}^a`", ":code:`technology, annual = 1`", ":code:`tech_annual`", "technologies that produce constant annual output, (:math:`{T}^a \subset T`)"
@@ -52,6 +49,8 @@ number of technology subsets.
    ":math:`\text{T}^c`", ":code:`technology, curtail = 1`", ":code:`tech_curtailment`", "technologies with curtailable output and no upstream cost; (:math:`{T}^c \subset (T - T^{res})`)"
    ":math:`\text{T}^f`", ":code:`technology, flex = 1`", ":code:`tech_flex`", "technologies producing excess commodity flows, (:math:`{T}^f \subset T`)"
    ":math:`\text{T}^x`", ":code:`technology, exchange = 1`", ":code:`tech_exchange`", "technologies used for interregional commodity flows, (:math:`{T}^x \subset T`)"
+   ":math:`\text{T}^{ur}`", ":code:`technology, ramp_up = 1`", ":code:`tech_upramping`", "electric generators with a ramp up hourly rate limit; (:math:`{T}^{ur} \subset T`)"
+   ":math:`\text{T}^{dr}`", ":code:`technology, ramp_down = 1`", ":code:`tech_downramping`", "electric generators with a ramp down hourly rate limit; (:math:`{T}^{dr} \subset T`)"
    ":math:`\text{T}^{ret}`", ":code:`technology, retire = 1`", ":code:`tech_retirement`", "technologies allowed to retire before end of life, (:math:`{T}^{ret} \subset (T - T^{u})`)"
    ":math:`\text{T}^u`", ":code:`technology, unlim_cap = 1`", ":code:`tech_uncap`", "technologies that have no bound on capacity, (:math:`{T}^u \subset (T - T^{res})`)"
    ":math:`\text{T}^{ss}`", ":code:`technology, seas_stor = 1`", ":code:`tech_seasonal_storage`", "seasonal storage technologies, (:math:`{T}^{ss} \subset T^s`)"
@@ -69,15 +68,16 @@ technologies.
    ":math:`\text{C}^d`", ":code:`commodity, flag = d`", ":code:`commodity_demand`", "end-use demand commodities, representing the final consumer demands"
    ":math:`\text{C}^e`", ":code:`commodity, flag = e`", ":code:`commodity_emissions`", "emission commodities (e.g. :math:`\text{CO}_\text{2}` :math:`\text{NO}_\text{x}`); filtered by flag"
    ":math:`\text{C}^p`", ":code:`commodity, flag = p`", ":code:`commodity_physical`", "physical energy commodities (e.g. electricity, coal, uranium, oil) produced and consumed across the energy system"
-   ":math:`\text{C}^w`", ":code:`commodity, flag = w, wa , wp`", ":code:`commodity_waste`", "production can be greater than consumption; can be physical, annual, or neither (not balanced)"
+   ":math:`\text{C}^w`", ":code:`commodity, flag = w, wa , wp`", ":code:`commodity_waste`", "production can be greater than consumption; can be physical, annual, or neither (not balanced, all wasted)"
    ":math:`\text{C}^a`", ":code:`commodity, flag = a`", ":code:`commodity_annual`", "same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`)"
+   ":math:`\text{C}^l`", ":code:`commodity, flag = l`", ":code:`commodity_flex`", "(disposable) commodities produced by a flex technology (:math:`\text{C}^l \subset \text{C}^p`)"
    ":math:`\text{C}^s`", ":code:`commodity, flag = s`", ":code:`commodity_source`", "primary source commodities, not balanced by :code:`CommodityBalance_constraint`"
    ":math:`{}^*\text{C}^k`", "", ":code:`commodity_sink`", "commodities that exit the process network (:math:`\text{C}_d \cup \text{C}_w`); union of demand and waste commodities"
    ":math:`{}^*\text{C}^c`", "", ":code:`commodity_carrier`", "physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`); union of physical, demand, and waste commodities"
    ":math:`{}^*\text{C}`", "", ":code:`commodity_all`", "union of all commodity sets; union of carrier and emissions commodities"
 
 There is one additional set that defines operators (=, <, >). While not strictly
-necessary, defing these operators as a set allows modelers to express constraints
+necessary, defining these operators as a set allows modelers to express constraints
 more efficiently.
 
 .. csv-table::
@@ -166,34 +166,59 @@ Emission Parameters
    ":math:`\text{EE}_{r,t,v,e}`", "emission_embodied", "emission_embodied", "emissions associated with the creation of capacity; embodied emissions"
    ":math:`\text{EEOL}_{r,t,v,e}`", "emission_end_of_life", "emission_end_of_life", "emissions associated with the retirement/end of life of capacity; end-of-life emissions"
 
-Limit & Constraint Parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Absolute Limits (Capacity, Activity, Emission)
+"""""""""""""""""""""""""""""""""""""""""""""""
 
 .. csv-table::
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
    ":math:`\text{LC}_{r,p,t}`", "limit_capacity", "limit_capacity", "limit tech-specific capacity by period; capacity limits"
-   "", "limit_new_capacity", "limit_new_capacity", "new capacity limits"
+   ":math:`\text{LNC}_{r,p,t}`", "limit_new_capacity", "limit_new_capacity", "Limit new capacity deployment by period"
    ":math:`\text{LA}_{r,p,t}`", "limit_activity", "limit_activity", "limit tech-specific activity by region and period; activity limits"
    ":math:`\text{LE}_{r,p,e}`", "limit_emission", "limit_emission", "limit emissions by region and period; emission limits"
-   ":math:`\text{LR}_{r,t}`", "limit_resource", "limit_resource", "limit resource production by tech across time periods; resource extraction limits"
-   "", "limit_growth_capacity", "limit_growth_capacity", "capacity growth rate"
-   "", "limit_degrowth_capacity", "limit_degrowth_capacity", "capacity degrowth rate"
-   "", "limit_growth_new_capacity", "limit_growth_new_capacity", "new capacity growth rate"
-   "", "limit_degrowth_new_capacity", "limit_degrowth_new_capacity", "new capacity degrowth rate"
-   "", "limit_growth_new_capacity_delta", "limit_growth_new_capacity_delta", "new capacity growth delta"
-   "", "limit_degrowth_new_capacity_delta", "limit_degrowth_new_capacity_delta", "new capacity degrowth delta"
-   "", "limit_annual_capacity_factor", "limit_annual_capacity_factor", "annual capacity factor limits"
-   "", "limit_seasonal_capacity_factor", "limit_seasonal_capacity_factor", "seasonal capacity factor limits"
-   "", "limit_capacity_share", "limit_capacity_share", "capacity share limits"
-   "", "limit_activity_share", "limit_activity_share", "activity share limits"
-   "", "limit_new_capacity_share", "limit_new_capacity_share", "new capacity share limits"
+   ":math:`\text{LR}_{r,t}`", "limit_resource", "limit_resource", "Cumulative activity limit across time periods (not supported in myopic)"
+
+Growth & Degrowth Limits
+""""""""""""""""""""""""
+
+.. csv-table::
+   :header: "Parameter", "Database Table", "Model Element", "Notes"
+   :widths: 15, 20, 25, 40
+
+   ":math:`\text{LGC}_{r,t}`", "limit_growth_capacity", "limit_growth_capacity", "capacity growth rate limits"
+   ":math:`\text{LDGC}_{r,t}`", "limit_degrowth_capacity", "limit_degrowth_capacity", "capacity degrowth rate limits"
+   ":math:`\text{LGNC}_{r,t}`", "limit_growth_new_capacity", "limit_growth_new_capacity", "new capacity growth rate limits"
+   ":math:`\text{LDGNC}_{r,t}`", "limit_degrowth_new_capacity", "limit_degrowth_new_capacity", "new capacity degrowth rate limits"
+   ":math:`\mathrm{LGNC}_{\Delta,r,t}`", "limit_growth_new_capacity_delta", "limit_growth_new_capacity_delta", "new capacity growth acceleration limits"
+   ":math:`\mathrm{LDGNC}_{\Delta,r,t}`", "limit_degrowth_new_capacity_delta", "limit_degrowth_new_capacity_delta", "new capacity degrowth deceleration limits"
+
+Operational & Split Limits
+""""""""""""""""""""""""""
+
+.. csv-table::
+   :header: "Parameter", "Database Table", "Model Element", "Notes"
+   :widths: 15, 20, 25, 40
+
+   ":math:`\text{LACF}_{r,p,t,o}`", "limit_annual_capacity_factor", "limit_annual_capacity_factor", "annual capacity factor limits"
+   ":math:`\text{LSCF}_{r,p,s,t}`", "limit_seasonal_capacity_factor", "limit_seasonal_capacity_factor", "seasonal capacity factor limits"
    ":math:`\text{TIS}_{r,i,t}`", "limit_tech_input_split", "limit_tech_input_split", "technology input fuel ratio at time slice level; tech input split constraints"
    ":math:`\text{TISA}_{r,i,t}`", "limit_tech_input_split_annual", "limit_tech_input_split_annual", "average annual technology input fuel ratio; annual tech input splits"
    ":math:`\text{TOS}_{r,t,o}`", "limit_tech_output_split", "limit_tech_output_split", "technology output fuel ratio at time slice level; tech output split constraints"
-   ":math:`\text{TISA}_{r,i,t}`", "limit_tech_output_split_annual", "limit_tech_output_split_annual", "average annual technology output fuel ratio; annual tech output splits"
+   ":math:`\text{TOSA}_{r,t,o}`", "limit_tech_output_split_annual", "limit_tech_output_split_annual", "average annual technology output fuel ratio; annual tech output splits"
    ":math:`\text{LSF}_{r,p,s,d,t,v}`", "limit_storage_level_fraction", "limit_storage_fraction", "limit storage level in any time slice; storage level fraction limits"
+
+Share Limits
+""""""""""""
+
+.. csv-table::
+   :header: "Parameter", "Database Table", "Model Element", "Notes"
+   :widths: 15, 20, 25, 40
+
+   ":math:`\text{LCS}_{r,p,g_1,g_2}`", "limit_capacity_share", "limit_capacity_share", "capacity share limits between technology groups"
+   ":math:`\text{LAS}_{r,p,g_1,g_2}`", "limit_activity_share", "limit_activity_share", "activity share limits between technology groups"
+   ":math:`\text{LNCS}_{r,p,g_1,g_2}`", "limit_new_capacity_share", "limit_new_capacity_share", "new capacity share limits"
 
 Storage Parameters
 ^^^^^^^^^^^^^^^^^^
@@ -231,7 +256,7 @@ Policy Parameters
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   "", "rps_requirement", "renewable_portfolio_standard", "RPS requirements"
+   "", "rps_requirement", "renewable_portfolio_standard", "**[Deprecated]** RPS requirements; use limit_activity_share instead"
    ":math:`\text{LIT}_{r,t,e,t}`", "linked_tech", "linked_techs", "dummy techs used to convert CO2 emissions to physical commodity; linked technology specs"
 
 Construction & End-of-Life Parameters
