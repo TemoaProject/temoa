@@ -13,7 +13,7 @@ The Myopic extension in Temoa is designed to:
 
 * Solve the model for a sequence of overlapping or non-overlapping time windows.
 * Limit the foresight of the model to a user-specified number of future periods.
-* Persist the capacity investment decisions from previous windows as "initial capacity" for subsequent windows.
+* Fix the capacity investment decisions from previous windows as "initial capacity" for subsequent windows.
 * Automatically manage the ``myopic_efficiency`` table to filter active technologies based on their remaining lifetime and previous investment decisions.
 
 Configuration
@@ -32,7 +32,7 @@ To enable Myopic mode, set the ``scenario_mode`` to ``"myopic"`` in your configu
 Settings
 ~~~~~~~~
 
-* **view_depth**: The number of future time periods visible to the model in each iteration. For example, a ``view_depth`` of 2 means the model will optimize over the current period and the next one.
+* **view_depth**: The number of future time periods visible to the model in eachiteration. For example, a ``view_depth`` of 2 means the model will optimize over two periods at a time.
 * **step_size**: The number of periods to advance the "base year" in each subsequent iteration. A ``step_size`` of 1 means the base year will move forward by one time period at a time.
 
 .. important::
@@ -58,7 +58,7 @@ Myopic Efficiency Table
 The ``myopic_efficiency`` table is a key internal component of the myopic sequencer. It acts as a dynamic version of the standard ``efficiency`` table, filtered for each optimization window.
 
 * It is "actively maintained" during the run.
-* Items not built in a previous window's visibility window are removed.
+* Items not built in a previous time window are removed.
 * Items that reach the end of their technical lifetime are retired and removed from the table.
 * The table includes a computed ``lifetime`` field used internally to screen active technologies.
 
@@ -80,4 +80,4 @@ Modeling Considerations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 * **Investment Amortization**: Investment costs in Temoa are amortized over the useful life of a built technology. This harmonizes how the model perceives costs and benefits within the ``view_depth``: since the model only sees the benefits of a technology for the portion of its life that falls within the current window, the costs are similarly distributed. Consequently, discounted investment costs reported in summary logs may be significantly higher than those reported in the ``output_cost`` table.
-* **Limited Foresight**: Myopic mode cannot see beyond the specified ``view_depth``, including constraints. If a constraint only becomes active later in the planning horizon, the model may make "stupid but cost-saving" decisions in early windows. This can lead to unexpected rollbacks when those constraints finally enter the visibility window, which can complicate the interpretation of the results. Modeler caution is advised when setting the ``view_depth`` relative to known future constraints.
+* **Limited Foresight**: Myopic mode cannot see beyond the specified ``view_depth``, including constraints. If a constraint only becomes active later in the planning horizon, the model may make sub-optimal decisions in early time windows. This can lead to unexpected rollbacks when those constraints finally enter the visibility window, which can complicate the interpretation of the results. Modeler caution is advised when setting the ``view_depth`` relative to known future constraints.
