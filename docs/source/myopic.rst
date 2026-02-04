@@ -32,7 +32,7 @@ To enable Myopic mode, set the ``scenario_mode`` to ``"myopic"`` in your configu
 Settings
 ~~~~~~~~
 
-* **view_depth**: The number of future time periods visible to the model in eachiteration. For example, a ``view_depth`` of 2 means the model will optimize over two periods at a time.
+* **view_depth**: The number of future time periods visible to the model in each iteration. For example, a ``view_depth`` of 2 means the model will optimize over two periods at a time.
 * **step_size**: The number of periods to advance the "base year" in each subsequent iteration. A ``step_size`` of 1 means the base year will move forward by one time period at a time.
 
 .. important::
