@@ -3,17 +3,24 @@
 Modeling to Generate Alternatives (MGA)
 =======================================
 
-Temoa provides two extensions for Modeling to Generate Alternatives (MGA): the standard iterative MGA and the Single-Vector MGA (SVMGA). Both methods are designed to explore the "near-optimal" solution space, helping users identify alternative energy system configurations that have similar total costs but different characteristics (e.g., higher utilization of a specific technology or lower emissions).
+Temoa provides two extensions for Modeling to Generate Alternatives (MGA), an
+algorithm to explore the near-optimal solution space: hull expansion and
+single-vector MGA. Both are described in more detail below. 
 
-Standard MGA
-------------
+Hull Expansion
+--------------
 
-The standard MGA extension implements an iterative algorithm to explore the boundaries of the near-optimal solution space. It works by relaxing the total system cost by a user-specified percentage (epsilon) and then iteratively optimizing along different axes to find extreme points.
+Hull expansion creates the convex hull containing all near-optimal solutions
+bound by the extreme points along a particular solution axis and then samples
+the continuum of solutions. The size of the convex hull is determined by the
+degree of cost relaxation (``cost_epsilon``). The method is described in
+`Pedersen et al. (2021) <https://www.sciencedirect.com/science/article/pii/S0360544221015425>`_
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable standard MGA, set the ``scenario_mode`` to ``"mga"`` in your configuration TOML file and provide an ``[MGA]`` section:
+To enable hull expansion, set the ``scenario_mode`` to ``"mga"`` in your
+configuration TOML file and provide an ``[MGA]`` section:
 
 .. code-block:: toml
 
@@ -29,7 +36,8 @@ To enable standard MGA, set the ``scenario_mode`` to ``"mga"`` in your configura
 Options
 ^^^^^^^
 
-* **cost_epsilon**: The fraction by which the optimal cost is allowed to increase (e.g., ``0.05`` for 5%).
+* **cost_epsilon**: The fraction by which the optimal cost is allowed to increase
+  (e.g., ``0.05`` for 5%).
 * **iteration_limit**: The maximum number of alternative solutions to generate.
 * **time_limit_hrs**: The maximum wall-clock time for the entire MGA run.
 * **axis**: The dimension along which to optimize. Supported values:
@@ -37,17 +45,23 @@ Options
     * ``TECH_CATEGORY_CAPACITY``
     * ``TECH_CATEGORY_ACTIVITY`` (Default)
     * ``EMISSION_ACTIVITY``
-* **weighting**: The algorithm used to select the next optimization vector. Currently, only ``HULL_EXPANSION`` is supported.
+* **weighting**: The algorithm used to select the next optimization vector.
+  Currently, only ``HULL_EXPANSION`` is supported.
 
 Single-Vector MGA (SVMGA)
 -------------------------
 
-Single-Vector MGA is a simplified, two-stage process. First, it solves the base model to find the optimal cost. Second, it adds a cost relaxation constraint and optimizes a new objective function defined by the user to "push" the model in a specific direction.
+Single-Vector MGA is a simplified, two-stage process. First, it solves the base
+model to find the minimum cost. Second, it adds a cost relaxation constraint and
+creates a new objective function that minimizes user-specified quantities, such
+as technology-specific installed capacity or total carbon dioxide emissions.
+
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable SVMGA, set the ``scenario_mode`` to ``"svmga"`` and provide an ``[SVMGA]`` section:
+To enable SVMGA, set the ``scenario_mode`` to ``"svmga"`` and provide an
+``[SVMGA]`` section:
 
 .. code-block:: toml
 
@@ -62,19 +76,32 @@ To enable SVMGA, set the ``scenario_mode`` to ``"svmga"`` and provide an ``[SVMG
 Options
 ^^^^^^^
 
-* **cost_epsilon**: Same as in standard MGA.
-* **capacity_labels**: A list of technology names whose total capacity should be maximized in the second stage. Matching is **exact and case-sensitive** against the identifiers in the ``tech_all`` set. Example: ``["solar_pv", "wind_onshore"]``.
-* **emissions_labels**: A list of emission commodities whose total emissions should be minimized. Matching is **exact and case-sensitive** against identifiers in the ``commodity_emissions`` set. Example: ``["CO2"]``.
-* **activity_labels**: A list of technology names whose total activity (energy flow out) should be maximized. Matching is **exact and case-sensitive**. Example: ``["coal_power"]``.
+* **cost_epsilon**: Same as in hull expansion.
+* **capacity_labels**: A list of technology names whose total capacity should be
+  maximized in the second stage. Matching is **exact and case-sensitive** against
+  the identifiers in the ``tech_all`` set. Example: ``["solar_pv", "wind_onshore"]``.
+* **emissions_labels**: A list of emission commodities whose total emissions
+  should be minimized. Matching is **exact and case-sensitive** against
+  identifiers in the ``commodity_emissions`` set. Example: ``["CO2"]``.
+* **activity_labels**: A list of technology names whose total activity
+  (energy flow out) should be maximized. Matching is **exact and case-sensitive**.
+  Example: ``["coal_power"]``.
 
-Note: SVMGA will construct an unweighted sum of all variables matching these labels as the new objective function.
+Note: SVMGA will construct an unweighted sum of all variables matching these
+labels as the new objective function. Be careful not to mix different units. In
+addition, note that the MGA objective function is set to minimize regardless of
+the label choice.
 
 Parallel Execution and Solver Options
 -------------------------------------
 
-Standard MGA supports parallel execution of iterative solves to maximize performance. **Note: SVMGA executes sequentially and does not utilize parallel workers.**
+Standard MGA supports parallel execution of iterative solves to maximize
+performance. **Note: SVMGA executes sequentially and does not utilize parallel
+workers.**
 
-The number of worker processes and solver-specific settings are defined in a ``MGA_solver_options.toml`` file. By default, Temoa looks for this file in the same directory as your main configuration file.
+The number of worker processes and solver-specific settings are defined in a
+``MGA_solver_options.toml`` file. By default, Temoa looks for this file in the
+same directory as your main configuration file.
 
 .. code-block:: toml
 
@@ -87,22 +114,31 @@ The number of worker processes and solver-specific settings are defined in a ``M
    BarConvTol = 0.01
 
 .. tip::
-   When choosing ``num_workers``, a good rule of thumb is to set it to the number of available CPU cores minus one. This leaves room for the main orchestration process and ensures that the system remains responsive. Also, be mindful of the ``Threads`` setting within solver blocks, as the total thread count will be ``num_workers * Threads``.
+   When choosing ``num_workers``, a good rule of thumb is to set it to the
+   number of available CPU cores minus one. This leaves room for the main
+   orchestration process and ensures that the system remains responsive. Also,
+   be mindful of the ``Threads`` setting within solver blocks, as the total
+   thread count will be ``num_workers * Threads``.
 
 Outputs
 -------
 
-MGA results are stored in the same output database specified in your configuration. Each iteration is saved as a unique scenario to allow for easy comparison and analysis.
+MGA results are stored in the same output database specified in your
+configuration. Each iteration is saved as a unique scenario to allow for easy
+comparison and analysis.
 
 Scenario Naming Convention
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each run is saved under a unique scenario name in the output tables, following the format: ``<base_scenario>-<iteration_index>``.
+Each run is saved under a unique scenario name in the output tables, following
+the format: ``<base_scenario>-<iteration_index>``.
 
 *   **Iteration 0**: The original baseline solve (optimal solution).
 *   **Iterations 1-N**: The alternative solutions generated by the MGA algorithm.
 
-For example, if your base scenario is ``utopia_mga``, the results for the base case will be found under scenario ``utopia_mga-0``, and the first alternative will be under ``utopia_mga-1``.
+For example, if your base scenario is ``utopia_mga``, the results for the base
+case will be found under scenario ``utopia_mga-0``, and the first alternative
+will be under ``utopia_mga-1``.
 
 Key Database Tables
 ~~~~~~~~~~~~~~~~~~~
