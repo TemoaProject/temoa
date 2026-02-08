@@ -8,3 +8,4 @@ Temoa Project Documentation
    myopic
    unit_checking
    stochastics
+   mga
