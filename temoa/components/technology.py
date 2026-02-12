@@ -297,24 +297,16 @@ def create_survival_curve(model: TemoaModel) -> None:
                     logger.info(msg)
 
                 # Make sure the lifetime for this process aligns with survival curve end
-                if value(model.lifetime_process[r, t, v]) < p - v:
+                if round(value(model.lifetime_process[r, t, v])) != p - v:
                     msg = (
-                        f'The lifetime_process parameter for process ({r, t, v}) with survival '
-                        f'curve does not extend beyond the end of that survival curve in {p}. To '
-                        'agree with '
-                        f'the survival curve, set lifetime_process[{r, t, v}] >= {p - v}'
+                        f'The lifetime_process parameter '
+                        f'({round(value(model.lifetime_process[r, t, v]))}) for process '
+                        f'{r, t, v} with survival curve does not agree with the end of that '
+                        f'survival curve in {p}. To agree with '
+                        f'the survival curve, set lifetime_process[{r, t, v}] = {p - v}'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
-                elif value(model.lifetime_process[r, t, v]) != p - v:
-                    msg = (
-                        f'The lifetime_process parameter for process ({r, t, v}) with survival '
-                        'curve '
-                        f'does match the end of that survival curve in {p}. This will waste '
-                        'compute. To agree with the survival curve and suppress this warning, set '
-                        f'lifetime_process[{r, t, v}] = {p - v}'
-                    )
-                    logger.warning(msg)
 
                 continue
 
