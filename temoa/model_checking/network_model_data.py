@@ -197,12 +197,9 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
     tech_retire = {
         t[0] for t in cur.execute('SELECT tech FROM technology WHERE retire==1').fetchall()
     }
-    try:
-        tech_survival_curve = set(
-            cur.execute('SELECT DISTINCT region, tech, vintage FROM survival_curve').fetchall()
-        )
-    except sqlite3.OperationalError:
-        tech_survival_curve = set()
+    tech_survival_curve = set(
+        cur.execute('SELECT DISTINCT region, tech, vintage FROM lifetime_survival_curve').fetchall()
+    )
 
     periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM time_period').fetchall())
     periods = periods_full[:-1]
