@@ -15,7 +15,11 @@ from logging import getLogger
 from typing import Any
 
 from temoa.core.config import TemoaConfig
-from temoa.model_checking.commodity_graph import visualize_graph
+from temoa.model_checking.commodity_graph import (
+    detect_cycles,
+    generate_commodity_graph,
+    visualize_graph,
+)
 from temoa.model_checking.commodity_network import CommodityNetwork
 from temoa.model_checking.element_checker import ViableSet
 from temoa.model_checking.network_model_data import EdgeTuple, NetworkModelData
@@ -197,12 +201,26 @@ class CommodityNetworkManager:
 
     def analyze_graphs(self, config: TemoaConfig) -> None:
         """
-        Generates and saves visual graphs of the network for each region and period.
+        Orchestrates network analysis and visualization for each region and period.
         """
         if not self.analyzed or self.regions is None:
             raise RuntimeError('analyze_network() must be called before analyze_graphs().')
         for region in self.regions:
             for period in self.periods:
+                # Always generate the commodity graph for cycle detection
+                commodity_graph, _ = generate_commodity_graph(
+                    region,
+                    period,
+                    network_data=self.orig_data,
+                    demand_orphans=self.demand_orphans[region, period],
+                    other_orphans=self.other_orphans[region, period],
+                    driven_techs=self.orig_data.get_driven_techs(region, period),
+                )
+
+                # Perform cycle detection regardless of plotting flag
+                detect_cycles(commodity_graph, config)
+
+                # Then call visualize_graph which handles its own config check
                 visualize_graph(
                     region,
                     period,
@@ -211,4 +229,5 @@ class CommodityNetworkManager:
                     other_orphans=self.other_orphans[region, period],
                     driven_techs=self.orig_data.get_driven_techs(region, period),
                     config=config,
+                    commodity_graph=commodity_graph,
                 )

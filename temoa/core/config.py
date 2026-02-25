@@ -63,7 +63,46 @@ class TemoaConfig:
         check_units: bool = False,
         plot_commodity_network: bool = False,
         graphviz_output: bool = False,
-    ):
+        cycle_count_limit: int = 100,
+        cycle_length_limit: int = 1,
+    ) -> None:
+        """
+        Initializes the overall configuration for a Temoa Scenario.
+
+        :param scenario: The unique name for this scenario.
+        :param scenario_mode: The operating mode (e.g., perfect_foresight, myopic).
+        :param input_database: Path to the input SQLite database.
+        :param output_database: Path to the output SQLite database.
+        :param output_path: Directory for output files.
+        :param solver_name: The name of the solver to use.
+        :param neos: Whether to use the NEOS server (currently NOT supported).
+        :param save_excel: Whether to generate an Excel results file.
+        :param save_duals: Whether to save duals to the output database.
+        :param save_storage_levels: Whether to save storage levels by time slice.
+        :param save_lp_file: Whether to save the Pyomo-generated LP file.
+        :param time_sequencing: Method for representing seasons/timeslices.
+        :param reserve_margin: Method for calculating reserve margin contributions.
+        :param MGA: Configuration for Modeling to Generate Alternatives.
+        :param SVMGA: Configuration for Single-Variable MGA.
+        :param myopic: Configuration for myopic runs.
+        :param morris: Configuration for Method of Morris sensitivity analysis.
+        :param monte_carlo: Configuration for Monte Carlo simulation.
+        :param stochastic_config: Path to stochastic configuration file.
+        :param config_file: Path to the original configuration file.
+        :param silent: If True, suppresses non-critical log output.
+        :param stream_output: If True, streams solver output to the terminal.
+        :param price_check: If True, validates pricing data.
+        :param source_trace: If True, enables network connectivity analysis.
+        :param check_units: If True, validates unit consistency.
+        :param plot_commodity_network: If True, generates network visualizations.
+        :param graphviz_output: If True, saves graphviz-formatted network files.
+        :param cycle_count_limit: The maximum number of cycles to report in the log file.
+            - `-1`: Unbounded detection (INFO logs).
+            - `0`: Strictly not allow cycles (ERROR logs, unbounded).
+            - `> 0`: Limit the number of cycles reported (INFO logs).
+        :param cycle_length_limit: Minimum cycle length to report. Skip cycles
+            with length (number of nodes) less than or equal to this limit.
+        """
         if '-' in scenario:
             raise ValueError(
                 'Scenario name must not contain "-".  Dashes are used internally to indicate'
@@ -146,6 +185,15 @@ class TemoaConfig:
         self.plot_commodity_network = plot_commodity_network and self.source_trace
         self.graphviz_output = graphviz_output
         self.stochastic_config = stochastic_config
+
+        # Validate cycle detection parameters
+        if cycle_count_limit < -1:
+            raise ValueError(f'cycle_count_limit must be >= -1 (received {cycle_count_limit})')
+        if cycle_length_limit < 0:
+            raise ValueError(f'cycle_length_limit must be >= 0 (received {cycle_length_limit})')
+
+        self.cycle_count_limit = cycle_count_limit
+        self.cycle_length_limit = cycle_length_limit
 
         # warn if output db != input db
         if self.input_database.suffix == self.output_database.suffix:  # they are both .db/.sqlite

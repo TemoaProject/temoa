@@ -58,6 +58,17 @@ discrepancies are noted in the log file for the model.  The user can also reques
 html files that can be used in diagnosis of problem areas.  The general intent is to ensure that all flows to Demand
 commodities can be cleanly traced back to original sources.
 
+Temoa also performs cycle detection on the commodity network to identify logical loops that might
+lead to erroneous model behavior or infinite energy generation. Because complex models can sometimes
+contain a large number of cycles, Temoa provides configuration options to limit the depth and
+volume of the cycle detection log:
+
+* **cycle_count_limit**: (Default: 100) The maximum number of cycles to report in the log file.
+    - `-1`: Unbounded detection (INFO logs).
+    - `0`: Strictly not allow cycles (ERROR logs, unbounded).
+    - `> 0`: Limit the number of cycles reported (INFO logs).
+* **cycle_length_limit**: (Default: 1) Skip cycles with a length (number of nodes) less than or equal to this value.
+
 #### An example
 
 Consider the simple network below with one source, one

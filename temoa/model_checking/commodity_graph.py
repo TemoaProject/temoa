@@ -104,6 +104,26 @@ def generate_technology_graph(
     return tg
 
 
+def _get_sector_colors(all_edge_tuples: Iterable[EdgeTuple]) -> dict[Sector, str]:
+    """Helper to generate consistent sector colors."""
+    unique_sectors = sorted({tech.sector for tech in all_edge_tuples if tech.sector})
+    color_palette = [
+        '#1f77b4',
+        '#ff7f0e',
+        '#2ca02c',
+        '#d62728',
+        '#9467bd',
+        '#8c564b',
+        '#e377c2',
+        '#7f7f7f',
+        '#bcbd22',
+        '#17becf',
+    ]
+    return {
+        sector: color_palette[i % len(color_palette)] for i, sector in enumerate(unique_sectors)
+    }
+
+
 def generate_commodity_graph(
     region: Region,
     period: Period,
@@ -124,22 +144,8 @@ def generate_commodity_graph(
     )
 
     # 1. Prepare sector-based mappings for coloring
-    unique_sectors = sorted({tech.sector for tech in all_edge_tuples if tech.sector})
-    color_palette = [
-        '#1f77b4',
-        '#ff7f0e',
-        '#2ca02c',
-        '#d62728',
-        '#9467bd',
-        '#8c564b',
-        '#e377c2',
-        '#7f7f7f',
-        '#bcbd22',
-        '#17becf',
-    ]
-    sector_colors = {
-        sector: color_palette[i % len(color_palette)] for i, sector in enumerate(unique_sectors)
-    }
+    sector_colors = _get_sector_colors(all_edge_tuples)
+    unique_sectors = sorted(sector_colors)
     default_color = '#A9A9A9'
 
     commodity_sector_counts: defaultdict[Commodity, defaultdict[Sector, int]] = defaultdict(
@@ -239,22 +245,34 @@ def visualize_graph(
     other_orphans: Iterable[EdgeTuple],
     driven_techs: Iterable[EdgeTuple],
     config: TemoaConfig,
+    commodity_graph: nx.DiGraph[str] | None = None,
 ) -> None:
     """
-    Generates and saves an interactive HTML file with two graph views if
-    config.plot_commodity_network is True.
+    Orchestrates the visualization of the given region and period's commodity
+    and technology network graphs.
     """
-    # 1. Check the configuration flag first. If false, do nothing.
     if not config.plot_commodity_network:
-        logger.info("Skipping network graph generation because 'plot_commodity_network' is false.")
         return
 
-    # --- All generation logic now only runs if the flag is True ---
-
-    # 2. Generate the primary (commodity-centric) graph and its color legend
-    commodity_graph, sector_colors = generate_commodity_graph(
-        region, period, network_data, demand_orphans, other_orphans, driven_techs
-    )
+    # 1. Generate the primary (commodity-centric) graph if not provided
+    if commodity_graph is None:
+        commodity_graph, sector_colors = generate_commodity_graph(
+            region,
+            period,
+            network_data,
+            demand_orphans,
+            other_orphans,
+            driven_techs,
+        )
+    else:
+        # We need sector_colors for visualization even if graph is provided
+        all_techs_for_period = (
+            set(network_data.available_techs.get((region, period), set()))
+            | set(demand_orphans)
+            | set(other_orphans)
+            | set(driven_techs)
+        )
+        sector_colors = _get_sector_colors(all_techs_for_period)
 
     # 3. Collect all technology tuples needed for the secondary graph
     all_techs_for_period = (
@@ -287,7 +305,7 @@ def visualize_graph(
     output_file = config.output_path / f'Network_Graph_{region}_{period}.html'
     unique_sectors = sorted(sector_colors)
 
-    graph_path = nx_to_vis(
+    nx_to_vis(
         nx_graph=commodity_graph,
         secondary_graph=tech_graph,
         output_filename=output_file,
@@ -298,17 +316,44 @@ def visualize_graph(
         show_browser=False,
     )
 
-    if graph_path:
-        logger.info('Generated network graphs at: %s', graph_path)
-    else:
-        logger.error('Failed to generate network graphs')
 
-    # 8. Perform cycle detection on the commodity graph
+def detect_cycles(graph: nx.DiGraph[str], config: TemoaConfig) -> None:
+    """
+    Performs cycle detection on the given graph and logs the results
+    based on the configuration limits.
+    """
+    if config.cycle_count_limit == -1:
+        logger.warning(
+            'Cycle detection is unbounded (cycle_count_limit=-1). '
+            'This is not recommended for large or complex models as it '
+            'may lead to performance issues or log bloat.'
+        )
+    elif config.cycle_count_limit == 0:
+        logger.warning(
+            'Cycle detection is set to strictly not allow cycles (cycle_count_limit=0). '
+            'Any cycles found will be reported as ERRORS and detection will be unbounded. '
+            'This is not recommended for large or complex models as it '
+            'may lead to performance issues or log bloat.'
+        )
+
     try:
-        for cycle in nx.simple_cycles(G=commodity_graph):
-            if len(cycle) < 2:
+        count = 0
+        for cycle in nx.simple_cycles(G=graph):
+            if len(cycle) <= config.cycle_length_limit:
                 continue
+
             cycle_str = ' -> '.join(cycle) + f' -> {cycle[0]}'
-            logger.info('Cycle detected: %s', cycle_str)
+            if config.cycle_count_limit == 0:
+                logger.error('Cycle detected: %s', cycle_str)
+            else:
+                logger.info('Cycle detected: %s', cycle_str)
+
+            count += 1
+            if config.cycle_count_limit > 0 and count >= config.cycle_count_limit:
+                logger.warning(
+                    'Reached cycle detection limit of %d. Abandoning further loop detection.',
+                    config.cycle_count_limit,
+                )
+                break
     except nx.NetworkXError as e:
-        logger.warning('NetworkXError during cycle detection: %s', e, exc_info=True)
+        logger.warning('NetworkXError during cycle detection: %s', e)
