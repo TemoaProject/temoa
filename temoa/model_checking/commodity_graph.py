@@ -305,10 +305,23 @@ def visualize_graph(
 
     # 8. Perform cycle detection on the commodity graph
     try:
+        count = 0
+        limit = config.cycle_count_limit
+        length_limit = config.cycle_length_limit
+
         for cycle in nx.simple_cycles(G=commodity_graph):
-            if len(cycle) < 2:
+            if limit != -1 and count >= limit:
+                if limit > 0:
+                    logger.warning('Cycle detection reached limit of %d cycles. Stopping.', limit)
+                else:
+                    logger.error('Cycles detected but cycle_count_limit is 0. Stopping.')
+                break
+
+            if len(cycle) < length_limit:
                 continue
+
             cycle_str = ' -> '.join(cycle) + f' -> {cycle[0]}'
             logger.info('Cycle detected: %s', cycle_str)
+            count += 1
     except nx.NetworkXError as e:
         logger.warning('NetworkXError during cycle detection: %s', e, exc_info=True)
