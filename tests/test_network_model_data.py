@@ -31,7 +31,7 @@ test_scenarios: list[ScenarioType] = [
         'name': 'basic',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM survival_curve': [],
+            'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             # Unique keys for each commodity query
             'FROM main.commodity': [('s1',), ('p1',), ('p2',), ('p3',), ('d1',), ('d2',)],
@@ -82,7 +82,7 @@ test_scenarios: list[ScenarioType] = [
         'name': 'bad linked tech',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM survival_curve': [],
+            'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             'FROM main.commodity': [('s1',), ('p1',), ('p3',), ('d1',), ('d2',)],
             "commodity WHERE flag LIKE '%p%'": [('s1',), ('p3',), ('d1',), ('d2',)],
@@ -119,7 +119,7 @@ test_scenarios: list[ScenarioType] = [
         'name': 'good linked tech',
         'db_data': {
             'technology WHERE retire==1': [],
-            'FROM survival_curve': [],
+            'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
             'FROM main.commodity': [('s1',), ('p1',), ('d1',), ('d2',), ('s2',)],
             "commodity WHERE flag LIKE '%p%'": [('s1',), ('d1',), ('d2',), ('s2',)],
@@ -277,7 +277,7 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM survival_curve' in query:
+        elif 'FROM lifetime_survival_curve' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -361,7 +361,7 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
-        elif 'FROM survival_curve' in query:
+        elif 'FROM lifetime_survival_curve' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
