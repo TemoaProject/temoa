@@ -308,7 +308,8 @@ Users can configure the cycle detection behavior using the following settings:
   suppresses further cycle reports for the remainder of the run (without terminating execution),
   and a positive integer sets a specific limit. Default is 100.
 * **cycle_length_limit**: Minimum length of cycles to report. This can be used to filter out small,
-  expected circularities if necessary. Default is 1.
+  expected circularities if necessary. Default is 1. The length limit is inclusive, so a cycle of
+  length 1 is a self-loop, and a cycle of length `n` has `n` unique nodes.
 
 Note that the myopic mode *requires* the use of Source Tracing to ensure accuracy as some orphans
 may be produced by endogenous decisions in myopic runs.
