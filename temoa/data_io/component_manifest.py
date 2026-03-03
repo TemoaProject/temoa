@@ -314,15 +314,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         # Singleton and Configuration-based Components
         # =========================================================================
         LoadItem(
-            component=model.days_per_period,
-            table='metadata',
-            columns=['value'],
-            where_clause="element == 'days_per_period'",
-            custom_loader_name='_load_days_per_period',
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
             component=model.global_discount_rate,
             table='metadata_real',
             columns=['value'],

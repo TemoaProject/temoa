@@ -263,6 +263,7 @@ class HybridLoader:
         # ---------------------------------------------------------------------
         # Load simple config-based or myopic-specific values
         self._load_component_data(data, model.time_sequencing, [(self.config.time_sequencing,)])
+        self._load_component_data(data, model.days_per_period, [(self.config.days_per_period,)])
         self._load_component_data(
             data, model.reserve_margin_method, [(self.config.reserve_margin,)]
         )
@@ -674,21 +675,6 @@ class HybridLoader:
         self._load_component_data(data, model.loan_rate, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
-    def _load_days_per_period(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Loads the singleton days_per_period, with a fallback."""
-        model = TemoaModel()
-        days = 365
-        if filtered_data:
-            days = cast('int', filtered_data[0][0])
-        else:
-            logger.info('No value for days_per_period found. Assuming 365 days per period.')
-        data[model.days_per_period.name] = {None: days}
-
     def _load_global_discount_rate(
         self,
         data: dict[str, object],

@@ -97,6 +97,11 @@ save_lp_file = false
 #       storage must be tagged and the TimeSeasonSequential table filled.
 time_sequencing = 'seasonal_timeslices'
 
+# Number of days represented by each planning period.
+# Used to adjust flow variables for number of days represented by each season.
+# E.g. 365 if all seasons collectively represent a year, 7 if modelling a single representative week.
+days_per_period = 365
+
 # How contributions to the planning reserve margin are calculated
 # Options:
 #   'static'
