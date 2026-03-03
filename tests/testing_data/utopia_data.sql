@@ -479,7 +479,6 @@ REPLACE INTO "limit_tech_output_split" VALUES('utopia',2010,'SRE','DSL','ge',0.7
 REPLACE INTO "limit_tech_output_split" VALUES('utopia',1990,'SRE','GSL','ge',0.3,'');
 REPLACE INTO "limit_tech_output_split" VALUES('utopia',2000,'SRE','GSL','ge',0.3,'');
 REPLACE INTO "limit_tech_output_split" VALUES('utopia',2010,'SRE','GSL','ge',0.3,'');
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');

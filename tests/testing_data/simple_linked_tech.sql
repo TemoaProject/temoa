@@ -27,7 +27,6 @@ REPLACE INTO "emission_activity" VALUES('linkville','CO2','NGA','PLANT',2000,'EL
 REPLACE INTO "lifetime_tech" VALUES('linkville', 'CCS', 100.0, NULL, '');
 REPLACE INTO "lifetime_tech" VALUES('linkville', 'PLANT', 100.0, NULL, '');
 REPLACE INTO "linked_tech" VALUES('linkville','PLANT','CO2','CCS',NULL);
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');

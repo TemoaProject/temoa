@@ -1115,7 +1115,6 @@ CREATE TABLE metadata
     PRIMARY KEY (element)
 );
 INSERT INTO "metadata" VALUES('myopic_base_year',2000,'Base Year for Myopic Analysis');
-INSERT INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 INSERT INTO "metadata" VALUES('DB_MAJOR',4,'');
 INSERT INTO "metadata" VALUES('DB_MINOR',0,'');
 CREATE TABLE metadata_real

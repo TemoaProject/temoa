@@ -12,8 +12,6 @@ REPLACE INTO metadata
 VALUES ('DB_MAJOR', 4, 'DB major version number');
 REPLACE INTO metadata
 VALUES ('DB_MINOR', 0, 'DB minor version number');
-REPLACE INTO metadata
-VALUES ('days_per_period', 365, 'count of days in each period');
 
 CREATE TABLE IF NOT EXISTS metadata_real
 (

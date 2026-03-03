@@ -42,7 +42,6 @@ REPLACE INTO "efficiency" VALUES('region', 'electricity', 'seas_stor', 2000, 'el
 REPLACE INTO "efficiency" VALUES('region', 'electricity', 'demand', 2000, 'demand', 1.0, NULL, NULL);
 REPLACE INTO "limit_storage_level_fraction" VALUES('region',2000,'winter','b','seas_stor',2000,'e',0.5,NULL);
 REPLACE INTO "limit_storage_level_fraction" VALUES('region',2000,'charge','b','dly_stor',2000,'e',0.5,NULL);
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');

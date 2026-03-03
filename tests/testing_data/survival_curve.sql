@@ -142,7 +142,6 @@ REPLACE INTO "lifetime_tech" VALUES('region', 'tech_ancient', 35.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('region', 'tech_old', 35.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('region', 'tech_current', 35.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('region', 'tech_future', 35.0, NULL, NULL);
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');

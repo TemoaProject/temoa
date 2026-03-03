@@ -41,7 +41,6 @@ REPLACE INTO "limit_capacity" VALUES('electricville',2025,'batt','ge',0.1,'','')
 REPLACE INTO "limit_capacity" VALUES('electricville',2025,'EH','le',200.0,'','');
 REPLACE INTO "limit_capacity" VALUES('electricville',2025,'batt','le',100.0,'','');
 REPLACE INTO "limit_storage_level_fraction" VALUES('electricville',2025,'s1','d1','batt',2025,'e',0.5,NULL);
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');

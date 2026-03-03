@@ -393,7 +393,6 @@ REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2010,'electricity'
 REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2010,'diesel','CAR_PHEV','le',0.8,'');
 REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2020,'electricity','CAR_PHEV','le',0.2,'');
 REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2020,'diesel','CAR_PHEV','le',0.8,NULL);
-REPLACE INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
 REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
