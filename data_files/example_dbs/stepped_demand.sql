@@ -1223,15 +1223,13 @@ INSERT INTO TimeSeason VALUES(2050,2,'summer',NULL);
 INSERT INTO TimeSeason VALUES(2050,3,'winter',NULL);
 CREATE TABLE time_season_sequential
 (
-    period INTEGER
-        REFERENCES TimePeriod (period),
-    sequence INTEGER,
+        sequence INTEGER,
     seas_seq TEXT,
     season TEXT
         REFERENCES SeasonLabel (season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
 CREATE TABLE TimePeriodType

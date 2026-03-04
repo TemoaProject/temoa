@@ -240,7 +240,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.time_season,
             table='time_season',
-            columns=['period', 'season'],
+            columns=['season'],
             custom_loader_name='_load_time_season',
             is_period_filtered=False,  # Custom loader handles myopic filtering
             is_table_required=False,
@@ -248,15 +248,17 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.time_season_sequential,
             table='time_season_sequential',
-            columns=['period', 'seas_seq', 'season', 'num_days'],
+            columns=['seas_seq', 'season', 'num_days'],
             custom_loader_name='_load_time_season_sequential',
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
             component=model.segment_fraction,
             table='time_segment_fraction',
-            columns=['period', 'season', 'tod', 'segment_fraction'],
+            columns=['season', 'tod', 'segment_fraction'],
             custom_loader_name='_load_segment_fraction',
+            is_period_filtered=False,
             is_table_required=False,
         ),
         # =========================================================================

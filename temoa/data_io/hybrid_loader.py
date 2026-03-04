@@ -546,35 +546,15 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Loads time_season_all (simple set of all seasons) and time_season
-        (indexed set mapping periods to seasons), with a dynamic fallback
-        if the table is missing.
+        Loads time_season as a flat ordered set of season names.
         """
         model = TemoaModel()
-        mi = self.myopic_index
-        time_optimize = cast('list[int]', data.get('time_optimize', []))
-
-        rows_to_load: list[tuple[object, ...]] = []
-        if not raw_data:
+        if not filtered_data:
             logger.warning('No time_season table found. Loading a single filler season "S".')
-            rows_to_load = [(p, 'S') for p in time_optimize]
-        elif mi:
-            valid_periods = set(time_optimize)
-            rows_to_load = [row for row in raw_data if row[0] in valid_periods]
+            seasons_to_load: list[tuple[object, ...]] = [('S',)]
         else:
-            rows_to_load = list(raw_data)
-
-        if not rows_to_load:
-            data.setdefault(model.time_season_all.name, [])
-            return
-
-        unique_seasons = sorted({(row[1],) for row in rows_to_load})
-        self._load_component_data(data, model.time_season_all, unique_seasons)
-
-        for period, season in rows_to_load:
-            store = data.get(model.time_season.name, defaultdict(list))
-            store[period].append(season)  # type: ignore[index]
-            data[model.time_season.name] = store
+            seasons_to_load = list(filtered_data)
+        self._load_component_data(data, model.time_season, seasons_to_load)
 
     def _load_time_season_sequential(
         self,
@@ -588,9 +568,9 @@ class HybridLoader:
         model = TemoaModel()
         self._load_component_data(data, model.time_season_sequential, filtered_data)
         if filtered_data:
-            ordered_data = [row[0:3] for row in filtered_data]
+            ordered_data = [row[0:2] for row in filtered_data]  # (seas_seq, season)
             self._load_component_data(data, model.ordered_season_sequential, ordered_data)
-            seq_data = sorted({(row[1],) for row in filtered_data})
+            seq_data = sorted({(row[0],) for row in filtered_data})
             self._load_component_data(data, model.time_season_to_sequential, seq_data)
 
     def _load_segment_fraction(
@@ -607,8 +587,7 @@ class HybridLoader:
             logger.warning(
                 'No segment_fraction table found. Generating default segment_fraction values.'
             )
-            time_optimize = data.get('time_optimize', [])
-            fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]  # type: ignore[attr-defined]
+            fallback: list[tuple[object, ...]] = [('S', 'D', 1.0)]
             self._load_component_data(data, model.segment_fraction, fallback)
 
     # --- Capacity and Cost Components ---

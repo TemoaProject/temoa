@@ -50,5 +50,5 @@ REPLACE INTO "time_period" VALUES(0,2000,'f');
 REPLACE INTO "time_period" VALUES(1,2001,'f');
 REPLACE INTO "time_period_type" VALUES('e','existing vintages');
 REPLACE INTO "time_period_type" VALUES('f','future');
-REPLACE INTO "time_season" VALUES(2000,0,'S1',NULL);
-REPLACE INTO "time_segment_fraction" VALUES(2000,'S1','D1',1.0,NULL);
+REPLACE INTO "time_season" VALUES(0,'S1',NULL);
+REPLACE INTO "time_segment_fraction" VALUES('S1', 'D1', 1.0, NULL);

@@ -42,7 +42,7 @@ def limit_tech_input_split_constraint_indices(
         for r, p, i, t, op in model.input_split_vintages
         if t not in model.tech_annual
         for v in model.input_split_vintages[r, p, i, t, op]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
     ann_indices = {
@@ -92,7 +92,7 @@ def limit_tech_output_split_constraint_indices(
         for r, p, t, o, op in model.output_split_vintages
         if t not in model.tech_annual
         for v in model.output_split_vintages[r, p, t, o, op]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
     ann_indices = {
@@ -219,7 +219,7 @@ def renewable_portfolio_standard_constraint(
         for t in model.tech_group_members[g]
         for (_t, v) in model.process_reserve_periods.get((r, p), [])
         if _t == t
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
@@ -228,7 +228,7 @@ def renewable_portfolio_standard_constraint(
     total_inp = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for (t, v) in model.process_reserve_periods[r, p]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
@@ -284,7 +284,7 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
         for S_v in model.process_vintages[_r, p, _t]
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     )
 
@@ -324,7 +324,7 @@ def limit_activity_share_constraint(
         for S_v in model.process_vintages.get((_r, p, S_t), [])
         for S_i in model.process_inputs[_r, p, S_t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     )
     sub_activity += quicksum(
@@ -346,7 +346,7 @@ def limit_activity_share_constraint(
         for S_v in model.process_vintages.get((_r, p, S_t), [])
         for S_i in model.process_inputs[_r, p, S_t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     )
     super_activity += quicksum(
@@ -479,7 +479,7 @@ def limit_annual_capacity_factor_constraint(
             for _r in regions
             for S_v in model.process_vintages.get((_r, p, t), [])
             for S_i in model.process_inputs[_r, p, t, S_v]
-            for s in model.time_season[p]
+            for s in model.time_season
             for d in model.time_of_day
         )
     else:
@@ -548,7 +548,7 @@ def limit_seasonal_capacity_factor_constraint(
     else:
         activity_rpst = quicksum(
             model.v_flow_out_annual[_r, p, S_i, t, S_v, S_o]
-            * model.segment_fraction_per_season[p, s]
+            * model.segment_fraction_per_season[s]
             for _r in regions
             for S_v in model.process_vintages[_r, p, t]
             for S_i in model.process_inputs[_r, p, t, S_v]
@@ -558,7 +558,7 @@ def limit_seasonal_capacity_factor_constraint(
     possible_activity_rpst = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, t]
         * value(model.capacity_to_activity[_r, t])
-        * value(model.segment_fraction_per_season[p, s])
+        * value(model.segment_fraction_per_season[s])
         for _r in regions
     )
     seasonal_cf = value(model.limit_seasonal_capacity_factor[r, p, s, t, op])
@@ -645,14 +645,14 @@ def limit_tech_input_split_average_constraint(
     inp = quicksum(
         model.v_flow_out[r, p, S_s, S_d, i, t, v, S_o]
         / get_variable_efficiency(model, r, p, S_s, S_d, i, t, v, S_o)
-        for S_s in model.time_season[p]
+        for S_s in model.time_season
         for S_d in model.time_of_day
         for S_o in model.process_outputs_by_input[r, p, t, v, i]
     )
     total_inp = quicksum(
         model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o]
         / get_variable_efficiency(model, r, p, S_s, S_d, S_i, t, v, S_o)
-        for S_s in model.time_season[p]
+        for S_s in model.time_season
         for S_d in model.time_of_day
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
@@ -775,7 +775,7 @@ def limit_tech_output_split_average_constraint(
     out = quicksum(
         model.v_flow_out[r, p, S_s, S_d, S_i, t, v, o]
         for S_i in model.process_inputs_by_output[r, p, t, v, o]
-        for S_s in model.time_season[p]
+        for S_s in model.time_season
         for S_d in model.time_of_day
     )
 
@@ -783,7 +783,7 @@ def limit_tech_output_split_average_constraint(
         model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o]
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        for S_s in model.time_season[p]
+        for S_s in model.time_season
         for S_d in model.time_of_day
     )
 
@@ -847,7 +847,7 @@ def limit_emission_constraint(
         if tmp_e == e and tmp_r == reg and S_t not in model.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
         if (reg, p, S_t, S_v) in model.process_inputs
-        for S_s in model.time_season[p]
+        for S_s in model.time_season
         for S_d in model.time_of_day
     )
 
@@ -1320,7 +1320,7 @@ def limit_activity_constraint(
         for S_v in model.process_vintages.get((_r, p, _t), [])
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     )
     activity += quicksum(

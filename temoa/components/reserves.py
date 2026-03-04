@@ -35,7 +35,7 @@ def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Seaso
         for r in model.planning_reserve_margin.sparse_iterkeys()
         for p in model.time_optimize
         if (r, p) in model.process_reserve_periods
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -102,7 +102,7 @@ def reserve_margin_dynamic(
         * value(model.reserve_capacity_derate[r, p, s, t, v])
         * value(model.capacity_factor_process[r, p, s, d, t, v])
         * value(model.capacity_to_activity[r, t])
-        * value(model.segment_fraction[p, s, d])
+        * value(model.segment_fraction[s, d])
         for (t, v) in model.process_reserve_periods[r, p]
         if t not in model.tech_uncap and t not in model.tech_storage
     )
@@ -155,7 +155,7 @@ def reserve_margin_dynamic(
             * value(model.reserve_capacity_derate[r, p, s, t, v])
             * value(model.capacity_factor_process[r, p, s, d, t, v])
             * value(model.capacity_to_activity[r1r2, t])
-            * value(model.segment_fraction[p, s, d])
+            * value(model.segment_fraction[s, d])
             for (t, v) in model.process_reserve_periods[r1r2, p]
         )
 
@@ -207,7 +207,7 @@ def reserve_margin_static(
         value(model.capacity_credit[r, p, t, v])
         * model.v_capacity[r, p, t, v]
         * value(model.capacity_to_activity[r, t])
-        * value(model.segment_fraction[p, s, d])
+        * value(model.segment_fraction[s, d])
         for (t, v) in model.process_reserve_periods[r, p]
         if t not in model.tech_uncap
     )
@@ -240,7 +240,7 @@ def reserve_margin_static(
             value(model.capacity_credit[r1r2, p, t, v])
             * model.v_capacity[r1r2, p, t, v]
             * value(model.capacity_to_activity[r1r2, t])
-            * value(model.segment_fraction[p, s, d])
+            * value(model.segment_fraction[s, d])
             for (t, v) in model.process_reserve_periods[r1r2, p]
         )
 
@@ -286,7 +286,7 @@ def reserve_margin_constraint(
         (
             value(model.demand_specific_distribution[r, p, s, d, S_o])
             if S_o in model.commodity_demand
-            else value(model.segment_fraction[p, s, d])
+            else value(model.segment_fraction[s, d])
         )
         * model.v_flow_out_annual[r, p, S_i, t, S_v, S_o]
         for (t, S_v) in model.process_reserve_periods[r, p]

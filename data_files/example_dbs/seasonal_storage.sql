@@ -1076,61 +1076,57 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     season TEXT REFERENCES season_label(season),
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (sequence, season)
 );
-INSERT INTO "time_season" VALUES(2000,0,'charge',NULL);
-INSERT INTO "time_season" VALUES(2000,1,'discharge',NULL);
+INSERT INTO "time_season" VALUES(0,'charge',NULL);
+INSERT INTO "time_season" VALUES(1,'discharge',NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES season_label(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
-INSERT INTO "time_season_sequential" VALUES(2000,1,'summer','charge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,2,'sept_w1','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,3,'sept_w2','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,4,'sept_w3','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,5,'sept_w4','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,6,'sept_29th','discharge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,7,'sept_30th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,8,'winter','discharge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,9,'apr_w1','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,10,'apr_w2','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,11,'apr_w3','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,12,'apr_w4','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,13,'apr_29th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,14,'apr_30th','discharge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('summer','charge',152.5,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_w1','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_w2','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_w3','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_w4','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_29th','discharge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('sept_30th','charge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('winter','discharge',152.5,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_w1','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_w2','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_w3','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_w4','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_29th','charge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES('apr_30th','discharge',1.0,NULL);
 
 CREATE TABLE time_segment_fraction
 (
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
     notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (season, tod),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','a',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','b',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','c',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','d',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','a',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','b',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','c',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','d',0.125,NULL);
+INSERT INTO "time_segment_fraction" VALUES('charge', 'a', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('charge', 'b', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('charge', 'c', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('charge', 'd', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('discharge', 'a', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('discharge', 'b', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('discharge', 'c', 0.125, NULL);
+INSERT INTO "time_segment_fraction" VALUES('discharge', 'd', 0.125, NULL);
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

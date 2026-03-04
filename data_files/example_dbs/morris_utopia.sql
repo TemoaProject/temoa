@@ -1524,64 +1524,42 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     season TEXT REFERENCES season_label(season),
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (sequence, season)
 );
-INSERT INTO "time_season" VALUES(1990,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(1990,3,'winter',NULL);
-INSERT INTO "time_season" VALUES(1990,1,'inter',NULL);
-INSERT INTO "time_season" VALUES(2000,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2000,3,'winter',NULL);
-INSERT INTO "time_season" VALUES(2000,1,'inter',NULL);
-INSERT INTO "time_season" VALUES(2010,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2010,3,'winter',NULL);
-INSERT INTO "time_season" VALUES(2010,1,'inter',NULL);
+INSERT INTO "time_season" VALUES(0,'summer',NULL);
+INSERT INTO "time_season" VALUES(1,'winter',NULL);
+INSERT INTO "time_season" VALUES(2,'inter',NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES season_label(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
 
 CREATE TABLE time_segment_fraction
 (
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
     notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (season, tod),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(1990,'inter','day',0.1667,'# I-D');
-INSERT INTO "time_segment_fraction" VALUES(1990,'inter','night',0.0833,'# I-N');
-INSERT INTO "time_segment_fraction" VALUES(1990,'summer','day',0.1667,'# S-D');
-INSERT INTO "time_segment_fraction" VALUES(1990,'summer','night',0.0833,'# S-N');
-INSERT INTO "time_segment_fraction" VALUES(1990,'winter','day',0.3333,'# W-D');
-INSERT INTO "time_segment_fraction" VALUES(1990,'winter','night',0.1667,'# W-N');
-INSERT INTO "time_segment_fraction" VALUES(2000,'inter','day',0.1667,'# I-D');
-INSERT INTO "time_segment_fraction" VALUES(2000,'inter','night',0.0833,'# I-N');
-INSERT INTO "time_segment_fraction" VALUES(2000,'summer','day',0.1667,'# S-D');
-INSERT INTO "time_segment_fraction" VALUES(2000,'summer','night',0.0833,'# S-N');
-INSERT INTO "time_segment_fraction" VALUES(2000,'winter','day',0.3333,'# W-D');
-INSERT INTO "time_segment_fraction" VALUES(2000,'winter','night',0.1667,'# W-N');
-INSERT INTO "time_segment_fraction" VALUES(2010,'inter','day',0.1667,'# I-D');
-INSERT INTO "time_segment_fraction" VALUES(2010,'inter','night',0.0833,'# I-N');
-INSERT INTO "time_segment_fraction" VALUES(2010,'summer','day',0.1667,'# S-D');
-INSERT INTO "time_segment_fraction" VALUES(2010,'summer','night',0.0833,'# S-N');
-INSERT INTO "time_segment_fraction" VALUES(2010,'winter','day',0.3333,'# W-D');
-INSERT INTO "time_segment_fraction" VALUES(2010,'winter','night',0.1667,'# W-N');
+INSERT INTO "time_segment_fraction" VALUES('inter', 'day', 0.1667, '# I-D');
+INSERT INTO "time_segment_fraction" VALUES('inter', 'night', 0.0833, '# I-N');
+INSERT INTO "time_segment_fraction" VALUES('summer', 'day', 0.1667, '# S-D');
+INSERT INTO "time_segment_fraction" VALUES('summer', 'night', 0.0833, '# S-N');
+INSERT INTO "time_segment_fraction" VALUES('winter', 'day', 0.3333, '# W-D');
+INSERT INTO "time_segment_fraction" VALUES('winter', 'night', 0.1667, '# W-N');
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

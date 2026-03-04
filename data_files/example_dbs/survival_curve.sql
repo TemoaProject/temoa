@@ -1162,49 +1162,35 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     season TEXT REFERENCES season_label(season),
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (sequence, season)
 );
-INSERT INTO "time_season" VALUES(2025,0,'s',NULL);
-INSERT INTO "time_season" VALUES(2030,1,'s',NULL);
-INSERT INTO "time_season" VALUES(2035,2,'s',NULL);
-INSERT INTO "time_season" VALUES(2040,3,'s',NULL);
-INSERT INTO "time_season" VALUES(2045,4,'s',NULL);
-INSERT INTO "time_season" VALUES(2050,5,'s',NULL);
+INSERT INTO "time_season" VALUES(0,'s',NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES season_label(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
 
 CREATE TABLE time_segment_fraction
 (
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
     notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (season, tod),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2025,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2030,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2035,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2040,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2045,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2050,'s','d',1.0,NULL);
+INSERT INTO "time_segment_fraction" VALUES('s', 'd', 1.0, NULL);
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

@@ -1510,73 +1510,45 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     season TEXT REFERENCES season_label(season),
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (sequence, season)
 );
-INSERT INTO "time_season" VALUES(2020,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2020,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2020,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2020,4,'winter',NULL);
-INSERT INTO "time_season" VALUES(2025,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2025,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2025,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2025,4,'winter',NULL);
-INSERT INTO "time_season" VALUES(2030,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2030,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2030,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2030,4,'winter',NULL);
+INSERT INTO "time_season" VALUES(0,'spring',NULL);
+INSERT INTO "time_season" VALUES(1,'summer',NULL);
+INSERT INTO "time_season" VALUES(2,'fall',NULL);
+INSERT INTO "time_season" VALUES(3,'winter',NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES season_label(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
 
 CREATE TABLE time_segment_fraction
 (
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
     notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (season, tod),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2020,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'winter','night',0.125,'Winter - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'winter','night',0.125,'Winter - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'winter','night',0.125,'Winter - Night');
+INSERT INTO "time_segment_fraction" VALUES('spring', 'day', 0.125, 'Spring - Day');
+INSERT INTO "time_segment_fraction" VALUES('spring', 'night', 0.125, 'Spring - Night');
+INSERT INTO "time_segment_fraction" VALUES('summer', 'day', 0.125, 'Summer - Day');
+INSERT INTO "time_segment_fraction" VALUES('summer', 'night', 0.125, 'Summer - Night');
+INSERT INTO "time_segment_fraction" VALUES('fall', 'day', 0.125, 'Fall - Day');
+INSERT INTO "time_segment_fraction" VALUES('fall', 'night', 0.125, 'Fall - Night');
+INSERT INTO "time_segment_fraction" VALUES('winter', 'day', 0.125, 'Winter - Day');
+INSERT INTO "time_segment_fraction" VALUES('winter', 'night', 0.125, 'Winter - Night');
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

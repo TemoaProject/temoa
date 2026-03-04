@@ -41,7 +41,7 @@ def test_storage_fraction(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             * model.v_capacity[r, p, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
             * model.capacity_to_activity[r, t]
             * (model.storage_duration[r, t] / 8760)
-            * model.segment_fraction_per_season[p, s]
+            * model.segment_fraction_per_season[s]
             * model.days_per_period
             * model.process_life_frac[r, p, t, v]
         )

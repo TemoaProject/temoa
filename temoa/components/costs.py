@@ -381,7 +381,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
         if S_p == p and S_t not in model.tech_annual
         for S_i in model.process_inputs[r, S_p, S_t, S_v]
         for S_o in model.process_outputs_by_input[r, S_p, S_t, S_v, S_i]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     )
 
@@ -425,7 +425,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
         if t not in model.tech_annual
     ]

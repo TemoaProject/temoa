@@ -95,8 +95,7 @@ print(f'price_per_kwh: ${price_per_kwh: 0.2f}\n')
 print('building storage level constraint...')
 
 # More SETS
-model.time_season_all.construct(['winter', 'summer'])
-model.time_season.construct(data={2020: {'winter', 'summer'}, 2025: {'winter', 'summer'}})
+model.time_season.construct(['winter', 'summer'])
 model.days_per_period.construct(data={None: 365})
 tod_slices = 2
 model.time_of_day.construct(data=range(1, tod_slices + 1))
@@ -119,10 +118,9 @@ model.storage_duration.construct(data={('A', 'battery'): 4})
 seasonal_fractions = {'winter': 0.4, 'summer': 0.6}
 model.segment_fraction.construct(
     data={
-        (p, s, d): seasonal_fractions[s] / tod_slices
+        (s, d): seasonal_fractions[s] / tod_slices
         for d in model.time_of_day
-        for p in model.time_optimize
-        for s in model.time_season[p]
+        for s in model.time_season
     }
 )
 # QA the total
@@ -140,7 +138,7 @@ print('The storage level constraint for the single period in the "super day":\n'
 # cross-check the multiplier...
 mulitplier = (
     storage_dur
-    * model.segment_fraction_per_season[2020, 'winter']
+    * model.segment_fraction_per_season['winter']
     * model.days_per_period
     * c2a
     * c

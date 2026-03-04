@@ -181,7 +181,7 @@ class SvMgaSequencer:
         psd_set = [
             (p, s, d)
             for p in model.time_optimize
-            for s in model.time_season[p]
+            for s in model.time_season
             for d in model.time_of_day
         ]
         flow_idxs = [(r, *psd, i, t, v, o) for psd in psd_set]

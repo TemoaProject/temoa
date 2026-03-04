@@ -885,15 +885,13 @@ CREATE TABLE IF NOT EXISTS reserve_capacity_derate
 );
 CREATE TABLE IF NOT EXISTS time_segment_fraction
 (
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
     notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (season, tod),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 CREATE TABLE IF NOT EXISTS storage_duration
@@ -1046,22 +1044,20 @@ CREATE TABLE IF NOT EXISTS output_cost
 
 CREATE TABLE IF NOT EXISTS time_season
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     season TEXT REFERENCES season_label(season),
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (sequence, season)
 );
 
 CREATE TABLE IF NOT EXISTS time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES season_label(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
+    PRIMARY KEY (sequence, seas_seq, season),
     CHECK (num_days > 0)
 );
 

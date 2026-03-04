@@ -419,7 +419,7 @@ def check_efficiency_variable(model: TemoaModel) -> None:
 
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
-    num_seg = len(model.time_season[p]) * len(model.time_of_day)
+    num_seg = len(model.time_season) * len(model.time_of_day)
     for (r, p, i, t, v, o), count in count_rpitvo.items():
         if count > 0:
             model.is_efficiency_variable[r, p, i, t, v, o] = True

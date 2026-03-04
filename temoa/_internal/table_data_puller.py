@@ -152,12 +152,12 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         # Make sure this isn't just a non-annual demand tech
         if t not in model.tech_annual:
             continue
-        for s in model.time_season[p]:
+        for s in model.time_season:
             for d in model.time_of_day:
                 if o in model.commodity_demand:
                     distribution = value(model.demand_specific_distribution[r, p, s, d, o])
                 else:
-                    distribution = value(model.segment_fraction[p, s, d])
+                    distribution = value(model.segment_fraction[s, d])
                 fi = FI(r, p, s, d, i, t, v, o)
                 flow = value(model.v_flow_out_annual[r, p, i, t, v, o]) * distribution
                 if abs(flow) < epsilon:
@@ -170,11 +170,11 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
 
     # flex annual
     for r, p, i, t, v, o in model.v_flex_annual.keys():
-        for s in model.time_season[p]:
+        for s in model.time_season:
             for d in model.time_of_day:
                 fi = FI(r, p, s, d, i, t, v, o)
                 flow = value(model.v_flex_annual[r, p, i, t, v, o]) * value(
-                    model.segment_fraction[p, s, d]
+                    model.segment_fraction[s, d]
                 )
                 if abs(flow) < epsilon:
                     continue
@@ -188,10 +188,10 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             * value(model.v_new_capacity[r, t, v])
             / value(model.period_length[v])
         )
-        for s in model.time_season[v]:
+        for s in model.time_season:
             for d in model.time_of_day:
                 fi = FI(r, v, s, d, i, t, v, cast('Commodity', 'construction_input'))
-                flow = annual * value(model.segment_fraction[v, s, d])
+                flow = annual * value(model.segment_fraction[s, d])
                 if abs(flow) < epsilon:
                     continue
                 res[fi][FlowType.IN] = flow
@@ -204,10 +204,10 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             annual = value(model.end_of_life_output[r, t, v, o]) * value(
                 model.v_annual_retirement[r, p, t, v]
             )
-            for s in model.time_season[p]:
+            for s in model.time_season:
                 for d in model.time_of_day:
                     fi = FI(r, p, s, d, cast('Commodity', 'end_of_life_output'), t, v, o)
-                    flow = annual * value(model.segment_fraction[p, s, d])
+                    flow = annual * value(model.segment_fraction[s, d])
                     if abs(flow) < epsilon:
                         continue
                     res[fi][FlowType.OUT] = flow
@@ -229,7 +229,7 @@ def poll_storage_level_results(model: TemoaModel, epsilon: float = 1e-5) -> dict
         if t in model.tech_seasonal_storage:
             continue
         state = value(model.v_storage_level[r, p, s, d, t, v]) / (
-            value(model.segment_fraction_per_season[p, s]) * value(model.days_per_period)
+            value(model.segment_fraction_per_season[s]) * value(model.days_per_period)
         )
         sli = SLI(r, p, s, d, t, v)
         if abs(state) < epsilon:
@@ -241,8 +241,8 @@ def poll_storage_level_results(model: TemoaModel, epsilon: float = 1e-5) -> dict
         # Ratio of days in virtual storage season to days in actual season
         # Flows and StorageLevel are normalised to the number of days in the ACTUAL season, so must
         # be adjusted to the number of days in the virtual storage season
-        days_adjust = value(model.time_season_sequential[p, s_seq, s]) / (
-            value(model.segment_fraction_per_season[p, s]) * value(model.days_per_period)
+        days_adjust = value(model.time_season_sequential[s_seq, s]) / (
+            value(model.segment_fraction_per_season[s]) * value(model.days_per_period)
         )
         for d in model.time_of_day:
             state = (
@@ -408,7 +408,7 @@ def poll_cost_results(
                 value(model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o])
                 for S_i in model.process_inputs[r, p, t, v]
                 for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-                for S_s in model.time_season[p]
+                for S_s in model.time_season
                 for S_d in model.time_of_day
             )
         else:
@@ -597,7 +597,7 @@ def poll_emissions(
     normal = [
         (r, p, e, s, d, i, t, v, o)
         for (r, p, e, i, t, v, o) in base
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
         if t not in model.tech_annual
     ]

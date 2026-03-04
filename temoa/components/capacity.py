@@ -60,7 +60,7 @@ def check_capacity_factor_process(model: TemoaModel) -> None:
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
     for (r, p, t, v), count in count_rptv.items():
-        num_seg = len(model.time_season[p]) * len(model.time_of_day)
+        num_seg = len(model.time_season) * len(model.time_of_day)
         if count > 0:
             model.is_capacity_factor_process[r, p, t, v] = True
             if count < num_seg:
@@ -91,7 +91,7 @@ def create_capacity_factors(model: TemoaModel) -> None:
         (r, p, s, d, t, v)
         for (r, t, v) in processes
         for p in model.process_periods[r, t, v]
-        for s, d in cross_product(model.time_season[p], model.time_of_day)
+        for s, d in cross_product(model.time_season, model.time_of_day)
     }
 
     # Step 2
@@ -220,7 +220,7 @@ def capacity_constraint_indices(
             if t not in model.tech_annual or t in model.tech_demand:
                 if t not in model.tech_uncap:
                     if t not in model.tech_storage:
-                        for s in model.time_season[p]:
+                        for s in model.time_season:
                             for d in model.time_of_day:
                                 capacity_indices.add((r, p, s, d, t, v))
     else:
@@ -236,7 +236,7 @@ def capacity_factor_process_indices(
     indices: set[tuple[Region, Season, TimeOfDay, Technology, Vintage]] = set()
     for r, _i, t, v, _o in model.efficiency.sparse_iterkeys():
         for p in model.time_optimize:
-            for s in model.time_season[p]:
+            for s in model.time_season:
                 for d in model.time_of_day:
                     indices.add((r, s, d, t, v))
     return indices
@@ -248,7 +248,7 @@ def capacity_factor_tech_indices(
     all_cfs: set[tuple[Region, Period, Season, TimeOfDay, Technology]] = set()
     if model.active_capacity_available_rpt:
         for r, p, t in model.active_capacity_available_rpt:
-            for s in model.time_season[p]:
+            for s in model.time_season:
                 for d in model.time_of_day:
                     all_cfs.add((r, p, s, d, t))
     else:
@@ -447,7 +447,7 @@ def capacity_constraint(
             (
                 value(model.demand_specific_distribution[r, p, s, d, S_o])
                 if S_o in model.commodity_demand
-                else value(model.segment_fraction[p, s, d])
+                else value(model.segment_fraction[s, d])
             )
             * model.v_flow_out_annual[r, p, S_i, t, v, S_o]
             for S_i in model.process_inputs[r, p, t, v]
@@ -465,7 +465,7 @@ def capacity_constraint(
         # capacity must be available to cover both activity and curtailment.
         return get_capacity_factor(model, r, p, s, d, t, v) * value(
             model.capacity_to_activity[r, t]
-        ) * value(model.segment_fraction[p, s, d]) * model.v_capacity[
+        ) * value(model.segment_fraction[s, d]) * model.v_capacity[
             r, p, t, v
         ] == useful_activity + sum(
             model.v_curtailment[r, p, s, d, S_i, t, v, S_o]
@@ -476,7 +476,7 @@ def capacity_constraint(
         return (
             get_capacity_factor(model, r, p, s, d, t, v)
             * value(model.capacity_to_activity[r, t])
-            * value(model.segment_fraction[p, s, d])
+            * value(model.segment_fraction[s, d])
             * model.v_capacity[r, p, t, v]
             >= useful_activity
         )
