@@ -15,8 +15,6 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
@@ -26,32 +24,24 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'inter','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'inter','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'winter','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'winter','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'summer','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2000,'summer','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'inter','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'inter','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'winter','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'winter','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'summer','day','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'summer','night','E31',2000,0.2753,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'inter','day','E31',2010,0.2756,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'inter','night','E31',2010,0.2756,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'winter','day','E31',2010,0.2756,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'winter','night','E31',2010,0.2756,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'summer','day','E31',2010,0.2756,'');
-INSERT INTO "capacity_factor_process" VALUES('utopia',2010,'summer','night','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','inter','day','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','inter','night','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','winter','day','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','winter','night','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','summer','day','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','summer','night','E31',2000,0.2753,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','inter','day','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','inter','night','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','winter','day','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','winter','night','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','summer','day','E31',2010,0.2756,'');
+INSERT INTO "capacity_factor_process" VALUES('utopia','summer','night','E31',2010,0.2756,'');
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod    TEXT
@@ -60,99 +50,39 @@ CREATE TABLE capacity_factor_tech
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'inter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'winter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',1990,'summer','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'inter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'winter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2000,'summer','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','day','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','night','E01',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','day','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','night','E21',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','day','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','night','E31',0.275,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','day','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','night','E51',0.17,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'inter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'winter','night','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','day','E70',0.8,'');
-INSERT INTO "capacity_factor_tech" VALUES('utopia',2010,'summer','night','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','day','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','night','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','day','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','night','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','day','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','night','E01',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','day','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','night','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','day','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','night','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','day','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','night','E21',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','day','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','night','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','day','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','night','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','day','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','night','E31',0.275,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','day','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','night','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','day','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','night','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','day','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','night','E51',0.17,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','day','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','inter','night','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','day','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','winter','night','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','day','E70',0.8,'');
+INSERT INTO "capacity_factor_tech" VALUES('utopia','summer','night','E70',0.8,'');
 CREATE TABLE capacity_to_activity
 (
     region TEXT,
@@ -468,8 +398,6 @@ INSERT INTO "demand" VALUES('utopia',2010,'TX',11.69,'','');
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -478,39 +406,19 @@ CREATE TABLE demand_specific_distribution
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'inter','night','RH',0.06,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'winter','day','RH',0.5467,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'winter','night','RH',2.73299999999999931e-01,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'inter','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'inter','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'summer','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'summer','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'winter','day','RL',0.5,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'winter','night','RL',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',1990,'inter','day','RH',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'inter','night','RH',0.06,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'winter','day','RH',0.5467,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'winter','night','RH',2.73299999999999931e-01,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'inter','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'inter','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'summer','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'summer','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'winter','day','RL',0.5,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'winter','night','RL',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2000,'inter','day','RH',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'inter','night','RH',0.06,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'winter','day','RH',0.5467,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'winter','night','RH',2.73299999999999931e-01,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'inter','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'inter','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'summer','day','RL',0.15,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'summer','night','RL',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'winter','day','RL',0.5,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'winter','night','RL',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('utopia',2010,'inter','day','RH',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('utopia','inter','night','RH',0.06,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','winter','day','RH',0.5467,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','winter','night','RH',2.73299999999999931e-01,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','inter','day','RL',0.15,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','inter','night','RL',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','summer','day','RL',0.15,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','summer','night','RL',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','winter','day','RL',0.5,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','winter','night','RL',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('utopia','inter','day','RH',0.12,NULL);
 CREATE TABLE efficiency
 (
     region      TEXT,
@@ -594,8 +502,6 @@ INSERT INTO "efficiency" VALUES('utopia','GSL','TXG',2010,'TX',0.231,'# direct t
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -610,7 +516,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -976,8 +882,6 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
         REFERENCES season_label (season),
 	tech    TEXT
@@ -986,26 +890,22 @@ CREATE TABLE limit_seasonal_capacity_factor
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE limit_tech_input_split
 (
@@ -1381,8 +1281,6 @@ INSERT INTO "region" VALUES('utopia',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
     	REFERENCES season_label (season),
     tech    TEXT
@@ -1390,7 +1288,7 @@ CREATE TABLE reserve_capacity_derate
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement

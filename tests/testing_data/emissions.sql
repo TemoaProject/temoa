@@ -1,7 +1,7 @@
-REPLACE INTO "capacity_factor_tech" VALUES('Testregion',2000,'S1','TOD1','TechCurtailment',1.0,NULL);
-REPLACE INTO "capacity_factor_tech" VALUES('Testregion',2000,'S1','TOD2','TechCurtailment',0.5,NULL);
-REPLACE INTO "capacity_factor_tech" VALUES('Testregion',2000,'S1','TOD1','TechOrdinary',1.0,NULL);
-REPLACE INTO "capacity_factor_tech" VALUES('Testregion',2000,'S1','TOD2','TechOrdinary',0.5,NULL);
+REPLACE INTO "capacity_factor_tech" VALUES('Testregion','S1','TOD1','TechCurtailment',1.0,NULL);
+REPLACE INTO "capacity_factor_tech" VALUES('Testregion','S1','TOD2','TechCurtailment',0.5,NULL);
+REPLACE INTO "capacity_factor_tech" VALUES('Testregion','S1','TOD1','TechOrdinary',1.0,NULL);
+REPLACE INTO "capacity_factor_tech" VALUES('Testregion','S1','TOD2','TechOrdinary',0.5,NULL);
 REPLACE INTO "commodity" VALUES('annual_in', 's', NULL, NULL);
 REPLACE INTO "commodity" VALUES('flex_in', 's', NULL, NULL);
 REPLACE INTO "commodity" VALUES('ordinary_in', 's', NULL, NULL);

@@ -37,7 +37,7 @@ def test_storage_fraction(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
 
     for r, p, s, d, t, v, op in model.limit_storage_fraction_constraint_rpsdtv:
         energy = (
-            model.limit_storage_fraction[r, p, s, d, t, v, op]
+            model.limit_storage_fraction[r, s, d, t, op]
             * model.v_capacity[r, p, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
             * model.capacity_to_activity[r, t]
             * (model.storage_duration[r, t] / 8760)

@@ -15,8 +15,6 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
@@ -26,14 +24,12 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod    TEXT
@@ -42,7 +38,7 @@ CREATE TABLE capacity_factor_tech
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_to_activity
@@ -223,8 +219,6 @@ INSERT INTO "demand" VALUES('region',2050,'demand',1.0,NULL,NULL);
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -233,7 +227,7 @@ CREATE TABLE demand_specific_distribution
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
 CREATE TABLE efficiency
@@ -263,8 +257,6 @@ INSERT INTO "efficiency" VALUES('region','source','tech_future',2050,'demand',1.
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -279,7 +271,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -643,8 +635,6 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
         REFERENCES season_label (season),
 	tech    TEXT
@@ -653,26 +643,22 @@ CREATE TABLE limit_seasonal_capacity_factor
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE limit_tech_input_split
 (
@@ -1041,8 +1027,6 @@ INSERT INTO "region" VALUES('region',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
     	REFERENCES season_label (season),
     tech    TEXT
@@ -1050,7 +1034,7 @@ CREATE TABLE reserve_capacity_derate
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement

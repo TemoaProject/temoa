@@ -53,7 +53,7 @@ def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) ->
 def get_variable_efficiency(
     model: TemoaModel,
     r: Region,
-    p: Period,
+    _p: Period,
     s: Season,
     d: TimeOfDay,
     i: Commodity,
@@ -74,9 +74,9 @@ def get_variable_efficiency(
     This dictionary-lookup approach is used for performance, as it is much faster
     than repeatedly checking the indices of a large Pyomo parameter during model build.
     """
-    if model.is_efficiency_variable.get((r, p, i, t, v, o), False):
+    if model.is_efficiency_variable[r, i, t, v, o]:
         return value(model.efficiency[r, i, t, v, o]) * value(
-            model.efficiency_variable[r, p, s, d, i, t, v, o]
+            model.efficiency_variable[r, s, d, i, t, v, o]
         )
     else:
         return value(model.efficiency[r, i, t, v, o])

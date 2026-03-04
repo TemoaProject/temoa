@@ -15,8 +15,6 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod     TEXT
@@ -26,14 +24,12 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod    TEXT
@@ -42,105 +38,41 @@ CREATE TABLE capacity_factor_tech
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2000,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2010,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionA',2020,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2000,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2010,'spring','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'summer','morning','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'autumn','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'winter','morning','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'spring','morning','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'summer','afternoon','SOL_PV',0.3,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'autumn','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'winter','afternoon','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'spring','afternoon','SOL_PV',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'summer','evening','SOL_PV',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'autumn','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'winter','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'spring','evening','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'summer','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'autumn','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'winter','overnight','SOL_PV',0.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('RegionB',2020,'spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','summer','morning','SOL_PV',0.3,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','autumn','morning','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','winter','morning','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','spring','morning','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','summer','afternoon','SOL_PV',0.3,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','autumn','afternoon','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','winter','afternoon','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','spring','afternoon','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','summer','evening','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionA','spring','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','summer','morning','SOL_PV',0.3,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','autumn','morning','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','winter','morning','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','spring','morning','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','summer','afternoon','SOL_PV',0.3,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','autumn','afternoon','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','winter','afternoon','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','spring','afternoon','SOL_PV',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','summer','evening','SOL_PV',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','autumn','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','winter','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','spring','evening','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','summer','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','autumn','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','winter','overnight','SOL_PV',0.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('RegionB','spring','overnight','SOL_PV',0.0,NULL);
 CREATE TABLE capacity_to_activity
 (
     region TEXT,
@@ -368,8 +300,6 @@ INSERT INTO "demand" VALUES('RegionB',2020,'heating',1.0,NULL,NULL);
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -378,105 +308,41 @@ CREATE TABLE demand_specific_distribution
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2000,'spring','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2010,'spring','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionA',2020,'spring','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2000,'spring','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2010,'spring','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'summer','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'autumn','morning','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'winter','morning','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'spring','morning','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'summer','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'autumn','afternoon','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'winter','afternoon','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'spring','afternoon','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'summer','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'autumn','evening','heating',0.08,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'winter','evening','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'spring','evening','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'summer','overnight','heating',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'autumn','overnight','heating',0.12,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'winter','overnight','heating',0.16,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('RegionB',2020,'spring','overnight','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','summer','morning','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','autumn','morning','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','winter','morning','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','spring','morning','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','summer','afternoon','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','autumn','afternoon','heating',0.08,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','winter','afternoon','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','spring','afternoon','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','summer','evening','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','autumn','evening','heating',0.08,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','winter','evening','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','spring','evening','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','summer','overnight','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','autumn','overnight','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','winter','overnight','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionA','spring','overnight','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','summer','morning','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','autumn','morning','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','winter','morning','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','spring','morning','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','summer','afternoon','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','autumn','afternoon','heating',0.08,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','winter','afternoon','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','spring','afternoon','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','summer','evening','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','autumn','evening','heating',0.08,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','winter','evening','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','spring','evening','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','summer','overnight','heating',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','autumn','overnight','heating',0.12,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','winter','overnight','heating',0.16,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('RegionB','spring','overnight','heating',0.0,NULL);
 CREATE TABLE efficiency
 (
     region      TEXT,
@@ -574,8 +440,6 @@ INSERT INTO "efficiency" VALUES('RegionB-RegionA','electricity','ELEC_INTERTIE',
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod         TEXT
@@ -590,7 +454,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -936,8 +800,6 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
         REFERENCES season_label (season),
 	tech    TEXT
@@ -946,26 +808,22 @@ CREATE TABLE limit_seasonal_capacity_factor
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
     season TEXT
         REFERENCES season_label (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE limit_tech_input_split
 (
@@ -1389,8 +1247,6 @@ INSERT INTO "region" VALUES('RegionB',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
     	REFERENCES season_label (season),
     tech    TEXT
@@ -1398,7 +1254,7 @@ CREATE TABLE reserve_capacity_derate
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement

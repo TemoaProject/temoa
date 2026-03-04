@@ -61,6 +61,22 @@ def storage_constraint_indices(
     return model.storage_level_indices_rpsdtv
 
 
+def limit_storage_fraction_constraint_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, str]]:
+    """Expand the period-free param set to include all valid process (period, vintage) combos."""
+    param_keys = set(model.limit_storage_fraction_param_rsdt)
+    all_storage = set(model.storage_constraints_rpsdtv) | set(
+        model.seasonal_storage_constraints_rpsdtv
+    )
+    result: set[tuple] = set()
+    for r, p, s, d, t, v in all_storage:
+        for op in model.operator:
+            if (r, s, d, t, op) in param_keys:
+                result.add((r, p, s, d, t, v, op))
+    return result
+
+
 # ============================================================================
 # PYOMO CONSTRAINT RULES
 # ============================================================================
@@ -516,7 +532,7 @@ def limit_storage_fraction_constraint(
         model.v_capacity[r, p, t, v]
         * value(model.capacity_to_activity[r, t])
         * (value(model.storage_duration[r, t]) / (24 * value(model.days_per_period)))
-        * value(model.limit_storage_fraction[r, p, s, d, t, v, op])
+        * value(model.limit_storage_fraction[r, s, d, t, op])
     )
 
     if model.is_seasonal_storage[t]:

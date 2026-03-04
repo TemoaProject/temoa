@@ -868,7 +868,7 @@ class HybridLoader:
             model.limit_emission.name: model.limit_emission_constraint_rpe.name,
             model.limit_activity.name: model.limit_activity_constraint_rpt.name,
             model.limit_seasonal_capacity_factor.name: (
-                model.limit_seasonal_capacity_factor_constraint_rpst.name
+                model.limit_seasonal_capacity_factor_constraint_rst.name
             ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
             model.limit_annual_capacity_factor.name: (
@@ -881,7 +881,7 @@ class HybridLoader:
                 model.limit_new_capacity_share_constraint_rpgg.name
             ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
-            model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,
+            model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,
             model.renewable_portfolio_standard.name: (
                 model.renewable_portfolio_standard_constraint_rpg.name
             ),

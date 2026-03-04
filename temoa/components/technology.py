@@ -384,30 +384,25 @@ def check_efficiency_indices(model: TemoaModel) -> None:
 
 
 def check_efficiency_variable(model: TemoaModel) -> None:
-    count_rpitvo = {}
+    count_ritvo = {}
     # Pull non-variable efficiency by default
     for r, i, t, v, o in model.efficiency.sparse_iterkeys():
         if (r, t, v) not in model.process_periods:
             # Probably an existing vintage that retires in p0
             # Still want it for end of life flows
             continue
-        for p in model.process_periods[r, t, v]:
-            model.is_efficiency_variable[r, p, i, t, v, o] = False
-            count_rpitvo[r, p, i, t, v, o] = 0
+        model.is_efficiency_variable[r, i, t, v, o] = False
+        count_ritvo[r, i, t, v, o] = 0
 
     annual = set()
     # Check for bad values and count up the good ones
-    for r, p, _s, _d, i, t, v, o in model.efficiency_variable.sparse_iterkeys():
-        if p not in model.process_periods[r, t, v]:
-            msg = f'Invalid period {p} for process {r, t, v} in efficiency_variable table'
-            logger.error(msg)
-            raise ValueError(msg)
-
+    for r, _s, _d, i, t, v, o in model.efficiency_variable.sparse_iterkeys():
         if t in model.tech_annual:
             annual.add(t)
 
         # Good value, pull from efficiency_variable table
-        count_rpitvo[r, p, i, t, v, o] += 1
+        if (r, i, t, v, o) in count_ritvo:
+            count_ritvo[r, i, t, v, o] += 1
 
     for t in annual:
         msg = (
@@ -420,14 +415,14 @@ def check_efficiency_variable(model: TemoaModel) -> None:
     # Check if all possible values have been set as variable
     # log a warning if some are missing (allowed but maybe accidental)
     num_seg = len(model.time_season) * len(model.time_of_day)
-    for (r, p, i, t, v, o), count in count_rpitvo.items():
+    for (r, i, t, v, o), count in count_ritvo.items():
         if count > 0:
-            model.is_efficiency_variable[r, p, i, t, v, o] = True
+            model.is_efficiency_variable[r, i, t, v, o] = True
             if count < num_seg:
                 logger.info(
                     'Some but not all efficiency_variable values were set (%i out of a possible '
                     '%i) for: %s Missing values will default to value set in efficiency table.',
                     count,
                     num_seg,
-                    (r, p, i, t, v, o),
+                    (r, i, t, v, o),
                 )

@@ -40,29 +40,36 @@ logger = getLogger(name=__name__)
 
 
 def check_capacity_factor_process(model: TemoaModel) -> None:
-    count_rptv: dict[tuple[Region, Period, Technology, Vintage], int] = {}
+
+    # Count of capacity factor process entries for this process in this region
+    count_rtv: dict[tuple[Region, Technology, Vintage], int] = {}
+
     # Pull capacity_factor_tech by default
-    for r, p, _s, _d, t in model.capacity_factor_rpsdt:
-        for v in model.process_vintages[r, p, t]:
-            model.is_capacity_factor_process[r, p, t, v] = False
-            count_rptv[r, p, t, v] = 0
+    unique_rt = set((r, t) for r, _s, _d, t in model.capacity_factor_rsdt)
+    for r, t in unique_rt:
+        for p in model.time_optimize:
+            for v in model.process_vintages.get((r, p, t), []):
+                if (r, t, v) not in count_rtv:
+                    model.is_capacity_factor_process[r, t, v] = False
+                    count_rtv[r, t, v] = 0
 
     # Check for bad values and count up the good ones
-    for r, p, _s, _d, t, v in model.capacity_factor_process.sparse_iterkeys():
-        if v not in model.process_vintages[r, p, t]:
-            msg = f'Invalid process {p, v} for {r, t} in capacity_factor_process table'
+    for r, _s, _d, t, v in model.capacity_factor_process.sparse_iterkeys():
+        # Validate that vintage is active for some period
+        if not model.process_periods.get((r, t, v)):
+            msg = f'Invalid vintage {v} for {r, t} in capacity_factor_process table'
             logger.error(msg)
             raise ValueError(msg)
 
         # Good value, pull from capacity_factor_process table
-        count_rptv[r, p, t, v] += 1
+        count_rtv[r, t, v] += 1
 
     # Check if all possible values have been set by process
     # log a warning if some are missing (allowed but maybe accidental)
-    for (r, p, t, v), count in count_rptv.items():
+    for (r, t, v), count in count_rtv.items():
         num_seg = len(model.time_season) * len(model.time_of_day)
         if count > 0:
-            model.is_capacity_factor_process[r, p, t, v] = True
+            model.is_capacity_factor_process[r, t, v] = True
             if count < num_seg:
                 logger.info(
                     'Some but not all processes were set in capacity_factor_process (%i out of a '
@@ -70,7 +77,7 @@ def check_capacity_factor_process(model: TemoaModel) -> None:
                     'value or 1 if that is not set either.',
                     count,
                     num_seg,
-                    (r, p, t, v),
+                    (r, t, v),
                 )
 
 
@@ -85,12 +92,11 @@ def create_capacity_factors(model: TemoaModel) -> None:
     capacity_factor_process = model.capacity_factor_process
 
     # Step 1
-    processes = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    processes = {(r, t, v) for r, _i, t, v, _o in model.efficiency.sparse_iterkeys()}
 
     all_cfs = {
-        (r, p, s, d, t, v)
+        (r, s, d, t, v)
         for (r, t, v) in processes
-        for p in model.process_periods[r, t, v]
         for s, d in cross_product(model.time_season, model.time_of_day)
     }
 
@@ -106,8 +112,8 @@ def create_capacity_factors(model: TemoaModel) -> None:
 
     if unspecified_cfs:
         # CFP._constructed = False
-        for r, p, s, d, t, v in unspecified_cfs:
-            capacity_factor_process[r, p, s, d, t, v] = model.capacity_factor_tech[r, p, s, d, t]
+        for r, s, d, t, v in unspecified_cfs:
+            capacity_factor_process[r, s, d, t, v] = model.capacity_factor_tech[r, s, d, t]
         logger.debug(
             'Created Capacity Factors for %d processes without an explicit specification',
             len(unspecified_cfs),
@@ -116,7 +122,7 @@ def create_capacity_factors(model: TemoaModel) -> None:
 
 
 def get_default_capacity_factor(
-    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> float:
     """
     This initializer is used to fill the capacity_factor_process from the capacity_factor_tech
@@ -134,16 +140,16 @@ def get_default_capacity_factor(
     :param v: vintage
     :return: the capacity factor
     """
-    return value(model.capacity_factor_tech[r, p, s, d, t])
+    return value(model.capacity_factor_tech[r, s, d, t])
 
 
 def get_capacity_factor(
-    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
+    model: TemoaModel, r: Region, s: Season, d: TimeOfDay, t: Technology, v: Vintage
 ) -> float:
-    if model.is_capacity_factor_process[r, p, t, v]:
-        return value(model.capacity_factor_process[r, p, s, d, t, v])
+    if model.is_capacity_factor_process[r, t, v]:
+        return value(model.capacity_factor_process[r, s, d, t, v])
     else:
-        return value(model.capacity_factor_tech[r, p, s, d, t])
+        return value(model.capacity_factor_tech[r, s, d, t])
 
 
 # ============================================================================
@@ -244,13 +250,13 @@ def capacity_factor_process_indices(
 
 def capacity_factor_tech_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology]]:
-    all_cfs: set[tuple[Region, Period, Season, TimeOfDay, Technology]] = set()
-    if model.active_capacity_available_rpt:
-        for r, p, t in model.active_capacity_available_rpt:
+) -> set[tuple[Region, Season, TimeOfDay, Technology]]:
+    all_cfs: set[tuple[Region, Season, TimeOfDay, Technology]] = set()
+    if model.active_capacity_available_rpt: # in case every tech in the model is unlim_cap
+        for r, _p, t in model.active_capacity_available_rpt:
             for s in model.time_season:
                 for d in model.time_of_day:
-                    all_cfs.add((r, p, s, d, t))
+                    all_cfs.add((r, s, d, t))
     else:
         return set()
     return all_cfs
@@ -445,7 +451,7 @@ def capacity_constraint(
         # Annual demand technology
         useful_activity = sum(
             (
-                value(model.demand_specific_distribution[r, p, s, d, S_o])
+                value(model.demand_specific_distribution[r, s, d, S_o])
                 if S_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )
@@ -463,7 +469,7 @@ def capacity_constraint(
     if t in model.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
         # capacity must be available to cover both activity and curtailment.
-        return get_capacity_factor(model, r, p, s, d, t, v) * value(
+        return get_capacity_factor(model, r, s, d, t, v) * value(
             model.capacity_to_activity[r, t]
         ) * value(model.segment_fraction[s, d]) * model.v_capacity[
             r, p, t, v
@@ -474,7 +480,7 @@ def capacity_constraint(
         )
     else:
         return (
-            get_capacity_factor(model, r, p, s, d, t, v)
+            get_capacity_factor(model, r, s, d, t, v)
             * value(model.capacity_to_activity[r, t])
             * value(model.segment_fraction[s, d])
             * model.v_capacity[r, p, t, v]

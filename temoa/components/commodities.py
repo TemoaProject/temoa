@@ -249,7 +249,7 @@ def demand_activity_constraint(
         for s_i in model.process_inputs_by_output[r, p, t, v, dem]
     )
 
-    expr = annual_activity * value(model.demand_specific_distribution[r, p, s, d, dem]) == activity
+    expr = annual_activity * value(model.demand_specific_distribution[r, s, d, dem]) == activity
     return expr
 
 
@@ -386,7 +386,7 @@ def commodity_balance_constraint(
         # Into annual flows
         consumed += sum(
             (
-                value(model.demand_specific_distribution[r, p, s, d, s_o])
+                value(model.demand_specific_distribution[r, s, d, s_o])
                 if s_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )
@@ -692,14 +692,13 @@ def create_demands(model: TemoaModel) -> None:
     logger.debug('Started creating demand distributions in CreateDemands()')
 
     # Step 0: some setup for a couple of reusable items
-    # Get the nth element from the tuple (r, p, s, d, dem)
+    # Get the nth element from the tuple (r, s, d, dem)
     # So we only have to update these indices in one place if they change
     demand_specific_distribution_region = iget(0)
-    demand_specific_distribution_period = iget(1)
-    demand_specific_distributon_dem = iget(4)
+    demand_specific_distributon_dem = iget(3)
 
     # Step 1: Check if any demand commodities are going unused
-    used_dems = {dem for r, p, dem in model.demand.sparse_iterkeys()}
+    used_dems = {dem for _r, _p, dem in model.demand.sparse_iterkeys()}
     unused_dems = sorted(model.commodity_demand.difference(used_dems))
     if unused_dems:
         for dem in unused_dems:
@@ -762,33 +761,30 @@ def create_demands(model: TemoaModel) -> None:
     )  # the demands not mentioned in DSD *at all*
 
     if unset_demand_distributions:
-        for p in model.time_optimize:
-            unset_distributions = set(
-                cross_product(
-                    model.regions,
-                    (p,),
-                    model.time_season,
-                    model.time_of_day,
-                    unset_demand_distributions,
-                )
+        unset_distributions = set(
+            cross_product(
+                model.regions,
+                model.time_season,
+                model.time_of_day,
+                unset_demand_distributions,
             )
-            for r, p, s, d, dem in unset_distributions:
-                demand_specific_distribution[r, p, s, d, dem] = value(
-                    model.segment_fraction[s, d]
-                )  # DSD._constructed = True
+        )
+        for r, s, d, dem in unset_distributions:
+            demand_specific_distribution[r, s, d, dem] = value(
+                model.segment_fraction[s, d]
+            )  # DSD._constructed = True
 
     # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    used_rp_dems = {(r, p, dem) for r, p, dem in model.demand.sparse_iterkeys()}
-    for r, p, dem in used_rp_dems:
+    used_r_dems = {(r, dem) for r, p, dem in model.demand.sparse_iterkeys()}
+    for r, dem in used_r_dems:
         expected_key_length = len(model.time_season) * len(model.time_of_day)
         keys = [
             k
             for k in demand_specific_distribution.sparse_iterkeys()
             if demand_specific_distribution_region(k) == r
-            and demand_specific_distribution_period(k) == p
             and demand_specific_distributon_dem(k) == dem
         ]
         if len(keys) != expected_key_length:
@@ -797,11 +793,11 @@ def create_demands(model: TemoaModel) -> None:
                 (s, d)
                 for s in model.time_season
                 for d in model.time_of_day
-                if (r, p, s, d, dem) not in keys
+                if (r, s, d, dem) not in keys
             }
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
-                (r, p, dem),
+                (r, dem),
                 missing,
             )
         total = sum(value(demand_specific_distribution[i]) for i in keys)
@@ -829,7 +825,7 @@ def create_demands(model: TemoaModel) -> None:
                 'must total to 1.\n\n Demand-specific distribution in error: '
                 ' \n   {}\n\tsum = {}'
             )
-            logger.error(msg.format((r, p, dem), items, total))
-            raise ValueError(msg.format((r, p, dem), items, total))
+            logger.error(msg.format((r, dem), items, total))
+            raise ValueError(msg.format((r, dem), items, total))
 
     logger.debug('Finished creating demand distributions')

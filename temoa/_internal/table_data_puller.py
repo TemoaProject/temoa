@@ -155,7 +155,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         for s in model.time_season:
             for d in model.time_of_day:
                 if o in model.commodity_demand:
-                    distribution = value(model.demand_specific_distribution[r, p, s, d, o])
+                    distribution = value(model.demand_specific_distribution[r, s, d, o])
                 else:
                     distribution = value(model.segment_fraction[s, d])
                 fi = FI(r, p, s, d, i, t, v, o)

@@ -99,8 +99,8 @@ def reserve_margin_dynamic(
     # Derated available generation
     available = sum(
         model.v_capacity[r, p, t, v]
-        * value(model.reserve_capacity_derate[r, p, s, t, v])
-        * value(model.capacity_factor_process[r, p, s, d, t, v])
+        * value(model.reserve_capacity_derate[r, s, t, v])
+        * value(model.capacity_factor_process[r, s, d, t, v])
         * value(model.capacity_to_activity[r, t])
         * value(model.segment_fraction[s, d])
         for (t, v) in model.process_reserve_periods[r, p]
@@ -111,7 +111,7 @@ def reserve_margin_dynamic(
     # Derated net output flow
     available += sum(
         model.v_flow_out[r, p, s, d, i, t, v, o]
-        * value(model.reserve_capacity_derate[r, p, s, t, v])
+        * value(model.reserve_capacity_derate[r, s, t, v])
         for (t, v) in model.process_reserve_periods[r, p]
         if t in model.tech_storage
         for i in model.process_inputs[r, p, t, v]
@@ -119,7 +119,7 @@ def reserve_margin_dynamic(
     )
     available -= sum(
         model.v_flow_in[r, p, s, d, i, t, v, o]
-        * value(model.reserve_capacity_derate[r, p, s, t, v])
+        * value(model.reserve_capacity_derate[r, s, t, v])
         for (t, v) in model.process_reserve_periods[r, p]
         if t in model.tech_storage
         for i in model.process_inputs[r, p, t, v]
@@ -152,8 +152,8 @@ def reserve_margin_dynamic(
         # add the available output of the exchange tech.
         available += sum(
             model.v_capacity[r1r2, p, t, v]
-            * value(model.reserve_capacity_derate[r, p, s, t, v])
-            * value(model.capacity_factor_process[r, p, s, d, t, v])
+            * value(model.reserve_capacity_derate[r, s, t, v])
+            * value(model.capacity_factor_process[r, s, d, t, v])
             * value(model.capacity_to_activity[r1r2, t])
             * value(model.segment_fraction[s, d])
             for (t, v) in model.process_reserve_periods[r1r2, p]
@@ -284,7 +284,7 @@ def reserve_margin_constraint(
     # Annual generation
     total_generation += sum(
         (
-            value(model.demand_specific_distribution[r, p, s, d, S_o])
+            value(model.demand_specific_distribution[r, s, d, S_o])
             if S_o in model.commodity_demand
             else value(model.segment_fraction[s, d])
         )

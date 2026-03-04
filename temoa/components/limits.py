@@ -197,6 +197,17 @@ def limit_degrowth_new_capacity_delta_indices(
     return indices
 
 
+def limit_seasonal_capacity_factor_constraint_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Season, Technology, str]]:
+    """Expand the period-free param set to include all time_optimize periods."""
+    return {
+        (r, p, s, t, op)
+        for r, s, t, op in model.limit_seasonal_capacity_factor_constraint_rst
+        for p in model.time_optimize
+    }
+
+
 # ============================================================================
 # PYOMO CONSTRAINT RULES
 # ============================================================================
@@ -561,7 +572,7 @@ def limit_seasonal_capacity_factor_constraint(
         * value(model.segment_fraction_per_season[s])
         for _r in regions
     )
-    seasonal_cf = value(model.limit_seasonal_capacity_factor[r, p, s, t, op])
+    seasonal_cf = value(model.limit_seasonal_capacity_factor[r, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
