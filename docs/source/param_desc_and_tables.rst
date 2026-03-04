@@ -89,7 +89,7 @@ capacity, activity and emissions**.
    ":math:`\text{LNC}_{r,p,t}`", ":code:`limit_new_capacity`", ":code:`limit_new_capacity`", "limit on new capacity deployment by period"
    ":math:`\text{LA}_{r,p,t}`", ":code:`limit_activity`", ":code:`limit_activity`", "limit on technology-specific activity by region and period"
    ":math:`\text{LE}_{r,p,e}`", ":code:`limit_emission`", ":code:`limit_emission`", "limit on emissions by region and period"
-   ":math:`\text{LR}_{r,t}`", ":code:`limit_resource`", ":code:`limit_resource`", "cumulative activity limit across time periods (not supported in myopic)"
+   ":math:`\text{LS}_{r,t}`", ":code:`limit_resource`", ":code:`limit_resource`", "cumulative activity limit across time periods (not supported in myopic)"
 
 Parameters in the table below relate to the specification of **growth and degrowth
 limits**.
@@ -137,7 +137,7 @@ Parameters in the table below relate to the specification of **policy**.
    :widths: 15, 20, 25, 40
 
    "", ":code:`rps_requirement`", ":code:`renewable_portfolio_standard`", "**[Deprecated]** RPS requirements; use :code:`limit_activity_share` instead"
-   ":math:`\text{LIT}_{r,t,e,t}`", ":code:`linked_tech`", ":code:`linked_techs`", "dummy techs used to convert CO2 emissions to physical commodity"
+   ":math:`\text{LIT}_{r,t,e,t'}`", ":code:`linked_tech`", ":code:`linked_techs`", "dummy techs used to convert CO2 emissions to physical commodity"
 
 Parameters in the table below relate to the specification of **construction and
 end-of-life**.
@@ -157,7 +157,6 @@ therefore do not appear in the database**.
    :widths: 15, 20, 25, 40
 
    ":math:`{}^*\text{LEN}_p`", "", ":code:`period_length`", "number of years in period :math:`p`; computed from time periods"
-   "", "", ":code:`segment_fraction_per_season`", "computed from segment fractions"
    ":math:`{}^*\text{LA}_{t,v}`", "", ":code:`loan_annualize`", "loan amortization by tech and vintage; based on :math:`DR_t`; computed from loan rate and lifetime"
    ":math:`{}^*\text{PLF}_{r,p,t,v}`", "", ":code:`process_life_frac`", "fraction of available process capacity by region and period; computed from process life fraction"
    "", "", ":code:`segment_fraction_per_season`", "computed internally from segment fractions"
@@ -179,8 +178,8 @@ successful run completion.
 - :code:`output_emission`
 - :code:`output_cost`
 
-Finally, the database tables below do not have a directed mapping to the the
-model code.
+Finally, the database tables below do not have a directed mapping to the model
+code.
 
 .. csv-table::
    :header: "Database Table", "Purpose", "Notes"
