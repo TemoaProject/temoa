@@ -209,7 +209,7 @@ def param_period_length(model: TemoaModel, p: Period) -> int:
 
 
 def loop_period_next_timeslice(
-    model: TemoaModel, p: Period, s: Season, d: TimeOfDay
+    model: TemoaModel, s: Season, d: TimeOfDay
 ) -> tuple[Season, TimeOfDay]:
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
@@ -236,7 +236,7 @@ def loop_period_next_timeslice(
 
 
 def loop_season_next_timeslice(
-    model: TemoaModel, p: Period, s: Season, d: TimeOfDay
+    model: TemoaModel, s: Season, d: TimeOfDay
 ) -> tuple[Season, TimeOfDay]:
     # We loop each season so never carrying state between seasons
     s_next: Season = s
@@ -268,24 +268,21 @@ def create_time_sequence(model: TemoaModel) -> None:
     match model.time_sequencing.first():
         case 'consecutive_days':
             msg: str = 'Running a consecutive days database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season * model.time_of_day:
-                    model.time_next[p, s, d] = loop_period_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_period_next_timeslice(model, s, d)
         case 'seasonal_timeslices':
             msg = 'Running a seasonal time slice database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season * model.time_of_day:
-                    model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_season_next_timeslice(model, s, d)
         case 'representative_periods':
             msg = 'Running a representative periods database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season * model.time_of_day:
-                    model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_season_next_timeslice(model, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the time_manual table
             msg = 'Pulling time sequence from time_manual table.'
             for p, s, d, s_next, d_next in model.time_manual:
-                model.time_next[p, s, d] = s_next, d_next
+                model.time_next[s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader
             msg = (
@@ -300,15 +297,14 @@ def create_time_sequence(model: TemoaModel) -> None:
 
     logger.debug('Creating superimposed sequential seasons.')
 
-    # Superimposed sequential seasons (global, applied to all periods)
+    # Superimposed sequential seasons (global, period-independent)
     seasons: list[tuple[Season, Season]] = list(model.ordered_season_sequential)
-    for p in model.time_optimize:
-        for i, (s_seq, s) in enumerate(seasons):
-            model.sequential_to_season[p, s_seq] = s
-            if (s_seq, s) == seasons[-1]:
-                model.time_next_sequential[p, s_seq] = seasons[0][0]
-            else:
-                model.time_next_sequential[p, s_seq] = seasons[i + 1][0]
+    for i, (s_seq, s) in enumerate(seasons):
+        model.sequential_to_season[s_seq] = s
+        if (s_seq, s) == seasons[-1]:
+            model.time_next_sequential[s_seq] = seasons[0][0]
+        else:
+            model.time_next_sequential[s_seq] = seasons[i + 1][0]
 
     logger.debug('Created time sequence.')
 

@@ -80,7 +80,7 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
         )
 
-        s_next, d_next = model.time_next[p, s, d]
+        s_next, d_next = model.time_next[s, d]
 
         state = model.v_storage_level[r, p, s, d, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
         next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs

@@ -207,10 +207,9 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
     }
 
     model.seasonal_storage_level_indices_rpstv = {
-        (r, p, s_stor, t, v)
+        (r, p, s_seq, t, v)
         for r, p, t in model.storage_vintages
         if t in model.tech_seasonal_storage
         for v in model.storage_vintages[r, p, t]
-        for _p, s_stor in model.sequential_to_season
-        if _p == p
+        for s_seq in model.sequential_to_season
     }

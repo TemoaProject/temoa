@@ -48,9 +48,9 @@ OutputSplitAnnualVintagesDict = dict[
 
 
 # Time sequencing dictionary types
-TimeNextDict = dict[tuple[Period, Season, TimeOfDay], tuple[Season, TimeOfDay]]
-TimeNextSequentialDict = dict[tuple[Period, Season], Season]
-SequentialToSeasonDict = dict[tuple[Period, Season], Season]
+TimeNextDict = dict[tuple[Season, TimeOfDay], tuple[Season, TimeOfDay]]
+TimeNextSequentialDict = dict[Season, Season]
+SequentialToSeasonDict = dict[Season, Season]
 
 
 # Geography/exchange dictionary types

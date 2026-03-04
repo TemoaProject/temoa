@@ -83,8 +83,8 @@ def ramp_up_season_constraint_indices(
         for r, p, t in model.ramp_up_vintages
         for v in model.ramp_up_vintages[r, p, t]
         for s_seq, s in model.ordered_season_sequential
-        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
-        if s_next != model.time_next[p, s, model.time_of_day.last()][0]
+        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
+        if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
 
     return indices
@@ -102,8 +102,8 @@ def ramp_down_season_constraint_indices(
         for r, p, t in model.ramp_down_vintages
         for v in model.ramp_down_vintages[r, p, t]
         for s_seq, s in model.ordered_season_sequential
-        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
-        if s_next != model.time_next[p, s, model.time_of_day.last()][0]
+        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
+        if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
 
     return indices
@@ -295,7 +295,7 @@ def ramp_up_day_constraint(
     - :math:`CAP \cdot C2A` gives the maximum hourly change in activity
     """
 
-    s_next, d_next = model.time_next[p, s, d]
+    s_next, d_next = model.time_next[s, d]
 
     # How many hours does this time slice represent
     hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
@@ -385,7 +385,7 @@ def ramp_down_day_constraint(
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down\_day}}
     """
 
-    s_next, d_next = model.time_next[p, s, d]
+    s_next, d_next = model.time_next[s, d]
 
     # How many hours does this time slice represent
     hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24

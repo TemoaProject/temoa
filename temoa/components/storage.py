@@ -114,7 +114,7 @@ def storage_energy_constraint(
 
     s_next: Season
     d_next: TimeOfDay
-    s_next, d_next = model.time_next[p, s, d]
+    s_next, d_next = model.time_next[s, d]
 
     expr = (
         model.v_storage_level[r, p, s, d, t, v] + stored_energy
@@ -166,7 +166,7 @@ def seasonal_storage_energy_constraint(
         are each one day.
     """
 
-    s: Season = model.sequential_to_season[p, s_seq]
+    s: Season = model.sequential_to_season[s_seq]
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s
@@ -185,8 +185,8 @@ def seasonal_storage_energy_constraint(
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
     )
 
-    s_seq_next: Season = model.time_next_sequential[p, s_seq]
-    s_next: Season = model.sequential_to_season[p, s_seq_next]
+    s_seq_next: Season = model.time_next_sequential[s_seq]
+    s_next: Season = model.sequential_to_season[s_seq_next]
 
     # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
     # so must
@@ -328,7 +328,7 @@ def seasonal_storage_energy_upper_bound_constraint(
         Unadjusted energy upper bound constraint for seasonal storage.
     """
 
-    s: Season = model.sequential_to_season[p, s_seq]
+    s: Season = model.sequential_to_season[s_seq]
 
     energy_capacity = (
         model.v_capacity[r, p, t, v]
@@ -521,7 +521,7 @@ def limit_storage_fraction_constraint(
 
     if model.is_seasonal_storage[t]:
         s_seq: Season = s  # sequential season
-        s = model.sequential_to_season[p, s_seq]  # non-sequential season
+        s = model.sequential_to_season[s_seq]  # non-sequential season
 
     # adjust the storage level to the individual-day level
     energy_level = model.v_storage_level[r, p, s, d, t, v] / (

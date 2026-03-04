@@ -172,11 +172,11 @@ class TemoaModel(AbstractModel):
         self.import_regions: t.ImportRegionsDict = {}
 
         # These establish time sequencing
-        # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        # {(s, d): (s_next, d_next)} sequence of following time slices
         self.time_next: t.TimeNextDict = {}
-        # {(p, s_seq): (s_seq_next)} next virtual storage season
+        # {s_seq: s_seq_next} next virtual storage season
         self.time_next_sequential: t.TimeNextSequentialDict = {}
-        # {(p, s_seq): (s)} season matching this virtual storage season
+        # {s_seq: s} season matching this virtual storage season
         self.sequential_to_season: t.SequentialToSeasonDict = {}
 
         ################################################
