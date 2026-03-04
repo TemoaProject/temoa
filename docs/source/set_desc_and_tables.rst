@@ -9,7 +9,7 @@ Our discussion of sets is broken down into several logical categories to make it
 easier to parse. The **first group of sets pertains to Temoa's treatment of time**,
 as shown below. **Note:** Some entries in the "Database Table" column are
 comma-separated. In those cases, the first element refers to the name of the database
-table, and the second refers to specific column within the database column used to
+table, and the second refers to specific column within the database table used to
 identify a specific subset. For example, in the first table below, :code:`time_period`
 is the master set and :code:`time_exist` is a subset that defines the user-defined
 model time periods to define historical technology vintages that exist prior to
@@ -79,7 +79,7 @@ technologies.
    ":math:`\text{C}^a`", ":code:`commodity, flag = a`", ":code:`commodity_annual`", "same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`)"
    ":math:`\text{C}^l`", ":code:`commodity, flag = l`", ":code:`commodity_flex`", "(disposable) commodities produced by a flex technology (:math:`\text{C}^l \subset \text{C}^p`)"
    ":math:`\text{C}^s`", ":code:`commodity, flag = s`", ":code:`commodity_source`", "primary source commodities, not balanced by :code:`CommodityBalance_constraint`"
-   ":math:`{}^*\text{C}^c`", "", ":code:`commodity_carrier`", "physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`); union of physical, demand, and waste commodities"
+   ":math:`{}^*\text{C}^c`", "", ":code:`commodity_carrier`", "union of physical, demand, and waste commodities, (:math:`\text{C}_p \cup \text{C}_d \cup \text{C}^w`)"
    ":math:`{}^*\text{C}`", "", ":code:`commodity_all`", "union of all commodity sets; union of carrier and emissions commodities"
 
 There is an additional set that defines **operators (=, <, >)**. While not strictly
@@ -105,7 +105,7 @@ code and thus do not appear in the database schema.
    ":math:`{}^*\text{C}`", ":code:`commodity_all`", "union of all commodity sets; union of carrier and emissions commodities"
    ":math:`\text{T}^e`", ":code:`tech_exist`", "technologies with existing capacity; derived from existing_capacity table"
 
-These are also python dictionaries and sets used to specific internal data
+There are also python dictionaries and sets used to specify internal data
 structures during model construction and are not considered formal model elements:
 
 - :code:`process_inputs`, :code:`process_outputs`, :code:`process_loans`

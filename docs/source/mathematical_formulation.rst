@@ -104,7 +104,7 @@ and demand is balanced at each of these levels:
 
 We use the word 'slice' to refer to the tuple of season and time of day
 :math:`\{s,d\}`. Note that these time slices are user-defined, and can
-represent time ranging large blocks of time (e.g., winter-night) to every
+represent time ranging from large blocks of time (e.g., winter-night) to every
 hour in a given season.
 
 There are two specifiable period sets: :code:`time_exist` (:math:`\text{P}^e`)
@@ -123,7 +123,7 @@ year, and makes them easily accessible via the :code:`time_optimize` set.  This 
 :math:`\text{P}^f = \{2010, 2015, 2025\}`, :code:`time_optimize` does not
 contain 2025: :math:`\text{P}^o =\{2010, 2015\}`.
 
-Temoa assumes that all elements of the :code:`time_existing` and
+Temoa assumes that all elements of the :code:`time_exist` and
 :code:`time_future` sets are integers.  Further, these sets are assumed to be
 ordered, such that the minimum element is "naught".  For example, if
 :math:`\text{P}^f = \{2015, 2020, 2030\}`, then :math:`P_0 = 2015`.  In
@@ -536,7 +536,7 @@ lifetime, then :code:`LifeTimeTech` can be used instead of :code:`LifeTimeProces
 linked_techs
 ^^^^^^^^^^^^
 
-:math:`{LIT}_{r \in R, t \in T, e \in C^e, t \in T}`
+:math:`{LIT}_{r \in R, t \in T, e \in C^e, t' \in T}`
 
 In power-to-gas pathways, :math:`CO2` is an input to some processes, including
 synthetic natural gas production and liquid fuel production via Fischer-Tropsch.
@@ -545,7 +545,7 @@ physical commodity that can be included in the :code:`efficiency` table. The
 :code:`linked_techs` parameter specifies the dummy technology used to convert an
 emissions commodity to a physical commodity. Note that the first :code:`t`
 represents the primary upstream technology linked to the dummy linked technology,
-which is represented by the second :code:`t` index.
+which is represented by the second :code:`t'` index.
 
 
 loan_rate
@@ -924,7 +924,7 @@ each.
    :widths: 18, 22, 50
 
    ":math:`FO_{r,p,s,d,i,t,v,o}`",":code:`v_flow_out`","Commodity flow by time slice out of a tech based on a given input"
-   ":math:`FOA_{r,p,s,d,i,t,v,o}`",":code:`v_flow_out_annual`","Annual commodity flow out of a tech based on a given input"
+   ":math:`FOA_{r,p,i,t,v,o}`",":code:`v_flow_out_annual`","Annual commodity flow out of a tech based on a given input"
    ":math:`FIS_{r,p,s,d,i,t,v,o}`",":code:`v_flow_in`","Commodity flow into a storage tech to produce a given output"
    ":math:`FLX_{r,p,s,d,i,t,v,o}`",":code:`v_flex`","The portion of commodity production exceeding demand"
    ":math:`FLXA_{r,p,i,t,v,o}`",":code:`v_flex_annual`","The portion of commodity production from constant production techs exceeding demand"
@@ -1109,7 +1109,7 @@ variables to distinguish them from parameters. Second, you will notice the use
 of the Theta superset (:math:`\Theta`).  The Temoa code makes heavy use of
 sparse sets, for both correctness and efficient use of computational resources.
 For brevity, and to avoid discussion of implementation details, we do not
-enumerate their logical creation here.  Instead, we rely on the readers general
+enumerate their logical creation here.  Instead, we rely on the reader's general
 understanding of the context. The use of (:math:`\Theta`) means that the
 constraint is only defined for the exact indices that the modeler specified.
 
