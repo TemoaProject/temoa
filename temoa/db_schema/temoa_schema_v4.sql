@@ -928,8 +928,6 @@ REPLACE INTO technology_type
 VALUES ('ps', 'storage production technology');
 -- CREATE TABLE IF NOT EXISTS time_manual
 -- (
---     period       INTEGER
---         REFERENCES time_period (period),
 --     season TEXT
 --        REFERENCES season_label (season),
 --     tod          TEXT
@@ -939,7 +937,7 @@ VALUES ('ps', 'storage production technology');
 --     tod_next     TEXT
 --         REFERENCES time_of_day (tod),
 --     notes        TEXT,
---     PRIMARY KEY (period, season, tod)
+--     PRIMARY KEY (season, tod)
 -- );
 CREATE TABLE IF NOT EXISTS time_of_day
 (

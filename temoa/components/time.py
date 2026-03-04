@@ -147,10 +147,10 @@ def validate_time_manual(model: TemoaModel) -> None:
 
     segment_fraction_sd: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
     time_manual_sd: set[tuple[str, str]] = {
-        (s, d) for p, s, d, s_next, d_next in model.time_manual
+        (s, d) for s, d, s_next, d_next in model.time_manual
     }
     time_manual_sd_next: set[tuple[str, str]] = {
-        (s_next, d_next) for p, s, d, s_next, d_next in model.time_manual
+        (s_next, d_next) for s, d, s_next, d_next in model.time_manual
     }
 
     missing_sd: set[tuple[str, str]] = segment_fraction_sd.difference(time_manual_sd)
@@ -281,7 +281,7 @@ def create_time_sequence(model: TemoaModel) -> None:
         case 'manual':
             # Hidden feature. Define the sequence directly in the time_manual table
             msg = 'Pulling time sequence from time_manual table.'
-            for p, s, d, s_next, d_next in model.time_manual:
+            for s, d, s_next, d_next in model.time_manual:
                 model.time_next[s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader

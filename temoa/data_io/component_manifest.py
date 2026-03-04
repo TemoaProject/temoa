@@ -261,6 +261,13 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
         ),
+        LoadItem(
+            component=model.time_manual,
+            table='time_manual',
+            columns=['season', 'tod', 'season_next', 'tod_next'],
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         # =========================================================================
         # Capacity and Cost Components
         # =========================================================================
