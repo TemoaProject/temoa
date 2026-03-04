@@ -19,14 +19,16 @@ class ExpectedVals(Enum):
 test_vals = {
     'test_system': {
         # reduced after removing ancient 1-year-shift obj function bug
-        ExpectedVals.OBJ_VALUE: 468550.1905,
+        # increased by ~25 after removing period index from storagefrac (more constraints)
+        ExpectedVals.OBJ_VALUE: 468575.0703,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
         # increased by 2 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/25 by 504 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 2810,
+        # increased by 10 after removing period index from storagefrac (more constraints)
+        ExpectedVals.CONSTR_COUNT: 2820,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
