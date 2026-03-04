@@ -4172,12 +4172,10 @@
     ],
     "ordered_season_sequential": [
         [
-            2025,
             "s1",
             "s1"
         ],
         [
-            2025,
             "s2",
             "s2"
         ]
@@ -4310,9 +4308,6 @@
         2025
     ],
     "time_season": [
-        2025
-    ],
-    "time_season_all": [
         "s1",
         "s2"
     ],
