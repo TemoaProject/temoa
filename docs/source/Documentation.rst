@@ -88,38 +88,6 @@ Graphviz also generates static SVG diagrams showing the energy system structure:
    are automatically generated when ``graphviz_output = true`` is set in the
    configuration file.
 
-Output Graphs
--------------
-
-.. warning::
-   The ``make_output_plots.py`` script has not been fully tested with Temoa v4.0
-   and is currently unsupported. Use at your own risk and please report any issues
-   on `GitHub Issues`_.
-
-Temoa can also be used to generate output graphs using `matplotlib <https://matplotlib.org/>`_.
-From the command line, navigate to the :code:`data_processing` folder and execute the
-following command:
-
-.. parsed-literal::
-  $ uv run python temoa/data_processing/make_output_plots.py --help
-
-The command above will specify all of the flags required to create a stacked bar
-or line plot. For example, consider the following command:
-
-.. parsed-literal::
-  $ uv run python temoa/data_processing/make_output_plots.py -i data_files/temoa_utopia.sqlite -s test_run -p capacity -c electric --super
-
-.. figure:: images/output_flow_example.*
-   :align: center
-   :figclass: center
-   :figwidth: 60%
-
-   This stacked bar plot represents the activity (i.e., output commodity flow)
-   associated with each technology in the electric sector from the 'test_run'
-   scenario drawn from the 'temoa_utopia' database. Because the :code:`super`
-   flag was specified, technologies are grouped together based on user-specified
-   categories in the :code:`tech_category` column of the :code:`technologies`
-   table of the database.
 
 =====================
 The Math Behind Temoa
