@@ -344,7 +344,10 @@ def ramp_up_day_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_increase <= rampable_activity
 
@@ -434,7 +437,10 @@ def ramp_down_day_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_decrease <= rampable_activity
 
@@ -509,7 +515,10 @@ def ramp_up_season_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_increase <= rampable_activity
 
@@ -584,7 +593,10 @@ def ramp_down_season_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_decrease <= rampable_activity
 
