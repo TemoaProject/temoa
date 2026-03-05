@@ -1054,23 +1054,23 @@ CREATE TABLE time_season_sequential
     season TEXT REFERENCES time_season(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (sequence, seas_seq, season),
+    PRIMARY KEY (seas_seq),
     CHECK (num_days > 0)
 );
-INSERT INTO "time_season_sequential" VALUES('summer','charge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_w1','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_w2','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_w3','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_w4','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_29th','discharge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('sept_30th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('winter','discharge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_w1','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_w2','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_w3','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_w4','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_29th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES('apr_30th','discharge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(1,'summer','charge',152.5,NULL);
+INSERT INTO "time_season_sequential" VALUES(2,'sept_w1','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(3,'sept_w2','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(4,'sept_w3','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(5,'sept_w4','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(6,'sept_29th','discharge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(7,'sept_30th','charge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(8,'winter','discharge',152.5,NULL);
+INSERT INTO "time_season_sequential" VALUES(9,'apr_w1','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(10,'apr_w2','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(11,'apr_w3','charge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(12,'apr_w4','discharge',7.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(13,'apr_29th','charge',1.0,NULL);
+INSERT INTO "time_season_sequential" VALUES(14,'apr_30th','discharge',1.0,NULL);
 
 CREATE TABLE time_segment_fraction
 (

@@ -1120,10 +1120,10 @@ CREATE TABLE time_season_sequential
         sequence INTEGER,
     seas_seq TEXT,
     season TEXT
-        REFERENCES SeasonLabel (season),
+        REFERENCES time_season (season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (sequence, seas_seq, season),
+    PRIMARY KEY (seas_seq),
     CHECK (num_days > 0)
 );
 CREATE TABLE TimePeriodType

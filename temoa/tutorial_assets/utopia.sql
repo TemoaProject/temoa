@@ -1441,7 +1441,7 @@ CREATE TABLE time_season_sequential
     season TEXT REFERENCES time_season(season),
     num_days REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (sequence, seas_seq, season),
+    PRIMARY KEY (seas_seq),
     CHECK (num_days > 0)
 );
 CREATE TABLE time_season_to_sequential
