@@ -49,8 +49,6 @@ REPLACE INTO "operator" VALUES('e','equal to');
 REPLACE INTO "operator" VALUES('le','less than or equal to');
 REPLACE INTO "operator" VALUES('ge','greater than or equal to');
 REPLACE INTO "region" VALUES('electricville',NULL);
-REPLACE INTO "season_label" VALUES('s1',NULL);
-REPLACE INTO "season_label" VALUES('s2',NULL);
 REPLACE INTO "sector_label" VALUES('supply',NULL);
 REPLACE INTO "sector_label" VALUES('electric',NULL);
 REPLACE INTO "sector_label" VALUES('transport',NULL);

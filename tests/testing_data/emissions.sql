@@ -75,7 +75,6 @@ REPLACE INTO "operator" VALUES('e','equal to');
 REPLACE INTO "operator" VALUES('le','less than or equal to');
 REPLACE INTO "operator" VALUES('ge','greater than or equal to');
 REPLACE INTO "region" VALUES('Testregion',NULL);
-REPLACE INTO "season_label" VALUES('S1',NULL);
 REPLACE INTO "technology" VALUES('TechAnnual','p','energy',NULL,NULL,0,1,0,0,0,0,0,0,NULL);
 REPLACE INTO "technology" VALUES('TechFlex','p','energy',NULL,NULL,0,0,0,0,0,1,0,0,NULL);
 REPLACE INTO "technology" VALUES('TechOrdinary','p','energy',NULL,NULL,0,0,0,0,0,0,0,0,NULL);

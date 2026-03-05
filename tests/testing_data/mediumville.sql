@@ -155,8 +155,6 @@ REPLACE INTO "ramp_up_hourly" VALUES('A','EH',0.05,NULL);
 REPLACE INTO "region" VALUES('A','main region');
 REPLACE INTO "region" VALUES('B','just a 2nd region');
 REPLACE INTO "rps_requirement" VALUES('B',2025,'RPS_common',0.3,NULL);
-REPLACE INTO "season_label" VALUES('s1',NULL);
-REPLACE INTO "season_label" VALUES('s2',NULL);
 REPLACE INTO "sector_label" VALUES('supply',NULL);
 REPLACE INTO "sector_label" VALUES('electric',NULL);
 REPLACE INTO "sector_label" VALUES('transport',NULL);

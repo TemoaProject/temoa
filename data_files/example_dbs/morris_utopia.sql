@@ -16,7 +16,7 @@ CREATE TABLE capacity_factor_process
 (
     region  TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -43,7 +43,7 @@ CREATE TABLE capacity_factor_tech
 (
     region TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
@@ -399,7 +399,7 @@ CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
@@ -503,7 +503,7 @@ CREATE TABLE efficiency_variable
 (
     region      TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -883,7 +883,7 @@ CREATE TABLE limit_seasonal_capacity_factor
 	region  TEXT
         REFERENCES region (region),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -896,7 +896,7 @@ CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
@@ -1137,7 +1137,7 @@ CREATE TABLE output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -1160,7 +1160,7 @@ CREATE TABLE output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -1235,7 +1235,7 @@ CREATE TABLE output_storage_level
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -1282,7 +1282,7 @@ CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
@@ -1302,14 +1302,6 @@ CREATE TABLE rps_requirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO "season_label" VALUES('inter',NULL);
-INSERT INTO "season_label" VALUES('summer',NULL);
-INSERT INTO "season_label" VALUES('winter',NULL);
 CREATE TABLE sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -1423,9 +1415,9 @@ INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
     sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    season TEXT,
     notes TEXT,
-    PRIMARY KEY (sequence, season)
+    PRIMARY KEY (season)
 );
 INSERT INTO "time_season" VALUES(0,'summer',NULL);
 INSERT INTO "time_season" VALUES(1,'winter',NULL);
@@ -1435,7 +1427,7 @@ CREATE TABLE time_season_sequential
 (
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
+    season TEXT REFERENCES time_season(season),
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (sequence, seas_seq, season),
@@ -1445,7 +1437,7 @@ CREATE TABLE time_season_sequential
 CREATE TABLE time_segment_fraction
 (
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,

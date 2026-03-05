@@ -39,11 +39,6 @@ CREATE TABLE IF NOT EXISTS output_objective
     objective_name    TEXT,
     total_system_cost REAL
 );
-CREATE TABLE IF NOT EXISTS season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
 CREATE TABLE IF NOT EXISTS sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -68,7 +63,7 @@ CREATE TABLE IF NOT EXISTS capacity_factor_process
     period  INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -85,7 +80,7 @@ CREATE TABLE IF NOT EXISTS capacity_factor_tech
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
@@ -220,7 +215,7 @@ CREATE TABLE IF NOT EXISTS demand_specific_distribution
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
@@ -267,7 +262,7 @@ CREATE TABLE IF NOT EXISTS efficiency_variable
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -478,7 +473,7 @@ CREATE TABLE IF NOT EXISTS limit_storage_level_fraction
     period   INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
@@ -603,7 +598,7 @@ CREATE TABLE IF NOT EXISTS limit_seasonal_capacity_factor
 	period	INTEGER
         REFERENCES time_period (period),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -777,7 +772,7 @@ CREATE TABLE IF NOT EXISTS output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -801,7 +796,7 @@ CREATE TABLE IF NOT EXISTS output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -825,7 +820,7 @@ CREATE TABLE IF NOT EXISTS output_storage_level
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -874,7 +869,7 @@ CREATE TABLE IF NOT EXISTS reserve_capacity_derate
     period  INTEGER
         REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
@@ -886,7 +881,7 @@ CREATE TABLE IF NOT EXISTS reserve_capacity_derate
 CREATE TABLE IF NOT EXISTS time_segment_fraction
 (
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
@@ -929,11 +924,11 @@ VALUES ('ps', 'storage production technology');
 -- CREATE TABLE IF NOT EXISTS time_manual
 -- (
 --     season TEXT
---        REFERENCES season_label (season),
+--        REFERENCES time_season (season),
 --     tod          TEXT
 --         REFERENCES time_of_day (tod),
 --     season_next TEXT
---        REFERENCES season_label (season),
+--        REFERENCES time_season (season),
 --     tod_next     TEXT
 --         REFERENCES time_of_day (tod),
 --     notes        TEXT,
@@ -1043,16 +1038,16 @@ CREATE TABLE IF NOT EXISTS output_cost
 CREATE TABLE IF NOT EXISTS time_season
 (
     sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    season TEXT,
     notes TEXT,
-    PRIMARY KEY (sequence, season)
+    PRIMARY KEY (season)
 );
 
 CREATE TABLE IF NOT EXISTS time_season_sequential
 (
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
+    season TEXT REFERENCES time_season(season),
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (sequence, seas_seq, season),

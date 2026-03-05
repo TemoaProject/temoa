@@ -16,7 +16,7 @@ CREATE TABLE capacity_factor_process
 (
     region  TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -31,7 +31,7 @@ CREATE TABLE capacity_factor_tech
 (
     region TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
@@ -176,7 +176,7 @@ CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
@@ -218,7 +218,7 @@ CREATE TABLE efficiency_variable
 (
     region      TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -534,7 +534,7 @@ CREATE TABLE limit_seasonal_capacity_factor
 	region  TEXT
         REFERENCES region (region),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
@@ -547,7 +547,7 @@ CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
@@ -783,7 +783,7 @@ CREATE TABLE output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -806,7 +806,7 @@ CREATE TABLE output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -881,7 +881,7 @@ CREATE TABLE output_storage_level
     period INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -928,7 +928,7 @@ CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
@@ -948,27 +948,6 @@ CREATE TABLE rps_requirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO "season_label" VALUES('charge','non-sequential season - charging day');
-INSERT INTO "season_label" VALUES('discharge','non-sequential season - discharging day');
-INSERT INTO "season_label" VALUES('summer','sequential season - summer day');
-INSERT INTO "season_label" VALUES('sept_w1','sequential season - day in first week of September');
-INSERT INTO "season_label" VALUES('sept_w2','sequential season - day in second week of September');
-INSERT INTO "season_label" VALUES('sept_w3','sequential season - day in third week of September');
-INSERT INTO "season_label" VALUES('sept_w4','sequential season - day in fourth week of September');
-INSERT INTO "season_label" VALUES('sept_29th','sequential season - 29th of September');
-INSERT INTO "season_label" VALUES('sept_30th','sequential season - 30th of September');
-INSERT INTO "season_label" VALUES('winter','sequential season - winter day');
-INSERT INTO "season_label" VALUES('apr_w1','sequential season - day in first week of September');
-INSERT INTO "season_label" VALUES('apr_w2','sequential season - day in second week of September');
-INSERT INTO "season_label" VALUES('apr_w3','sequential season - day in third week of September');
-INSERT INTO "season_label" VALUES('apr_w4','sequential season - day in fourth week of September');
-INSERT INTO "season_label" VALUES('apr_29th','sequential season - 29th of April');
-INSERT INTO "season_label" VALUES('apr_30th','sequential season - 30th of April');
 CREATE TABLE sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -1061,9 +1040,9 @@ INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
     sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    season TEXT,
     notes TEXT,
-    PRIMARY KEY (sequence, season)
+    PRIMARY KEY (season)
 );
 INSERT INTO "time_season" VALUES(0,'charge',NULL);
 INSERT INTO "time_season" VALUES(1,'discharge',NULL);
@@ -1072,7 +1051,7 @@ CREATE TABLE time_season_sequential
 (
     sequence INTEGER,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
+    season TEXT REFERENCES time_season(season),
     num_days REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (sequence, seas_seq, season),
@@ -1096,7 +1075,7 @@ INSERT INTO "time_season_sequential" VALUES('apr_30th','discharge',1.0,NULL);
 CREATE TABLE time_segment_fraction
 (
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     segment_fraction REAL,
