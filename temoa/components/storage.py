@@ -13,6 +13,7 @@ including:
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
@@ -23,6 +24,9 @@ if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
 
     from ..types import ExprLike, Period, Region, Season, Technology, TimeOfDay, Vintage
+
+
+logger = getLogger(__name__)
 
 
 # ============================================================================
@@ -65,16 +69,33 @@ def limit_storage_fraction_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, str]]:
     """Expand the period-free param set to include all valid process (period, vintage) combos."""
-    param_keys = set(model.limit_storage_fraction_param_rsdt)
-    all_storage = set(model.storage_constraints_rpsdtv) | set(
-        model.seasonal_storage_constraints_rpsdtv
+
+    bad_keys = set(
+        (r, s, d, t, op)
+        for r, s, d, t, op in model.limit_storage_fraction_param_rsdt
+        if (not model.is_seasonal_storage[t]) != (s in model.time_season)
     )
-    result: set[tuple] = set()
-    for r, p, s, d, t, v in all_storage:
-        for op in model.operator:
-            if (r, s, d, t, op) in param_keys:
-                result.add((r, p, s, d, t, v, op))
-    return result
+    if bad_keys:
+        msg = (
+            "Bad keys identified in limit_storage_level_fraction table. "
+            "Regular season used for seasonal storage or sequential season "
+            f"used for diurnal storage. Bad keys: {bad_keys}"
+        )
+        logger.error(msg)
+        raise ValueError(msg)
+    
+    all_storage_constraints = set(
+        model.storage_constraints_rpsdtv | model.seasonal_storage_constraints_rpsdtv
+    )
+    valid_keys = set(
+        (r, p, s, d, t, v, op)
+        for r, s, d, t, op in model.limit_storage_fraction_param_rsdt
+        for p in model.time_optimize
+        for v in model.process_vintages.get((r, p, t), [])
+        if (r, p, s, d, t, v) in all_storage_constraints
+    )
+
+    return valid_keys
 
 
 # ============================================================================
