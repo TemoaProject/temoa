@@ -1419,7 +1419,8 @@ CREATE TABLE time_season
     season TEXT,
     segment_fraction REAL,
     notes TEXT,
-    PRIMARY KEY (season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction > 0 AND segment_fraction < 1)
 );
 INSERT INTO "time_season" VALUES(0,'summer',0.25,NULL);
 INSERT INTO "time_season" VALUES(1,'winter',0.5,NULL);
@@ -1433,7 +1434,7 @@ CREATE TABLE time_season_sequential
     segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (segment_fraction > 0)
+    CHECK (segment_fraction > 0 AND segment_fraction < 1)
 );
 
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);

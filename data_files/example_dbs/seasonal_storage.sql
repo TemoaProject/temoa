@@ -1044,7 +1044,8 @@ CREATE TABLE time_season
     season TEXT,
     segment_fraction REAL,
     notes TEXT,
-    PRIMARY KEY (season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction > 0 AND segment_fraction < 1)
 );
 INSERT INTO "time_season" VALUES(0,'charge',0.5,NULL);
 INSERT INTO "time_season" VALUES(1,'discharge',0.5,NULL);
@@ -1057,7 +1058,7 @@ CREATE TABLE time_season_sequential
     segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (segment_fraction > 0)
+    CHECK (segment_fraction > 0 AND segment_fraction < 1)
 );
 INSERT INTO "time_season_sequential" VALUES(1,'summer','charge',0.417808,NULL);
 INSERT INTO "time_season_sequential" VALUES(2,'sept_w1','discharge',0.019178,NULL);
