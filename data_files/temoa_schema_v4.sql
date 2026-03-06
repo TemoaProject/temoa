@@ -938,7 +938,9 @@ CREATE TABLE IF NOT EXISTS time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    INTEGER NOT NULL DEFAULT 1,
+    notes    TEXT
 );
 CREATE TABLE IF NOT EXISTS time_period
 (

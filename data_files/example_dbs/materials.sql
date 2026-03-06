@@ -1347,12 +1347,14 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    INTEGER NOT NULL DEFAULT 1,
+    notes    TEXT
 );
-INSERT INTO "time_of_day" VALUES(1,'morning');
-INSERT INTO "time_of_day" VALUES(2,'afternoon');
-INSERT INTO "time_of_day" VALUES(3,'evening');
-INSERT INTO "time_of_day" VALUES(4,'overnight');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(1,'morning',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(2,'afternoon',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(3,'evening',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(4,'overnight',6);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,

@@ -1397,10 +1397,12 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    INTEGER NOT NULL DEFAULT 1,
+    notes    TEXT
 );
-INSERT INTO "time_of_day" VALUES(1,'day');
-INSERT INTO "time_of_day" VALUES(2,'night');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(1,'day',16);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(2,'night',8);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,

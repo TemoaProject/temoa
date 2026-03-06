@@ -48,7 +48,7 @@ REPLACE INTO "technology" VALUES('FAKE_SOURCE','p','supply',NULL,NULL,1,0,0,0,0,
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-REPLACE INTO "time_of_day" VALUES(1,'day');
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(1,'day',24);
 REPLACE INTO "time_period" VALUES(0,1995,'e');
 REPLACE INTO "time_period" VALUES(1,2000,'f');
 REPLACE INTO "time_period" VALUES(2,2005,'f');

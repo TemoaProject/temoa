@@ -238,6 +238,13 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             fallback_data=[('D',)],
         ),
         LoadItem(
+            component=model.time_of_day_hours,
+            table='time_of_day',
+            columns=['tod', 'hours'],
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
+        LoadItem(
             component=model.time_season,
             table='time_season',
             columns=['season'],

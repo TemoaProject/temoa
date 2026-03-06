@@ -157,7 +157,7 @@ REPLACE INTO "technology" VALUES('tech_future','p','energy',NULL,NULL,0,0,0,0,0,
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-REPLACE INTO "time_of_day" VALUES(0,'d');
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(0,'d',24);
 REPLACE INTO "time_period" VALUES(-2,1994,'e');
 REPLACE INTO "time_period" VALUES(-1,2010,'e');
 REPLACE INTO "time_period" VALUES(0,2025,'f');

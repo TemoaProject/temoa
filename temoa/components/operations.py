@@ -323,14 +323,8 @@ def ramp_up_day_constraint(
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[s, d]) / value(model.segment_fraction_per_season[s])
-            + value(model.segment_fraction[s_next, d_next])
-            / value(model.segment_fraction_per_season[s_next])
-        )
-    )
+        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
+    ) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -416,14 +410,8 @@ def ramp_down_day_constraint(
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[s, d]) / value(model.segment_fraction_per_season[s])
-            + value(model.segment_fraction[s_next, d_next])
-            / value(model.segment_fraction_per_season[s_next])
-        )
-    )
+        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
+    ) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -494,14 +482,8 @@ def ramp_up_season_constraint(
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[s, d]) / value(model.segment_fraction_per_season[s])
-            + value(model.segment_fraction[s_next, d_next])
-            / value(model.segment_fraction_per_season[s_next])
-        )
-    )
+        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
+    ) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -572,14 +554,8 @@ def ramp_down_season_constraint(
 
     # elapsed hours from middle of this time slice to middle of next time slice
     hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[s, d]) / value(model.segment_fraction_per_season[s])
-            + value(model.segment_fraction[s_next, d_next])
-            / value(model.segment_fraction_per_season[s_next])
-        )
-    )
+        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
+    ) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:

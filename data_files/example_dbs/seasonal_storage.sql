@@ -1013,12 +1013,14 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    INTEGER NOT NULL DEFAULT 1,
+    notes    TEXT
 );
-INSERT INTO "time_of_day" VALUES(0,'a');
-INSERT INTO "time_of_day" VALUES(1,'b');
-INSERT INTO "time_of_day" VALUES(2,'c');
-INSERT INTO "time_of_day" VALUES(3,'d');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(0,'a',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(1,'b',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(2,'c',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(3,'d',6);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,

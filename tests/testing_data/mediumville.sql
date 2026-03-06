@@ -180,8 +180,8 @@ REPLACE INTO "technology" VALUES('GeoHeater','p','residential','hydro','',0,0,0,
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-REPLACE INTO "time_of_day" VALUES(1,'d1');
-REPLACE INTO "time_of_day" VALUES(2,'d2');
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(1,'d1',12);
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(2,'d2',12);
 REPLACE INTO "time_period" VALUES(1,2020,'e');
 REPLACE INTO "time_period" VALUES(2,2025,'f');
 REPLACE INTO "time_period" VALUES(3,2030,'f');

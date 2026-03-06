@@ -362,10 +362,10 @@ REPLACE INTO "technology" VALUES('ELEC_INTERTIE','p','electricity',NULL,NULL,0,0
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-REPLACE INTO "time_of_day" VALUES(1,'morning');
-REPLACE INTO "time_of_day" VALUES(2,'afternoon');
-REPLACE INTO "time_of_day" VALUES(3,'evening');
-REPLACE INTO "time_of_day" VALUES(4,'overnight');
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(1,'morning',6);
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(2,'afternoon',6);
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(3,'evening',6);
+REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(4,'overnight',6);
 REPLACE INTO "time_period" VALUES(1,1990,'e');
 REPLACE INTO "time_period" VALUES(2,2000,'f');
 REPLACE INTO "time_period" VALUES(3,2010,'f');
