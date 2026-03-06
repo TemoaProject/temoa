@@ -41,7 +41,8 @@ test_vals = {
         # reduced after removing ancient 1-year-shift obj function bug
         # increased after rework of inter-season sequencing
         # reduced after changing fixed costs from MLP to PL
-        ExpectedVals.OBJ_VALUE: 34711.5173,
+        # reduced by <1 after changing season definition (segfrac no longer rounded)
+        ExpectedVals.OBJ_VALUE: 34710.6730,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.
