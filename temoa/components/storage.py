@@ -204,14 +204,15 @@ def seasonal_storage_energy_constraint(
     s_seq_next: Season = model.time_next_sequential[s_seq]
     s_next: Season = model.sequential_to_season[s_seq_next]
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
-    # so must
-    # be adjusted to the number of days in the sequential season
-    days_adjust = value(model.time_season_sequential[s_seq, s]) / (
-        value(model.segment_fraction_per_season[s]) * value(model.days_per_period)
+    # Flows and StorageLevel are adjusted for the weight of seasons and so must be 
+    # readjusted for the relative weight of the sequential season
+    days_adjust = (
+        value(model.time_season_sequential[s_seq, s])
+        / value(model.segment_fraction_per_season[s])
     )
-    days_adjust_next = value(model.time_season_sequential[s_seq_next, s_next]) / (
-        value(model.segment_fraction_per_season[s_next]) * value(model.days_per_period)
+    days_adjust_next = (
+        value(model.time_season_sequential[s_seq_next, s_next])
+        / value(model.segment_fraction_per_season[s_next])
     )
 
     stored_energy = (charge - discharge) * days_adjust
@@ -352,11 +353,11 @@ def seasonal_storage_energy_upper_bound_constraint(
         * (value(model.storage_duration[r, t]) / (24 * value(model.days_per_period)))
     )
 
-    # Flows and StorageLevel are normalised to the number of days in the non-sequential season,
-    # so must
-    # be adjusted to the number of days in the sequential season
-    days_adjust = value(model.time_season_sequential[s_seq, s]) / (
-        value(model.segment_fraction_per_season[s]) * value(model.days_per_period)
+    # Flows and StorageLevel are adjusted for the weight of seasons and so must be 
+    # readjusted for the relative weight of the sequential season
+    days_adjust = (
+        value(model.time_season_sequential[s_seq, s])
+        / value(model.segment_fraction_per_season[s])
     )
 
     # v_storage_level tracks the running cumulative delta in the non-sequential season,
