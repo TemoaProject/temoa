@@ -548,7 +548,7 @@ def limit_storage_fraction_constraint(
     if model.is_seasonal_storage[t]:
         # seasonal storage upper energy limit is absolute
         energy_level = model.v_seasonal_storage_level[r, p, s_seq, t, v] + energy_level * value(
-            model.time_season_sequential[s_seq, s]
+            model.time_season_sequential[s_seq, s] * value(model.days_per_period)
         )
 
     expr = operator_expression(energy_level, Operator(op), energy_limit)
