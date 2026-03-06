@@ -462,8 +462,7 @@ CREATE TABLE IF NOT EXISTS limit_degrowth_new_capacity_delta
 CREATE TABLE IF NOT EXISTS limit_storage_level_fraction
 (
     region   TEXT,
-    season TEXT
-        REFERENCES time_season (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT

@@ -813,8 +813,7 @@ CREATE TABLE limit_seasonal_capacity_factor
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    season TEXT
-        REFERENCES time_season (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
