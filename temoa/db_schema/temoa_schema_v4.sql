@@ -1015,7 +1015,7 @@ CREATE TABLE IF NOT EXISTS time_season
     segment_fraction REAL,
     notes TEXT,
     PRIMARY KEY (season),
-    CHECK (segment_fraction > 0 AND segment_fraction < 1)
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 
 CREATE TABLE IF NOT EXISTS time_season_sequential
@@ -1026,7 +1026,7 @@ CREATE TABLE IF NOT EXISTS time_season_sequential
     segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (segment_fraction > 0 AND segment_fraction < 1)
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 
 CREATE TABLE IF NOT EXISTS myopic_efficiency
