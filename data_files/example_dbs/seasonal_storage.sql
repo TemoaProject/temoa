@@ -1013,7 +1013,7 @@ CREATE TABLE time_of_day
     sequence INTEGER UNIQUE,
     tod      TEXT
         PRIMARY KEY,
-    hours    INTEGER NOT NULL DEFAULT 1,
+    hours    REAL NOT NULL DEFAULT 1,
     notes    TEXT
 );
 INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(0,'a',6);
