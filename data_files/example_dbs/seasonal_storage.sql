@@ -557,8 +557,8 @@ CREATE TABLE limit_storage_level_fraction
     notes    TEXT,
     PRIMARY KEY(region, season, tod, tech, operator)
 );
-INSERT INTO "limit_storage_level_fraction" VALUES('region','winter','b','seas_stor',2000,0.5,NULL);
-INSERT INTO "limit_storage_level_fraction" VALUES('region','charge','b','dly_stor',2000,0.5,NULL);
+INSERT INTO "limit_storage_level_fraction" VALUES('region','winter','b','seas_stor','e',0.5,NULL);
+INSERT INTO "limit_storage_level_fraction" VALUES('region','charge','b','dly_stor','e',0.5,NULL);
 CREATE TABLE limit_tech_input_split
 (
     region         TEXT,

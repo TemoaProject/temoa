@@ -896,8 +896,8 @@ CREATE TABLE limit_storage_level_fraction
     notes    TEXT,
     PRIMARY KEY(region, season, tod, tech, operator)
 );
-INSERT INTO "limit_storage_level_fraction" VALUES('R1','winter','day','E_BATT',2025,0.5,'');
-INSERT INTO "limit_storage_level_fraction" VALUES('R2','summer','day','E_BATT',2020,0.5,'');
+INSERT INTO "limit_storage_level_fraction" VALUES('R1','winter','day','E_BATT','e',0.5,'');
+INSERT INTO "limit_storage_level_fraction" VALUES('R2','summer','day','E_BATT','e',0.5,'');
 CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
