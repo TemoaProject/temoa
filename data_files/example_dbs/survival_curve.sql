@@ -1144,33 +1144,22 @@ CREATE TABLE time_season
 (
     sequence INTEGER,
     season TEXT,
+    segment_fraction REAL,
     notes TEXT,
     PRIMARY KEY (season)
 );
-INSERT INTO "time_season" VALUES(0,'s',NULL);
+INSERT INTO "time_season" VALUES(0,'s',1.0,NULL);
 
 CREATE TABLE time_season_sequential
 (
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES time_season(season),
-    num_days REAL NOT NULL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (num_days > 0)
+    CHECK (segment_fraction > 0)
 );
 
-CREATE TABLE time_segment_fraction
-(
-    season TEXT
-        REFERENCES time_season (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (season, tod),
-    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
-);
-INSERT INTO "time_segment_fraction" VALUES('s', 'd', 1.0, NULL);
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

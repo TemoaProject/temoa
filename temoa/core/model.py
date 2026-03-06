@@ -329,7 +329,7 @@ class TemoaModel(AbstractModel):
 
         # Define time-related parameters
         self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
-        self.segment_fraction = Param(self.time_season, self.time_of_day)
+        self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
         self.time_of_day_hours = Param(self.time_of_day, default=1)
         self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
         self.time_sequencing = Set()  # How do states carry between time segments?
@@ -494,10 +494,7 @@ class TemoaModel(AbstractModel):
 
         # Set up representation of time
         self.days_per_period = Param()
-        self.segment_fraction_per_season = Param(
-            self.time_season,
-            initialize=time.segment_fraction_per_season_rule,
-        )
+        self.segment_fraction_per_season = Param(self.time_season)
         self.time_season_sequential = Param(
             self.time_season_to_sequential, self.time_season, mutable=True
         )

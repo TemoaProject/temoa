@@ -94,6 +94,4 @@ REPLACE INTO "time_period" VALUES(3,2005,'f');
 REPLACE INTO "time_period" VALUES(4,2010,'f');
 REPLACE INTO "time_period_type" VALUES('e','existing vintages');
 REPLACE INTO "time_period_type" VALUES('f','future');
-REPLACE INTO "time_season" VALUES(1,'S1',NULL);
-REPLACE INTO "time_segment_fraction" VALUES('S1', 'TOD1', 0.5, NULL);
-REPLACE INTO "time_segment_fraction" VALUES('S1', 'TOD2', 0.5, NULL);
+REPLACE INTO "time_season" VALUES(1,'S1',1.0,NULL);

@@ -1121,10 +1121,10 @@ CREATE TABLE time_season_sequential
     seas_seq TEXT,
     season TEXT
         REFERENCES time_season (season),
-    num_days REAL NOT NULL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (num_days > 0)
+    CHECK (segment_fraction > 0)
 );
 CREATE TABLE TimePeriodType
 (

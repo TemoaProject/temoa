@@ -862,17 +862,6 @@ CREATE TABLE IF NOT EXISTS reserve_capacity_derate
     PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
-CREATE TABLE IF NOT EXISTS time_segment_fraction
-(
-    season TEXT
-        REFERENCES time_season (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (season, tod),
-    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
-);
 CREATE TABLE IF NOT EXISTS storage_duration
 (
     region   TEXT,
@@ -1025,6 +1014,7 @@ CREATE TABLE IF NOT EXISTS time_season
 (
     sequence INTEGER,
     season TEXT,
+    segment_fraction REAL,
     notes TEXT,
     PRIMARY KEY (season)
 );
@@ -1034,10 +1024,10 @@ CREATE TABLE IF NOT EXISTS time_season_sequential
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES time_season(season),
-    num_days REAL NOT NULL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (num_days > 0)
+    CHECK (segment_fraction > 0)
 );
 
 CREATE TABLE IF NOT EXISTS myopic_efficiency

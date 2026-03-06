@@ -1425,43 +1425,25 @@ CREATE TABLE time_season
 (
     sequence INTEGER,
     season TEXT,
+    segment_fraction REAL,
     notes TEXT,
     PRIMARY KEY (season)
 );
-INSERT INTO "time_season" VALUES(0,'spring',NULL);
-INSERT INTO "time_season" VALUES(1,'summer',NULL);
-INSERT INTO "time_season" VALUES(2,'fall',NULL);
-INSERT INTO "time_season" VALUES(3,'winter',NULL);
+INSERT INTO "time_season" VALUES(0,'spring',0.25,NULL);
+INSERT INTO "time_season" VALUES(1,'summer',0.25,NULL);
+INSERT INTO "time_season" VALUES(2,'fall',0.25,NULL);
+INSERT INTO "time_season" VALUES(3,'winter',0.25,NULL);
 
 CREATE TABLE time_season_sequential
 (
     sequence INTEGER,
     seas_seq TEXT,
     season TEXT REFERENCES time_season(season),
-    num_days REAL NOT NULL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (seas_seq),
-    CHECK (num_days > 0)
+    CHECK (segment_fraction > 0)
 );
 
-CREATE TABLE time_segment_fraction
-(
-    season TEXT
-        REFERENCES time_season (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (season, tod),
-    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
-);
-INSERT INTO "time_segment_fraction" VALUES('spring', 'day', 0.125, 'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES('spring', 'night', 0.125, 'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES('summer', 'day', 0.125, 'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES('summer', 'night', 0.125, 'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES('fall', 'day', 0.125, 'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES('fall', 'night', 0.125, 'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES('winter', 'day', 0.125, 'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES('winter', 'night', 0.125, 'Winter - Night');
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

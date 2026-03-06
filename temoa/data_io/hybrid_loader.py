@@ -573,23 +573,6 @@ class HybridLoader:
             seq_data = sorted({(row[0],) for row in filtered_data})
             self._load_component_data(data, model.time_season_to_sequential, seq_data)
 
-    def _load_segment_fraction(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles dynamic fallbacks for segment_fraction if its table is missing."""
-        model = TemoaModel()
-        if filtered_data:
-            self._load_component_data(data, model.segment_fraction, filtered_data)
-        else:
-            logger.warning(
-                'No segment_fraction table found. Generating default segment_fraction values.'
-            )
-            fallback: list[tuple[object, ...]] = [('S', 'D', 1.0)]
-            self._load_component_data(data, model.segment_fraction, fallback)
-
     # --- Capacity and Cost Components ---
     def _load_existing_capacity(
         self,
