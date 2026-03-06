@@ -327,12 +327,25 @@ class TemoaModel(AbstractModel):
 
         self.global_discount_rate = Param(default=0.05)
 
+        # These need to come before validate_season_sequential as they tell us whether
+        # we need sequential seasons
+        self.ramp_up_hourly = Param(self.regions, self.tech_upramping, validate=validate_0to1)
+        self.ramp_down_hourly = Param(self.regions, self.tech_downramping, validate=validate_0to1)
+
         # Define time-related parameters
-        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
-        self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
-        self.time_of_day_hours = Param(self.time_of_day, default=1)
-        self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
+        # Basic period construction
         self.time_sequencing = Set()  # How do states carry between time segments?
+        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
+        self.days_per_period = Param()
+        self.time_of_day_hours = Param(self.time_of_day, default=1)
+        self.segment_fraction_per_season = Param(self.time_season)
+        self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
+        self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
+        self.time_season_sequential = Param(
+            self.time_season_to_sequential, self.time_season, mutable=True
+        )
+        self.validate_season_sequential = BuildAction(rule=time.create_time_season_to_sequential)
+        self.create_time_sequence = BuildAction(rule=time.create_time_sequence)
         self.time_manual = Set(
             ordered=True
         )  # This is just to get data from the table. Hidden feature and usually not used
@@ -487,19 +500,6 @@ class TemoaModel(AbstractModel):
         self.renewable_portfolio_standard = Param(
             self.renewable_portfolio_standard_constraint_rpg, validate=validate_0to1
         )
-
-        # These need to come before validate_season_sequential
-        self.ramp_up_hourly = Param(self.regions, self.tech_upramping, validate=validate_0to1)
-        self.ramp_down_hourly = Param(self.regions, self.tech_downramping, validate=validate_0to1)
-
-        # Set up representation of time
-        self.days_per_period = Param()
-        self.segment_fraction_per_season = Param(self.time_season)
-        self.time_season_sequential = Param(
-            self.time_season_to_sequential, self.time_season, mutable=True
-        )
-        self.validate_season_sequential = BuildAction(rule=time.create_time_season_to_sequential)
-        self.create_time_sequence = BuildAction(rule=time.create_time_sequence)
 
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
