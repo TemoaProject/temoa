@@ -979,8 +979,7 @@ CREATE TABLE output_storage_level
         REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES time_season (season),
+    season TEXT,
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
