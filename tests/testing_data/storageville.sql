@@ -63,11 +63,11 @@ REPLACE INTO "technology" VALUES('batt','ps','electric','electric','',0,0,0,0,0,
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(1,'d1', 4.8);
-REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(2,'d2', 4.8);
-REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(3,'d3', 4.8);
-REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(4,'d4', 4.8);
-REPLACE INTO "time_of_day" (sequence, tod, hours) VALUES(5,'d5', 4.8);
+REPLACE INTO "time_of_day" VALUES(1,'d1', 4.8, NULL);
+REPLACE INTO "time_of_day" VALUES(2,'d2', 4.8, NULL);
+REPLACE INTO "time_of_day" VALUES(3,'d3', 4.8, NULL);
+REPLACE INTO "time_of_day" VALUES(4,'d4', 4.8, NULL);
+REPLACE INTO "time_of_day" VALUES(5,'d5', 4.8, NULL);
 REPLACE INTO "time_period" VALUES(1,2020,'e');
 REPLACE INTO "time_period" VALUES(2,2025,'f');
 REPLACE INTO "time_period" VALUES(3,2030,'f');
