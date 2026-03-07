@@ -429,8 +429,8 @@ REPLACE INTO "technology" VALUES('TXG','p','transport','petroleum','',0,0,0,0,0,
 REPLACE INTO "technology_type" VALUES('p','production technology');
 REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
-INSERT INTO "time_of_day" VALUES(1,'day',16,NULL);
-INSERT INTO "time_of_day" VALUES(2,'night',8,NULL);
+REPLACE INTO "time_of_day" VALUES(1,'day',16,NULL);
+REPLACE INTO "time_of_day" VALUES(2,'night',8,NULL);
 REPLACE INTO "time_period" VALUES(1,1960,'e');
 REPLACE INTO "time_period" VALUES(2,1970,'e');
 REPLACE INTO "time_period" VALUES(3,1980,'e');
