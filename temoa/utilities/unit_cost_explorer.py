@@ -124,12 +124,17 @@ model.segment_fraction.construct(
     }
 )
 # QA the total
-print(f'quality check.  Total of all segment_fraction: {sum(model.segment_fraction.values()):0.3f}')
+print(
+    'quality check.  Total of all segment_fraction: '
+    f'{sum(value(v) for v in model.segment_fraction.values()):0.3f}'
+)
 model.process_life_frac.construct(data={('A', 2020, 'battery', 2020): 1.0})
 
 # More VARS
 model.v_storage_level.construct()
-model.segment_fraction_per_season.construct()
+model.segment_fraction_per_season.construct(
+    data=seasonal_fractions
+)
 
 model.is_seasonal_storage['battery'] = False
 upper_limit = storage_energy_upper_bound_constraint(model, 'A', 2020, 'winter', 1, 'battery', 2020)
