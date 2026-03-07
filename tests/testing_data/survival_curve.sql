@@ -170,8 +170,3 @@ REPLACE INTO "time_period" VALUES(6,2055,'f');
 REPLACE INTO "time_period_type" VALUES('e','existing vintages');
 REPLACE INTO "time_period_type" VALUES('f','future');
 REPLACE INTO "time_season" VALUES(0,'s',1.0,NULL);
-REPLACE INTO "time_season" VALUES(1,'s',1.0,NULL);
-REPLACE INTO "time_season" VALUES(2,'s',1.0,NULL);
-REPLACE INTO "time_season" VALUES(3,'s',1.0,NULL);
-REPLACE INTO "time_season" VALUES(4,'s',1.0,NULL);
-REPLACE INTO "time_season" VALUES(5,'s',1.0,NULL);
