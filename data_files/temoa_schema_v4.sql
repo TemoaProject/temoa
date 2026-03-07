@@ -1028,7 +1028,7 @@ CREATE TABLE IF NOT EXISTS output_cost
 
 CREATE TABLE IF NOT EXISTS time_season
 (
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     season TEXT,
     segment_fraction REAL NOT NULL,
     notes TEXT,
@@ -1038,7 +1038,7 @@ CREATE TABLE IF NOT EXISTS time_season
 
 CREATE TABLE IF NOT EXISTS time_season_sequential
 (
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
     season TEXT REFERENCES time_season(season),
     segment_fraction REAL NOT NULL,

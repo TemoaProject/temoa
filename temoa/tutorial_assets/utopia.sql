@@ -1428,7 +1428,7 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     season TEXT,
     segment_fraction REAL NOT NULL,
     notes TEXT,
@@ -1440,7 +1440,7 @@ INSERT INTO "time_season" VALUES(1,'summer',0.25,NULL);
 INSERT INTO "time_season" VALUES(2,'winter',0.5,NULL);
 CREATE TABLE time_season_sequential
 (
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
     season TEXT REFERENCES time_season(season),
     segment_fraction REAL NOT NULL,
