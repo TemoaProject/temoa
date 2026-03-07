@@ -1110,7 +1110,8 @@ CREATE TABLE time_of_day
     tod      TEXT
         PRIMARY KEY,
     hours    REAL NOT NULL DEFAULT 1,
-    notes    TEXT
+    notes    TEXT,
+    CHECK (hours > 0)
 );
 INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(0,'d',24);
 CREATE TABLE time_period
@@ -1142,7 +1143,7 @@ CREATE TABLE time_season
 (
     sequence INTEGER,
     season TEXT,
-    segment_fraction REAL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (season),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)

@@ -911,7 +911,8 @@ CREATE TABLE IF NOT EXISTS time_of_day
     tod      TEXT
         PRIMARY KEY,
     hours    REAL NOT NULL DEFAULT 1,
-    notes    TEXT
+    notes    TEXT,
+    CHECK (hours > 0)
 );
 CREATE TABLE IF NOT EXISTS time_period
 (
@@ -1012,7 +1013,7 @@ CREATE TABLE IF NOT EXISTS time_season
 (
     sequence INTEGER,
     season TEXT,
-    segment_fraction REAL,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
     PRIMARY KEY (season),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
