@@ -483,6 +483,7 @@ CREATE TABLE IF NOT EXISTS limit_storage_level_fraction
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
+    CHECK (fraction >= 0 AND fraction <= 1),
     PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_activity

@@ -894,6 +894,7 @@ CREATE TABLE limit_storage_level_fraction
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
+    CHECK (fraction >= 0 AND fraction <= 1),
     PRIMARY KEY(region, season, tod, tech, operator)
 );
 INSERT INTO "limit_storage_level_fraction" VALUES('R1','winter','day','E_BATT','e',0.5,'');

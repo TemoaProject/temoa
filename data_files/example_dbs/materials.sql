@@ -822,6 +822,7 @@ CREATE TABLE limit_storage_level_fraction
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
+    CHECK (fraction >= 0 AND fraction <= 1),
     PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE limit_tech_input_split
