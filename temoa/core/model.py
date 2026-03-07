@@ -18,6 +18,7 @@ from pyomo.environ import (
     Constraint,
     Integers,
     NonNegativeReals,
+    PositiveReals,
     Objective,
     Param,
     minimize,
@@ -336,8 +337,8 @@ class TemoaModel(AbstractModel):
         # Basic period construction
         self.time_sequencing = Set()  # How do states carry between time segments?
         self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
-        self.days_per_period = Param()
-        self.time_of_day_hours = Param(self.time_of_day, default=1)
+        self.days_per_period = Param(domain=PositiveReals, default=365.0)
+        self.time_of_day_hours = Param(self.time_of_day, domain=PositiveReals, default=1.0)
         self.segment_fraction_per_season = Param(self.time_season)
         self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
         self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
@@ -408,7 +409,7 @@ class TemoaModel(AbstractModel):
             self.tech_all,
             self.vintage_all,
             self.commodity_carrier,
-            within=NonNegativeReals,
+            within=PositiveReals,
             validate=validate_efficiency,
         )
         self.validate_used_efficiency_indices = BuildAction(
@@ -423,7 +424,7 @@ class TemoaModel(AbstractModel):
             self.tech_all,
             self.vintage_all,
             self.commodity_carrier,
-            within=NonNegativeReals,
+            within=PositiveReals,
             default=1,
         )
 
