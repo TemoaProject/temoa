@@ -38,11 +38,11 @@ def commodity_balance_constraint_error_check(
 ) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
-    if isinstance(supplied, int) or isinstance(demanded, int):
+    if isinstance(supplied, int) and isinstance(demanded, int):
         expr = str(supplied == demanded)
         msg = (
             'Unable to balance commodity {} in ({}, {}, {}, {}).\n'
-            'No flows on one side of constraint expression:\n'
+            'Nothing produces or consumes it:\n'
             '   {}\n'
             'Possible reasons:\n'
             " - Is there a missing period in set 'time_future'?\n"
@@ -61,11 +61,11 @@ def annual_commodity_balance_constraint_error_check(
 ) -> None:
     # note:  if a pyomo equation simplifies to an int, there are no variables in it, which
     #        is an indicator of a problem. How this might come up I do not know
-    if isinstance(supplied, int) or isinstance(demanded, int):
+    if isinstance(supplied, int) and isinstance(demanded, int):
         expr = str(supplied == demanded)
         msg = (
             'Unable to balance annual commodity {} in ({}, {}).\n'
-            'No flows on one side of constraint expression:\n'
+            'Nothing produces or consumes it:\n'
             '   {}\n'
             'Possible reasons:\n'
             " - Is there a missing period in set 'time_future'?\n"

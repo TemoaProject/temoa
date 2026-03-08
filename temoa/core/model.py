@@ -292,9 +292,12 @@ class TemoaModel(AbstractModel):
         self.commodity_waste = Set()
         self.commodity_flex = Set(within=self.commodity_physical)
         self.commodity_source = Set(within=self.commodity_physical)
+        self.commodity_sink = Set(
+            initialize=self.commodity_demand | self.commodity_waste
+        )
         self.commodity_annual = Set(within=self.commodity_physical)
         self.commodity_carrier = Set(
-            initialize=self.commodity_physical | self.commodity_demand | self.commodity_waste
+            initialize=self.commodity_physical | self.commodity_sink
         )
         self.commodity_all = Set(
             initialize=self.commodity_carrier | self.commodity_emissions,

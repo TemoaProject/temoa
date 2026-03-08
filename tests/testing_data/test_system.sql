@@ -83,7 +83,7 @@ REPLACE INTO "commodity" VALUES('OIL', 'p', 'crude oil', NULL);
 REPLACE INTO "commodity" VALUES('NG', 'p', 'natural gas', NULL);
 REPLACE INTO "commodity" VALUES('URN', 'p', 'uranium', NULL);
 REPLACE INTO "commodity" VALUES('ETH', 'p', 'ethanol', NULL);
-REPLACE INTO "commodity" VALUES('SOL', 'p', 'solar insolation', NULL);
+REPLACE INTO "commodity" VALUES('SOL', 's', 'solar insolation', NULL);
 REPLACE INTO "commodity" VALUES('GSL', 'p', 'gasoline', NULL);
 REPLACE INTO "commodity" VALUES('DSL', 'p', 'diesel', NULL);
 REPLACE INTO "commodity" VALUES('ELC', 'p', 'electricity', NULL);

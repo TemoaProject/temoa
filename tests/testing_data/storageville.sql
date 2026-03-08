@@ -3,7 +3,7 @@ REPLACE INTO "commodity" VALUES('ELC', 'p', '# electricity', NULL);
 REPLACE INTO "commodity" VALUES('HYD', 'p', '# water', NULL);
 REPLACE INTO "commodity" VALUES('co2', 'e', '#CO2 emissions', NULL);
 REPLACE INTO "commodity" VALUES('RL', 'd', '# residential lighting', NULL);
-REPLACE INTO "commodity" VALUES('earth', 'p', '# the source of stuff', NULL);
+REPLACE INTO "commodity" VALUES('earth', 's', '# the source of stuff', NULL);
 REPLACE INTO "commodity_type" VALUES('w','waste commodity');
 REPLACE INTO "commodity_type" VALUES('wa','waste annual commodity');
 REPLACE INTO "commodity_type" VALUES('wp','waste physical commodity');

@@ -110,17 +110,23 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
     """
     logger.debug('Creating commodity balance and active flow index sets.')
     # 1. Commodity Balance
-    commodity_upstream = set(
-        model.commodity_up_stream_process
-        | model.retirement_production_processes
-        | model.import_regions
+    commodity_upstream_rpo = set(
+        (r, p, o)
+        for r, p, o in (
+            model.commodity_up_stream_process
+            | model.retirement_production_processes | model.import_regions
+        )
+        if o not in model.commodity_sink # only balanced if input to another process (caught below)
     )
-    commodity_downstream = set(
-        model.commodity_down_stream_process
-        | model.capacity_consumption_techs
-        | model.export_regions
+    commodity_downstream_rpi = set(
+        (r, p, i)
+        for r, p, i in (
+            model.commodity_down_stream_process
+            | model.capacity_consumption_techs | model.export_regions
+        )
+        if i not in model.commodity_source # sources are never balanced (infinite source)
     )
-    model.commodity_balance_rpc = commodity_upstream.intersection(commodity_downstream)
+    model.commodity_balance_rpc = commodity_upstream_rpo.union(commodity_downstream_rpi)
 
     # 2. Active Flow Indices (Time-Sliced)
     model.active_flow_rpsditvo = {

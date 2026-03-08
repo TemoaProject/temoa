@@ -55,55 +55,23 @@ class CommodityNetworkManager:
         continues until a pass over all periods finds no new orphans, signifying
         a stable, valid network.
         """
-        for pass_num in range(1, 100):  # Safety break after 100 iterations
-            orphans_this_pass: set[EdgeTuple] = set()
 
-            for period in self.periods:
-                cn = CommodityNetwork(region=region, period=period, model_data=data)
-                cn.analyze_network()
+        for period in self.periods:
+            cn = CommodityNetwork(region=region, period=period, model_data=data)
+            cn.analyze_network()
 
-                # Log any demands that are not fully supported
-                for commodity in cn.unsupported_demands():
-                    logger.error(
-                        'Demand %s is not supported back to a source in region %s, period %d',
-                        commodity,
-                        region,
-                        period,
-                    )
-
-                # Collect newly identified orphans from this period's analysis
-                new_demand_orphans = cn.get_demand_side_orphans()
-                new_other_orphans = cn.get_other_orphans()
-
-                # Add to the main collections, ensuring no duplicates
-                self.demand_orphans[region, period].update(new_demand_orphans)
-                self.other_orphans[region, period].update(new_other_orphans)
-
-                orphans_this_pass.update(new_demand_orphans)
-                orphans_this_pass.update(new_other_orphans)
-
-            if not orphans_this_pass:
-                logger.debug(
-                    'Region %s analysis stable after %d pass(es).',
+            # Log any demands that are not fully supported
+            for commodity in cn.unsupported_demands():
+                logger.warning(
+                    'Demand %s is not supported back to a source in region %s, period %d',
+                    commodity,
                     region,
-                    pass_num - 1,
+                    period,
                 )
-                break  # Exit the loop if the network is stable
 
-            logger.debug(
-                'Pass %d for region %s: Found and removed %d orphan(s).',
-                pass_num,
-                region,
-                len(orphans_this_pass),
-            )
-            for orphan in sorted(orphans_this_pass):
-                logger.warning('Removing orphan across all periods: %s', orphan)
-
-            # Remove all orphans found in this pass from all periods in the region
-            for period in self.periods:
-                data.available_techs[region, period] -= orphans_this_pass
-        else:
-            logger.error('Region %s analysis did not converge after 100 passes.', region)
+            # Add to the main collections, ensuring no duplicates
+            self.demand_orphans[region, period].update(cn.get_demand_side_orphans())
+            self.other_orphans[region, period].update(cn.get_other_orphans())
 
     def analyze_network(self) -> bool:
         """
