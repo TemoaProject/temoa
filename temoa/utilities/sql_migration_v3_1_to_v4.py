@@ -165,23 +165,42 @@ def migrate_dump_to_sqlite(args) -> None:
         if not r[0].lower().startswith('sqlite_')
     ]
 
-    if args.debug:
-        print('DEBUG Mapping samples:')
-        for t in (
-            'TimeSeason',
-            'time_season',
-            'TimeSeasonSequential',
-            'time_season_sequential',
-            'SegFrac',
-            'segfrac',
-        ):
-            print(f'  {t} -> {map_token_no_cascade(t)}')
-        print('\nDEBUG Old DB tables:', old_tables)
-        print('DEBUG New DB tables:', new_db_tables)
-
     # --- 3. Programmatically copy data ---
     total_rows_copied = 0
     for old_table_name in old_tables:
+        if old_table_name in (
+            'MetaData',
+            'MetaDataReal',
+            'TimeSeason',
+            'time_season',
+            'time_of_day',
+            'time_season_sequential',
+            'TimeSeasonSequential',
+        ):
+            if args.debug:
+                print(f'DEBUG: Skipping {old_table_name} (handled by custom logic)')
+            continue
+
+        if old_table_name == 'CapacityFactorProcess':
+            # Special case: aggregate across periods
+            old_data = con_old_in_memory.execute(
+                'SELECT region, season, tod, tech, vintage, AVG(factor) '
+                'FROM CapacityFactorProcess '
+                'GROUP BY region, season, tod, tech, vintage'
+            ).fetchall()
+            if old_data:
+                con_new_in_memory.executemany(
+                    'INSERT OR REPLACE INTO capacity_factor_process '
+                    '(region, season, tod, tech, vintage, factor) '
+                    'VALUES (?, ?, ?, ?, ?, ?)',
+                    old_data,
+                )
+                print(
+                    f'Aggregated {len(old_data)} rows: {old_table_name} -> capacity_factor_process'
+                )
+                total_rows_copied += len(old_data)
+            continue
+
         mapped_new_table_name = map_table_name(old_table_name)
 
         if mapped_new_table_name not in new_db_tables:
@@ -264,6 +283,77 @@ def migrate_dump_to_sqlite(args) -> None:
         rows_copied_this_table = len(filtered_rows_for_insert)
         print(f'Copied {rows_copied_this_table} rows: {old_table_name} -> {mapped_new_table_name}')
         total_rows_copied += rows_copied_this_table
+
+    # --- 3b. Custom logic for restructured tables (Seasons/TOD) ---
+    print('Processing custom migration logic for seasons and time-of-day...')
+
+    # 1. time_season (aggregate from TimeSegmentFraction)
+    try:
+        # v3.1: TimeSegmentFraction(period, season, tod, segfrac)
+        # v4: time_season(season, segment_fraction)
+        old_data = con_old_in_memory.execute(
+            'SELECT season, SUM(segfrac) / COUNT(DISTINCT period) '
+            'FROM TimeSegmentFraction GROUP BY season'
+        ).fetchall()
+        if old_data:
+            con_new_in_memory.executemany(
+                'INSERT OR REPLACE INTO time_season (season, segment_fraction) VALUES (?, ?)',
+                old_data,
+            )
+            print(f'Propagated {len(old_data)} seasons to time_season.')
+    except sqlite3.OperationalError:
+        print('WARNING: Could not migrate seasons from TimeSegmentFraction (table missing?)')
+
+    # 2. time_of_day (aggregate from TimeSegmentFraction)
+    try:
+        # v3.1: TimeSegmentFraction(period, season, tod, segfrac) ->
+        # tod_weights = SUM(segfrac) over season
+        # v4: time_of_day(tod, hours)
+        old_data = con_old_in_memory.execute(
+            'SELECT tod, SUM(segfrac) FROM TimeSegmentFraction GROUP BY tod'
+        ).fetchall()
+        if old_data:
+            num_periods = (
+                con_old_in_memory.execute(
+                    'SELECT COUNT(DISTINCT period) FROM TimeSegmentFraction'
+                ).fetchone()[0]
+                or 1
+            )
+            # Normalize to 24 hours
+            normalized_data = [(r[0], (r[1] / num_periods) * 24.0) for r in old_data]
+            con_new_in_memory.executemany(
+                'INSERT OR REPLACE INTO time_of_day (tod, hours) VALUES (?, ?)',
+                normalized_data,
+            )
+            print(f'Propagated {len(normalized_data)} time-of-day slots to time_of_day.')
+    except sqlite3.OperationalError:
+        print('WARNING: Could not migrate time_of_day from TimeSegmentFraction.')
+
+    # 3. time_season_sequential (aggregate from TimeSeasonSequential and TimeSegmentFraction)
+    # This is tricky because v3.1 had period-dependent sequential seasons.
+    # We take the first available period's definition.
+    try:
+        # v3.1: TimeSeasonSequential(period, sequence, seas_seq, season, num_days)
+        # v4: time_season_sequential(seas_seq, season, segment_fraction)
+        first_period = con_old_in_memory.execute(
+            'SELECT MIN(period) FROM TimeSeasonSequential'
+        ).fetchone()[0]
+        if first_period:
+            old_data = con_old_in_memory.execute(
+                'SELECT tss.seas_seq, tss.season, (tss.num_days / 365.25) '
+                'FROM TimeSeasonSequential tss '
+                'WHERE tss.period = ?',
+                (first_period,),
+            ).fetchall()
+            if old_data:
+                con_new_in_memory.executemany(
+                    'INSERT OR REPLACE INTO time_season_sequential '
+                    '(seas_seq, season, segment_fraction) VALUES (?, ?, ?)',
+                    old_data,
+                )
+                print(f'Propagated {len(old_data)} sequential seasons to time_season.')
+    except sqlite3.OperationalError:
+        pass  # Optional table
 
     # --- Final updates and dump ---
     con_new_in_memory.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MAJOR', 4, '')")

@@ -1448,18 +1448,5 @@ CREATE TABLE time_season_sequential
     PRIMARY KEY (seas_seq),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-CREATE TABLE time_season_to_sequential
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    sequence INTEGER,
-    seas_seq TEXT,
-    season TEXT
-        REFERENCES time_season (season),
-    segment_fraction REAL NOT NULL,
-    notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
-);
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;
