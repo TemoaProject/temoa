@@ -147,6 +147,7 @@ def reserve_margin_dynamic(
         # Only consider exchange technologies connecting to this region
         if r2 == r:
             # Add the firm capacity commitment TO this region
+            # (this region was guaranteed an import of power)
             available += sum(
                 model.v_capacity[r1r2, p, t, v]
                 * value(model.reserve_capacity_derate[r1r2, p, s, t, v])
@@ -155,8 +156,9 @@ def reserve_margin_dynamic(
                 * value(model.segment_fraction[p, s, d])
                 for (t, v) in model.process_reserve_periods[r1r2, p]
             )
-        if r1 == r:
+        elif r1 == r:
             # Subtract the firm capacity commitment FROM this region
+            # (this region guaranteed an export of power)
             available -= sum(
                 model.v_capacity[r1r2, p, t, v]
                 * value(model.reserve_capacity_derate[r1r2, p, s, t, v])
@@ -240,6 +242,7 @@ def reserve_margin_static(
         # Only consider exchange technologies connecting to this region
         if r2 == r:
             # Add the firm capacity commitment TO this region
+            # (this region was guaranteed an import of power)
             available += sum(
                 value(model.capacity_credit[r1r2, p, t, v])
                 * model.v_capacity[r1r2, p, t, v]
@@ -247,8 +250,9 @@ def reserve_margin_static(
                 * value(model.segment_fraction[p, s, d])
                 for (t, v) in model.process_reserve_periods[r1r2, p]
             )
-        if r1 == r:
+        elif r1 == r:
             # Subtract the firm capacity commitment FROM this region
+            # (this region guaranteed an export of power)
             available -= sum(
                 value(model.capacity_credit[r1r2, p, t, v])
                 * model.v_capacity[r1r2, p, t, v]
