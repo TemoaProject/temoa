@@ -282,7 +282,8 @@ Derived Sets
 
    "", "tech_with_capacity", "technologies eligible for capacitization; computed as tech_all - tech_uncap"
    "", "tech_or_group", "technologies or groups combined; union of tech_group_names | tech_all"
-   ":math:`{}^*\text{C}^c`", "commodity_carrier", "physical energy carriers and end-use demands; union of physical, demand, and waste commodities"
+   ":math:`{}^*\text{C}^k`", "commodity_sink", "commodities that exit the process network; union of demand and waste commodities"
+   ":math:`{}^*\text{C}^c`", "commodity_carrier", "physical energy carriers and sinks; union of physical and sink commodities"
    ":math:`{}^*\text{C}`", "commodity_all", "union of all commodity sets; union of carrier and emissions commodities"
    ":math:`\text{T}^e`", "tech_exist", "technologies with existing capacity; derived from existing_capacity table"
 
