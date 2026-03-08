@@ -152,8 +152,8 @@ def reserve_margin_dynamic(
         # add the available output of the exchange tech.
         available += sum(
             model.v_capacity[r1r2, p, t, v]
-            * value(model.reserve_capacity_derate[r, p, s, t, v])
-            * value(model.capacity_factor_process[r, p, s, d, t, v])
+            * value(model.reserve_capacity_derate[r1r2, p, s, t, v])
+            * value(model.capacity_factor_process[r1r2, p, s, d, t, v])
             * value(model.capacity_to_activity[r1r2, t])
             * value(model.segment_fraction[p, s, d])
             for (t, v) in model.process_reserve_periods[r1r2, p]
