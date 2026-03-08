@@ -67,7 +67,8 @@ Commodity Sets
    ":math:`\text{C}^w`", "commodity (flag='w','wa','wp')", "commodity_waste", "production can be greater than consumption; can be physical, annual, or neither (not balanced); filtered by waste flags"
    ":math:`\text{C}^a`", "commodity (flag='a')", "commodity_annual", "same as commodity physical but flows are only balanced over each period (:math:`\text{C}^a \subset \text{C}^p`); filtered by flag"
    ":math:`\text{C}^s`", "commodity (flag='s')", "commodity_source", "input sources (not balanced by CommodityBalance_constraint); filtered by flag"
-   ":math:`{}^*\text{C}^c`", "", "commodity_carrier", "physical energy carriers and end-use demands (:math:`\text{C}_p \cup \text{C}_d`); union of physical, demand, and waste commodities"
+   ":math:`{}^*\text{C}^k`", "", "commodity_sink", "commodities that exit the process network (:math:`\text{C}_d \cup \text{C}_w`); union of demand and waste commodities"
+   ":math:`{}^*\text{C}^c`", "", "commodity_carrier", "physical energy carriers and sinks (:math:`\text{C}_p \cup \text{C}_k`); union of physical and sink commodities"
    ":math:`{}^*\text{C}`", "", "commodity_all", "union of all commodity sets; union of carrier and emissions commodities"
 
 Other Sets
