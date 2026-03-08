@@ -338,10 +338,23 @@ def check_efficiency_indices(model: TemoaModel) -> None:
     """
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
-    c_inputs = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
-    c_inputs = c_inputs | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
     c_outputs = {o for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
     c_outputs = c_outputs | {o for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
+
+    diff = model.commodity_demand - c_outputs
+    if diff:
+        msg = (
+            'Unmet demands.  The following demand commodities are '
+            'not the output of any process.'
+            '\n\n    Element(s): {}'
+        )
+        diff_str = (str(i) for i in diff)
+        f_msg = msg.format(', '.join(diff_str))
+        logger.error(f_msg)
+        raise ValueError(f_msg)
+    
+    c_inputs = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    c_inputs = c_inputs | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
     c_carrier = c_inputs | c_outputs
 
     symdiff = c_carrier.symmetric_difference(model.commodity_carrier)
@@ -366,18 +379,6 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         )
         symdiff_str2: set[str] = {str(i) for i in symdiff}
         f_msg = msg.format(', '.join(symdiff_str2))
-        logger.error(f_msg)
-        raise ValueError(f_msg)
-
-    diff = model.commodity_demand - c_outputs
-    if diff:
-        msg = (
-            'Unmet demands.  The following demand commodities are '
-            'not the output of any process.'
-            '\n\n    Element(s): {}'
-        )
-        diff_str = (str(i) for i in diff)
-        f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
