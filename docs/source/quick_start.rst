@@ -299,7 +299,17 @@ data and analyzes it for "orphans" which likely represent gaps in the network th
 to erroneous output data.  The operation is enabled by tagging foundational commodities for which
 there are no predecessors as "source" commodities in the `Commodity` database table with an `s` tag.
 Orphans (or chains of orphans) on either the demand or supply side are reported and *suppressed* in
-the data to prevent network corruption.
+the data to prevent network corruption. Additionally, Temoa performs cycle detection on the commodity
+network to identify circular dependencies that could lead to non-convergence or erroneous results.
+Users can configure the cycle detection behavior using the following settings:
+
+* **cycle_count_limit**: Limits the number of cycles reported in the log. A value of `-1` allows
+  unbounded detection, `0` causes the system to log an error on the first detected cycle and then
+  suppresses further cycle reports for the remainder of the run (without terminating execution),
+  and a positive integer sets a specific limit. Default is 100.
+* **cycle_length_limit**: Minimum length of cycles to report. This can be used to filter out small,
+  expected circularities if necessary. Default is 1. The length limit is inclusive, so a cycle of
+  length 1 is a self-loop, and a cycle of length `n` has `n` unique nodes.
 
 Note that the myopic mode *requires* the use of Source Tracing to ensure accuracy as some orphans
 may be produced by endogenous decisions in myopic runs.

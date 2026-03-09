@@ -63,6 +63,8 @@ class TemoaConfig:
         check_units: bool = False,
         plot_commodity_network: bool = False,
         graphviz_output: bool = False,
+        cycle_count_limit: int = 100,
+        cycle_length_limit: int = 1,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -146,6 +148,14 @@ class TemoaConfig:
         self.plot_commodity_network = plot_commodity_network and self.source_trace
         self.graphviz_output = graphviz_output
         self.stochastic_config = stochastic_config
+
+        # Cycle detection limits
+        if not isinstance(cycle_count_limit, int) or cycle_count_limit < -1:
+            raise ValueError('cycle_count_limit must be an integer >= -1')
+        if not isinstance(cycle_length_limit, int) or cycle_length_limit < 1:
+            raise ValueError('cycle_length_limit must be an integer >= 1')
+        self.cycle_count_limit = cycle_count_limit
+        self.cycle_length_limit = cycle_length_limit
 
         # warn if output db != input db
         if self.input_database.suffix == self.output_database.suffix:  # they are both .db/.sqlite
@@ -270,6 +280,8 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Unit checking', width, self.check_units)
         msg += '{:>{}s}: {}\n'.format('Commodity network plots', width, self.plot_commodity_network)
         msg += '{:>{}s}: {}\n'.format('Graphviz output', width, self.graphviz_output)
+        msg += '{:>{}s}: {}\n'.format('Cycle count limit', width, self.cycle_count_limit)
+        msg += '{:>{}s}: {}\n'.format('Cycle length limit', width, self.cycle_length_limit)
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Selected solver', width, self.solver_name)

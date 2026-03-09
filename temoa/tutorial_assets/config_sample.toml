@@ -51,6 +51,14 @@ plot_commodity_network = true
 # Recommended for production runs after units are populated in the database
 check_units = true
 
+# Limit the number of cycles detected in the commodity graph
+# -1 = unbounded (INFO), 0 = strictly disallow (ERROR), positive integer = limit
+cycle_count_limit = 100
+
+# Minimum cycle length to report (default: 1)
+# Use this to filter out very small cycles if needed
+cycle_length_limit = 1
+
 # ------------------------------------
 #             SOLVER
 #        Solver Selection
