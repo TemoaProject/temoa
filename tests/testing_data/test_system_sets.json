@@ -45172,8 +45172,13 @@
         "NG",
         "ETH"
     ],
+    "commodity_sink": [
+        "VMT",
+        "RH"
+    ],
     "commodity_source": [
-        "ethos"
+        "ethos",
+        "SOL"
     ],
     "commodity_waste": [],
     "operator": [

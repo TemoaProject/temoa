@@ -4157,6 +4157,10 @@
         "FusionGasFuel",
         "earth"
     ],
+    "commodity_sink": [
+        "RL",
+        "RH"
+    ],
     "commodity_source": [
         "earth"
     ],

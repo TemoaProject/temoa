@@ -25048,6 +25048,11 @@
         "URN",
         "GSL"
     ],
+    "commodity_sink": [
+        "RL",
+        "RH",
+        "TX"
+    ],
     "commodity_source": [
         "ethos"
     ],

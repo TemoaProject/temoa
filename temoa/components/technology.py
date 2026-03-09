@@ -338,45 +338,47 @@ def check_efficiency_indices(model: TemoaModel) -> None:
     """
     # TODO:  This could be upgraded to scan for finer resolution
     #        by checking by REGION and PERIOD...  Each region/period is unique.
-    c_physical = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
-    c_physical = c_physical | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
-    techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
     c_outputs = {o for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
     c_outputs = c_outputs | {o for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
 
-    symdiff = c_physical.symmetric_difference(model.commodity_physical)
+    diff = model.commodity_demand - c_outputs
+    if diff:
+        msg = (
+            'Unmet demands.  The following demand commodities are '
+            'not the output of any process.'
+            '\n\n    Element(s): {}'
+        )
+        diff_str = (str(i) for i in diff)
+        f_msg = msg.format(', '.join(diff_str))
+        logger.error(f_msg)
+        raise ValueError(f_msg)
+    
+    c_inputs = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    c_inputs = c_inputs | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
+    c_carrier = c_inputs | c_outputs
+
+    symdiff = c_carrier.symmetric_difference(model.commodity_carrier)
     if symdiff:
         msg = (
             'Unused or unspecified physical carriers.  Either add or remove '
-            'the following elements to the Set commodity_physical.'
+            'the following elements to the Set commodity_carrier.'
             '\n\n    Element(s): {}'
         )
         symdiff_str: set[str] = {str(i) for i in symdiff}
         f_msg = msg.format(', '.join(symdiff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
+    
+    techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
 
-    symdiff = techs.symmetric_difference(model.tech_all)
+    symdiff = techs.symmetric_difference(model.tech_production)
     if symdiff:
         msg = (
             'Unused or unspecified technologies.  Either add or remove '
-            'the following technology(ies) to the tech_resource or '
-            'tech_production Sets.\n\n    Technology(ies): {}'
+            'the following technologies.\n\n    Technologies: {}'
         )
         symdiff_str2: set[str] = {str(i) for i in symdiff}
         f_msg = msg.format(', '.join(symdiff_str2))
-        logger.error(f_msg)
-        raise ValueError(f_msg)
-
-    diff = model.commodity_demand - c_outputs
-    if diff:
-        msg = (
-            'Unused or unspecified outputs.  Either add or remove the '
-            'following elements to the commodity_demand Set.'
-            '\n\n    Element(s): {}'
-        )
-        diff_str = (str(i) for i in diff)
-        f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
 
