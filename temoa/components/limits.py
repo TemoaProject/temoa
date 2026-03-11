@@ -1383,7 +1383,10 @@ def limit_capacity_constraint(
     techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_capacity[r, p, t, op])
     capacity = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, _t] for _t in techs for _r in regions
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        for _t in techs
+        for _r in regions
+        if (_r, p, _t) in model.process_vintages
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
     return expr
