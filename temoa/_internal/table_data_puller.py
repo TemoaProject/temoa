@@ -190,7 +190,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         )
         for s in model.time_season[v]:
             for d in model.time_of_day:
-                fi = FI(r, v, s, d, i, t, v, cast('Commodity', 'construction_input'))
+                fi = FI(r, v, s, d, i, t, v, cast('Commodity', None))
                 flow = annual * value(model.segment_fraction[v, s, d])
                 if abs(flow) < epsilon:
                     continue
@@ -206,7 +206,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             )
             for s in model.time_season[p]:
                 for d in model.time_of_day:
-                    fi = FI(r, p, s, d, cast('Commodity', 'end_of_life_output'), t, v, o)
+                    fi = FI(r, p, s, d, cast('Commodity', None), t, v, o)
                     flow = annual * value(model.segment_fraction[p, s, d])
                     if abs(flow) < epsilon:
                         continue
