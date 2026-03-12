@@ -370,6 +370,8 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         raise ValueError(f_msg)
     
     techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    techs = techs | {t for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
+    techs = techs | {t for r, i, t, v in model.construction_input.sparse_iterkeys()}
 
     symdiff = techs.symmetric_difference(model.tech_production)
     if symdiff:
