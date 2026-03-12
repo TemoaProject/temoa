@@ -463,6 +463,7 @@ class HybridLoader:
         self.viable_rt = filts['rt']
         self.viable_rpit = filts['rpit']
         self.viable_rpto = filts['rpto']
+        self.viable_rtv_eol = filts['rtv_eol']
         self.viable_techs = filts['t']
         self.viable_input_comms = filts['ic']
         self.viable_output_comms = filts['oc']

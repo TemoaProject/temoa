@@ -433,7 +433,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                         EdgeTuple(
                             region=r,
                             input_comm=cast('Commodity', tech),
-                            tech=cast('Technology', 'end_of_life'),
+                            tech=tech,
                             vintage=v,
                             output_comm=eol_oc,
                             lifetime=lifetime,
