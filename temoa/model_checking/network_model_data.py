@@ -447,6 +447,8 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
+        if v not in periods:
+            continue
         construction_lifetime = basic_data['period_length'].get(
             cast('Period', v), cast('Period', 1)
         )
