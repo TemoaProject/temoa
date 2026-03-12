@@ -621,12 +621,14 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
     # Link construction materials to technologies
     for r, i, t, v in model.construction_input.sparse_iterkeys():
         model.capacity_consumption_techs.setdefault((r, v, i), set()).add(t)
+        model.used_techs.add(t)
 
     # Link end-of-life materials to retiring technologies
     for r, t, v, o in model.end_of_life_output.sparse_iterkeys():
         if (r, t, v) in model.retirement_periods:
             for p in model.retirement_periods[r, t, v]:
                 model.retirement_production_processes.setdefault((r, p, o), set()).add((t, v))
+        model.used_techs.add(t)
 
     # Create active capacity index sets from the now-populated process_vintages
     model.new_capacity_rtv = {
