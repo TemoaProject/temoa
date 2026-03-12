@@ -64,7 +64,15 @@ class MyopicSequencer:
     ]
 
     def __init__(self, config: TemoaConfig | None):
-        self.capacity_epsilon = 1e-5
+        # Minimum capacity (MW) to carry forward between myopic periods.
+        # mip-dev uses 10 MW.  Configurable via [myopic] capacity_threshold in TOML.
+        default_cap_threshold = 10
+        if config and config.myopic_inputs:
+            self.capacity_epsilon = config.myopic_inputs.get(
+                'capacity_threshold', default_cap_threshold
+            )
+        else:
+            self.capacity_epsilon = default_cap_threshold
         self.debugging = False
         self.optimization_periods: list[int] | None = None
         self.instance_queue: deque[MyopicIndex] = deque()  # a LIFO queue
