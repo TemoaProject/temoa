@@ -92,6 +92,13 @@ save_lp_file = false
 # graphviz dot file and svg for network visualization (requires graphviz to be installed separately)
 graphviz_output = false
 
+# Optional output filtering thresholds (set to 0 to disable per category)
+# Precedence is: TOML value > metadata_real in output db > internal defaults.
+output_threshold_capacity = 0.001
+output_threshold_activity = 0.001
+output_threshold_emission = 0.001
+output_threshold_cost = 0.01
+
 # ------------------------------------
 #          MODEL PARAMETERS
 #  these are specific to each model

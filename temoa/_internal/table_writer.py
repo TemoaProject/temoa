@@ -64,6 +64,13 @@ OPTIONAL_OUTPUT_TABLES = [
     'output_storage_level',
 ]
 
+OUTPUT_THRESHOLD_DEFAULTS = {
+    'capacity': 1e-3,
+    'activity': 1e-3,
+    'emission': 1e-3,
+    'cost': 1e-2,
+}
+
 FLOW_SUMMARY_FILE_LOC = (
     resources.files('temoa.extensions.modeling_to_generate_alternatives')
     / 'make_flow_summary_table.sql'
@@ -91,6 +98,17 @@ class TableWriter:
         except sqlite3.OperationalError as _:
             logger.exception('Failed to connect to output database: %s', config.output_database)
             sys.exit(-1)
+
+        self.output_threshold_capacity = self._resolve_output_threshold('capacity')
+        self.output_threshold_activity = self._resolve_output_threshold('activity')
+        self.output_threshold_emission = self._resolve_output_threshold('emission')
+        self.output_threshold_cost = self._resolve_output_threshold('cost')
+        self.epsilon = min(
+            self.output_threshold_capacity,
+            self.output_threshold_activity,
+            self.output_threshold_emission,
+            self.output_threshold_cost,
+        )
 
         # Unit propagator for populating units in output tables (lazy init)
         self._unit_propagator: UnitPropagator | None = None
@@ -228,6 +246,34 @@ class TableWriter:
 
         self.connection.executemany(query, rows_to_insert)
 
+    @staticmethod
+    def _validate_threshold(
+        threshold_name: str,
+        threshold_value: float | int | None,
+    ) -> float | None:
+        """Validate output threshold inputs and normalize to float."""
+        if threshold_value is None:
+            return None
+        numeric_value = float(threshold_value)
+        if numeric_value < 0:
+            raise ValueError(f'Output threshold "{threshold_name}" must be non-negative')
+        return numeric_value
+
+    def _resolve_output_threshold(self, threshold_type: str) -> float:
+        """Resolve threshold: TOML config if set, else hardcoded default."""
+        if threshold_type not in OUTPUT_THRESHOLD_DEFAULTS:
+            raise ValueError(f'Unknown output threshold type: {threshold_type}')
+
+        toml_key = f'output_threshold_{threshold_type}'
+        toml_value = self._validate_threshold(
+            toml_key,
+            getattr(self.config, toml_key, None),
+        )
+        if toml_value is not None:
+            return toml_value
+
+        return OUTPUT_THRESHOLD_DEFAULTS[threshold_type]
+
     def write_results(
         self,
         model: TemoaModel,
@@ -252,7 +298,11 @@ class TableWriter:
             else:
                 p_0 = None
 
-            e_costs, e_flows = poll_emissions(model=model, p_0=value(p_0))
+            e_costs, e_flows = poll_emissions(
+                model=model,
+                p_0=value(p_0),
+                epsilon=self.output_threshold_emission,
+            )
             self.emission_register = e_flows
             self.write_emissions(iteration=iteration)
 
@@ -278,7 +328,10 @@ class TableWriter:
             if not self.tech_sectors:
                 self._set_tech_sectors()
             self.write_objective(model, iteration=iteration)
-            _e_costs, e_flows = poll_emissions(model=model)
+            _e_costs, e_flows = poll_emissions(
+                model=model,
+                epsilon=self.output_threshold_emission,
+            )
             self.emission_register = e_flows
             self.write_emissions(iteration=iteration)
         finally:
@@ -400,7 +453,7 @@ class TableWriter:
         records = []
 
         for ei, val in self.emission_register.items():
-            if abs(val) < self.epsilon:
+            if abs(val) < self.output_threshold_emission:
                 continue
 
             row = {
@@ -425,7 +478,7 @@ class TableWriter:
         self.connection.commit()
 
     def write_capacity_tables(self, model: TemoaModel, iteration: int | None = None) -> None:
-        cap_data = poll_capacity_results(model=model)
+        cap_data = poll_capacity_results(model=model, epsilon=self.output_threshold_capacity)
         self._insert_capacity_results(cap_data=cap_data, iteration=iteration)
 
     def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:
@@ -508,7 +561,7 @@ class TableWriter:
             sector = self.tech_sectors.get(fi.t)
 
             for flow_type, val in flows.items():
-                if abs(val) < self.epsilon:
+                if abs(val) < self.output_threshold_activity:
                     continue
 
                 table_name = map_flow_to_table.get(flow_type)
@@ -593,7 +646,7 @@ class TableWriter:
 
         records = []
         for (r, p, i, t, v, o), val in output_flows.items():
-            if abs(val) < self.epsilon:
+            if abs(val) < self.output_threshold_activity:
                 continue
             records.append(
                 {
@@ -643,7 +696,7 @@ class TableWriter:
         return all_good
 
     def calculate_flows(self, model: TemoaModel) -> dict[FI, dict[FlowType, float]]:
-        return poll_flow_results(model, self.epsilon)
+        return poll_flow_results(model, self.output_threshold_activity)
 
     def write_costs(
         self,
@@ -657,7 +710,7 @@ class TableWriter:
         else:
             p_0 = min(model.time_optimize)
 
-        entries, exchange_entries = poll_cost_results(model, value(p_0), self.epsilon)
+        entries, exchange_entries = poll_cost_results(model, value(p_0), self.output_threshold_cost)
         self._insert_cost_results(entries, exchange_entries, emission_entries, iteration)
 
     def _insert_cost_results(
@@ -697,6 +750,18 @@ class TableWriter:
 
         for r, p, t, v in sorted_keys:
             costs = entries[(r, p, t, v)]
+            row_values = (
+                costs.get(CostType.D_INVEST, 0),
+                costs.get(CostType.D_FIXED, 0),
+                costs.get(CostType.D_VARIABLE, 0),
+                costs.get(CostType.D_EMISS, 0),
+                costs.get(CostType.INVEST, 0),
+                costs.get(CostType.FIXED, 0),
+                costs.get(CostType.VARIABLE, 0),
+                costs.get(CostType.EMISS, 0),
+            )
+            if all(abs(val) < self.output_threshold_cost for val in row_values):
+                continue
             records.append(
                 {
                     'scenario': scenario,
