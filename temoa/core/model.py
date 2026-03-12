@@ -292,13 +292,9 @@ class TemoaModel(AbstractModel):
         self.commodity_waste = Set()
         self.commodity_flex = Set(within=self.commodity_physical)
         self.commodity_source = Set(within=self.commodity_physical)
-        self.commodity_sink = Set(
-            initialize=self.commodity_demand | self.commodity_waste
-        )
+        self.commodity_sink = Set(initialize=self.commodity_demand | self.commodity_waste)
         self.commodity_annual = Set(within=self.commodity_physical)
-        self.commodity_carrier = Set(
-            initialize=self.commodity_physical | self.commodity_sink
-        )
+        self.commodity_carrier = Set(initialize=self.commodity_physical | self.commodity_sink)
         self.commodity_all = Set(
             initialize=self.commodity_carrier | self.commodity_emissions,
             validate=no_slash_or_pipe,
@@ -775,6 +771,9 @@ class TemoaModel(AbstractModel):
         self.storage_level_rpsdtv = Set(dimen=6, initialize=storage.storage_level_variable_indices)
         self.v_storage_level = Var(self.storage_level_rpsdtv, domain=NonNegativeReals)
 
+        self.storage_init_rpstv = Set(dimen=5, initialize=storage.storage_init_variable_indices)
+        self.v_storage_init = Var(self.storage_init_rpstv, domain=NonNegativeReals)
+
         self.seasonal_storage_level_rpstv = Set(
             dimen=5, initialize=storage.seasonal_storage_level_variable_indices
         )
@@ -912,6 +911,10 @@ class TemoaModel(AbstractModel):
 
         self.storage_energy_constraint = Constraint(
             self.storage_constraints_rpsdtv, rule=storage.storage_energy_constraint
+        )
+
+        self.storage_level_last_tod_constraint = Constraint(
+            self.storage_init_rpstv, rule=storage.storage_level_at_last_tod_constraint
         )
 
         self.storage_energy_upper_bound_constraint = Constraint(
