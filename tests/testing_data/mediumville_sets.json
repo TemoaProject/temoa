@@ -4332,5 +4332,21 @@
     ],
     "vintage_optimize": [
         2025
+    ],
+    "storage_init_rpstv": [
+        [
+            "B",
+            2025,
+            "s2",
+            "batt",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "batt",
+            2025
+        ]
     ]
 }
