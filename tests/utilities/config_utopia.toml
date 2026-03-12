@@ -8,6 +8,8 @@ neos = false
 
 # solver
 solver_name = "appsi_highs"
+time_sequencing = "seasonal_timeslices"
+reserve_margin = "static"
 
 # generate an excel file in the output_files folder
 save_excel = false

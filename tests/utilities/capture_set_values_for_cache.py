@@ -57,8 +57,11 @@ for scenario in scenarios:
     built_instance = ts.build_model()  # catch the built model
 
     model_sets = built_instance.component_map(ctype=pyo.Set)
-    sets_dict = {k: list(v) for k, v in model_sets.items()}
+    sets_dict = {}
+    for k in sorted(model_sets):
+        elements = sorted(model_sets[k], key=lambda x: str(x))
+        sets_dict[k] = elements
 
     # stash the result in a json file...
     with open(scenario['output_file'], 'w') as f_out:
-        json.dump(sets_dict, f_out, indent=2)
+        json.dump(sets_dict, f_out, indent=2, sort_keys=True)
