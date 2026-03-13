@@ -104,6 +104,8 @@ class MyopicSequencer:
                         f'is larger than the view depth ({self.view_depth}).  '
                         f'Check config'
                     )
+                self.evolving: bool = myopic_options.get('evolving')
+                self.evolution_script: str = myopic_options.get('evolution_script')
         else:
             # A None was passed for config and the caller is responsible for setting instance vars
             pass
