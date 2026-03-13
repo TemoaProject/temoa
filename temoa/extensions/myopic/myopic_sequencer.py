@@ -7,7 +7,7 @@ import logging
 import sqlite3
 import sys
 from collections import deque
-from importlib import resources
+from importlib import resources, util
 from pathlib import Path
 from sqlite3 import Connection
 
@@ -165,14 +165,15 @@ class MyopicSequencer:
         # 1.  get feedback from previous instance execution (optimal/infeasible/...)
         # 2.  decide what to do about it
         # 3.  pull the next instance from the queue (if !empty & if needed)
-        # 4.  Update the myopic_efficiency table (clean up history / add stuff now in visibility)
-        # 5.  pull data for next run and filter it with source tracing
-        # 6.  build instance
-        # 7.  run checks (price check) on the model, if selected
-        # 8.  run the model and assess
-        # 9.  commit or back out any data as necessary
-        # 10.  report findings
-        # 11.  compact the db
+        # 4.  if evolving, call the evolution script and pass it the myopic index and last instance status
+        # 5.  update the myopic_efficiency table (clean up history / add stuff now in visibility)
+        # 6.  pull data for next run and filter it with source tracing
+        # 7.  build instance
+        # 8.  run checks (price check) on the model, if selected
+        # 9.  run the model and assess
+        # 10. commit or back out any data as necessary
+        # 11. report findings
+        # 12. compact the db
 
         last_instance_status = None  # solve status
         last_base_year = None
@@ -206,18 +207,38 @@ class MyopicSequencer:
             else:
                 raise RuntimeError('Illegal state in myopic iteration.')
             logger.info('Processing Myopic Index: %s', idx)
+
+            # 4. If evolving, call the evolution script and pass it the myopic index and last instance status
+            if self.evolving and last_instance_status is not None: # don't evolve before first iteration (pointless)
+                if not self.config.silent:
+                    self.progress_mapper.report(idx, 'evolve')
+                if not self.evolution_script:
+                    logger.info(
+                        'Evolving myopic mode selected, but no evolution script provided.'
+                    )
+                else:
+                    # import the script as a module and call the iterate function with the idx and last_instance_status
+                    spec = util.spec_from_file_location("evolution_script", self.evolution_script)
+                    evolution_module = util.module_from_spec(spec)
+                    spec.loader.exec_module(evolution_module)
+                    evolution_module.iterate(
+                        idx=idx,
+                        prev_base_year=last_base_year,
+                        last_instance_status=last_instance_status,
+                        db_con=self.output_con,  # pass the db connection so the script can make updates as needed
+                    )
+
+            # 5. update the myopic_efficiency table so it is ready for the upcoming data pull.
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'load')
-
-            # 4. update the myopic_efficiency table so it is ready for the upcoming data pull.
             self.update_myopic_efficiency_table(myopic_index=idx, prev_base=last_base_year)
 
-            # 5. pull the data
+            # 6. pull the data
             # make a data loader
             data_loader = HybridLoader(self.output_con, self.config)
             data_portal = data_loader.load_data_portal(myopic_index=idx)
 
-            # 6. build
+            # 7. build
             instance = run_actions.build_instance(
                 loaded_portal=data_portal,
                 model_name=self.config.scenario,
@@ -227,7 +248,7 @@ class MyopicSequencer:
                 / ''.join(('LP', str(idx.base_year))),  # base year folder
             )
 
-            # 7.  Run checks...
+            # 8.  Run checks...
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'check')
             if self.config.price_check:
@@ -235,7 +256,7 @@ class MyopicSequencer:
                 if not good_prices and not self.config.silent:
                     print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
 
-            # 8.  Run the model and assess solve status
+            # 9.  Run the model and assess solve status
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'solve')
             model, results = run_actions.solve_instance(
@@ -254,7 +275,7 @@ class MyopicSequencer:
 
             logger.info('Completed myopic iteration on %s', idx)
 
-            # 9, 10.  Update the output tables...
+            # 10, 11.  Update the output tables...
             # first, clear any possible previous results that overlap, we might have been
             # backtracking...
             self.clear_results_after(idx.base_year)
