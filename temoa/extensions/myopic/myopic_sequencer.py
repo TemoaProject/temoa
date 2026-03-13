@@ -498,21 +498,37 @@ class MyopicSequencer:
             self.progress_mapper.draw_header()
 
         # check that we have enough periods to do myopic run
-        # 2 iterations, excluding end year, will be via shortened depth, if reqd.
         if len(future_periods) < self.view_depth + 1:
-            logger.error(
-                'Not enough future years to run myopic mode. Need %d including end year. Got %d.',
-                self.view_depth + 1,
-                len(future_periods),
-            )
-            sys.exit(-1)
+            msg = (
+                'Not enough future periods for view depth. Need {} including end period. Got {}.'
+            ).format(self.view_depth+1, len(future_periods))
+            logger.error(msg)
+            raise RuntimeError(msg)
         self.optimization_periods = future_periods.copy()
-        last_idx = len(future_periods) - 1
-        for idx in range(0, len(future_periods[:-1]), self.step_size):
-            depth = min(self.view_depth, last_idx - idx)
-            step = min(self.step_size, last_idx - idx)
+        last_base_year = ((len(future_periods) - 2) // self.step_size) * self.step_size
+        base_years = list(range(0, last_base_year+1, self.step_size))
+        if not self.evolving:
+            # Remove redundant iterations near end of horizon if not evolving
+            catch_Pe = [i for i in base_years if i + self.view_depth >= len(future_periods) - 1]
+            if len(catch_Pe) > 1:
+                # keep only one iteration that captures the end of the horizon
+                base_years = base_years[:-len(catch_Pe) + 1]
+        for n, idx in enumerate(base_years):
+            depth = min(self.view_depth, len(future_periods) - idx - 1)
+            if idx == base_years[-1]:
+                # last period, record the rest
+                step = depth
+            else:
+                # record to next base year
+                step = base_years[n+1] - idx
             if depth < 1:
-                break
+                msg = (
+                    'Calculated MyopicIndex with non-positive depth. '
+                    'This should never happen. Code error likely. '
+                    'idx: {}, step: {}, depth: {}, future_periods: {}'
+                ).format(idx, step, depth, future_periods)
+                logger.error(msg)
+                raise RuntimeError(msg)
             myopic_idx = MyopicIndex(
                 base_year=future_periods[idx],
                 step_year=future_periods[idx + step],
