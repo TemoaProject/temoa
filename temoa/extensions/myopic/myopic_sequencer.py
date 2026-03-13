@@ -93,11 +93,11 @@ class MyopicSequencer:
                 raise RuntimeError('No myopic options received.  See log file.')
             else:
                 self.view_depth: int = myopic_options.get('view_depth')
-                if not isinstance(self.view_depth, int):
-                    raise ValueError(f'view_depth is not an integer {self.view_depth}')
+                if not isinstance(self.view_depth, int) or self.view_depth < 1:
+                    raise ValueError(f'view_depth is not a positive integer {self.view_depth}')
                 self.step_size: int = myopic_options.get('step_size')
-                if not isinstance(self.step_size, int):
-                    raise ValueError(f'step_size is not an integer {self.step_size}')
+                if not isinstance(self.step_size, int) or self.step_size < 1:
+                    raise ValueError(f'step_size is not a positive integer {self.step_size}')
                 if self.step_size > self.view_depth:
                     raise ValueError(
                         f'the Myopic step size({self.step_size}) '
