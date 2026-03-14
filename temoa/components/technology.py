@@ -61,6 +61,7 @@ def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology,
     process indices that may be specified in the lifetime_process parameter.
     """
     indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    indices = indices | set(model.existing_capacity.sparse_iterkeys())
 
     return indices
 
@@ -226,6 +227,8 @@ def create_survival_curve(model: TemoaModel) -> None:
     rtv_interpolated = set()  # so we only need one warning
 
     for r, _, t, v, _ in model.efficiency.sparse_iterkeys():
+        model.is_survival_curve_process[r, t, v] = False  # by default
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
         model.is_survival_curve_process[r, t, v] = False  # by default
 
     # Collect rptv indices into (r, t, v): p dictionary
@@ -433,3 +436,29 @@ def check_efficiency_variable(model: TemoaModel) -> None:
                     num_seg,
                     (r, p, i, t, v, o),
                 )
+
+
+def check_existing_capacity(model: TemoaModel) -> None:
+
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
+
+        if t in model.tech_uncap:
+            msg = (
+                'Existing capacity entry for a tech without capacity (tech_unlim_cap set). '
+                'This is not allowed: ({}, {}, {})'
+            ).format(r, t, v)
+            logger.error(msg)
+            raise ValueError(msg)
+    
+        lifetime = value(model.lifetime_process[r, t, v])
+
+        # if it survives to future periods, it should have a capacity variable in that period
+        for p in model.time_optimize:
+            if v <= p < v + lifetime and (r, p, t, v) not in model.active_capacity_available_rptv:
+                msg = (
+                    'Existing capacity entry for region {}, tech {}, vintage {} has lifetime {} '
+                    'that includes period {} but no v_capacity exists for that period. Is this '
+                    'process in the efficiency table?'
+                ).format(r, t, v, lifetime, p)
+                logger.error(msg)
+                raise ValueError(msg)
