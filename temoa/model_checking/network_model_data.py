@@ -356,69 +356,67 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             sector = None
 
         for p in periods:
-            if not (v <= p < v + lifetime):
-                continue
-
-            living_techs.add(tech)
-            if '-' in r and r.count('-') == 1:  # Inter-regional transfer
-                r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
-                source_comm, dest_comm = (
-                    cast('Commodity', f'{ic} ({r1})'),
-                    cast('Commodity', f'{oc} ({r2})'),
-                )
-                res.available_techs[r2, p].add(
-                    EdgeTuple(
-                        region=r2,
-                        input_comm=source_comm,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
+            if (v <= p < v + lifetime):
+                living_techs.add(tech)
+                if '-' in r and r.count('-') == 1:  # Inter-regional transfer
+                    r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
+                    source_comm, dest_comm = (
+                        cast('Commodity', f'{ic} ({r1})'),
+                        cast('Commodity', f'{oc} ({r2})'),
                     )
-                )
-                res.available_techs[r1, p].add(
-                    EdgeTuple(
-                        region=r1,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=dest_comm,
-                        lifetime=lifetime,
-                        sector=sector,
+                    res.available_techs[r2, p].add(
+                        EdgeTuple(
+                            region=r2,
+                            input_comm=source_comm,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
                     )
-                )
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
+                    res.available_techs[r1, p].add(
+                        EdgeTuple(
+                            region=r1,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=dest_comm,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
                     )
-                )
-                res.source_commodities[r2, p].add(source_comm)
-                res.demand_commodities[r1, p].add(dest_comm)
-                res.physical_commodities.update([source_comm, dest_comm])
-                res.exchange_commodities.update([source_comm, dest_comm])
-            else:  # Standard technology
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
                     )
-                )
-                if ic in basic_data['source_commodities_all']:
-                    res.source_commodities[r, p].add(ic)
-                if oc in basic_data['waste_commodities_all']:
-                    res.waste_commodities[r, p].add(oc)
+                    res.source_commodities[r2, p].add(source_comm)
+                    res.demand_commodities[r1, p].add(dest_comm)
+                    res.physical_commodities.update([source_comm, dest_comm])
+                    res.exchange_commodities.update([source_comm, dest_comm])
+                else:  # Standard technology
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    if ic in basic_data['source_commodities_all']:
+                        res.source_commodities[r, p].add(ic)
+                    if oc in basic_data['waste_commodities_all']:
+                        res.waste_commodities[r, p].add(oc)
 
             is_natural_eol = p <= v + lifetime < p + basic_data['period_length'][p]
             is_retireable = (
