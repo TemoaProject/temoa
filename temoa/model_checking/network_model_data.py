@@ -66,7 +66,7 @@ class BasicData(TypedDict):
 class LookupData(TypedDict):
     """Defines the shape of the data returned by _fetch_lookup_data."""
 
-    eol: defaultdict[tuple[Region, Technology, Vintage], list[Commodity]]
+    eol: defaultdict[tuple[Region, Technology, Vintage, int], list[Commodity]]
     construction: list[tuple[Region, Commodity, Technology, Vintage]]
     linked: set[tuple[Region, Technology, Commodity, Technology]]
     neg_cost_techs: set[Technology]
@@ -349,7 +349,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
     res.physical_commodities = basic_data['physical_commodities']
     res.demand_commodities = basic_data['demand_commodities']
 
-    periods: list[Period] | set[Period] = basic_data['periods']
+    periods: list[Period] = basic_data['periods']
     if myopic_index:
         periods = [
             p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
