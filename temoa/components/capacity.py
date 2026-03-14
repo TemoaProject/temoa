@@ -604,9 +604,9 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
 
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')
     # Calculate retirement periods based on lifetime and survival curves
-    unique_rtv = set(
+    unique_rtv = {
         (r, t, v) for r, _i, t, v, _o in model.efficiency.sparse_iterkeys()
-    ) | set(model.existing_capacity.sparse_iterkeys())
+    } | set(model.existing_capacity.sparse_iterkeys())
     for r, t, v in unique_rtv:
         lifetime = value(model.lifetime_process[r, t, v])
         for p in model.time_optimize:
