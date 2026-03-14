@@ -33,8 +33,9 @@ def solved_connection(
     )
     config.scenario_mode = TemoaMode[mode.upper()]
     config.scenario = request.param['name']
-    config.myopic_inputs['view_depth'] = 1
-    config.myopic_inputs['step_size'] = 1
+    if config.myopic_inputs is not None:
+        config.myopic_inputs['view_depth'] = 1
+        config.myopic_inputs['step_size'] = 1
     sequencer = TemoaSequencer(config=config)
 
     sequencer.start()
