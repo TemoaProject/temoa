@@ -291,10 +291,19 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     lookups = LookupData(eol=defaultdict(list), construction=[], linked=set(), neg_cost_techs=set())
 
     try:
-        for r, tech, v, oc in cur.execute(
-            'SELECT region, tech, vintage, output_comm FROM end_of_life_output'
+        query = f"""
+            SELECT
+                eol.region, eol.tech, eol.vintage, eol.output_comm,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM end_of_life_output AS eol
+            LEFT JOIN main.lifetime_process AS lp ON eol.tech = lp.tech AND eol.vintage = lp.vintage
+            AND eol.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eol.tech = lt.tech AND eol.region = lt.region
+        """
+        for r, tech, v, oc, l in cur.execute(
+            query, (TemoaModel.default_lifetime_tech,)
         ).fetchall():
-            lookups['eol'][(r, tech, v)].append(oc)
+            lookups['eol'][(r, tech, v, l)].append(oc)
     except sqlite3.OperationalError:
         logger.warning('Table end_of_life_output not found, skipping.')
 
@@ -422,6 +431,15 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     if oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(oc)
 
+    for r, tech, v, lifetime in lookup_data['eol']:
+        for p in periods:
+
+            # retires bang on start of horizon or survives into planning periods
+            is_p0_eol = (p == periods[0]) and (v + lifetime == p)
+            is_living = (r, tech, v) in living_rtv
+            if not (is_p0_eol or is_living):
+                continue
+
             is_natural_eol = p <= v + lifetime < p + basic_data['period_length'][p]
             is_retireable = (
                 tech in basic_data['tech_retire']
@@ -433,7 +451,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             )
 
             if is_natural_eol or is_retireable or has_survival:
-                for eol_oc in lookup_data['eol'].get((r, tech, v), []):
+                for eol_oc in lookup_data['eol'][(r, tech, v, lifetime)]:
                     res.available_techs[r, p].add(
                         EdgeTuple(
                             region=r,
