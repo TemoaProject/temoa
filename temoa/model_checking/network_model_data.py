@@ -291,7 +291,7 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     lookups = LookupData(eol=defaultdict(list), construction=[], linked=set(), neg_cost_techs=set())
 
     try:
-        query = f"""
+        query = """
             SELECT
                 eol.region, eol.tech, eol.vintage, eol.output_comm,
                 COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
