@@ -201,7 +201,9 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         cur.execute('SELECT DISTINCT region, tech, vintage FROM lifetime_survival_curve').fetchall()
     )
 
-    periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM time_period').fetchall())
+    periods_full = sorted(
+        p[0] for p in cur.execute('SELECT period FROM time_period WHERE flag = "f"').fetchall()
+    )
     periods = periods_full[:-1]
     period_length = {
         periods_full[i]: periods_full[i + 1] - periods_full[i] for i in range(len(periods_full) - 1)
@@ -340,9 +342,9 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     periods: list[Period] | set[Period] = basic_data['periods']
     if myopic_index:
-        periods = {
+        periods = [
             p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
-        }
+        ]
 
     living_techs: set[Technology] = set()
 
