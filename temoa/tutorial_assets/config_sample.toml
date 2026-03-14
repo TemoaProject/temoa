@@ -161,7 +161,7 @@ step_size = 2    # number of periods to step by (must be <= view depth)
 # reaches the end of the planning horizon, to avoid redundant decisions with no 
 # new information. 
 evolving = true
-evolution_script = "temoa\\extensions\\myopic\\evolution_updater.py"
+evolution_script = "temoa/extensions/myopic/evolution_updater.py"
 
 [morris]
 perturbation = 0.10     # amount to perturb marked parameters (ex:  0.10 -> +/- 10%)
