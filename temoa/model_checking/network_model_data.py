@@ -347,6 +347,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         ]
 
     living_techs: set[Technology] = set()
+    living_rtv: set[tuple[Region, Technology, Vintage]] = set()
 
     # --- 2. Process technologies ---
     for tech_data in raw_techs:
@@ -360,6 +361,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         for p in periods:
             if (v <= p < v + lifetime):
                 living_techs.add(tech)
+                living_rtv.add((r, tech, v))
                 if '-' in r and r.count('-') == 1:  # Inter-regional transfer
                     r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
                     source_comm, dest_comm = (
@@ -445,7 +447,6 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     )
                     res.source_commodities[r, p].add(cast('Commodity', tech))
                     res.capacity_commodities.add(cast('Commodity', tech))
-                    living_techs.add(tech)
                     if eol_oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(eol_oc)
 
@@ -471,7 +472,6 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         )
         res.demand_commodities[r, cast('Period', v)].add(cast('Commodity', tech))
         res.capacity_commodities.add(cast('Commodity', tech))
-        living_techs.add(tech)
 
     # --- 4. Process Linked Techs and Other Metadata ---
     res.available_linked_techs = {
