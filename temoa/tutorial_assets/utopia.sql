@@ -1135,10 +1135,14 @@ CREATE TABLE myopic_efficiency
 (
     base_year   integer,
     region      text,
-    input_comm  text,
-    tech        text,
-    vintage     integer,
-    output_comm text,
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
     efficiency  real,
     lifetime    integer,
 
@@ -1286,15 +1290,21 @@ CREATE TABLE output_flow_out
 );
 CREATE TABLE output_flow_out_summary
 (
-    scenario    TEXT NOT NULL,
-    region      TEXT NOT NULL,
-    sector      TEXT,
-    period      INTEGER,
-    input_comm  TEXT NOT NULL,
-    tech        TEXT NOT NULL,
-    vintage     INTEGER,
-    output_comm TEXT NOT NULL,
-    flow        REAL NOT NULL,
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES sector_label (sector),
+    period      INTEGER
+        REFERENCES time_period (period),
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
+    flow        REAL,
 
     FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
