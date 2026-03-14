@@ -454,7 +454,13 @@ def check_existing_capacity(model: TemoaModel) -> None:
 
         # if it survives to future periods, it should have a capacity variable in that period
         for p in model.time_optimize:
-            if v <= p < v + lifetime and (r, p, t, v) not in model.active_capacity_available_rptv:
+            if (
+                v <= p < v + lifetime
+                and (
+                    model.active_capacity_available_rptv is None
+                    or (r, p, t, v) not in model.active_capacity_available_rptv
+                )
+            ):
                 msg = (
                     'Existing capacity entry for region {}, tech {}, vintage {} has lifetime {} '
                     'that includes period {} but no v_capacity exists for that period. Is this '
