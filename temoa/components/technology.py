@@ -436,35 +436,3 @@ def check_efficiency_variable(model: TemoaModel) -> None:
                     num_seg,
                     (r, p, i, t, v, o),
                 )
-
-
-def check_existing_capacity(model: TemoaModel) -> None:
-
-    for r, t, v in model.existing_capacity.sparse_iterkeys():
-
-        if t in model.tech_uncap:
-            msg = (
-                'Existing capacity entry for a tech without capacity (tech_unlim_cap set). '
-                'This is not allowed: ({}, {}, {})'
-            ).format(r, t, v)
-            logger.error(msg)
-            raise ValueError(msg)
-    
-        lifetime = value(model.lifetime_process[r, t, v])
-
-        # if it survives to future periods, it should have a capacity variable in that period
-        for p in model.time_optimize:
-            if (
-                v <= p < v + lifetime
-                and (
-                    model.active_capacity_available_rptv is None
-                    or (r, p, t, v) not in model.active_capacity_available_rptv
-                )
-            ):
-                msg = (
-                    'Existing capacity entry for region {}, tech {}, vintage {} has lifetime {} '
-                    'that includes period {} but no v_capacity exists for that period. Is this '
-                    'process in the efficiency table?'
-                ).format(r, t, v, lifetime, p)
-                logger.error(msg)
-                raise ValueError(msg)

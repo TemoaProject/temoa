@@ -513,7 +513,6 @@ class TemoaModel(AbstractModel):
         # equations below.
         self.create_sparse_dicts = BuildAction(rule=create_sparse_dicts)
         self.initialize_demands = BuildAction(rule=commodities.create_demands)
-        self.check_existing_capacity = BuildAction(rule=technology.check_existing_capacity)
 
         self.capacity_factor_rpsdt = Set(dimen=5, initialize=capacity.capacity_factor_tech_indices)
         self.capacity_factor_tech = Param(
