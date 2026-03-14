@@ -210,23 +210,12 @@ class MyopicSequencer:
 
             # 4. If evolving, call the evolution script and pass it the myopic index and last instance status
             if self.evolving and last_instance_status is not None: # don't evolve before first iteration (pointless)
-                if not self.config.silent:
-                    self.progress_mapper.report(idx, 'evolve')
-                if not self.evolution_script:
-                    logger.info(
-                        'Evolving myopic mode selected, but no evolution script provided.'
-                    )
-                else:
-                    # import the script as a module and call the iterate function with the idx and last_instance_status
-                    spec = util.spec_from_file_location("evolution_script", self.evolution_script)
-                    evolution_module = util.module_from_spec(spec)
-                    spec.loader.exec_module(evolution_module)
-                    evolution_module.iterate(
-                        idx=idx,
-                        prev_base_year=last_base_year,
-                        last_instance_status=last_instance_status,
-                        db_con=self.output_con,  # pass the db connection so the script can make updates as needed
-                    )
+                self.run_evolution_script(
+                    idx=idx,
+                    last_base_year=last_base_year,
+                    last_instance_status=last_instance_status,
+                    con=self.output_con,
+                )
 
             # 5. update the myopic_efficiency table so it is ready for the upcoming data pull.
             if not self.config.silent:
@@ -367,6 +356,53 @@ class MyopicSequencer:
             )
             res = self.cursor.execute(q2).fetchall()
             print(list(res))
+
+    def run_evolution_script(
+            self,
+            idx: int | None,
+            last_base_year: int | None,
+            last_instance_status: str | None,
+            con: sqlite3.Connection | None
+        ) -> None:
+        """
+        Run the evolution script to update the myopic database before the next iteration.
+        """
+
+        if not self.evolution_script:
+            logger.warning('Evolving myopic mode selected, but no evolution script provided.')
+            return
+        
+        # import the script as a module and call the iterate function
+        script_path = Path(self.evolution_script).expanduser()
+        if not script_path.is_file():
+            msg = f"Myopic evolution script not found: {script_path}"
+            logger.error(msg)
+            raise FileNotFoundError(msg)
+
+        spec = util.spec_from_file_location("evolution_script", script_path)
+        if spec is None or spec.loader is None:
+            msg = f"Could not load evolution script module spec from: {script_path}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        evolution_module = util.module_from_spec(spec)
+        spec.loader.exec_module(evolution_module)
+        iterate = getattr(evolution_module, "iterate", None)
+        if not callable(iterate):
+            msg = f"Evolution script must define callable iterate(...): {script_path}"
+            logger.error(msg)
+            raise AttributeError(msg)
+
+        if not self.config.silent:
+            self.progress_mapper.report(idx, 'evolve')
+
+        iterate(
+            idx=idx,
+            prev_base_year=last_base_year,
+            last_instance_status=last_instance_status,
+            db_con=con,
+        )
+
 
     def update_myopic_efficiency_table(self, myopic_index: MyopicIndex, prev_base: int):
         """
