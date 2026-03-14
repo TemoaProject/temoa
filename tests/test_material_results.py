@@ -86,7 +86,7 @@ def test_flows(solved_connection: tuple[sqlite3.Connection, str, str, int, float
     Test that the flows from each technology archetype
     are correct in both perfect foresight and myopic modes
     """
-    con, name, tech, period, flow_target, mode = solved_connection
+    con, name, tech, period, flow_target, _mode = solved_connection
     cursor = con.cursor()
     row = cursor.execute(
         'SELECT SUM(flow) FROM main.output_flow_out '
