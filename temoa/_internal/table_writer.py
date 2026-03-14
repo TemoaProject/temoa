@@ -621,7 +621,7 @@ class TableWriter:
         for fi, flow_vals in flows.items():
             if fi.t in model.tech_storage:
                 continue
-            if fi.i == 'end_of_life_output' or fi.o == 'construction_input':
+            if fi.i == None or fi.o == None:
                 continue
 
             fin = flow_vals.get(FlowType.IN, 0)
