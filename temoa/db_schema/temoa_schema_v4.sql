@@ -1081,8 +1081,6 @@ CREATE TABLE IF NOT EXISTS myopic_efficiency
         REFERENCES commodity (name),
     efficiency  real,
     lifetime    integer,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
 );
 -- for efficient searching by rtv:
@@ -1105,8 +1103,6 @@ CREATE TABLE IF NOT EXISTS output_flow_out_summary
     output_comm TEXT
         REFERENCES commodity (name),
     flow        REAL,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
 );
 

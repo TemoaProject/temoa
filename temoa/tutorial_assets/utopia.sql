@@ -1145,8 +1145,6 @@ CREATE TABLE myopic_efficiency
         REFERENCES commodity (name),
     efficiency  real,
     lifetime    integer,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE operator
@@ -1305,8 +1303,6 @@ CREATE TABLE output_flow_out_summary
     output_comm TEXT
         REFERENCES commodity (name),
     flow        REAL,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
 );
 CREATE TABLE output_net_capacity
