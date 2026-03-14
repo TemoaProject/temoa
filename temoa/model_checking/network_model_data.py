@@ -440,7 +440,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     )
                     res.source_commodities[r, p].add(cast('Commodity', tech))
                     res.capacity_commodities.add(cast('Commodity', tech))
-                    living_techs.add(cast('Commodity', tech))
+                    living_techs.add(tech)
                     if eol_oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(eol_oc)
 
@@ -455,7 +455,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             EdgeTuple(
                 region=r,
                 input_comm=ic,
-                tech=cast('Technology', tech),
+                tech=tech,
                 vintage=v,
                 output_comm=cast(
                     'Commodity', tech
