@@ -423,7 +423,10 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                 tech in basic_data['tech_retire']
                 and v < p <= v + lifetime - basic_data['period_length'][p]
             )
-            has_survival = (r, tech, v) in basic_data['tech_survival_curve']
+            has_survival = (
+                (r, tech, v) in basic_data['tech_survival_curve']
+                and v <= p <= v + lifetime
+            )
 
             if is_natural_eol or is_retireable or has_survival:
                 for eol_oc in lookup_data['eol'].get((r, tech, v), []):
