@@ -564,7 +564,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             component=model.emission_end_of_life,
             table='emission_end_of_life',
             columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
-            validator_name='viable_rtv_eol',
+            validator_name='viable_rtv',
             validation_map=(0, 2, 3),
             is_period_filtered=False,
             is_table_required=False,
