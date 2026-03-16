@@ -437,3 +437,24 @@ def check_efficiency_variable(model: TemoaModel) -> None:
                     num_seg,
                     (r, p, i, t, v, o),
                 )
+
+
+def check_existing_capacity(model: TemoaModel) -> None:
+    """
+    Check that all existing capacities are properly accounted for in the model.
+    """
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
+        cap = value(model.existing_capacity[r, t, v])
+        if t not in model.tech_all:
+            continue
+        if cap <= 0:
+            msg = f"Existing capacity {r, t, v} has non-positive capacity {cap}. This entry will be ignored."
+            logger.warning(msg)
+        life = value(model.lifetime_process[r, t, v])
+        if (r, t, v) not in model.process_periods and v + life > model.time_optimize.first():
+            msg = (
+                f"Existing capacity {r, t, v} with lifetime {life} and capacity {cap} should extend into "
+                "future periods but it not in process periods. Was it included in the Efficiency table?"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
