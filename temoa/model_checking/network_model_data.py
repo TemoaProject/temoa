@@ -100,6 +100,7 @@ class NetworkModelData:
     tech_data: defaultdict[Technology, dict[str, TechAttributeValue]] = field(
         default_factory=lambda: defaultdict(dict)
     )
+    silent_rptv: set[tuple[Region, Period, Technology, Vintage]] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         """Validate data consistency after initialization."""
@@ -295,6 +296,7 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     """Fetches data from all optional tables to avoid N+1 queries."""
     lookups = LookupData(
         eol=defaultdict(list),
+        eeol=defaultdict(list),
         construction=[],
         exs_cap=defaultdict(float),
         linked=set(),
@@ -317,6 +319,23 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
             lookups['eol'][(r, tech, v, l)].append(oc)
     except sqlite3.OperationalError:
         logger.warning('Table end_of_life_output not found, skipping.')
+
+    try:
+        query = """
+            SELECT
+                eeol.region, eeol.emis_comm, eeol.tech, eeol.vintage,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM emission_end_of_life AS eeol
+            LEFT JOIN main.lifetime_process AS lp ON eeol.tech = lp.tech AND eeol.vintage = lp.vintage
+            AND eeol.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eeol.tech = lt.tech AND eeol.region = lt.region
+        """
+        for r, ec, tech, v, l in cur.execute(
+            query, (TemoaModel.default_lifetime_tech,)
+        ).fetchall():
+            lookups['eeol'][(r, tech, v, l)] = ec
+    except sqlite3.OperationalError:
+        logger.warning('Table emission_end_of_life not found, skipping.')
 
     try:
         lookups['construction'] = cur.execute(
@@ -492,6 +511,15 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     res.capacity_commodities.add(cast('Commodity', tech))
                     if eol_oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(eol_oc)
+
+    p0 = periods[0]
+    for r, tech, v, lifetime in lookup_data['eeol']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to retire
+            continue
+        # retires bang on start of horizon or survives into planning periods
+        if v + lifetime == p0 and lookup_data['exs_cap'].get((r, tech, v), 0) > 0:
+            res.silent_rptv.add((r, p, tech, v))
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
