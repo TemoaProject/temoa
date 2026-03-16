@@ -251,11 +251,11 @@ class HybridLoader:
 
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
-                    logger.warning(
-                        '%d values for %s failed to validate and were ignored.',
-                        ignored_count,
-                        item.component.name,
-                    )
+                    msg = '%d values for %s failed to validate and were ignored.'
+                    if myopic_index:
+                        logger.info(msg, ignored_count, item.component.name)
+                    else:
+                        logger.warning(msg, ignored_count, item.component.name)
                 self._load_component_data(data, item.component, filtered_data)
 
         # ---------------------------------------------------------------------
