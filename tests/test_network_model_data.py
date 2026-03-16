@@ -30,6 +30,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'basic',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -81,6 +82,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'bad linked tech',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -118,6 +120,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'good linked tech',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -273,6 +276,10 @@ def test_sector_handling_with_sectors() -> None:
             return sector_check_mock
         elif 'FROM main.efficiency' in query:
             return efficiency_mock
+        elif 'technology WHERE unlim_cap==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'technology WHERE retire==1' in query:
             m = MagicMock()
             m.fetchall.return_value = []
@@ -356,6 +363,10 @@ def test_sector_handling_without_sectors() -> None:
         elif 'FROM main.commodity' in query:
             m = MagicMock()
             m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
+            return m
+        elif 'technology WHERE unlim_cap==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
             return m
         elif 'technology WHERE retire==1' in query:
             m = MagicMock()

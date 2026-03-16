@@ -53,6 +53,7 @@ type ModelBlock = TemoaModel | ConcreteModel
 class BasicData(TypedDict):
     """Defines the shape of the data returned by _fetch_basic_data."""
 
+    tech_uncap: set[Technology]
     tech_retire: set[Technology]
     tech_survival_curve: set[tuple[Region, Technology, Vintage]]
     periods: list[Period]
@@ -194,6 +195,9 @@ def _build_from_model(
 
 def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
     """Fetches simple, required tables and parameters from the DB."""
+    tech_uncap = {
+        t[0] for t in cur.execute('SELECT tech FROM technology WHERE unlim_cap==1').fetchall()
+    }
     tech_retire = {
         t[0] for t in cur.execute('SELECT tech FROM technology WHERE retire==1').fetchall()
     }
@@ -227,6 +231,7 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         demand_commodities[r, p].add(d)
 
     return BasicData(
+        tech_uncap=tech_uncap,
         tech_retire=tech_retire,
         tech_survival_curve=tech_survival_curve,
         periods=periods,
@@ -432,6 +437,9 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                         res.waste_commodities[r, p].add(oc)
 
     for r, tech, v, lifetime in lookup_data['eol']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to retire
+            continue
         for p in periods:
 
             # retires bang on start of horizon or survives into planning periods
@@ -470,6 +478,9 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
 
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to construct
+            continue
         if cast('Period', v) not in periods:
             continue
         construction_lifetime = basic_data['period_length'].get(
