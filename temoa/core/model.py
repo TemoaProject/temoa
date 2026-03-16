@@ -390,6 +390,9 @@ class TemoaModel(AbstractModel):
         self.end_of_life_output = Param(
             self.regions, self.tech_with_capacity, self.vintage_all, self.commodity_carrier
         )
+        self.emission_end_of_life = Param(
+            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
+        )
 
         self.efficiency = Param(
             self.regional_indices,
@@ -726,9 +729,6 @@ class TemoaModel(AbstractModel):
             self.commodity_emissions,
             self.tech_with_capacity,
             self.vintage_optimize,
-        )
-        self.emission_end_of_life = Param(
-            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
         )
 
         self.myopic_discounting_year = Param(default=0)
