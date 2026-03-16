@@ -608,6 +608,13 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
         (r, t, v) for r, _i, t, v, _o in model.efficiency.sparse_iterkeys()
     } | set(model.existing_capacity.sparse_iterkeys())
     for r, t, v in unique_rtv:
+        if t in model.tech_uncap:
+            # No capacity to retire
+            continue
+        if t not in model.tech_all:
+            # Not an active technology so wont have a lifetime
+            # If it has an EOLoutput it will be in tech_all
+            continue
         lifetime = value(model.lifetime_process[r, t, v])
         for p in model.time_optimize:
 
@@ -623,7 +630,7 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
             )
             is_survival_curve = model.is_survival_curve_process[r, t, v] and v <= p <= v + lifetime
 
-            if t not in model.tech_uncap and any(
+            if any(
                 (is_natural_eol, is_early_retire, is_survival_curve)
             ):
                 model.retirement_periods.setdefault((r, t, v), set()).add(p)
