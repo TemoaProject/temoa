@@ -65,7 +65,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 'p2', 't5', 2000, 'd2', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [],
             'FROM cost_variable': [],
         },
@@ -103,7 +105,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
@@ -141,7 +145,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
@@ -312,7 +318,15 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
+        elif 'FROM emission_end_of_life' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'FROM construction_input' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM existing_capacity' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -400,7 +414,15 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
+        elif 'FROM emission_end_of_life' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'FROM construction_input' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM existing_capacity' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
