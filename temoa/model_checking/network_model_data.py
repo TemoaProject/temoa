@@ -293,7 +293,13 @@ def _fetch_all_tech_definitions(
 
 def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     """Fetches data from all optional tables to avoid N+1 queries."""
-    lookups = LookupData(eol=defaultdict(list), construction=[], linked=set(), neg_cost_techs=set())
+    lookups = LookupData(
+        eol=defaultdict(list),
+        construction=[],
+        exs_cap=defaultdict(float),
+        linked=set(),
+        neg_cost_techs=set()
+    )
 
     try:
         query = """
@@ -318,6 +324,14 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
         ).fetchall()
     except sqlite3.OperationalError:
         logger.warning('Table construction_input not found, skipping.')
+
+    try:
+        for r, tech, v, capacity in cur.execute(
+            'SELECT region, tech, vintage, capacity FROM existing_capacity'
+        ).fetchall():
+            lookups['exs_cap'][(r, tech, v)] = capacity
+    except sqlite3.OperationalError:
+        logger.warning('Table existing_capacity not found, skipping.')
 
     try:
         lookups['linked'] = set(
@@ -443,7 +457,10 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         for p in periods:
 
             # retires bang on start of horizon or survives into planning periods
-            is_p0_eol = (p == periods[0]) and (v + lifetime == p)
+            is_p0_eol = (
+                (p == periods[0]) and (v + lifetime == p)
+                and lookup_data['exs_cap'].get((r, tech, v), 0) > 0
+            )
             is_living = (r, tech, v) in living_rtv
             if not (is_p0_eol or is_living):
                 continue

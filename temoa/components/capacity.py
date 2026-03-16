@@ -619,7 +619,10 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
         for p in model.time_optimize:
 
             # retires bang on start of horizon or survives into planning periods
-            is_p0_eol = (p == model.time_optimize.first()) and (v + lifetime == p)
+            is_p0_eol = (
+                (p == model.time_optimize.first()) and (v + lifetime == p)
+                and value(model.existing_capacity[r, t, v]) > 0
+            )
             is_living = (r, t, v) in model.process_periods
             if not (is_p0_eol or is_living):
                 continue
