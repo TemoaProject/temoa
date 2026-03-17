@@ -4157,9 +4157,7 @@
     "tech_exchange": [
         "FGF_pipe"
     ],
-    "tech_exist": [
-        "EH"
-    ],
+    "tech_exist": [],
     "tech_flex": [
         "EFL"
     ],
