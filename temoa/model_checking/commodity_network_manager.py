@@ -126,6 +126,9 @@ class CommodityNetworkManager:
                 valid_elements['rpto'].add(
                     (edge_tuple.region, p, edge_tuple.tech, edge_tuple.output_comm)
                 )
+                valid_elements['rtv_eol'].add(
+                    (edge_tuple.region, edge_tuple.input_comm, edge_tuple.vintage)
+                )
                 valid_elements['t'].add(edge_tuple.tech)
                 valid_elements['v'].add(edge_tuple.vintage)
                 valid_elements['ic'].add(edge_tuple.input_comm)
@@ -154,6 +157,11 @@ class CommodityNetworkManager:
             ),
             'rpto': ViableSet(
                 elements=valid_elements['rpto'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
+            'rtv_eol': ViableSet(
+                elements=valid_elements['rtv_eol'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
