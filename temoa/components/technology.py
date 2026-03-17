@@ -352,7 +352,7 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
-    
+
     c_inputs = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
     c_inputs = c_inputs | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
     c_carrier = c_inputs | c_outputs
@@ -368,8 +368,11 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         f_msg = msg.format(', '.join(symdiff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
-    
+
     techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    techs = techs | {t for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
+    techs = techs | {t for r, i, t, v in model.construction_input.sparse_iterkeys()}
+    techs = techs | {t for r, e, t, v in model.emission_end_of_life.sparse_iterkeys()}
 
     symdiff = techs.symmetric_difference(model.tech_production)
     if symdiff:
