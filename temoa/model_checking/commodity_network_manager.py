@@ -134,6 +134,13 @@ class CommodityNetworkManager:
                 valid_elements['ic'].add(edge_tuple.input_comm)
                 valid_elements['oc'].add(edge_tuple.output_comm)
 
+        # Good processes that we dont want in the network diagram
+        for r, _p, t, v in self.orig_data.silent_rptv:
+            valid_elements['rtv'].add((r, t, v))
+            valid_elements['rt'].add((r, t))
+            valid_elements['t'].add(t)
+            valid_elements['v'].add(v)
+
         return {
             'ritvo': ViableSet(
                 elements=valid_elements['ritvo'],
