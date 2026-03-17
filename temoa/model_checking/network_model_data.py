@@ -66,7 +66,7 @@ class BasicData(TypedDict):
 class LookupData(TypedDict):
     """Defines the shape of the data returned by _fetch_lookup_data."""
 
-    eol: defaultdict[tuple[Region, Technology, Vintage], list[Commodity]]
+    eol: defaultdict[tuple[Region, Technology, Vintage, int], list[Commodity]]
     construction: list[tuple[Region, Commodity, Technology, Vintage]]
     linked: set[tuple[Region, Technology, Commodity, Technology]]
     neg_cost_techs: set[Technology]
@@ -286,13 +286,28 @@ def _fetch_all_tech_definitions(
 
 def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     """Fetches data from all optional tables to avoid N+1 queries."""
-    lookups = LookupData(eol=defaultdict(list), construction=[], linked=set(), neg_cost_techs=set())
+    lookups = LookupData(
+        eol=defaultdict(list),
+        construction=[],
+        linked=set(),
+        neg_cost_techs=set(),
+    )
 
     try:
-        for r, tech, v, oc in cur.execute(
-            'SELECT region, tech, vintage, output_comm FROM end_of_life_output'
+        query = """
+            SELECT
+                eol.region, eol.tech, eol.vintage, eol.output_comm,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM end_of_life_output AS eol
+            LEFT JOIN main.lifetime_process AS lp ON eol.tech = lp.tech
+            AND eol.vintage = lp.vintage
+            AND eol.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eol.tech = lt.tech AND eol.region = lt.region
+        """
+        for r, tech, v, oc, life in cur.execute(
+            query, (TemoaModel.default_lifetime_tech,)
         ).fetchall():
-            lookups['eol'][(r, tech, v)].append(oc)
+            lookups['eol'][(r, tech, v, life)].append(oc)
     except sqlite3.OperationalError:
         logger.warning('Table end_of_life_output not found, skipping.')
 
@@ -356,79 +371,81 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             sector = None
 
         for p in periods:
-            if not (v <= p < v + lifetime):
-                continue
+            if v <= p < v + lifetime:
+                living_techs.add(tech)
+                if '-' in r and r.count('-') == 1:  # Inter-regional transfer
+                    r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
+                    source_comm, dest_comm = (
+                        cast('Commodity', f'{ic} ({r1})'),
+                        cast('Commodity', f'{oc} ({r2})'),
+                    )
+                    res.available_techs[r2, p].add(
+                        EdgeTuple(
+                            region=r2,
+                            input_comm=source_comm,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.available_techs[r1, p].add(
+                        EdgeTuple(
+                            region=r1,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=dest_comm,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.source_commodities[r2, p].add(source_comm)
+                    res.demand_commodities[r1, p].add(dest_comm)
+                    res.physical_commodities.update([source_comm, dest_comm])
+                    res.exchange_commodities.update([source_comm, dest_comm])
+                else:  # Standard technology
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    if ic in basic_data['source_commodities_all']:
+                        res.source_commodities[r, p].add(ic)
+                    if oc in basic_data['waste_commodities_all']:
+                        res.waste_commodities[r, p].add(oc)
 
-            living_techs.add(tech)
-            if '-' in r and r.count('-') == 1:  # Inter-regional transfer
-                r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
-                source_comm, dest_comm = (
-                    cast('Commodity', f'{ic} ({r1})'),
-                    cast('Commodity', f'{oc} ({r2})'),
-                )
-                res.available_techs[r2, p].add(
-                    EdgeTuple(
-                        region=r2,
-                        input_comm=source_comm,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.available_techs[r1, p].add(
-                    EdgeTuple(
-                        region=r1,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=dest_comm,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.source_commodities[r2, p].add(source_comm)
-                res.demand_commodities[r1, p].add(dest_comm)
-                res.physical_commodities.update([source_comm, dest_comm])
-                res.exchange_commodities.update([source_comm, dest_comm])
-            else:  # Standard technology
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                if ic in basic_data['source_commodities_all']:
-                    res.source_commodities[r, p].add(ic)
-                if oc in basic_data['waste_commodities_all']:
-                    res.waste_commodities[r, p].add(oc)
-
+    for r, tech, v, lifetime in lookup_data['eol']:
+        for p in periods:
             is_natural_eol = p <= v + lifetime < p + basic_data['period_length'][p]
             is_retireable = (
                 tech in basic_data['tech_retire']
                 and v < p <= v + lifetime - basic_data['period_length'][p]
             )
-            has_survival = (r, tech, v) in basic_data['tech_survival_curve']
+            has_survival = (r, tech, v) in basic_data[
+                'tech_survival_curve'
+            ] and v <= p <= v + lifetime
 
             if is_natural_eol or is_retireable or has_survival:
-                for eol_oc in lookup_data['eol'].get((r, tech, v), []):
+                for eol_oc in lookup_data['eol'][(r, tech, v, lifetime)]:
                     res.available_techs[r, p].add(
                         EdgeTuple(
                             region=r,
