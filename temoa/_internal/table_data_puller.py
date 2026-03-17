@@ -36,12 +36,12 @@ def _marks(num: int) -> str:
     return marks
 
 
-def ritvo(fi: FI) -> tuple[Region, Commodity, Technology, Vintage, Commodity]:
+def ritvo(fi: FI) -> tuple[Region, Commodity | None, Technology, Vintage, Commodity | None]:
     """convert FI to ritvo index"""
     return fi.r, fi.i, fi.t, fi.v, fi.o
 
 
-def rpetv(fi: FI, e: Commodity) -> tuple[Region, Period, Commodity, Technology, Vintage]:
+def rpetv(fi: FI, e: Commodity) -> tuple[Region, Period, Commodity | None, Technology, Vintage]:
     """convert FI and emission to rpetv index"""
     return fi.r, fi.p, e, fi.t, fi.v
 
@@ -190,7 +190,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         )
         for s in model.time_season[v]:
             for d in model.time_of_day:
-                fi = FI(r, v, s, d, i, t, v, cast('Commodity', 'construction_input'))
+                fi = FI(r, v, s, d, i, t, v, cast('Commodity', None))
                 flow = annual * value(model.segment_fraction[v, s, d])
                 if abs(flow) < epsilon:
                     continue
@@ -206,7 +206,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             )
             for s in model.time_season[p]:
                 for d in model.time_of_day:
-                    fi = FI(r, p, s, d, cast('Commodity', 'end_of_life_output'), t, v, o)
+                    fi = FI(r, p, s, d, cast('Commodity', None), t, v, o)
                     flow = annual * value(model.segment_fraction[p, s, d])
                     if abs(flow) < epsilon:
                         continue
