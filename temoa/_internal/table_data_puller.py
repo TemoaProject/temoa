@@ -58,7 +58,18 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     for r, t, v in model.v_new_capacity.keys():
         if v in model.time_optimize:
             val = value(model.v_new_capacity[r, t, v])
-            if abs(val) < epsilon:
+            if val < -epsilon:
+                logger.warning(
+                    'Negative built capacity for %s, %s, %s: %s. '
+                    'This should not be possible. Could be a result of '
+                    'numerical instability or a code problem.',
+                    r,
+                    t,
+                    v,
+                    val,
+                )
+                continue
+            if val < epsilon:
                 continue
             new_cap = (r, t, v, val)
             built.append(new_cap)
@@ -67,7 +78,19 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     net = []
     for r, p, t, v in model.v_capacity.keys():
         val = value(model.v_capacity[r, p, t, v])
-        if abs(val) < epsilon:
+        if val < -epsilon:
+            logger.warning(
+                'Negative net capacity for %s, %s, %s, %s: %s. '
+                'This should not be possible. Could be a result of '
+                'numerical instability or a code problem.',
+                r,
+                p,
+                t,
+                v,
+                val,
+            )
+            continue
+        if val < epsilon:
             continue
         new_net_cap = (r, p, t, v, val)
         net.append(new_net_cap)
@@ -84,8 +107,19 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
             if t in model.tech_retirement and v < p <= v + lifetime - value(model.period_length[p]):
                 early = value(model.v_retired_capacity[r, p, t, v])
                 eol -= early
-            early = 0 if abs(early) < epsilon else early
-            eol = 0 if abs(eol) < epsilon else eol
+            if early < -epsilon or eol < -epsilon:
+                logger.warning(
+                    'Negative retirement components for %s, %s, %s, %s: cap_eol=%s, cap_early=%s',
+                    r,
+                    p,
+                    t,
+                    v,
+                    eol,
+                    early,
+                )
+                continue
+            early = 0 if early < epsilon else early
+            eol = 0 if eol < epsilon else eol
             if early == 0 and eol == 0:
                 continue
             new_retired_cap = (r, p, t, v, eol, early)
