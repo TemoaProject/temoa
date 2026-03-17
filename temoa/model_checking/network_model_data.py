@@ -68,6 +68,7 @@ class LookupData(TypedDict):
     """Defines the shape of the data returned by _fetch_lookup_data."""
 
     eol: defaultdict[tuple[Region, Technology, Vintage, int], list[Commodity]]
+    exs_cap: defaultdict[tuple[Region, Technology, Vintage], float]
     construction: list[tuple[Region, Commodity, Technology, Vintage]]
     linked: set[tuple[Region, Technology, Commodity, Technology]]
     neg_cost_techs: set[Technology]
@@ -296,6 +297,7 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     lookups = LookupData(
         eol=defaultdict(list),
         construction=[],
+        exs_cap=defaultdict(float),
         linked=set(),
         neg_cost_techs=set(),
     )
@@ -324,6 +326,14 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
         ).fetchall()
     except sqlite3.OperationalError:
         logger.warning('Table construction_input not found, skipping.')
+
+    try:
+        for r, tech, v, capacity in cur.execute(
+            'SELECT region, tech, vintage, capacity FROM existing_capacity'
+        ).fetchall():
+            lookups['exs_cap'][(r, tech, v)] = capacity
+    except sqlite3.OperationalError:
+        logger.warning('Table existing_capacity not found, skipping.')
 
     try:
         lookups['linked'] = set(
@@ -367,6 +377,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         ]
 
     living_techs: set[Technology] = set()
+    living_rtv: set[tuple[Region, Technology, Vintage]] = set()
 
     # --- 2. Process technologies ---
     for tech_data in raw_techs:
@@ -380,6 +391,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         for p in periods:
             if v <= p < v + lifetime:
                 living_techs.add(tech)
+                living_rtv.add((r, tech, v))
                 if '-' in r and r.count('-') == 1:  # Inter-regional transfer
                     r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
                     source_comm, dest_comm = (
@@ -445,6 +457,16 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             # No capacity to retire
             continue
         for p in periods:
+            # retires bang on start of horizon or survives into planning periods
+            is_p0_eol = (
+                (p == periods[0])
+                and (v + lifetime == p)
+                and lookup_data['exs_cap'].get((r, tech, v), 0) > 0
+            )
+            is_living = (r, tech, v) in living_rtv
+            if not (is_p0_eol or is_living):
+                continue
+
             is_natural_eol = p <= v + lifetime < p + basic_data['period_length'][p]
             is_retireable = (
                 tech in basic_data['tech_retire']
@@ -497,7 +519,6 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         )
         res.demand_commodities[r, cast('Period', v)].add(cast('Commodity', tech))
         res.capacity_commodities.add(cast('Commodity', tech))
-        living_techs.add(tech)
 
     # --- 4. Process Linked Techs and Other Metadata ---
     res.available_linked_techs = {
