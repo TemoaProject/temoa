@@ -205,7 +205,9 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         cur.execute('SELECT DISTINCT region, tech, vintage FROM lifetime_survival_curve').fetchall()
     )
 
-    periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM time_period').fetchall())
+    periods_full = sorted(
+        p[0] for p in cur.execute('SELECT period FROM time_period WHERE flag = "f"').fetchall()
+    )
     periods = periods_full[:-1]
     period_length = {
         periods_full[i]: periods_full[i + 1] - periods_full[i] for i in range(len(periods_full) - 1)
@@ -358,11 +360,11 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
     res.physical_commodities = basic_data['physical_commodities']
     res.demand_commodities = basic_data['demand_commodities']
 
-    periods: list[Period] | set[Period] = basic_data['periods']
+    periods: list[Period] = basic_data['periods']
     if myopic_index:
-        periods = {
+        periods = [
             p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
-        }
+        ]
 
     living_techs: set[Technology] = set()
 
@@ -474,6 +476,8 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
     for r, ic, tech, v in lookup_data['construction']:
         if tech in basic_data['tech_uncap']:
             # No capacity to construct
+            continue
+        if cast('Period', v) not in periods:
             continue
         construction_lifetime = basic_data['period_length'].get(
             cast('Period', v), cast('Period', 1)
