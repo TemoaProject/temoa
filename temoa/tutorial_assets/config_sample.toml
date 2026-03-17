@@ -93,7 +93,7 @@ save_lp_file = false
 graphviz_output = false
 
 # Optional output filtering thresholds (set to 0 to disable per category)
-# Precedence is: TOML value > metadata_real in output db > internal defaults.
+# Precedence is: TOML value > internal defaults.
 output_threshold_capacity = 0.001
 output_threshold_activity = 0.001
 output_threshold_emission = 0.001
