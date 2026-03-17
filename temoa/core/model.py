@@ -83,7 +83,7 @@ def create_sparse_dicts(model: 'TemoaModel') -> None:
         for tech in sorted(unused_techs):
             logger.warning(
                 "Notice: '%s' is specified as a technology but is not "
-                'utilized in the efficiency parameter.',
+                'utilized in the process network.',
                 tech,
             )
 
