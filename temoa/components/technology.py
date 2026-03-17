@@ -61,6 +61,7 @@ def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology,
     process indices that may be specified in the lifetime_process parameter.
     """
     indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    indices = indices | set(model.existing_capacity.sparse_iterkeys())
 
     return indices
 
@@ -226,6 +227,8 @@ def create_survival_curve(model: TemoaModel) -> None:
     rtv_interpolated = set()  # so we only need one warning
 
     for r, _, t, v, _ in model.efficiency.sparse_iterkeys():
+        model.is_survival_curve_process[r, t, v] = False  # by default
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
         model.is_survival_curve_process[r, t, v] = False  # by default
 
     # Collect rptv indices into (r, t, v): p dictionary
