@@ -94,7 +94,7 @@ class CommodityNetworkManager:
         orphans_found = any(self.demand_orphans.values()) or any(self.other_orphans.values())
         return not orphans_found
 
-    def build_filters(self) -> dict[str, ViableSet]:
+    def build_filters(self, tech_groups: defaultdict[str, set[str]]) -> dict[str, ViableSet]:
         """
         Constructs ViableSet filters based on the valid technologies remaining
         after the network analysis is complete.
@@ -131,6 +131,15 @@ class CommodityNetworkManager:
                 valid_elements['ic'].add(edge_tuple.input_comm)
                 valid_elements['oc'].add(edge_tuple.output_comm)
 
+                for tech_group in tech_groups.get(edge_tuple.tech, {}):
+                    valid_elements['rtv'].add((edge_tuple.region, tech_group, edge_tuple.vintage))
+                    valid_elements['rt'].add((edge_tuple.region, tech_group))
+                    valid_elements['rpit'].add(
+                        (edge_tuple.region, p, edge_tuple.input_comm, tech_group)
+                    )
+                    valid_elements['rpto'].add(
+                        (edge_tuple.region, p, tech_group, edge_tuple.output_comm)
+                    )
         return {
             'ritvo': ViableSet(
                 elements=valid_elements['ritvo'],

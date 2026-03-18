@@ -246,9 +246,6 @@ class HybridLoader:
                     raw_data = item.fallback_data
                     filtered_data = self._filter_data(raw_data, item, use_raw_data)
 
-                if not filtered_data:
-                    continue
-
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
                     logger.warning(
@@ -457,7 +454,14 @@ class HybridLoader:
         if not self.manager:
             raise RuntimeError('Source trace manager not initialized for filtering.')
 
-        filts = self.manager.build_filters()
+        # Build viable sets for tech_or_group
+        # Create a dictionary from the tech_group_members table
+        tech_groups = defaultdict(set)
+        if self.table_exists('tech_group_member'):
+            for group_name, tech in cur.execute('SELECT group_name, tech FROM tech_group_member'):
+                tech_groups[tech].add(group_name)
+
+        filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
         self.viable_rtv = filts['rtv']
         self.viable_rt = filts['rt']
