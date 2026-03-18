@@ -1361,6 +1361,8 @@ def limit_new_capacity_constraint(
     cap_lim = value(model.limit_new_capacity[r, p, t, op])
     new_cap = quicksum(model.v_new_capacity[_r, _t, p] for _t in techs for _r in regions)
     expr = operator_expression(new_cap, Operator(op), cap_lim)
+    if isinstance(expr, bool):
+        return Constraint.Skip
     return expr
 
 
@@ -1389,6 +1391,8 @@ def limit_capacity_constraint(
         if (_r, p, _t) in model.process_vintages
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
+    if isinstance(expr, bool):
+        return Constraint.Skip
     return expr
 
 
