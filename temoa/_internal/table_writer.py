@@ -4,6 +4,7 @@ tool for writing outputs to database tables
 
 from __future__ import annotations
 
+import math
 import sqlite3
 import sys
 from collections import defaultdict
@@ -81,9 +82,8 @@ MC_TWEAKS_FILE_LOC = resources.files('temoa.extensions.monte_carlo') / 'make_del
 class TableWriter:
     con: sqlite3.Connection | None
 
-    def __init__(self, config: TemoaConfig, epsilon: float = 1e-5) -> None:
+    def __init__(self, config: TemoaConfig) -> None:
         self.config = config
-        self.epsilon = epsilon
         self.tech_sectors: dict[str, str] | None = None
         self.flow_register: dict[FI, dict[FlowType, float]] = {}
         self.emission_register: dict[EI, float] | None = None
@@ -255,6 +255,8 @@ class TableWriter:
         if threshold_value is None:
             return None
         numeric_value = float(threshold_value)
+        if not math.isfinite(numeric_value):
+            raise ValueError(f'Output threshold "{threshold_name}" must be finite')
         if numeric_value < 0:
             raise ValueError(f'Output threshold "{threshold_name}" must be non-negative')
         return numeric_value

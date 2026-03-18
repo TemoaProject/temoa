@@ -65,8 +65,8 @@ class MyopicSequencer:
 
     def __init__(self, config: TemoaConfig | None):
         # Minimum capacity (MW) to carry forward between myopic periods.
-        # mip-dev uses 10 MW.  Configurable via [myopic] capacity_threshold in TOML.
-        default_cap_threshold = 10
+        # Configurable via [myopic] capacity_threshold in TOML.
+        default_cap_threshold = 1e-3
         if config and config.myopic_inputs:
             self.capacity_epsilon = config.myopic_inputs.get(
                 'capacity_threshold', default_cap_threshold
@@ -395,7 +395,7 @@ class MyopicSequencer:
                 'DELETE FROM myopic_efficiency '
                 'WHERE (SELECT region, tech, vintage) '
                 '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
-                '    WHERE period = ? AND scenario = ?) '
+                '    WHERE period = ? AND scenario = ? AND ABS(capacity) >= ?) '
                 'AND tech not in (SELECT tech FROM main.technology where unlim_cap > 0)'
             )
 
@@ -404,16 +404,20 @@ class MyopicSequencer:
                     'SELECT * FROM myopic_efficiency '
                     'WHERE (SELECT region, tech, vintage) '
                     '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
-                    '    WHERE period = ? AND scenario = ?) '
+                    '    WHERE period = ? AND scenario = ? AND ABS(capacity) >= ?) '
                     'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
                 )
                 print('\n\n **** Removing these unused region-tech-vintage combos ****')
                 removals = self.cursor.execute(
-                    debug_query, (last_interval_end, self.config.scenario)
+                    debug_query,
+                    (last_interval_end, self.config.scenario, self.capacity_epsilon),
                 ).fetchall()
                 for i, removal in enumerate(removals):
                     print(f'{i}. Removing:  {removal}')
-            self.cursor.execute(delete_qry, (last_interval_end, self.config.scenario))
+            self.cursor.execute(
+                delete_qry,
+                (last_interval_end, self.config.scenario, self.capacity_epsilon),
+            )
             self.output_con.commit()
 
         # 2.  Add the new stuff now visible
