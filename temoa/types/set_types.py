@@ -34,3 +34,4 @@ ActiveCapacityAvailableVintageSet = set[tuple[Region, Period, Technology, Vintag
 GroupRegionActiveFlowSet = set[tuple[Region, Period, Technology]] | None
 
 CommodityBalancedSet = set[tuple[Region, Period, Commodity]]
+SingletonDemandsSet = set[tuple[Region, Period, Commodity]]
