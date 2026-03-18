@@ -46,7 +46,8 @@ test_vals = {
         # increased after making annualretirement derived var
         # reduced 2025/07/25 by 225 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 1486,
+        # reduced by 12 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 1474,
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
@@ -64,7 +65,8 @@ test_vals = {
         # increased after reviving RampSeason constraints
         # reduced 2025/07/25 by 24 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 240,
+        # reduced by 8 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 232,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         ExpectedVals.VAR_COUNT: 146,
@@ -76,7 +78,8 @@ test_vals = {
         ExpectedVals.EFF_INDEX_SIZE: 4,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 183,
+        # reduced by 8 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 175,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         ExpectedVals.VAR_COUNT: 91,

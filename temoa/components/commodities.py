@@ -102,14 +102,34 @@ def demand_constraint_error_check(supply: Any, r: Region, p: Period, dem: Commod
 def demand_activity_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, Commodity]]:
-    indices = {
-        (r, p, s, d, t, v, dem)
-        for r, p, dem in model.demand_constraint_rpc
-        for t, v in model.commodity_up_stream_process[r, p, dem]
-        if t not in model.tech_annual
-        for s in model.time_season[p]
-        for d in model.time_of_day
-    }
+    """Index set for DemandActivity. Drops indices for single-tech demands.
+
+    When exactly one non-annual (tech, vintage) pair with a single input serves a
+    demand commodity (and no annual techs co-serve it), the flow variables are fixed
+    directly and DAC indices are omitted.
+    """
+    indices = set()
+    for r, p, dem in model.demand_constraint_rpc:
+        upstream = list(model.commodity_up_stream_process[r, p, dem])
+        non_annual = [(t, v) for t, v in upstream if t not in model.tech_annual]
+        has_annual = any(t in model.tech_annual for t, _ in upstream)
+        # Single non-annual (t,v) with one input, no annual co-techs: fix variables
+        if len(non_annual) == 1 and not has_annual:
+            t, v = non_annual[0]
+            inputs = list(model.process_inputs_by_output[r, p, t, v, dem])
+            if len(inputs) == 1:
+                i = inputs[0]
+                dem_val = value(model.demand[r, p, dem])
+                model.v_flow_out_annual[r, p, i, t, v, dem].fix(dem_val)
+                for s in model.time_season[p]:
+                    for d in model.time_of_day:
+                        dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
+                        model.v_flow_out[r, p, s, d, i, t, v, dem].fix(dem_val * dsd)
+                continue
+        for t, v in non_annual:
+            for s in model.time_season[p]:
+                for d in model.time_of_day:
+                    indices.add((r, p, s, d, t, v, dem))
     return indices
 
 
