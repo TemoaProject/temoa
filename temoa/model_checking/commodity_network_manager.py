@@ -118,6 +118,15 @@ class CommodityNetworkManager:
                         edge_tuple.output_comm,
                     )
                 )
+                valid_elements['rtvo'].add(
+                    (
+                        edge_tuple.region,
+                        edge_tuple.tech,
+                        edge_tuple.vintage,
+                        edge_tuple.output_comm,
+                    )
+                )
+                valid_elements['rpt'].add((edge_tuple.region, p, edge_tuple.tech))
                 valid_elements['rtv'].add((edge_tuple.region, edge_tuple.tech, edge_tuple.vintage))
                 valid_elements['rt'].add((edge_tuple.region, edge_tuple.tech))
                 valid_elements['rpit'].add(
@@ -132,6 +141,15 @@ class CommodityNetworkManager:
                 valid_elements['oc'].add(edge_tuple.output_comm)
 
                 for tech_group in tech_groups.get(edge_tuple.tech, {}):
+                    valid_elements['rtvo'].add(
+                        (
+                            edge_tuple.region,
+                            tech_group,
+                            edge_tuple.vintage,
+                            edge_tuple.output_comm,
+                        )
+                    )
+                    valid_elements['rpt'].add((edge_tuple.region, p, tech_group))
                     valid_elements['rtv'].add((edge_tuple.region, tech_group, edge_tuple.vintage))
                     valid_elements['rt'].add((edge_tuple.region, tech_group))
                     valid_elements['rpit'].add(
@@ -146,8 +164,18 @@ class CommodityNetworkManager:
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
+            'rtvo': ViableSet(
+                elements=valid_elements['rtvo'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
             'rtv': ViableSet(
                 elements=valid_elements['rtv'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
+            'rpt': ViableSet(
+                elements=valid_elements['rpt'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
