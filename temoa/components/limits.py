@@ -565,7 +565,7 @@ def limit_seasonal_capacity_factor_constraint(
         activity_rpst = 0
     for _t in techs:
         if _t not in model.tech_annual:
-            activity_rpst = quicksum(
+            activity_rpst += quicksum(
                 model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
                 for _r in regions
                 for S_v in model.process_vintages.get((_r, p, _t), [])
@@ -574,7 +574,7 @@ def limit_seasonal_capacity_factor_constraint(
                 for d in model.time_of_day
             )
         else:
-            activity_rpst = quicksum(
+            activity_rpst += quicksum(
                 model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
                 * model.segment_fraction_per_season[p, s]
                 for _r in regions
@@ -589,6 +589,7 @@ def limit_seasonal_capacity_factor_constraint(
         * value(model.segment_fraction_per_season[p, s])
         for _r in regions
         for _t in techs
+        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
     )
     seasonal_cf = value(model.limit_seasonal_capacity_factor[r, p, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
