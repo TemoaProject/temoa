@@ -802,17 +802,16 @@ CREATE TABLE limit_activity_share
 CREATE TABLE limit_annual_capacity_factor
 (
     region      TEXT,
-    period      INTEGER
+    tech_or_group        TEXT,
+    vintage      INTEGER
         REFERENCES time_period (period),
-    tech        TEXT
-        REFERENCES technology (tech),
     output_comm TEXT
         REFERENCES commodity (name),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator),
+    PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE limit_capacity

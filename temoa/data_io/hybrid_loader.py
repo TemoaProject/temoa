@@ -915,7 +915,7 @@ class HybridLoader:
             ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
             model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rpto.name
+                model.limit_annual_capacity_factor_constraint_rtvo.name
             ),
             model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
             model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,

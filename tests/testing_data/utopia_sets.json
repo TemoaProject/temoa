@@ -22105,7 +22105,8 @@
     ],
     "limit_activity_constraint_rpt": [],
     "limit_activity_share_constraint_rpgg": [],
-    "limit_annual_capacity_factor_constraint_rpto": [],
+    "limit_annual_capacity_factor_constraint_rptvo": [],
+    "limit_annual_capacity_factor_constraint_rtvo": [],
     "limit_capacity_constraint_rpt": [
         [
             "utopia",

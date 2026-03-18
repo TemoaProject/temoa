@@ -643,9 +643,10 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.limit_annual_capacity_factor,
             table='limit_annual_capacity_factor',
-            columns=['region', 'period', 'tech', 'output_comm', 'operator', 'factor'],
-            validator_name='viable_rpto',
+            columns=['region', 'tech_or_group', 'vintage', 'output_comm', 'operator', 'factor'],
+            validator_name='viable_rtvo',
             validation_map=(0, 1, 2, 3),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(

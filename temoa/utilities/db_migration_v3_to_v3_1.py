@@ -135,7 +135,6 @@ operator_added_tables = {
     "MinCapacityShare": ("LimitCapacityShare", "ge"),
     "MinCapacityGroup": ("LimitCapacity", "ge"),
     "MinCapacity": ("LimitCapacity", "ge"),
-    "MinAnnualCapacityFactor": ("LimitAnnualCapacityFactor", "ge"),
     "MinActivityShare": ("LimitActivityShare", "ge"),
     "MinActivityGroup": ("LimitActivity", "ge"),
     "MinActivity": ("LimitActivity", "ge"),
@@ -146,7 +145,6 @@ operator_added_tables = {
     "MaxCapacityShare": ("LimitCapacityShare", "le"),
     "MaxCapacityGroup": ("LimitCapacity", "le"),
     "MaxCapacity": ("LimitCapacity", "le"),
-    "MaxAnnualCapacityFactor": ("LimitAnnualCapacityFactor", "le"),
     "MaxActivityShare": ("LimitActivityShare", "le"),
     "MaxActivityGroup": ("LimitActivity", "le"),
     "MaxActivity": ("LimitActivity", "le"),
@@ -156,6 +154,8 @@ operator_added_tables = {
 no_transfer = {
     "MinSeasonalActivity": "LimitSeasonalCapacityFactor",
     "MaxSeasonalActivity": "LimitSeasonalCapacityFactor",
+    "MinAnnualCapacityFactor": "LimitAnnualCapacityFactor",
+    "MaxAnnualCapacityFactor": "LimitAnnualCapacityFactor",
     "StorageInit": "LimitStorageLevelFraction",
 }
 
@@ -388,6 +388,11 @@ print(
     "manually. ---"
 )
 for old_name, new_name in no_transfer.items():
+    # Check if it exists in the old database. If not, no need to warn about it.
+    try:
+        con_old.execute(f"SELECT * FROM {old_name}").fetchone()
+    except sqlite3.OperationalError:
+        continue
     print(f"{old_name} to {new_name}")
 
 
