@@ -982,13 +982,12 @@ CREATE TABLE limit_seasonal_capacity_factor
         REFERENCES time_period (period),
 	season TEXT
         REFERENCES season_label (season),
-	tech    TEXT
-        REFERENCES technology (tech),
+	tech_or_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, period, season, tech_or_group, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (

@@ -604,7 +604,7 @@ class TemoaModel(AbstractModel):
             within=self.regional_global_indices
             * self.time_optimize
             * self.time_season_all
-            * self.tech_all
+            * self.tech_or_group
             * self.operator
         )
         self.limit_seasonal_capacity_factor = Param(

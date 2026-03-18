@@ -548,35 +548,47 @@ def limit_seasonal_capacity_factor_constraint(
     # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
+    techs = technology.gather_group_techs(model, t)
+
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all((_r, p, t) not in model.v_capacity_available_by_period_and_tech for _r in regions):
+    if all(
+        (_r, p, _t) not in model.v_capacity_available_by_period_and_tech
+        for _r in regions
+        for _t in techs
+    ):
         return Constraint.Skip
 
-    if t not in model.tech_annual:
-        activity_rpst = quicksum(
-            model.v_flow_out[_r, p, s, d, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in model.process_vintages[_r, p, t]
-            for S_i in model.process_inputs[_r, p, t, S_v]
-            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
-            for d in model.time_of_day
-        )
+    if TYPE_CHECKING:
+        activity_rpst = cast('Expression', 0)
     else:
-        activity_rpst = quicksum(
-            model.v_flow_out_annual[_r, p, S_i, t, S_v, S_o]
-            * model.segment_fraction_per_season[p, s]
-            for _r in regions
-            for S_v in model.process_vintages[_r, p, t]
-            for S_i in model.process_inputs[_r, p, t, S_v]
-            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
-        )
+        activity_rpst = 0
+    for _t in techs:
+        if _t not in model.tech_annual:
+            activity_rpst = quicksum(
+                model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
+                for _r in regions
+                for S_v in model.process_vintages.get((_r, p, _t), [])
+                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+                for d in model.time_of_day
+            )
+        else:
+            activity_rpst = quicksum(
+                model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
+                * model.segment_fraction_per_season[p, s]
+                for _r in regions
+                for S_v in model.process_vintages.get((_r, p, _t), [])
+                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+            )
 
     possible_activity_rpst = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, t]
-        * value(model.capacity_to_activity[_r, t])
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        * value(model.capacity_to_activity[_r, _t])
         * value(model.segment_fraction_per_season[p, s])
         for _r in regions
+        for _t in techs
     )
     seasonal_cf = value(model.limit_seasonal_capacity_factor[r, p, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
