@@ -940,28 +940,28 @@ CREATE TABLE limit_growth_new_capacity_delta
 CREATE TABLE limit_new_capacity
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     tech_or_group   TEXT,
+    vintage  INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     new_cap REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
+    PRIMARY KEY (region, tech_or_group, vintage, operator)
 );
 CREATE TABLE limit_new_capacity_share
 (
     region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
     sub_group      TEXT,
     super_group    TEXT,
+    vintage         INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
+    PRIMARY KEY (region, sub_group, super_group, vintage, operator)
 );
 CREATE TABLE limit_resource
 (

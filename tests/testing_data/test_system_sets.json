@@ -40011,8 +40011,8 @@
     "limit_growth_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_delta_constraint_rpt": [],
-    "limit_new_capacity_constraint_rpt": [],
-    "limit_new_capacity_share_constraint_rpgg": [],
+    "limit_new_capacity_constraint_rtv": [],
+    "limit_new_capacity_share_constraint_rggv": [],
     "limit_resource_constraint_rt": [],
     "limit_seasonal_capacity_factor_constraint_rpst": [],
     "limit_storage_fraction_constraint_rpsdtv": [

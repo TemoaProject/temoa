@@ -919,9 +919,9 @@ class HybridLoader:
             ),
             model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
             model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rpt.name,
+            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
             model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rpgg.name
+                model.limit_new_capacity_share_constraint_rggv.name
             ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
             model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,

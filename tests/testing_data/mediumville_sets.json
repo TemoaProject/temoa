@@ -3277,20 +3277,20 @@
     "limit_growth_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_delta_constraint_rpt": [],
-    "limit_new_capacity_constraint_rpt": [],
-    "limit_new_capacity_share_constraint_rpgg": [
+    "limit_new_capacity_constraint_rtv": [],
+    "limit_new_capacity_share_constraint_rggv": [
         [
             "A",
-            2025,
             "RPS_common",
             "A_tech_grp_1",
+            2025,
             "ge"
         ],
         [
             "global",
-            2025,
             "RPS_common",
             "A_tech_grp_1",
+            2025,
             "le"
         ]
     ],

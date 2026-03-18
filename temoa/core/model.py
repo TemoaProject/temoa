@@ -579,13 +579,13 @@ class TemoaModel(AbstractModel):
         )
         self.limit_capacity = Param(self.limit_capacity_constraint_rpt)
 
-        self.limit_new_capacity_constraint_rpt = Set(
+        self.limit_new_capacity_constraint_rtv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rpt)
+        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rtv)
 
         self.limit_resource_constraint_rt = Set(
             within=self.regional_global_indices * self.tech_or_group * self.operator
@@ -669,14 +669,14 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity_share = Param(self.limit_activity_share_constraint_rpgg)
 
-        self.limit_new_capacity_share_constraint_rpgg = Set(
+        self.limit_new_capacity_share_constraint_rggv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rpgg)
+        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rggv)
 
         # This set works for all storage-related constraints
         self.storage_constraints_rpsdtv = Set(
@@ -1041,7 +1041,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_constraint = Constraint(
-            self.limit_new_capacity_constraint_rpt, rule=limits.limit_new_capacity_constraint
+            self.limit_new_capacity_constraint_rtv, rule=limits.limit_new_capacity_constraint
         )
 
         self.limit_capacity_share_constraint = Constraint(
@@ -1053,7 +1053,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_share_constraint = Constraint(
-            self.limit_new_capacity_share_constraint_rpgg,
+            self.limit_new_capacity_share_constraint_rggv,
             rule=limits.limit_new_capacity_share_constraint,
         )
 

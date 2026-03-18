@@ -598,7 +598,10 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.limit_new_capacity,
             table='limit_new_capacity',
-            columns=['region', 'period', 'tech_or_group', 'operator', 'new_cap'],
+            columns=['region', 'tech_or_group', 'vintage', 'operator', 'new_cap'],
+            validator_name='viable_rtv',
+            validation_map=(0, 1, 2),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -610,7 +613,10 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.limit_new_capacity_share,
             table='limit_new_capacity_share',
-            columns=['region', 'period', 'sub_group', 'super_group', 'operator', 'share'],
+            columns=['region', 'sub_group', 'super_group', 'vintage', 'operator', 'share'],
+            validator_name='viable_rtv',
+            validation_map=(0, 1, 3),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(

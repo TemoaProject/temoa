@@ -425,7 +425,7 @@ def limit_capacity_share_constraint(
 
 
 def limit_new_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
+    model: TemoaModel, r: Region, g1: Technology, g2: Technology, v: Vintage, op: str
 ) -> ExprLike:
     r"""
     The limit_new_capacity_share constraint limits the share of new capacity
@@ -436,21 +436,21 @@ def limit_new_capacity_share_constraint(
 
     sub_group = technology.gather_group_techs(model, g1)
     sub_new_cap = quicksum(
-        model.v_new_capacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, v]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, cast('Vintage', p)) in model.process_periods
+        if (_r, _t, v) in model.process_periods
     )
 
     super_group = technology.gather_group_techs(model, g2)
     super_new_cap = quicksum(
-        model.v_new_capacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, v]
         for _t in super_group
         for _r in regions
-        if (_r, _t, cast('Vintage', p)) in model.process_periods
+        if (_r, _t, v) in model.process_periods
     )
 
-    share_lim = value(model.limit_new_capacity_share[r, p, g1, g2, op])
+    share_lim = value(model.limit_new_capacity_share[r, g1, g2, v, op])
     expr = operator_expression(sub_new_cap, Operator(op), share_lim * super_new_cap)
     if isinstance(expr, bool):
         return Constraint.Skip
@@ -1371,24 +1371,26 @@ def limit_activity_constraint(
 
 
 def limit_new_capacity_constraint(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
+    model: TemoaModel, r: Region, t: Technology, v: Vintage, op: str
 ) -> ExprLike:
     r"""
     The limit_new_capacity constraint sets a limit on the newly installed capacity of a
-    given technology or group in a given year. Note that the indices for these constraints are
-    region, period and tech.
+    given technology or group in a given vintage year.
 
     .. math::
         :label: limit_new_capacity
 
-        \textbf{NCAP}_{r, t, v} \le LNC_{r, p, t}
-
-        \text{where }v=p
+        \textbf{NCAP}_{r, t, v} \le LNC_{r, t, v}
     """
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
-    cap_lim = value(model.limit_new_capacity[r, p, t, op])
-    new_cap = quicksum(model.v_new_capacity[_r, _t, p] for _t in techs for _r in regions)
+    cap_lim = value(model.limit_new_capacity[r, t, v, op])
+    new_cap = quicksum(
+        model.v_new_capacity[_r, _t, v]
+        for _t in techs
+        for _r in regions
+        if (_r, _t, v) in model.process_periods
+    )
     expr = operator_expression(new_cap, Operator(op), cap_lim)
     return expr
 
@@ -1412,7 +1414,10 @@ def limit_capacity_constraint(
     techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_capacity[r, p, t, op])
     capacity = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, _t] for _t in techs for _r in regions
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        for _t in techs
+        for _r in regions
+        if (_r, p, _t) in model.process_vintages
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
     return expr
