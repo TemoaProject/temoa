@@ -120,11 +120,11 @@ def demand_activity_constraint_indices(
             if len(inputs) == 1:
                 i = inputs[0]
                 dem_val = value(model.demand[r, p, dem])
-                model.v_flow_out_annual[r, p, i, t, v, dem].fix(dem_val)
+                model.v_flow_out_annual[r, p, i, t, v, dem].fix(dem_val)  # type: ignore[attr-defined]
                 for s in model.time_season[p]:
                     for d in model.time_of_day:
                         dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
-                        model.v_flow_out[r, p, s, d, i, t, v, dem].fix(dem_val * dsd)
+                        model.v_flow_out[r, p, s, d, i, t, v, dem].fix(dem_val * dsd)  # type: ignore[attr-defined]
                 continue
         for t, v in non_annual:
             for s in model.time_season[p]:
