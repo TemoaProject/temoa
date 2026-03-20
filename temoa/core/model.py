@@ -83,7 +83,7 @@ def create_sparse_dicts(model: 'TemoaModel') -> None:
         for tech in sorted(unused_techs):
             logger.warning(
                 "Notice: '%s' is specified as a technology but is not "
-                'utilized in the efficiency parameter.',
+                'utilized in the process network.',
                 tech,
             )
 
@@ -388,6 +388,9 @@ class TemoaModel(AbstractModel):
         self.end_of_life_output = Param(
             self.regions, self.tech_with_capacity, self.vintage_all, self.commodity_carrier
         )
+        self.emission_end_of_life = Param(
+            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
+        )
 
         self.efficiency = Param(
             self.regional_indices,
@@ -511,6 +514,7 @@ class TemoaModel(AbstractModel):
         # equations below.
         self.create_sparse_dicts = BuildAction(rule=create_sparse_dicts)
         self.initialize_demands = BuildAction(rule=commodities.create_demands)
+        self.validate_existing_capacity = BuildAction(rule=technology.check_existing_capacity)
 
         self.capacity_factor_rpsdt = Set(dimen=5, initialize=capacity.capacity_factor_tech_indices)
         self.capacity_factor_tech = Param(
@@ -724,9 +728,6 @@ class TemoaModel(AbstractModel):
             self.commodity_emissions,
             self.tech_with_capacity,
             self.vintage_optimize,
-        )
-        self.emission_end_of_life = Param(
-            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
         )
 
         self.myopic_discounting_year = Param(default=0)

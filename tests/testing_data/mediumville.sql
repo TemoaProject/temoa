@@ -100,7 +100,6 @@ REPLACE INTO "efficiency" VALUES('A', 'GeoHyd', 'GeoHeater', 2025, 'RH', 0.9, NU
 REPLACE INTO "efficiency" VALUES('A', 'earth', 'GeoThermal', 2025, 'GeoHyd', 1.0, NULL, NULL);
 REPLACE INTO "emission_activity" VALUES('A','co2','HYD','EH',2025,'ELC',0.02,NULL,NULL);
 REPLACE INTO "emission_activity" VALUES('A','FusionGas','HYD','EF',2025,'ELC',-0.2,NULL,'emission_activity specifies emission activity coefficients (not efficiency values), negative coefficients represent emissions removal/capture, this coupling is essential for the linked tech constraint that converts CO2 from emissions commodity to physical commodity input.');
-REPLACE INTO "existing_capacity" VALUES('A','EH',2020,200.0,'things',NULL);
 REPLACE INTO "lifetime_process" VALUES('B', 'EF', 2025, 200.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('A', 'EH', 60.0, NULL, '');
 REPLACE INTO "lifetime_tech" VALUES('B', 'bulbs', 100.0, NULL, 'super LED!');

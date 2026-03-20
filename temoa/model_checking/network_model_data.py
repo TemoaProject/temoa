@@ -53,6 +53,7 @@ type ModelBlock = TemoaModel | ConcreteModel
 class BasicData(TypedDict):
     """Defines the shape of the data returned by _fetch_basic_data."""
 
+    tech_uncap: set[Technology]
     tech_retire: set[Technology]
     tech_survival_curve: set[tuple[Region, Technology, Vintage]]
     periods: list[Period]
@@ -66,7 +67,9 @@ class BasicData(TypedDict):
 class LookupData(TypedDict):
     """Defines the shape of the data returned by _fetch_lookup_data."""
 
-    eol: defaultdict[tuple[Region, Technology, Vintage], list[Commodity]]
+    eol: defaultdict[tuple[Region, Technology, Vintage, int], list[Commodity]]
+    eeol: set[tuple[Region, Technology, Vintage, int]]
+    exs_cap: defaultdict[tuple[Region, Technology, Vintage], float]
     construction: list[tuple[Region, Commodity, Technology, Vintage]]
     linked: set[tuple[Region, Technology, Commodity, Technology]]
     neg_cost_techs: set[Technology]
@@ -99,6 +102,7 @@ class NetworkModelData:
     tech_data: defaultdict[Technology, dict[str, TechAttributeValue]] = field(
         default_factory=lambda: defaultdict(dict)
     )
+    silent_rptv: set[tuple[Region, Period, Technology, Vintage]] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         """Validate data consistency after initialization."""
@@ -194,6 +198,9 @@ def _build_from_model(
 
 def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
     """Fetches simple, required tables and parameters from the DB."""
+    tech_uncap = {
+        t[0] for t in cur.execute('SELECT tech FROM technology WHERE unlim_cap==1').fetchall()
+    }
     tech_retire = {
         t[0] for t in cur.execute('SELECT tech FROM technology WHERE retire==1').fetchall()
     }
@@ -201,7 +208,9 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         cur.execute('SELECT DISTINCT region, tech, vintage FROM lifetime_survival_curve').fetchall()
     )
 
-    periods_full = sorted(p[0] for p in cur.execute('SELECT period FROM time_period').fetchall())
+    periods_full = sorted(
+        p[0] for p in cur.execute('SELECT period FROM time_period WHERE flag = "f"').fetchall()
+    )
     periods = periods_full[:-1]
     period_length = {
         periods_full[i]: periods_full[i + 1] - periods_full[i] for i in range(len(periods_full) - 1)
@@ -225,6 +234,7 @@ def _fetch_basic_data(cur: sqlite3.Cursor) -> BasicData:
         demand_commodities[r, p].add(d)
 
     return BasicData(
+        tech_uncap=tech_uncap,
         tech_retire=tech_retire,
         tech_survival_curve=tech_survival_curve,
         periods=periods,
@@ -286,15 +296,48 @@ def _fetch_all_tech_definitions(
 
 def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
     """Fetches data from all optional tables to avoid N+1 queries."""
-    lookups = LookupData(eol=defaultdict(list), construction=[], linked=set(), neg_cost_techs=set())
+    lookups = LookupData(
+        eol=defaultdict(list),
+        eeol=set(),
+        construction=[],
+        exs_cap=defaultdict(float),
+        linked=set(),
+        neg_cost_techs=set(),
+    )
 
     try:
-        for r, tech, v, oc in cur.execute(
-            'SELECT region, tech, vintage, output_comm FROM end_of_life_output'
+        query = """
+            SELECT
+                eol.region, eol.tech, eol.vintage, eol.output_comm,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM end_of_life_output AS eol
+            LEFT JOIN main.lifetime_process AS lp ON eol.tech = lp.tech
+            AND eol.vintage = lp.vintage
+            AND eol.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eol.tech = lt.tech AND eol.region = lt.region
+        """
+        for r, tech, v, oc, life in cur.execute(
+            query, (TemoaModel.default_lifetime_tech,)
         ).fetchall():
-            lookups['eol'][(r, tech, v)].append(oc)
+            lookups['eol'][(r, tech, v, life)].append(oc)
     except sqlite3.OperationalError:
         logger.warning('Table end_of_life_output not found, skipping.')
+
+    try:
+        query = """
+            SELECT
+                eeol.region, eeol.tech, eeol.vintage,
+                COALESCE(lp.lifetime, lt.lifetime, ?) AS lifetime
+            FROM emission_end_of_life AS eeol
+            LEFT JOIN main.lifetime_process AS lp ON eeol.tech = lp.tech
+            AND eeol.vintage = lp.vintage
+            AND eeol.region = lp.region
+            LEFT JOIN main.lifetime_tech AS lt ON eeol.tech = lt.tech AND eeol.region = lt.region
+        """
+        for r, tech, v, life in cur.execute(query, (TemoaModel.default_lifetime_tech,)).fetchall():
+            lookups['eeol'].add((r, tech, v, life))
+    except sqlite3.OperationalError:
+        logger.warning('Table emission_end_of_life not found, skipping.')
 
     try:
         lookups['construction'] = cur.execute(
@@ -302,6 +345,14 @@ def _fetch_lookup_data(cur: sqlite3.Cursor) -> LookupData:
         ).fetchall()
     except sqlite3.OperationalError:
         logger.warning('Table construction_input not found, skipping.')
+
+    try:
+        for r, tech, v, capacity in cur.execute(
+            'SELECT region, tech, vintage, capacity FROM existing_capacity'
+        ).fetchall():
+            lookups['exs_cap'][(r, tech, v)] = capacity
+    except sqlite3.OperationalError:
+        logger.warning('Table existing_capacity not found, skipping.')
 
     try:
         lookups['linked'] = set(
@@ -338,13 +389,14 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
     res.physical_commodities = basic_data['physical_commodities']
     res.demand_commodities = basic_data['demand_commodities']
 
-    periods: list[Period] | set[Period] = basic_data['periods']
+    periods: list[Period] = basic_data['periods']
     if myopic_index:
-        periods = {
+        periods = [
             p for p in periods if myopic_index.base_year <= p <= myopic_index.last_demand_year
-        }
+        ]
 
     living_techs: set[Technology] = set()
+    living_rtv: set[tuple[Region, Technology, Vintage]] = set()
 
     # --- 2. Process technologies ---
     for tech_data in raw_techs:
@@ -356,84 +408,100 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             sector = None
 
         for p in periods:
-            if not (v <= p < v + lifetime):
-                continue
+            if v <= p < v + lifetime:
+                living_techs.add(tech)
+                living_rtv.add((r, tech, v))
+                if '-' in r and r.count('-') == 1:  # Inter-regional transfer
+                    r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
+                    source_comm, dest_comm = (
+                        cast('Commodity', f'{ic} ({r1})'),
+                        cast('Commodity', f'{oc} ({r2})'),
+                    )
+                    res.available_techs[r2, p].add(
+                        EdgeTuple(
+                            region=r2,
+                            input_comm=source_comm,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.available_techs[r1, p].add(
+                        EdgeTuple(
+                            region=r1,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=dest_comm,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    res.source_commodities[r2, p].add(source_comm)
+                    res.demand_commodities[r1, p].add(dest_comm)
+                    res.physical_commodities.update([source_comm, dest_comm])
+                    res.exchange_commodities.update([source_comm, dest_comm])
+                else:  # Standard technology
+                    res.available_techs[r, p].add(
+                        EdgeTuple(
+                            region=r,
+                            input_comm=ic,
+                            tech=tech,
+                            vintage=v,
+                            output_comm=oc,
+                            lifetime=lifetime,
+                            sector=sector,
+                        )
+                    )
+                    if ic in basic_data['source_commodities_all']:
+                        res.source_commodities[r, p].add(ic)
+                    if oc in basic_data['waste_commodities_all']:
+                        res.waste_commodities[r, p].add(oc)
 
-            living_techs.add(tech)
-            if '-' in r and r.count('-') == 1:  # Inter-regional transfer
-                r1, r2 = (cast('Region', reg) for reg in r.split('-', 1))
-                source_comm, dest_comm = (
-                    cast('Commodity', f'{ic} ({r1})'),
-                    cast('Commodity', f'{oc} ({r2})'),
-                )
-                res.available_techs[r2, p].add(
-                    EdgeTuple(
-                        region=r2,
-                        input_comm=source_comm,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.available_techs[r1, p].add(
-                    EdgeTuple(
-                        region=r1,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=dest_comm,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                res.source_commodities[r2, p].add(source_comm)
-                res.demand_commodities[r1, p].add(dest_comm)
-                res.physical_commodities.update([source_comm, dest_comm])
-                res.exchange_commodities.update([source_comm, dest_comm])
-            else:  # Standard technology
-                res.available_techs[r, p].add(
-                    EdgeTuple(
-                        region=r,
-                        input_comm=ic,
-                        tech=tech,
-                        vintage=v,
-                        output_comm=oc,
-                        lifetime=lifetime,
-                        sector=sector,
-                    )
-                )
-                if ic in basic_data['source_commodities_all']:
-                    res.source_commodities[r, p].add(ic)
-                if oc in basic_data['waste_commodities_all']:
-                    res.waste_commodities[r, p].add(oc)
+    for r, tech, v, lifetime in lookup_data['eol']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to retire
+            continue
+        for p in periods:
+            # retires bang on start of horizon or survives into planning periods
+            is_p0_eol = (
+                (p == periods[0])
+                and (v + lifetime == p)
+                and lookup_data['exs_cap'].get((r, tech, v), 0) > 0
+            )
+            is_living = (r, tech, v) in living_rtv
+            if not (is_p0_eol or is_living):
+                continue
 
             is_natural_eol = p <= v + lifetime < p + basic_data['period_length'][p]
             is_retireable = (
                 tech in basic_data['tech_retire']
                 and v < p <= v + lifetime - basic_data['period_length'][p]
             )
-            has_survival = (r, tech, v) in basic_data['tech_survival_curve']
+            has_survival = (r, tech, v) in basic_data[
+                'tech_survival_curve'
+            ] and v <= p <= v + lifetime
 
             if is_natural_eol or is_retireable or has_survival:
-                for eol_oc in lookup_data['eol'].get((r, tech, v), []):
+                for eol_oc in lookup_data['eol'][(r, tech, v, lifetime)]:
                     res.available_techs[r, p].add(
                         EdgeTuple(
                             region=r,
                             input_comm=cast('Commodity', tech),
-                            tech=cast('Technology', 'end_of_life'),
+                            tech=tech,
                             vintage=v,
                             output_comm=eol_oc,
                             lifetime=lifetime,
@@ -445,8 +513,21 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
                     if eol_oc in basic_data['waste_commodities_all']:
                         res.waste_commodities[r, p].add(eol_oc)
 
+    for r, tech, v, lifetime in lookup_data['eeol']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to retire
+            continue
+        # retires bang on start of horizon or survives into planning periods
+        if v + lifetime == periods[0] and lookup_data['exs_cap'].get((r, tech, v), 0) > 0:
+            res.silent_rptv.add((r, periods[0], tech, v))
+
     # --- 3. Process Construction ---
     for r, ic, tech, v in lookup_data['construction']:
+        if tech in basic_data['tech_uncap']:
+            # No capacity to construct
+            continue
+        if cast('Period', v) not in periods:
+            continue
         construction_lifetime = basic_data['period_length'].get(
             cast('Period', v), cast('Period', 1)
         )
@@ -454,7 +535,7 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
             EdgeTuple(
                 region=r,
                 input_comm=ic,
-                tech=cast('Technology', 'construction'),
+                tech=tech,
                 vintage=v,
                 output_comm=cast(
                     'Commodity', tech
@@ -465,7 +546,6 @@ def _build_from_db(con: DbConnection, myopic_index: MyopicIndex | None = None) -
         )
         res.demand_commodities[r, cast('Period', v)].add(cast('Commodity', tech))
         res.capacity_commodities.add(cast('Commodity', tech))
-        living_techs.add(tech)
 
     # --- 4. Process Linked Techs and Other Metadata ---
     res.available_linked_techs = {

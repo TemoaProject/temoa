@@ -246,10 +246,10 @@ class FI(NamedTuple):
     p: Period
     s: Season
     d: TimeOfDay
-    i: Commodity
+    i: Commodity | None
     t: Technology
     v: Vintage
-    o: Commodity
+    o: Commodity | None
 
 
 class SLI(NamedTuple):
