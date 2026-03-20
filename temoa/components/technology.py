@@ -61,6 +61,7 @@ def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology,
     process indices that may be specified in the lifetime_process parameter.
     """
     indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    indices = indices | set(model.existing_capacity.sparse_iterkeys())
 
     return indices
 
@@ -159,13 +160,13 @@ def populate_core_dictionaries(model: TemoaModel) -> None:
                     process,
                 )
                 continue
-            if t not in model.tech_uncap and model.existing_capacity[process] == 0:
-                logger.warning(
-                    'Notice: Unnecessary specification of existing_capacity for %s. '
-                    'Declaring a capacity of zero may be omitted.',
-                    process,
+            if t not in model.tech_uncap and value(model.existing_capacity[process]) <= 0:
+                msg = (
+                    f'Notice: Non-positive existing capacity declaration {process}. '
+                    'This is not supported for processes surviving into future periods.'
                 )
-                continue
+                logger.error(msg)
+                raise ValueError(msg)
             if v + lifetime <= first_period:
                 logger.info(
                     '%s specified as existing_capacity, but its '
@@ -226,6 +227,8 @@ def create_survival_curve(model: TemoaModel) -> None:
     rtv_interpolated = set()  # so we only need one warning
 
     for r, _, t, v, _ in model.efficiency.sparse_iterkeys():
+        model.is_survival_curve_process[r, t, v] = False  # by default
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
         model.is_survival_curve_process[r, t, v] = False  # by default
 
     # Collect rptv indices into (r, t, v): p dictionary
@@ -352,7 +355,7 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         f_msg = msg.format(', '.join(diff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
-    
+
     c_inputs = {i for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
     c_inputs = c_inputs | {i for r, i, t, v in model.construction_input.sparse_iterkeys()}
     c_carrier = c_inputs | c_outputs
@@ -368,8 +371,11 @@ def check_efficiency_indices(model: TemoaModel) -> None:
         f_msg = msg.format(', '.join(symdiff_str))
         logger.error(f_msg)
         raise ValueError(f_msg)
-    
+
     techs = {t for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    techs = techs | {t for r, t, v, o in model.end_of_life_output.sparse_iterkeys()}
+    techs = techs | {t for r, i, t, v in model.construction_input.sparse_iterkeys()}
+    techs = techs | {t for r, e, t, v in model.emission_end_of_life.sparse_iterkeys()}
 
     symdiff = techs.symmetric_difference(model.tech_production)
     if symdiff:
@@ -431,3 +437,29 @@ def check_efficiency_variable(model: TemoaModel) -> None:
                     num_seg,
                     (r, p, i, t, v, o),
                 )
+
+
+def check_existing_capacity(model: TemoaModel) -> None:
+    """
+    Check that all existing capacities are properly accounted for in the model.
+    """
+    for r, t, v in model.existing_capacity.sparse_iterkeys():
+        cap = value(model.existing_capacity[r, t, v])
+        if cap <= 0:
+            msg = (
+                f'Existing capacity {r, t, v} has non-positive capacity {cap}. '
+                'This entry will be ignored.'
+            )
+            logger.warning(msg)
+            continue
+        if t not in model.tech_all:
+            continue
+        life = value(model.lifetime_process[r, t, v])
+        if (r, t, v) not in model.process_periods and v + life > model.time_optimize.first():
+            msg = (
+                f'Existing capacity {r, t, v} with lifetime {life} and capacity {cap} '
+                'should extend into future periods but it is not in process periods. '
+                'Was it included in the Efficiency table?'
+            )
+            logger.error(msg)
+            raise ValueError(msg)

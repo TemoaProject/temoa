@@ -83,7 +83,7 @@ def create_sparse_dicts(model: 'TemoaModel') -> None:
         for tech in sorted(unused_techs):
             logger.warning(
                 "Notice: '%s' is specified as a technology but is not "
-                'utilized in the efficiency parameter.',
+                'utilized in the process network.',
                 tech,
             )
 
@@ -388,6 +388,9 @@ class TemoaModel(AbstractModel):
         self.end_of_life_output = Param(
             self.regions, self.tech_with_capacity, self.vintage_all, self.commodity_carrier
         )
+        self.emission_end_of_life = Param(
+            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
+        )
 
         self.efficiency = Param(
             self.regional_indices,
@@ -511,6 +514,7 @@ class TemoaModel(AbstractModel):
         # equations below.
         self.create_sparse_dicts = BuildAction(rule=create_sparse_dicts)
         self.initialize_demands = BuildAction(rule=commodities.create_demands)
+        self.validate_existing_capacity = BuildAction(rule=technology.check_existing_capacity)
 
         self.capacity_factor_rpsdt = Set(dimen=5, initialize=capacity.capacity_factor_tech_indices)
         self.capacity_factor_tech = Param(
@@ -725,9 +729,6 @@ class TemoaModel(AbstractModel):
             self.tech_with_capacity,
             self.vintage_optimize,
         )
-        self.emission_end_of_life = Param(
-            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
-        )
 
         self.myopic_discounting_year = Param(default=0)
 
@@ -772,6 +773,9 @@ class TemoaModel(AbstractModel):
 
         self.storage_level_rpsdtv = Set(dimen=6, initialize=storage.storage_level_variable_indices)
         self.v_storage_level = Var(self.storage_level_rpsdtv, domain=NonNegativeReals)
+
+        self.storage_init_rpstv = Set(dimen=5, initialize=storage.storage_init_variable_indices)
+        self.v_storage_init = Var(self.storage_init_rpstv, domain=NonNegativeReals)
 
         self.seasonal_storage_level_rpstv = Set(
             dimen=5, initialize=storage.seasonal_storage_level_variable_indices
@@ -911,6 +915,10 @@ class TemoaModel(AbstractModel):
 
         self.storage_energy_constraint = Constraint(
             self.storage_constraints_rpsdtv, rule=storage.storage_energy_constraint
+        )
+
+        self.storage_level_last_tod_constraint = Constraint(
+            self.storage_init_rpstv, rule=storage.storage_level_at_last_tod_constraint
         )
 
         self.storage_energy_upper_bound_constraint = Constraint(

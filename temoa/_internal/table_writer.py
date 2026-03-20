@@ -597,7 +597,9 @@ class TableWriter:
 
         self.connection.commit()
 
-    def _get_flow_units(self, flow_type: FlowType, input_comm: str, output_comm: str) -> str | None:
+    def _get_flow_units(
+        self, flow_type: FlowType, input_comm: str | None, output_comm: str | None
+    ) -> str | None:
         """
         Get units for flow based on flow type.
 
@@ -616,11 +618,12 @@ class TableWriter:
         if not unit_prop:
             return None
 
-        if flow_type == FlowType.IN:
+        if flow_type == FlowType.IN and input_comm is not None:
             return unit_prop.get_flow_in_units(input_comm)
-        else:
+        elif output_comm is not None:
             # OUT, CURTAIL, FLEX all use output commodity units
             return unit_prop.get_flow_out_units(output_comm)
+        return None
 
     def write_summary_flow(self, model: TemoaModel, iteration: int | None = None) -> None:
         flow_data = self.calculate_flows(model=model)
@@ -636,9 +639,9 @@ class TableWriter:
         self.flow_register = flow_data
 
         # Aggregate flows (sum across seasons/time of day)
-        output_flows: defaultdict[tuple[str, Period, str, Technology, Vintage, str], float] = (
-            defaultdict(float)
-        )
+        output_flows: defaultdict[
+            tuple[str, Period, str | None, Technology, Vintage, str | None], float
+        ] = defaultdict(float)
 
         for fi, flows in self.flow_register.items():
             val = flows.get(FlowType.OUT)
@@ -676,7 +679,7 @@ class TableWriter:
         for fi, flow_vals in flows.items():
             if fi.t in model.tech_storage:
                 continue
-            if fi.i == 'end_of_life_output' or fi.o == 'construction_input':
+            if fi.i is None or fi.o is None:
                 continue
 
             fin = flow_vals.get(FlowType.IN, 0)

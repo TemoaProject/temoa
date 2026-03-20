@@ -36,12 +36,12 @@ def _marks(num: int) -> str:
     return marks
 
 
-def ritvo(fi: FI) -> tuple[Region, Commodity, Technology, Vintage, Commodity]:
+def ritvo(fi: FI) -> tuple[Region, Commodity | None, Technology, Vintage, Commodity | None]:
     """convert FI to ritvo index"""
     return fi.r, fi.i, fi.t, fi.v, fi.o
 
 
-def rpetv(fi: FI, e: Commodity) -> tuple[Region, Period, Commodity, Technology, Vintage]:
+def rpetv(fi: FI, e: Commodity) -> tuple[Region, Period, Commodity | None, Technology, Vintage]:
     """convert FI and emission to rpetv index"""
     return fi.r, fi.p, e, fi.t, fi.v
 
@@ -58,7 +58,18 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     for r, t, v in model.v_new_capacity.keys():
         if v in model.time_optimize:
             val = value(model.v_new_capacity[r, t, v])
-            if abs(val) < epsilon:
+            if val < -epsilon:
+                logger.warning(
+                    'Negative built capacity for %s, %s, %s: %s. '
+                    'This should not be possible. Could be a result of '
+                    'numerical instability or a code problem.',
+                    r,
+                    t,
+                    v,
+                    val,
+                )
+                continue
+            if val < epsilon:
                 continue
             new_cap = (r, t, v, val)
             built.append(new_cap)
@@ -67,7 +78,19 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
     net = []
     for r, p, t, v in model.v_capacity.keys():
         val = value(model.v_capacity[r, p, t, v])
-        if abs(val) < epsilon:
+        if val < -epsilon:
+            logger.warning(
+                'Negative net capacity for %s, %s, %s, %s: %s. '
+                'This should not be possible. Could be a result of '
+                'numerical instability or a code problem.',
+                r,
+                p,
+                t,
+                v,
+                val,
+            )
+            continue
+        if val < epsilon:
             continue
         new_net_cap = (r, p, t, v, val)
         net.append(new_net_cap)
@@ -84,8 +107,19 @@ def poll_capacity_results(model: TemoaModel, epsilon: float = 1e-5) -> CapData:
             if t in model.tech_retirement and v < p <= v + lifetime - value(model.period_length[p]):
                 early = value(model.v_retired_capacity[r, p, t, v])
                 eol -= early
-            early = 0 if abs(early) < epsilon else early
-            eol = 0 if abs(eol) < epsilon else eol
+            if early < -epsilon or eol < -epsilon:
+                logger.warning(
+                    'Negative retirement components for %s, %s, %s, %s: cap_eol=%s, cap_early=%s',
+                    r,
+                    p,
+                    t,
+                    v,
+                    eol,
+                    early,
+                )
+                continue
+            early = 0 if early < epsilon else early
+            eol = 0 if eol < epsilon else eol
             if early == 0 and eol == 0:
                 continue
             new_retired_cap = (r, p, t, v, eol, early)
@@ -190,7 +224,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         )
         for s in model.time_season[v]:
             for d in model.time_of_day:
-                fi = FI(r, v, s, d, i, t, v, cast('Commodity', 'construction_input'))
+                fi = FI(r, v, s, d, i, t, v, cast('Commodity', None))
                 flow = annual * value(model.segment_fraction[v, s, d])
                 if abs(flow) < epsilon:
                     continue
@@ -206,7 +240,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
             )
             for s in model.time_season[p]:
                 for d in model.time_of_day:
-                    fi = FI(r, p, s, d, cast('Commodity', 'end_of_life_output'), t, v, o)
+                    fi = FI(r, p, s, d, cast('Commodity', None), t, v, o)
                     flow = annual * value(model.segment_fraction[p, s, d])
                     if abs(flow) < epsilon:
                         continue

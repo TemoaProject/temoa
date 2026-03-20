@@ -604,29 +604,54 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
 
     logger.debug('Creating capacity, retirement, and construction/EOL sets.')
     # Calculate retirement periods based on lifetime and survival curves
-    for r, _i, t, v, _o in model.efficiency.sparse_iterkeys():
+    unique_rtv = {(r, t, v) for r, _i, t, v, _o in model.efficiency.sparse_iterkeys()} | set(
+        model.existing_capacity.sparse_iterkeys()
+    )
+    for r, t, v in unique_rtv:
+        if t in model.tech_uncap:
+            # No capacity to retire
+            continue
+        if t not in model.tech_all:
+            # Not an active technology so wont have a lifetime
+            # If it has an EOLoutput it will be in tech_all
+            continue
         lifetime = value(model.lifetime_process[r, t, v])
         for p in model.time_optimize:
+            # retires bang on start of horizon or survives into planning periods
+            is_p0_eol = (
+                (p == model.time_optimize.first())
+                and (v + lifetime == p)
+                and value(model.existing_capacity[r, t, v]) > 0
+            )
+            is_living = (r, t, v) in model.process_periods
+            if not (is_p0_eol or is_living):
+                continue
+
             is_natural_eol = p <= v + lifetime < p + value(model.period_length[p])
             is_early_retire = t in model.tech_retirement and v < p <= v + lifetime - value(
                 model.period_length[p]
             )
             is_survival_curve = model.is_survival_curve_process[r, t, v] and v <= p <= v + lifetime
 
-            if t not in model.tech_uncap and any(
-                (is_natural_eol, is_early_retire, is_survival_curve)
-            ):
+            if any((is_natural_eol, is_early_retire, is_survival_curve)):
                 model.retirement_periods.setdefault((r, t, v), set()).add(p)
 
     # Link construction materials to technologies
     for r, i, t, v in model.construction_input.sparse_iterkeys():
         model.capacity_consumption_techs.setdefault((r, v, i), set()).add(t)
+        model.used_techs.add(t)
 
     # Link end-of-life materials to retiring technologies
     for r, t, v, o in model.end_of_life_output.sparse_iterkeys():
         if (r, t, v) in model.retirement_periods:
             for p in model.retirement_periods[r, t, v]:
                 model.retirement_production_processes.setdefault((r, p, o), set()).add((t, v))
+                model.used_techs.add(t)
+
+    # Link end-of-life emissions to retiring technologies
+    for r, _e, t, v in model.emission_end_of_life.sparse_iterkeys():
+        if (r, t, v) in model.retirement_periods:
+            model.used_techs.add(t)
 
     # Create active capacity index sets from the now-populated process_vintages
     model.new_capacity_rtv = {
