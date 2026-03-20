@@ -38,7 +38,7 @@ def test_storage_fraction(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
     for r, p, s, d, t, v, op in model.limit_storage_fraction_constraint_rpsdtv:
         energy = (
             model.limit_storage_fraction[r, p, s, d, t, v, op]
-            * model.v_capacity[r, p, t, v].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+            * model.v_capacity[r, p, t, v].value
             * model.capacity_to_activity[r, t]
             * (model.storage_duration[r, t] / 8760)
             * model.segment_fraction_per_season[p, s]
@@ -46,7 +46,7 @@ def test_storage_fraction(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             * model.process_life_frac[r, p, t, v]
         )
 
-        assert model.v_storage_level[r, p, s, d, t, v].value == pytest.approx(energy, abs=1e-5), (  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+        assert model.v_storage_level[r, p, s, d, t, v].value == pytest.approx(energy, abs=1e-5), (
             f'model fails to initialise storage state at start of season {r, p, s, d, t, v}'
         )
 
@@ -76,12 +76,12 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
 
     for r, p, s, d, t, v in model.storage_level_rpsdtv:
         charge = sum(
-            model.v_flow_in[r, p, s, d, S_i, t, v, S_o].value * model.efficiency[r, S_i, t, v, S_o]  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+            model.v_flow_in[r, p, s, d, S_i, t, v, S_o].value * model.efficiency[r, S_i, t, v, S_o]
             for S_i in model.process_inputs[r, p, t, v]
             for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
         discharge = sum(
-            model.v_flow_out[r, p, s, d, S_i, t, v, S_o].value  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+            model.v_flow_out[r, p, s, d, S_i, t, v, S_o].value
             for S_o in model.process_outputs[r, p, t, v]
             for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
         )
@@ -93,8 +93,8 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             if d == d_last:
                 continue  # handled by seasonal_storage_energy_constraint
             s_next, d_next = model.time_next[p, s, d]
-            state = model.v_storage_level[r, p, s, d, t, v].value  # type: ignore [attr-defined]
-            next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value  # type: ignore [attr-defined]
+            state = model.v_storage_level[r, p, s, d, t, v].value
+            next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value
             assert state + stored_energy == pytest.approx(next_state, abs=1e-5), (
                 f'model fails to sequence storage {r, p, s, t, v} at {s, d} to {s_next, d_next}'
             )
@@ -102,10 +102,10 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             # Non-seasonal: time_next chain, v_storage_init at d_last
             s_next, d_next = model.time_next[p, s, d]
             if d == d_last:
-                prev_state = model.v_storage_init[r, p, s, t, v].value  # type: ignore [attr-defined]
+                prev_state = model.v_storage_init[r, p, s, t, v].value
             else:
-                prev_state = model.v_storage_level[r, p, s, d, t, v].value  # type: ignore [attr-defined]
-            next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value  # type: ignore [attr-defined]
+                prev_state = model.v_storage_level[r, p, s, d, t, v].value
+            next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value
             assert prev_state + stored_energy == pytest.approx(next_state, abs=1e-5), (
                 f'model fails to sequence storage {r, p, s, t, v} at {s, d}: '
                 f'state({prev_state}) + SE({stored_energy}) != next({next_state})'
@@ -143,10 +143,10 @@ def test_storage_flow_balance(system_test_run: tuple[str, Any, TemoaModel, Any])
         # calculate the inflow and outflow.  Inflow is taxed by efficiency in the model,
         # so we need to do that here as well
         inflow = sum(
-            model.v_flow_in[r, p, s, d, i, t, v, o].value * model.efficiency[r, i, t, v, o]  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+            model.v_flow_in[r, p, s, d, i, t, v, o].value * model.efficiency[r, i, t, v, o]
             for (r, p, s, d, i, t, v, o) in inflow_indices
         )
-        outflow = sum(model.v_flow_out[idx].value for idx in outflow_indices)  # type: ignore [attr-defined] # I can't figure out how to get mypy to see value through the pyomo stubs
+        outflow = sum(model.v_flow_out[idx].value for idx in outflow_indices)
 
         assert inflow == pytest.approx(outflow, abs=1e-5), (
             f'total inflow and outflow of storage tech {s_tech} do not match',

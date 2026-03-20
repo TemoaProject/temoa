@@ -10508,15 +10508,6 @@
         [
             "utopia",
             2000,
-            "inter",
-            "day",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "summer",
             "night",
             "RHE",
@@ -10666,15 +10657,6 @@
             "RHO",
             2000,
             "RH"
-        ],
-        [
-            "utopia",
-            2010,
-            "inter",
-            "night",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -10958,15 +10940,6 @@
         [
             "utopia",
             2000,
-            "summer",
-            "day",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "winter",
             "night",
             "RHO",
@@ -11021,15 +10994,6 @@
         [
             "utopia",
             2000,
-            "winter",
-            "night",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "summer",
             "day",
             "TXE",
@@ -11074,15 +11038,6 @@
         ],
         [
             "utopia",
-            2010,
-            "summer",
-            "night",
-            "RL1",
-            2010,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "night",
@@ -11098,15 +11053,6 @@
             "RHE",
             2010,
             "RH"
-        ],
-        [
-            "utopia",
-            2000,
-            "winter",
-            "day",
-            "RL1",
-            2000,
-            "RL"
         ],
         [
             "utopia",
@@ -11281,15 +11227,6 @@
         ],
         [
             "utopia",
-            2010,
-            "winter",
-            "night",
-            "RL1",
-            2010,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "day",
@@ -11368,15 +11305,6 @@
             "RHO",
             2010,
             "RH"
-        ],
-        [
-            "utopia",
-            2000,
-            "inter",
-            "night",
-            "RL1",
-            2000,
-            "RL"
         ],
         [
             "utopia",
@@ -11548,15 +11476,6 @@
             "RHE",
             1990,
             "RH"
-        ],
-        [
-            "utopia",
-            2010,
-            "summer",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -12127,15 +12046,6 @@
         ],
         [
             "utopia",
-            2000,
-            "summer",
-            "night",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "day",
@@ -12160,15 +12070,6 @@
             "TXE",
             2000,
             "TX"
-        ],
-        [
-            "utopia",
-            2010,
-            "inter",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -12385,15 +12286,6 @@
             "TXE",
             1990,
             "TX"
-        ],
-        [
-            "utopia",
-            2010,
-            "winter",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",

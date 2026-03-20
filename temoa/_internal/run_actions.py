@@ -206,20 +206,20 @@ def solve_instance(
         pass
 
     elif solver_name == 'cplex':
-        # Note: these parameter values are taken to be the same as those in PyPSA
+        # Note: these parameter values match mip-dev / PyPSA
         # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
         optimizer.options['lpmethod'] = 4  # barrier
         optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
-        optimizer.options['barrier convergetol'] = 1.0e-5
-        optimizer.options['feasopt tolerance'] = 1.0e-6
+        optimizer.options['barrier convergetol'] = 1.0e-3
+        optimizer.options['feasopt tolerance'] = 1.0e-4
 
     elif solver_name == 'gurobi':
-        # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
+        # Note: these parameter values match mip-dev / PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
         optimizer.options['Method'] = 2  # barrier
         optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
-        optimizer.options['BarConvTol'] = 1.0e-5
-        optimizer.options['FeasibilityTol'] = 1.0e-6
-        # optimizer.options["BarOrder"] = 0 # if solve times seem unusually long, try 0 or 1
+        optimizer.options['BarConvTol'] = 1.0e-3
+        optimizer.options['FeasibilityTol'] = 1.0e-4
+        optimizer.options['BarOrder'] = -1  # auto ordering; 2-4x faster than AMD on large models
 
     elif solver_name == 'appsi_highs':
         pass

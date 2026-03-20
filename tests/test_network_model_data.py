@@ -30,6 +30,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'basic',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -64,7 +65,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 'p2', 't5', 2000, 'd2', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [],
             'FROM cost_variable': [],
         },
@@ -81,6 +84,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'bad linked tech',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -101,7 +105,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
@@ -118,6 +124,7 @@ test_scenarios: list[ScenarioType] = [
     {
         'name': 'good linked tech',
         'db_data': {
+            'technology WHERE unlim_cap==1': [],
             'technology WHERE retire==1': [],
             'FROM lifetime_survival_curve': [],
             'FROM time_period': [(2020,), (2025,)],
@@ -138,7 +145,9 @@ test_scenarios: list[ScenarioType] = [
                 ('R1', 's1', 't1', 2000, 'd1', 100),
             ],
             'FROM end_of_life_output': [],
+            'FROM emission_end_of_life': [],
             'FROM construction_input': [],
+            'FROM existing_capacity': [],
             'FROM main.linked_tech': [('R1', 't4', 'nox', 'driven')],
             'FROM cost_variable': [],
         },
@@ -273,6 +282,10 @@ def test_sector_handling_with_sectors() -> None:
             return sector_check_mock
         elif 'FROM main.efficiency' in query:
             return efficiency_mock
+        elif 'technology WHERE unlim_cap==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'technology WHERE retire==1' in query:
             m = MagicMock()
             m.fetchall.return_value = []
@@ -305,7 +318,15 @@ def test_sector_handling_with_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
+        elif 'FROM emission_end_of_life' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'FROM construction_input' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM existing_capacity' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
@@ -357,6 +378,10 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = [('s1',), ('p1',), ('d1',)]
             return m
+        elif 'technology WHERE unlim_cap==1' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'technology WHERE retire==1' in query:
             m = MagicMock()
             m.fetchall.return_value = []
@@ -389,7 +414,15 @@ def test_sector_handling_without_sectors() -> None:
             m = MagicMock()
             m.fetchall.return_value = []
             return m
+        elif 'FROM emission_end_of_life' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
         elif 'FROM construction_input' in query:
+            m = MagicMock()
+            m.fetchall.return_value = []
+            return m
+        elif 'FROM existing_capacity' in query:
             m = MagicMock()
             m.fetchall.return_value = []
             return m

@@ -49,7 +49,8 @@ test_vals = {
         # reduced 2025/07/25 by 225 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 27 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 1513,
+        # reduced by 14 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 1499,
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
@@ -69,7 +70,8 @@ test_vals = {
         # reduced 2025/07/25 by 24 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 242,
+        # reduced by 10 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 232,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable
@@ -84,7 +86,8 @@ test_vals = {
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 185,
+        # reduced by 9 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 176,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable
