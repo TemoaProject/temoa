@@ -40,7 +40,7 @@ def emission_activity_indices(
 ) -> set[tuple[Region, Commodity, Commodity, Technology, Vintage, Commodity]]:
     indices = {
         (r, e, i, t, v, o)
-        for r, i, t, v, o in model.efficiency.sparse_iterkeys()
+        for r, i, t, v, o in model.efficiency.sparse_keys()
         for e in model.commodity_emissions
         if r in model.regions  # omit any exchange/groups
     }
@@ -53,7 +53,7 @@ def linked_tech_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, Commodity]]:
     linkedtech_indices = {
         (r, p, s, d, t, v, e)
-        for r, t, e in model.linked_techs.sparse_iterkeys()
+        for r, t, e in model.linked_techs.sparse_keys()
         for p in model.time_optimize
         if (r, p, t) in model.process_vintages
         for v in model.process_vintages[r, p, t]

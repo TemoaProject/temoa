@@ -338,7 +338,7 @@ def validate_efficiency(
 
 
 def validate_reserve_margin(model: TemoaModel) -> None:
-    for r in model.planning_reserve_margin.sparse_iterkeys():
+    for r in model.planning_reserve_margin.sparse_keys():
         if all((r, p) not in model.process_reserve_periods for p in model.time_optimize):
             logger.warning(
                 'Planning reserve margin provided but there are no reserve technologies serving '

@@ -697,7 +697,7 @@ def create_technology_and_commodity_sets(model: TemoaModel) -> None:
         - M.tech_demand: Technologies that directly satisfy an end-use demand.
     """
     logger.debug('Creating technology and commodity subsets.')
-    for _r, _i, t, _v, o in model.efficiency.sparse_iterkeys():
+    for _r, _i, t, _v, o in model.efficiency.sparse_keys():
         if t in model.tech_flex and o not in model.commodity_flex:
             model.commodity_flex.add(o)
 
@@ -728,7 +728,7 @@ def create_demands(model: TemoaModel) -> None:
     demand_specific_distributon_dem = iget(3)
 
     # Step 1: Check if any demand commodities are going unused
-    used_dems = {dem for _r, _p, dem in model.demand.sparse_iterkeys()}
+    used_dems = {dem for _r, _p, dem in model.demand.sparse_keys()}
     unused_dems = sorted(model.commodity_demand.difference(used_dems))
     if unused_dems:
         for dem in unused_dems:
@@ -740,8 +740,8 @@ def create_demands(model: TemoaModel) -> None:
     #          makes sense to just use segment_fraction directly
     # Step 2: Build the demand default distribution (= segment_fraction)
     # DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
-    # unset_defaults = set(M.segment_fraction.sparse_iterkeys())
-    # unset_defaults.difference_update(DDD.sparse_iterkeys())
+    # unset_defaults = set(M.segment_fraction.sparse_keys())
+    # unset_defaults.difference_update(DDD.sparse_keys())
     # if unset_defaults:
     # Some hackery because Pyomo thinks that this Param is constructed.
     # However, in our view, it is not yet, because we're specifically
@@ -759,7 +759,7 @@ def create_demands(model: TemoaModel) -> None:
     #     # errors associated with the specification of demand shares by time slice,
     #     # but we check to make sure it is within the specified tolerance.
 
-    #     key_padding = max(map(get_str_padding, DDD.sparse_iterkeys()))
+    #     key_padding = max(map(get_str_padding, DDD.sparse_keys()))
 
     #     fmt = '%%-%ds = %%s' % key_padding
     #     # Works out to something like "%-25s = %s"
@@ -783,7 +783,7 @@ def create_demands(model: TemoaModel) -> None:
     demands_specified = set(
         map(
             demand_specific_distributon_dem,
-            (i for i in demand_specific_distribution.sparse_iterkeys()),
+            (i for i in demand_specific_distribution.sparse_keys()),
         )
     )
     unset_demand_distributions = used_dems.difference(
@@ -808,12 +808,12 @@ def create_demands(model: TemoaModel) -> None:
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    used_r_dems = {(r, dem) for r, p, dem in model.demand.sparse_iterkeys()}
+    used_r_dems = {(r, dem) for r, p, dem in model.demand.sparse_keys()}
     for r, dem in used_r_dems:
         expected_key_length = len(model.time_season) * len(model.time_of_day)
         keys = [
             k
-            for k in demand_specific_distribution.sparse_iterkeys()
+            for k in demand_specific_distribution.sparse_keys()
             if demand_specific_distribution_region(k) == r
             and demand_specific_distributon_dem(k) == dem
         ]

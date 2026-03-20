@@ -138,7 +138,7 @@ def limit_tech_output_split_average_constraint_indices(
 def limit_growth_capacity_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_growth_capacity.sparse_iterkeys()
+        for r, t, op in model.limit_growth_capacity.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -149,7 +149,7 @@ def limit_degrowth_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_degrowth_capacity.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_capacity.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -160,7 +160,7 @@ def limit_growth_new_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_growth_new_capacity.sparse_iterkeys()
+        for r, t, op in model.limit_growth_new_capacity.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -171,7 +171,7 @@ def limit_degrowth_new_capacity_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_degrowth_new_capacity.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_new_capacity.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -182,7 +182,7 @@ def limit_growth_new_capacity_delta_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_growth_new_capacity_delta.sparse_iterkeys()
+        for r, t, op in model.limit_growth_new_capacity_delta.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -193,7 +193,7 @@ def limit_degrowth_new_capacity_delta_indices(
 ) -> set[tuple[Region, Period, Technology, str]]:
     indices = {
         (r, p, t, op)
-        for r, t, op in model.limit_degrowth_new_capacity_delta.sparse_iterkeys()
+        for r, t, op in model.limit_degrowth_new_capacity_delta.sparse_keys()
         for p in model.time_optimize
     }
     return indices
@@ -884,7 +884,7 @@ def limit_emission_constraint(
         model.v_flow_out[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
         * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
         for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_keys()
         if tmp_e == e and tmp_r == reg and S_t not in model.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
         if (reg, p, S_t, S_v) in model.process_inputs
@@ -896,7 +896,7 @@ def limit_emission_constraint(
         model.v_flow_out_annual[reg, p, S_i, S_t, S_v, S_o]
         * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
         for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_iterkeys()
+        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_keys()
         if tmp_e == e and tmp_r == reg and S_t in model.tech_annual
         # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
         if (reg, p, S_t, S_v) in model.process_inputs
@@ -907,14 +907,14 @@ def limit_emission_constraint(
         * value(model.emission_embodied[reg, e, t, v])
         / value(model.period_length[v])
         for reg in regions
-        for (S_r, S_e, t, v) in model.emission_embodied.sparse_iterkeys()
+        for (S_r, S_e, t, v) in model.emission_embodied.sparse_keys()
         if v == p and S_r == reg and S_e == e
     )
 
     retirement_emissions = quicksum(
         model.v_annual_retirement[reg, p, t, v] * value(model.emission_end_of_life[reg, e, t, v])
         for reg in regions
-        for (S_r, S_e, t, v) in model.emission_end_of_life.sparse_iterkeys()
+        for (S_r, S_e, t, v) in model.emission_end_of_life.sparse_keys()
         if (reg, t, v) in model.retirement_periods and p in model.retirement_periods[reg, t, v]
         if S_r == reg and S_e == e
     )
@@ -1037,7 +1037,7 @@ def limit_growth_capacity(
         capacity_prev = sum(
             value(model.existing_capacity[_r, _t, _v])
             * min(1.0, (_v + value(model.lifetime_process[_r, _t, _v]) - p_prev) / (p - p_prev))
-            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
+            for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions
             and _t in techs
             and _v + value(model.lifetime_process[_r, _t, _v]) > p_prev
@@ -1156,7 +1156,7 @@ def limit_growth_new_capacity(
         p_prev = model.time_exist.last()
         new_cap_prev = sum(
             value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
+            for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions and _t in techs and _v == p_prev
         )
     else:
@@ -1282,13 +1282,13 @@ def limit_growth_new_capacity_delta(
         p_prev = model.time_exist.last()
         new_cap_prev = sum(
             value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
+            for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions and _t in techs and _v == p_prev
         )
         p_prev2 = model.time_exist.prev(p_prev)
         new_cap_prev2 = sum(
             value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
+            for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions and _t in techs and _v == p_prev2
         )
     else:
@@ -1300,7 +1300,7 @@ def limit_growth_new_capacity_delta(
             p_prev2 = model.time_exist.last()
             new_cap_prev2 = sum(
                 value(model.existing_capacity[_r, _t, _v])
-                for _r, _t, _v in model.existing_capacity.sparse_iterkeys()
+                for _r, _t, _v in model.existing_capacity.sparse_keys()
                 if _r in regions and _t in techs and _v == p_prev2
             )
         else:

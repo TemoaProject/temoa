@@ -170,7 +170,7 @@ def _build_from_model(
         raise NotImplementedError('Cannot build network data from model using a myopic_index')
 
     dem_com = defaultdict(set)
-    for r, p, d in model.demand.sparse_iterkeys():
+    for r, p, d in model.demand.sparse_keys():
         dem_com[r, p].add(d)
 
     techs: defaultdict[tuple[Region, Period], set[EdgeTuple]] = defaultdict(set)
@@ -183,7 +183,7 @@ def _build_from_model(
 
     linked_techs = {
         LinkedTechTuple(r, driver, emission, driven)
-        for r, driver, emission, driven in model.linked_techs.sparse_iterkeys()
+        for r, driver, emission, driven in model.linked_techs.sparse_keys()
     }
 
     res = NetworkModelData(

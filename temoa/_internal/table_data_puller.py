@@ -216,7 +216,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
                 res[fi][FlowType.OUT] -= flow
 
     # construction flows
-    for r, i, t, v in model.construction_input.sparse_iterkeys():
+    for r, i, t, v in model.construction_input.sparse_keys():
         annual = (
             value(model.construction_input[r, i, t, v])
             * value(model.v_new_capacity[r, t, v])
@@ -231,7 +231,7 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
                 res[fi][FlowType.IN] = flow
 
     # end of life flows
-    for r, t, v, o in model.end_of_life_output.sparse_iterkeys():
+    for r, t, v, o in model.end_of_life_output.sparse_keys():
         if (r, t, v) not in model.retirement_periods:
             continue
         for p in model.retirement_periods[r, t, v]:
@@ -335,7 +335,7 @@ def poll_cost_results(
     entries: dict[tuple[Region, Period, Technology, Vintage], dict[CostType, float]] = defaultdict(
         dict
     )
-    for r, t, v in model.cost_invest.sparse_iterkeys():  # Returns only non-zero values
+    for r, t, v in model.cost_invest.sparse_keys():  # Returns only non-zero values
         # gather details...
         cap = value(model.v_new_capacity[r, t, v])
         if abs(cap) < epsilon:
@@ -395,7 +395,7 @@ def poll_cost_results(
                 {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
 
-    for r, p, t, v in model.cost_fixed.sparse_iterkeys():
+    for r, p, t, v in model.cost_fixed.sparse_keys():
         cap = value(model.v_capacity[r, p, t, v])
         if abs(cap) < epsilon:
             continue
@@ -436,7 +436,7 @@ def poll_cost_results(
                 }
             )
 
-    for r, p, t, v in model.cost_variable.sparse_iterkeys():
+    for r, p, t, v in model.cost_variable.sparse_keys():
         if t not in model.tech_annual:
             activity = sum(
                 value(model.v_flow_out[r, p, S_s, S_d, S_i, t, v, S_o])
@@ -622,7 +622,7 @@ def poll_emissions(
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in model.emission_activity.sparse_iterkeys()
+        for (r, e, i, t, v, o) in model.emission_activity.sparse_keys()
         for p in model.time_optimize
         if (r, p, t, v) in model.process_inputs
     ]
@@ -683,7 +683,7 @@ def poll_emissions(
 
     # iterate through embodied flows
     embodied_flows: dict[EI, float] = defaultdict(float)
-    for r, e, t, v in model.emission_embodied.sparse_iterkeys():
+    for r, e, t, v in model.emission_embodied.sparse_keys():
         embodied_flows[EI(r, v, t, v, e)] += value(
             model.v_new_capacity[r, t, v]
             * model.emission_embodied[r, e, t, v]
@@ -731,7 +731,7 @@ def poll_emissions(
 
     # iterate through end of life flows
     eol_flows: dict[EI, float] = defaultdict(float)
-    for r, e, t, v in model.emission_end_of_life.sparse_iterkeys():
+    for r, e, t, v in model.emission_end_of_life.sparse_keys():
         if (r, t, v) not in model.retirement_periods:
             continue
         for p in model.retirement_periods[r, t, v]:

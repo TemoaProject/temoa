@@ -129,7 +129,7 @@ def create_geography_sets(model: TemoaModel) -> None:
           of (region_from, t, v, i) tuples.
     """
     logger.debug('Creating geography-related sets for exchange technologies.')
-    for r, i, t, v, o in model.efficiency.sparse_iterkeys():
+    for r, i, t, v, o in model.efficiency.sparse_keys():
         if t not in model.tech_exchange:
             continue
 
