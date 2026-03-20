@@ -135,6 +135,8 @@ class TemoaModel(AbstractModel):
         self.group_region_active_flow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
+        # demands served by a single r, i, t, v, o sub-process
+        self.singleton_demands: t.SingletonDemandsSet = set()
         self.commodity_balance_rpc: t.CommodityBalancedSet = (
             set()
         )  # Set of valid region-period-commodity indices to balance
@@ -858,6 +860,7 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
+        self.check_singleton_demands = BuildAction(rule=commodities.check_singleton_demands)
         self.demand_constraint = Constraint(
             self.demand_constraint_rpc, rule=commodities.demand_constraint
         )

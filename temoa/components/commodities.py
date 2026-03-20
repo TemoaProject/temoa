@@ -16,7 +16,7 @@ from logging import getLogger
 from operator import itemgetter as iget
 from typing import TYPE_CHECKING, Any, cast
 
-from pyomo.environ import value
+from pyomo.environ import Constraint, value
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -94,6 +94,34 @@ def demand_constraint_error_check(supply: Any, r: Region, p: Period, dem: Commod
         raise Exception(msg.format(dem, r, p))
 
 
+def check_singleton_demands(model: TemoaModel) -> None:
+    """
+    Check for demand commodities that are only produced by a single
+    (r, i, t, v, o) sub-process. If such a case is found, the flow variables are
+    fixed directly and demand activity and demand constraints are skipped
+    as these constraints would otherwise be overdefined and unstable.
+    """
+    for r, p, dem in model.demand_constraint_rpc:
+        upstream_itv = {
+            (i, t, v)
+            for t, v in model.commodity_up_stream_process.get((r, p, dem), [])
+            for i in model.process_inputs_by_output.get((r, p, t, v, dem), [])
+        }
+        if len(upstream_itv) != 1:
+            # not singleton, regular demand constraints
+            continue
+
+        # singleton, fix everything and skip demand constraints
+        val = value(model.demand[r, p, dem])
+        i, t, v = next(iter(upstream_itv))
+        model.v_flow_out_annual[r, p, i, t, v, dem].fix(val)
+        if t not in model.tech_annual:
+            for s, d in cross_product(model.time_season[p], model.time_of_day):
+                dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
+                model.v_flow_out[r, p, s, d, i, t, v, dem].fix(val * dsd)
+        model.singleton_demands.add((r, p, dem))
+
+
 # ============================================================================
 # PYOMO INDEX SET FUNCTIONS
 # ============================================================================
@@ -108,28 +136,15 @@ def demand_activity_constraint_indices(
     demand commodity (and no annual techs co-serve it), the flow variables are fixed
     directly and DAC indices are omitted.
     """
-    indices = set()
-    for r, p, dem in model.demand_constraint_rpc:
-        upstream = list(model.commodity_up_stream_process[r, p, dem])
-        non_annual = [(t, v) for t, v in upstream if t not in model.tech_annual]
-        has_annual = any(t in model.tech_annual for t, _ in upstream)
-        # Single non-annual (t,v) with one input, no annual co-techs: fix variables
-        if len(non_annual) == 1 and not has_annual:
-            t, v = non_annual[0]
-            inputs = list(model.process_inputs_by_output[r, p, t, v, dem])
-            if len(inputs) == 1:
-                i = inputs[0]
-                dem_val = value(model.demand[r, p, dem])
-                model.v_flow_out_annual[r, p, i, t, v, dem].fix(dem_val)  # type: ignore[attr-defined]
-                for s in model.time_season[p]:
-                    for d in model.time_of_day:
-                        dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
-                        model.v_flow_out[r, p, s, d, i, t, v, dem].fix(dem_val * dsd)  # type: ignore[attr-defined]
-                continue
-        for t, v in non_annual:
-            for s in model.time_season[p]:
-                for d in model.time_of_day:
-                    indices.add((r, p, s, d, t, v, dem))
+    indices = {
+        (r, p, s, d, t, v, dem)
+        for r, p, dem in model.demand_constraint_rpc
+        if (r, p, dem) not in model.singleton_demands
+        for t, v in model.commodity_up_stream_process[r, p, dem]
+        if t not in model.tech_annual
+        for s in model.time_season[p]
+        for d in model.time_of_day
+    }
     return indices
 
 
@@ -196,13 +211,8 @@ def demand_constraint(model: TemoaModel, r: Region, p: Period, dem: Commodity) -
     could satisfy both an end-use and internal system demand, then the output from
     :math:`\textbf{FO}` and :math:`\textbf{FOA}` would be double counted."""
 
-    # All demand techs are annual now
-    # supply = sum(
-    #     M.v_flow_out[r, p, s, d, s_i, s_t, s_v, dem]
-    #     for s_t, s_v in M.commodity_up_stream_process[r, p, dem]
-    #     if s_t not in M.tech_annual
-    #     for s_i in M.process_inputs_by_output[r, p, s_t, s_v, dem]
-    # )
+    if (r, p, dem) in model.singleton_demands:
+        return Constraint.Skip
 
     supply_annual = sum(
         model.v_flow_out_annual[r, p, s_i, s_t, s_v, dem]
