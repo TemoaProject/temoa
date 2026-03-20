@@ -135,6 +135,8 @@ class TemoaModel(AbstractModel):
         self.group_region_active_flow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
+        # demands served by a single r, i, t, v, o sub-process
+        self.singleton_demands: t.SingletonDemandsSet = set()
         self.commodity_balance_rpc: t.CommodityBalancedSet = (
             set()
         )  # Set of valid region-period-commodity indices to balance
@@ -292,13 +294,9 @@ class TemoaModel(AbstractModel):
         self.commodity_waste = Set()
         self.commodity_flex = Set(within=self.commodity_physical)
         self.commodity_source = Set(within=self.commodity_physical)
-        self.commodity_sink = Set(
-            initialize=self.commodity_demand | self.commodity_waste
-        )
+        self.commodity_sink = Set(initialize=self.commodity_demand | self.commodity_waste)
         self.commodity_annual = Set(within=self.commodity_physical)
-        self.commodity_carrier = Set(
-            initialize=self.commodity_physical | self.commodity_sink
-        )
+        self.commodity_carrier = Set(initialize=self.commodity_physical | self.commodity_sink)
         self.commodity_all = Set(
             initialize=self.commodity_carrier | self.commodity_emissions,
             validate=no_slash_or_pipe,
@@ -862,6 +860,7 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
+        self.check_singleton_demands = BuildAction(rule=commodities.check_singleton_demands)
         self.demand_constraint = Constraint(
             self.demand_constraint_rpc, rule=commodities.demand_constraint
         )
