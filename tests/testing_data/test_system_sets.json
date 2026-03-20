@@ -42293,6 +42293,26 @@
             "R1",
             "S_OILREF",
             2020
+        ],
+        [
+            "R1",
+            "E_NUCLEAR",
+            2015
+        ],
+        [
+            "R2",
+            "E_NUCLEAR",
+            2015
+        ],
+        [
+            "R1-R2",
+            "E_TRANS",
+            2015
+        ],
+        [
+            "R2-R1",
+            "E_TRANS",
+            2015
         ]
     ],
     "new_capacity_var_rtv": [

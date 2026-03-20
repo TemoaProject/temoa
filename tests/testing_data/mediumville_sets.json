@@ -3788,40 +3788,7 @@
             2025
         ]
     ],
-    "ramp_down_season_constraint_rpsstv": [
-        [
-            "A",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ]
-    ],
+    "ramp_down_season_constraint_rpsstv": [],
     "ramp_up_day_constraint_rpsdtv": [
         [
             "B",
@@ -3888,40 +3855,7 @@
             2025
         ]
     ],
-    "ramp_up_season_constraint_rpsstv": [
-        [
-            "A",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ]
-    ],
+    "ramp_up_season_constraint_rpsstv": [],
     "regional_exchange_capacity_constraint_rrptv": [
         [
             "B",

@@ -113,13 +113,14 @@ def cost_variable_indices(model: TemoaModel) -> set[tuple[Region, Period, Techno
 
 def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Technology, Vintage]]:
     """
-    Based on the efficiency parameter's indices and time_future parameter, this
-    function returns the set of process indices that may be specified in the
-    cost_invest parameter.
-    """
-    min_period = min(model.vintage_optimize)
+    Based on the efficiency parameter's indices, this function returns the set of
+    process indices that may be specified in the loan_lifetime_process parameter.
 
-    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys() if v >= min_period}
+    Note: We include all efficiency vintages (not just >= min optimization period)
+    because in myopic mode, previously optimized vintages remain active in later
+    windows and their data must be accepted by the param's index set.
+    """
+    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
 
     return indices
 

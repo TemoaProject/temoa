@@ -71,7 +71,8 @@ test_vals = {
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
         # reduced by 10 after dropping DAC for single-tech demands
-        ExpectedVals.CONSTR_COUNT: 232,
+        # reduced by 8 after disabling season ramp for seasonal_timeslices
+        ExpectedVals.CONSTR_COUNT: 224,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable
