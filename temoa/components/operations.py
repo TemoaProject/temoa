@@ -74,7 +74,9 @@ def ramp_down_day_constraint_indices(
 def ramp_up_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.time_sequencing.first() == 'consecutive_days':
+    # Season-to-season ramp constraints require full inter-season ordering;
+    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
+    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
@@ -94,7 +96,9 @@ def ramp_up_season_constraint_indices(
 def ramp_down_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.time_sequencing.first() == 'consecutive_days':
+    # Season-to-season ramp constraints require full inter-season ordering;
+    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
+    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints

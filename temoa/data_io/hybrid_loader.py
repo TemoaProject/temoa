@@ -250,11 +250,11 @@ class HybridLoader:
 
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
-                    logger.warning(
-                        '%d values for %s failed to validate and were ignored.',
-                        ignored_count,
-                        item.component.name,
-                    )
+                    msg = '%d values for %s failed to validate and were ignored.'
+                    if myopic_index:
+                        logger.info(msg, ignored_count, item.component.name)
+                    else:
+                        logger.warning(msg, ignored_count, item.component.name)
                 self._load_component_data(data, item.component, filtered_data)
 
         # ---------------------------------------------------------------------
@@ -471,6 +471,7 @@ class HybridLoader:
         self.viable_rt = filts['rt']
         self.viable_rpit = filts['rpit']
         self.viable_rpto = filts['rpto']
+        self.viable_rtv_eol = filts['rtv_eol']
         self.viable_techs = filts['t']
         self.viable_input_comms = filts['ic']
         self.viable_output_comms = filts['oc']
@@ -680,6 +681,34 @@ class HybridLoader:
         mi = self.myopic_index
         data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]  # type: ignore[operator]
         self._load_component_data(data, model.loan_rate, data_to_load)
+
+    def _load_construction_input(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Handles myopic period filtering for construction_input."""
+        model = TemoaModel()
+        base_year = self.myopic_index.base_year if self.myopic_index else None
+        data_to_load = [
+            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
+        ]
+        self._load_component_data(data, model.construction_input, data_to_load)
+
+    def _load_emission_embodied(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Handles myopic period filtering for emission_embodied."""
+        model = TemoaModel()
+        base_year = self.myopic_index.base_year if self.myopic_index else None
+        data_to_load = [
+            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
+        ]
+        self._load_component_data(data, model.emission_embodied, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_days_per_period(

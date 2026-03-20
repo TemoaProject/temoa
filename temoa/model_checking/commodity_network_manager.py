@@ -135,6 +135,9 @@ class CommodityNetworkManager:
                 valid_elements['rpto'].add(
                     (edge_tuple.region, p, edge_tuple.tech, edge_tuple.output_comm)
                 )
+                valid_elements['rtv_eol'].add(
+                    (edge_tuple.region, edge_tuple.input_comm, edge_tuple.vintage)
+                )
                 valid_elements['t'].add(edge_tuple.tech)
                 valid_elements['v'].add(edge_tuple.vintage)
                 valid_elements['ic'].add(edge_tuple.input_comm)
@@ -158,6 +161,13 @@ class CommodityNetworkManager:
                     valid_elements['rpto'].add(
                         (edge_tuple.region, p, tech_group, edge_tuple.output_comm)
                     )
+        # Good processes that we dont want in the network diagram
+        for r, _p, t, v in self.orig_data.silent_rptv:
+            valid_elements['rtv'].add((r, t, v))
+            valid_elements['rt'].add((r, t))
+            valid_elements['t'].add(t)
+            valid_elements['v'].add(v)
+
         return {
             'ritvo': ViableSet(
                 elements=valid_elements['ritvo'],
@@ -191,6 +201,11 @@ class CommodityNetworkManager:
             ),
             'rpto': ViableSet(
                 elements=valid_elements['rpto'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
+            'rtv_eol': ViableSet(
+                elements=valid_elements['rtv_eol'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),

@@ -144,20 +144,29 @@ def reserve_margin_dynamic(
             continue
         r1, r2 = r1r2.split('-')
 
-        # Only consider the capacity of technologies that import to
-        # the region in question -- i.e. for cases where r2 == r.
-        if r2 != r:
-            continue
-
-        # add the available output of the exchange tech.
-        available += sum(
-            model.v_capacity[r1r2, p, t, v]
-            * value(model.reserve_capacity_derate[r, p, s, t, v])
-            * value(model.capacity_factor_process[r, p, s, d, t, v])
-            * value(model.capacity_to_activity[r1r2, t])
-            * value(model.segment_fraction[p, s, d])
-            for (t, v) in model.process_reserve_periods[r1r2, p]
-        )
+        # Only consider exchange technologies connecting to this region
+        if r2 == r:
+            # Add the firm capacity commitment TO this region
+            # (this region was guaranteed an import of power)
+            available += sum(
+                model.v_capacity[r1r2, p, t, v]
+                * value(model.reserve_capacity_derate[r1r2, p, s, t, v])
+                * value(model.capacity_factor_process[r1r2, p, s, d, t, v])
+                * value(model.capacity_to_activity[r1r2, t])
+                * value(model.segment_fraction[p, s, d])
+                for (t, v) in model.process_reserve_periods[r1r2, p]
+            )
+        elif r1 == r:
+            # Subtract the firm capacity commitment FROM this region
+            # (this region guaranteed an export of power)
+            available -= sum(
+                model.v_capacity[r1r2, p, t, v]
+                * value(model.reserve_capacity_derate[r1r2, p, s, t, v])
+                * value(model.capacity_factor_process[r1r2, p, s, d, t, v])
+                * value(model.capacity_to_activity[r1r2, t])
+                * value(model.segment_fraction[p, s, d])
+                for (t, v) in model.process_reserve_periods[r1r2, p]
+            )
 
     return available
 
@@ -230,19 +239,27 @@ def reserve_margin_static(
             continue
         r1, r2 = r1r2.split('-')
 
-        # Only consider the capacity of technologies that import to
-        # the region in question -- i.e. for cases where r2 == r.
-        if r2 != r:
-            continue
-
-        # add the available capacity of the exchange tech.
-        available += sum(
-            value(model.capacity_credit[r1r2, p, t, v])
-            * model.v_capacity[r1r2, p, t, v]
-            * value(model.capacity_to_activity[r1r2, t])
-            * value(model.segment_fraction[p, s, d])
-            for (t, v) in model.process_reserve_periods[r1r2, p]
-        )
+        # Only consider exchange technologies connecting to this region
+        if r2 == r:
+            # Add the firm capacity commitment TO this region
+            # (this region was guaranteed an import of power)
+            available += sum(
+                value(model.capacity_credit[r1r2, p, t, v])
+                * model.v_capacity[r1r2, p, t, v]
+                * value(model.capacity_to_activity[r1r2, t])
+                * value(model.segment_fraction[p, s, d])
+                for (t, v) in model.process_reserve_periods[r1r2, p]
+            )
+        elif r1 == r:
+            # Subtract the firm capacity commitment FROM this region
+            # (this region guaranteed an export of power)
+            available -= sum(
+                value(model.capacity_credit[r1r2, p, t, v])
+                * model.v_capacity[r1r2, p, t, v]
+                * value(model.capacity_to_activity[r1r2, t])
+                * value(model.segment_fraction[p, s, d])
+                for (t, v) in model.process_reserve_periods[r1r2, p]
+            )
 
     return available
 
