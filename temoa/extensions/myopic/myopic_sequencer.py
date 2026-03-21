@@ -359,7 +359,7 @@ class MyopicSequencer:
 
     def run_evolution_script(
             self,
-            idx: int | None,
+            idx: MyopicIndex | None,
             last_base_year: int | None,
             last_instance_status: str | None,
             con: sqlite3.Connection | None
@@ -371,7 +371,7 @@ class MyopicSequencer:
         if not self.evolution_script:
             logger.warning('Evolving myopic mode selected, but no evolution script provided.')
             return
-        
+
         # import the script as a module and call the iterate function
         script_path = Path(self.evolution_script).expanduser()
         if not script_path.is_file():
