@@ -471,12 +471,12 @@ def limit_annual_capacity_factor_constraint(
         :label: limit_annual_capacity_factor
 
             \sum_{S,D,I} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, t, v, o} \cdot
-            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
             \forall \{r, t \notin T^{a}, v, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
 
             \\\sum_{I} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, t, v, o} \cdot
-            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
             \forall \{r, t \in T^{a}, v, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
     """
