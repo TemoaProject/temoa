@@ -522,17 +522,16 @@ CREATE TABLE IF NOT EXISTS limit_activity_share
 CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
 (
     region      TEXT,
-    period      INTEGER
+    tech_or_group   TEXT,
+    vintage      INTEGER
         REFERENCES time_period (period),
-    tech        TEXT
-        REFERENCES technology (tech),
     output_comm TEXT
         REFERENCES commodity (name),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator),
+    PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS limit_capacity
@@ -564,28 +563,28 @@ CREATE TABLE IF NOT EXISTS limit_capacity_share
 CREATE TABLE IF NOT EXISTS limit_new_capacity
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     tech_or_group   TEXT,
+    vintage  INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     new_cap REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
+    PRIMARY KEY (region, tech_or_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_new_capacity_share
 (
     region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
     sub_group      TEXT,
     super_group    TEXT,
+    vintage         INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
+    PRIMARY KEY (region, sub_group, super_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_resource
 (
@@ -606,13 +605,12 @@ CREATE TABLE IF NOT EXISTS limit_seasonal_capacity_factor
         REFERENCES time_period (period),
 	season TEXT
         REFERENCES season_label (season),
-	tech    TEXT
-        REFERENCES technology (tech),
+	tech_or_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, period, season, tech_or_group, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_tech_input_split
 (

@@ -122,6 +122,11 @@ period_added_tables = [
     ("",                      "TimeSegmentFraction"),
 ]
 
+period_to_vintage_tables = {
+    "LimitNewCapacityShare",
+    "LimitNewCapacity",
+}
+
 operator_added_tables = {
     "EmissionLimit": ("LimitEmission", "le"),
     "TechOutputSplit": ("LimitTechOutputSplit", "ge"),
@@ -135,7 +140,6 @@ operator_added_tables = {
     "MinCapacityShare": ("LimitCapacityShare", "ge"),
     "MinCapacityGroup": ("LimitCapacity", "ge"),
     "MinCapacity": ("LimitCapacity", "ge"),
-    "MinAnnualCapacityFactor": ("LimitAnnualCapacityFactor", "ge"),
     "MinActivityShare": ("LimitActivityShare", "ge"),
     "MinActivityGroup": ("LimitActivity", "ge"),
     "MinActivity": ("LimitActivity", "ge"),
@@ -146,7 +150,6 @@ operator_added_tables = {
     "MaxCapacityShare": ("LimitCapacityShare", "le"),
     "MaxCapacityGroup": ("LimitCapacity", "le"),
     "MaxCapacity": ("LimitCapacity", "le"),
-    "MaxAnnualCapacityFactor": ("LimitAnnualCapacityFactor", "le"),
     "MaxActivityShare": ("LimitActivityShare", "le"),
     "MaxActivityGroup": ("LimitActivity", "le"),
     "MaxActivity": ("LimitActivity", "le"),
@@ -156,6 +159,8 @@ operator_added_tables = {
 no_transfer = {
     "MinSeasonalActivity": "LimitSeasonalCapacityFactor",
     "MaxSeasonalActivity": "LimitSeasonalCapacityFactor",
+    "MinAnnualCapacityFactor": "LimitAnnualCapacityFactor",
+    "MaxAnnualCapacityFactor": "LimitAnnualCapacityFactor",
     "StorageInit": "LimitStorageLevelFraction",
 }
 
@@ -188,6 +193,22 @@ for old_name, (new_name, operator) in operator_added_tables.items():
     ]
     op_index = new_cols.index("operator")
     data = [(*row[0:op_index], operator, *row[op_index:len(new_cols)-1]) for row in data]
+    # if table in period_to_vintage_tables, move period value from period column to vintage column
+    if new_name in period_to_vintage_tables:
+        old_cols: list[str] = [
+            c[1] for c in con_old.execute(f"PRAGMA table_info({old_name});").fetchall()
+        ]
+        period_index = old_cols.index("period")
+        vintage_index = new_cols.index("vintage")
+        data = [
+            (
+                *row[0:period_index],
+                *row[period_index+1:vintage_index+1],
+                row[period_index],
+                *row[vintage_index+1:]
+            )
+            for row in data
+        ]
 
     # construct the query with correct number of placeholders
     num_placeholders = len(data[0])
@@ -388,6 +409,11 @@ print(
     "manually. ---"
 )
 for old_name, new_name in no_transfer.items():
+    # Check if it exists in the old database. If not, no need to warn about it.
+    try:
+        con_old.execute(f"SELECT * FROM {old_name}").fetchone()
+    except sqlite3.OperationalError:
+        continue
     print(f"{old_name} to {new_name}")
 
 
