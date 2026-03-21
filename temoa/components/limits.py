@@ -1420,11 +1420,7 @@ def limit_capacity_constraint(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
         for _t in techs
         for _r in regions
-<<<<<<< rework/vintage_limit_tables
-        if (_r, p, _t) in model.process_vintages
-=======
         if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
->>>>>>> unstable
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
     if isinstance(expr, bool):
