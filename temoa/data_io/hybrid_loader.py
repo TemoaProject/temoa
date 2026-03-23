@@ -106,6 +106,8 @@ class HybridLoader:
         self.viable_output_comms: ViableSet | None = None
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
+        self.viable_rtvo: ViableSet | None = None
+        self.viable_rpt: ViableSet | None = None
         self.viable_rpto: ViableSet | None = None
         self.viable_rtv: ViableSet | None = None
         self.viable_rt: ViableSet | None = None
@@ -245,9 +247,6 @@ class HybridLoader:
                     )
                     raw_data = item.fallback_data
                     filtered_data = self._filter_data(raw_data, item, use_raw_data)
-
-                if not filtered_data:
-                    continue
 
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
@@ -457,8 +456,17 @@ class HybridLoader:
         if not self.manager:
             raise RuntimeError('Source trace manager not initialized for filtering.')
 
-        filts = self.manager.build_filters()
+        # Build viable sets for tech_or_group
+        # Create a dictionary from the tech_group_members table
+        tech_groups = defaultdict(set)
+        if self.table_exists('tech_group_member'):
+            for group_name, tech in cur.execute('SELECT group_name, tech FROM tech_group_member'):
+                tech_groups[tech].add(group_name)
+
+        filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
+        self.viable_rtvo = filts['rtvo']
+        self.viable_rpt = filts['rpt']
         self.viable_rtv = filts['rtv']
         self.viable_rt = filts['rt']
         self.viable_rpit = filts['rpit']
@@ -936,13 +944,13 @@ class HybridLoader:
             ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
             model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rpto.name
+                model.limit_annual_capacity_factor_constraint_rtvo.name
             ),
             model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
             model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rpt.name,
+            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
             model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rpgg.name
+                model.limit_new_capacity_share_constraint_rggv.name
             ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
             model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,

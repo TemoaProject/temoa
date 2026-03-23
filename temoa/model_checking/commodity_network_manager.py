@@ -94,7 +94,7 @@ class CommodityNetworkManager:
         orphans_found = any(self.demand_orphans.values()) or any(self.other_orphans.values())
         return not orphans_found
 
-    def build_filters(self) -> dict[str, ViableSet]:
+    def build_filters(self, tech_groups: defaultdict[str, set[str]]) -> dict[str, ViableSet]:
         """
         Constructs ViableSet filters based on the valid technologies remaining
         after the network analysis is complete.
@@ -118,6 +118,15 @@ class CommodityNetworkManager:
                         edge_tuple.output_comm,
                     )
                 )
+                valid_elements['rtvo'].add(
+                    (
+                        edge_tuple.region,
+                        edge_tuple.tech,
+                        edge_tuple.vintage,
+                        edge_tuple.output_comm,
+                    )
+                )
+                valid_elements['rpt'].add((edge_tuple.region, p, edge_tuple.tech))
                 valid_elements['rtv'].add((edge_tuple.region, edge_tuple.tech, edge_tuple.vintage))
                 valid_elements['rt'].add((edge_tuple.region, edge_tuple.tech))
                 valid_elements['rpit'].add(
@@ -134,8 +143,28 @@ class CommodityNetworkManager:
                 valid_elements['ic'].add(edge_tuple.input_comm)
                 valid_elements['oc'].add(edge_tuple.output_comm)
 
+                for tech_group in tech_groups.get(edge_tuple.tech, {}):
+                    valid_elements['rtvo'].add(
+                        (
+                            edge_tuple.region,
+                            tech_group,
+                            edge_tuple.vintage,
+                            edge_tuple.output_comm,
+                        )
+                    )
+                    valid_elements['rpt'].add((edge_tuple.region, p, tech_group))
+                    valid_elements['rtv'].add((edge_tuple.region, tech_group, edge_tuple.vintage))
+                    valid_elements['rt'].add((edge_tuple.region, tech_group))
+                    valid_elements['rpit'].add(
+                        (edge_tuple.region, p, edge_tuple.input_comm, tech_group)
+                    )
+                    valid_elements['rpto'].add(
+                        (edge_tuple.region, p, tech_group, edge_tuple.output_comm)
+                    )
+
         # Good processes that we dont want in the network diagram
-        for r, _p, t, v in self.orig_data.silent_rptv:
+        for r, p, t, v in self.orig_data.silent_rptv:
+            valid_elements['rpt'].add((r, p, t))
             valid_elements['rtv'].add((r, t, v))
             valid_elements['rt'].add((r, t))
             valid_elements['t'].add(t)
@@ -147,8 +176,18 @@ class CommodityNetworkManager:
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
+            'rtvo': ViableSet(
+                elements=valid_elements['rtvo'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
             'rtv': ViableSet(
                 elements=valid_elements['rtv'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
+            'rpt': ViableSet(
+                elements=valid_elements['rpt'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),

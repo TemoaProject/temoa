@@ -516,17 +516,16 @@ CREATE TABLE IF NOT EXISTS LimitActivityShare
 CREATE TABLE IF NOT EXISTS LimitAnnualCapacityFactor
 (
     region      TEXT,
-    period      INTEGER
+    tech_or_group        TEXT,
+    vintage      INTEGER
         REFERENCES TimePeriod (period),
-    tech        TEXT
-        REFERENCES Technology (tech),
     output_comm TEXT
         REFERENCES Commodity (name),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator),
+    PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS LimitCapacity
@@ -558,28 +557,28 @@ CREATE TABLE IF NOT EXISTS LimitCapacityShare
 CREATE TABLE IF NOT EXISTS LimitNewCapacity
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES TimePeriod (period),
     tech_or_group   TEXT,
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     new_cap REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
+    PRIMARY KEY (region, tech_or_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS LimitNewCapacityShare
 (
     region         TEXT,
-    period         INTEGER
-        REFERENCES TimePeriod (period),
     sub_group      TEXT,
     super_group    TEXT,
+    vintage  INTEGER
+        REFERENCES TimePeriod (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES Operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
+    PRIMARY KEY (region, sub_group, super_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS LimitResource
 (

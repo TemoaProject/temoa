@@ -583,13 +583,13 @@ class TemoaModel(AbstractModel):
         )
         self.limit_capacity = Param(self.limit_capacity_constraint_rpt)
 
-        self.limit_new_capacity_constraint_rpt = Set(
+        self.limit_new_capacity_constraint_rtv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rpt)
+        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rtv)
 
         self.limit_resource_constraint_rt = Set(
             within=self.regional_global_indices * self.tech_or_group * self.operator
@@ -608,22 +608,22 @@ class TemoaModel(AbstractModel):
             within=self.regional_global_indices
             * self.time_optimize
             * self.time_season_all
-            * self.tech_all
+            * self.tech_or_group
             * self.operator
         )
         self.limit_seasonal_capacity_factor = Param(
             self.limit_seasonal_capacity_factor_constraint_rpst, validate=validate_0to1
         )
 
-        self.limit_annual_capacity_factor_constraint_rpto = Set(
+        self.limit_annual_capacity_factor_constraint_rtvo = Set(
             within=self.regional_global_indices
-            * self.time_optimize
-            * self.tech_all
+            * self.tech_or_group
+            * self.vintage_all
             * self.commodity_carrier
             * self.operator
         )
         self.limit_annual_capacity_factor = Param(
-            self.limit_annual_capacity_factor_constraint_rpto, validate=validate_0to1
+            self.limit_annual_capacity_factor_constraint_rtvo, validate=validate_0to1
         )
 
         self.limit_growth_capacity = Param(
@@ -673,14 +673,14 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity_share = Param(self.limit_activity_share_constraint_rpgg)
 
-        self.limit_new_capacity_share_constraint_rpgg = Set(
+        self.limit_new_capacity_share_constraint_rggv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rpgg)
+        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rggv)
 
         # This set works for all storage-related constraints
         self.storage_constraints_rpsdtv = Set(
@@ -1049,7 +1049,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_constraint = Constraint(
-            self.limit_new_capacity_constraint_rpt, rule=limits.limit_new_capacity_constraint
+            self.limit_new_capacity_constraint_rtv, rule=limits.limit_new_capacity_constraint
         )
 
         self.limit_capacity_share_constraint = Constraint(
@@ -1061,7 +1061,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_share_constraint = Constraint(
-            self.limit_new_capacity_share_constraint_rpgg,
+            self.limit_new_capacity_share_constraint_rggv,
             rule=limits.limit_new_capacity_share_constraint,
         )
 
@@ -1073,8 +1073,11 @@ class TemoaModel(AbstractModel):
             self.limit_resource_constraint_rt, rule=limits.limit_resource_constraint
         )
 
+        self.limit_annual_capacity_factor_constraint_rptvo = Set(
+            dimen=6, initialize=limits.limit_annual_capacity_factor_indices
+        )
         self.limit_annual_capacity_factor_constraint = Constraint(
-            self.limit_annual_capacity_factor_constraint_rpto,
+            self.limit_annual_capacity_factor_constraint_rptvo,
             rule=limits.limit_annual_capacity_factor_constraint,
         )
 
