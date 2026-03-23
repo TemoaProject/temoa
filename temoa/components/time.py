@@ -155,9 +155,7 @@ def validate_time_manual(model: TemoaModel) -> None:
         return
 
     segment_fraction_sd: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
-    time_manual_sd: set[tuple[str, str]] = {
-        (s, d) for s, d, s_next, d_next in model.time_manual
-    }
+    time_manual_sd: set[tuple[str, str]] = {(s, d) for s, d, s_next, d_next in model.time_manual}
     time_manual_sd_next: set[tuple[str, str]] = {
         (s_next, d_next) for s, d, s_next, d_next in model.time_manual
     }
@@ -194,7 +192,6 @@ def init_set_vintage_exist(model: TemoaModel) -> list[int]:
 def init_set_vintage_optimize(model: TemoaModel) -> list[int]:
     """Initializes the `vintage_optimize` set."""
     return sorted(model.time_optimize)
-
 
 
 def param_period_length(model: TemoaModel, p: Period) -> int:
@@ -321,7 +318,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         # Don't need it anyway
         return
 
-    if not model.time_season_sequential:
+    if not model.segment_fraction_per_sequential_season:
         if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
             logger.info(
                 'No data in time_season_sequential. By default, assuming sequential seasons '
@@ -330,7 +327,9 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             for s in model.time_season:
                 model.time_season_to_sequential.add(s)
                 model.ordered_season_sequential.add((s, s))
-                model.time_season_sequential[s, s] = value(model.segment_fraction_per_season[s])
+                model.segment_fraction_per_sequential_season[s] = value(
+                    model.segment_fraction_per_season[s]
+                )
 
         else:
             msg = (
@@ -347,7 +346,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
     seas_fracs_seq: dict[str, float] = {}
     prev_frac: float = 0
     for s_seq, s in model.time_season_sequential.sparse_iterkeys():
-        seg_frac_seq: float = value(model.time_season_sequential[s_seq, s])
+        seg_frac_seq: float = value(model.segment_fraction_per_sequential_season[s_seq])
         if (
             model.time_sequencing.first() == 'consecutive_days'
             and prev_frac
@@ -378,8 +377,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
     for s in seas_fracs_seq:
         if s not in model.time_season:
             msg = (
-                f'Season {s!r} referenced in time_season_sequential '
-                'does not exist in time_season.'
+                f'Season {s!r} referenced in time_season_sequential does not exist in time_season.'
             )
             logger.error(msg)
             raise ValueError(msg)

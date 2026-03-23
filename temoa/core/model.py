@@ -341,8 +341,8 @@ class TemoaModel(AbstractModel):
         self.segment_fraction_per_season = Param(self.time_season)
         self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
         self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
-        self.time_season_sequential = Param(
-            self.time_season_to_sequential, self.time_season, mutable=True
+        self.segment_fraction_per_sequential_season = Param(
+            self.time_season_sequential, mutable=True
         )
         self.validate_season_sequential = BuildAction(rule=time.create_time_season_to_sequential)
         self.create_time_sequence = BuildAction(rule=time.create_time_sequence)

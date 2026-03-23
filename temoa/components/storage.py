@@ -270,10 +270,10 @@ def seasonal_storage_energy_constraint(
 
     # Flows and StorageLevel are adjusted for the weight of seasons and so must be
     # readjusted for the relative weight of the sequential season
-    days_adjust = value(model.time_season_sequential[s_seq, s]) / value(
+    days_adjust = value(model.segment_fraction_per_sequential_season[s_seq]) / value(
         model.segment_fraction_per_season[s]
     )
-    days_adjust_next = value(model.time_season_sequential[s_seq_next, s_next]) / value(
+    days_adjust_next = value(model.segment_fraction_per_sequential_season[s_seq_next]) / value(
         model.segment_fraction_per_season[s_next]
     )
 
@@ -417,7 +417,7 @@ def seasonal_storage_energy_upper_bound_constraint(
 
     # Flows and StorageLevel are adjusted for the weight of seasons and so must be
     # readjusted for the relative weight of the sequential season
-    days_adjust = value(model.time_season_sequential[s_seq, s]) / value(
+    days_adjust = value(model.segment_fraction_per_sequential_season[s_seq]) / value(
         model.segment_fraction_per_season[s]
     )
 
@@ -609,7 +609,7 @@ def limit_storage_fraction_constraint(
     if model.is_seasonal_storage[t]:
         # seasonal storage upper energy limit is absolute
         energy_level = model.v_seasonal_storage_level[r, p, s_seq, t, v] + energy_level * value(
-            model.time_season_sequential[s_seq, s] * value(model.days_per_period)
+            model.segment_fraction_per_sequential_season[s_seq] * value(model.days_per_period)
         )
 
     expr = operator_expression(energy_level, Operator(op), energy_limit)

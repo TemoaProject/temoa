@@ -575,8 +575,13 @@ class HybridLoader:
         Composite loader for time_season_sequential and its associated index sets.
         """
         model = TemoaModel()
-        self._load_component_data(data, model.time_season_sequential, filtered_data)
         if filtered_data:
+            seg_frac_data = [
+                (row[0], row[2]) for row in filtered_data
+            ]  # (seas_seq, segment_fraction)
+            self._load_component_data(
+                data, model.segment_fraction_per_sequential_season, seg_frac_data
+            )
             ordered_data = [row[0:2] for row in filtered_data]  # (seas_seq, season)
             self._load_component_data(data, model.ordered_season_sequential, ordered_data)
             seq_data = sorted({(row[0],) for row in filtered_data})
