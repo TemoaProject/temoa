@@ -313,6 +313,13 @@ class TemoaConfig:
             msg += '{:>{}s}: {}\n'.format(
                 'Myopic step size', width, self.myopic_inputs.get('step_size')
             )
+            msg += '{:>{}s}: {}\n'.format(
+                'Evolving mode', width, bool(self.myopic_inputs.get('evolving'))
+            )
+            if bool(self.myopic_inputs.get('evolving')):
+                msg += '{:>{}s}: {}\n'.format(
+                    'Evolution script', width, str(self.myopic_inputs.get('evolution_script'))
+                )
 
         if self.scenario_mode == TemoaMode.MGA and self.mga_inputs is not None:
             msg += spacer
