@@ -3,6 +3,7 @@
 A sequencer for Monte Carlo Runs
 
 """
+from __future__ import annotations
 
 import logging
 import queue
@@ -10,19 +11,26 @@ import sqlite3
 import time
 import tomllib
 from datetime import datetime
-from logging import getLogger
-from multiprocessing import Queue
 from importlib import resources
+from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
 
-from pyomo.dataportal import DataPortal
-
-from temoa._internal.data_brick import DataBrick
 from temoa._internal.table_writer import TableWriter
-from temoa.core.config import TemoaConfig
 from temoa.data_io.hybrid_loader import HybridLoader
-from temoa.extensions.monte_carlo.mc_run import MCRunFactory
+from temoa.extensions.monte_carlo.mc_run import MCRun, MCRunFactory
 from temoa.extensions.monte_carlo.mc_worker import MCWorker
+
+if TYPE_CHECKING:
+    from multiprocessing import Queue
+    from multiprocessing.process import BaseProcess
+
+    from pyomo.dataportal import DataPortal
+
+    from temoa._internal.data_brick import DataBrick
+    from temoa.core.config import TemoaConfig
+
+
 
 logger = getLogger(__name__)
 
@@ -36,21 +44,38 @@ class MCSequencer:
     A sequencer to control the steps in Monte Carlo run sequence
     """
 
+    num_workers: int
+    worker_solver_options: dict[str, Any]
+    solve_count: int
+    seen_instance_indices: set[int]
+    orig_label: str
+    writer: TableWriter
+    verbose: bool
+
     def __init__(self, config: TemoaConfig):
         self.config = config
 
         # determine the path to the solver options file
-        custom_path = self.config.monte_carlo_inputs.get('solver_options')
+        custom_path = (
+            self.config.monte_carlo_inputs.get('solver_options')
+            if self.config.monte_carlo_inputs
+            else None
+        )
         if custom_path:
-            options_file_path = Path(custom_path)
+            options_file_path: Path | None = Path(cast('str', custom_path))
             # if the path is relative, make it relative to the config file location if possible
-            if not options_file_path.is_absolute() and self.config.config_file:
+            if (
+                options_file_path
+                and not options_file_path.is_absolute()
+                and self.config.config_file
+            ):
                 options_file_path = self.config.config_file.parent / options_file_path
             logger.info('Using custom Monte Carlo solver options from: %s', options_file_path)
         else:
             options_file_path = None
 
         # read in the options
+        all_options: dict[str, Any]
         try:
             if options_file_path:
                 with open(options_file_path, 'rb') as f:
@@ -82,7 +107,7 @@ class MCSequencer:
         self.writer = TableWriter(self.config)
         self.verbose = False  # for troubleshooting
 
-    def start(self):
+    def start(self) -> None:
         """Run the sequencer"""
         # ==== basic sequence ====
         # 1. Load the model data, which may involve filtering it down if source tracing
@@ -92,7 +117,6 @@ class MCSequencer:
         # 4. copy & modify the base data to make per-dataset runs
         # 5. farm out the runs to workers
 
-        start_time = datetime.now()
 
         # 0. Set up database for scenario
         self.writer.clear_scenario()
@@ -103,13 +127,13 @@ class MCSequencer:
         with sqlite3.connect(self.config.input_database) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
             data_store = hybrid_loader.create_data_dict(myopic_index=None)
-        mc_run = MCRunFactory(config=self.config, data_store=data_store)
+        mc_factory = MCRunFactory(config=self.config, data_store=data_store)
 
         # 2. Screen the input file
-        mc_run.prescreen_input_file()
+        mc_factory.prescreen_input_file()
 
         # 3. set up the run generator
-        run_gen = mc_run.run_generator()
+        run_gen = mc_factory.run_generator()
 
         # 4. Set up the workers
         import multiprocessing
@@ -123,9 +147,9 @@ class MCSequencer:
         result_queue: Queue[DataBrick | str] = ctx.Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue = ctx.Queue()
+        log_queue: Queue[logging.LogRecord] = ctx.Queue()
         # make workers
-        workers = []
+        workers: list[BaseProcess] = []
         kwargs = {
             'solver_name': self.config.solver_name,
             'solver_options': self.worker_solver_options,
@@ -134,17 +158,18 @@ class MCSequencer:
         s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
-        for i in range(num_workers):
+        for _ in range(num_workers):
             w = MCWorker(
                 dp_queue=work_queue,
                 results_queue=result_queue,
                 log_root_name=__name__,
                 log_queue=log_queue,
+                solver_name=self.config.solver_name,
+                solver_options=self.worker_solver_options,
                 log_level=logging.INFO,
                 solver_log_path=s_path,
-                **kwargs,
             )
-            p = ctx.Process(target=w.run, daemon=True)
+            p: BaseProcess = ctx.Process(target=w.run, daemon=True)
             p.start()
             workers.append(p)
         # workers now running and waiting for jobs...
@@ -152,7 +177,7 @@ class MCSequencer:
         # 6.  Start the iterative solve process and let the manager run the show
         more_runs = True
         # pull the first instance
-        mc_run = next(run_gen)
+        mc_run: MCRun = next(run_gen)
         # capture the "tweaks"
         self.writer.write_tweaks(iteration=mc_run.run_index, change_records=mc_run.change_records)
         run_name, dp = mc_run.model_dp
@@ -199,7 +224,7 @@ class MCSequencer:
                 next_result = None
                 # print('no result')
             if next_result is not None:
-                self.process_solve_results(next_result)
+                self.process_solve_results(cast('DataBrick', next_result))
                 self.solve_count += 1
                 logger.info('Solve count: %d', self.solve_count)
                 if self.verbose or not self.config.silent:
@@ -250,7 +275,7 @@ class MCSequencer:
                 next_result = None
             if next_result is not None and next_result != 'COYOTE':
                 logger.debug('bagged a result post-shutdown')
-                self.process_solve_results(next_result)
+                self.process_solve_results(cast('DataBrick', next_result))
                 self.solve_count += 1
                 logger.info('Solve count: %d', self.solve_count)
                 if self.verbose or not self.config.silent:
@@ -265,8 +290,8 @@ class MCSequencer:
             if empty == num_workers:
                 break
 
-        for w in workers:
-            w.join()
+        for proc in workers:
+            proc.join()
             logger.debug('worker wrapped up...')
 
         log_queue.close()
@@ -283,7 +308,7 @@ class MCSequencer:
         if self.verbose:
             print('result queue joined')
 
-    def process_solve_results(self, brick: DataBrick):
+    def process_solve_results(self, brick: DataBrick) -> None:
         """write the results as required"""
         # get the instance number from the model name, if provided
         if '-' not in brick.name:

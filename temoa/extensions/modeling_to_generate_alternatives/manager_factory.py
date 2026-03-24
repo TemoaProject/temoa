@@ -1,11 +1,19 @@
-import sqlite3
+from __future__ import annotations
 
-from temoa.core.model import TemoaModel
+from typing import TYPE_CHECKING, Any
+
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
 from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_manager import (
     TechActivityVectorManager,
 )
-from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
+
+if TYPE_CHECKING:
+    import sqlite3
+
+    from temoa.core.model import TemoaModel
+    from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
+
+
 
 
 def get_manager(
@@ -13,7 +21,7 @@ def get_manager(
     weighting: MgaWeighting,
     model: TemoaModel,
     con: sqlite3.Connection | None,
-    **kwargs,
+    **kwargs: Any,
 ) -> VectorManager:
     match axis:
         case MgaAxis.TECH_CATEGORY_ACTIVITY:
@@ -21,6 +29,8 @@ def get_manager(
                 raise NotImplementedError(
                     'TECH_CATEGORY_ACTIVITY is only implemented for HULL_EXPANSION'
                 )
+            if con is None:
+                raise ValueError('Connection is required for TECH_CATEGORY_ACTIVITY')
             return TechActivityVectorManager(
                 base_model=model, conn=con, weighting=weighting, **kwargs
             )

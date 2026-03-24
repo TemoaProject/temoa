@@ -4,11 +4,13 @@ Simple visualizer to track the progress of myopic solve
 
 from datetime import datetime, timedelta
 
+from typing import Literal
+
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 
 
 class MyopicProgressMapper:
-    def __init__(self, sorted_future_years: list):
+    def __init__(self, sorted_future_years: list[int]) -> None:
         self.leader = '--'
         self.trailer = ''.join(reversed(self.leader))
         self.years = sorted_future_years
@@ -18,7 +20,7 @@ class MyopicProgressMapper:
         }
         self.hack: datetime = datetime.now()
 
-    def draw_header(self):
+    def draw_header(self) -> None:
         time_buffer = ' ' * 10
         tot_length = len(self.years) * self.tag_width + 2 * len(self.years)
         print(time_buffer, end='')
@@ -49,7 +51,9 @@ class MyopicProgressMapper:
             f'{int(delta.total_seconds()%3600//60):02d}:{int(delta.total_seconds())%60:02d}   '
         )
 
-    def report(self, mi: MyopicIndex, status):
+    def report(
+        self, mi: MyopicIndex, status: Literal['load', 'solve', 'report', 'check', 'evolve']
+    ) -> None:
         if status not in {'load', 'solve', 'report', 'check', 'evolve'}:
             raise ValueError(f'bad status: {status} received in MyopicProgressMapper')
 

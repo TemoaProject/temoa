@@ -16,7 +16,7 @@ class MyopicIndex:
     last_demand_year: int
     last_year: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.base_year < self.step_year <= self.last_year:
             raise ValueError(
                 f'Received a nonsense value for step_year: {self.step_year} with '

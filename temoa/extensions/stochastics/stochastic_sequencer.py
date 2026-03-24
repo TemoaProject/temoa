@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 import pyomo.environ as pyo
 
-from temoa.core.config import TemoaConfig
 from temoa.extensions.stochastics.stochastic_config import StochasticConfig
+
+if TYPE_CHECKING:
+    from temoa.core.config import TemoaConfig
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +34,17 @@ class StochasticSequencer:
             self.stoch_config = StochasticConfig.from_toml(sc_path)
         except Exception as e:
             logger.exception('Failed to load stochastic config from %s', sc_path)
-            raise ValueError(f'Error parsing stochastic config {sc_path}') from e
+            raise ValueError(f'Error parsing stochastic config {sc_path}. Original error: {e}') from e
 
     def start(self) -> None:
         """
         Execute the stochastic run.
         """
         try:
-            from mpisppy.opt.ef import ExtensiveForm
+            from mpisppy.opt.ef import ExtensiveForm  # type: ignore[import-untyped]
         except ImportError as e:
             logger.exception('mpi-sppy is not installed. Please install it to use stochastic mode.')
-            raise RuntimeError('mpi-sppy not found') from e
+            raise RuntimeError(f'mpi-sppy not found. Original error: {e}') from e
 
         from temoa.extensions.stochastics.scenario_creator import scenario_creator
 

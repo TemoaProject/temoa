@@ -1,12 +1,16 @@
 """
 An ABC to serve as a framework for future Vector Managers
 """
+from __future__ import annotations
 
-import sqlite3
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator
+from typing import TYPE_CHECKING, Any
 
-from temoa.core.model import TemoaModel
+if TYPE_CHECKING:
+    import sqlite3
+    from collections.abc import Iterable, Iterator
+
+    from temoa.core.model import TemoaModel
 
 
 class VectorManager(ABC):
@@ -17,7 +21,7 @@ class VectorManager(ABC):
         base_model: TemoaModel,
         optimal_cost: float,
         cost_relaxation: float,
-    ):
+    ) -> None:
         """
         Initialize a new manager
         :param conn: connection to the current database
@@ -34,7 +38,7 @@ class VectorManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def group_members(self, group) -> list[str]:
+    def group_members(self, group: str) -> list[str]:
         """The members (by string name) in the group"""
         raise NotImplementedError()
 
@@ -45,9 +49,10 @@ class VectorManager(ABC):
         Indicator that this manager has no more vectors to generate
         :return: True if expired
         """
+        raise NotImplementedError()
 
     @abstractmethod
-    def group_variable_names(self, tech) -> list[str]:
+    def group_variable_names(self, tech: str) -> list[str]:
         """The variable NAMES associated with the individual group members"""
         raise NotImplementedError()
 
@@ -62,10 +67,10 @@ class VectorManager(ABC):
         raise NotImplementedError('the manager subclass must implement instance_generator')
 
     @abstractmethod
-    def process_results(self, M: TemoaModel):
+    def process_results(self, model: TemoaModel) -> Any:
         raise NotImplementedError('the manager subclass must implement process_results')
 
     @abstractmethod
-    def finalize_tracker(self):
+    def finalize_tracker(self) -> None:
         """Finalize any tracker employed by the manager"""
         pass

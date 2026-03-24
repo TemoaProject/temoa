@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import logging
 import tomllib
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Self
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +35,7 @@ class StochasticConfig:
 
 
     @classmethod
-    def from_toml(cls, path: Path) -> 'StochasticConfig':
+    def from_toml(cls, path: Path) -> Self:
         with open(path, 'rb') as f:
             data = tomllib.load(f)
 

@@ -24,6 +24,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import cast
 
 # distro for the related cost vars
 
@@ -33,7 +34,8 @@ import numpy as np
 num_runs = 1000
 cov = np.array([[0.4, -0.1], [-0.1, 0.1]])
 price_devs = np.random.multivariate_normal([0, 0], cov, size=num_runs)
-print(f'correlation check: {np.corrcoef(price_devs.T)[0, 1]}')
+corr_matrix = cast(np.typing.NDArray[np.float64], np.corrcoef(price_devs.T))
+print(f'correlation check: {corr_matrix[0, 1]}')
 
 # verify with a peek...
 plt.plot(price_devs[:, 0], price_devs[:, 1], '.', alpha=0.5)

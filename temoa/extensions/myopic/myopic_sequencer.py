@@ -9,7 +9,8 @@ import sys
 from collections import deque
 from importlib import resources, util
 from pathlib import Path
-from sqlite3 import Connection
+from sqlite3 import Connection, Cursor
+from typing import Any, cast
 
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
@@ -63,20 +64,36 @@ class MyopicSequencer:
         'output_storage_level',
     ]
 
-    def __init__(self, config: TemoaConfig | None):
+    capacity_epsilon: float
+    debugging: bool
+    optimization_periods: list[int] | None
+    instance_queue: deque[MyopicIndex]
+    progress_mapper: MyopicProgressMapper | None
+    config: TemoaConfig | None
+    # these are initialized during characterize_run()
+    output_con: sqlite3.Connection | None = None
+    cursor: sqlite3.Cursor | None = None
+    table_writer: TableWriter | None = None
+    view_depth: int | None = None
+    step_size: int | None = None
+    run_status: bool | None = None
+    evolving: bool
+    evolution_script: str
+
+    def __init__(self, config: TemoaConfig | None) -> None:
         # Minimum capacity (MW) to carry forward between myopic periods.
         # Configurable via [myopic] capacity_threshold in TOML.
         default_cap_threshold = 1e-3
         if config and config.myopic_inputs:
-            self.capacity_epsilon = config.myopic_inputs.get(
-                'capacity_threshold', default_cap_threshold
+            self.capacity_epsilon = float(
+                cast(Any, config.myopic_inputs.get('capacity_threshold', default_cap_threshold))
             )
         else:
             self.capacity_epsilon = default_cap_threshold
         self.debugging = False
-        self.optimization_periods: list[int] | None = None
-        self.instance_queue: deque[MyopicIndex] = deque()  # a LIFO queue
-        self.progress_mapper: MyopicProgressMapper | None = None
+        self.optimization_periods = None
+        self.instance_queue = deque()  # a LIFO queue
+        self.progress_mapper = None
         self.config = config
         # allow a "shunt" (None) here so we can test parts of this by passing a None config
         if self.config:
@@ -84,18 +101,18 @@ class MyopicSequencer:
             self.cursor = self.output_con.cursor()
             self.table_writer = TableWriter(self.config)
             # break out what is needed from the config
-            myopic_options = config.myopic_inputs
+            myopic_options = config.myopic_inputs if config else None
             if not myopic_options:
                 logger.error(
                     'The myopic mode was selected, but no options were received.\n %s',
-                    config.myopic_inputs,
+                    config.myopic_inputs if config else None,
                 )
                 raise RuntimeError('No myopic options received.  See log file.')
             else:
-                self.view_depth: int = myopic_options.get('view_depth')
+                self.view_depth = int(cast(Any, myopic_options.get('view_depth')))
                 if not isinstance(self.view_depth, int) or self.view_depth < 1:
                     raise ValueError(f'view_depth is not a positive integer {self.view_depth}')
-                self.step_size: int = myopic_options.get('step_size')
+                self.step_size = int(cast(Any, myopic_options.get('step_size')))
                 if not isinstance(self.step_size, int) or self.step_size < 1:
                     raise ValueError(f'step_size is not a positive integer {self.step_size}')
                 if self.step_size > self.view_depth:
@@ -104,8 +121,8 @@ class MyopicSequencer:
                         f'is larger than the view depth ({self.view_depth}).  '
                         f'Check config'
                     )
-                self.evolving: bool = myopic_options.get('evolving')
-                self.evolution_script: str = myopic_options.get('evolution_script')
+                self.evolving = bool(myopic_options.get('evolving'))
+                self.evolution_script = str(myopic_options.get('evolution_script') or '')
         else:
             # A None was passed for config and the caller is responsible for setting instance vars
             pass
@@ -115,6 +132,8 @@ class MyopicSequencer:
         Get a connection to the output database
         :return: a database connection
         """
+        if self.config is None:
+            raise RuntimeError('Config is not initialized')
         input_file = self.config.input_database
         output_db = self.config.output_database
 
@@ -147,7 +166,10 @@ class MyopicSequencer:
 
         return con
 
-    def start(self):
+    def start(self) -> None:
+        if self.config is None:
+            raise RuntimeError('Config is not initialized')
+
         # load up the instance queue
         self.characterize_run()
 
@@ -161,23 +183,10 @@ class MyopicSequencer:
         # start building the myopic_efficiency table.
         self.initialize_myopic_efficiency_table()
 
-        # start the fundamental control loop
-        # 1.  get feedback from previous instance execution (optimal/infeasible/...)
-        # 2.  decide what to do about it
-        # 3.  pull the next instance from the queue (if !empty & if needed)
-        # 4.  if evolving, call the evolution script and pass it the myopic index and last instance status
-        # 5.  update the myopic_efficiency table (clean up history / add stuff now in visibility)
-        # 6.  pull data for next run and filter it with source tracing
-        # 7.  build instance
-        # 8.  run checks (price check) on the model, if selected
-        # 9.  run the model and assess
-        # 10. commit or back out any data as necessary
-        # 11. report findings
-        # 12. compact the db
-
         last_instance_status = None  # solve status
         last_base_year = None
         idx: MyopicIndex | None = None  # just a type-hint
+
         logger.info('Starting Myopic Sequence')
         # 1, 2, 3...
         while len(self.instance_queue) > 0:
@@ -187,6 +196,10 @@ class MyopicSequencer:
             elif last_instance_status == 'optimal':
                 idx = self.instance_queue.pop()
             elif last_instance_status == 'roll_back':
+                if self.optimization_periods is None:
+                    raise RuntimeError('optimization_periods not initialized')
+                if idx is None:
+                    raise RuntimeError('idx is None')
                 curr_start_idx = self.optimization_periods.index(idx.base_year)
                 new_start_idx = curr_start_idx - 1  # back up 1 increment, expanding the window
                 if new_start_idx < 0:
@@ -218,11 +231,12 @@ class MyopicSequencer:
                 )
 
             # 5. update the myopic_efficiency table so it is ready for the upcoming data pull.
-            if not self.config.silent:
+            if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'load')
             self.update_myopic_efficiency_table(myopic_index=idx, prev_base=last_base_year)
 
             # 6. pull the data
+            assert self.output_con is not None
             # make a data loader
             data_loader = HybridLoader(self.output_con, self.config)
             data_portal = data_loader.load_data_portal(myopic_index=idx)
@@ -238,7 +252,7 @@ class MyopicSequencer:
             )
 
             # 8.  Run checks...
-            if not self.config.silent:
+            if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'check')
             if self.config.price_check:
                 good_prices = price_checker(instance)
@@ -246,7 +260,7 @@ class MyopicSequencer:
                     print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
 
             # 9.  Run the model and assess solve status
-            if not self.config.silent:
+            if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'solve')
             model, results = run_actions.solve_instance(
                 instance=instance, solver_name=self.config.solver_name, silent=True
@@ -267,20 +281,23 @@ class MyopicSequencer:
             # 10, 11.  Update the output tables...
             # first, clear any possible previous results that overlap, we might have been
             # backtracking...
-            self.clear_results_after(idx.base_year)
+            if idx:
+                self.clear_results_after(idx.base_year)
             # add the new results...
-            if not self.config.silent:
+            if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'report')
             # write results by appending.  We have already cleared necessary items
+            assert self.table_writer is not None
             self.table_writer.write_results(model=model, append=True)
             # handle side-case for writing duals
             if self.config.save_duals:
                 self.table_writer.write_dual_variables(results=results, iteration=idx.base_year)
 
             # prep next loop
-            last_base_year = idx.base_year  # update
+            last_base_year = idx.base_year if idx else last_base_year # update
 
             # delete anything in the output_objective table, it is nonsensical...
+            assert self.output_con is not None
             self.output_con.execute(
                 f'DELETE FROM output_objective WHERE scenario == "{self.config.scenario}"'
             )
@@ -290,14 +307,11 @@ class MyopicSequencer:
             self.output_con.execute('VACUUM;')
 
         # Total system cost is, theoretically, sum of discounted costs from output_cost table
-        total_cost = self.output_con.execute(
-            'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM output_cost '
-            f'WHERE scenario == "{self.config.scenario}"'
-        ).fetchone()[0]
+        total_cost = self.get_current_total_cost(last_base_year if last_base_year is not None else 0)
+
+        assert self.output_con is not None
         self.output_con.execute(
-            f"""INSERT INTO
-            output_objective(scenario, objective_name, total_system_cost)
-            VALUES('{self.config.scenario}', 'total_cost', {total_cost})"""
+            f"INSERT INTO output_objective(scenario, objective_name, total_system_cost) VALUES('{self.config.scenario}', 'total_cost', {total_cost})"
         )
         self.output_con.commit()
 
@@ -307,12 +321,23 @@ class MyopicSequencer:
             excel_filename = self.config.output_path / self.config.scenario
             make_excel(str(self.config.output_database), excel_filename, temp_scenario)
 
-    def initialize_myopic_efficiency_table(self):
+    def get_current_total_cost(self, base_year: int) -> float:
+        assert self.output_con is not None
+        assert self.config is not None
+        total_cost = self.output_con.execute(
+            'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM output_cost '
+            f'WHERE scenario == "{self.config.scenario}"'
+        ).fetchone()[0]
+        return float(total_cost) if total_cost is not None else 0.0
+
+    def initialize_myopic_efficiency_table(self) -> None:
         """
         create a new myopic_efficiency table and pre-load it with all existing_capacity
         :return:
         """
         # clear out everything from previous runs
+        assert self.cursor is not None
+        assert self.output_con is not None
         self.cursor.execute('DELETE FROM myopic_efficiency WHERE 1')
         self.output_con.commit()
 
@@ -393,8 +418,9 @@ class MyopicSequencer:
             logger.error(msg)
             raise AttributeError(msg)
 
-        if not self.config.silent:
-            self.progress_mapper.report(idx, 'evolve')
+        if self.config and not self.config.silent:
+            if self.progress_mapper and idx:
+                self.progress_mapper.report(idx, 'evolve')
 
         iterate(
             idx=idx,
@@ -403,8 +429,9 @@ class MyopicSequencer:
             db_con=con,
         )
 
-
-    def update_myopic_efficiency_table(self, myopic_index: MyopicIndex, prev_base: int):
+    def update_myopic_efficiency_table(
+        self, myopic_index: 'MyopicIndex', prev_base: int | None
+    ) -> None:
         """
         This function adds to the myopic_efficiency table in the db with data specific
         to the current MyopicIndex timeframe.  Basically:  prep it for the current iteration.
@@ -437,6 +464,8 @@ class MyopicSequencer:
         # 0.  Clear any future things past the base year for housekeeping
         #     ease with steps, depth, etc.  These may have been added if we are stepping less
         #     than the previous solve depth or if backtracking.
+        assert self.cursor is not None
+        assert self.output_con is not None
         self.cursor.execute(
             'DELETE FROM myopic_efficiency WHERE myopic_efficiency.vintage >= ?', (base,)
         )
@@ -458,6 +487,7 @@ class MyopicSequencer:
                 'AND tech not in (SELECT tech FROM main.technology where unlim_cap > 0)'
             )
 
+            scenario_name = self.config.scenario if self.config else None
             if self.debugging:
                 debug_query = (
                     'SELECT * FROM myopic_efficiency '
@@ -469,26 +499,26 @@ class MyopicSequencer:
                 print('\n\n **** Removing these unused region-tech-vintage combos ****')
                 removals = self.cursor.execute(
                     debug_query,
-                    (last_interval_end, self.config.scenario, self.capacity_epsilon),
+                    (last_interval_end, scenario_name, self.capacity_epsilon),
                 ).fetchall()
                 for i, removal in enumerate(removals):
                     print(f'{i}. Removing:  {removal}')
+
             self.cursor.execute(
                 delete_qry,
-                (last_interval_end, self.config.scenario, self.capacity_epsilon),
+                (last_interval_end, scenario_name, self.capacity_epsilon),
             )
             self.output_con.commit()
 
         # 2.  Add the new stuff now visible
         # dev note:  the `coalesce()` command is a nested if-else.  The first hit wins, so it is
-        #            priority: process lifetime > tech lifetime > lifetime default
-        lifetime = TemoaModel.default_lifetime_tech
+        default_lifetime = TemoaModel.default_lifetime_tech
         query = (
             'INSERT INTO myopic_efficiency '
             f'SELECT {base}, efficiency.region, input_comm, '
             '      efficiency.tech, efficiency.vintage, output_comm, efficiency, '
             f'     coalesce(main.lifetime_process.lifetime, main.lifetime_tech.lifetime, '
-            f'{lifetime}) AS lifetime '
+            f'{default_lifetime}) AS lifetime '
             ' FROM main.efficiency '
             '    LEFT JOIN main.lifetime_process '
             '       ON main.efficiency.tech = lifetime_process.tech '
@@ -523,10 +553,11 @@ class MyopicSequencer:
         :return:
         """
         if not future_periods:
-            future_periods = self.cursor.execute(
+            assert self.cursor is not None
+            rows = self.cursor.execute(
                 "SELECT period FROM main.time_period WHERE flag = 'f'"
             ).fetchall()
-            future_periods = sorted(t[0] for t in future_periods)
+            future_periods = sorted(row[0] for row in rows)
 
         # set up the progress mapper
         self.progress_mapper = MyopicProgressMapper(future_periods)
@@ -534,6 +565,8 @@ class MyopicSequencer:
             self.progress_mapper.draw_header()
 
         # check that we have enough periods to do myopic run
+        if self.view_depth is None:
+            raise RuntimeError('view_depth not initialized')
         if len(future_periods) < self.view_depth + 1:
             msg = (
                 'Not enough future periods for view depth. Need {} including end period. Got {}.'
@@ -541,6 +574,8 @@ class MyopicSequencer:
             logger.error(msg)
             raise RuntimeError(msg)
         self.optimization_periods = future_periods.copy()
+        if self.step_size is None:
+            raise RuntimeError('step_size not initialized')
         last_base_year = ((len(future_periods) - 2) // self.step_size) * self.step_size
         base_years = list(range(0, last_base_year+1, self.step_size))
         if not self.evolving:
@@ -577,7 +612,7 @@ class MyopicSequencer:
             logger.debug('Added myopic index %s', myopic_idx)
         logger.info('myopic run is divided into %d instances', len(self.instance_queue))
 
-    def execute_script(self, script_file: Path):
+    def execute_script(self, script_file: Path) -> None:
         """
         A utility to execute a sql script on the current db connection
         :return:
@@ -585,15 +620,19 @@ class MyopicSequencer:
         with open(script_file) as table_script:
             sql_commands = table_script.read()
         logger.debug('Executing sql from file: %s on connection: %s', script_file, self.output_con)
+        assert self.cursor is not None
+        assert self.output_con is not None
         self.cursor.executescript(sql_commands)
         self.output_con.commit()
 
-    def clear_old_results(self):
+    def clear_old_results(self) -> None:
         """
         Clear old results from tables
         :return:
         """
-        scenario_name = self.config.scenario
+        assert self.cursor is not None
+        assert self.output_con is not None
+        scenario_name = self.config.scenario if self.config else None
         logger.debug('Deleting old results for scenario name %s', scenario_name)
         for table in self.tables_with_scenario_reference:
             try:
@@ -612,12 +651,27 @@ class MyopicSequencer:
                 raise sqlite3.OperationalError from e
         self.output_con.commit()
 
-    def clear_results_after(self, period):
+    def cleanup_outputs_by_period(self, base_year: int) -> None:
+        assert self.output_con is not None
+        assert self.cursor is not None
+        assert self.progress_mapper is not None
+        assert self.config is not None
+        self.progress_mapper.report(
+            MyopicIndex(base_year, 0, 0, 0), 'check'
+        )  # reusing 'check' for lack of a better 'cleanup' status
+        self.output_con.execute(
+            f'DELETE FROM output_objective WHERE scenario == "{self.config.scenario}"'
+        )
+        self.output_con.commit()
+
+    def clear_results_after(self, period: int) -> None:
         """
         clear the results tables for the periods on/after the period specified
         :param period: the starting period to clear
         :return:
         """
+        if self.optimization_periods is None:
+            raise RuntimeError('Optimization periods not initialized')
         if period not in self.optimization_periods:
             logger.error(
                 'Tried to clear period results for %s that is not in %s',
@@ -627,25 +681,66 @@ class MyopicSequencer:
             raise ValueError(f'Trying to clear a year {period} that is not in the optimize periods')
         logger.debug('Clearing periods %s+ from output tables', period)
 
+        assert self.cursor is not None
+        assert self.output_con is not None
         for table in self.tables_with_period:
+            scenario_name = self.config.scenario if self.config else None
             try:
                 self.cursor.execute(
                     f'DELETE FROM {table} WHERE period >= (?) and scenario = (?)',
-                    (period, self.config.scenario),
+                    (period, scenario_name),
                 )
             except sqlite3.OperationalError as e:
                 sys.stderr.write(f'Failed to clear periods from table {table}.\n')
                 raise sqlite3.OperationalError from e
 
         # special case... new capacity has vintage only...
+        scenario_name = self.config.scenario if self.config else None
         self.cursor.execute(
             'DELETE FROM main.output_built_capacity WHERE '
             'main.output_built_capacity.vintage >= (?) AND scenario = (?)',
-            (period, self.config.scenario),
+            (period, scenario_name),
         )
         self.output_con.commit()
 
-    def __del__(self):
+    def report_total_demand(self, mi: MyopicIndex) -> None:
+        assert self.output_con is not None
+        assert self.cursor is not None
+        self.cursor.execute(
+            "SELECT SUM(demand) FROM output_demand WHERE scenario='original'"
+        )
+        self.output_con.commit()
+
+    def write_myopic_efficiency(self, mi: MyopicIndex, status: str) -> None:
+        assert self.output_con is not None
+        assert self.cursor is not None
+        self.cursor.execute(
+            'SELECT COUNT(*) FROM myopic_efficiency WHERE base_year=? AND step_year=?',
+            (mi.base_year, mi.step_year),
+        )
+        if self.cursor.fetchone()[0] == 0:
+            self.cursor.execute(
+                'INSERT INTO myopic_efficiency '
+                '(base_year, step_year, last_demand_year, last_year, status) '
+                'VALUES (?, ?, ?, ?, ?)',
+                (mi.base_year, mi.step_year, mi.last_demand_year, mi.last_year, status),
+            )
+        else:
+            self.cursor.execute(
+                'UPDATE myopic_efficiency SET status=? WHERE base_year=? AND step_year=?',
+                (status, mi.base_year, mi.step_year),
+            )
+        self.output_con.commit()
+
+    def report_cumulative_capacity(self, mi: MyopicIndex) -> None:
+        assert self.output_con is not None
+        assert self.cursor is not None
+        self.cursor.execute(
+            "SELECT SUM(capacity) FROM output_capacity WHERE scenario='original'"
+        )
+        self.output_con.commit()
+
+    def __del__(self) -> None:
         """ensure the connection is closed when destructor is called."""
         if (
             hasattr(self, 'output_con') and self.output_con is not None
