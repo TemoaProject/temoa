@@ -52,7 +52,7 @@ def evaluate(param_names: dict[int, list[Any]], param_values: Any,
     output_query = cur.fetchall()
     for row in output_query:
         y_of = row[-1]
-    cur.execute("SELECT emis_comm, SUM(emission) FROM output_emissionn WHERE emis_comm='co2'")
+    cur.execute("SELECT emis_comm, SUM(emission) FROM output_emission WHERE emis_comm='co2'")
     output_query = cur.fetchall()
     for row in output_query:
         y_cumulative_co2 = row[-1]
@@ -142,71 +142,71 @@ with resources.as_file(db_resource) as db_file, \
         loader.load_data_portal()
         data = loader.data
 
-problem = read_param_file(str(param_file), delimiter=' ')
-param_values = sample(
-    problem, N=10, num_levels=8, optimal_trajectories=False, local_optimization=False, seed=seed
-)
-print(param_values)
-print(param_names)
-n = len(param_values)
-# pull the data
-
-num_cores = 1  # multiprocessing.cpu_count()
-Morris_Objectives = Parallel(n_jobs=num_cores)(
-    delayed(evaluate)(param_names, param_values[i, :], data, i) for i in range(0, n)
-)
-Morris_Objectives = array(Morris_Objectives)
-print(Morris_Objectives)
-si_of = morris.analyze(
-    problem,
-    param_values,
-    Morris_Objectives[:, 0],
-    conf_level=0.95,
-    print_to_console=False,
-    num_levels=8,
-    num_resamples=1000,
-    seed=seed + 1,
-)
-
-si_cumulative_co2 = morris.analyze(
-    problem,
-    param_values,
-    Morris_Objectives[:, 1],
-    conf_level=0.95,
-    print_to_console=False,
-    num_levels=8,
-    num_resamples=1000,
-    seed=seed + 2,
-)
-num_vars = problem['num_vars']
-groups, unique_group_names = compute_groups_matrix(problem['groups'])
-number_of_groups = len(unique_group_names)
-print(
-    '{:<30} {:>10} {:>10} {:>15} {:>10}'.format(
-        'Parameter', 'Mu_Star', 'Mu', 'Mu_Star_Conf', 'Sigma'
-    )
-)
-for j in list(range(number_of_groups)):
-    print(
-        '{:30} {:10.3f} {:10.3f} {:15.3f} {:10.3f}'.format(
-            si_of['names'][j],
-            si_of['mu_star'][j],
-            si_of['mu'][j],
-            si_of['mu_star_conf'][j],
-            si_of['sigma'][j],
+        problem = read_param_file(str(param_file), delimiter=' ')
+        param_values = sample(
+            problem, N=10, num_levels=8, optimal_trajectories=False, local_optimization=False, seed=seed
         )
-    )
+        print(param_values)
+        print(param_names)
+        n = len(param_values)
 
-line1 = si_of['mu_star']
-line2 = si_of['mu_star_conf']
-line3 = si_cumulative_co2['mu_star']
-line4 = si_cumulative_co2['mu_star_conf']
-with open('MMResults.csv', 'w') as f:
-    writer = csv.writer(f, delimiter=',')
-    writer.writerow(unique_group_names)
-    writer.writerow('Objective Function')
-    writer.writerow(line1)
-    writer.writerow(line2)
-    writer.writerow('Cumulative CO2 Emissions')
-    writer.writerow(line3)
-    writer.writerow(line4)
+        # pull the data
+        num_cores = 1  # multiprocessing.cpu_count()
+        Morris_Objectives = Parallel(n_jobs=num_cores)(
+            delayed(evaluate)(param_names, param_values[i, :], data, i) for i in range(0, n)
+        )
+
+        Morris_Objectives = array(Morris_Objectives)
+        print(Morris_Objectives)
+        si_of = morris.analyze(
+            problem,
+            param_values,
+            Morris_Objectives[:, 0],
+            conf_level=0.95,
+            print_to_console=False,
+            num_levels=8,
+            num_resamples=1000,
+            seed=seed + 1,
+        )
+
+        si_cumulative_co2 = morris.analyze(
+            problem,
+            param_values,
+            Morris_Objectives[:, 1],
+            conf_level=0.95,
+            print_to_console=False,
+            num_levels=8,
+            num_resamples=1000,
+            seed=seed + 2,
+        )
+        groups, unique_group_names = compute_groups_matrix(problem['groups'])
+        number_of_groups = len(unique_group_names)
+        print(
+            '{:<30} {:>10} {:>10} {:>15} {:>10}'.format(
+                'Parameter', 'Mu_Star', 'Mu', 'Mu_Star_Conf', 'Sigma'
+            )
+        )
+        for j in list(range(number_of_groups)):
+            print(
+                '{:30} {:10.3f} {:10.3f} {:15.3f} {:10.3f}'.format(
+                    si_of['names'][j],
+                    si_of['mu_star'][j],
+                    si_of['mu'][j],
+                    si_of['mu_star_conf'][j],
+                    si_of['sigma'][j],
+                )
+            )
+
+        line1 = si_of['mu_star']
+        line2 = si_of['mu_star_conf']
+        line3 = si_cumulative_co2['mu_star']
+        line4 = si_cumulative_co2['mu_star_conf']
+        with open('MMResults.csv', 'w') as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerow(unique_group_names)
+            writer.writerow('Objective Function')
+            writer.writerow(line1)
+            writer.writerow(line2)
+            writer.writerow('Cumulative CO2 Emissions')
+            writer.writerow(line3)
+            writer.writerow(line4)

@@ -7,7 +7,7 @@ from collections import defaultdict, namedtuple
 from itertools import product
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from temoa.core.model import TemoaModel
 from temoa.data_io.hybrid_loader import HybridLoader
@@ -225,7 +225,19 @@ class MCRunFactory:
         self.config = config
         self.data_store = data_store
         self.tweak_factory = TweakFactory(data_store)
-        self.settings_file = Path(self.config.monte_carlo_inputs['run_settings'])  # type: ignore
+
+        if not config.monte_carlo_inputs:
+            raise ValueError("Monte Carlo mode requires 'monte_carlo_inputs' in the configuration.")
+
+        settings_path = config.monte_carlo_inputs.get('run_settings')
+        if not settings_path:
+            raise ValueError(
+                "Monte Carlo mode requires 'run_settings' path in 'monte_carlo_inputs'."
+            )
+
+        self.settings_file = Path(cast(str, settings_path))
+        if not self.settings_file.exists():
+            raise FileNotFoundError(f'Monte Carlo run settings file not found: {self.settings_file}')
 
     def prescreen_input_file(self) -> bool:
         """

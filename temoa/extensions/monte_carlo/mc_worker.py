@@ -49,16 +49,17 @@ class MCWorker:
         results_queue: Queue[DataBrick | str],
         log_root_name: str,
         log_queue: Queue[logging.LogRecord],
+        solver_name: str,
+        solver_options: dict[str, Any],
         log_level: int = logging.INFO,
         solver_log_path: Path | None = None,
-        **kwargs: Any,
     ):
         self.worker_number = MCWorker.worker_idx
         MCWorker.worker_idx += 1
         self.dp_queue = dp_queue
         self.results_queue = results_queue
-        self.solver_name = kwargs['solver_name']
-        self.solver_options = kwargs['solver_options']
+        self.solver_name = solver_name
+        self.solver_options = solver_options
         self.opt = None # Initialize in run()
         self.log_queue = log_queue
         self.log_level = log_level

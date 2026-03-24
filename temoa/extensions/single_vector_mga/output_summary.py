@@ -35,19 +35,19 @@ def summarize(config: TemoaConfig, orig_cost: float, option_cost: float) -> None
             item,
         )
         option = poll_emission(conn, scenarios[1], item)
-        row_delta = float((option - orig) / orig * 100) if all((orig, option)) else None
+        row_delta = float((option - orig) / orig * 100) if orig != 0.0 else None
         records.append(['Emission', item, orig, option, row_delta])
     for item in sorted(cast('Iterable[Any]', activity_labels)):
         orig = poll_activity(conn, scenarios[0], item)
         option = poll_activity(conn, scenarios[1], item)
-        row_delta = (option - orig) / orig * 100 if all((orig, option)) else None
+        row_delta = (option - orig) / orig * 100 if orig != 0.0 else None
 
         records.append(['Activity', item, orig, option, row_delta])
 
     for item in sorted(cast('Iterable[Any]', capacity_labels)):
         orig = poll_capacity(conn, scenarios[0], item)
         option = poll_capacity(conn, scenarios[1], item)
-        row_delta = (option - orig) / orig * 100 if all((orig, option)) else None
+        row_delta = (option - orig) / orig * 100 if orig != 0.0 else None
 
         records.append(['Capacity', item, orig, option, row_delta])
 

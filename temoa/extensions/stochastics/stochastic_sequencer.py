@@ -34,7 +34,7 @@ class StochasticSequencer:
             self.stoch_config = StochasticConfig.from_toml(sc_path)
         except Exception as e:
             logger.exception('Failed to load stochastic config from %s', sc_path)
-            raise ValueError(f'Error parsing stochastic config {sc_path}') from e
+            raise ValueError(f'Error parsing stochastic config {sc_path}. Original error: {e}') from e
 
     def start(self) -> None:
         """
@@ -44,7 +44,7 @@ class StochasticSequencer:
             from mpisppy.opt.ef import ExtensiveForm  # type: ignore[import-untyped]
         except ImportError as e:
             logger.exception('mpi-sppy is not installed. Please install it to use stochastic mode.')
-            raise RuntimeError('mpi-sppy not found') from e
+            raise RuntimeError(f'mpi-sppy not found. Original error: {e}') from e
 
         from temoa.extensions.stochastics.scenario_creator import scenario_creator
 

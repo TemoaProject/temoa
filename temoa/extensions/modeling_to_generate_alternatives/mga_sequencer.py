@@ -374,4 +374,8 @@ class MgaSequencer:
         self.writer.write_summary_flow(instance, iteration=idx)
 
     def __del__(self) -> None:
-        self.con.close()
+        if hasattr(self, 'con') and self.con is not None:
+            try:
+                self.con.close()
+            except Exception:
+                pass

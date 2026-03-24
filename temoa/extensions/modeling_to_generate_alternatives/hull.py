@@ -118,12 +118,12 @@ class Hull:
 
     def add_point(self, point: np.ndarray) -> None:
         if len(point) != self.dim:
-            logger.error(
-                'Tried adding a point to hull (dim: %d) with wrong dimensions %d. Point: %s',
-                self.dim,
-                len(point),
-                point,
+            msg = (
+                f'Tried adding a point to hull (dim: {self.dim}) with wrong dimensions {len(point)}. '
+                f'Point: {point}'
             )
+            logger.error(msg)
+            raise ValueError(msg)
         if self.all_points is None:
             self.all_points = np.atleast_2d(point)
         else:

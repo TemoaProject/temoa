@@ -164,9 +164,10 @@ class MCSequencer:
                 results_queue=result_queue,
                 log_root_name=__name__,
                 log_queue=log_queue,
+                solver_name=self.config.solver_name,
+                solver_options=self.worker_solver_options,
                 log_level=logging.INFO,
                 solver_log_path=s_path,
-                **kwargs,
             )
             p: BaseProcess = ctx.Process(target=w.run, daemon=True)
             p.start()

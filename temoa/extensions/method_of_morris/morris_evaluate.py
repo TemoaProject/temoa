@@ -88,7 +88,7 @@ def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, A
             'Multiple outputs found in Objective table matching scenario name.  Coding error.'
         )
     else:
-        y_of = output_query[0][0]
+        y_of = output_query[0][0] if output_query[0][0] is not None else 0.0
     cur.execute(
         "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
         (scenario_name,),
@@ -102,7 +102,7 @@ def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, A
             'error.'
         )
     else:
-        y_cumulative_co2 = output_query[0][0]
+        y_cumulative_co2 = output_query[0][0] if output_query[0][0] is not None else 0.0
     morris_objectives = [float(y_of), float(y_cumulative_co2)]
     logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, y_of)
     if not config.silent:

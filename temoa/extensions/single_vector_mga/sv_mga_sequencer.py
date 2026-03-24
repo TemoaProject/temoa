@@ -9,7 +9,7 @@ import logging
 import sqlite3
 import sys
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import Any, cast, TYPE_CHECKING
 
 from pyomo.core import Constraint, Expression, Objective, value
 from pyomo.opt import check_optimal_termination
@@ -128,9 +128,9 @@ class SvMgaSequencer:
         activity_labels = svmga_inputs.get('activity_labels', [])
         new_obj = SvMgaSequencer.construct_obj(
             instance,
-            emission_labels,  # type: ignore[arg-type]
-            capacity_labels,  # type: ignore[arg-type]
-            activity_labels,  # type: ignore[arg-type]
+            cast('list[str]', emission_labels),
+            cast('list[str]', capacity_labels),
+            cast('list[str]', activity_labels),
         )
 
         # check for an empty objective

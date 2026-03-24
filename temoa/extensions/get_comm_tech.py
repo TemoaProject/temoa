@@ -32,7 +32,7 @@ def get_tperiods(inp_f: str) -> dict[str, list[int]]:
         x.append(row[0])
     for y in x:
         cur.execute(
-            f"SELECT DISTINCT period FROM output_flow_out WHERE scenario is '{y}'"
+            'SELECT DISTINCT period FROM output_flow_out WHERE scenario = ?', (y,)
         )
         periods_list[y] = []
         for per in cur:
@@ -206,7 +206,7 @@ def is_db_overwritten(db_file: str, inp_dat_file: str) -> bool:
 
     try:
         con = sqlite3.connect(db_file)
-    except Exception:
+    except sqlite3.Error:
         return False
     cur = con.cursor()  # A database cursor enables traversal over DB records
     con.text_factory = str  # This ensures data is explored with UTF-8 encoding

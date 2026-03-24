@@ -145,7 +145,7 @@ class TechActivityVectorManager(VectorManager):
         return False  # this Manager can always generate more...
 
     def group_variable_names(self, tech: str) -> list[str]:
-        return [str(k) for k in self.category_mapping.keys()]
+        return list(self.variable_index_mapping.get(tech, {}).keys())
 
     def random_input_vector_model(self) -> TemoaModel:
         new_model = self.base_model.clone()

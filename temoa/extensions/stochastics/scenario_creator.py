@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import sqlite3
 from typing import TYPE_CHECKING, Any, cast
+from collections.abc import Iterable
 
 from mpisppy.utils.sputils import attach_root_node  # type: ignore[import-untyped]
 
@@ -41,8 +42,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
             # Build a map of table -> index columns from the manifest
             # For each LoadItem, the index columns are all but the last one (which is the value)
             table_index_map: dict[str, list[str]] = {}
-            item: LoadItem
-            for item in hybrid_loader.manifest:
+            for item in cast('Iterable[LoadItem]', hybrid_loader.manifest):
                 if item.table not in table_index_map and item.columns:
                     table_index_map[item.table] = list(item.columns[:-1])
     except Exception as e:
@@ -54,7 +54,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
         if p.scenario != scenario_name:
             continue
 
-        target_param = cast('dict[Any, Any] | None', data_dict.get(p.table))
+        target_param = cast(dict[Any, Any] | None, data_dict.get(p.table))
         if target_param is None:
             logger.warning(
                 'Table %s not found in data_dict for scenario %s', p.table, scenario_name
@@ -72,8 +72,10 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
             )
             continue
 
-        for idx_tuple, current_val in list(target_param.items()):
+        for idx, current_val in list(target_param.items()):
             # Map index tuple to names based on table manifest
+            # normalize idx to tuple if it is a single value
+            idx_tuple = idx if isinstance(idx, tuple) else (idx,)
             index_map = dict(zip(index_cols, idx_tuple, strict=True))
 
             # Check if filter matches
@@ -85,11 +87,11 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
 
             if match:
                 if p.action == 'multiply':
-                    target_param[idx_tuple] = current_val * p.value
+                    target_param[idx] = current_val * p.value
                 elif p.action == 'add':
-                    target_param[idx_tuple] = current_val + p.value
+                    target_param[idx] = current_val + p.value
                 elif p.action == 'set':
-                    target_param[idx_tuple] = p.value
+                    target_param[idx] = p.value
 
     # 3. Build instance
     data_portal = HybridLoader.data_portal_from_data(data_dict)

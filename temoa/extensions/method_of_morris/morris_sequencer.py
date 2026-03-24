@@ -118,7 +118,7 @@ class MorrisSequencer:
         # aren't super)
 
         seed = morris_inputs.get('seed')
-        self.seed = int(cast('Any', seed)) if seed else None
+        self.seed = int(cast('Any', seed)) if seed is not None else None
         logger.info('Morris Seed (None indicates system generated): %s', self.seed)
 
         self.conf_level = 0.95  # confidence level for mu_star analysis
