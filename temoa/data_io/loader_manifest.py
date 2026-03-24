@@ -57,3 +57,4 @@ class LoadItem:
     is_table_required: bool = True
     custom_loader_name: str | None = None
     fallback_data: list[tuple[object, ...]] | None = None
+    order_by: list[str] | None = None

@@ -315,6 +315,9 @@ class HybridLoader:
         if where_clauses:
             query += ' WHERE ' + ' AND '.join(where_clauses)
 
+        if item.order_by:
+            query += ' ORDER BY ' + ', '.join(item.order_by)
+
         try:
             return cur.execute(query, params).fetchall()
         except OperationalError as e:

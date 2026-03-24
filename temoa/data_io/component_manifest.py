@@ -236,6 +236,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
             fallback_data=[('D',)],
+            order_by=['sequence'],
         ),
         LoadItem(
             component=model.time_of_day_hours,
@@ -251,6 +252,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             custom_loader_name='_load_time_season',
             is_period_filtered=False,  # Custom loader handles myopic filtering
             is_table_required=False,
+            order_by=['sequence'],
         ),
         LoadItem(
             component=model.segment_fraction_per_season,
@@ -266,6 +268,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             custom_loader_name='_load_time_season_sequential',
             is_period_filtered=False,
             is_table_required=False,
+            order_by=['sequence'],
         ),
         LoadItem(
             component=model.time_manual,
