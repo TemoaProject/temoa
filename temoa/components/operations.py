@@ -74,7 +74,9 @@ def ramp_down_day_constraint_indices(
 def ramp_up_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.time_sequencing.first() == 'consecutive_days':
+    # Season-to-season ramp constraints require full inter-season ordering;
+    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
+    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
@@ -93,7 +95,9 @@ def ramp_up_season_constraint_indices(
 def ramp_down_season_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    if model.time_sequencing.first() == 'consecutive_days':
+    # Season-to-season ramp constraints require full inter-season ordering;
+    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
+    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
@@ -322,9 +326,7 @@ def ramp_up_day_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
-    ) / 2
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -409,9 +411,7 @@ def ramp_down_day_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
-    ) / 2
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -481,9 +481,7 @@ def ramp_up_season_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
-    ) / 2
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -553,9 +551,7 @@ def ramp_down_season_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        model.time_of_day_hours[d] + model.time_of_day_hours[d_next]
-    ) / 2
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:

@@ -19,3 +19,5 @@ weight = "integer"
 [myopic]
 view_depth = 2
 step_size = 1
+evolving = false
+evolution_script = ''

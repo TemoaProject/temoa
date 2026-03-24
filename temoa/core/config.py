@@ -66,6 +66,10 @@ class TemoaConfig:
         graphviz_output: bool = False,
         cycle_count_limit: int = 100,
         cycle_length_limit: int = 1,
+        output_threshold_capacity: float | None = None,
+        output_threshold_activity: float | None = None,
+        output_threshold_emission: float | None = None,
+        output_threshold_cost: float | None = None,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -150,6 +154,10 @@ class TemoaConfig:
         self.plot_commodity_network = plot_commodity_network and self.source_trace
         self.graphviz_output = graphviz_output
         self.stochastic_config = stochastic_config
+        self.output_threshold_capacity = output_threshold_capacity
+        self.output_threshold_activity = output_threshold_activity
+        self.output_threshold_emission = output_threshold_emission
+        self.output_threshold_cost = output_threshold_cost
 
         # Cycle detection limits
         if not isinstance(cycle_count_limit, int) or cycle_count_limit < -1:
@@ -308,6 +316,13 @@ class TemoaConfig:
             msg += '{:>{}s}: {}\n'.format(
                 'Myopic step size', width, self.myopic_inputs.get('step_size')
             )
+            msg += '{:>{}s}: {}\n'.format(
+                'Evolving mode', width, bool(self.myopic_inputs.get('evolving'))
+            )
+            if bool(self.myopic_inputs.get('evolving')):
+                msg += '{:>{}s}: {}\n'.format(
+                    'Evolution script', width, str(self.myopic_inputs.get('evolution_script'))
+                )
 
         if self.scenario_mode == TemoaMode.MGA and self.mga_inputs is not None:
             msg += spacer

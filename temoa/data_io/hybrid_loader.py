@@ -106,6 +106,8 @@ class HybridLoader:
         self.viable_output_comms: ViableSet | None = None
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
+        self.viable_rtvo: ViableSet | None = None
+        self.viable_rpt: ViableSet | None = None
         self.viable_rpto: ViableSet | None = None
         self.viable_rtv: ViableSet | None = None
         self.viable_rt: ViableSet | None = None
@@ -246,16 +248,13 @@ class HybridLoader:
                     raw_data = item.fallback_data
                     filtered_data = self._filter_data(raw_data, item, use_raw_data)
 
-                if not filtered_data:
-                    continue
-
                 if len(filtered_data) < len(raw_data):
                     ignored_count = len(raw_data) - len(filtered_data)
-                    logger.warning(
-                        '%d values for %s failed to validate and were ignored.',
-                        ignored_count,
-                        item.component.name,
-                    )
+                    msg = '%d values for %s failed to validate and were ignored.'
+                    if myopic_index:
+                        logger.info(msg, ignored_count, item.component.name)
+                    else:
+                        logger.warning(msg, ignored_count, item.component.name)
                 self._load_component_data(data, item.component, filtered_data)
 
         # ---------------------------------------------------------------------
@@ -458,12 +457,22 @@ class HybridLoader:
         if not self.manager:
             raise RuntimeError('Source trace manager not initialized for filtering.')
 
-        filts = self.manager.build_filters()
+        # Build viable sets for tech_or_group
+        # Create a dictionary from the tech_group_members table
+        tech_groups = defaultdict(set)
+        if self.table_exists('tech_group_member'):
+            for group_name, tech in cur.execute('SELECT group_name, tech FROM tech_group_member'):
+                tech_groups[tech].add(group_name)
+
+        filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
+        self.viable_rtvo = filts['rtvo']
+        self.viable_rpt = filts['rpt']
         self.viable_rtv = filts['rtv']
         self.viable_rt = filts['rt']
         self.viable_rpit = filts['rpit']
         self.viable_rpto = filts['rpto']
+        self.viable_rtv_eol = filts['rtv_eol']
         self.viable_techs = filts['t']
         self.viable_input_comms = filts['ic']
         self.viable_output_comms = filts['oc']
@@ -635,6 +644,34 @@ class HybridLoader:
         mi = self.myopic_index
         data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]  # type: ignore[operator]
         self._load_component_data(data, model.loan_rate, data_to_load)
+
+    def _load_construction_input(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Handles myopic period filtering for construction_input."""
+        model = TemoaModel()
+        base_year = self.myopic_index.base_year if self.myopic_index else None
+        data_to_load = [
+            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
+        ]
+        self._load_component_data(data, model.construction_input, data_to_load)
+
+    def _load_emission_embodied(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Handles myopic period filtering for emission_embodied."""
+        model = TemoaModel()
+        base_year = self.myopic_index.base_year if self.myopic_index else None
+        data_to_load = [
+            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
+        ]
+        self._load_component_data(data, model.emission_embodied, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_global_discount_rate(
@@ -855,13 +892,13 @@ class HybridLoader:
             ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
             model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rpto.name
+                model.limit_annual_capacity_factor_constraint_rtvo.name
             ),
             model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
             model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rpt.name,
+            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
             model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rpgg.name
+                model.limit_new_capacity_share_constraint_rggv.name
             ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
             model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,

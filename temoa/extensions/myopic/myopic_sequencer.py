@@ -7,7 +7,7 @@ import logging
 import sqlite3
 import sys
 from collections import deque
-from importlib import resources
+from importlib import resources, util
 from pathlib import Path
 from sqlite3 import Connection
 
@@ -64,7 +64,15 @@ class MyopicSequencer:
     ]
 
     def __init__(self, config: TemoaConfig | None):
-        self.capacity_epsilon = 1e-5
+        # Minimum capacity (MW) to carry forward between myopic periods.
+        # Configurable via [myopic] capacity_threshold in TOML.
+        default_cap_threshold = 1e-3
+        if config and config.myopic_inputs:
+            self.capacity_epsilon = config.myopic_inputs.get(
+                'capacity_threshold', default_cap_threshold
+            )
+        else:
+            self.capacity_epsilon = default_cap_threshold
         self.debugging = False
         self.optimization_periods: list[int] | None = None
         self.instance_queue: deque[MyopicIndex] = deque()  # a LIFO queue
@@ -85,17 +93,19 @@ class MyopicSequencer:
                 raise RuntimeError('No myopic options received.  See log file.')
             else:
                 self.view_depth: int = myopic_options.get('view_depth')
-                if not isinstance(self.view_depth, int):
-                    raise ValueError(f'view_depth is not an integer {self.view_depth}')
+                if not isinstance(self.view_depth, int) or self.view_depth < 1:
+                    raise ValueError(f'view_depth is not a positive integer {self.view_depth}')
                 self.step_size: int = myopic_options.get('step_size')
-                if not isinstance(self.step_size, int):
-                    raise ValueError(f'step_size is not an integer {self.step_size}')
+                if not isinstance(self.step_size, int) or self.step_size < 1:
+                    raise ValueError(f'step_size is not a positive integer {self.step_size}')
                 if self.step_size > self.view_depth:
                     raise ValueError(
                         f'the Myopic step size({self.step_size}) '
                         f'is larger than the view depth ({self.view_depth}).  '
                         f'Check config'
                     )
+                self.evolving: bool = myopic_options.get('evolving')
+                self.evolution_script: str = myopic_options.get('evolution_script')
         else:
             # A None was passed for config and the caller is responsible for setting instance vars
             pass
@@ -155,14 +165,15 @@ class MyopicSequencer:
         # 1.  get feedback from previous instance execution (optimal/infeasible/...)
         # 2.  decide what to do about it
         # 3.  pull the next instance from the queue (if !empty & if needed)
-        # 4.  Update the myopic_efficiency table (clean up history / add stuff now in visibility)
-        # 5.  pull data for next run and filter it with source tracing
-        # 6.  build instance
-        # 7.  run checks (price check) on the model, if selected
-        # 8.  run the model and assess
-        # 9.  commit or back out any data as necessary
-        # 10.  report findings
-        # 11.  compact the db
+        # 4.  if evolving, call the evolution script and pass it the myopic index and last instance status
+        # 5.  update the myopic_efficiency table (clean up history / add stuff now in visibility)
+        # 6.  pull data for next run and filter it with source tracing
+        # 7.  build instance
+        # 8.  run checks (price check) on the model, if selected
+        # 9.  run the model and assess
+        # 10. commit or back out any data as necessary
+        # 11. report findings
+        # 12. compact the db
 
         last_instance_status = None  # solve status
         last_base_year = None
@@ -196,18 +207,27 @@ class MyopicSequencer:
             else:
                 raise RuntimeError('Illegal state in myopic iteration.')
             logger.info('Processing Myopic Index: %s', idx)
+
+            # 4. If evolving, call the evolution script and pass it the myopic index and last instance status
+            if self.evolving and last_instance_status is not None: # don't evolve before first iteration (pointless)
+                self.run_evolution_script(
+                    idx=idx,
+                    last_base_year=last_base_year,
+                    last_instance_status=last_instance_status,
+                    con=self.output_con,
+                )
+
+            # 5. update the myopic_efficiency table so it is ready for the upcoming data pull.
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'load')
-
-            # 4. update the myopic_efficiency table so it is ready for the upcoming data pull.
             self.update_myopic_efficiency_table(myopic_index=idx, prev_base=last_base_year)
 
-            # 5. pull the data
+            # 6. pull the data
             # make a data loader
             data_loader = HybridLoader(self.output_con, self.config)
             data_portal = data_loader.load_data_portal(myopic_index=idx)
 
-            # 6. build
+            # 7. build
             instance = run_actions.build_instance(
                 loaded_portal=data_portal,
                 model_name=self.config.scenario,
@@ -217,7 +237,7 @@ class MyopicSequencer:
                 / ''.join(('LP', str(idx.base_year))),  # base year folder
             )
 
-            # 7.  Run checks...
+            # 8.  Run checks...
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'check')
             if self.config.price_check:
@@ -225,7 +245,7 @@ class MyopicSequencer:
                 if not good_prices and not self.config.silent:
                     print('\nWarning:  Cost anomalies discovered.  Check log file for details.')
 
-            # 8.  Run the model and assess solve status
+            # 9.  Run the model and assess solve status
             if not self.config.silent:
                 self.progress_mapper.report(idx, 'solve')
             model, results = run_actions.solve_instance(
@@ -244,7 +264,7 @@ class MyopicSequencer:
 
             logger.info('Completed myopic iteration on %s', idx)
 
-            # 9, 10.  Update the output tables...
+            # 10, 11.  Update the output tables...
             # first, clear any possible previous results that overlap, we might have been
             # backtracking...
             self.clear_results_after(idx.base_year)
@@ -337,6 +357,53 @@ class MyopicSequencer:
             res = self.cursor.execute(q2).fetchall()
             print(list(res))
 
+    def run_evolution_script(
+            self,
+            idx: MyopicIndex | None,
+            last_base_year: int | None,
+            last_instance_status: str | None,
+            con: sqlite3.Connection | None
+        ) -> None:
+        """
+        Run the evolution script to update the myopic database before the next iteration.
+        """
+
+        if not self.evolution_script:
+            logger.warning('Evolving myopic mode selected, but no evolution script provided.')
+            return
+
+        # import the script as a module and call the iterate function
+        script_path = Path(self.evolution_script).expanduser()
+        if not script_path.is_file():
+            msg = f"Myopic evolution script not found: {script_path}"
+            logger.error(msg)
+            raise FileNotFoundError(msg)
+
+        spec = util.spec_from_file_location("evolution_script", script_path)
+        if spec is None or spec.loader is None:
+            msg = f"Could not load evolution script module spec from: {script_path}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        evolution_module = util.module_from_spec(spec)
+        spec.loader.exec_module(evolution_module)
+        iterate = getattr(evolution_module, "iterate", None)
+        if not callable(iterate):
+            msg = f"Evolution script must define callable iterate(...): {script_path}"
+            logger.error(msg)
+            raise AttributeError(msg)
+
+        if not self.config.silent:
+            self.progress_mapper.report(idx, 'evolve')
+
+        iterate(
+            idx=idx,
+            prev_base_year=last_base_year,
+            last_instance_status=last_instance_status,
+            db_con=con,
+        )
+
+
     def update_myopic_efficiency_table(self, myopic_index: MyopicIndex, prev_base: int):
         """
         This function adds to the myopic_efficiency table in the db with data specific
@@ -387,7 +454,7 @@ class MyopicSequencer:
                 'DELETE FROM myopic_efficiency '
                 'WHERE (SELECT region, tech, vintage) '
                 '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
-                '    WHERE period = ? AND scenario = ?) '
+                '    WHERE period = ? AND scenario = ? AND ABS(capacity) >= ?) '
                 'AND tech not in (SELECT tech FROM main.technology where unlim_cap > 0)'
             )
 
@@ -396,16 +463,20 @@ class MyopicSequencer:
                     'SELECT * FROM myopic_efficiency '
                     'WHERE (SELECT region, tech, vintage) '
                     '  NOT IN (SELECT region, tech, vintage FROM output_net_capacity '
-                    '    WHERE period = ? AND scenario = ?) '
+                    '    WHERE period = ? AND scenario = ? AND ABS(capacity) >= ?) '
                     'AND tech not in (SELECT tech FROM Technology where unlim_cap > 0)'
                 )
                 print('\n\n **** Removing these unused region-tech-vintage combos ****')
                 removals = self.cursor.execute(
-                    debug_query, (last_interval_end, self.config.scenario)
+                    debug_query,
+                    (last_interval_end, self.config.scenario, self.capacity_epsilon),
                 ).fetchall()
                 for i, removal in enumerate(removals):
                     print(f'{i}. Removing:  {removal}')
-            self.cursor.execute(delete_qry, (last_interval_end, self.config.scenario))
+            self.cursor.execute(
+                delete_qry,
+                (last_interval_end, self.config.scenario, self.capacity_epsilon),
+            )
             self.output_con.commit()
 
         # 2.  Add the new stuff now visible
@@ -463,21 +534,37 @@ class MyopicSequencer:
             self.progress_mapper.draw_header()
 
         # check that we have enough periods to do myopic run
-        # 2 iterations, excluding end year, will be via shortened depth, if reqd.
         if len(future_periods) < self.view_depth + 1:
-            logger.error(
-                'Not enough future years to run myopic mode. Need %d including end year. Got %d.',
-                self.view_depth + 1,
-                len(future_periods),
-            )
-            sys.exit(-1)
+            msg = (
+                'Not enough future periods for view depth. Need {} including end period. Got {}.'
+            ).format(self.view_depth+1, len(future_periods))
+            logger.error(msg)
+            raise RuntimeError(msg)
         self.optimization_periods = future_periods.copy()
-        last_idx = len(future_periods) - 1
-        for idx in range(0, len(future_periods[:-1]), self.step_size):
-            depth = min(self.view_depth, last_idx - idx)
-            step = min(self.step_size, last_idx - idx)
+        last_base_year = ((len(future_periods) - 2) // self.step_size) * self.step_size
+        base_years = list(range(0, last_base_year+1, self.step_size))
+        if not self.evolving:
+            # Remove redundant iterations near end of horizon if not evolving
+            catch_Pe = [i for i in base_years if i + self.view_depth >= len(future_periods) - 1]
+            if len(catch_Pe) > 1:
+                # keep only one iteration that captures the end of the horizon
+                base_years = base_years[:-len(catch_Pe) + 1]
+        for n, idx in enumerate(base_years):
+            depth = min(self.view_depth, len(future_periods) - idx - 1)
+            if idx == base_years[-1]:
+                # last period, record the rest
+                step = depth
+            else:
+                # record to next base year
+                step = base_years[n+1] - idx
             if depth < 1:
-                break
+                msg = (
+                    'Calculated MyopicIndex with non-positive depth. '
+                    'This should never happen. Code error likely. '
+                    'idx: {}, step: {}, depth: {}, future_periods: {}'
+                ).format(idx, step, depth, future_periods)
+                logger.error(msg)
+                raise RuntimeError(msg)
             myopic_idx = MyopicIndex(
                 base_year=future_periods[idx],
                 step_year=future_periods[idx + step],

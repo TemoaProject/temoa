@@ -1828,29 +1828,11 @@
         [
             "B",
             2025,
-            "s2",
-            "d1",
-            "bulbs",
-            2025,
-            "RL"
-        ],
-        [
-            "B",
-            2025,
             "s1",
             "d1",
             "heater",
             2025,
             "RH"
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "d1",
-            "bulbs",
-            2025,
-            "RL"
         ],
         [
             "B",
@@ -1873,29 +1855,11 @@
         [
             "A",
             2025,
-            "s1",
-            "d2",
-            "bulbs",
-            2025,
-            "RL"
-        ],
-        [
-            "A",
-            2025,
             "s2",
             "d1",
             "GeoHeater",
             2025,
             "RH"
-        ],
-        [
-            "A",
-            2025,
-            "s1",
-            "d1",
-            "bulbs",
-            2025,
-            "RL"
         ],
         [
             "A",
@@ -1920,27 +1884,9 @@
             2025,
             "s1",
             "d2",
-            "bulbs",
-            2025,
-            "RL"
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "d2",
             "GeoHeater",
             2025,
             "RH"
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "d2",
-            "bulbs",
-            2025,
-            "RL"
         ],
         [
             "B",
@@ -1968,24 +1914,6 @@
             "GeoHeater",
             2025,
             "RH"
-        ],
-        [
-            "B",
-            2025,
-            "s2",
-            "d2",
-            "bulbs",
-            2025,
-            "RL"
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "d1",
-            "bulbs",
-            2025,
-            "RL"
         ],
         [
             "B",
@@ -3222,7 +3150,8 @@
         ]
     ],
     "limit_activity_share_constraint_rpgg": [],
-    "limit_annual_capacity_factor_constraint_rpto": [],
+    "limit_annual_capacity_factor_constraint_rptvo": [],
+    "limit_annual_capacity_factor_constraint_rtvo": [],
     "limit_capacity_constraint_rpt": [
         [
             "B",
@@ -3276,20 +3205,20 @@
     "limit_growth_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_delta_constraint_rpt": [],
-    "limit_new_capacity_constraint_rpt": [],
-    "limit_new_capacity_share_constraint_rpgg": [
+    "limit_new_capacity_constraint_rtv": [],
+    "limit_new_capacity_share_constraint_rggv": [
         [
             "A",
-            2025,
             "RPS_common",
             "A_tech_grp_1",
+            2025,
             "ge"
         ],
         [
             "global",
-            2025,
             "RPS_common",
             "A_tech_grp_1",
+            2025,
             "le"
         ]
     ],
@@ -3790,40 +3719,7 @@
             2025
         ]
     ],
-    "ramp_down_season_constraint_rpsstv": [
-        [
-            "A",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ]
-    ],
+    "ramp_down_season_constraint_rpsstv": [],
     "ramp_up_day_constraint_rpsdtv": [
         [
             "B",
@@ -3890,40 +3786,7 @@
             2025
         ]
     ],
-    "ramp_up_season_constraint_rpsstv": [
-        [
-            "A",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "A",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s1",
-            "s2",
-            "EH",
-            2025
-        ],
-        [
-            "B",
-            2025,
-            "s2",
-            "s1",
-            "EH",
-            2025
-        ]
-    ],
+    "ramp_up_season_constraint_rpsstv": [],
     "regional_exchange_capacity_constraint_rrptv": [
         [
             "B",
@@ -4157,9 +4020,7 @@
     "tech_exchange": [
         "FGF_pipe"
     ],
-    "tech_exist": [
-        "EH"
-    ],
+    "tech_exist": [],
     "tech_flex": [
         "EFL"
     ],
@@ -4257,5 +4118,21 @@
     ],
     "vintage_optimize": [
         2025
+    ],
+    "storage_init_rpstv": [
+        [
+            "B",
+            2025,
+            "s2",
+            "batt",
+            2025
+        ],
+        [
+            "B",
+            2025,
+            "s1",
+            "batt",
+            2025
+        ]
     ]
 }

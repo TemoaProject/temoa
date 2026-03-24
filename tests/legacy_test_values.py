@@ -28,13 +28,15 @@ test_vals = {
         # reduced 2025/07/25 by 504 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 10 after removing period index from storagefrac (more constraints)
-        ExpectedVals.CONSTR_COUNT: 2820,
+        # increased by 48 after tying v_storage_level[d_last] to v_storage_init
+        ExpectedVals.CONSTR_COUNT: 2868,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
         # reduced 2025/07/25 by 420 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.VAR_COUNT: 1960,
+        # increased by 48 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 2008,
     },
     'utopia': {
         # reduced after reworking storageinit -> storage was less constrained
@@ -49,14 +51,17 @@ test_vals = {
         # increased after making annualretirement derived var
         # reduced 2025/07/25 by 225 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 1486,
+        # increased by 27 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 14 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 1499,
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
         # reduced 2025/07/25 by 200 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.VAR_COUNT: 1095,
+        # increased by 27 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 1122,
     },
     'mediumville': {
         # added 2025/06/12 prior to addition of dynamic reserve margin
@@ -67,22 +72,30 @@ test_vals = {
         # increased after reviving RampSeason constraints
         # reduced 2025/07/25 by 24 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 240,
+        # increased by 2 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 10 after dropping DAC for single-tech demands
+        # reduced by 8 after disabling season ramp for seasonal_timeslices
+        ExpectedVals.CONSTR_COUNT: 224,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.VAR_COUNT: 146,
+        # increased by 2 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 148,
     },
     'seasonal_storage': {
         # added 2025/06/16 after addition of seasonal storage
+        # updated: simplified storage_init to time_next chain with d_last swap
         ExpectedVals.OBJ_VALUE: 76661.0231,
         ExpectedVals.EFF_DOMAIN_SIZE: 24,
         ExpectedVals.EFF_INDEX_SIZE: 4,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.CONSTR_COUNT: 183,
+        # increased by 2 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 9 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 176,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
-        ExpectedVals.VAR_COUNT: 91,
+        # increased by 2 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 93,
     },
     'survival_curve': {
         # added 2025/06/19 after addition of survival curves

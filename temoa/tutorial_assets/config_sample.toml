@@ -92,6 +92,13 @@ save_lp_file = false
 # graphviz dot file and svg for network visualization (requires graphviz to be installed separately)
 graphviz_output = false
 
+# Optional output filtering thresholds (set to 0 to disable per category)
+# Precedence is: TOML value > internal defaults.
+output_threshold_capacity = 0.001
+output_threshold_activity = 0.001
+output_threshold_emission = 0.001
+output_threshold_cost = 0.01
+
 # ------------------------------------
 #          MODEL PARAMETERS
 #  these are specific to each model
@@ -151,7 +158,15 @@ weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight 
 
 [myopic]
 view_depth = 2   # number of periods seen/analyzed per iteration
-step_size = 1    # number of periods to step by (must be <= view depth)
+step_size = 2    # number of periods to step by (must be <= view depth)
+# Evolving mode: if true, the evolution_script is called between myopic iterations
+# to update the database. The view depth may shorten near the end of the planning
+# horizon to ensure that all iterations are performed.
+# If false, the evolution_script is not used and iterations end once view depth
+# reaches the end of the planning horizon, to avoid redundant decisions with no
+# new information.
+evolving = false
+evolution_script = "temoa/extensions/myopic/evolution_updater.py"
 
 [morris]
 perturbation = 0.10     # amount to perturb marked parameters (ex:  0.10 -> +/- 10%)

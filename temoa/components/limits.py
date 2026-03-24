@@ -23,6 +23,8 @@ import temoa.components.technology as technology
 from temoa.components.utils import Operator, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
+    from pyomo.core import Expression
+
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike, Period, Region, Technology, Vintage
     from temoa.types.core_types import Commodity, Season, TimeOfDay
@@ -206,6 +208,20 @@ def limit_seasonal_capacity_factor_constraint_indices(
         for r, s, t, op in model.limit_seasonal_capacity_factor_constraint_rst
         for p in model.time_optimize
     }
+
+
+def limit_annual_capacity_factor_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
+    indices = {
+        (r, p, t, v, o, op)
+        for r, t, v, o, op in model.limit_annual_capacity_factor_constraint_rtvo
+        for _r in geography.gather_group_regions(model, r)
+        for _t in technology.gather_group_techs(model, t)
+        for p in model.time_optimize
+        if o in model.process_outputs.get((_r, p, _t, v), [])
+    }
+    return indices
 
 
 # ============================================================================
@@ -420,7 +436,7 @@ def limit_capacity_share_constraint(
 
 
 def limit_new_capacity_share_constraint(
-    model: TemoaModel, r: Region, p: Period, g1: Technology, g2: Technology, op: str
+    model: TemoaModel, r: Region, g1: Technology, g2: Technology, v: Vintage, op: str
 ) -> ExprLike:
     r"""
     The limit_new_capacity_share constraint limits the share of new capacity
@@ -431,21 +447,21 @@ def limit_new_capacity_share_constraint(
 
     sub_group = technology.gather_group_techs(model, g1)
     sub_new_cap = quicksum(
-        model.v_new_capacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, v]
         for _t in sub_group
         for _r in regions
-        if (_r, _t, cast('Vintage', p)) in model.process_periods
+        if (_r, _t, v) in model.process_periods
     )
 
     super_group = technology.gather_group_techs(model, g2)
     super_new_cap = quicksum(
-        model.v_new_capacity[_r, _t, p]
+        model.v_new_capacity[_r, _t, v]
         for _t in super_group
         for _r in regions
-        if (_r, _t, cast('Vintage', p)) in model.process_periods
+        if (_r, _t, v) in model.process_periods
     )
 
-    share_lim = value(model.limit_new_capacity_share[r, p, g1, g2, op])
+    share_lim = value(model.limit_new_capacity_share[r, g1, g2, v, op])
     expr = operator_expression(sub_new_cap, Operator(op), share_lim * super_new_cap)
     if isinstance(expr, bool):
         return Constraint.Skip
@@ -453,11 +469,11 @@ def limit_new_capacity_share_constraint(
 
 
 def limit_annual_capacity_factor_constraint(
-    model: TemoaModel, r: Region, p: Period, t: Technology, o: Commodity, op: str
+    model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage, o: Commodity, op: str
 ) -> ExprLike:
     r"""
     The limit_annual_capacity_factor sets an upper bound on the annual capacity factor
-    from a specific technology. The first portion of the constraint pertains to
+    from a specific process. The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
@@ -465,49 +481,50 @@ def limit_annual_capacity_factor_constraint(
     .. math::
         :label: limit_annual_capacity_factor
 
-            \sum_{S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, p, t} \cdot
-            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \sum_{S,D,I} \textbf{FO}_{r, p, s, d, i, t, v, o} \le LIMACF_{r, t, v, o} \cdot
+            \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \notin T^{a}, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
+            \forall \{r, t \notin T^{a}, v, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
 
-            \\\sum_{I,V,O} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, p, t} \cdot
-            \textbf{CAPAVL}_{r, p, t} \cdot \text{C2A}_{r, t}
+            \\\sum_{I} \textbf{FOA}_{r, p, i, t, v, o} \ge LIMACF_{r, t, v, o} \cdot
+            \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
-            \forall \{r, p, t \in T^{a}, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
+            \forall \{r, t \in T^{a}, v, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
     """
     # r can be an individual region (r='US'), or a combination of regions separated by plus
     # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
-    # we need to screen here because it is possible that the restriction extends beyond the
-    # lifetime of any vintage of the tech...
-    if all((_r, p, t) not in model.v_capacity_available_by_period_and_tech for _r in regions):
-        return Constraint.Skip
+    techs = technology.gather_group_techs(model, t)
 
-    if t not in model.tech_annual:
-        activity_rpt = quicksum(
-            model.v_flow_out[_r, p, s, d, S_i, t, S_v, o]
-            for _r in regions
-            for S_v in model.process_vintages.get((_r, p, t), [])
-            for S_i in model.process_inputs[_r, p, t, S_v]
-            for s in model.time_season
-            for d in model.time_of_day
-        )
+    if TYPE_CHECKING:
+        activity_rptvo = cast('Expression', 0)
     else:
-        activity_rpt = quicksum(
-            model.v_flow_out_annual[_r, p, S_i, t, S_v, o]
-            for _r in regions
-            for S_v in model.process_vintages.get((_r, p, t), [])
-            for S_i in model.process_inputs[_r, p, t, S_v]
-        )
+        activity_rptvo = 0
+    for _t in techs:
+        if _t not in model.tech_annual:
+            activity_rptvo += quicksum(
+                model.v_flow_out[_r, p, s, d, S_i, _t, v, o]
+                for _r in regions
+                for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
+                for s in model.time_season
+                for d in model.time_of_day
+            )
+        else:
+            activity_rptvo += quicksum(
+                model.v_flow_out_annual[_r, p, S_i, _t, v, o]
+                for _r in regions
+                for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
+            )
 
-    possible_activity_rpt = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, t]
-        * value(model.capacity_to_activity[_r, t])
+    possible_activity_rptvo = quicksum(
+        model.v_capacity[_r, p, _t, v] * value(model.capacity_to_activity[_r, _t])
         for _r in regions
+        for _t in techs
+        if v in model.process_vintages.get((_r, p, _t), [])
     )
-    annual_cf = value(model.limit_annual_capacity_factor[r, p, t, o, op])
-    expr = operator_expression(activity_rpt, Operator(op), annual_cf * possible_activity_rpt)
+    annual_cf = value(model.limit_annual_capacity_factor[r, t, v, o, op])
+    expr = operator_expression(activity_rptvo, Operator(op), annual_cf * possible_activity_rptvo)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         return Constraint.Skip
@@ -542,35 +559,48 @@ def limit_seasonal_capacity_factor_constraint(
     # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
     regions = geography.gather_group_regions(model, r)
+    techs = technology.gather_group_techs(model, t)
+
     # we need to screen here because it is possible that the restriction extends beyond the
     # lifetime of any vintage of the tech...
-    if all((_r, p, t) not in model.v_capacity_available_by_period_and_tech for _r in regions):
+    if all(
+        (_r, p, _t) not in model.v_capacity_available_by_period_and_tech
+        for _r in regions
+        for _t in techs
+    ):
         return Constraint.Skip
 
-    if t not in model.tech_annual:
-        activity_rpst = quicksum(
-            model.v_flow_out[_r, p, s, d, S_i, t, S_v, S_o]
-            for _r in regions
-            for S_v in model.process_vintages[_r, p, t]
-            for S_i in model.process_inputs[_r, p, t, S_v]
-            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
-            for d in model.time_of_day
-        )
+    if TYPE_CHECKING:
+        activity_rpst = cast('Expression', 0)
     else:
-        activity_rpst = quicksum(
-            model.v_flow_out_annual[_r, p, S_i, t, S_v, S_o]
-            * model.segment_fraction_per_season[s]
-            for _r in regions
-            for S_v in model.process_vintages[_r, p, t]
-            for S_i in model.process_inputs[_r, p, t, S_v]
-            for S_o in model.process_outputs_by_input[_r, p, t, S_v, S_i]
-        )
+        activity_rpst = 0
+    for _t in techs:
+        if _t not in model.tech_annual:
+            activity_rpst += quicksum(
+                model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
+                for _r in regions
+                for S_v in model.process_vintages.get((_r, p, _t), [])
+                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+                for d in model.time_of_day
+            )
+        else:
+            activity_rpst += quicksum(
+                model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
+                * model.segment_fraction_per_season[s]
+                for _r in regions
+                for S_v in model.process_vintages.get((_r, p, _t), [])
+                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+            )
 
     possible_activity_rpst = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, t]
-        * value(model.capacity_to_activity[_r, t])
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        * value(model.capacity_to_activity[_r, _t])
         * value(model.segment_fraction_per_season[s])
         for _r in regions
+        for _t in techs
+        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
     )
     seasonal_cf = value(model.limit_seasonal_capacity_factor[r, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
@@ -1353,25 +1383,29 @@ def limit_activity_constraint(
 
 
 def limit_new_capacity_constraint(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
+    model: TemoaModel, r: Region, t: Technology, v: Vintage, op: str
 ) -> ExprLike:
     r"""
     The limit_new_capacity constraint sets a limit on the newly installed capacity of a
-    given technology or group in a given year. Note that the indices for these constraints are
-    region, period and tech.
+    given technology or group in a given vintage year.
 
     .. math::
         :label: limit_new_capacity
 
-        \textbf{NCAP}_{r, t, v} \le LNC_{r, p, t}
-
-        \text{where }v=p
+        \textbf{NCAP}_{r, t, v} \le LNC_{r, t, v}
     """
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
-    cap_lim = value(model.limit_new_capacity[r, p, t, op])
-    new_cap = quicksum(model.v_new_capacity[_r, _t, p] for _t in techs for _r in regions)
+    cap_lim = value(model.limit_new_capacity[r, t, v, op])
+    new_cap = quicksum(
+        model.v_new_capacity[_r, _t, v]
+        for _t in techs
+        for _r in regions
+        if (_r, _t, v) in model.process_periods
+    )
     expr = operator_expression(new_cap, Operator(op), cap_lim)
+    if isinstance(expr, bool):
+        return Constraint.Skip
     return expr
 
 
@@ -1394,9 +1428,14 @@ def limit_capacity_constraint(
     techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_capacity[r, p, t, op])
     capacity = quicksum(
-        model.v_capacity_available_by_period_and_tech[_r, p, _t] for _t in techs for _r in regions
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        for _t in techs
+        for _r in regions
+        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
     )
     expr = operator_expression(capacity, Operator(op), cap_lim)
+    if isinstance(expr, bool):
+        return Constraint.Skip
     return expr
 
 

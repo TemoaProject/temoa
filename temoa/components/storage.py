@@ -59,6 +59,25 @@ def seasonal_storage_constraint_indices(
     return set()
 
 
+def storage_init_variable_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Season, Technology, Vintage]]:
+    """Index set for v_storage_init: one per (r, p, s, t, v) for non-seasonal storage.
+
+    Introduces a hub variable at the daily cycle wrap point. Structurally equivalent
+    to the original closed-cycle formulation (presolve can substitute back), but
+    empirically improved barrier solve time ~25% on a 16-region national model.
+    The mechanism is not fully understood.
+    """
+    if not model.storage_level_indices_rpsdtv:
+        return set()
+    return {
+        (r, p, s, t, v)
+        for r, p, s, _d, t, v in model.storage_level_indices_rpsdtv
+        if not model.is_seasonal_storage[t]
+    }
+
+
 def storage_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
@@ -70,30 +89,30 @@ def limit_storage_fraction_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, str]]:
     """Expand the period-free param set to include all valid process (period, vintage) combos."""
 
-    bad_keys = set(
+    bad_keys = {
         (r, s, d, t, op)
         for r, s, d, t, op in model.limit_storage_fraction_param_rsdt
         if (not model.is_seasonal_storage[t]) != (s in model.time_season)
-    )
+    }
     if bad_keys:
         msg = (
-            "Bad keys identified in limit_storage_level_fraction table. "
-            "Regular season used for seasonal storage or sequential season "
-            f"used for diurnal storage. Bad keys: {bad_keys}"
+            'Bad keys identified in limit_storage_level_fraction table. '
+            'Regular season used for seasonal storage or sequential season '
+            f'used for diurnal storage. Bad keys: {bad_keys}'
         )
         logger.error(msg)
         raise ValueError(msg)
-    
+
     all_storage_constraints = set(
         model.storage_constraints_rpsdtv | model.seasonal_storage_constraints_rpsdtv
     )
-    valid_keys = set(
+    valid_keys = {
         (r, p, s, d, t, v, op)
         for r, s, d, t, op in model.limit_storage_fraction_param_rsdt
         for p in model.time_optimize
         for v in model.process_vintages.get((r, p, t), [])
         if (r, p, s, d, t, v) in all_storage_constraints
-    )
+    }
 
     return valid_keys
 
@@ -110,28 +129,34 @@ def storage_energy_constraint(
 ) -> ExprLike:
     r"""
     This constraint enforces the continuity of storage level between time slices.
-    storage level in the next time slice (:math:`s_{next}, d_{next}`) is equal to
-    current storage level plus net charge in the current time slice.
+
+    Uses the :code:`time_next` mapping to chain storage levels forward. For
+    non-seasonal storage, :math:`v\_storage\_init` replaces :math:`v\_storage\_level`
+    on the LHS at the daily cycle wrap point (last time-of-day). Combined with
+    the tie-back constraint (:math:`SL_{d_{last}} = SI`), this is structurally
+    equivalent to a closed cycle.
+
+    Empirically, this swap improved barrier solve time ~25% on a 16-region
+    national model, though the structural reason is not fully understood.
+
+    **Non-seasonal, last time-of-day (d_last):**
 
     .. math::
-        :label: Storage Energy
+        {SI}_{r,p,s,t,v} + \text{net\_charge} = {SL}_{r,p,s_{next},d_{next},t,v}
 
-            {SL}_{r,p,s,d,t,v}
-            + \sum\limits_{I,O} \mathbf{FIS}_{r,p,s,d,i,t,v,o} \cdot {EFF}_{r,i,t,v,o}
-            - \sum\limits_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
-            = {SL}_{r,p,s_{{next}},d_{{next}},t,v}
+    **All other time slices (non-seasonal and seasonal):**
 
-    Note that for all seasonal representations except consecutive_days, the last time slice
-    of each season will loop back to the first time slice of the same season, preventing
-    seasonal deltas for non-seasonal storage (see SeasonalStorageEnergyUpperBound).
+    .. math::
+        {SL}_{r,p,s,d,t,v} + \text{net\_charge} = {SL}_{r,p,s_{next},d_{next},t,v}
+
+    For seasonal storage, the last time-of-day is skipped (handled by
+    SeasonalStorageEnergy_constraint).
     """
 
-    # We allow a non-zero daily delta only in the case of seasonal storage
+    # Seasonal storage: skip d_last (handled by SeasonalStorageEnergy_constraint)
     if model.is_seasonal_storage[t] and d == model.time_of_day.last():
-        return Constraint.Skip  # handled by SeasonalStorageEnergy_constraint
+        return Constraint.Skip
 
-    # This is the sum of all input=i sent TO storage tech t of vintage v with
-    # output=o in p,s,d
     charge = sum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
         * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
@@ -139,8 +164,6 @@ def storage_energy_constraint(
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
-    # with input=i in p,s,d
     discharge = sum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for S_o in model.process_outputs[r, p, t, v]
@@ -153,12 +176,32 @@ def storage_energy_constraint(
     d_next: TimeOfDay
     s_next, d_next = model.time_next[s, d]
 
-    expr = (
-        model.v_storage_level[r, p, s, d, t, v] + stored_energy
-        == model.v_storage_level[r, p, s_next, d_next, t, v]
-    )
+    if d == model.time_of_day.last():
+        # Non-seasonal at d_last: use v_storage_init instead of v_storage_level
+        expr = (
+            model.v_storage_init[r, p, s, t, v] + stored_energy
+            == model.v_storage_level[r, p, s_next, d_next, t, v]
+        )
+    else:
+        expr = (
+            model.v_storage_level[r, p, s, d, t, v] + stored_energy
+            == model.v_storage_level[r, p, s_next, d_next, t, v]
+        )
 
     return expr
+
+
+def storage_level_at_last_tod_constraint(
+    model: TemoaModel, r: Region, p: Period, s: Season, t: Technology, v: Vintage
+) -> ExprLike:
+    """Tie v_storage_level at d_last to v_storage_init for non-seasonal storage.
+
+    The storage_energy_constraint uses v_storage_init at d_last instead of
+    v_storage_level. This equality ensures v_storage_level[d_last] still
+    reflects the correct state for any constraints that reference it.
+    """
+    d_last = model.time_of_day.last()
+    return model.v_storage_level[r, p, s, d_last, t, v] == model.v_storage_init[r, p, s, t, v]
 
 
 def seasonal_storage_energy_constraint(
@@ -225,15 +268,13 @@ def seasonal_storage_energy_constraint(
     s_seq_next: Season = model.time_next_sequential[s_seq]
     s_next: Season = model.sequential_to_season[s_seq_next]
 
-    # Flows and StorageLevel are adjusted for the weight of seasons and so must be 
+    # Flows and StorageLevel are adjusted for the weight of seasons and so must be
     # readjusted for the relative weight of the sequential season
-    days_adjust = (
-        value(model.time_season_sequential[s_seq, s])
-        / value(model.segment_fraction_per_season[s])
+    days_adjust = value(model.time_season_sequential[s_seq, s]) / value(
+        model.segment_fraction_per_season[s]
     )
-    days_adjust_next = (
-        value(model.time_season_sequential[s_seq_next, s_next])
-        / value(model.segment_fraction_per_season[s_next])
+    days_adjust_next = value(model.time_season_sequential[s_seq_next, s_next]) / value(
+        model.segment_fraction_per_season[s_next]
     )
 
     stored_energy = (charge - discharge) * days_adjust
@@ -374,11 +415,10 @@ def seasonal_storage_energy_upper_bound_constraint(
         * (value(model.storage_duration[r, t]) / (24 * value(model.days_per_period)))
     )
 
-    # Flows and StorageLevel are adjusted for the weight of seasons and so must be 
+    # Flows and StorageLevel are adjusted for the weight of seasons and so must be
     # readjusted for the relative weight of the sequential season
-    days_adjust = (
-        value(model.time_season_sequential[s_seq, s])
-        / value(model.segment_fraction_per_season[s])
+    days_adjust = value(model.time_season_sequential[s_seq, s]) / value(
+        model.segment_fraction_per_season[s]
     )
 
     # v_storage_level tracks the running cumulative delta in the non-sequential season,

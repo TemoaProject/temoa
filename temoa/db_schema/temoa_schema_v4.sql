@@ -503,17 +503,16 @@ CREATE TABLE IF NOT EXISTS limit_activity_share
 CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
 (
     region      TEXT,
-    period      INTEGER
+    tech_or_group   TEXT,
+    vintage      INTEGER
         REFERENCES time_period (period),
-    tech        TEXT
-        REFERENCES technology (tech),
     output_comm TEXT
         REFERENCES commodity (name),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, tech, output_comm, operator),
+    PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS limit_capacity
@@ -545,28 +544,28 @@ CREATE TABLE IF NOT EXISTS limit_capacity_share
 CREATE TABLE IF NOT EXISTS limit_new_capacity
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     tech_or_group   TEXT,
+    vintage  INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     new_cap REAL,
     units   TEXT,
     notes   TEXT,
-    PRIMARY KEY (region, period, tech_or_group, operator)
+    PRIMARY KEY (region, tech_or_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_new_capacity_share
 (
     region         TEXT,
-    period         INTEGER
-        REFERENCES time_period (period),
     sub_group      TEXT,
     super_group    TEXT,
+    vintage         INTEGER
+        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     share REAL,
     notes          TEXT,
-    PRIMARY KEY (region, period, sub_group, super_group, operator)
+    PRIMARY KEY (region, sub_group, super_group, vintage, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_resource
 (
@@ -585,13 +584,12 @@ CREATE TABLE IF NOT EXISTS limit_seasonal_capacity_factor
         REFERENCES region (region),
 	season TEXT
         REFERENCES time_season (season),
-	tech    TEXT
-        REFERENCES technology (tech),
+	tech_or_group    TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, season, tech, operator)
+	PRIMARY KEY(region, season, tech_or_group, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_tech_input_split
 (
@@ -1035,14 +1033,16 @@ CREATE TABLE IF NOT EXISTS myopic_efficiency
 (
     base_year   integer,
     region      text,
-    input_comm  text,
-    tech        text,
-    vintage     integer,
-    output_comm text,
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
     efficiency  real,
     lifetime    integer,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
 );
 -- for efficient searching by rtv:
@@ -1050,17 +1050,21 @@ CREATE INDEX IF NOT EXISTS region_tech_vintage ON myopic_efficiency (region, tec
 
 CREATE TABLE IF NOT EXISTS output_flow_out_summary
 (
-    scenario    TEXT NOT NULL,
-    region      TEXT NOT NULL,
-    sector      TEXT,
-    period      INTEGER,
-    input_comm  TEXT NOT NULL,
-    tech        TEXT NOT NULL,
-    vintage     INTEGER,
-    output_comm TEXT NOT NULL,
-    flow        REAL NOT NULL,
-
-    FOREIGN KEY (tech) REFERENCES technology (tech),
+    scenario    TEXT,
+    region      TEXT,
+    sector      TEXT
+        REFERENCES sector_label (sector),
+    period      INTEGER
+        REFERENCES time_period (period),
+    input_comm  TEXT
+        REFERENCES commodity (name),
+    tech        TEXT
+        REFERENCES technology (tech),
+    vintage     INTEGER
+        REFERENCES time_period (period),
+    output_comm TEXT
+        REFERENCES commodity (name),
+    flow        REAL,
     PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, output_comm)
 );
 

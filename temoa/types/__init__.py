@@ -68,6 +68,7 @@ __all__ = [
     'GroupRegionActiveFlowSet',
     'NewCapacitySet',
     'SeasonalStorageLevelIndicesSet',
+    'SingletonDemandsSet',
     'StorageLevelIndicesSet',
     # Type aliases
     'ExprLike',
@@ -151,6 +152,7 @@ from .set_types import (
     GroupRegionActiveFlowSet,
     NewCapacitySet,
     SeasonalStorageLevelIndicesSet,
+    SingletonDemandsSet,
     StorageLevelIndicesSet,
 )
 

@@ -18,9 +18,9 @@ from pyomo.environ import (
     Constraint,
     Integers,
     NonNegativeReals,
-    PositiveReals,
     Objective,
     Param,
+    PositiveReals,
     minimize,
 )
 
@@ -84,7 +84,7 @@ def create_sparse_dicts(model: 'TemoaModel') -> None:
         for tech in sorted(unused_techs):
             logger.warning(
                 "Notice: '%s' is specified as a technology but is not "
-                'utilized in the efficiency parameter.',
+                'utilized in the process network.',
                 tech,
             )
 
@@ -136,6 +136,8 @@ class TemoaModel(AbstractModel):
         self.group_region_active_flow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
+        # demands served by a single r, i, t, v, o sub-process
+        self.singleton_demands: t.SingletonDemandsSet = set()
         self.commodity_balance_rpc: t.CommodityBalancedSet = (
             set()
         )  # Set of valid region-period-commodity indices to balance
@@ -186,7 +188,8 @@ class TemoaModel(AbstractModel):
 
         # {(r, i, t, v, o): bool} which efficiencies have variable indexing
         self.is_efficiency_variable: t.EfficiencyVariableDict = {}
-        # {(r, t, v): bool} which processes use capacity_factor_process table (instead of capacity_factor_tech)
+        # {(r, t, v): bool} which processes use capacity_factor_process
+        # table (instead of capacity_factor_tech)
         self.is_capacity_factor_process: t.CapacityFactorProcessDict = {}
         # {t: bool} whether a storage tech is seasonal storage
         self.is_seasonal_storage: t.SeasonalStorageDict = {}
@@ -291,13 +294,9 @@ class TemoaModel(AbstractModel):
         self.commodity_waste = Set()
         self.commodity_flex = Set(within=self.commodity_physical)
         self.commodity_source = Set(within=self.commodity_physical)
-        self.commodity_sink = Set(
-            initialize=self.commodity_demand | self.commodity_waste
-        )
+        self.commodity_sink = Set(initialize=self.commodity_demand | self.commodity_waste)
         self.commodity_annual = Set(within=self.commodity_physical)
-        self.commodity_carrier = Set(
-            initialize=self.commodity_physical | self.commodity_sink
-        )
+        self.commodity_carrier = Set(initialize=self.commodity_physical | self.commodity_sink)
         self.commodity_all = Set(
             initialize=self.commodity_carrier | self.commodity_emissions,
             validate=no_slash_or_pipe,
@@ -401,6 +400,9 @@ class TemoaModel(AbstractModel):
         )
         self.end_of_life_output = Param(
             self.regions, self.tech_with_capacity, self.vintage_all, self.commodity_carrier
+        )
+        self.emission_end_of_life = Param(
+            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
         )
 
         self.efficiency = Param(
@@ -507,6 +509,7 @@ class TemoaModel(AbstractModel):
         # equations below.
         self.create_sparse_dicts = BuildAction(rule=create_sparse_dicts)
         self.initialize_demands = BuildAction(rule=commodities.create_demands)
+        self.validate_existing_capacity = BuildAction(rule=technology.check_existing_capacity)
 
         self.capacity_factor_rsdt = Set(dimen=4, initialize=capacity.capacity_factor_tech_indices)
         self.capacity_factor_tech = Param(
@@ -574,13 +577,13 @@ class TemoaModel(AbstractModel):
         )
         self.limit_capacity = Param(self.limit_capacity_constraint_rpt)
 
-        self.limit_new_capacity_constraint_rpt = Set(
+        self.limit_new_capacity_constraint_rtv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rpt)
+        self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rtv)
 
         self.limit_resource_constraint_rt = Set(
             within=self.regional_global_indices * self.tech_or_group * self.operator
@@ -603,20 +606,20 @@ class TemoaModel(AbstractModel):
             within=self.regional_global_indices
             * self.time_optimize
             * self.time_season
-            * self.tech_all
+            * self.tech_or_group
             * self.operator,
             initialize=limits.limit_seasonal_capacity_factor_constraint_indices,
         )
 
-        self.limit_annual_capacity_factor_constraint_rpto = Set(
+        self.limit_annual_capacity_factor_constraint_rtvo = Set(
             within=self.regional_global_indices
-            * self.time_optimize
-            * self.tech_all
+            * self.tech_or_group
+            * self.vintage_all
             * self.commodity_carrier
             * self.operator
         )
         self.limit_annual_capacity_factor = Param(
-            self.limit_annual_capacity_factor_constraint_rpto, validate=validate_0to1
+            self.limit_annual_capacity_factor_constraint_rtvo, validate=validate_0to1
         )
 
         self.limit_growth_capacity = Param(
@@ -666,14 +669,14 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity_share = Param(self.limit_activity_share_constraint_rpgg)
 
-        self.limit_new_capacity_share_constraint_rpgg = Set(
+        self.limit_new_capacity_share_constraint_rggv = Set(
             within=self.regional_global_indices
-            * self.time_optimize
             * self.tech_or_group
             * self.tech_or_group
+            * self.vintage_optimize
             * self.operator
         )
-        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rpgg)
+        self.limit_new_capacity_share = Param(self.limit_new_capacity_share_constraint_rggv)
 
         # This set works for all storage-related constraints
         self.storage_constraints_rpsdtv = Set(
@@ -682,7 +685,9 @@ class TemoaModel(AbstractModel):
         self.seasonal_storage_constraints_rpsdtv = Set(
             dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
-        self.limit_storage_fraction_param_rsdt = Set()  # populated by hybrid_loader with (r, s, d, t, op) keys
+        self.limit_storage_fraction_param_rsdt = (
+            Set()
+        )  # populated by hybrid_loader with (r, s, d, t, op) keys
         self.limit_storage_fraction = Param(
             self.limit_storage_fraction_param_rsdt, validate=validate_0to1
         )
@@ -722,9 +727,6 @@ class TemoaModel(AbstractModel):
             self.commodity_emissions,
             self.tech_with_capacity,
             self.vintage_optimize,
-        )
-        self.emission_end_of_life = Param(
-            self.regions, self.commodity_emissions, self.tech_with_capacity, self.vintage_all
         )
 
         self.myopic_discounting_year = Param(default=0)
@@ -770,6 +772,9 @@ class TemoaModel(AbstractModel):
 
         self.storage_level_rpsdtv = Set(dimen=6, initialize=storage.storage_level_variable_indices)
         self.v_storage_level = Var(self.storage_level_rpsdtv, domain=NonNegativeReals)
+
+        self.storage_init_rpstv = Set(dimen=5, initialize=storage.storage_init_variable_indices)
+        self.v_storage_init = Var(self.storage_init_rpstv, domain=NonNegativeReals)
 
         self.seasonal_storage_level_rpstv = Set(
             dimen=5, initialize=storage.seasonal_storage_level_variable_indices
@@ -858,6 +863,7 @@ class TemoaModel(AbstractModel):
         # Declare core model constraints that ensure proper system functioning
         # In driving order, starting with the need to meet end-use demands
 
+        self.check_singleton_demands = BuildAction(rule=commodities.check_singleton_demands)
         self.demand_constraint = Constraint(
             self.demand_constraint_rpc, rule=commodities.demand_constraint
         )
@@ -908,6 +914,10 @@ class TemoaModel(AbstractModel):
 
         self.storage_energy_constraint = Constraint(
             self.storage_constraints_rpsdtv, rule=storage.storage_energy_constraint
+        )
+
+        self.storage_level_last_tod_constraint = Constraint(
+            self.storage_init_rpstv, rule=storage.storage_level_at_last_tod_constraint
         )
 
         self.storage_energy_upper_bound_constraint = Constraint(
@@ -1038,7 +1048,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_constraint = Constraint(
-            self.limit_new_capacity_constraint_rpt, rule=limits.limit_new_capacity_constraint
+            self.limit_new_capacity_constraint_rtv, rule=limits.limit_new_capacity_constraint
         )
 
         self.limit_capacity_share_constraint = Constraint(
@@ -1050,7 +1060,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_new_capacity_share_constraint = Constraint(
-            self.limit_new_capacity_share_constraint_rpgg,
+            self.limit_new_capacity_share_constraint_rggv,
             rule=limits.limit_new_capacity_share_constraint,
         )
 
@@ -1062,8 +1072,11 @@ class TemoaModel(AbstractModel):
             self.limit_resource_constraint_rt, rule=limits.limit_resource_constraint
         )
 
+        self.limit_annual_capacity_factor_constraint_rptvo = Set(
+            dimen=6, initialize=limits.limit_annual_capacity_factor_indices
+        )
         self.limit_annual_capacity_factor_constraint = Constraint(
-            self.limit_annual_capacity_factor_constraint_rpto,
+            self.limit_annual_capacity_factor_constraint_rptvo,
             rule=limits.limit_annual_capacity_factor_constraint,
         )
 

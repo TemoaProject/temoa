@@ -9428,15 +9428,6 @@
         [
             "utopia",
             2000,
-            "inter",
-            "day",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "summer",
             "night",
             "RHE",
@@ -9586,15 +9577,6 @@
             "RHO",
             2000,
             "RH"
-        ],
-        [
-            "utopia",
-            2010,
-            "inter",
-            "night",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -9878,15 +9860,6 @@
         [
             "utopia",
             2000,
-            "summer",
-            "day",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "winter",
             "night",
             "RHO",
@@ -9941,15 +9914,6 @@
         [
             "utopia",
             2000,
-            "winter",
-            "night",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
-            2000,
             "summer",
             "day",
             "TXE",
@@ -9994,15 +9958,6 @@
         ],
         [
             "utopia",
-            2010,
-            "summer",
-            "night",
-            "RL1",
-            2010,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "night",
@@ -10018,15 +9973,6 @@
             "RHE",
             2010,
             "RH"
-        ],
-        [
-            "utopia",
-            2000,
-            "winter",
-            "day",
-            "RL1",
-            2000,
-            "RL"
         ],
         [
             "utopia",
@@ -10201,15 +10147,6 @@
         ],
         [
             "utopia",
-            2010,
-            "winter",
-            "night",
-            "RL1",
-            2010,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "day",
@@ -10288,15 +10225,6 @@
             "RHO",
             2010,
             "RH"
-        ],
-        [
-            "utopia",
-            2000,
-            "inter",
-            "night",
-            "RL1",
-            2000,
-            "RL"
         ],
         [
             "utopia",
@@ -10468,15 +10396,6 @@
             "RHE",
             1990,
             "RH"
-        ],
-        [
-            "utopia",
-            2010,
-            "summer",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -11047,15 +10966,6 @@
         ],
         [
             "utopia",
-            2000,
-            "summer",
-            "night",
-            "RL1",
-            2000,
-            "RL"
-        ],
-        [
-            "utopia",
             1990,
             "inter",
             "day",
@@ -11080,15 +10990,6 @@
             "TXE",
             2000,
             "TX"
-        ],
-        [
-            "utopia",
-            2010,
-            "inter",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -11305,15 +11206,6 @@
             "TXE",
             1990,
             "TX"
-        ],
-        [
-            "utopia",
-            2010,
-            "winter",
-            "day",
-            "RL1",
-            2010,
-            "RL"
         ],
         [
             "utopia",
@@ -21133,7 +21025,8 @@
     ],
     "limit_activity_constraint_rpt": [],
     "limit_activity_share_constraint_rpgg": [],
-    "limit_annual_capacity_factor_constraint_rpto": [],
+    "limit_annual_capacity_factor_constraint_rptvo": [],
+    "limit_annual_capacity_factor_constraint_rtvo": [],
     "limit_capacity_constraint_rpt": [
         [
             "utopia",
@@ -21210,8 +21103,8 @@
     "limit_growth_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_constraint_rpt": [],
     "limit_growth_new_capacity_delta_constraint_rpt": [],
-    "limit_new_capacity_constraint_rpt": [],
-    "limit_new_capacity_share_constraint_rpgg": [],
+    "limit_new_capacity_constraint_rtv": [],
+    "limit_new_capacity_share_constraint_rggv": [],
     "limit_resource_constraint_rt": [],
     "limit_seasonal_capacity_factor_constraint_rpst": [],
     "limit_seasonal_capacity_factor_constraint_rst": [],
@@ -22160,6 +22053,81 @@
             "utopia",
             "RL1",
             2000
+        ],
+        [
+            "utopia",
+            "E01",
+            1960
+        ],
+        [
+            "utopia",
+            "E01",
+            1970
+        ],
+        [
+            "utopia",
+            "E01",
+            1980
+        ],
+        [
+            "utopia",
+            "E70",
+            1960
+        ],
+        [
+            "utopia",
+            "E70",
+            1970
+        ],
+        [
+            "utopia",
+            "E70",
+            1980
+        ],
+        [
+            "utopia",
+            "RHO",
+            1970
+        ],
+        [
+            "utopia",
+            "RHO",
+            1980
+        ],
+        [
+            "utopia",
+            "TXG",
+            1970
+        ],
+        [
+            "utopia",
+            "TXG",
+            1980
+        ],
+        [
+            "utopia",
+            "TXD",
+            1970
+        ],
+        [
+            "utopia",
+            "TXD",
+            1980
+        ],
+        [
+            "utopia",
+            "E31",
+            1980
+        ],
+        [
+            "utopia",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            "RL1",
+            1980
         ]
     ],
     "new_capacity_var_rtv": [
@@ -24163,5 +24131,196 @@
         2000,
         2010,
         1990
+    ],
+    "storage_init_rpstv": [
+        [
+            "utopia",
+            2010,
+            "inter",
+            "E51",
+            2000
+        ],
+        [
+            "utopia",
+            2010,
+            "summer",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2000,
+            "summer",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2010,
+            "winter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            1990,
+            "summer",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2000,
+            "inter",
+            "E51",
+            2000
+        ],
+        [
+            "utopia",
+            1990,
+            "winter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2010,
+            "summer",
+            "E51",
+            2010
+        ],
+        [
+            "utopia",
+            2010,
+            "inter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2000,
+            "winter",
+            "E51",
+            2000
+        ],
+        [
+            "utopia",
+            1990,
+            "winter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2010,
+            "summer",
+            "E51",
+            2000
+        ],
+        [
+            "utopia",
+            2000,
+            "inter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2010,
+            "winter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2010,
+            "inter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            1990,
+            "inter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2000,
+            "summer",
+            "E51",
+            2000
+        ],
+        [
+            "utopia",
+            2000,
+            "winter",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2010,
+            "winter",
+            "E51",
+            2010
+        ],
+        [
+            "utopia",
+            2010,
+            "inter",
+            "E51",
+            2010
+        ],
+        [
+            "utopia",
+            2000,
+            "inter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            1990,
+            "summer",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2010,
+            "summer",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            1990,
+            "inter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2000,
+            "summer",
+            "E51",
+            1990
+        ],
+        [
+            "utopia",
+            2000,
+            "winter",
+            "E51",
+            1980
+        ],
+        [
+            "utopia",
+            2010,
+            "winter",
+            "E51",
+            2000
+        ]
     ]
 }
