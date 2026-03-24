@@ -42580,7 +42580,7 @@
         "spring",
         "winter"
     ],
-    "time_season_to_sequential": [],
+    "time_season_sequential": [],
     "time_sequencing": [
         "seasonal_timeslices"
     ],

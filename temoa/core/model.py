@@ -220,14 +220,14 @@ class TemoaModel(AbstractModel):
 
         # Define the model time slices
         self.time_season = Set(ordered=True, validate=no_slash_or_pipe)
-        self.time_season_to_sequential = Set(ordered=True, validate=no_slash_or_pipe)
+        self.time_season_sequential = Set(ordered=True, validate=no_slash_or_pipe)
         self.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
         # This is just to get the TimeStorageSeason table sequentially.
         # There must be a better way but this works for now
         self.ordered_season_sequential = Set(
             dimen=2,
-            within=self.time_season_to_sequential * self.time_season,
+            within=self.time_season_sequential * self.time_season,
             ordered=True,
         )
 

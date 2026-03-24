@@ -325,7 +325,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
                 'match time_season.'
             )
             for s in model.time_season:
-                model.time_season_to_sequential.add(s)
+                model.time_season_sequential.add(s)
                 model.ordered_season_sequential.add((s, s))
                 model.segment_fraction_per_sequential_season[s] = value(
                     model.segment_fraction_per_season[s]
@@ -345,7 +345,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
 
     seas_fracs_seq: dict[str, float] = {}
     prev_frac: float = 0
-    for s_seq, s in model.time_season_sequential.sparse_iterkeys():
+    for s_seq, s in model.ordered_season_sequential:
         seg_frac_seq: float = value(model.segment_fraction_per_sequential_season[s_seq])
         if (
             model.time_sequencing.first() == 'consecutive_days'
@@ -355,7 +355,7 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             msg = (
                 'time_sequencing set to consecutive_days but two consecutive seasons do not '
                 'represent the same fraction of the year. This discontinuity will lead to bad '
-                f'model behaviour: {s}, fraction: {seg_frac_seq}. '
+                f'model behaviour: {s_seq}, fraction: {seg_frac_seq}. '
                 f'Previous fraction: {prev_frac}. Check the config file for more information.'
             )
             logger.error(msg)

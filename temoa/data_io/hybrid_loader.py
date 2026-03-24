@@ -584,8 +584,8 @@ class HybridLoader:
             )
             ordered_data = [row[0:2] for row in filtered_data]  # (seas_seq, season)
             self._load_component_data(data, model.ordered_season_sequential, ordered_data)
-            seq_data = sorted({(row[0],) for row in filtered_data})
-            self._load_component_data(data, model.time_season_to_sequential, seq_data)
+            seq_seasons = [(row[0],) for row in filtered_data]  # (seas_seq,)
+            self._load_component_data(data, model.time_season_sequential, seq_seasons)
 
     # --- Capacity and Cost Components ---
     def _load_existing_capacity(
