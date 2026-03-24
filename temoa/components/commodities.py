@@ -116,8 +116,8 @@ def check_singleton_demands(model: TemoaModel) -> None:
         i, t, v = next(iter(upstream_itv))
         model.v_flow_out_annual[r, p, i, t, v, dem].fix(val)
         if t not in model.tech_annual:
-            for s, d in cross_product(model.time_season[p], model.time_of_day):
-                dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
+            for s, d in cross_product(model.time_season, model.time_of_day):
+                dsd = value(model.demand_specific_distribution[r, s, d, dem])
                 model.v_flow_out[r, p, s, d, i, t, v, dem].fix(val * dsd)
         model.singleton_demands.add((r, p, dem))
 

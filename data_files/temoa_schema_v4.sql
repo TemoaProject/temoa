@@ -687,7 +687,7 @@ CREATE TABLE IF NOT EXISTS output_curtailment
     period      INTEGER
         REFERENCES time_period (period),
     season      TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
