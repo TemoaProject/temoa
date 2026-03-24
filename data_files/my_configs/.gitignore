@@ -1,2 +1,0 @@
-# this will auto-ignore any new .toml config files.  It is always possible to override this with a Git ADD
-*.toml
