@@ -120,7 +120,7 @@ def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Techno
     because in myopic mode, previously optimized vintages remain active in later
     windows and their data must be accepted by the param's index set.
     """
-    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_iterkeys()}
+    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_keys()}
 
     return indices
 
@@ -335,7 +335,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             global_discount_rate,
             vintage=S_v,
         )
-        for r, S_t, S_v in model.cost_invest.sparse_iterkeys()
+        for r, S_t, S_v in model.cost_invest.sparse_keys()
         if S_v == p and not model.is_survival_curve_process[r, S_t, S_v]
     )
     loan_costs += quicksum(
@@ -352,7 +352,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_e,
             global_discount_rate,
         )
-        for r, S_t, S_v in model.cost_invest.sparse_iterkeys()
+        for r, S_t, S_v in model.cost_invest.sparse_keys()
         if S_v == p and model.is_survival_curve_process[r, S_t, S_v]
     )
 
@@ -365,7 +365,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_0,
             p=p,
         )
-        for r, S_p, S_t, S_v in model.cost_fixed.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_fixed.sparse_keys()
         if S_p == p
     )
 
@@ -378,7 +378,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_0,
             p,
         )
-        for r, S_p, S_t, S_v in model.cost_variable.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_variable.sparse_keys()
         if S_p == p and S_t not in model.tech_annual
         for S_i in model.process_inputs[r, S_p, S_t, S_v]
         for S_o in model.process_outputs_by_input[r, S_p, S_t, S_v, S_i]
@@ -395,7 +395,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_0,
             p,
         )
-        for r, S_p, S_t, S_v in model.cost_variable.sparse_iterkeys()
+        for r, S_p, S_t, S_v in model.cost_variable.sparse_keys()
         if S_p == p and S_t in model.tech_annual
         for S_i in model.process_inputs[r, S_p, S_t, S_v]
         for S_o in model.process_outputs_by_input[r, S_p, S_t, S_v, S_i]
@@ -417,7 +417,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
 
     base = [
         (r, p, e, i, t, v, o)
-        for (r, e, i, t, v, o) in model.emission_activity.sparse_iterkeys()
+        for (r, e, i, t, v, o) in model.emission_activity.sparse_keys()
         if (r, p, e) in model.cost_emission  # tightest filter first
         and (r, p, t, v) in model.process_inputs
     ]
@@ -484,7 +484,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_0=p_0,
             p=p,
         )
-        for (r, e, t, v) in model.emission_embodied.sparse_iterkeys()
+        for (r, e, t, v) in model.emission_embodied.sparse_keys()
         if (r, p, e) in model.cost_emission
         if v == p
     )
@@ -502,7 +502,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             p_0=p_0,
             p=p,
         )
-        for (r, e, t, v) in model.emission_end_of_life.sparse_iterkeys()
+        for (r, e, t, v) in model.emission_end_of_life.sparse_keys()
         if (r, p, e) in model.cost_emission
         if (r, t, v) in model.retirement_periods and p in model.retirement_periods[r, t, v]
     )
@@ -687,8 +687,8 @@ def create_costs(model: TemoaModel) -> None:
     var_indices = set(model.cost_variable_rptv)
 
     # Step 2
-    unspecified_fixed_prices = fixed_indices.difference(cost_fixed.sparse_iterkeys())
-    unspecified_var_prices = var_indices.difference(cost_variable.sparse_iterkeys())
+    unspecified_fixed_prices = fixed_indices.difference(cost_fixed.sparse_keys())
+    unspecified_var_prices = var_indices.difference(cost_variable.sparse_keys())
 
     # Step 3
 

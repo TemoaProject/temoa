@@ -32,7 +32,7 @@ logger = getLogger(__name__)
 def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Season, TimeOfDay]]:
     indices = {
         (r, p, s, d)
-        for r in model.planning_reserve_margin.sparse_iterkeys()
+        for r in model.planning_reserve_margin.sparse_keys()
         for p in model.time_optimize
         if (r, p) in model.process_reserve_periods
         for s in model.time_season

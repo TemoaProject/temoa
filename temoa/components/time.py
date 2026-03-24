@@ -102,7 +102,7 @@ def validate_segment_fraction(model: TemoaModel) -> None:
     expected_keys: set[tuple[str, str]] = {
         (s, d) for s in model.time_season for d in model.time_of_day
     }
-    keys: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
+    keys: set[tuple[str, str]] = set(model.segment_fraction.sparse_keys())
 
     if expected_keys != keys:
         extra: set[tuple[str, str]] = keys.difference(expected_keys)
@@ -154,7 +154,7 @@ def validate_time_manual(model: TemoaModel) -> None:
     if model.time_sequencing.first() != 'manual':
         return
 
-    segment_fraction_sd: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
+    segment_fraction_sd: set[tuple[str, str]] = set(model.segment_fraction.sparse_keys())
     time_manual_sd: set[tuple[str, str]] = {(s, d) for s, d, s_next, d_next in model.time_manual}
     time_manual_sd_next: set[tuple[str, str]] = {
         (s_next, d_next) for s, d, s_next, d_next in model.time_manual

@@ -40,11 +40,10 @@ def price_checker(model: TemoaModel) -> bool:
     warnings = False  # flag
     # some sets for x-checking
     registered_inv_costs = {
-        (region, tech, vintage) for (region, tech, vintage) in model.cost_invest.sparse_iterkeys()
+        (region, tech, vintage) for (region, tech, vintage) in model.cost_invest.sparse_keys()
     }
     efficiency_rtv = {
-        (region, tech, vintage)
-        for (region, _, tech, vintage, __) in model.efficiency.sparse_iterkeys()
+        (region, tech, vintage) for (region, _, tech, vintage, __) in model.efficiency.sparse_keys()
     }
     sorted_efficiency_rtv = sorted(efficiency_rtv, key=lambda rtv: (rtv[1], rtv[0], rtv[2]))
 
@@ -58,11 +57,11 @@ def price_checker(model: TemoaModel) -> bool:
     # var costs for the period = vintage year
     base_year_variable_cost_rtv = set()
 
-    for r, p, t, v in model.cost_fixed.sparse_iterkeys():
+    for r, p, t, v in model.cost_fixed.sparse_keys():
         fixed_costs[r, t, v].add(p)
         if p == v:
             base_year_fixed_cost_rtv.add((r, t, v))
-    for r, p, t, v in model.cost_variable.sparse_iterkeys():
+    for r, p, t, v in model.cost_variable.sparse_keys():
         var_costs[r, t, v].add(p)
         if p == v:
             base_year_variable_cost_rtv.add((r, t, v))
@@ -273,11 +272,11 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     logger.debug('starting price check #4:  uncapacitated techs')
     efficiency_rtv = {
         (region, tech, vintage)
-        for (region, _, tech, vintage, __) in model.efficiency.sparse_iterkeys()
+        for (region, _, tech, vintage, __) in model.efficiency.sparse_keys()
         if tech in model.tech_uncap
     }
 
-    fixed_cost_periods = {(r, t, v): p for r, p, t, v in model.cost_fixed.sparse_iterkeys()}
+    fixed_cost_periods = {(r, t, v): p for r, p, t, v in model.cost_fixed.sparse_keys()}
     rtv_with_fixed_cost = efficiency_rtv & set(fixed_cost_periods.keys())
     if rtv_with_fixed_cost:
         logger.error(
@@ -288,7 +287,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
         for rtv in rtv_with_fixed_cost:
             logger.error('%s: %s', rtv, fixed_cost_periods[rtv])
 
-    rtv_with_invest_cost = efficiency_rtv & set(model.cost_invest.sparse_iterkeys())
+    rtv_with_invest_cost = efficiency_rtv & set(model.cost_invest.sparse_keys())
     if rtv_with_invest_cost:
         logger.error(
             'The following technologies are labeled as unlimited capacity, but have an INVEST cost'
@@ -298,7 +297,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
 
     var_cost_periods = defaultdict(set)
     # by starting from the cost side, we will naturally omit anything with NO var costs at all.
-    for r, p, t, v in model.cost_variable.sparse_iterkeys():
+    for r, p, t, v in model.cost_variable.sparse_keys():
         if (r, t, v) in efficiency_rtv:
             var_cost_periods[(r, t, v)].add(p)
     # use it to check for all/none var costs in viable periods
@@ -333,7 +332,7 @@ def check_tech_uncap(model: TemoaModel) -> bool:
     capacity_params = (model.existing_capacity,)
     bad_cap_entries = False
     for param in capacity_params:
-        bad_entries = {(r, t, v) for r, t, v in param.sparse_iterkeys() if t in model.tech_uncap}
+        bad_entries = {(r, t, v) for r, t, v in param.sparse_keys() if t in model.tech_uncap}
         if bad_entries:
             for entry in bad_entries:
                 logger.error(

@@ -76,7 +76,7 @@ def test_against_legacy_outputs(
     efficiency_param: pyo.Param = mdl.efficiency
     # check the set membership
     assert (
-        len(tuple(efficiency_param.sparse_iterkeys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
+        len(tuple(efficiency_param.sparse_keys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
     ), 'should match legacy numbers'
 
     # check the size of the domain.  NOTE:  The build of the domain here may be "expensive" for
