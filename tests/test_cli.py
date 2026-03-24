@@ -12,6 +12,7 @@ runner = CliRunner()
 
 # Path to the configuration file template we will use for tests.
 TESTING_CONFIGS_DIR = Path(__file__).parent / 'testing_configs'
+UTOPIA_SQL_FIXTURE = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets' / 'utopia.sql'
 UTOPIA_CONFIG_TEMPLATE = TESTING_CONFIGS_DIR / 'config_utopia.toml'
 
 
@@ -157,8 +158,8 @@ def test_cli_migrate_help() -> None:
 
 def test_cli_migrate_sql_file(tmp_path: Path) -> None:
     """Test migrating a SQL file with explicit --output."""
-    # Ensure input file is available in the test environment (e.g., copied from data_files)
-    input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    # Ensure input file is available in the test environment
+    input_file_src = UTOPIA_SQL_FIXTURE
     input_file = tmp_path / 'test_input.sql'
     shutil.copy2(input_file_src, input_file)
 
@@ -192,7 +193,7 @@ def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path: Path) -> 
     where the input directory is writable.
     Output should be next to input with _v4.sql suffix.
     """
-    src_file = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    src_file = UTOPIA_SQL_FIXTURE
     input_file = tmp_path / src_file.name  # Input file in writable tmp_path
     shutil.copy2(src_file, input_file)
 
@@ -221,7 +222,7 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
     non_writable_mock_parent = tmp_path / 'mock_non_writable_input_parent'
     non_writable_mock_parent.mkdir()
 
-    src_file = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    src_file = UTOPIA_SQL_FIXTURE
     input_file = non_writable_mock_parent / src_file.name
     shutil.copy2(src_file, input_file)
 
@@ -270,7 +271,7 @@ def test_cli_migrate_sql_file_auto_output_no_writable_location(
     non_writable_mock_parent = tmp_path / 'mock_non_writable_input_parent_no_cwd'
     non_writable_mock_parent.mkdir()
 
-    src_file = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    src_file = UTOPIA_SQL_FIXTURE
     input_file = non_writable_mock_parent / src_file.name
     shutil.copy2(src_file, input_file)
 
@@ -317,7 +318,7 @@ def test_cli_migrate_unknown_type(tmp_path: Path) -> None:
 
 def test_cli_migrate_override_type(tmp_path: Path) -> None:
     """Test migrating with explicit type override."""
-    input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    input_file_src = UTOPIA_SQL_FIXTURE
     input_file = tmp_path / 'test_input_override.sql'
     shutil.copy2(input_file_src, input_file)
 
@@ -332,7 +333,7 @@ def test_cli_migrate_override_type(tmp_path: Path) -> None:
 
 def test_cli_migrate_sql_file_silent(tmp_path: Path) -> None:
     """Test migrating a SQL file with --silent flag."""
-    input_file_src = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    input_file_src = UTOPIA_SQL_FIXTURE
     input_file = tmp_path / 'test_input_silent.sql'
     shutil.copy2(input_file_src, input_file)
 
@@ -375,7 +376,7 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd_si
     non_writable_mock_parent = tmp_path / 'mock_non_writable_input_parent_silent'
     non_writable_mock_parent.mkdir()
 
-    src_file = Path(__file__).parent.parent / 'data_files' / 'temoa_basics_0.sql'
+    src_file = UTOPIA_SQL_FIXTURE
     input_file = non_writable_mock_parent / src_file.name
     shutil.copy2(src_file, input_file)
 
