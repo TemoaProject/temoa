@@ -262,6 +262,7 @@ class HybridLoader:
         # ---------------------------------------------------------------------
         # Load simple config-based or myopic-specific values
         self._load_component_data(data, model.time_sequencing, [(self.config.time_sequencing,)])
+        self._load_component_data(data, model.days_per_period, [(self.config.days_per_period,)])
         self._load_component_data(
             data, model.reserve_margin_method, [(self.config.reserve_margin,)]
         )
@@ -313,6 +314,9 @@ class HybridLoader:
 
         if where_clauses:
             query += ' WHERE ' + ' AND '.join(where_clauses)
+
+        if item.order_by:
+            query += ' ORDER BY ' + ', '.join(item.order_by)
 
         try:
             return cur.execute(query, params).fetchall()
@@ -554,35 +558,15 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Loads time_season_all (simple set of all seasons) and time_season
-        (indexed set mapping periods to seasons), with a dynamic fallback
-        if the table is missing.
+        Loads time_season as a flat ordered set of season names.
         """
         model = TemoaModel()
-        mi = self.myopic_index
-        time_optimize = cast('list[int]', data.get('time_optimize', []))
-
-        rows_to_load: list[tuple[object, ...]] = []
-        if not raw_data:
+        if not filtered_data:
             logger.warning('No time_season table found. Loading a single filler season "S".')
-            rows_to_load = [(p, 'S') for p in time_optimize]
-        elif mi:
-            valid_periods = set(time_optimize)
-            rows_to_load = [row for row in raw_data if row[0] in valid_periods]
+            seasons_to_load: list[tuple[object, ...]] = [('S',)]
         else:
-            rows_to_load = list(raw_data)
-
-        if not rows_to_load:
-            data.setdefault(model.time_season_all.name, [])
-            return
-
-        unique_seasons = sorted({(row[1],) for row in rows_to_load})
-        self._load_component_data(data, model.time_season_all, unique_seasons)
-
-        for period, season in rows_to_load:
-            store = data.get(model.time_season.name, defaultdict(list))
-            store[period].append(season)  # type: ignore[index]
-            data[model.time_season.name] = store
+            seasons_to_load = list(filtered_data)
+        self._load_component_data(data, model.time_season, seasons_to_load)
 
     def _load_time_season_sequential(
         self,
@@ -594,30 +578,17 @@ class HybridLoader:
         Composite loader for time_season_sequential and its associated index sets.
         """
         model = TemoaModel()
-        self._load_component_data(data, model.time_season_sequential, filtered_data)
         if filtered_data:
-            ordered_data = [row[0:3] for row in filtered_data]
-            self._load_component_data(data, model.ordered_season_sequential, ordered_data)
-            seq_data = sorted({(row[1],) for row in filtered_data})
-            self._load_component_data(data, model.time_season_to_sequential, seq_data)
-
-    def _load_segment_fraction(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles dynamic fallbacks for segment_fraction if its table is missing."""
-        model = TemoaModel()
-        if filtered_data:
-            self._load_component_data(data, model.segment_fraction, filtered_data)
-        else:
-            logger.warning(
-                'No segment_fraction table found. Generating default segment_fraction values.'
+            seg_frac_data = [
+                (row[0], row[2]) for row in filtered_data
+            ]  # (seas_seq, segment_fraction)
+            self._load_component_data(
+                data, model.segment_fraction_per_sequential_season, seg_frac_data
             )
-            time_optimize = data.get('time_optimize', [])
-            fallback = [(p, 'S', 'D', 1.0) for p in time_optimize]  # type: ignore[attr-defined]
-            self._load_component_data(data, model.segment_fraction, fallback)
+            ordered_data = [row[0:2] for row in filtered_data]  # (seas_seq, season)
+            self._load_component_data(data, model.ordered_season_sequential, ordered_data)
+            seq_seasons = [(row[0],) for row in filtered_data]  # (seas_seq,)
+            self._load_component_data(data, model.time_season_sequential, seq_seasons)
 
     # --- Capacity and Cost Components ---
     def _load_existing_capacity(
@@ -711,21 +682,6 @@ class HybridLoader:
         self._load_component_data(data, model.emission_embodied, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
-    def _load_days_per_period(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Loads the singleton days_per_period, with a fallback."""
-        model = TemoaModel()
-        days = 365
-        if filtered_data:
-            days = cast('int', filtered_data[0][0])
-        else:
-            logger.info('No value for days_per_period found. Assuming 365 days per period.')
-        data[model.days_per_period.name] = {None: days}
-
     def _load_global_discount_rate(
         self,
         data: dict[str, object],
@@ -940,7 +896,7 @@ class HybridLoader:
             model.limit_emission.name: model.limit_emission_constraint_rpe.name,
             model.limit_activity.name: model.limit_activity_constraint_rpt.name,
             model.limit_seasonal_capacity_factor.name: (
-                model.limit_seasonal_capacity_factor_constraint_rpst.name
+                model.limit_seasonal_capacity_factor_constraint_rst.name
             ),
             model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
             model.limit_annual_capacity_factor.name: (
@@ -953,7 +909,7 @@ class HybridLoader:
                 model.limit_new_capacity_share_constraint_rggv.name
             ),
             model.limit_resource.name: model.limit_resource_constraint_rt.name,
-            model.limit_storage_fraction.name: model.limit_storage_fraction_constraint_rpsdtv.name,
+            model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,
             model.renewable_portfolio_standard.name: (
                 model.renewable_portfolio_standard_constraint_rpg.name
             ),

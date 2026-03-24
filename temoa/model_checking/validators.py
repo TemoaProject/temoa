@@ -274,7 +274,6 @@ def validate_capacity_factor_process(
     model: TemoaModel,
     val: float,
     r: Region,
-    p: Period,
     s: Season,
     d: TimeOfDay,
     t: Technology,
@@ -297,8 +296,7 @@ def validate_capacity_factor_process(
     return all(
         (
             r in model.regions,
-            p in model.time_optimize,
-            s in model.time_season[p],
+            s in model.time_season,
             d in model.time_of_day,
             t in model.tech_with_capacity,
             v in model.vintage_all,

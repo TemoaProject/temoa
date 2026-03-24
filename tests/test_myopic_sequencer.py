@@ -7,45 +7,25 @@ from temoa.extensions.myopic.myopic_sequencer import MyopicSequencer
 params = [
     {
         'name': 'single_step',
-        'conf_data': {
-            'step_size': 1,
-            'view_depth': 3,
-            'evolving': False,
-            'evolution_script': None
-        },
+        'conf_data': {'step_size': 1, 'view_depth': 3, 'evolving': False, 'evolution_script': None},
         'expected_steps': 2,
         'expected_last_base_year': 1,
     },
     {
         'name': 'triple_step',
-        'conf_data': {
-            'step_size': 3,
-            'view_depth': 4,
-            'evolving': False,
-            'evolution_script': None
-        },
+        'conf_data': {'step_size': 3, 'view_depth': 4, 'evolving': False, 'evolution_script': None},
         'expected_steps': 1,  # see end of horizon immediately
         'expected_last_base_year': 0,
     },
     {
         'name': 'single_step_evolving',
-        'conf_data': {
-            'step_size': 1,
-            'view_depth': 3,
-            'evolving': True,
-            'evolution_script': None
-        },
+        'conf_data': {'step_size': 1, 'view_depth': 3, 'evolving': True, 'evolution_script': None},
         'expected_steps': 4,
         'expected_last_base_year': 3,
     },  # 4 single steps
     {
         'name': 'triple_step_evolving',
-        'conf_data': {
-            'step_size': 3,
-            'view_depth': 4,
-            'evolving': True,
-            'evolution_script': None
-        },
+        'conf_data': {'step_size': 3, 'view_depth': 4, 'evolving': True, 'evolution_script': None},
         'expected_steps': 2,  # 1 step of 3, followed by 1 step of 1
         'expected_last_base_year': 3,
     },

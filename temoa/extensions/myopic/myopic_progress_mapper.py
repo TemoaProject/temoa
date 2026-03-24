@@ -52,7 +52,7 @@ class MyopicProgressMapper:
     def report(self, mi: MyopicIndex, status):
         if status not in {'load', 'solve', 'report', 'check', 'evolve'}:
             raise ValueError(f'bad status: {status} received in MyopicProgressMapper')
-        
+
         if status == 'evolve':
             repeats = self.years.index(mi.last_demand_year) - self.years.index(mi.base_year) + 1
             print(self.timestamp(), end='')

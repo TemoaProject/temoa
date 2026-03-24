@@ -19,15 +19,17 @@ class ExpectedVals(Enum):
 test_vals = {
     'test_system': {
         # reduced after removing ancient 1-year-shift obj function bug
-        ExpectedVals.OBJ_VALUE: 468550.1905,
+        # increased by ~25 after removing period index from storagefrac (more constraints)
+        ExpectedVals.OBJ_VALUE: 468575.0703,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
         # increased by 2 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/25 by 504 after annualising demands
         # increased 2025/08/19 after making annual demands optional
+        # increased by 10 after removing period index from storagefrac (more constraints)
         # increased by 48 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 2858,
+        ExpectedVals.CONSTR_COUNT: 2868,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
@@ -41,7 +43,8 @@ test_vals = {
         # reduced after removing ancient 1-year-shift obj function bug
         # increased after rework of inter-season sequencing
         # reduced after changing fixed costs from MLP to PL
-        ExpectedVals.OBJ_VALUE: 34711.5173,
+        # reduced by <1 after changing season definition (segfrac no longer rounded)
+        ExpectedVals.OBJ_VALUE: 34710.6730,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.

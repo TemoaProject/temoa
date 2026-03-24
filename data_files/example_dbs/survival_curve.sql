@@ -15,10 +15,8 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -26,23 +24,21 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_to_activity
@@ -223,17 +219,15 @@ INSERT INTO "demand" VALUES('region',2050,'demand',1.0,NULL,NULL);
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
 CREATE TABLE efficiency
@@ -263,10 +257,8 @@ INSERT INTO "efficiency" VALUES('region','source','tech_future',2050,'demand',1.
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -279,7 +271,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -643,36 +635,30 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    CHECK (fraction >= 0 AND fraction <= 1),
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE limit_tech_input_split
 (
@@ -775,7 +761,6 @@ CREATE TABLE metadata
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 INSERT INTO "metadata" VALUES('DB_MAJOR',4,'');
 INSERT INTO "metadata" VALUES('DB_MINOR',0,'');
 CREATE TABLE metadata_real
@@ -851,7 +836,7 @@ CREATE TABLE output_curtailment
     period      INTEGER
         REFERENCES time_period (period),
     season      TEXT
-        REFERENCES time_period (period),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -898,7 +883,7 @@ CREATE TABLE output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -921,7 +906,7 @@ CREATE TABLE output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -995,8 +980,7 @@ CREATE TABLE output_storage_level
         REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -1042,16 +1026,14 @@ INSERT INTO "region" VALUES('region',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement
@@ -1065,12 +1047,6 @@ CREATE TABLE rps_requirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO "season_label" VALUES('s',NULL);
 CREATE TABLE sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -1133,9 +1109,12 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    REAL NOT NULL DEFAULT 1,
+    notes    TEXT,
+    CHECK (hours > 0)
 );
-INSERT INTO "time_of_day" VALUES(0,'d');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(0,'d',24);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,
@@ -1163,49 +1142,25 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    sequence INTEGER UNIQUE,
+    season TEXT,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_season" VALUES(2025,0,'s',NULL);
-INSERT INTO "time_season" VALUES(2030,1,'s',NULL);
-INSERT INTO "time_season" VALUES(2035,2,'s',NULL);
-INSERT INTO "time_season" VALUES(2040,3,'s',NULL);
-INSERT INTO "time_season" VALUES(2045,4,'s',NULL);
-INSERT INTO "time_season" VALUES(2050,5,'s',NULL);
+INSERT INTO "time_season" VALUES(0,'s',1.0,NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
-    num_days REAL NOT NULL,
+    season TEXT REFERENCES time_season(season),
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
-
-CREATE TABLE time_segment_fraction
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (seas_seq),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2025,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2030,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2035,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2040,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2045,'s','d',1.0,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2050,'s','d',1.0,NULL);
+
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

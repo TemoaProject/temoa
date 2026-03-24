@@ -90,7 +90,7 @@ class ExchangeTechCostLedger:
             act_dir1 = value(
                 sum(
                     model.v_flow_out[rr1, period, s, d, s_i, tech, vintage, s_o]
-                    for s in model.time_season[period]
+                    for s in model.time_season
                     for d in model.time_of_day
                     for s_i in model.process_inputs[rr1, period, tech, vintage]
                     for s_o in model.process_outputs_by_input[rr1, period, tech, vintage, s_i]
@@ -99,7 +99,7 @@ class ExchangeTechCostLedger:
             act_dir2 = value(
                 sum(
                     model.v_flow_out[rr2, period, s, d, s_i, tech, vintage, s_o]
-                    for s in model.time_season[period]
+                    for s in model.time_season
                     for d in model.time_of_day
                     for s_i in model.process_inputs[rr2, period, tech, vintage]
                     for s_o in model.process_outputs_by_input[rr2, period, tech, vintage, s_i]

@@ -48,9 +48,9 @@ OutputSplitAnnualVintagesDict = dict[
 
 
 # Time sequencing dictionary types
-TimeNextDict = dict[tuple[Period, Season, TimeOfDay], tuple[Season, TimeOfDay]]
-TimeNextSequentialDict = dict[tuple[Period, Season], Season]
-SequentialToSeasonDict = dict[tuple[Period, Season], Season]
+TimeNextDict = dict[tuple[Season, TimeOfDay], tuple[Season, TimeOfDay]]
+TimeNextSequentialDict = dict[Season, Season]
+SequentialToSeasonDict = dict[Season, Season]
 
 
 # Geography/exchange dictionary types
@@ -65,8 +65,8 @@ ActiveRegionsForTechDict = dict[tuple[Period, Technology], set[Region]]
 
 # Switching/boolean flag dictionary types
 EfficiencyVariableDict = dict[
-    tuple[Region, Period, Commodity, Technology, Vintage, Commodity], bool
+    tuple[Region, Commodity, Technology, Vintage, Commodity], bool
 ]
-CapacityFactorProcessDict = dict[tuple[Region, Period, Technology, Vintage], bool]
+CapacityFactorProcessDict = dict[tuple[Region, Technology, Vintage], bool]
 SeasonalStorageDict = dict[Technology, bool]
 SurvivalCurveProcessDict = dict[tuple[Region, Technology, Vintage], bool]

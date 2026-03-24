@@ -58,7 +58,7 @@ def linked_tech_constraint_indices(
         if (r, p, t) in model.process_vintages
         for v in model.process_vintages[r, p, t]
         if model.active_activity_rptv and (r, p, t, v) in model.active_activity_rptv
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -106,9 +106,9 @@ def linked_emissions_tech_constraint(
     if t in model.tech_annual:
         primary_flow = quicksum(
             (
-                value(model.demand_specific_distribution[r, p, s, d, S_o])
+                value(model.demand_specific_distribution[r, s, d, S_o])
                 if S_o in model.commodity_demand
-                else value(model.segment_fraction[p, s, d])
+                else value(model.segment_fraction[s, d])
             )
             * model.v_flow_out_annual[r, p, S_i, t, v, S_o]
             * value(model.emission_activity[r, e, S_i, t, v, S_o])
@@ -134,9 +134,9 @@ def linked_emissions_tech_constraint(
     if linked_t in model.tech_annual:
         linked_flow = quicksum(
             (
-                value(model.demand_specific_distribution[r, p, s, d, S_o])
+                value(model.demand_specific_distribution[r, s, d, S_o])
                 if S_o in model.commodity_demand
-                else value(model.segment_fraction[p, s, d])
+                else value(model.segment_fraction[s, d])
             )
             * model.v_flow_out_annual[r, p, S_i, linked_t, v, S_o]
             for S_i in model.process_inputs[r, p, linked_t, v]

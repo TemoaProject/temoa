@@ -236,27 +236,45 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_period_filtered=False,
             is_table_required=False,
             fallback_data=[('D',)],
+            order_by=['sequence'],
+        ),
+        LoadItem(
+            component=model.time_of_day_hours,
+            table='time_of_day',
+            columns=['tod', 'hours'],
+            is_period_filtered=False,
+            is_table_required=False,
         ),
         LoadItem(
             component=model.time_season,
             table='time_season',
-            columns=['period', 'season'],
+            columns=['season'],
             custom_loader_name='_load_time_season',
             is_period_filtered=False,  # Custom loader handles myopic filtering
+            is_table_required=False,
+            order_by=['sequence'],
+        ),
+        LoadItem(
+            component=model.segment_fraction_per_season,
+            table='time_season',
+            columns=['season', 'segment_fraction'],
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
             component=model.time_season_sequential,
             table='time_season_sequential',
-            columns=['period', 'seas_seq', 'season', 'num_days'],
+            columns=['seas_seq', 'season', 'segment_fraction'],
             custom_loader_name='_load_time_season_sequential',
+            is_period_filtered=False,
             is_table_required=False,
+            order_by=['sequence'],
         ),
         LoadItem(
-            component=model.segment_fraction,
-            table='time_segment_fraction',
-            columns=['period', 'season', 'tod', 'segment_fraction'],
-            custom_loader_name='_load_segment_fraction',
+            component=model.time_manual,
+            table='time_manual',
+            columns=['season', 'tod', 'season_next', 'tod_next'],
+            is_period_filtered=False,
             is_table_required=False,
         ),
         # =========================================================================
@@ -314,15 +332,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         # Singleton and Configuration-based Components
         # =========================================================================
         LoadItem(
-            component=model.days_per_period,
-            table='metadata',
-            columns=['value'],
-            where_clause="element == 'days_per_period'",
-            custom_loader_name='_load_days_per_period',
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
             component=model.global_discount_rate,
             table='metadata_real',
             columns=['value'],
@@ -356,7 +365,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             table='efficiency_variable',
             columns=[
                 'region',
-                'period',
                 'season',
                 'tod',
                 'input_comm',
@@ -366,7 +374,8 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
                 'efficiency',
             ],
             validator_name='viable_ritvo',
-            validation_map=(0, 4, 5, 6, 7),
+            validation_map=(0, 3, 4, 5, 6),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -377,7 +386,8 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.demand_specific_distribution,
             table='demand_specific_distribution',
-            columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
+            columns=['region', 'season', 'tod', 'demand_name', 'dsd'],
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -392,17 +402,19 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.capacity_factor_tech,
             table='capacity_factor_tech',
-            columns=['region', 'period', 'season', 'tod', 'tech', 'factor'],
+            columns=['region', 'season', 'tod', 'tech', 'factor'],
             validator_name='viable_rt',
-            validation_map=(0, 4),
+            validation_map=(0, 3),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
             component=model.capacity_factor_process,
             table='capacity_factor_process',
-            columns=['region', 'period', 'season', 'tod', 'tech', 'vintage', 'factor'],
+            columns=['region', 'season', 'tod', 'tech', 'vintage', 'factor'],
             validator_name='viable_rtv',
-            validation_map=(0, 4, 5),
+            validation_map=(0, 3, 4),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -495,9 +507,10 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.reserve_capacity_derate,
             table='reserve_capacity_derate',
-            columns=['region', 'period', 'season', 'tech', 'vintage', 'factor'],
+            columns=['region', 'season', 'tech', 'vintage', 'factor'],
             validator_name='viable_rtv',
-            validation_map=(0, 3, 4),
+            validation_map=(0, 2, 3),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -521,16 +534,15 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             table='limit_storage_level_fraction',
             columns=[
                 'region',
-                'period',
                 'season',
                 'tod',
                 'tech',
-                'vintage',
                 'operator',
                 'fraction',
             ],
-            validator_name='viable_rtv',
-            validation_map=(0, 4, 5),
+            validator_name='viable_rt',
+            validation_map=(0, 3),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -653,9 +665,10 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.limit_seasonal_capacity_factor,
             table='limit_seasonal_capacity_factor',
-            columns=['region', 'period', 'season', 'tech_or_group', 'operator', 'factor'],
-            validator_name='viable_rpt',
-            validation_map=(0, 1, 3),
+            columns=['region', 'season', 'tech', 'operator', 'factor'],
+            validator_name='viable_rt',
+            validation_map=(0, 2),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(

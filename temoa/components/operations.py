@@ -36,7 +36,7 @@ def baseload_diurnal_constraint_indices(
         (r, p, s, d, t, v)
         for r, p, t in model.baseload_vintages
         for v in model.baseload_vintages[r, p, t]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -50,7 +50,7 @@ def ramp_up_day_constraint_indices(
         (r, p, s, d, t, v)
         for r, p, t in model.ramp_up_vintages
         for v in model.ramp_up_vintages[r, p, t]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -64,7 +64,7 @@ def ramp_down_day_constraint_indices(
         (r, p, s, d, t, v)
         for r, p, t in model.ramp_down_vintages
         for v in model.ramp_down_vintages[r, p, t]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -84,10 +84,9 @@ def ramp_up_season_constraint_indices(
         (r, p, s, s_next, t, v)
         for r, p, t in model.ramp_up_vintages
         for v in model.ramp_up_vintages[r, p, t]
-        for _p, s_seq, s in model.ordered_season_sequential
-        if _p == p
-        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
-        if s_next != model.time_next[p, s, model.time_of_day.last()][0]
+        for s_seq, s in model.ordered_season_sequential
+        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
+        if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
 
     return indices
@@ -106,10 +105,9 @@ def ramp_down_season_constraint_indices(
         (r, p, s, s_next, t, v)
         for r, p, t in model.ramp_down_vintages
         for v in model.ramp_down_vintages[r, p, t]
-        for _p, s_seq, s in model.ordered_season_sequential
-        if _p == p
-        for s_next in (model.sequential_to_season[p, model.time_next_sequential[p, s_seq]],)
-        if s_next != model.time_next[p, s, model.time_of_day.last()][0]
+        for s_seq, s in model.ordered_season_sequential
+        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
+        if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
 
     return indices
@@ -192,8 +190,8 @@ def baseload_diurnal_constraint(
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    expr = activity_sd * value(model.segment_fraction[p, s, d_0]) == activity_sd_0 * value(
-        model.segment_fraction[p, s, d]
+    expr = activity_sd * value(model.segment_fraction[s, d_0]) == activity_sd_0 * value(
+        model.segment_fraction[s, d]
     )
 
     return expr
@@ -301,12 +299,12 @@ def ramp_up_day_constraint(
     - :math:`CAP \cdot C2A` gives the maximum hourly change in activity
     """
 
-    s_next, d_next = model.time_next[p, s, d]
+    s_next, d_next = model.time_next[s, d]
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
     hours_adjust_next = (
-        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
     )
 
     hourly_activity_sd = (
@@ -328,15 +326,7 @@ def ramp_up_day_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
-            + value(model.segment_fraction[p, s_next, d_next])
-            / value(model.segment_fraction_per_season[p, s_next])
-        )
-    )
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -350,7 +340,10 @@ def ramp_up_day_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_increase <= rampable_activity
 
@@ -391,12 +384,12 @@ def ramp_down_day_constraint(
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down\_day}}
     """
 
-    s_next, d_next = model.time_next[p, s, d]
+    s_next, d_next = model.time_next[s, d]
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
     hours_adjust_next = (
-        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
     )
 
     hourly_activity_sd = (
@@ -418,15 +411,7 @@ def ramp_down_day_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
-            + value(model.segment_fraction[p, s_next, d_next])
-            / value(model.segment_fraction_per_season[p, s_next])
-        )
-    )
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -440,7 +425,10 @@ def ramp_down_day_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_decrease <= rampable_activity
 
@@ -469,9 +457,9 @@ def ramp_up_season_constraint(
     d_next = model.time_of_day.first()
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
     hours_adjust_next = (
-        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
     )
 
     hourly_activity_sd = (
@@ -493,15 +481,7 @@ def ramp_up_season_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
-            + value(model.segment_fraction[p, s_next, d_next])
-            / value(model.segment_fraction_per_season[p, s_next])
-        )
-    )
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -515,7 +495,10 @@ def ramp_up_season_constraint(
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_increase <= rampable_activity
 
@@ -544,9 +527,9 @@ def ramp_down_season_constraint(
     d_next = model.time_of_day.first()
 
     # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[p, s, d]) * value(model.days_per_period) * 24
+    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
     hours_adjust_next = (
-        value(model.segment_fraction[p, s_next, d_next]) * value(model.days_per_period) * 24
+        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
     )
 
     hourly_activity_sd = (
@@ -568,15 +551,7 @@ def ramp_down_season_constraint(
     )
 
     # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (
-        24
-        / 2
-        * (
-            value(model.segment_fraction[p, s, d]) / value(model.segment_fraction_per_season[p, s])
-            + value(model.segment_fraction[p, s_next, d_next])
-            / value(model.segment_fraction_per_season[p, s_next])
-        )
-    )
+    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
     ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
 
     if ramp_fraction >= 1:
@@ -590,7 +565,10 @@ def ramp_down_season_constraint(
 
     activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
     rampable_activity = (
-        ramp_fraction * model.v_capacity[r, p, t, v] * value(model.capacity_to_activity[r, t])
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
     )
     expr = activity_decrease <= rampable_activity
 

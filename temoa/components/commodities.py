@@ -116,8 +116,8 @@ def check_singleton_demands(model: TemoaModel) -> None:
         i, t, v = next(iter(upstream_itv))
         model.v_flow_out_annual[r, p, i, t, v, dem].fix(val)
         if t not in model.tech_annual:
-            for s, d in cross_product(model.time_season[p], model.time_of_day):
-                dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
+            for s, d in cross_product(model.time_season, model.time_of_day):
+                dsd = value(model.demand_specific_distribution[r, s, d, dem])
                 model.v_flow_out[r, p, s, d, i, t, v, dem].fix(val * dsd)
         model.singleton_demands.add((r, p, dem))
 
@@ -142,7 +142,7 @@ def demand_activity_constraint_indices(
         if (r, p, dem) not in model.singleton_demands
         for t, v in model.commodity_up_stream_process[r, p, dem]
         if t not in model.tech_annual
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
     return indices
@@ -159,7 +159,7 @@ def commodity_balance_constraint_indices(
         # r in this line includes interregional transfer combinations (not needed).
         if r in model.regions  # this line ensures only the regions are included.
         and c not in model.commodity_annual
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -279,7 +279,7 @@ def demand_activity_constraint(
         for s_i in model.process_inputs_by_output[r, p, t, v, dem]
     )
 
-    expr = annual_activity * value(model.demand_specific_distribution[r, p, s, d, dem]) == activity
+    expr = annual_activity * value(model.demand_specific_distribution[r, s, d, dem]) == activity
     return expr
 
 
@@ -416,9 +416,9 @@ def commodity_balance_constraint(
         # Into annual flows
         consumed += sum(
             (
-                value(model.demand_specific_distribution[r, p, s, d, s_o])
+                value(model.demand_specific_distribution[r, s, d, s_o])
                 if s_o in model.commodity_demand
-                else value(model.segment_fraction[p, s, d])
+                else value(model.segment_fraction[s, d])
             )
             * model.v_flow_out_annual[r, p, c, s_t, s_v, s_o]
             / get_variable_efficiency(model, r, p, s, d, c, s_t, s_v, s_o)
@@ -431,7 +431,7 @@ def commodity_balance_constraint(
         # Consumed by building capacity
         # Assume evenly distributed over a year
         consumed += (
-            value(model.segment_fraction[p, s, d])
+            value(model.segment_fraction[s, d])
             * sum(
                 value(model.construction_input[r, c, s_t, p]) * model.v_new_capacity[r, s_t, p]
                 for s_t in model.capacity_consumption_techs[r, p, c]
@@ -449,7 +449,7 @@ def commodity_balance_constraint(
         )
 
         # From annual flows
-        produced += value(model.segment_fraction[p, s, d]) * sum(
+        produced += value(model.segment_fraction[s, d]) * sum(
             model.v_flow_out_annual[r, p, s_i, s_t, s_v, c]
             for s_t, s_v in model.commodity_up_stream_process[r, p, c]
             if s_t in model.tech_annual
@@ -465,7 +465,7 @@ def commodity_balance_constraint(
                 for s_i in model.process_inputs_by_output[r, p, s_t, s_v, c]
             )
             # Wasted by annual flex flows
-            consumed += value(model.segment_fraction[p, s, d]) * sum(
+            consumed += value(model.segment_fraction[s, d]) * sum(
                 model.v_flex_annual[r, p, s_i, s_t, s_v, c]
                 for s_t, s_v in model.commodity_up_stream_process[r, p, c]
                 if s_t in model.tech_annual and s_t in model.tech_flex
@@ -475,7 +475,7 @@ def commodity_balance_constraint(
     if (r, p, c) in model.retirement_production_processes:
         # Produced by retiring capacity
         # Assume evenly distributed over a year
-        produced += value(model.segment_fraction[p, s, d]) * sum(
+        produced += value(model.segment_fraction[s, d]) * sum(
             value(model.end_of_life_output[r, s_t, s_v, c])
             * model.v_annual_retirement[r, p, s_t, s_v]
             for s_t, s_v in model.retirement_production_processes[r, p, c]
@@ -492,7 +492,7 @@ def commodity_balance_constraint(
             if s_t not in model.tech_annual
         )
         consumed += sum(
-            value(model.segment_fraction[p, s, d])
+            value(model.segment_fraction[s, d])
             * model.v_flow_out_annual[r + '-' + reg, p, c, s_t, s_v, S_o]
             / get_variable_efficiency(
                 model, cast('Region', r + '-' + reg), p, s, d, c, s_t, s_v, S_o
@@ -509,7 +509,7 @@ def commodity_balance_constraint(
             if s_t not in model.tech_annual
         )
         produced += sum(
-            value(model.segment_fraction[p, s, d])
+            value(model.segment_fraction[s, d])
             * model.v_flow_out_annual[reg + '-' + r, p, s_i, s_t, s_v, c]
             for reg, s_t, s_v, s_i in model.import_regions[r, p, c]
             if s_t in model.tech_annual
@@ -550,7 +550,7 @@ def annual_commodity_balance_constraint(
         # For other techs, it would be redundant as in = out / eff
         consumed += sum(
             model.v_flow_in[r, p, s_s, s_d, c, s_t, s_v, s_o]
-            for s_s in model.time_season[p]
+            for s_s in model.time_season
             for s_d in model.time_of_day
             for s_t, s_v in model.commodity_down_stream_process[r, p, c]
             if s_t in model.tech_storage
@@ -560,7 +560,7 @@ def annual_commodity_balance_constraint(
         consumed += sum(
             model.v_flow_out[r, p, s_s, s_d, c, s_t, s_v, s_o]
             / get_variable_efficiency(model, r, p, s_s, s_d, c, s_t, s_v, s_o)
-            for s_s in model.time_season[p]
+            for s_s in model.time_season
             for s_d in model.time_of_day
             for s_t, s_v in model.commodity_down_stream_process[r, p, c]
             if s_t not in model.tech_storage and s_t not in model.tech_annual
@@ -590,7 +590,7 @@ def annual_commodity_balance_constraint(
         # Includes output from storage
         produced += sum(
             model.v_flow_out[r, p, s_s, s_d, s_i, s_t, s_v, c]
-            for s_s in model.time_season[p]
+            for s_s in model.time_season
             for s_d in model.time_of_day
             for s_t, s_v in model.commodity_up_stream_process[r, p, c]
             if s_t not in model.tech_annual
@@ -607,7 +607,7 @@ def annual_commodity_balance_constraint(
         if c in model.commodity_flex:
             consumed += sum(
                 model.v_flex[r, p, s_s, s_d, s_i, s_t, s_v, c]
-                for s_s in model.time_season[p]
+                for s_s in model.time_season
                 for s_d in model.time_of_day
                 for s_t, s_v in model.commodity_up_stream_process[r, p, c]
                 if s_t not in model.tech_annual and s_t in model.tech_flex
@@ -636,7 +636,7 @@ def annual_commodity_balance_constraint(
             / get_variable_efficiency(
                 model, cast('Region', r + '-' + s_r), p, s_s, s_d, c, s_t, s_v, s_o
             )
-            for s_s in model.time_season[p]
+            for s_s in model.time_season
             for s_d in model.time_of_day
             for s_r, s_t, s_v, s_o in model.export_regions[r, p, c]
             if s_t not in model.tech_annual
@@ -652,7 +652,7 @@ def annual_commodity_balance_constraint(
     if (r, p, c) in model.import_regions:
         produced += sum(
             model.v_flow_out[cast('Region', s_r + '-' + r), p, s_s, S_d, s_i, s_t, s_v, c]
-            for s_s in model.time_season[p]
+            for s_s in model.time_season
             for S_d in model.time_of_day
             for s_r, s_t, s_v, s_i in model.import_regions[r, p, c]
             if s_t not in model.tech_annual
@@ -722,14 +722,13 @@ def create_demands(model: TemoaModel) -> None:
     logger.debug('Started creating demand distributions in CreateDemands()')
 
     # Step 0: some setup for a couple of reusable items
-    # Get the nth element from the tuple (r, p, s, d, dem)
+    # Get the nth element from the tuple (r, s, d, dem)
     # So we only have to update these indices in one place if they change
     demand_specific_distribution_region = iget(0)
-    demand_specific_distribution_period = iget(1)
-    demand_specific_distributon_dem = iget(4)
+    demand_specific_distributon_dem = iget(3)
 
     # Step 1: Check if any demand commodities are going unused
-    used_dems = {dem for r, p, dem in model.demand.sparse_iterkeys()}
+    used_dems = {dem for _r, _p, dem in model.demand.sparse_iterkeys()}
     unused_dems = sorted(model.commodity_demand.difference(used_dems))
     if unused_dems:
         for dem in unused_dems:
@@ -792,46 +791,43 @@ def create_demands(model: TemoaModel) -> None:
     )  # the demands not mentioned in DSD *at all*
 
     if unset_demand_distributions:
-        for p in model.time_optimize:
-            unset_distributions = set(
-                cross_product(
-                    model.regions,
-                    (p,),
-                    model.time_season[p],
-                    model.time_of_day,
-                    unset_demand_distributions,
-                )
+        unset_distributions = set(
+            cross_product(
+                model.regions,
+                model.time_season,
+                model.time_of_day,
+                unset_demand_distributions,
             )
-            for r, p, s, d, dem in unset_distributions:
-                demand_specific_distribution[r, p, s, d, dem] = value(
-                    model.segment_fraction[p, s, d]
-                )  # DSD._constructed = True
+        )
+        for r, s, d, dem in unset_distributions:
+            demand_specific_distribution[r, s, d, dem] = value(
+                model.segment_fraction[s, d]
+            )  # DSD._constructed = True
 
     # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
     #         Also check that all keys are made...  The demand distro should be supported
     #         by the full set of (r, p, dem) keys because it is an equality constraint
     #         and we need to ensure even the zeros are passed in
-    used_rp_dems = {(r, p, dem) for r, p, dem in model.demand.sparse_iterkeys()}
-    for r, p, dem in used_rp_dems:
-        expected_key_length = len(model.time_season[p]) * len(model.time_of_day)
+    used_r_dems = {(r, dem) for r, p, dem in model.demand.sparse_iterkeys()}
+    for r, dem in used_r_dems:
+        expected_key_length = len(model.time_season) * len(model.time_of_day)
         keys = [
             k
             for k in demand_specific_distribution.sparse_iterkeys()
             if demand_specific_distribution_region(k) == r
-            and demand_specific_distribution_period(k) == p
             and demand_specific_distributon_dem(k) == dem
         ]
         if len(keys) != expected_key_length:
             # this could be very slow but only calls when there's a problem
             missing = {
                 (s, d)
-                for s in model.time_season[p]
+                for s in model.time_season
                 for d in model.time_of_day
-                if (r, p, s, d, dem) not in keys
+                if (r, s, d, dem) not in keys
             }
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
-                (r, p, dem),
+                (r, dem),
                 missing,
             )
         total = sum(value(demand_specific_distribution[i]) for i in keys)
@@ -859,7 +855,7 @@ def create_demands(model: TemoaModel) -> None:
                 'must total to 1.\n\n Demand-specific distribution in error: '
                 ' \n   {}\n\tsum = {}'
             )
-            logger.error(msg.format((r, p, dem), items, total))
-            raise ValueError(msg.format((r, p, dem), items, total))
+            logger.error(msg.format((r, dem), items, total))
+            raise ValueError(msg.format((r, dem), items, total))
 
     logger.debug('Finished creating demand distributions')

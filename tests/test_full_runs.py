@@ -120,7 +120,8 @@ def test_myopic_utopia(
     # reduced this target after storageinit rework
     # reduced after removing ancient 1-year shift bug from objective function
     # increased after rework of inter-season sequencing
-    assert invest_sum == pytest.approx(11004.8335), 'sum of investment costs did not match expected'
+    # reduced by <1 after changing season definition (segfrac no longer rounded)
+    assert invest_sum == pytest.approx(11004.3544), 'sum of investment costs did not match expected'
     con.close()
 
 
@@ -139,7 +140,8 @@ def test_stochastic_utopia(
     _, _, _, sequencer = system_test_run
 
     # Stochastic Expected Value for current utopia configuration
-    expected_obj = 34389.9878
+    # reduced by <1 after changing season definition (segfrac no longer rounded)
+    expected_obj = 34389.1352
 
     assert sequencer.stochastic_sequencer is not None
     assert sequencer.stochastic_sequencer.objective_value == pytest.approx(expected_obj, rel=1e-5)

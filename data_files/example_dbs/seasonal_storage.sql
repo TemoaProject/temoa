@@ -15,10 +15,8 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -26,33 +24,31 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'charge','a','generator',1.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'charge','b','generator',1.0,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'charge','c','generator',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'charge','d','generator',0.2,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'discharge','a','generator',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'discharge','b','generator',0.1,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'discharge','c','generator',0.01,NULL);
-INSERT INTO "capacity_factor_tech" VALUES('region',2000,'discharge','d','generator',0.01,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','charge','a','generator',1.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','charge','b','generator',1.0,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','charge','c','generator',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','charge','d','generator',0.2,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','discharge','a','generator',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','discharge','b','generator',0.1,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','discharge','c','generator',0.01,NULL);
+INSERT INTO "capacity_factor_tech" VALUES('region','discharge','d','generator',0.01,NULL);
 CREATE TABLE capacity_to_activity
 (
     region TEXT,
@@ -179,27 +175,25 @@ INSERT INTO "demand" VALUES('region',2000,'demand',8760.0,'MWh',NULL);
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'charge','a','demand',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'charge','b','demand',0.05,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'charge','c','demand',0.05,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'charge','d','demand',0.1,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'discharge','a','demand',0.0,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'discharge','b','demand',0.2,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'discharge','c','demand',0.2,NULL);
-INSERT INTO "demand_specific_distribution" VALUES('region',2000,'discharge','d','demand',0.4,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','charge','a','demand',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','charge','b','demand',0.05,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','charge','c','demand',0.05,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','charge','d','demand',0.1,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','discharge','a','demand',0.0,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','discharge','b','demand',0.2,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','discharge','c','demand',0.2,NULL);
+INSERT INTO "demand_specific_distribution" VALUES('region','discharge','d','demand',0.4,NULL);
 CREATE TABLE efficiency
 (
     region      TEXT,
@@ -223,10 +217,8 @@ INSERT INTO "efficiency" VALUES('region','electricity','demand',2000,'demand',1.
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -239,7 +231,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -541,39 +533,33 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    CHECK (fraction >= 0 AND fraction <= 1),
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
-INSERT INTO "limit_storage_level_fraction" VALUES('region',2000,'winter','b','seas_stor',2000,'e',0.5,NULL);
-INSERT INTO "limit_storage_level_fraction" VALUES('region',2000,'charge','b','dly_stor',2000,'e',0.5,NULL);
+INSERT INTO "limit_storage_level_fraction" VALUES('region','winter','b','seas_stor','e',0.5,NULL);
+INSERT INTO "limit_storage_level_fraction" VALUES('region','charge','b','dly_stor','e',0.5,NULL);
 CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
@@ -675,7 +661,6 @@ CREATE TABLE metadata
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 INSERT INTO "metadata" VALUES('DB_MAJOR',4,'');
 INSERT INTO "metadata" VALUES('DB_MINOR',0,'');
 CREATE TABLE metadata_real
@@ -751,7 +736,7 @@ CREATE TABLE output_curtailment
     period      INTEGER
         REFERENCES time_period (period),
     season      TEXT
-        REFERENCES time_period (period),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -798,7 +783,7 @@ CREATE TABLE output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -821,7 +806,7 @@ CREATE TABLE output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -895,8 +880,7 @@ CREATE TABLE output_storage_level
         REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -942,16 +926,14 @@ INSERT INTO "region" VALUES('region',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement
@@ -965,27 +947,6 @@ CREATE TABLE rps_requirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO "season_label" VALUES('charge','non-sequential season - charging day');
-INSERT INTO "season_label" VALUES('discharge','non-sequential season - discharging day');
-INSERT INTO "season_label" VALUES('summer','sequential season - summer day');
-INSERT INTO "season_label" VALUES('sept_w1','sequential season - day in first week of September');
-INSERT INTO "season_label" VALUES('sept_w2','sequential season - day in second week of September');
-INSERT INTO "season_label" VALUES('sept_w3','sequential season - day in third week of September');
-INSERT INTO "season_label" VALUES('sept_w4','sequential season - day in fourth week of September');
-INSERT INTO "season_label" VALUES('sept_29th','sequential season - 29th of September');
-INSERT INTO "season_label" VALUES('sept_30th','sequential season - 30th of September');
-INSERT INTO "season_label" VALUES('winter','sequential season - winter day');
-INSERT INTO "season_label" VALUES('apr_w1','sequential season - day in first week of September');
-INSERT INTO "season_label" VALUES('apr_w2','sequential season - day in second week of September');
-INSERT INTO "season_label" VALUES('apr_w3','sequential season - day in third week of September');
-INSERT INTO "season_label" VALUES('apr_w4','sequential season - day in fourth week of September');
-INSERT INTO "season_label" VALUES('apr_29th','sequential season - 29th of April');
-INSERT INTO "season_label" VALUES('apr_30th','sequential season - 30th of April');
 CREATE TABLE sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -1051,12 +1012,15 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    REAL NOT NULL DEFAULT 1,
+    notes    TEXT,
+    CHECK (hours > 0)
 );
-INSERT INTO "time_of_day" VALUES(0,'a');
-INSERT INTO "time_of_day" VALUES(1,'b');
-INSERT INTO "time_of_day" VALUES(2,'c');
-INSERT INTO "time_of_day" VALUES(3,'d');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(0,'a',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(1,'b',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(2,'c',6);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(3,'d',6);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,
@@ -1077,61 +1041,40 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    sequence INTEGER UNIQUE,
+    season TEXT,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_season" VALUES(2000,0,'charge',NULL);
-INSERT INTO "time_season" VALUES(2000,1,'discharge',NULL);
+INSERT INTO "time_season" VALUES(0,'charge',0.5,NULL);
+INSERT INTO "time_season" VALUES(1,'discharge',0.5,NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
-    num_days REAL NOT NULL,
+    season TEXT REFERENCES time_season(season),
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
-INSERT INTO "time_season_sequential" VALUES(2000,1,'summer','charge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,2,'sept_w1','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,3,'sept_w2','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,4,'sept_w3','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,5,'sept_w4','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,6,'sept_29th','discharge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,7,'sept_30th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,8,'winter','discharge',152.5,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,9,'apr_w1','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,10,'apr_w2','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,11,'apr_w3','charge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,12,'apr_w4','discharge',7.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,13,'apr_29th','charge',1.0,NULL);
-INSERT INTO "time_season_sequential" VALUES(2000,14,'apr_30th','discharge',1.0,NULL);
-
-CREATE TABLE time_segment_fraction
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (seas_seq),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','a',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','b',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','c',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'charge','d',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','a',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','b',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','c',0.125,NULL);
-INSERT INTO "time_segment_fraction" VALUES(2000,'discharge','d',0.125,NULL);
+INSERT INTO "time_season_sequential" VALUES(1,'summer','charge',0.417808,NULL);
+INSERT INTO "time_season_sequential" VALUES(2,'sept_w1','discharge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(3,'sept_w2','charge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(4,'sept_w3','discharge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(5,'sept_w4','charge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(6,'sept_29th','discharge',0.002740,NULL);
+INSERT INTO "time_season_sequential" VALUES(7,'sept_30th','charge',0.002740,NULL);
+INSERT INTO "time_season_sequential" VALUES(8,'winter','discharge',0.417808,NULL);
+INSERT INTO "time_season_sequential" VALUES(9,'apr_w1','charge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(10,'apr_w2','discharge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(11,'apr_w3','charge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(12,'apr_w4','discharge',0.019178,NULL);
+INSERT INTO "time_season_sequential" VALUES(13,'apr_29th','charge',0.002740,NULL);
+INSERT INTO "time_season_sequential" VALUES(14,'apr_30th','discharge',0.002740,NULL);
+
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

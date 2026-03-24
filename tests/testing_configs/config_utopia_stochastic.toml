@@ -6,6 +6,7 @@ output_database = "tests/testing_outputs/utopia_stochastic.sqlite"
 output_path = "tests/testing_outputs/utopia_stochastic"
 solver_name = "appsi_highs"
 time_sequencing = "seasonal_timeslices"
+days_per_period = 365
 save_duals = false
 
 [stochastic]

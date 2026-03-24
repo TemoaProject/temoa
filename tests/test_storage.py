@@ -37,11 +37,11 @@ def test_storage_fraction(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
 
     for r, p, s, d, t, v, op in model.limit_storage_fraction_constraint_rpsdtv:
         energy = (
-            model.limit_storage_fraction[r, p, s, d, t, v, op]
+            model.limit_storage_fraction[r, s, d, t, op]
             * model.v_capacity[r, p, t, v].value
             * model.capacity_to_activity[r, t]
             * (model.storage_duration[r, t] / 8760)
-            * model.segment_fraction_per_season[p, s]
+            * model.segment_fraction_per_season[s]
             * model.days_per_period
             * model.process_life_frac[r, p, t, v]
         )
@@ -86,13 +86,13 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
         )
 
+        s_next, d_next = model.time_next[s, d]
         stored_energy = charge - discharge
 
         if model.is_seasonal_storage[t]:
             # Seasonal storage: time_next chain (last tod skipped)
             if d == d_last:
                 continue  # handled by seasonal_storage_energy_constraint
-            s_next, d_next = model.time_next[p, s, d]
             state = model.v_storage_level[r, p, s, d, t, v].value
             next_state = model.v_storage_level[r, p, s_next, d_next, t, v].value
             assert state + stored_energy == pytest.approx(next_state, abs=1e-5), (
@@ -100,7 +100,6 @@ def test_state_sequencing(system_test_run: tuple[str, Any, TemoaModel, Any]) -> 
             )
         else:
             # Non-seasonal: time_next chain, v_storage_init at d_last
-            s_next, d_next = model.time_next[p, s, d]
             if d == d_last:
                 prev_state = model.v_storage_init[r, p, s, t, v].value
             else:

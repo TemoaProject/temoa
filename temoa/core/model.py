@@ -20,6 +20,7 @@ from pyomo.environ import (
     NonNegativeReals,
     Objective,
     Param,
+    PositiveReals,
     minimize,
 )
 
@@ -150,7 +151,6 @@ class TemoaModel(AbstractModel):
         self.retirement_production_processes: t.RetirementProductionProcessesDict = {}
         self.process_inputs_by_output: t.ProcessInputsByOutputDict = {}
         self.process_outputs_by_input: t.ProcessOutputsByInputDict = {}
-        self.process_techs: t.ProcessTechsDict = {}
         self.process_reserve_periods: t.ProcessReservePeriodsDict = {}
         self.process_periods: t.ProcessPeriodsDict = {}  # {(r, t, v): set(p)}
         # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
@@ -174,11 +174,11 @@ class TemoaModel(AbstractModel):
         self.import_regions: t.ImportRegionsDict = {}
 
         # These establish time sequencing
-        # {(p, s, d): (s_next, d_next)} sequence of following time slices
+        # {(s, d): (s_next, d_next)} sequence of following time slices
         self.time_next: t.TimeNextDict = {}
-        # {(p, s_seq): (s_seq_next)} next virtual storage season
+        # {s_seq: s_seq_next} next virtual storage season
         self.time_next_sequential: t.TimeNextSequentialDict = {}
-        # {(p, s_seq): (s)} season matching this virtual storage season
+        # {s_seq: s} season matching this virtual storage season
         self.sequential_to_season: t.SequentialToSeasonDict = {}
 
         ################################################
@@ -186,9 +186,10 @@ class TemoaModel(AbstractModel):
         #  (to avoid slow searches in initialisation)  #
         ################################################
 
-        # {(r, p, i, t, v, o): bool} which efficiencies have variable indexing
+        # {(r, i, t, v, o): bool} which efficiencies have variable indexing
         self.is_efficiency_variable: t.EfficiencyVariableDict = {}
-        # {(r, p, t, v): bool} which capacity factors have have period-vintage indexing
+        # {(r, t, v): bool} which processes use capacity_factor_process
+        # table (instead of capacity_factor_tech)
         self.is_capacity_factor_process: t.CapacityFactorProcessDict = {}
         # {t: bool} whether a storage tech is seasonal storage
         self.is_seasonal_storage: t.SeasonalStorageDict = {}
@@ -218,16 +219,15 @@ class TemoaModel(AbstractModel):
         self.validate_time = BuildAction(rule=time.validate_time)
 
         # Define the model time slices
-        self.time_season_all = Set(ordered=True, validate=no_slash_or_pipe)
-        self.time_season_to_sequential = Set(ordered=True, validate=no_slash_or_pipe)
-        self.time_season = Set(self.time_optimize, within=self.time_season_all, ordered=True)
+        self.time_season = Set(ordered=True, validate=no_slash_or_pipe)
+        self.time_season_sequential = Set(ordered=True, validate=no_slash_or_pipe)
         self.time_of_day = Set(ordered=True, validate=no_slash_or_pipe)
 
         # This is just to get the TimeStorageSeason table sequentially.
         # There must be a better way but this works for now
         self.ordered_season_sequential = Set(
-            dimen=3,
-            within=self.time_optimize * self.time_season_to_sequential * self.time_season_all,
+            dimen=2,
+            within=self.time_season_sequential * self.time_season,
             ordered=True,
         )
 
@@ -327,11 +327,25 @@ class TemoaModel(AbstractModel):
 
         self.global_discount_rate = Param(default=0.05)
 
+        # These need to come before validate_season_sequential as they tell us whether
+        # we need sequential seasons
+        self.ramp_up_hourly = Param(self.regions, self.tech_upramping, validate=validate_0to1)
+        self.ramp_down_hourly = Param(self.regions, self.tech_downramping, validate=validate_0to1)
+
         # Define time-related parameters
-        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
-        self.segment_fraction = Param(self.time_optimize, self.time_season_all, self.time_of_day)
-        self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
+        # Basic period construction
         self.time_sequencing = Set()  # How do states carry between time segments?
+        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
+        self.days_per_period = Param(domain=PositiveReals, default=365.0)
+        self.time_of_day_hours = Param(self.time_of_day, domain=PositiveReals, default=1.0)
+        self.segment_fraction_per_season = Param(self.time_season)
+        self.segment_fraction = Param(self.time_season, self.time_of_day, mutable=True)
+        self.validate_segment_fraction = BuildAction(rule=time.validate_segment_fraction)
+        self.segment_fraction_per_sequential_season = Param(
+            self.time_season_sequential, mutable=True
+        )
+        self.validate_season_sequential = BuildAction(rule=time.create_time_season_to_sequential)
+        self.create_time_sequence = BuildAction(rule=time.create_time_sequence)
         self.time_manual = Set(
             ordered=True
         )  # This is just to get data from the table. Hidden feature and usually not used
@@ -346,8 +360,7 @@ class TemoaModel(AbstractModel):
         # )
         self.demand_specific_distribution = Param(
             self.regions,
-            self.time_optimize,
-            self.time_season_all,
+            self.time_season,
             self.time_of_day,
             self.commodity_demand,
             mutable=True,
@@ -398,7 +411,7 @@ class TemoaModel(AbstractModel):
             self.tech_all,
             self.vintage_all,
             self.commodity_carrier,
-            within=NonNegativeReals,
+            within=PositiveReals,
             validate=validate_efficiency,
         )
         self.validate_used_efficiency_indices = BuildAction(
@@ -407,14 +420,13 @@ class TemoaModel(AbstractModel):
 
         self.efficiency_variable = Param(
             self.regional_indices,
-            self.time_optimize,
-            self.time_season_all,
+            self.time_season,
             self.time_of_day,
             self.commodity_physical,
             self.tech_all,
             self.vintage_all,
             self.commodity_carrier,
-            within=NonNegativeReals,
+            within=PositiveReals,
             default=1,
         )
 
@@ -492,23 +504,6 @@ class TemoaModel(AbstractModel):
             self.renewable_portfolio_standard_constraint_rpg, validate=validate_0to1
         )
 
-        # These need to come before validate_season_sequential
-        self.ramp_up_hourly = Param(self.regions, self.tech_upramping, validate=validate_0to1)
-        self.ramp_down_hourly = Param(self.regions, self.tech_downramping, validate=validate_0to1)
-
-        # Set up representation of time
-        self.days_per_period = Param()
-        self.segment_fraction_per_season = Param(
-            self.time_optimize,
-            self.time_season_all,
-            initialize=time.segment_fraction_per_season_rule,
-        )
-        self.time_season_sequential = Param(
-            self.time_optimize, self.time_season_to_sequential, self.time_season_all, mutable=True
-        )
-        self.validate_season_sequential = BuildAction(rule=time.create_time_season_to_sequential)
-        self.create_time_sequence = BuildAction(rule=time.create_time_sequence)
-
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
@@ -516,17 +511,16 @@ class TemoaModel(AbstractModel):
         self.initialize_demands = BuildAction(rule=commodities.create_demands)
         self.validate_existing_capacity = BuildAction(rule=technology.check_existing_capacity)
 
-        self.capacity_factor_rpsdt = Set(dimen=5, initialize=capacity.capacity_factor_tech_indices)
+        self.capacity_factor_rsdt = Set(dimen=4, initialize=capacity.capacity_factor_tech_indices)
         self.capacity_factor_tech = Param(
-            self.capacity_factor_rpsdt, default=1, validate=validate_0to1
+            self.capacity_factor_rsdt, default=1, validate=validate_0to1
         )
 
         # Dev note:  using a default function below alleviates need to make this set.
         # M.CapacityFactor_rsdtv = Set(dimen=5, initialize=capacity_factor_processIndices)
         self.capacity_factor_process = Param(
             self.regional_indices,
-            self.time_optimize,
-            self.time_season_all,
+            self.time_season,
             self.time_of_day,
             self.tech_with_capacity,
             self.vintage_all,
@@ -604,15 +598,17 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity = Param(self.limit_activity_constraint_rpt)
 
+        self.limit_seasonal_capacity_factor_constraint_rst = Set()
+        self.limit_seasonal_capacity_factor = Param(
+            self.limit_seasonal_capacity_factor_constraint_rst, validate=validate_0to1
+        )
         self.limit_seasonal_capacity_factor_constraint_rpst = Set(
             within=self.regional_global_indices
             * self.time_optimize
-            * self.time_season_all
+            * self.time_season
             * self.tech_or_group
-            * self.operator
-        )
-        self.limit_seasonal_capacity_factor = Param(
-            self.limit_seasonal_capacity_factor_constraint_rpst, validate=validate_0to1
+            * self.operator,
+            initialize=limits.limit_seasonal_capacity_factor_constraint_indices,
         )
 
         self.limit_annual_capacity_factor_constraint_rtvo = Set(
@@ -689,12 +685,16 @@ class TemoaModel(AbstractModel):
         self.seasonal_storage_constraints_rpsdtv = Set(
             dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
+        self.limit_storage_fraction_param_rsdt = (
+            Set()
+        )  # populated by hybrid_loader with (r, s, d, t, op) keys
+        self.limit_storage_fraction = Param(
+            self.limit_storage_fraction_param_rsdt, validate=validate_0to1
+        )
         self.limit_storage_fraction_constraint_rpsdtv = Set(
             within=(self.storage_constraints_rpsdtv | self.seasonal_storage_constraints_rpsdtv)
-            * self.operator
-        )
-        self.limit_storage_fraction = Param(
-            self.limit_storage_fraction_constraint_rpsdtv, validate=validate_0to1
+            * self.operator,
+            initialize=storage.limit_storage_fraction_constraint_indices,
         )
 
         # Storage duration is expressed in hours
@@ -714,8 +714,7 @@ class TemoaModel(AbstractModel):
         )
         self.reserve_capacity_derate = Param(
             self.regional_indices,
-            self.time_optimize,
-            self.time_season_all,
+            self.time_season,
             self.tech_reserve,
             self.vintage_all,
             default=1,

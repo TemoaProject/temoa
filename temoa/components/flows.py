@@ -138,7 +138,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.process_vintages[r, p, t]
         for i in model.process_inputs.get((r, p, t, v), set())
         for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -160,7 +160,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.process_vintages[r, p, t]
         for i in model.process_inputs.get((r, p, t, v), set())
         for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -180,7 +180,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.storage_vintages[r, p, t]
         for i in model.process_inputs.get((r, p, t, v), set())
         for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -190,7 +190,7 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         for v in model.curtailment_vintages[r, p, t]
         for i in model.process_inputs.get((r, p, t, v), set())
         for o in model.process_outputs_by_input.get((r, p, t, v, i), set())
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
@@ -204,15 +204,14 @@ def create_commodity_balance_and_flow_sets(model: TemoaModel) -> None:
         (r, p, s, d, t, v)
         for r, p, t in model.storage_vintages
         for v in model.storage_vintages[r, p, t]
-        for s in model.time_season[p]
+        for s in model.time_season
         for d in model.time_of_day
     }
 
     model.seasonal_storage_level_indices_rpstv = {
-        (r, p, s_stor, t, v)
+        (r, p, s_seq, t, v)
         for r, p, t in model.storage_vintages
         if t in model.tech_seasonal_storage
         for v in model.storage_vintages[r, p, t]
-        for _p, s_stor in model.sequential_to_season
-        if _p == p
+        for s_seq in model.sequential_to_season
     }

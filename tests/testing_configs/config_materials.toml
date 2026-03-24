@@ -8,6 +8,7 @@ save_excel = false
 save_duals = false
 save_lp_file = false
 time_sequencing = "seasonal_timeslices"
+days_per_period = 365
 reserve_margin = "static"
 
 [MGA]

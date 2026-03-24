@@ -125,6 +125,11 @@ output_threshold_cost = 0.01
 #       storage must be tagged and the TimeSeasonSequential table filled.
 time_sequencing = 'seasonal_timeslices'
 
+# Number of days represented by each planning period.
+# Used to adjust flow variables for number of days represented by each season.
+# E.g. 365 if all seasons collectively represent a year, 7 if modelling a single representative week.
+days_per_period = 365
+
 # How contributions to the planning reserve margin are calculated
 # Options:
 #   'static'
@@ -158,8 +163,8 @@ step_size = 2    # number of periods to step by (must be <= view depth)
 # to update the database. The view depth may shorten near the end of the planning
 # horizon to ensure that all iterations are performed.
 # If false, the evolution_script is not used and iterations end once view depth
-# reaches the end of the planning horizon, to avoid redundant decisions with no 
-# new information. 
+# reaches the end of the planning horizon, to avoid redundant decisions with no
+# new information.
 evolving = false
 evolution_script = "temoa/extensions/myopic/evolution_updater.py"
 

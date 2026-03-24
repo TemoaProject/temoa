@@ -15,10 +15,8 @@ CREATE TABLE capacity_credit
 CREATE TABLE capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -26,73 +24,39 @@ CREATE TABLE capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'spring','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'summer','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'fall','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'winter','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2020,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'spring','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'summer','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'fall','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'winter','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2020,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'spring','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'summer','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'fall','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'winter','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2025,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'spring','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'summer','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'fall','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'winter','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2025,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'spring','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'summer','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'fall','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'winter','day','E_SOLPV',0.6,'');
-INSERT INTO "capacity_factor_tech" VALUES('R1',2030,'winter','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'spring','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'spring','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'summer','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'summer','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'fall','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'fall','night','E_SOLPV',0.0,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'winter','day','E_SOLPV',0.48,'');
-INSERT INTO "capacity_factor_tech" VALUES('R2',2030,'winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','spring','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','summer','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','fall','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','winter','day','E_SOLPV',0.6,'');
+INSERT INTO "capacity_factor_tech" VALUES('R1','winter','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','spring','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','spring','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','summer','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','summer','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','fall','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','fall','night','E_SOLPV',0.0,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','winter','day','E_SOLPV',0.48,'');
+INSERT INTO "capacity_factor_tech" VALUES('R2','winter','night','E_SOLPV',0.0,'');
 CREATE TABLE capacity_to_activity
 (
     region TEXT,
@@ -418,67 +382,33 @@ INSERT INTO "demand" VALUES('R2',2030,'VMT',42.0,'','');
 CREATE TABLE demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2020,'winter','night','RH',0.4,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2020,'winter','night','RH',0.4,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2025,'winter','night','RH',0.4,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2025,'winter','night','RH',0.4,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R1',2030,'winter','night','RH',0.4,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'spring','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'spring','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'summer','day','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'summer','night','RH',0.0,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'fall','day','RH',0.05,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'fall','night','RH',0.1,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'winter','day','RH',0.3,'');
-INSERT INTO "demand_specific_distribution" VALUES('R2',2030,'winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R1','winter','night','RH',0.4,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','spring','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','spring','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','summer','day','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','summer','night','RH',0.0,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','fall','day','RH',0.05,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','fall','night','RH',0.1,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','winter','day','RH',0.3,'');
+INSERT INTO "demand_specific_distribution" VALUES('R2','winter','night','RH',0.4,'');
 CREATE TABLE efficiency
 (
     region      TEXT,
@@ -572,10 +502,8 @@ INSERT INTO "efficiency" VALUES('R2-R1','ELC','E_TRANS',2015,'ELC',0.9,'');
 CREATE TABLE efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -588,7 +516,7 @@ CREATE TABLE efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE emission_activity
@@ -944,39 +872,33 @@ CREATE TABLE limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    CHECK (fraction >= 0 AND fraction <= 1),
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
-INSERT INTO "limit_storage_level_fraction" VALUES('R1',2025,'winter','day','E_BATT',2025,'e',0.5,'');
-INSERT INTO "limit_storage_level_fraction" VALUES('R2',2020,'summer','day','E_BATT',2020,'e',0.5,'');
+INSERT INTO "limit_storage_level_fraction" VALUES('R1','winter','day','E_BATT','e',0.5,'');
+INSERT INTO "limit_storage_level_fraction" VALUES('R2','summer','day','E_BATT','e',0.5,'');
 CREATE TABLE limit_tech_input_split
 (
     region         TEXT,
@@ -1102,7 +1024,6 @@ CREATE TABLE metadata
     notes   TEXT,
     PRIMARY KEY (element)
 );
-INSERT INTO "metadata" VALUES('days_per_period',365,'count of days in each period');
 INSERT INTO "metadata" VALUES('DB_MAJOR',4,'');
 INSERT INTO "metadata" VALUES('DB_MINOR',0,'');
 CREATE TABLE metadata_real
@@ -1178,7 +1099,7 @@ CREATE TABLE output_curtailment
     period      INTEGER
         REFERENCES time_period (period),
     season      TEXT
-        REFERENCES time_period (period),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -1225,7 +1146,7 @@ CREATE TABLE output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -1248,7 +1169,7 @@ CREATE TABLE output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -1322,8 +1243,7 @@ CREATE TABLE output_storage_level
         REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -1370,16 +1290,14 @@ INSERT INTO "region" VALUES('R2',NULL);
 CREATE TABLE reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE rps_requirement
@@ -1393,15 +1311,6 @@ CREATE TABLE rps_requirement
     requirement REAL    NOT NULL,
     notes       TEXT
 );
-CREATE TABLE season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
-INSERT INTO "season_label" VALUES('summer',NULL);
-INSERT INTO "season_label" VALUES('fall',NULL);
-INSERT INTO "season_label" VALUES('winter',NULL);
-INSERT INTO "season_label" VALUES('spring',NULL);
 CREATE TABLE sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -1484,10 +1393,13 @@ CREATE TABLE time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    REAL NOT NULL DEFAULT 1,
+    notes    TEXT,
+    CHECK (hours > 0)
 );
-INSERT INTO "time_of_day" VALUES(1,'day');
-INSERT INTO "time_of_day" VALUES(2,'night');
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(1,'day',12);
+INSERT INTO "time_of_day" (sequence, tod, hours) VALUES(2,'night',12);
 CREATE TABLE time_period
 (
     sequence INTEGER UNIQUE,
@@ -1511,73 +1423,28 @@ INSERT INTO "time_period_type" VALUES('e','existing vintages');
 INSERT INTO "time_period_type" VALUES('f','future');
 CREATE TABLE time_season
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    sequence INTEGER UNIQUE,
+    season TEXT,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_season" VALUES(2020,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2020,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2020,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2020,4,'winter',NULL);
-INSERT INTO "time_season" VALUES(2025,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2025,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2025,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2025,4,'winter',NULL);
-INSERT INTO "time_season" VALUES(2030,1,'spring',NULL);
-INSERT INTO "time_season" VALUES(2030,2,'summer',NULL);
-INSERT INTO "time_season" VALUES(2030,3,'fall',NULL);
-INSERT INTO "time_season" VALUES(2030,4,'winter',NULL);
+INSERT INTO "time_season" VALUES(0,'spring',0.25,NULL);
+INSERT INTO "time_season" VALUES(1,'summer',0.25,NULL);
+INSERT INTO "time_season" VALUES(2,'fall',0.25,NULL);
+INSERT INTO "time_season" VALUES(3,'winter',0.25,NULL);
 
 CREATE TABLE time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
-    num_days REAL NOT NULL,
+    season TEXT REFERENCES time_season(season),
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
-);
-
-CREATE TABLE time_segment_fraction
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (period, season, tod),
+    PRIMARY KEY (seas_seq),
     CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
-INSERT INTO "time_segment_fraction" VALUES(2020,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2020,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2020,'winter','night',0.125,'Winter - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2025,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2025,'winter','night',0.125,'Winter - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'spring','day',0.125,'Spring - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'spring','night',0.125,'Spring - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'summer','day',0.125,'Summer - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'summer','night',0.125,'Summer - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'fall','day',0.125,'Fall - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'fall','night',0.125,'Fall - Night');
-INSERT INTO "time_segment_fraction" VALUES(2030,'winter','day',0.125,'Winter - Day');
-INSERT INTO "time_segment_fraction" VALUES(2030,'winter','night',0.125,'Winter - Night');
+
 CREATE INDEX region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 COMMIT;

@@ -88,55 +88,60 @@ def validate_time(model: TemoaModel) -> None:
 
 
 def validate_segment_fraction(model: TemoaModel) -> None:
-    """Ensure that the segment fractions adds up to 1"""
+    """Compute and validate segment_fraction from season fractions and TOD hours."""
 
-    for p in model.time_optimize:
-        expected_keys: set[tuple[int, str, str]] = {
-            (p, s, d) for s in model.time_season[p] for d in model.time_of_day
-        }
-        keys: set[tuple[int, str, str]] = {
-            (_p, s, d) for _p, s, d in model.segment_fraction.sparse_iterkeys() if _p == p
-        }
-
-        if expected_keys != keys:
-            extra: set[tuple[int, str, str]] = keys.difference(expected_keys)
-            missing: set[tuple[int, str, str]] = expected_keys.difference(keys)
-            msg: str = (
-                f'time_segment_fraction elements for period {p} do not match time_season and '
-                'time_of_day.'
-                f'\n\nIndices missing from time_segment_fraction:\n{missing}'
-                f'\n\nIndices in time_segment_fraction missing from time_season/time_of_day:\n'
-                f'{extra}'
+    # Compute segment_fraction[s, d] = segment_fraction_per_season[s] * hours[d] / total_hours
+    total_hours: float = sum(value(model.time_of_day_hours[d]) for d in model.time_of_day)
+    for s in model.time_season:
+        for d in model.time_of_day:
+            model.segment_fraction[s, d] = (
+                value(model.segment_fraction_per_season[s])
+                * value(model.time_of_day_hours[d])
+                / total_hours
             )
-            logger.error(msg)
-            raise ValueError(msg)
+    expected_keys: set[tuple[str, str]] = {
+        (s, d) for s in model.time_season for d in model.time_of_day
+    }
+    keys: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
 
-        total: float = sum(value(model.segment_fraction[k]) for k in keys)
+    if expected_keys != keys:
+        extra: set[tuple[str, str]] = keys.difference(expected_keys)
+        missing: set[tuple[str, str]] = expected_keys.difference(keys)
+        msg: str = (
+            'Computed segment_fraction elements do not match time_season × time_of_day.'
+            f'\n\nIndices missing from segment_fraction:\n{missing}'
+            f'\n\nIndices in segment_fraction not matching time_season/time_of_day:\n'
+            f'{extra}'
+        )
+        logger.error(msg)
+        raise ValueError(msg)
 
-        if abs(float(total) - 1.0) > 0.001:
-            # We can't explicitly test for "!= 1.0" because of incremental rounding
-            # errors associated with the specification of segment_fraction by time slice,
-            # but we check to make sure it is within the specified tolerance.
+    total: float = sum(value(model.segment_fraction[k]) for k in keys)
 
-            def get_str_padding(obj: object) -> int:
-                return len(str(obj))
+    if abs(float(total) - 1.0) > 0.001:
+        # We can't explicitly test for "!= 1.0" because of incremental rounding
+        # errors associated with the specification of segment_fraction by time slice,
+        # but we check to make sure it is within the specified tolerance.
 
-            key_padding: int = max(map(get_str_padding, keys))
+        def get_str_padding(obj: object) -> int:
+            return len(str(obj))
 
-            # Works out to something like "%-25s = %s"
+        key_padding: int = max(map(get_str_padding, keys))
 
-            items_list: list[tuple[tuple[object, object, object], object]] = sorted(
-                [(k, model.segment_fraction[k]) for k in keys]
-            )
-            items: str = '\n   '.join(f'{str(k):<{key_padding}} = {v}' for k, v in items_list)
+        # Works out to something like "%-25s = %s"
 
-            msg = (
-                f'The values of time_segment_fraction do not sum to 1 for period {p}. '
-                'Each item in segment_fraction represents a fraction of a year, so they must '
-                f'total to 1.  Current values:\n   {items}\n\tsum = {total}'
-            )
-            logger.error(msg)
-            raise Exception(msg)
+        items_list: list[tuple[tuple[object, object], object]] = sorted(
+            [(k, model.segment_fraction[k]) for k in keys]
+        )
+        items: str = '\n   '.join(f'{str(k):<{key_padding}} = {v}' for k, v in items_list)
+
+        msg = (
+            'The values of segment_fraction do not sum to 1. '
+            'Each item in segment_fraction represents a fraction of a year, so they must '
+            f'total to 1.  Current values:\n   {items}\n\tsum = {total}'
+        )
+        logger.error(msg)
+        raise Exception(msg)
 
 
 def validate_time_manual(model: TemoaModel) -> None:
@@ -149,25 +154,21 @@ def validate_time_manual(model: TemoaModel) -> None:
     if model.time_sequencing.first() != 'manual':
         return
 
-    segment_fraction_psd: set[tuple[int, str, str]] = set(model.segment_fraction.sparse_iterkeys())
-    time_manual_psd: set[tuple[int, str, str]] = {
-        (p, s, d) for p, s, d, s_next, d_next in model.time_manual
-    }
-    time_manual_psd_next: set[tuple[int, str, str]] = {
-        (p, s_next, d_next) for p, s, d, s_next, d_next in model.time_manual
+    segment_fraction_sd: set[tuple[str, str]] = set(model.segment_fraction.sparse_iterkeys())
+    time_manual_sd: set[tuple[str, str]] = {(s, d) for s, d, s_next, d_next in model.time_manual}
+    time_manual_sd_next: set[tuple[str, str]] = {
+        (s_next, d_next) for s, d, s_next, d_next in model.time_manual
     }
 
-    missing_psd: set[tuple[int, str, str]] = segment_fraction_psd.difference(time_manual_psd)
-    missing_psd_next: set[tuple[int, str, str]] = segment_fraction_psd.difference(
-        time_manual_psd_next
-    )
-    if missing_psd or missing_psd_next:
+    missing_sd: set[tuple[str, str]] = segment_fraction_sd.difference(time_manual_sd)
+    missing_sd_next: set[tuple[str, str]] = segment_fraction_sd.difference(time_manual_sd_next)
+    if missing_sd or missing_sd_next:
         msg: str = (
             'Failed to build state sequence. '
-            f'\nThese states from time_segment_fraction were not given a next state:\n'
-            f'{missing_psd}\n'
-            f'\nThese states from time_segment_fraction do not follow any state:\n'
-            f'{missing_psd_next}'
+            f'\nThese segment_fraction states were not given a next state:\n'
+            f'{missing_sd}\n'
+            f'\nThese segment_fraction states do not follow any state:\n'
+            f'{missing_sd_next}'
         )
         logger.error(msg)
         raise ValueError(msg)
@@ -193,15 +194,6 @@ def init_set_vintage_optimize(model: TemoaModel) -> list[int]:
     return sorted(model.time_optimize)
 
 
-def segment_fraction_per_season_rule(model: TemoaModel, p: Period, s: Season) -> float:
-    """Rule to calculate the total fraction of a period represented by a season."""
-    return sum(
-        value(model.segment_fraction[p, s, d])
-        for d in model.time_of_day
-        if (p, s, d) in model.segment_fraction
-    )
-
-
 def param_period_length(model: TemoaModel, p: Period) -> int:
     """Rule to calculate the length of each optimization period in years."""
     periods: list[int] = sorted(model.time_future)
@@ -215,20 +207,20 @@ def param_period_length(model: TemoaModel, p: Period) -> int:
 
 
 def loop_period_next_timeslice(
-    model: TemoaModel, p: Period, s: Season, d: TimeOfDay
+    model: TemoaModel, s: Season, d: TimeOfDay
 ) -> tuple[Season, TimeOfDay]:
     # Final time slice of final season (end of period)
     # Loop state back to initial state of first season
     # Loop the period
-    if s == model.time_season[p].last() and d == model.time_of_day.last():
-        s_next: Season = model.time_season[p].first()
+    if s == model.time_season.last() and d == model.time_of_day.last():
+        s_next: Season = model.time_season.first()
         d_next: TimeOfDay = model.time_of_day.first()
 
     # Last time slice of any season that is NOT the last season
     # Carry state to initial state of next season
     # Carry state between seasons
     elif d == model.time_of_day.last():
-        s_next = model.time_season[p].next(s)
+        s_next = model.time_season.next(s)
         d_next = model.time_of_day.first()
 
     # Any other time slice
@@ -242,7 +234,7 @@ def loop_period_next_timeslice(
 
 
 def loop_season_next_timeslice(
-    model: TemoaModel, p: Period, s: Season, d: TimeOfDay
+    model: TemoaModel, s: Season, d: TimeOfDay
 ) -> tuple[Season, TimeOfDay]:
     # We loop each season so never carrying state between seasons
     s_next: Season = s
@@ -274,24 +266,21 @@ def create_time_sequence(model: TemoaModel) -> None:
     match model.time_sequencing.first():
         case 'consecutive_days':
             msg: str = 'Running a consecutive days database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season[p] * model.time_of_day:
-                    model.time_next[p, s, d] = loop_period_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_period_next_timeslice(model, s, d)
         case 'seasonal_timeslices':
             msg = 'Running a seasonal time slice database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season[p] * model.time_of_day:
-                    model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_season_next_timeslice(model, s, d)
         case 'representative_periods':
             msg = 'Running a representative periods database.'
-            for p in model.time_optimize:
-                for s, d in model.time_season[p] * model.time_of_day:
-                    model.time_next[p, s, d] = loop_season_next_timeslice(model, p, s, d)
+            for s, d in model.time_season * model.time_of_day:
+                model.time_next[s, d] = loop_season_next_timeslice(model, s, d)
         case 'manual':
             # Hidden feature. Define the sequence directly in the time_manual table
             msg = 'Pulling time sequence from time_manual table.'
-            for p, s, d, s_next, d_next in model.time_manual:
-                model.time_next[p, s, d] = s_next, d_next
+            for s, d, s_next, d_next in model.time_manual:
+                model.time_next[s, d] = s_next, d_next
         case _:
             # This should have been caught in hybrid_loader
             msg = (
@@ -306,17 +295,14 @@ def create_time_sequence(model: TemoaModel) -> None:
 
     logger.debug('Creating superimposed sequential seasons.')
 
-    # Superimposed sequential seasons
-    for p in model.time_optimize:
-        seasons: list[tuple[Season, Season]] = [
-            (s_seq, s) for _p, s_seq, s in model.ordered_season_sequential if _p == p
-        ]
-        for i, (s_seq, s) in enumerate(seasons):
-            model.sequential_to_season[p, s_seq] = s
-            if (s_seq, s) == seasons[-1]:
-                model.time_next_sequential[p, s_seq] = seasons[0][0]
-            else:
-                model.time_next_sequential[p, s_seq] = seasons[i + 1][0]
+    # Superimposed sequential seasons (global, period-independent)
+    seasons: list[tuple[Season, Season]] = list(model.ordered_season_sequential)
+    for i, (s_seq, s) in enumerate(seasons):
+        model.sequential_to_season[s_seq] = s
+        if (s_seq, s) == seasons[-1]:
+            model.time_next_sequential[s_seq] = seasons[0][0]
+        else:
+            model.time_next_sequential[s_seq] = seasons[i + 1][0]
 
     logger.debug('Created time sequence.')
 
@@ -332,20 +318,18 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         # Don't need it anyway
         return
 
-    if not model.time_season_sequential:
+    if not model.segment_fraction_per_sequential_season:
         if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
             logger.info(
                 'No data in time_season_sequential. By default, assuming sequential seasons '
-                'match time_season and time_segment_fraction.'
+                'match time_season.'
             )
-            for s in model.time_season_all:
-                model.time_season_to_sequential.add(s)
-            for p in model.time_season:
-                for s in model.time_season[p]:
-                    model.ordered_season_sequential.add((p, s, s))
-                    model.time_season_sequential[p, s, s] = value(
-                        model.segment_fraction_per_season[p, s]
-                    ) * value(model.days_per_period)
+            for s in model.time_season:
+                model.time_season_sequential.add(s)
+                model.ordered_season_sequential.add((s, s))
+                model.segment_fraction_per_sequential_season[s] = value(
+                    model.segment_fraction_per_season[s]
+                )
 
         else:
             msg = (
@@ -359,74 +343,60 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
             logger.error(msg)
             raise ValueError(msg)
 
-    sequential: dict[tuple[int, str], float] = {}
-    prev_n: float = 0
-    for p, s_seq, s in model.time_season_sequential.sparse_iterkeys():
-        num_days: float = value(model.time_season_sequential[p, s_seq, s])
+    seas_fracs_seq: dict[str, float] = {}
+    prev_frac: float = 0
+    for s_seq, s in model.ordered_season_sequential:
+        seg_frac_seq: float = value(model.segment_fraction_per_sequential_season[s_seq])
         if (
             model.time_sequencing.first() == 'consecutive_days'
-            and prev_n
-            and abs(num_days - prev_n) >= 0.001
+            and prev_frac
+            and abs(seg_frac_seq - prev_frac) >= 0.001
         ):
             msg = (
                 'time_sequencing set to consecutive_days but two consecutive seasons do not '
-                'represent the same number of days. This discontinuity will lead to bad model '
-                f'behaviour: {p, s}, days: {num_days}. '
-                f'Previous number of days: {prev_n}. Check the config file for more information.'
+                'represent the same fraction of the year. This discontinuity will lead to bad '
+                f'model behaviour: {s_seq}, fraction: {seg_frac_seq}. '
+                f'Previous fraction: {prev_frac}. Check the config file for more information.'
             )
             logger.error(msg)
             raise ValueError(msg)
-        prev_n = num_days  # for validating next in sequence
+        prev_frac = seg_frac_seq  # for validating next in sequence
 
-        # Regardless of their order, make sure the total number of days adds up
-        if (p, s) not in sequential:
-            sequential[p, s] = 0
-        sequential[p, s] += num_days
+        # Regardless of their order, make sure the total fractions add up
+        seas_fracs_seq[s] = seas_fracs_seq.get(s, 0) + seg_frac_seq
 
-    # Check that time_season_sequential num_days total to number of days in each period
-    count_total: dict[
-        int, float
-    ] = {}  # {p: n} total days per period according to time_season_sequential
-    for p in model.time_optimize:
-        count_total[p] = sum(sequential[p, s] for _p, s in sequential if _p == p)
-        if abs(count_total[p] - value(model.days_per_period)) >= 0.001:
-            logger.warning(
-                'Sum of num_days in time_season_sequential (%s) '
-                'for period %s does not sum to days_per_period (%s) '
-                'from the MetaData table.',
-                count_total[p],
-                p,
-                value(model.days_per_period),
-            )
+    # Check that time_season_sequential segment_fraction totals to 1.0
+    frac_total: float = sum(seas_fracs_seq.values())
+    if abs(frac_total - 1.0) >= 0.001:
+        logger.warning(
+            'Sum of segment_fraction in time_season_sequential (%s) does not sum to 1.0.',
+            frac_total,
+        )
 
-    # Check that seasons using in storage seasons are actual seasons
-    for p, s in sequential:
-        if (p, s) not in model.segment_fraction_per_season:
+    # Check that seasons used in storage seasons are actual seasons
+    for s in seas_fracs_seq:
+        if s not in model.time_season:
             msg = (
-                f'Period-season index {(p, s)} that does not exist in '
-                'time_segment_fraction referenced in time_season_sequential .'
+                f'Season {s!r} referenced in time_season_sequential does not exist in time_season.'
             )
             logger.error(msg)
             raise ValueError(msg)
 
-    for p, s in model.segment_fraction_per_season.sparse_iterkeys():
-        if s not in model.time_season[p]:
-            continue
-
+    for s in model.time_season:
         # Check that all seasons are used in sequential seasons
-        if (p, s) not in sequential:
-            msg = f'Period-season index {(p, s)} absent from time_season_sequential'
+        if s not in seas_fracs_seq:
+            msg = f'Season {s!r} absent from time_season_sequential'
             logger.warning(msg)
 
-        # Check that the two tables agree on the total seasonal composition of each period
-        segment_fraction = value(model.segment_fraction_per_season[p, s])
-        segment_fraction_seq = sequential[p, s] / count_total[p]
-        if abs(segment_fraction - segment_fraction_seq) >= 0.001:
+        # Check that the two tables agree on the total seasonal composition
+        season_frac = value(model.segment_fraction_per_season[s])
+        season_frac_seq = seas_fracs_seq[s]
+        if abs(season_frac - season_frac_seq) >= 0.001:
             msg = (
-                'Discrepancy of total period-season composition between '
-                'time_segment_fraction and time_season_sequential. Total fraction of each '
-                'period assigned to each season should match: '
-                f'time_segment_fraction: {(p, s, value(model.segment_fraction_per_season[p, s]))}'
-                f', time_season_sequential: {(p, s, segment_fraction_seq)}'
+                'Discrepancy of total seasonal composition between '
+                'time_season and time_season_sequential. Total fraction '
+                'assigned to each season should match: '
+                f'time_season: {(s, season_frac)}'
+                f', time_season_sequential: {(s, season_frac_seq)}'
             )
             logger.warning(msg)

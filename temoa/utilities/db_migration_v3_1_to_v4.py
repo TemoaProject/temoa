@@ -149,19 +149,38 @@ def migrate_all(args) -> None:
         r[0]
         for r in con_new.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     ]
-    print('DEBUG mapping samples:')
-    for t in (
-        'TimeSeason',
-        'time_season',
-        'TimeSeasonSequential',
-        'time_season_sequential',
-        'SegFrac',
-    ):
-        print(f'  {t} -> {map_token_no_cascade(t)}')
     total = 0
     for old in old_tables:
         if old.lower().startswith('sqlite_'):
             continue
+        if old in (
+            'MetaData',
+            'MetaDataReal',
+            'TimeSeason',
+            'time_season',
+            'time_of_day',
+            'time_season_sequential',
+            'TimeSeasonSequential',
+        ):
+            continue
+        if old == 'CapacityFactorProcess':
+            # Special case: aggregate across periods
+            old_data = con_old.execute(
+                'SELECT region, season, tod, tech, vintage, AVG(factor) '
+                'FROM CapacityFactorProcess '
+                'GROUP BY region, season, tod, tech, vintage'
+            ).fetchall()
+            if old_data:
+                con_new.executemany(
+                    'INSERT OR REPLACE INTO capacity_factor_process '
+                    '(region, season, tod, tech, vintage, factor) '
+                    'VALUES (?, ?, ?, ?, ?, ?)',
+                    old_data,
+                )
+                print(f'Aggregated {len(old_data)} rows: {old} -> capacity_factor_process')
+                total += len(old_data)
+            continue
+
         new = map_token_no_cascade(old)
         if new not in new_tables:
             candidates = [t for t in new_tables if t == new or t.startswith(new) or new in t]
@@ -175,10 +194,69 @@ def migrate_all(args) -> None:
             print(f'Copied {n} rows: {old} -> {new}')
             total += n
         except Exception:
-            import traceback
+            print(f'Error migrating {old} -> {new}')
+            raise
 
-            print(f'Error migrating {old} -> {new}:')
-            traceback.print_exc()
+    # --- Custom logic for restructured tables (Seasons/TOD) ---
+    print('Processing custom migration logic for seasons and time-of-day...')
+
+    # 1. time_season (aggregate from TimeSegmentFraction)
+    try:
+        old_data = con_old.execute(
+            'SELECT season, SUM(segfrac) / COUNT(DISTINCT period) '
+            'FROM TimeSegmentFraction GROUP BY season'
+        ).fetchall()
+        if old_data:
+            con_new.executemany(
+                'INSERT OR REPLACE INTO time_season (season, segment_fraction) VALUES (?, ?)',
+                old_data,
+            )
+            print(f'Propagated {len(old_data)} seasons to time_season.')
+            total += len(old_data)
+    except sqlite3.OperationalError:
+        print('WARNING: Could not migrate seasons from TimeSegmentFraction.')
+
+    # 2. time_of_day (aggregate from TimeSegmentFraction)
+    try:
+        old_data = con_old.execute(
+            'SELECT tod, SUM(segfrac) FROM TimeSegmentFraction GROUP BY tod'
+        ).fetchall()
+        if old_data:
+            num_periods = (
+                con_old.execute(
+                    'SELECT COUNT(DISTINCT period) FROM TimeSegmentFraction'
+                ).fetchone()[0]
+                or 1
+            )
+            normalized_data = [(r[0], (r[1] / num_periods) * 24.0) for r in old_data]
+            con_new.executemany(
+                'INSERT OR REPLACE INTO time_of_day (tod, hours) VALUES (?, ?)', normalized_data
+            )
+            print(f'Propagated {len(normalized_data)} time-of-day slots to time_of_day.')
+            total += len(normalized_data)
+    except sqlite3.OperationalError:
+        print('WARNING: Could not migrate time_of_day from TimeSegmentFraction.')
+
+    # 3. time_season_sequential (aggregate from TimeSeasonSequential)
+    try:
+        first_period = con_old.execute('SELECT MIN(period) FROM TimeSeasonSequential').fetchone()[0]
+        if first_period:
+            old_data = con_old.execute(
+                'SELECT tss.seas_seq, tss.season, (tss.num_days / 365.25) '
+                'FROM TimeSeasonSequential tss '
+                'WHERE tss.period = ?',
+                (first_period,),
+            ).fetchall()
+            if old_data:
+                con_new.executemany(
+                    'INSERT OR REPLACE INTO time_season_sequential '
+                    '(seas_seq, season, segment_fraction) VALUES (?, ?, ?)',
+                    old_data,
+                )
+                print(f'Propagated {len(old_data)} sequential seasons to time_season_sequential.')
+                total += len(old_data)
+    except (sqlite3.OperationalError, TypeError):
+        pass
 
     # ensure metadata version bumped
     cur = con_new.cursor()

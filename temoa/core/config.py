@@ -48,6 +48,7 @@ class TemoaConfig:
         save_storage_levels: bool = False,
         save_lp_file: bool = False,
         time_sequencing: str | None = None,
+        days_per_period: int = 365,
         reserve_margin: str | None = None,
         MGA: dict[str, object] | None = None,
         SVMGA: dict[str, object] | None = None,
@@ -132,6 +133,7 @@ class TemoaConfig:
         self.save_storage_levels = save_storage_levels
         self.save_lp_file = save_lp_file
         self.time_sequencing = time_sequencing
+        self.days_per_period = days_per_period
         self.reserve_margin = reserve_margin
 
         self.mga_inputs = MGA
@@ -303,6 +305,7 @@ class TemoaConfig:
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
+        msg += '{:>{}s}: {}\n'.format('Days per period', width, self.days_per_period)
         msg += '{:>{}s}: {}\n'.format('Planning reserve margin', width, self.reserve_margin)
 
         if self.scenario_mode == TemoaMode.MYOPIC and self.myopic_inputs is not None:

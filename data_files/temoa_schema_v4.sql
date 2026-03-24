@@ -12,8 +12,6 @@ REPLACE INTO metadata
 VALUES ('DB_MAJOR', 4, 'DB major version number');
 REPLACE INTO metadata
 VALUES ('DB_MINOR', 0, 'DB minor version number');
-REPLACE INTO metadata
-VALUES ('days_per_period', 365, 'count of days in each period');
 
 CREATE TABLE IF NOT EXISTS metadata_real
 (
@@ -41,11 +39,6 @@ CREATE TABLE IF NOT EXISTS output_objective
     objective_name    TEXT,
     total_system_cost REAL
 );
-CREATE TABLE IF NOT EXISTS season_label
-(
-    season TEXT PRIMARY KEY,
-    notes  TEXT
-);
 CREATE TABLE IF NOT EXISTS sector_label
 (
     sector TEXT PRIMARY KEY,
@@ -67,10 +60,8 @@ CREATE TABLE IF NOT EXISTS capacity_credit
 CREATE TABLE IF NOT EXISTS capacity_factor_process
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod     TEXT
         REFERENCES time_of_day (tod),
     tech    TEXT
@@ -78,23 +69,21 @@ CREATE TABLE IF NOT EXISTS capacity_factor_process
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tod, tech, vintage),
+    PRIMARY KEY (region, season, tod, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS capacity_factor_tech
 (
     region TEXT,
-    period INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod    TEXT
         REFERENCES time_of_day (tod),
     tech   TEXT
         REFERENCES technology (tech),
     factor REAL,
     notes  TEXT,
-    PRIMARY KEY (region, period, season, tod, tech),
+    PRIMARY KEY (region, season, tod, tech),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS capacity_to_activity
@@ -219,17 +208,15 @@ CREATE TABLE IF NOT EXISTS demand
 CREATE TABLE IF NOT EXISTS demand_specific_distribution
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     demand_name TEXT
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, demand_name),
+    PRIMARY KEY (region, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
 CREATE TABLE IF NOT EXISTS end_of_life_output
@@ -266,10 +253,8 @@ CREATE TABLE IF NOT EXISTS efficiency
 CREATE TABLE IF NOT EXISTS efficiency_variable
 (
     region      TEXT,
-    period      INTEGER
-        REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -282,7 +267,7 @@ CREATE TABLE IF NOT EXISTS efficiency_variable
         REFERENCES commodity (name),
     efficiency  REAL,
     notes       TEXT,
-    PRIMARY KEY (region, period, season, tod, input_comm, tech, vintage, output_comm),
+    PRIMARY KEY (region, season, tod, input_comm, tech, vintage, output_comm),
     CHECK (efficiency > 0)
 );
 CREATE TABLE IF NOT EXISTS emission_activity
@@ -477,21 +462,17 @@ CREATE TABLE IF NOT EXISTS limit_degrowth_new_capacity_delta
 CREATE TABLE IF NOT EXISTS limit_storage_level_fraction
 (
     region   TEXT,
-    period   INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod      TEXT
         REFERENCES time_of_day (tod),
     tech     TEXT
         REFERENCES technology (tech),
-    vintage  INTEGER
-        REFERENCES time_period (period),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
     fraction REAL,
     notes    TEXT,
-    PRIMARY KEY(region, period, season, tod, tech, vintage, operator)
+    CHECK (fraction >= 0 AND fraction <= 1),
+    PRIMARY KEY(region, season, tod, tech, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_activity
 (
@@ -602,17 +583,15 @@ CREATE TABLE IF NOT EXISTS limit_seasonal_capacity_factor
 (
 	region  TEXT
         REFERENCES region (region),
-	period	INTEGER
-        REFERENCES time_period (period),
 	season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
 	tech    TEXT
         REFERENCES technology (tech),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
 	factor	REAL,
 	notes	TEXT,
-	PRIMARY KEY(region, period, season, tech, operator)
+	PRIMARY KEY(region, season, tech, operator)
 );
 CREATE TABLE IF NOT EXISTS limit_tech_input_split
 (
@@ -708,7 +687,7 @@ CREATE TABLE IF NOT EXISTS output_curtailment
     period      INTEGER
         REFERENCES time_period (period),
     season      TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -779,7 +758,7 @@ CREATE TABLE IF NOT EXISTS output_flow_in
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -803,7 +782,7 @@ CREATE TABLE IF NOT EXISTS output_flow_out
     period      INTEGER
         REFERENCES time_period (period),
     season TEXT
-        REFERENCES season_label (season),
+        REFERENCES time_season (season),
     tod         TEXT
         REFERENCES time_of_day (tod),
     input_comm  TEXT
@@ -826,8 +805,7 @@ CREATE TABLE IF NOT EXISTS output_storage_level
         REFERENCES sector_label (sector),
     period INTEGER
         REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
+    season TEXT,
     tod TEXT
         REFERENCES time_of_day (tod),
     tech TEXT
@@ -873,30 +851,15 @@ CREATE TABLE IF NOT EXISTS region
 CREATE TABLE IF NOT EXISTS reserve_capacity_derate
 (
     region  TEXT,
-    period  INTEGER
-        REFERENCES time_period (period),
     season  TEXT
-    	REFERENCES season_label (season),
+    	REFERENCES time_season (season),
     tech    TEXT
         REFERENCES technology (tech),
     vintage INTEGER,
     factor  REAL,
     notes   TEXT,
-    PRIMARY KEY (region, period, season, tech, vintage),
+    PRIMARY KEY (region, season, tech, vintage),
     CHECK (factor >= 0 AND factor <= 1)
-);
-CREATE TABLE IF NOT EXISTS time_segment_fraction
-(
-    period INTEGER
-        REFERENCES time_period (period),
-    season TEXT
-        REFERENCES season_label (season),
-    tod     TEXT
-        REFERENCES time_of_day (tod),
-    segment_fraction REAL,
-    notes   TEXT,
-    PRIMARY KEY (period, season, tod),
-    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 CREATE TABLE IF NOT EXISTS storage_duration
 (
@@ -932,24 +895,25 @@ REPLACE INTO technology_type
 VALUES ('ps', 'storage production technology');
 -- CREATE TABLE IF NOT EXISTS time_manual
 -- (
---     period       INTEGER
---         REFERENCES time_period (period),
 --     season TEXT
---        REFERENCES season_label (season),
+--        REFERENCES time_season (season),
 --     tod          TEXT
 --         REFERENCES time_of_day (tod),
 --     season_next TEXT
---        REFERENCES season_label (season),
+--        REFERENCES time_season (season),
 --     tod_next     TEXT
 --         REFERENCES time_of_day (tod),
 --     notes        TEXT,
---     PRIMARY KEY (period, season, tod)
+--     PRIMARY KEY (season, tod)
 -- );
 CREATE TABLE IF NOT EXISTS time_of_day
 (
     sequence INTEGER UNIQUE,
     tod      TEXT
-        PRIMARY KEY
+        PRIMARY KEY,
+    hours    REAL NOT NULL DEFAULT 1,
+    notes    TEXT,
+    CHECK (hours > 0)
 );
 CREATE TABLE IF NOT EXISTS time_period
 (
@@ -1048,23 +1012,23 @@ CREATE TABLE IF NOT EXISTS output_cost
 
 CREATE TABLE IF NOT EXISTS time_season
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
-    season TEXT REFERENCES season_label(season),
+    sequence INTEGER UNIQUE,
+    season TEXT,
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, season)
+    PRIMARY KEY (season),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 
 CREATE TABLE IF NOT EXISTS time_season_sequential
 (
-    period INTEGER REFERENCES time_period (period),
-    sequence INTEGER,
+    sequence INTEGER UNIQUE,
     seas_seq TEXT,
-    season TEXT REFERENCES season_label(season),
-    num_days REAL NOT NULL,
+    season TEXT REFERENCES time_season(season),
+    segment_fraction REAL NOT NULL,
     notes TEXT,
-    PRIMARY KEY (period, sequence, seas_seq, season),
-    CHECK (num_days > 0)
+    PRIMARY KEY (seas_seq),
+    CHECK (segment_fraction >= 0 AND segment_fraction <= 1)
 );
 
 CREATE TABLE IF NOT EXISTS myopic_efficiency
