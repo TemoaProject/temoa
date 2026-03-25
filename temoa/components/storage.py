@@ -219,16 +219,15 @@ def seasonal_storage_energy_constraint(
         :label: Storage Energy (Sequential Seasons)
 
         \mathbf{SSL}_{r,p,s^{seq},t,v}
-        + DA_{r,p,s^{seq}} \cdot \left(\mathbf{SL}_{r,p,s^*,d_{last},t,v} +
+        + \frac{\text{SFS}_{s^{seq}}}{\text{SFS}_{s^*}}
+        \cdot \left(\mathbf{SL}_{r,p,s^*,d_{last},t,v} +
         \sum_{I,O} \mathbf{FI}_{r,p,s^*,d_{last},i,t,v,o} \cdot EFF_{r,i,t,v,o}
         - \sum_{I,O} \mathbf{FO}_{r,p,s^*,d_{last},i,t,v,o}
         \right)
 
-        = DA_{r,p,s^{seq}_{next}} \cdot \mathbf{SL}_{r,p,s_{next}^*,d_{first},t,v}
+        = \frac{\text{SFS}_{s^{seq}_{next}}}{\text{SFS}_{s^*_{next}}}
+        \cdot \mathbf{SL}_{r,p,s_{next}^*,d_{first},t,v}
         + \mathbf{SSL}_{r,p,s^{seq}_{next},t,v}
-
-        \\
-        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}
 
     .. figure:: images/ldes_chain.*
         :align: center
@@ -317,7 +316,7 @@ def storage_energy_upper_bound_constraint(
        :label: StorageEnergyUpperBound
 
           \textbf{SL}_{r, p, s, d, t, v} \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{24 \cdot DPP}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac {SD_{r,t}}{24 \cdot DPP}
           \cdot \sum_{d} SEG_{s,d} \cdot DPP
 
           \\
@@ -365,12 +364,8 @@ def seasonal_storage_energy_upper_bound_constraint(
         :label: Seasonal Storage Energy Capacity
 
         \mathbf{SSL}_{r,p,s^{seq},t,v}
-        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot DA_{r,p,s^{seq}}
+        + \mathbf{SL}_{r,p,s^*,d,t,v} \cdot \frac{\text{SFS}_{s^{seq}}}{\text{SFS}_{s^*}}
         \leq \mathbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot \frac{SD_{r,t}}{24 \cdot DPP}
-
-        \\
-
-        \text{where } DA_{r,p,s^{seq}} = \frac{\#days_{s^{seq}}}{SEG_{r,p,s^*} \cdot DPP}
 
 
 
@@ -444,7 +439,7 @@ def storage_charge_rate_constraint(
 
           \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
           \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageChargeRate}}
@@ -484,7 +479,7 @@ def storage_discharge_rate_constraint(
 
           \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
           \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
           \\
           \forall \{r,p, s, d, t, v\} \in \Theta_{\text{StorageDischargeRate}}
@@ -525,7 +520,7 @@ def storage_throughput_constraint(
           +
           \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
           \le
-          \textbf{CAP}_{r,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
+          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
@@ -567,27 +562,33 @@ def limit_storage_fraction_constraint(
     r"""
 
     This constraint is used if the users wishes to force a specific storage charge level
-    for certain storage technologies and vintages at a certain time slice.
-    In this case, the value of the decision variable :math:`\textbf{SI}_{r,t,v}` is set by
-    this constraint rather than being optimized. User-specified storage charge levels that are
-    sufficiently different from the optimal :math:`\textbf{SI}_{r,t,v}` could impact the
-    cost-effectiveness of storage. For example, if the optimal charge level happens to be
-    50% of the full energy capacity, forced charge levels (specified by parameter
-    :math:`SIF_{r,t,v}`) equal to 10% or 90% of the full energycapacity could lead to
-    more expensive solutions.
+    for certain storage technologies and vintages at a certain time slice. User-specified
+    storage charge levels that are sufficiently different from the optimal could impact the
+    cost-effectiveness of storage.
+
+    :code:`s` can be a season from the :code:`time_season` set or a sequential season from
+    the :code:`time_sequential_season` set.
 
 
     .. math::
        :label: limit_storage_fraction
 
-          \textbf{SF}_{r,p,s,d,t,v} \le
-          SF_{r,p,s,d,t,v}
-          \cdot
-          \textbf{CAP}_{r,p,t,v} \cdot \text{C2A}_{r,t} \cdot \frac {SD_{r,t}}{24 \cdot \text{DPP}}
-          \cdot \sum_{d} \text{SEG}_{s,d} \cdot \text{days\_per\_period} \cdot \text{MPL}_{r,p,t,v}
+          \frac{\textbf{SL}_{r,p,s,d,t,v}}{\text{SFS}_s \cdot \text{DPP}}
+          \quad \le, \ge, \text{or} = \quad
+          \textbf{CAP}_{r,p,t,v} \cdot \text{C2A}_{r,t}
+          \cdot \frac{\text{SD}_{r,t}}{24 \cdot \text{DPP}}
+          \cdot \text{LSF}_{r,s,d,t}
 
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{limit\_storage\_fraction}}
+
+    For seasonal storage technologies, the LHS becomes:
+
+    .. math::
+
+          \textbf{SSL}_{r,p,s_{seq},t,v}
+          + \frac{\text{SFS}_{s_{seq}}}{\text{SFS}_{s^*}}
+          \cdot \textbf{SL}_{r,p,s^*,d,t,v}
     """
 
     energy_limit = (
