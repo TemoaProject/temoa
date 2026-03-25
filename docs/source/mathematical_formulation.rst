@@ -1455,6 +1455,8 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa.components.reserves.reserve_margin_dynamic
 
+.. autofunction:: temoa.components.emissions.linked_emissions_tech_constraint
+
 
 Objective Function
 ~~~~~~~~~~~~~~~~~~
@@ -1480,8 +1482,6 @@ User-Specific Constraints
 
 .. autofunction:: temoa.components.limits.limit_activity_share_constraint
 
-.. _max_capacity_constraint:
-
 .. autofunction:: temoa.components.limits.limit_capacity_constraint
 
 .. autofunction:: temoa.components.limits.limit_new_capacity_constraint
@@ -1491,8 +1491,6 @@ User-Specific Constraints
 .. autofunction:: temoa.components.limits.limit_new_capacity_share_constraint
 
 .. autofunction:: temoa.components.limits.limit_resource_constraint
-
-.. _TechOutputSplit_constraint:
 
 .. autofunction:: temoa.components.limits.limit_tech_input_split_constraint
 
