@@ -153,7 +153,7 @@ def test_cli_migrate_help() -> None:
     result = runner.invoke(app, ['migrate', '--help'])
     assert result.exit_code == 0
     assert 'migrate' in result.stdout
-    assert 'Migrate a single Temoa database file' in result.stdout
+    assert 'Migrate a Temoa database file' in result.stdout
 
 
 def test_cli_migrate_sql_file(tmp_path: Path) -> None:
@@ -172,19 +172,20 @@ def test_cli_migrate_sql_file(tmp_path: Path) -> None:
     assert output_file.exists()
 
 
-def test_cli_migrate_rejects_directory_input(tmp_path: Path) -> None:
-    """Test that the migrate command rejects a directory as input."""
+def test_cli_migrate_accepts_directory_input(tmp_path: Path) -> None:
+    """Test that the migrate command accepts a directory as input for batch processing."""
     dummy_dir = tmp_path / 'my_dummy_dir'
     dummy_dir.mkdir()
     args = ['migrate', str(dummy_dir)]
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 0
     # Normalize whitespace to handle platform-specific line breaks from rich.print()
     normalized_output = ' '.join(result.stdout.split())
-    assert 'Error: Input path must be a file, not a directory:' in normalized_output
+    assert 'Batch migrating directory' in normalized_output
     # Check for the directory name in the original output (paths may be split across lines)
     assert 'my_dummy_dir' in result.stdout
+    assert 'No .sql, .sqlite, or .db files found' in result.stdout
 
 
 def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path: Path) -> None:
@@ -250,10 +251,10 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
     normalized_output = ' '.join(result.stdout.split())
     assert 'SQL dump migration completed' in normalized_output
     assert 'Warning: Input directory' in normalized_output
-    assert str(non_writable_mock_parent) in normalized_output
-    assert 'is not writable.' in normalized_output
-    assert 'Saving output to current directory:' in normalized_output
-    assert str(tmp_path) in normalized_output
+    assert 'mock_non_writable_input_parent' in re.sub(r'\s+', '', result.stdout)
+    assert 'is not writable' in normalized_output
+    assert 'Saving output to current directory' in normalized_output
+    assert tmp_path.name in normalized_output
 
     expected_output_in_cwd = tmp_path / (input_file.stem + '_v4.sql')
     assert expected_output_in_cwd.exists()

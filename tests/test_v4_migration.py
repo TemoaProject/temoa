@@ -14,9 +14,9 @@ MOCK_DATA = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql'
 
 
 def test_v4_migrations(tmp_path: Path) -> None:
-    """Test both SQL and SQLite v4 migrators."""
+    """Test both SQL and SQLite master migrators."""
 
-    # 1. Create v3.1 SQLite DB
+    # 1. Create v3.1 SQLite DB (acts as our v3 mock since the mock schema is 3.1)
     db_v3_1 = tmp_path / 'test_v3_1.sqlite'
     with sqlite3.connect(db_v3_1) as conn:
         conn.execute('PRAGMA foreign_keys = OFF')
@@ -24,7 +24,7 @@ def test_v4_migrations(tmp_path: Path) -> None:
         conn.executescript(MOCK_DATA.read_text())
         conn.execute('PRAGMA foreign_keys = ON')
 
-    # 2. Dump v3.1 to SQL
+    # 2. Dump to SQL
     sql_v3_1 = tmp_path / 'test_v3_1.sql'
     with open(sql_v3_1, 'w') as f:
         for line in sqlite3.connect(db_v3_1).iterdump():
@@ -35,7 +35,9 @@ def test_v4_migrations(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            str(UTILITIES_DIR / 'sql_migration_v3_1_to_v4.py'),
+            str(UTILITIES_DIR / 'master_migration.py'),
+            '--type',
+            'sql',
             '--input',
             str(sql_v3_1),
             '--schema',
@@ -57,12 +59,14 @@ def test_v4_migrations(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            str(UTILITIES_DIR / 'db_migration_v3_1_to_v4.py'),
-            '--source',
+            str(UTILITIES_DIR / 'master_migration.py'),
+            '--type',
+            'db',
+            '--input',
             str(db_v3_1),
             '--schema',
             str(SCHEMA_V4),
-            '--out',
+            '--output',
             str(db_v4_migrated),
         ],
         check=True,
