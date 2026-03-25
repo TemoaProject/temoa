@@ -176,6 +176,11 @@ def test_cli_migrate_accepts_directory_input(tmp_path: Path) -> None:
     """Test that the migrate command accepts a directory as input for batch processing."""
     dummy_dir = tmp_path / 'my_dummy_dir'
     dummy_dir.mkdir()
+    
+    src_file = UTOPIA_SQL_FIXTURE
+    input_file = dummy_dir / src_file.name
+    shutil.copy2(src_file, input_file)
+    
     args = ['migrate', str(dummy_dir)]
     result = runner.invoke(app, args)
 
@@ -185,7 +190,7 @@ def test_cli_migrate_accepts_directory_input(tmp_path: Path) -> None:
     assert 'Batch migrating directory' in normalized_output
     # Check for the directory name in the original output (paths may be split across lines)
     assert 'my_dummy_dir' in result.stdout
-    assert 'No .sql, .sqlite, or .db files found' in result.stdout
+    assert 'Total files processed: 1' in normalized_output
 
 
 def test_cli_migrate_sql_file_auto_output_writable_input_dir(tmp_path: Path) -> None:

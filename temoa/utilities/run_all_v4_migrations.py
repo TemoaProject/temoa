@@ -37,45 +37,53 @@ def run_command(
 
 
 def run_migrations(
-    input_dir: Path, migration_script: Path, schema_path: Path, dry_run: bool = False
+    input_dir: Path, migration_script: Path, schema_path: Path, dry_run: bool = False, silent: bool = False
 ) -> None:
     if not input_dir.is_dir():
-        print(f'Error: Input directory not found at {input_dir}')
-        sys.exit(1)
+        raise FileNotFoundError(f'Error: Input directory not found at {input_dir}')
     if not migration_script.is_file():
-        print(f'Error: Migration script not found at {migration_script}')
-        sys.exit(1)
+        raise FileNotFoundError(f'Error: Migration script not found at {migration_script}')
     if not schema_path.is_file():
-        print(f'Error: schema file not found at {schema_path}')
-        sys.exit(1)
+        raise FileNotFoundError(f'Error: schema file not found at {schema_path}')
 
-    print(f'Scanning for .sql and .sqlite files in: {input_dir}')
+    if not silent:
+        print(f'Scanning for .sql and .sqlite files in: {input_dir}')
     sql_files = list(input_dir.glob('*.sql'))
     db_files = list(input_dir.glob('*.sqlite')) + list(input_dir.glob('*.db'))
     all_files = sql_files + db_files
 
     if not all_files:
-        print(f'No .sql, .sqlite, or .db files found in {input_dir}. Exiting.')
+        if not silent:
+            print(f'No .sql, .sqlite, or .db files found in {input_dir}. Exiting.')
         return
 
     if dry_run:
-        print('\n--- Dry Run ---')
-        print(f'The following {len(all_files)} files would be processed:')
-        for f in all_files:
-            print(f'  - {f.name}')
-        print('\nNo files will be modified in dry run mode.')
+        if not silent:
+            print('\n--- Dry Run ---')
+            print(f'The following {len(all_files)} files would be processed:')
+            for f in all_files:
+                print(f'  - {f.name}')
+            print('\nNo files will be modified in dry run mode.')
         return
 
-    print(f'\n--- Starting Migration of {len(all_files)} files ---')
+    if not silent:
+        print(f'\n--- Starting Migration of {len(all_files)} files ---')
     processed_count = 0
     failed_files = []
 
     for target_file in all_files:
-        print(f'\nProcessing: {target_file.name}')
+        if not silent:
+            print(f'\nProcessing: {target_file.name}')
 
         ext = target_file.suffix.lower()
-        temp_output_file = Path(tempfile.mkstemp(suffix=ext, prefix='temp_migrated_')[1])
-        original_backup_file = Path(tempfile.mkstemp(suffix='.bak', prefix='orig_backup_')[1])
+        fd1, path1 = tempfile.mkstemp(suffix=ext, prefix='temp_migrated_')
+        os.close(fd1)
+        temp_output_file = Path(path1)
+        
+        fd2, path2 = tempfile.mkstemp(suffix='.bak', prefix='orig_backup_')
+        os.close(fd2)
+        original_backup_file = Path(path2)
+        
         mig_type = 'sql' if ext == '.sql' else 'db'
 
         try:
@@ -84,7 +92,7 @@ def run_migrations(
 
             # 2. Run migration script, outputting to a temporary file
             migration_cmd = [
-                'python3',
+                sys.executable,
                 str(migration_script),
                 '--input',
                 str(target_file),
@@ -100,16 +108,19 @@ def run_migrations(
             if result.returncode == 0:
                 # 3. If successful, overwrite original file
                 shutil.copy2(temp_output_file, target_file)
-                print(f'SUCCESS: {target_file.name} migrated and overwritten.')
+                if not silent:
+                    print(f'SUCCESS: {target_file.name} migrated and overwritten.')
                 processed_count += 1
             else:
                 # 4. On failure, restore original file
-                print(f'FAILED: Migration for {target_file.name} failed. Restoring original file.')
+                if not silent:
+                    print(f'FAILED: Migration for {target_file.name} failed. Restoring original file.')
                 shutil.copy2(original_backup_file, target_file)
                 failed_files.append(target_file.name)
 
         except Exception as e:
-            print(f'CRITICAL ERROR processing {target_file.name}: {e}. Restoring original file.')
+            if not silent:
+                print(f'CRITICAL ERROR processing {target_file.name}: {e}. Restoring original file.')
             if original_backup_file.exists():
                 shutil.copy2(original_backup_file, target_file)
             failed_files.append(target_file.name)
@@ -119,13 +130,14 @@ def run_migrations(
             if original_backup_file.exists():
                 os.remove(original_backup_file)
 
-    print('\n--- Migration Summary ---')
-    print(f'Total files processed: {processed_count}')
+    if not silent:
+        print('\n--- Migration Summary ---')
+        print(f'Total files processed: {processed_count}')
     if failed_files:
-        print(f'FAILED files: {", ".join(failed_files)}')
-        sys.exit(1)
+        raise RuntimeError(f'FAILED files: {", ".join(failed_files)}')
     else:
-        print('All files migrated successfully.')
+        if not silent:
+            print('All files migrated successfully.')
 
 
 def main() -> None:

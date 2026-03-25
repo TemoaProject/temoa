@@ -456,6 +456,7 @@ def migrate(
                 migration_script=migration_script,
                 schema_path=schema_path,
                 dry_run=False,
+                silent=silent,
             )
             if not silent:
                 rich.print(f'[green]Directory migration completed for {input_path}[/green]')

@@ -1,6 +1,9 @@
 import argparse
+import os
 import re
 import sqlite3
+
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -238,7 +241,7 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
                 vints = [
                     v[0]
                     for v in con_old.execute(
-                        f'SELECT vintage FROM Efficiency WHERE region="{row[0]}" AND tech="{row[1]}"'
+                        'SELECT vintage FROM Efficiency WHERE region=? AND tech=?', (row[0], row[1])
                     ).fetchall()
                 ]
                 for v in vints:
@@ -373,19 +376,33 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
 
 
 def migrate_database(source_path: Path, schema_path: Path, output_path: Path) -> None:
+    fd, temp_path_str = tempfile.mkstemp(suffix='.sqlite', prefix='temp_migration_')
+    os.close(fd)
+    temp_path = Path(temp_path_str)
+
     con_old = sqlite3.connect(source_path)
-    con_new = sqlite3.connect(output_path)
-    with open(schema_path, encoding='utf-8') as f:
-        con_new.executescript(f.read())
-
-    con_new.execute('PRAGMA foreign_keys = 0;')
-    execute_v3_to_v4_migration(con_old, con_new)
-
-    con_new.commit()
-    con_new.execute('VACUUM;')
-    con_new.execute('PRAGMA foreign_keys = 1;')
+    con_new = sqlite3.connect(temp_path)
+    
+    try:
+        with open(schema_path, encoding='utf-8') as f:
+            con_new.executescript(f.read())
+    
+        con_new.execute('PRAGMA foreign_keys = 0;')
+        execute_v3_to_v4_migration(con_old, con_new)
+    
+        con_new.commit()
+        con_new.execute('VACUUM;')
+        con_new.execute('PRAGMA foreign_keys = 1;')
+    except Exception:
+        con_old.close()
+        con_new.close()
+        if temp_path.exists():
+            os.remove(temp_path)
+        raise
+        
     con_old.close()
     con_new.close()
+    os.replace(temp_path, output_path)
 
 
 def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) -> None:

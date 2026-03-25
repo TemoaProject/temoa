@@ -8,20 +8,30 @@ import pytest
 # Constants
 REPO_ROOT = Path(__file__).parents[1]
 UTILITIES_DIR = REPO_ROOT / 'temoa' / 'utilities'
-SCHEMA_V3_1 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3_1.sql'
 SCHEMA_V4 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
-MOCK_DATA = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql'
+
+SCHEMA_V3 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3.sql'
+SCHEMA_V3_1 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3_1.sql'
+MOCK_DATA_V3 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_mock.sql'
+MOCK_DATA_V3_1 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql'
 
 
-def test_v4_migrations(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    'schema_file, mock_data_file',
+    [
+        (SCHEMA_V3, MOCK_DATA_V3),
+        (SCHEMA_V3_1, MOCK_DATA_V3_1),
+    ]
+)
+def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) -> None:
     """Test both SQL and SQLite master migrators."""
 
-    # 1. Create v3.1 SQLite DB (acts as our v3 mock since the mock schema is 3.1)
-    db_v3_1 = tmp_path / 'test_v3_1.sqlite'
+    # 1. Create SQLite DB
+    db_v3_1 = tmp_path / 'test_db.sqlite'
     with sqlite3.connect(db_v3_1) as conn:
         conn.execute('PRAGMA foreign_keys = OFF')
-        conn.executescript(SCHEMA_V3_1.read_text())
-        conn.executescript(MOCK_DATA.read_text())
+        conn.executescript(schema_file.read_text())
+        conn.executescript(mock_data_file.read_text())
         conn.execute('PRAGMA foreign_keys = ON')
 
     # 2. Dump to SQL
