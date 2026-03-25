@@ -207,32 +207,118 @@ and demand is balanced at each of these levels:
 
  * **Periods** - consecutive blocks of years, marked by the first year in the
    period.  For example, a two-period model might consist of :math:`\text{P}^f =
-   \{2010, 2015, 2025\}`, representing the two periods of years from beginning 2010
-   through 2014 end, and from beginning 2015 through 2024 end. Note the that last period element
-   \(2025\) does not represent a new time period, but rather defines the end of the second time
+   \{2010, 2015, 2025\}`, representing the two periods of years from 2010
+   to 2015, and from 2015 to 2025. It is up to the model builder whether this represents start
+   of year to start of year or end of year to end of year. Note that the last period element
+   (2025) does not represent a new time period, but rather defines the end of the second time
    period and therefore the planning horizon.
 
- * **Seasonal** - Each year may have multiple seasons. In a conventional time-sliced
-   model, the seasons may typically represent the four seasons: winter, spring summer,
-   and fall. However, the seasonal slices can represent any amount of time at the
-   sub-period scale. For example, in a database with representative days, the seasonal
-   slices can be used as generic containers to represent blocks of days. The type of
-   seasonal representation in use should be defined in the config file.
+ * **Seasonal** - Each year is divided into one or more seasons.  What a "season"
+   represents depends on the :code:`time_sequencing` mode chosen in the configuration
+   file (see below).  Each season carries a :code:`segment_fraction` value in the
+   :code:`time_season` table specifying the fraction of the year it represents.
 
- * **Daily** - Within a season, a given day can be further subdivided into different
-   time segments. Less detailed databases may include larger blocks of time, such as morning,
-   afternoon, and night. In a database with representative days, each daily segment can
-   be used to represent every hour of the day.
+ * **Daily** - Within each season, the day is subdivided into one or more
+   time-of-day segments.  Each segment has an associated :code:`hours` value in the
+   :code:`time_of_day` table indicating how many hours it represents (e.g. 8 hours for
+   "Day", 16 hours for "Night").  Less detailed databases may use a single segment
+   covering the full day.
 
-We use the word 'slice' to refer to the tuple of season and time of day
-:math:`\{s,d\}`. Note that these time slices are user-defined, and can
-represent time ranging from large blocks of time (e.g., winter-night) to every
-hour in a given season.
+We use the word 'slice' or 'timeslice' to refer to the tuple of season and time of day
+:math:`\{s,d\}`. The fraction of a year represented by each slice is computed
+automatically:
 
+.. math::
+
+   SEG_{s,d} = \text{segment\_fraction\_per\_season}(s) \;\times\; \frac{\text{hours}(d)}
+               {\sum_{d'} \text{hours}(d')}
+
+The sum of :math:`SEG_{s,d}` over all :math:`(s,d)` pairs must equal 1.
+
+Time Sequencing Modes
+~~~~~~~~~~~~~~~~~~~~~
+
+Temoa v4 supports four modes for interpreting the meaning and ordering of seasons,
+controlled by the :code:`time_sequencing` setting in the configuration TOML file:
+
+ * **consecutive_days** — Each season represents a single day, and the seasons are
+   treated as consecutive days in order.  Use this when modeling e.g., a representative
+   week (7 seasons) or a full year (365 seasons).  Inter-season state (e.g. for
+   storage) carries forward naturally from one season to the next, so the
+   :code:`time_season_sequential` table can be left empty (more on that below).
+
+ * **seasonal_timeslices** *(default)* — Each season represents a sequential slice of
+   the year containing one or many days (e.g. Winter, Spring, Summer, Fall).  The
+   true chronological sequence is assumed to follow the :code:`time_season` ordering,
+   so the :code:`time_season_sequential` table can be left empty.  This is the
+   traditional Temoa time representation.
+
+ * **representative_periods** — Each season represents a block of days that may not
+   be contiguous in time (e.g. a "typical summer weekday" drawn from several months).
+   If the model uses inter-season constraints such as seasonal storage or
+   inter-season ramping, the true chronological sequence must be defined in the
+   :code:`time_season_sequential` table.  Technologies using seasonal storage must
+   also be flagged in the :code:`technology` table.
+
+ * **manual** — The sequence of time slices is defined explicitly by the modeler in
+   an optional :code:`time_manual` table.  This is an advanced feature provided in
+   case none of the above modes are suitable, and is not recommended for most users.
+
+The selected mode, in combination with the sequence of the :code:`time_season` and
+:code:`time_of_day` tables, is
+used to construct the :code:`time_next` dictionary, which maps each :math:`(s,d)` time
+slice to its successor in the chronological sequence, :math:`(s_{next}, d_{next})`.
+
+The :code:`days_per_period` configuration setting (default: 365) specifies how many
+days each planning period's representative year encompasses.  This is used to scale
+flow variables correctly.  For example, reduce it to 7 when modeling a single
+representative week.
+
+Time Season Sequential
+~~~~~~~~~~~~~~~~~~~~~~
+
+When using the **representative_periods** time sequencing mode, the seasons in
+:code:`time_season` may represent non-contiguous blocks of time (e.g. a "typical
+summer weekday" drawn from several calendar months).  For constraints that depend
+on inter-season ordering — seasonal storage and inter-season ramping — the model
+needs to know the true chronological sequence showing how the representative seasons
+are stitched together to form a complete year.
+
+The :code:`time_season_sequential` table provides this mapping.  Each row defines
+a *sequential season* (:code:`seas_seq`) that references one of the
+:code:`time_season` entries and carries its own :code:`segment_fraction` and an
+integer :code:`sequence` column that determines the chronological order.  Because
+the same representative season may appear more than once in the reconstructed year
+(e.g. "typical summer weekday" could appear for June, July, and August), the sequential table can
+contain multiple entries that map back to the same :code:`time_season` row, each
+with its own fraction.
+
+From this table Temoa builds two internal dictionaries:
+
+* :code:`time_next_sequential` — maps each sequential season to its successor,
+  forming a circular chain that represents the annual cycle.
+* :code:`sequential_to_season` — maps each sequential season back to its parent
+  representative season in :code:`time_season`.
+
+These dictionaries are consumed by:
+
+* The **seasonal storage energy constraint**, which chains the storage state of
+  charge across sequential seasons in chronological order.
+* The **ramp up/down season constraints**, which limit the rate of activity change
+  at season boundaries that are adjacent in the sequential ordering but not
+  necessarily adjacent in the :code:`time_season` set.
+
+For the **consecutive_days** and **seasonal_timeslices** modes, the
+:code:`time_season_sequential` table may be left empty — the model derives the
+chronological order directly from the :code:`time_season` set.
+
+
+Periods
+~~~~~~~
 There are two specifiable period sets: :code:`time_exist` (:math:`\text{P}^e`)
 and :code:`time_future` (:math:`\text{P}^f`).  The :code:`time_exist` set
 contains periods before :code:`time_future`.  Its primary purpose is to specify
-the vintages for capacity that exist prior to the model optimization.
+the vintages for capacity that exists prior to the model optimization.
 The :code:`time_future` set contains the future periods that the model will
 optimize.  As this set must contain only integers, Temoa interprets the elements
 to be the boundaries of each period of interest.  Thus, this is an ordered set
@@ -250,7 +336,7 @@ Temoa assumes that all elements of the :code:`time_exist` and
 ordered, such that the minimum element is "naught".  For example, if
 :math:`\text{P}^f = \{2015, 2020, 2030\}`, then :math:`P_0 = 2015`.  In
 other words, the capital :math:`\text{P}` with the naught subscript indicates
-the first element in the :code:`time_future` set.  
+the first element in the :code:`time_future` set.
 
 One final note on periods: rather than optimizing each year within a period
 individually, Temoa makes the simplifying assumption that each time period contains
@@ -282,7 +368,10 @@ delineation.
 As noted above, Temoa allows the modeler to subdivide each year into a set of time
 slices, comprised of a season and a time of day.  Unlike :code:`time_future`, there
 is no restriction on what labels the modeler may assign to the :code:`time_season`
-and :code:`time_of_day` set elements.
+and :code:`time_of_day` set elements.  Each season carries a
+:code:`segment_fraction` (fraction of the year), and each time-of-day segment
+carries an :code:`hours` value.  These are combined to compute the
+:code:`segment_fraction` for each :math:`(s,d)` slice as described above.
 
 Sets
 ----
