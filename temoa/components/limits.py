@@ -331,11 +331,18 @@ def limit_activity_share_constraint(
     .. math::
         :label: Limit Activity Share
 
-        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_1} \subseteq T,\ V,\ O}
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ (T^{g_1} \setminus T^a) \subseteq T,\ V,\ O}
         \mathbf{FO}_{r,p,s,d,i,t,v,o}
-        \quad \le, \ge, \text{or} = \quad LAS_{r,p,g_1,g_2} \cdot
-        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ T^{g_2} \subseteq T,\ V,\ O}
+        + \sum_{R_g \subseteq R,\ I,\ (T^{g_1} \cap T^a) \subseteq T,\ V,\ O}
+        \mathbf{FOA}_{r,p,i,t,v,o}
+        \\
+        \quad \le, \ge, \text{or} = \quad
+        \\
+        LAS_{r,p,g_1,g_2} \cdot
+        \sum_{R_g \subseteq R,\ S,\ D,\ I,\ (T^{g_2} \setminus T^a) \subseteq T,\ V,\ O}
         \mathbf{FO}_{r,p,s,d,i,t,v,o}
+        + \sum_{R_g \subseteq R,\ I,\ (T^{g_2} \cap T^a) \subseteq T,\ V,\ O}
+        \mathbf{FOA}_{r,p,i,t,v,o}
 
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit\_activity\_share}}
     """
