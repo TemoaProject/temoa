@@ -329,19 +329,19 @@ look like:
 
 .. code-block:: ampl
 
-   s.t. demand_constraint{(p, s, d, dem) in sDemand_psd_dem} :
-       sum{(p, s, d, Si, St, Sv, dem) in sFlowVar_psditvo}
-         v_flow_out[p, s, d, Si, St, Sv, dem]
+   s.t. demand_constraint{(r, p, dem) in sDemand_rpc} :
+       sum{(r, p, Si, St, Sv, dem) in sFlowVar_rpitvo}
+         v_flow_out_annual[r, p, Si, St, Sv, dem]
     =
-       pDemand[p, s, d, dem];
+       pDemand[r, p, dem];
 
 While the syntax is not a direct translation, the indices of the constraint
-(``p``, ``s``, ``d``, and ``dem``) are clear, and by inference, so are the
-indices of summation (``i``, ``t``, ``v``) and operand (``v_flow_out``).  This
-one-line definition creates an inequality for each period, season, time of day,
-and demand, ensuring that total output meets each demand in each time slice --
+(``r``, ``p``, and ``dem``) are clear, and by inference, so are the
+indices of summation (``i``, ``t``, ``v``) and operand (``v_flow_out_annual``).  This
+one-line definition creates an equality for each region, period, and
+demand, ensuring that total annual output meets each demand --
 almost exactly as we have formulated the demand constraint :eq:`Demand`.  In
-contrast, Temoa's implementation in Pyomo takes 47 source-lines (the code
+contrast, Temoa's implementation in Pyomo takes many more source-lines (the code
 discussed above does not include the function documentation).  While some of the
 verbosity is inherent to working with a general purpose scripting language, and
 most of it is our formatting for clarity, the absolute minimum number of lines a
@@ -354,7 +354,7 @@ reasons:
    tools (e.g. numpy, matplotlib) that are not as cleanly available to other
    AMLs.  For instance, there is minimal capability in MathProg to error check a
    model before a solve, and providing interactive feedback like what Temoa's
-   demand_constraintErrorCheck function does is difficult, if not impossible.
+   :code:`demand_constraint_error_check` function does is difficult, if not impossible.
    While a subtle addition, specific and directed error messages are an
    effective measure to reduce the learning curve for new modelers.
 
@@ -380,12 +380,12 @@ reasons:
 This last point is somewhat esoteric, but consider the MathProg implementation
 of the Demand constraint in contrast with the last line of the Pyomo version::
 
-   expr = (supply = M.Demand[p, s, d, dem])
+   expr = supply_annual == value( M.demand[r, p, dem] )
 
 While the MathProg version indeed translates more directly to standard notation,
 consider that standard notation itself needs extensive surrounding text to
 explain the significance of an equation.  *Why* does the equation compare the
-sum of a subset of FlowOut to Demand?  In Temoa's implementation, a high-level
+sum of annual flows to Demand?  In Temoa's implementation, a high-level
 understanding of what a constraint does requires only the last line of code:
 "Supply must meet demand."
 
@@ -499,7 +499,7 @@ The Temoa model code is organized into clear, purpose-driven packages:
   * ``reserves.py`` - Reserve margin requirements
   * ``limits.py`` - Various limit constraints (capacity, activity, emissions, etc.)
   * ``storage.py`` - Energy storage constraints
-  * ``ramping.py`` - Ramping constraints for generators
+  * ``operations.py`` - Baseload and ramping constraints for generators
   * Additional constraint modules for specific features
 
 * ``temoa.data_io`` - Data loading and validation
