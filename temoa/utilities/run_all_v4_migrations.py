@@ -79,11 +79,11 @@ def run_migrations(
         fd1, path1 = tempfile.mkstemp(suffix=ext, prefix='temp_migrated_')
         os.close(fd1)
         temp_output_file = Path(path1)
-        
+
         fd2, path2 = tempfile.mkstemp(suffix='.bak', prefix='orig_backup_')
         os.close(fd2)
         original_backup_file = Path(path2)
-        
+
         mig_type = 'sql' if ext == '.sql' else 'db'
 
         try:
@@ -135,9 +135,9 @@ def run_migrations(
         print(f'Total files processed: {processed_count}')
     if failed_files:
         raise RuntimeError(f'FAILED files: {", ".join(failed_files)}')
-    else:
-        if not silent:
-            print('All files migrated successfully.')
+
+    if not silent:
+        print('All files migrated successfully.')
 
 
 def main() -> None:

@@ -17,7 +17,7 @@ MOCK_DATA_V3_1 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql
 
 
 @pytest.mark.parametrize(
-    'schema_file, mock_data_file',
+    ('schema_file', 'mock_data_file'),
     [
         (SCHEMA_V3, MOCK_DATA_V3),
         (SCHEMA_V3_1, MOCK_DATA_V3_1),

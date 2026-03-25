@@ -108,9 +108,7 @@ def map_token_no_cascade(token: str) -> str:
             if not matched:
                 out.append(orig[i])
                 i += 1
-        mapped_once = ''.join(out)
-        mapped_once = re.sub(r'__+', '_', mapped_once).lower()
-        return mapped_once
+        return re.sub(r'__+', '_', ''.join(out)).lower()
     return to_snake_case(token)
 
 
@@ -121,19 +119,10 @@ def get_table_info(conn: sqlite3.Connection, table: str) -> list[tuple[Any, ...]
         return []
 
 
-def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> None:
-    old_tables = [
-        r[0]
-        for r in con_old.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-    ]
-    new_tables = [
-        r[0]
-        for r in con_new.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-    ]
-    total = 0
-
-    # 1. Handle operator-added tables
+def _migrate_operator_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate max/min tables to operator constraints."""
     print('--- Migrating max/min tables to operator constraints ---')
+    total = 0
     for old_name, (new_name, operator) in OPERATOR_ADDED_TABLES.items():
         try:
             data = con_old.execute(f'SELECT * FROM {old_name}').fetchall()
@@ -147,6 +136,8 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
             continue
 
         op_index = new_cols.index('operator')
+        assert 0 <= op_index < len(new_cols), f'Operator column missing or invalid for {new_name}'
+
         data = [(*row[0:op_index], operator, *row[op_index : len(new_cols) - 1]) for row in data]
 
         # Move period to vintage if applicable
@@ -170,8 +161,21 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
         con_new.executemany(query, data)
         print(f'Migrated {len(data)} rows: {old_name} -> {new_name}')
         total += len(data)
+    return total
 
-    # 2. Standard directory / copied tables
+
+def _migrate_standard_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate standard tables by mapping names and columns."""
+    print('--- Executing standard table migrations ---')
+    total = 0
+    old_tables = [
+        r[0]
+        for r in con_old.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    ]
+    new_tables = [
+        r[0]
+        for r in con_new.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    ]
     custom_handled_old_tables = {
         'MetaData',
         'MetaDataReal',
@@ -185,7 +189,6 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
         'CapacityFactorProcess',
     }.union(OPERATOR_ADDED_TABLES.keys())
 
-    print('--- Executing standard table migrations ---')
     for old in old_tables:
         if old.lower().startswith('sqlite_') or old in custom_handled_old_tables:
             continue
@@ -226,11 +229,12 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
         con_new.executemany(q, filtered)
         print(f'Copied {len(filtered)} rows: {old} -> {new}')
         total += len(filtered)
+    return total
 
-    # 3. Custom specific logics
-    print('--- Processing custom migration logic ---')
 
-    # 3.1 LoanLifetimeTech -> loan_lifetime_process
+def _migrate_loan_lifetime(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate LoanLifetimeTech to loan_lifetime_process."""
+    total = 0
     try:
         data = con_old.execute(
             'SELECT region, tech, lifetime, notes FROM LoanLifetimeTech'
@@ -254,8 +258,13 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
             total += len(new_data)
     except sqlite3.OperationalError:
         pass
+    return total
 
-    # 3.2 time_season (aggregate from TimeSegmentFraction)
+
+def _migrate_time_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate time-related tables (season, tod, sequential)."""
+    total = 0
+    # 1. time_season
     try:
         old_data = []
         cols = [c[1] for c in get_table_info(con_old, 'TimeSegmentFraction')]
@@ -278,7 +287,7 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
     except sqlite3.OperationalError:
         pass
 
-    # 3.3 time_of_day (aggregate from TimeSegmentFraction)
+    # 2. time_of_day
     try:
         old_data = []
         cols = [c[1] for c in get_table_info(con_old, 'TimeSegmentFraction')]
@@ -313,7 +322,7 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
     except sqlite3.OperationalError:
         pass
 
-    # 3.4 time_season_sequential
+    # 3. time_season_sequential
     try:
         old_data = []
         cols = [c[1] for c in get_table_info(con_old, 'TimeSeasonSequential')]
@@ -341,8 +350,12 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
             total += len(old_data)
     except sqlite3.OperationalError:
         pass
+    return total
 
-    # 3.5 CapacityFactorProcess
+
+def _migrate_capacity_factor(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate CapacityFactorProcess."""
+    total = 0
     try:
         old_data = []
         cols = [c[1] for c in get_table_info(con_old, 'CapacityFactorProcess')]
@@ -367,8 +380,21 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
                 total += len(old_data)
     except sqlite3.OperationalError:
         pass
+    return total
 
-    # 4. Final Updates
+
+def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> None:
+    """Main migration logic router."""
+    total = 0
+    total += _migrate_operator_tables(con_old, con_new)
+    total += _migrate_standard_tables(con_old, con_new)
+
+    print('--- Processing custom migration logic ---')
+    total += _migrate_loan_lifetime(con_old, con_new)
+    total += _migrate_time_tables(con_old, con_new)
+    total += _migrate_capacity_factor(con_old, con_new)
+
+    # Final Updates
     con_new.execute("UPDATE technology SET flag='p' WHERE flag='r';")
     con_new.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MAJOR', 4, '')")
     con_new.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MINOR', 0, '')")
@@ -382,14 +408,14 @@ def migrate_database(source_path: Path, schema_path: Path, output_path: Path) ->
 
     con_old = sqlite3.connect(source_path)
     con_new = sqlite3.connect(temp_path)
-    
+
     try:
         with open(schema_path, encoding='utf-8') as f:
             con_new.executescript(f.read())
-    
+
         con_new.execute('PRAGMA foreign_keys = 0;')
         execute_v3_to_v4_migration(con_old, con_new)
-    
+
         con_new.commit()
         con_new.execute('VACUUM;')
         con_new.execute('PRAGMA foreign_keys = 1;')
@@ -399,7 +425,7 @@ def migrate_database(source_path: Path, schema_path: Path, output_path: Path) ->
         if temp_path.exists():
             os.remove(temp_path)
         raise
-        
+
     con_old.close()
     con_new.close()
     os.replace(temp_path, output_path)
@@ -420,12 +446,26 @@ def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) ->
     con_new_in_memory.commit()
     con_new_in_memory.execute('PRAGMA foreign_keys = 1;')
 
-    with open(output_path, 'w', encoding='utf-8') as f_out:
-        for line in con_new_in_memory.iterdump():
-            f_out.write(line + '\n')
+    fd, temp_path_str = tempfile.mkstemp(
+        suffix='.sql', prefix='temp_sql_export_', dir=output_path.parent
+    )
+    temp_path = Path(temp_path_str)
 
-    con_old_in_memory.close()
-    con_new_in_memory.close()
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f_out:
+            for line in con_new_in_memory.iterdump():
+                f_out.write(line + '\n')
+            f_out.flush()
+            os.fsync(f_out.fileno())
+
+        os.replace(temp_path, output_path)
+    except Exception:
+        if temp_path.exists():
+            os.remove(temp_path)
+        raise
+    finally:
+        con_old_in_memory.close()
+        con_new_in_memory.close()
 
 
 if __name__ == '__main__':
