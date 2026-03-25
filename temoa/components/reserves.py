@@ -58,28 +58,30 @@ def reserve_margin_dynamic(
     .. math::
         :label: reserve_margin_dynamic
 
-            &\sum_{t \in T^{res} \setminus T^{x} \setminus T^s,\ V} CFP_{r,p,s^*,d^*,t,v}\
-                \cdot RCD_{r,p,s^*,t,v}\
-                \cdot \mathbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*}\
+            &\sum_{t \in T^{res} \setminus T^{x} \setminus T^s,\ V} CFP_{r,s^*,d^*,t,v}\
+                \cdot RCD_{r,s^*,t,v}\
+                \cdot \mathbf{CAP}_{r,p,t,v} \cdot SEG_{s^*,d^*}\
                 \cdot C2A_{r,t} \\
-            &+ \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r_i - r, p, s^*, d^*, t, v}\
-                \cdot RCD_{r_i - r, p, s^*, t, v}\
-                \cdot \mathbf{CAPAVL}_{p,t} \cdot SEG_{s^*,d^*}\
+            &+ \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r_i - r, s^*, d^*, t, v}\
+                \cdot RCD_{r_i - r, s^*, t, v}\
+                \cdot \mathbf{CAP}_{r_i - r,p,t,v} \cdot SEG_{s^*,d^*}\
                 \cdot C2A_{r_i - r, t} \\
-            &- \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r - r_i, p, s^*, d^*, t, v}\
-                \cdot RCD_{r - r_i, p, s^*, t, v}\
-                \cdot \mathbf{CAPAVL}_{p,t}\
+            &- \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r - r_i, s^*, d^*, t, v}\
+                \cdot RCD_{r - r_i, s^*, t, v}\
+                \cdot \mathbf{CAP}_{r - r_i,p,t,v}\
                 \cdot SEG_{s^*,d^*} \cdot C2A_{r - r_i, t} \\
             &+ \sum_{t \in (T^s \cap T^{res}), V, I, O} \
                 \left(\
                 \mathbf{FO}_{r,p,s,d,i,t,v,o} - \mathbf{FI}_{r,p,s,d,i,t,v,o}\
                 \right)\
-                \cdot RCD_{r,p,s,t,v} \\
+                \cdot RCD_{r,s,t,v} \\
             &\geq\
                 \left[\
-                \sum_{t \in T^{res} \setminus T^{x}, V, I, O}\
+                \sum_{t \in T^{res} \setminus T^{x} \setminus T^a, V, I, O}\
                 \mathbf{FO}_{r, p, s, d, i, t, v, o}\
                 \right. \\
+            &+ \sum_{t \in T^{res} \cap T^a, V, I, O}\
+                DSD_{r,s,d,o} \cdot \mathbf{FOA}_{r, p, i, t, v, o} \\
             &+ \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
                 \mathbf{FO}_{r_i - r, p, s, d, i, t, v, o} \\
             &- \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
@@ -175,26 +177,36 @@ def reserve_margin_static(
     r"""
 
     During each period :math:`p`, the sum of capacity values of all reserve
-    technologies :math:`\sum_{t \in T^{res}} \textbf{CAPAVL}_{r,p,t}`, which are
+    technologies :math:`\sum_{t \in T^{res}} \textbf{CAP}_{r,p,t,v}`, which are
     defined in the set :math:`\textbf{T}^{res}`, should exceed the peak load by
     :math:`PRM`, the regional reserve margin. Note that the reserve
     margin is expressed in percentage of the peak load. Generally speaking, in
     a database we may not know the peak demand before running the model, therefore,
     we write this equation for all the time-slices defined in the database in each region.
     Each generator is allowed to contribute its available capacity times a pre-defined
-    capacity credit, :math:`CC_{t,r}`
+    capacity credit, :math:`CC_{r,p,t,v}`.
+
+    For exchange technologies (i.e., inter-regional transmission), reserve contributions
+    are added to the downstream region but *subtracted* from the upstream region. This is
+    because, since they are not generating any power, their summed contribution across
+    regions should be zero.
 
     .. math::
         :label: reserve_margin_static
 
-            &\sum_{t \in T^{res} \setminus T^{x}} {CC_{t,r} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            &\sum_{t \in T^{res} \setminus T^{x}, V} {CC_{r,p,t,v}
+            \cdot \textbf{CAP}_{r,p,t,v} \cdot
             SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
-            &+ \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r_i-r} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            &+ \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r_i-r,p,t,v}
+            \cdot \textbf{CAP}_{r_i-r,p,t,v} \cdot
             SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
-            &- \sum_{t \in T^{res} \cap T^{x}} {CC_{t,r-r_i} \cdot \textbf{CAPAVL}_{p,t} \cdot
+            &- \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r-r_i,p,t,v}
+            \cdot \textbf{CAP}_{r-r_i,p,t,v} \cdot
             SEG_{s^*,d^*} \cdot C2A_{r-r_i,t} }\\
-            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x},V,I,O }
+            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x} \setminus T^a,V,I,O }
             \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
+            &+ \sum_{ t \in T^{res} \cap T^a,V,I,O }
+            DSD_{r,s,d,o} \cdot \textbf{FOA}_{r, p, i, t, v, o}\\
             &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
             &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
             &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}
