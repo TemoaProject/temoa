@@ -80,8 +80,10 @@ def reserve_margin_dynamic(
                 \sum_{t \in T^{res} \setminus T^{x} \setminus T^a, V, I, O}\
                 \mathbf{FO}_{r, p, s, d, i, t, v, o}\
                 \right. \\
-            &+ \sum_{t \in T^{res} \cap T^a, V, I, O}\
-                DSD_{r,s,d,o} \cdot \mathbf{FOA}_{r, p, i, t, v, o} \\
+            &+ \sum_{t \in T^{res} \cap T^a, V, I, O}
+                \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
+                SEG_{s,d} & \text{otherwise} \end{cases}
+                \cdot \mathbf{FOA}_{r, p, i, t, v, o} \\
             &+ \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
                 \mathbf{FO}_{r_i - r, p, s, d, i, t, v, o} \\
             &- \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
@@ -206,7 +208,9 @@ def reserve_margin_static(
             &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x} \setminus T^a,V,I,O }
             \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
             &+ \sum_{ t \in T^{res} \cap T^a,V,I,O }
-            DSD_{r,s,d,o} \cdot \textbf{FOA}_{r, p, i, t, v, o}\\
+            \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
+            SEG_{s,d} & \text{otherwise} \end{cases}
+            \cdot \textbf{FOA}_{r, p, i, t, v, o}\\
             &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
             &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
             &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}
