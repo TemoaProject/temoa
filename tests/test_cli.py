@@ -249,12 +249,14 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
     )
     # Normalize whitespace to handle platform-specific line breaks from rich.print()
     normalized_output = ' '.join(result.stdout.split())
+    clean_output = re.sub(r'\s+', '', result.stdout)
+    
     assert 'SQL dump migration completed' in normalized_output
     assert 'Warning: Input directory' in normalized_output
-    assert 'mock_non_writable_input_parent' in re.sub(r'\s+', '', result.stdout)
+    assert 'mock_non_writable_input_parent' in clean_output
     assert 'is not writable' in normalized_output
     assert 'Saving output to current directory' in normalized_output
-    assert tmp_path.name in normalized_output
+    assert tmp_path.name in clean_output
 
     expected_output_in_cwd = tmp_path / (input_file.stem + '_v4.sql')
     assert expected_output_in_cwd.exists()
