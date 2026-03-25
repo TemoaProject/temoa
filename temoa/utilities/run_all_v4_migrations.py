@@ -24,12 +24,13 @@ from pathlib import Path
 
 
 def run_command(
-    cmd: list[str], cwd: Path | None = None, capture_output: bool = True
+    cmd: list[str], cwd: Path | None = None, capture_output: bool = True, silent: bool = False
 ) -> subprocess.CompletedProcess[str]:
     """Helper to run shell commands."""
-    print(f'Executing: {" ".join(cmd)}')
+    if not silent:
+        print(f'Executing: {" ".join(cmd)}')
     result = subprocess.run(cmd, cwd=cwd, capture_output=capture_output, text=True, check=False)
-    if result.returncode != 0 and capture_output:
+    if not silent and result.returncode != 0 and capture_output:
         print(f'COMMAND FAILED (exit code {result.returncode}):')
         print('STDOUT:\n', result.stdout)
         print('STDERR:\n', result.stderr)
@@ -103,7 +104,7 @@ def run_migrations(
                 '--type',
                 mig_type,
             ]
-            result = run_command(migration_cmd, cwd=Path.cwd())
+            result = run_command(migration_cmd, cwd=Path.cwd(), silent=silent)
 
             if result.returncode == 0:
                 # 3. If successful, overwrite original file

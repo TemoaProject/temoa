@@ -114,6 +114,16 @@ def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     assert len(rows) == 1
     assert rows[0] == ('R1', 'winter', 'day', 'T1', 2030, pytest.approx(0.6))
 
+    # Check operator-added tables (limit_capacity and limit_emission)
+    cap_rows = conn.execute('SELECT region, tech_or_group, period, capacity, operator FROM limit_capacity').fetchall()
+    assert len(cap_rows) == 1
+    assert cap_rows[0] == ('R1', 'T1', 2030, 10.0, 'ge')
+
+    emis_rows = conn.execute('SELECT region, period, value, operator FROM limit_emission').fetchall()
+    assert len(emis_rows) == 1
+    assert emis_rows[0] == ('R1', 2030, 100.0, 'le')
+
     # Check metadata version
     major = conn.execute("SELECT value FROM metadata WHERE element='DB_MAJOR'").fetchone()[0]
     assert int(major) == 4
+    assert int(conn.execute("SELECT value FROM metadata WHERE element='DB_MINOR'").fetchone()[0]) == 0

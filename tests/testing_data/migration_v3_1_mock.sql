@@ -28,3 +28,5 @@ INSERT INTO Commodity (name, flag) VALUES ('Out', 'p');
 INSERT INTO CapacityFactorProcess (region, period, season, tod, tech, vintage, factor) VALUES ('R1', 2030, 'winter', 'day', 'T1', 2030, 0.5);
 INSERT INTO CapacityFactorProcess (region, period, season, tod, tech, vintage, factor) VALUES ('R1', 2040, 'winter', 'day', 'T1', 2030, 0.7);
 INSERT INTO Efficiency (region, input_comm, tech, vintage, output_comm, efficiency) VALUES ('R1', 'In', 'T1', 2030, 'Out', 0.9);
+INSERT INTO LimitCapacity (region, period, tech_or_group, operator, capacity, units, notes) VALUES ('R1', 2030, 'T1', 'ge', 10.0, 'GW', 'test op');
+INSERT INTO LimitEmission (region, period, emis_comm, operator, value, units, notes) VALUES ('R1', 2030, 'Out', 'le', 100.0, 'kt', 'test op');

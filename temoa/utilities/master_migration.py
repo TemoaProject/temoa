@@ -402,7 +402,14 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
 
 
 def migrate_database(source_path: Path, schema_path: Path, output_path: Path) -> None:
-    fd, temp_path_str = tempfile.mkstemp(suffix='.sqlite', prefix='temp_migration_')
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Input database not found: {source_path}")
+    if not schema_path.is_file():
+        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+
+    fd, temp_path_str = tempfile.mkstemp(
+        suffix='.sqlite', prefix='temp_migration_', dir=output_path.parent
+    )
     os.close(fd)
     temp_path = Path(temp_path_str)
 
@@ -419,19 +426,25 @@ def migrate_database(source_path: Path, schema_path: Path, output_path: Path) ->
         con_new.commit()
         con_new.execute('VACUUM;')
         con_new.execute('PRAGMA foreign_keys = 1;')
-    except Exception:
+
         con_old.close()
         con_new.close()
+        os.replace(temp_path, output_path)
+    except Exception:
         if temp_path.exists():
             os.remove(temp_path)
         raise
-
-    con_old.close()
-    con_new.close()
-    os.replace(temp_path, output_path)
+    finally:
+        con_old.close()
+        con_new.close()
 
 
 def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) -> None:
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Input SQL dump not found: {source_path}")
+    if not schema_path.is_file():
+        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+
     con_old_in_memory = sqlite3.connect(':memory:')
     with open(source_path, encoding='utf-8') as f:
         con_old_in_memory.executescript(f.read())
