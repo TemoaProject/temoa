@@ -43,19 +43,18 @@ To help explain the Pyomo implementation, we discuss a single constraint in
 detail. Consider the :code:`Demand` :eq:`Demand` constraint:
 
 .. math::
-   \sum_{I, T, V} \textbf{FO}_{r, p, s, d, i, t, v, dem} +
-   SEG_{s,d} \cdot  \sum_{I, T^{a}, V} \textbf{FOA}_{r, p, i, t, v, dem}
-   \ge
-   {DEM}_{r, p, dem} \cdot {DSD}_{r, s, d, dem}
+   \sum_{I, T, V} \textbf{FOA}_{r, p, i, t, v, dem}
+   =
+   {DEM}_{r, p, dem}
 
    \\
-   \forall \{r, p, s, d, dem\} \in \Theta_{\text{Demand}}
+   \forall \{r, p, dem\} \in \Theta_{\text{Demand}}
 
 Implementing this with Pyomo requires two pieces, and optionally a third:
 
  #. a constraint definition (in ``temoa/core/model.py``),
  #. the constraint implementation (in ``temoa/components/``), and
- #. (optional) sparse constraint index creation (in ``temoa/components/technology.py``).
+ #. (optional) sparse constraint index creation (in ``temoa/components/``).
 
 We discuss first a straightforward implementation of this constraint, that
 specifies the sets over which the constraint is defined.  We will follow it with
@@ -69,8 +68,8 @@ A simple definition of this constraint is:
    .. code-block:: python
       :linenos:
 
-      M.demand_constraint = Constraint(
-        M.regions, M.time_optimize, M.time_season, M.time_of_day, M.commodity_demand,
+      self.demand_constraint = Constraint(
+        self.regions, self.time_optimize, self.commodity_demand,
         rule=demand_constraint
       )
 
@@ -95,25 +94,19 @@ is:
    .. code-block:: python
       :linenos:
 
-      def demand_constraint ( M, r, p, s, d, dem ):
-         if (r,p,s,d,dem) not in M.demand_specific_distribution.sparse_keys():  # If user did not specify this Demand, tell
-            return Constraint.Skip           # Pyomo to ignore this constraint index.
-
-         supply = sum(
-            M.v_flow_out[r, p, s, d, S_i, S_t, S_v, dem]
-            for S_t, S_v in M.commodity_up_stream_process[r, p, dem] if S_t not in M.tech_annual
-            for S_i in M.process_input_by_output[r, p, S_t, S_v, dem]
-         )
+      def demand_constraint ( M, r, p, dem ):
+         if (r, p, dem) in M.singleton_demands:
+            return Constraint.Skip
 
          supply_annual = sum(
             M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem]
-            for S_t, S_v in M.commodity_up_stream_process[r, p, dem] if S_t in M.tech_annual
-            for S_i in M.process_input_by_output[r, p, S_t, S_v, dem]
-         ) * value( M.segment_fraction[ s, d])
+            for S_t, S_v in M.commodity_up_stream_process[r, p, dem]
+            for S_i in M.process_inputs_by_output[r, p, S_t, S_v, dem]
+         )
 
-         demand_constraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
+         demand_constraint_error_check(supply_annual, r, p, dem)
 
-         expr = supply + supply_annual == M.Demand[r, p, dem] * M.demand_specific_distribution[r, s, d, dem]
+         expr = supply_annual == value( M.demand[r, p, dem] )
          return expr
 
    ...
@@ -126,10 +119,9 @@ this to just :code:`M`) followed by local variable names in which to store the
 index set elements passed by Pyomo.  Note that the ordering is the same as
 specified in the constraint definition.  Thus the first item after :code:`M`
 will be an item from :code:`region`, the second from :code:`time_optimize`,
-the third from :code:`time_season`, fourth from :code:`time_of_day`, and the
-fifth from :code:`commodity_demand`.  Though one could choose :code:`a`, :code:`b`,
-:code:`c`, :code:`d`, and :code:`e` (or any naming scheme), we chose :code:`p`, :code:`s`,
-:code:`d`, and :code:`dem` as part of a :ref:`naming scheme
+and the third from :code:`commodity_demand`.  Though one could choose :code:`a`,
+:code:`b`, and :code:`c` (or any naming scheme), we chose :code:`r`, :code:`p`,
+and :code:`dem` as part of a :ref:`naming scheme
 <naming_conventions>` to aid in mnemonic understanding.  Consequently, the rule
 signature (Line 1) is another place to look to discover what indices define a
 constraint.
@@ -137,23 +129,18 @@ constraint.
 Lines 2 and 3 are an indication that this constraint is implemented in a
 non-sparse manner.  That is, Pyomo does not inherently know the valid indices
 for a given model parameter or equation.  In ``temoa.core.model``, the constraint definition
-listed five index sets, so Pyomo will naively call this function for every
-possible combination of tuple :math:`\{r, p, s, d, dem\}`.  However, as there
-may be slices for which a demand does not exist (e.g., the winter season might
-have no cooling demand), there is no need to create a constraint for any tuple
-involving 'winter' and 'cooling'.  Indeed, an attempt to access a demand for
-which the modeler has not specified a value results in a Pyomo error, so it is
-necessary to ignore any tuple for which no Demand exists.
+listed three index sets, so Pyomo will naively call this function for every
+possible combination of tuple :math:`\{r, p, dem\}`.  However, as there
+may be region-period-demand combinations for which no technology can supply
+the demand, there is no need to create a constraint for such tuples.
 
-Lines 5 through 11 represent two *source-lines* that we split over several lines for
-clarity.  These lines implement the summations of the demand commodity ``dem``
-produced by demand technologies with both variable and constant output across the
-year, summed over all relevant technologies, vintages, and the inputs. The
-:code:`supply` and :code:`supply_annual` are local variables used in the expression
+Lines 5 through 8 sum the annual output flow of demand commodity ``dem``
+across all technologies and vintages. The
+:code:`supply_annual` is a local variable used in the expression
 (:code:`expr`) shown below. Note that the sum is performed with sparse indices, which
-are returned from dictionaries created in :code:`temoa/components/technology.py`.
+are returned from dictionaries created in :code:`temoa/components/`.
 
-Lines 5 through 11 also showcase a very common idiom in Python:
+Lines 5 through 8 also showcase a very common idiom in Python:
 list-comprehension.  List comprehension is a concise and efficient syntax to
 create lists.  As opposed to building a list element-by-element with for-loops,
 list comprehension can convert many statements into a single operation.
@@ -162,9 +149,9 @@ Consider a naive approach to calculating the supply::
    to_sum = list()
    for S_t in M.tech_all:
       for S_v in M.vintage_all:
-         for S_i in process_input_by_output( p, S_t, S_v, dem ):
-            to_sum.append( M.v_flow_out[p, s, d, S_i, S_t, S_v, dem] )
-   supply = sum( to_sum )
+         for S_i in process_inputs_by_output( r, p, S_t, S_v, dem ):
+            to_sum.append( M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem] )
+   supply_annual = sum( to_sum )
 
 This implementation creates an extra list (:code:`to_sum`), then builds the list
 element by element with :code:`.append()`, before finally calculating the summation.
@@ -175,11 +162,11 @@ A less naive approach would replace the :code:`.append()` call with the
 :code:`+=` operator, reducing the number of iterations through the elements to
 one::
 
-   supply = 0
+   supply_annual = 0
    for S_t in M.tech_all:
       for S_v in M.vintage_all:
-         for S_i in process_input_by_output( p, S_t, S_v, dem ):
-            supply += M.v_flow_out[p, s, d, S_i, S_t, S_v, dem]
+         for S_i in process_inputs_by_output( r, p, S_t, S_v, dem ):
+            supply_annual += M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem]
 
 Why is list comprehension necessary?  Strictly speaking, it is not, especially
 in light of this last example, which may read more familiar to those comfortable
@@ -189,10 +176,10 @@ the more efficient route for many list manipulations.  (It also *may* seem
 slightly more familiar to those used to a more mainstream algebraic modeling
 language.)
 
-With the correct model variables summed and stored in the ``supply`` and
-``supply_annual`` variables, Line 17 calls a function defined in
-:code:`temoa/components/technology.py` that checks to make sure there is technology
-that can supply each demand commodity ``dem`` in each :math:`\{r, p, s, d\}`.
+With the correct model variables summed and stored in the
+``supply_annual`` variable, Line 10 calls a function defined in
+:code:`temoa/components/commodities.py` that checks to make sure there is a technology
+that can supply each demand commodity ``dem`` in each :math:`\{r, p\}`.
 
 If no process supplies the demand, then it quits computation immediately rather
 than completing a potentially lengthy model generation and waiting for the
@@ -202,11 +189,11 @@ benefits of Temoa: we've incorporated error handling in several places to
 try and capture the most common user errors. This capability is subtle, but in
 practice extremely useful while building and debugging a model.
 
-Line 19 creates the actual inequality comparison.  This line is superfluous, but
-we leave it in the code as a reminder that inequality operators (i.e. :code:`<=`
-and :code:`>=`) with a Pyomo object (like supply) generate a Pyomo *expression
-object*, not a boolean True or False as one might expect.\ [#return_expression]_
-It is this expression object that must be returned to Pyomo, as on Line 20.
+Line 12 creates the actual equality comparison.  This line is superfluous, but
+we leave it in the code as a reminder that comparison operators (i.e. :code:`==`,
+:code:`<=`, :code:`>=`) with a Pyomo object (like supply_annual) generate a Pyomo
+*expression object*, not a boolean True or False as one might expect.\\ [#return_expression]_
+It is this expression object that must be returned to Pyomo, as on Line 13.
 
 In the above implementation, the constraint is called for every tuple in the
 Cartesian product of the indices, and the constraint must then decide whether
@@ -215,47 +202,119 @@ because it only calls the constraint rule for the valid tuples within the
 Cartesian product, which is computationally more efficient than the simpler
 implementation above.
 
-.. topic:: in ``temoa/core/model.py`` (actual implementation)
+.. topic:: in ``temoa/core/model.py`` (declaration of indices, parameter, and constraint)
 
    .. code-block:: python
       :linenos:
 
-      M.demand_constraint_rpsdc = Set( dimen=5, rule=demand_constraint_indices )
-      # ...
-      M.demand_constraint = Constraint( M.demand_constraint_rpsdc, rule=demand_constraint )
+      self.demand_constraint_rpc = Set(
+         within=self.regions * self.time_optimize * self.commodity_demand
+      )
+      self.demand = Param(self.demand_constraint_rpc)
+
+      ...
+
+      self.demand_constraint = Constraint(
+         self.demand_constraint_rpc, rule=commodities.demand_constraint
+      )
 
 
 As discussed above, the demand_constraint is only valid for certain
-:math:`\{r, p, s, d, dem\}` tuples.  Since the modeler can specify the demand
-distribution per commodity (necessary to model demands like heating, that do not
-apply in all time slices), Temoa must ascertain the valid tuples. We have
-implemented this logic in the function :code:`demand_constraint_indices` in
-``temoa/components/technology.py``.  Thus, Line 1 tells Pyomo to instantiate
-:code:`demand_constraint_rpsdc` as a Set of 5-length tuples indices
-(:code:`dimen=5`), and populate it with what Temoa's rule
-:code:`demand_constraint_indices` returns.  We omit here an explanation of the
-implementation of the :code:`demand_constraint_indices` function, stating merely
-that it returns the exact indices over which the demand_constraint must to be
-created.  With the sparse set :code:`demand_constraint_rpsdc` created, we can now
-can use it in place of the five sets specified in the non-sparse
+:math:`\{r, p, dem\}` tuples.  Since not all combinations of region, period, and
+demand commodity may be valid, Temoa must ascertain the valid tuples.
+Thus, Line 1 tells Pyomo to instantiate
+:code:`demand_constraint_rpc` as a Set of 3-length tuple indices
+within the dimensions of the :code:`regions`, :code:`time_optimize`, and
+:code:`commodity_demand` sets, and populate it only with entries loaded from
+the database. Demand values are stored in the parameter :code:`self.demand` declared in line 4.
+Data from the database is loaded into this index set and parameter via the
+:code:`HybridLoader` class in :code:`temoa/data_io/hybrid_loader.py`, declared in
+the :code:`component_manifest.py` file.
+
+.. topic:: in ``temoa/data_io/hybrid_loader.py`` (telling Temoa to load the indices)
+
+   .. code-block:: python
+      :linenos:
+
+      def load_param_idx_sets(self, data: dict[str, object]) -> dict[str, object]:
+
+         model = TemoaModel()
+         param_idx_sets = {
+            ...
+            model.demand.name: model.demand_constraint_rpc.name, # param index sets
+            ...
+         }
+
+.. topic:: in ``temoa/data_io/component_manifest.py`` (telling Temoa to load the parameter)
+
+   .. code-block:: python
+      :linenos:
+
+      def build_manifest(model: TemoaModel) -> list[LoadItem]:
+
+      manifest = [
+         ...
+         LoadItem(
+            component=model.demand, # param name
+            table='demand', # database table name
+            columns=['region', 'period', 'commodity', 'demand'], # indices and value column
+         ),
+         ...
+      ]
+
+Alternatively, this index set could be populated using an index function
+which determines the valid indices from other model components. This second method is needed
+when the indices of a constraint do not exactly align with the indices of the database
+table. For example, the database table :code:`ramp_up_hourly` is indexed by :code:`region`,
+:code:`tech` in the database but one of its inheriting constraints,
+:code:`ramp_up_day_constraint`, is indexed by :code:`region`, :code:`period`,
+:code:`season`, :code:`time_of_day`, :code:`tech`, :code:`vintage` in the model. In this case,
+an index function is needed to determine the valid indices for the constraint.
+
+.. topic:: in ``temoa/core/model.py`` (index set and constraint declaration)
+
+   .. code-block:: python
+      :linenos:
+
+      self.ramp_up_day_constraint_rpsdtv = Set(
+         dimen=6, initialize=operations.ramp_up_day_constraint_indices
+      )
+      self.ramp_up_day_constraint = Constraint(
+         self.ramp_up_day_constraint_rpsdtv, rule=operations.ramp_up_day_constraint
+      )
+
+.. topic:: in ``temoa/components/operations.py`` (return valid indices)
+
+   .. code-block:: python
+      :linenos:
+
+      def ramp_up_day_constraint_indices(model: TemoaModel):
+         indices = {
+            (r, p, s, d, t, v)
+            for r, p, t in model.ramp_up_vintages
+            for v in model.ramp_up_vintages[r, p, t]
+            for s in model.time_season
+            for d in model.time_of_day
+         }
+         return indices
+
+With the sparse set (:code:`demand_constraint_rpc` or :code:`ramp_up_day_constraint_rpsdtv`)
+created, we can now can use it in place of the sets specified in the non-sparse
 implementation.  Pyomo will now call the constraint implementation rule the
 minimum number of times.
 
-On the choice of the :code:`_rpsdc` suffix for the index set name, there is no
+On the choice of the :code:`_rpc` suffix for the index set name, there is no
 Pyomo-enforced restriction.  However, use of an index set in place of the
 non-sparse specification obfuscates over what indexes a constraint is defined.
 While it is not impossible to deduce, either from this documentation
-or from looking at the :code:`demand_constraint_indices` or
+or from looking at the index function or
 :code:`demand_constraint` implementations, the Temoa convention includes
 index set names that feature the one-character representation of each set dimension.
-In this case, the name :code:`demand_constraint_rpsdc` implies that this set has a
-dimensionality of 5, and (following the :ref:`naming scheme
+In this case, the name :code:`demand_constraint_rpc` implies that this set has a
+dimensionality of 3, and (following the :ref:`naming scheme
 <naming_conventions>`) the first index of each tuple will be an element of
-:code:`region`, the second an element of :code:`time_optimize`, the third
-an element of :code:`time_season`, fourth an element of :code:`time_of_day`,
-and fifth a commodity.  From the contextual information that this is the
-Demand constraint, one can assume that the ``c`` represents an element from
-:code:`commodity_demand`.
+:code:`region`, the second an element of :code:`time_optimize`,
+and third a demand commodity.
 
 
 
