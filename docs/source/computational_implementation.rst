@@ -73,8 +73,8 @@ A simple definition of this constraint is:
         rule=demand_constraint
       )
 
-In line 1, '``M.demand_constraint =``' creates a place holder in the model object
-``M``, called 'demand_constraint'.  Like a variable, this is the name through
+In line 1, '``self.demand_constraint =``' creates a place holder in the model object
+``self``, called 'demand_constraint'.  Like a variable, this is the name through
 which Pyomo will reference this class of constraints.  ``Constraint(...)`` is a
 Pyomo-specific function that creates each individual constraint in the class.
 The first arguments (line 2) are the index sets of the constraint class.  Line 2
@@ -94,30 +94,31 @@ is:
    .. code-block:: python
       :linenos:
 
-      def demand_constraint ( M, r, p, dem ):
-         if (r, p, dem) in M.singleton_demands:
+      def demand_constraint(model: TemoaModel, r: Region, p: Period, dem: Commodity) -> ExprLike:
+         if (r, p, dem) in model.singleton_demands:
             return Constraint.Skip
 
          supply_annual = sum(
-            M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem]
-            for S_t, S_v in M.commodity_up_stream_process[r, p, dem]
-            for S_i in M.process_inputs_by_output[r, p, S_t, S_v, dem]
+            model.v_flow_out_annual[r, p, s_i, s_t, s_v, dem]
+            for s_t, s_v in model.commodity_up_stream_process[r, p, dem]
+            for s_i in model.process_inputs_by_output[r, p, s_t, s_v, dem]
          )
 
          demand_constraint_error_check(supply_annual, r, p, dem)
 
-         expr = supply_annual == value( M.demand[r, p, dem] )
+         expr = supply_annual == value(model.demand[r, p, dem])
          return expr
-
    ...
 
 The Python boiler-plate code to create the rule is on line 1.  It begins with
 :code:`def`, followed by the rule name (matching the :code:`rule=...` argument
 in the constraint definition in ``temoa.core.model``), followed by the argument list.
+Note that the argument list is strongly typed (each element has an explicit type like
+:code:`Region`). Temoa enforces strong typing for code integrity using the :code:`mypy` package.
 The argument list will always start with the model (Temoa convention shortens
-this to just :code:`M`) followed by local variable names in which to store the
+this to just :code:`model`) followed by local variable names in which to store the
 index set elements passed by Pyomo.  Note that the ordering is the same as
-specified in the constraint definition.  Thus the first item after :code:`M`
+specified in the constraint definition.  Thus the first item after :code:`model`
 will be an item from :code:`region`, the second from :code:`time_optimize`,
 and the third from :code:`commodity_demand`.  Though one could choose :code:`a`,
 :code:`b`, and :code:`c` (or any naming scheme), we chose :code:`r`, :code:`p`,
@@ -131,26 +132,26 @@ non-sparse manner.  That is, Pyomo does not inherently know the valid indices
 for a given model parameter or equation.  In ``temoa.core.model``, the constraint definition
 listed three index sets, so Pyomo will naively call this function for every
 possible combination of tuple :math:`\{r, p, dem\}`.  However, as there
-may be region-period-demand combinations for which no technology can supply
-the demand, there is no need to create a constraint for such tuples.
+may be region-period-demand combinations for which the constraint is unnecessary,
+there is no need to create a constraint for such tuples.
 
-Lines 5 through 8 sum the annual output flow of demand commodity ``dem``
+Lines 5 through 9 sum the annual output flow of demand commodity ``dem``
 across all technologies and vintages. The
 :code:`supply_annual` is a local variable used in the expression
 (:code:`expr`) shown below. Note that the sum is performed with sparse indices, which
 are returned from dictionaries created in :code:`temoa/components/`.
 
-Lines 5 through 8 also showcase a very common idiom in Python:
+Lines 5 through 9 also showcase a very common idiom in Python:
 list-comprehension.  List comprehension is a concise and efficient syntax to
 create lists.  As opposed to building a list element-by-element with for-loops,
 list comprehension can convert many statements into a single operation.
 Consider a naive approach to calculating the supply::
 
    to_sum = list()
-   for S_t in M.tech_all:
-      for S_v in M.vintage_all:
+   for S_t in model.tech_all:
+      for S_v in model.vintage_all:
          for S_i in process_inputs_by_output( r, p, S_t, S_v, dem ):
-            to_sum.append( M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem] )
+            to_sum.append( model.v_flow_out_annual[r, p, S_i, S_t, S_v, dem] )
    supply_annual = sum( to_sum )
 
 This implementation creates an extra list (:code:`to_sum`), then builds the list
@@ -163,10 +164,10 @@ A less naive approach would replace the :code:`.append()` call with the
 one::
 
    supply_annual = 0
-   for S_t in M.tech_all:
-      for S_v in M.vintage_all:
+   for S_t in model.tech_all:
+      for S_v in model.vintage_all:
          for S_i in process_inputs_by_output( r, p, S_t, S_v, dem ):
-            supply_annual += M.v_flow_out_annual[r, p, S_i, S_t, S_v, dem]
+            supply_annual += model.v_flow_out_annual[r, p, S_i, S_t, S_v, dem]
 
 Why is list comprehension necessary?  Strictly speaking, it is not, especially
 in light of this last example, which may read more familiar to those comfortable
@@ -177,7 +178,7 @@ slightly more familiar to those used to a more mainstream algebraic modeling
 language.)
 
 With the correct model variables summed and stored in the
-``supply_annual`` variable, Line 10 calls a function defined in
+``supply_annual`` variable, Line 11 calls a function defined in
 :code:`temoa/components/commodities.py` that checks to make sure there is a technology
 that can supply each demand commodity ``dem`` in each :math:`\{r, p\}`.
 
@@ -192,7 +193,7 @@ practice extremely useful while building and debugging a model.
 Line 12 creates the actual equality comparison.  This line is superfluous, but
 we leave it in the code as a reminder that comparison operators (i.e. :code:`==`,
 :code:`<=`, :code:`>=`) with a Pyomo object (like supply_annual) generate a Pyomo
-*expression object*, not a boolean True or False as one might expect.\\ [#return_expression]_
+*expression object*, not a boolean True or False as one might expect [#return_expression]_.
 It is this expression object that must be returned to Pyomo, as on Line 13.
 
 In the above implementation, the constraint is called for every tuple in the
@@ -288,7 +289,9 @@ an index function is needed to determine the valid indices for the constraint.
    .. code-block:: python
       :linenos:
 
-      def ramp_up_day_constraint_indices(model: TemoaModel):
+      def ramp_up_day_constraint_indices(
+         model: TemoaModel,
+      ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
          indices = {
             (r, p, s, d, t, v)
             for r, p, t in model.ramp_up_vintages
@@ -296,6 +299,7 @@ an index function is needed to determine the valid indices for the constraint.
             for s in model.time_season
             for d in model.time_of_day
          }
+
          return indices
 
 With the sparse set (:code:`demand_constraint_rpc` or :code:`ramp_up_day_constraint_rpsdtv`)
@@ -380,7 +384,7 @@ reasons:
 This last point is somewhat esoteric, but consider the MathProg implementation
 of the Demand constraint in contrast with the last line of the Pyomo version::
 
-   expr = supply_annual == value( M.demand[r, p, dem] )
+   expr = supply_annual == value(model.demand[r, p, dem])
 
 While the MathProg version indeed translates more directly to standard notation,
 consider that standard notation itself needs extensive surrounding text to
@@ -772,11 +776,11 @@ Naming Conventions
 All constraints attached to a model should end with ``constraint``.  Similarly,
 the function they use to define the constraint for each index should use the
 same prefix and ``constraint`` suffix, but separate them with an underscore
-(e.g. ``M.somename_constraint = Constraint( ...,  rule=somename_constraint``):
+(e.g. ``self.somename_constraint = Constraint( ...,  rule=somename_constraint``):
 
 .. code-block:: python
 
-   M.capacity_constraint = Constraint( M.CapacityVar_tv, rule=Capacity_constraint )
+   self.capacity_constraint = Constraint( self.CapacityVar_tv, rule=Capacity_constraint )
 
 When providing the implementation for a constraint rule, use a consistent naming
 scheme between functions and constraint definitions.  For instance, we have
