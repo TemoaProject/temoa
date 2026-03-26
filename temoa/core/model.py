@@ -360,6 +360,7 @@ class TemoaModel(AbstractModel):
         # )
         self.demand_specific_distribution = Param(
             self.regions,
+            self.time_optimize,
             self.time_season,
             self.time_of_day,
             self.commodity_demand,

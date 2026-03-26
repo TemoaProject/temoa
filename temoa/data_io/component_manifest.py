@@ -386,8 +386,8 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.demand_specific_distribution,
             table='demand_specific_distribution',
-            columns=['region', 'season', 'tod', 'demand_name', 'dsd'],
-            is_period_filtered=False,
+            columns=['region', 'period', 'season', 'tod', 'demand_name', 'dsd'],
+            is_period_filtered=True,
             is_table_required=False,
         ),
         LoadItem(
