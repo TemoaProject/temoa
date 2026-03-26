@@ -117,7 +117,7 @@ def check_singleton_demands(model: TemoaModel) -> None:
         model.v_flow_out_annual[r, p, i, t, v, dem].fix(val)
         if t not in model.tech_annual:
             for s, d in cross_product(model.time_season, model.time_of_day):
-                dsd = value(model.demand_specific_distribution[r, s, d, dem])
+                dsd = value(model.demand_specific_distribution[r, p, s, d, dem])
                 model.v_flow_out[r, p, s, d, i, t, v, dem].fix(val * dsd)
         model.singleton_demands.add((r, p, dem))
 
@@ -279,7 +279,7 @@ def demand_activity_constraint(
         for s_i in model.process_inputs_by_output[r, p, t, v, dem]
     )
 
-    expr = annual_activity * value(model.demand_specific_distribution[r, s, d, dem]) == activity
+    expr = annual_activity * value(model.demand_specific_distribution[r, p, s, d, dem]) == activity
     return expr
 
 
@@ -416,7 +416,7 @@ def commodity_balance_constraint(
         # Into annual flows
         consumed += sum(
             (
-                value(model.demand_specific_distribution[r, s, d, s_o])
+                value(model.demand_specific_distribution[r, p, s, d, s_o])
                 if s_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )
