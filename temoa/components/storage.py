@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from .utils import Operator, get_variable_efficiency, operator_expression
+from .utils import Operator, get_capacity_factor, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -36,27 +36,24 @@ logger = getLogger(__name__)
 
 def storage_level_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return model.storage_level_indices_rpsdtv
 
 
 def seasonal_storage_level_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, Technology, Vintage]]:
     return model.seasonal_storage_level_indices_rpstv
 
 
 def seasonal_storage_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    if model.seasonal_storage_level_indices_rpstv:
-        indices = {
-            (r, p, s, d, t, v)
-            for r, p, s, t, v in model.seasonal_storage_level_indices_rpstv
-            for d in model.time_of_day
-        }
-        return indices
-    return set()
+    return {
+        (r, p, s, d, t, v)
+        for r, p, s, t, v in model.seasonal_storage_level_indices_rpstv
+        for d in model.time_of_day
+    }
 
 
 def storage_init_variable_indices(
@@ -69,8 +66,6 @@ def storage_init_variable_indices(
     empirically improved barrier solve time ~25% on a 16-region national model.
     The mechanism is not fully understood.
     """
-    if not model.storage_level_indices_rpsdtv:
-        return set()
     return {
         (r, p, s, t, v)
         for r, p, s, _d, t, v in model.storage_level_indices_rpsdtv
@@ -80,7 +75,7 @@ def storage_init_variable_indices(
 
 def storage_constraint_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return model.storage_level_indices_rpsdtv
 
 
@@ -547,6 +542,7 @@ def storage_throughput_constraint(
     max_throughput = (
         model.v_capacity[r, p, t, v]
         * value(model.capacity_to_activity[r, t])
+        * get_capacity_factor(model, r, s, d, t, v)
         * value(model.segment_fraction[s, d])
     )
     expr = throughput <= max_throughput

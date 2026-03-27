@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from .utils import get_variable_efficiency
+from .utils import get_capacity_factor, get_variable_efficiency
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 
 
 def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Season, TimeOfDay]]:
-    indices = {
+    return {
         (r, p, s, d)
         for r in model.planning_reserve_margin.sparse_keys()
         for p in model.time_optimize
@@ -38,8 +38,6 @@ def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Seaso
         for s in model.time_season
         for d in model.time_of_day
     }
-
-    return indices
 
 
 # ============================================================================
@@ -100,7 +98,7 @@ def reserve_margin_dynamic(
     available = sum(
         model.v_capacity[r, p, t, v]
         * value(model.reserve_capacity_derate[r, s, t, v])
-        * value(model.capacity_factor_process[r, s, d, t, v])
+        * get_capacity_factor(model, r, s, d, t, v)
         * value(model.capacity_to_activity[r, t])
         * value(model.segment_fraction[s, d])
         for (t, v) in model.process_reserve_periods[r, p]
@@ -149,7 +147,7 @@ def reserve_margin_dynamic(
             available += sum(
                 model.v_capacity[r1r2, p, t, v]
                 * value(model.reserve_capacity_derate[r1r2, s, t, v])
-                * value(model.capacity_factor_process[r1r2, s, d, t, v])
+                * get_capacity_factor(model, r1r2, s, d, t, v)
                 * value(model.capacity_to_activity[r1r2, t])
                 * value(model.segment_fraction[s, d])
                 for (t, v) in model.process_reserve_periods[r1r2, p]
@@ -160,7 +158,7 @@ def reserve_margin_dynamic(
             available -= sum(
                 model.v_capacity[r1r2, p, t, v]
                 * value(model.reserve_capacity_derate[r1r2, s, t, v])
-                * value(model.capacity_factor_process[r1r2, s, d, t, v])
+                * get_capacity_factor(model, r1r2, s, d, t, v)
                 * value(model.capacity_to_activity[r1r2, t])
                 * value(model.segment_fraction[s, d])
                 for (t, v) in model.process_reserve_periods[r1r2, p]

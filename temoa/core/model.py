@@ -132,7 +132,7 @@ class TemoaModel(AbstractModel):
 
         self.new_capacity_rtv: t.NewCapacitySet = set()
         self.active_capacity_available_rpt: t.ActiveCapacityAvailableSet = set()
-        self.active_capacity_available_rptv: t.ActiveCapacityAvailableVintageSet = set()
+        self.active_capacity_rptv: t.ActiveCapacityAvailableVintageSet = set()
         self.group_region_active_flow_rpt: t.GroupRegionActiveFlowSet = (
             set()  # Set of valid group-region, period, tech indices
         )
@@ -538,10 +538,10 @@ class TemoaModel(AbstractModel):
         self.initialize_efficiency_variable = BuildAction(rule=technology.check_efficiency_variable)
 
         # Define technology cost parameters
-        # dev note:  the cost_fixed_rptv isn't truly needed, but it is included in a constraint, so
-        #            let it go for now
         self.cost_fixed_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
         self.cost_fixed = Param(self.cost_fixed_rptv)
+        self.cost_variable_rptv = Set(dimen=4, initialize=costs.cost_variable_indices)
+        self.cost_variable = Param(self.cost_variable_rptv)
 
         self.cost_invest_rtv = Set(
             within=self.regional_indices * self.tech_all * self.time_optimize
@@ -555,9 +555,6 @@ class TemoaModel(AbstractModel):
         self.loan_annualize = Param(
             self.cost_invest_rtv, initialize=costs.param_loan_annualize_rule
         )
-
-        self.cost_variable_rptv = Set(dimen=4, initialize=costs.cost_variable_indices)
-        self.cost_variable = Param(self.cost_variable_rptv)
 
         self.cost_emission_rpe = Set(
             within=self.regions * self.time_optimize * self.commodity_emissions
@@ -784,10 +781,10 @@ class TemoaModel(AbstractModel):
         )
 
         # Derived decision variables
-        self.capacity_var_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
+        self.capacity_var_rptv = Set(dimen=4, initialize=capacity.capacity_variable_indices)
         self.v_capacity = Var(self.capacity_var_rptv, domain=NonNegativeReals)
 
-        self.new_capacity_var_rtv = Set(dimen=3, initialize=capacity.capacity_variable_indices)
+        self.new_capacity_var_rtv = Set(dimen=3, initialize=capacity.new_capacity_variable_indices)
         self.v_new_capacity = Var(self.new_capacity_var_rtv, domain=NonNegativeReals, initialize=0)
 
         self.retired_capacity_var_rptv = Set(
@@ -856,7 +853,7 @@ class TemoaModel(AbstractModel):
             ['Starting adjusted_capacity_constraint'], rule=progress_check
         )
         self.adjusted_capacity_constraint = Constraint(
-            self.cost_fixed_rptv, rule=capacity.adjusted_capacity_constraint
+            self.capacity_var_rptv, rule=capacity.adjusted_capacity_constraint
         )
         self.progress_marker_5 = BuildAction(['Finished Capacity Constraints'], rule=progress_check)
 

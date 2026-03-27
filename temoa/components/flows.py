@@ -41,9 +41,7 @@ logger = getLogger(__name__)
 
 def flow_variable_indices(
     model: TemoaModel,
-) -> (
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
-):
+) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]:
     return model.active_flow_rpsditvo
 
 
@@ -55,9 +53,7 @@ def flow_variable_annual_indices(
 
 def flex_variable_indices(
     model: TemoaModel,
-) -> (
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
-):
+) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]:
     return model.active_flex_rpsditvo
 
 
@@ -69,17 +65,13 @@ def flex_variable_annual_indices(
 
 def flow_in_storage_variable_indices(
     model: TemoaModel,
-) -> (
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
-):
+) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]:
     return model.active_flow_in_storage_rpsditvo
 
 
 def curtailment_variable_indices(
     model: TemoaModel,
-) -> (
-    set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]] | None
-):
+) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity, Technology, Vintage, Commodity]]:
     return model.active_curtailment_rpsditvo
 
 
