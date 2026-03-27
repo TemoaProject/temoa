@@ -64,26 +64,23 @@ def limit_tech_input_split_constraint_indices(
 def limit_tech_input_split_annual_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Commodity, Technology, Vintage, str]]:
-    indices = {
+    return {
         (r, p, i, t, v, op)
         for r, p, i, t, op in model.input_split_annual_vintages
         if t in model.tech_annual
         for v in model.input_split_annual_vintages[r, p, i, t, op]
     }
 
-    return indices
-
 
 def limit_tech_input_split_average_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Commodity, Technology, Vintage, str]]:
-    indices = {
+    return {
         (r, p, i, t, v, op)
         for r, p, i, t, op in model.input_split_annual_vintages
         if t not in model.tech_annual
         for v in model.input_split_annual_vintages[r, p, i, t, op]
     }
-    return indices
 
 
 def limit_tech_output_split_constraint_indices(
@@ -114,89 +111,81 @@ def limit_tech_output_split_constraint_indices(
 def limit_tech_output_split_annual_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
-    indices = {
+    return {
         (r, p, t, v, o, op)
         for r, p, t, o, op in model.output_split_annual_vintages
         if t in model.tech_annual
         for v in model.output_split_annual_vintages[r, p, t, o, op]
     }
-    return indices
 
 
 def limit_tech_output_split_average_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
-    indices = {
+    return {
         (r, p, t, v, o, op)
         for r, p, t, o, op in model.output_split_annual_vintages
         if t not in model.tech_annual
         for v in model.output_split_annual_vintages[r, p, t, o, op]
     }
-    return indices
 
 
 def limit_growth_capacity_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_growth_capacity.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_degrowth_capacity_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_degrowth_capacity.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_growth_new_capacity_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_growth_new_capacity.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_degrowth_new_capacity_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_degrowth_new_capacity.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_growth_new_capacity_delta_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_growth_new_capacity_delta.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_degrowth_new_capacity_delta_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, str]]:
-    indices = {
+    return {
         (r, p, t, op)
         for r, t, op in model.limit_degrowth_new_capacity_delta.sparse_keys()
         for p in model.time_optimize
     }
-    return indices
 
 
 def limit_seasonal_capacity_factor_constraint_indices(
@@ -213,7 +202,7 @@ def limit_seasonal_capacity_factor_constraint_indices(
 def limit_annual_capacity_factor_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
-    indices = {
+    return {
         (r, p, t, v, o, op)
         for r, t, v, o, op in model.limit_annual_capacity_factor_constraint_rtvo
         for _r in geography.gather_group_regions(model, r)
@@ -221,7 +210,6 @@ def limit_annual_capacity_factor_indices(
         for p in model.time_optimize
         if o in model.process_outputs.get((_r, p, _t, v), [])
     }
-    return indices
 
 
 # ============================================================================

@@ -32,7 +32,7 @@ logger = getLogger(__name__)
 def baseload_diurnal_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    indices = {
+    return {
         (r, p, s, d, t, v)
         for r, p, t in model.baseload_vintages
         for v in model.baseload_vintages[r, p, t]
@@ -40,13 +40,11 @@ def baseload_diurnal_constraint_indices(
         for d in model.time_of_day
     }
 
-    return indices
-
 
 def ramp_up_day_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    indices = {
+    return {
         (r, p, s, d, t, v)
         for r, p, t in model.ramp_up_vintages
         for v in model.ramp_up_vintages[r, p, t]
@@ -54,21 +52,17 @@ def ramp_up_day_constraint_indices(
         for d in model.time_of_day
     }
 
-    return indices
-
 
 def ramp_down_day_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    indices = {
+    return {
         (r, p, s, d, t, v)
         for r, p, t in model.ramp_down_vintages
         for v in model.ramp_down_vintages[r, p, t]
         for s in model.time_season
         for d in model.time_of_day
     }
-
-    return indices
 
 
 def ramp_up_season_constraint_indices(
@@ -80,7 +74,7 @@ def ramp_up_season_constraint_indices(
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
-    indices = {
+    return {
         (r, p, s, s_next, t, v)
         for r, p, t in model.ramp_up_vintages
         for v in model.ramp_up_vintages[r, p, t]
@@ -88,8 +82,6 @@ def ramp_up_season_constraint_indices(
         for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
         if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
-
-    return indices
 
 
 def ramp_down_season_constraint_indices(
@@ -101,7 +93,7 @@ def ramp_down_season_constraint_indices(
         return set()
 
     # s, s_next indexing ensures we dont build redundant constraints
-    indices = {
+    return {
         (r, p, s, s_next, t, v)
         for r, p, t in model.ramp_down_vintages
         for v in model.ramp_down_vintages[r, p, t]
@@ -109,8 +101,6 @@ def ramp_down_season_constraint_indices(
         for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
         if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
-
-    return indices
 
 
 # ============================================================================

@@ -49,14 +49,11 @@ def seasonal_storage_level_variable_indices(
 def seasonal_storage_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    if model.seasonal_storage_level_indices_rpstv:
-        indices = {
-            (r, p, s, d, t, v)
-            for r, p, s, t, v in model.seasonal_storage_level_indices_rpstv
-            for d in model.time_of_day
-        }
-        return indices
-    return set()
+    return {
+        (r, p, s, d, t, v)
+        for r, p, s, t, v in model.seasonal_storage_level_indices_rpstv
+        for d in model.time_of_day
+    }
 
 
 def storage_init_variable_indices(
@@ -69,8 +66,6 @@ def storage_init_variable_indices(
     empirically improved barrier solve time ~25% on a 16-region national model.
     The mechanism is not fully understood.
     """
-    if not model.storage_level_indices_rpsdtv:
-        return set()
     return {
         (r, p, s, t, v)
         for r, p, s, _d, t, v in model.storage_level_indices_rpsdtv

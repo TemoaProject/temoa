@@ -113,9 +113,7 @@ def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Techno
     because in myopic mode, previously optimized vintages remain active in later
     windows and their data must be accepted by the param's index set.
     """
-    indices = {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_keys()}
-
-    return indices
+    return {(r, t, v) for r, i, t, v, o in model.efficiency.sparse_keys()}
 
 
 # ============================================================================

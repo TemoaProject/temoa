@@ -136,7 +136,7 @@ def demand_activity_constraint_indices(
     demand commodity (and no annual techs co-serve it), the flow variables are fixed
     directly and DAC indices are omitted.
     """
-    indices = {
+    return {
         (r, p, s, d, t, v, dem)
         for r, p, dem in model.demand_constraint_rpc
         if (r, p, dem) not in model.singleton_demands
@@ -145,7 +145,6 @@ def demand_activity_constraint_indices(
         for s in model.time_season
         for d in model.time_of_day
     }
-    return indices
 
 
 def commodity_balance_constraint_indices(
@@ -153,7 +152,7 @@ def commodity_balance_constraint_indices(
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Commodity]]:
     # Generate indices only for those commodities that are produced by
     # technologies with varying output at the time slice level.
-    indices = {
+    return {
         (r, p, s, d, c)
         for r, p, c in model.commodity_balance_rpc
         # r in this line includes interregional transfer combinations (not needed).
@@ -163,23 +162,19 @@ def commodity_balance_constraint_indices(
         for d in model.time_of_day
     }
 
-    return indices
-
 
 def annual_commodity_balance_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Commodity]]:
     # Generate indices only for those commodities that are produced by
     # technologies with constant annual output.
-    indices = {
+    return {
         (r, p, c)
         for r, p, c in model.commodity_balance_rpc
         # r in this line includes interregional transfer combinations (not needed).
         if r in model.regions  # this line ensures only the regions are included.
         and c in model.commodity_annual
     }
-
-    return indices
 
 
 # ============================================================================
