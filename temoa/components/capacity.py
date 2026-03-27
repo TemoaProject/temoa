@@ -151,7 +151,7 @@ def get_default_capacity_factor(
 
 def new_capacity_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Technology, Vintage]] | None:
+) -> set[tuple[Region, Technology, Vintage]]:
     return model.new_capacity_rtv
 
 
@@ -179,13 +179,13 @@ def annual_retirement_variable_indices(
 
 def capacity_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Technology, Vintage]]:
     return model.active_capacity_rptv
 
 
 def capacity_available_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Technology]] | None:
+) -> set[tuple[Region, Period, Technology]]:
     return model.active_capacity_available_rpt
 
 

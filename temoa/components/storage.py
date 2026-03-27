@@ -36,13 +36,13 @@ logger = getLogger(__name__)
 
 def storage_level_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return model.storage_level_indices_rpsdtv
 
 
 def seasonal_storage_level_variable_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, Technology, Vintage]]:
     return model.seasonal_storage_level_indices_rpstv
 
 
@@ -75,7 +75,7 @@ def storage_init_variable_indices(
 
 def storage_constraint_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return model.storage_level_indices_rpsdtv
 
 

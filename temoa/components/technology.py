@@ -46,7 +46,7 @@ def gather_group_techs(model: TemoaModel, t_or_g: Technology) -> Iterable[Techno
 
 def model_process_life_indices(
     model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, Vintage]] | None:
+) -> set[tuple[Region, Period, Technology, Vintage]]:
     """
     Returns the set of sensical (region, period, tech, vintage) tuples.  The tuple indicates
     the periods in which a process is active, distinct from TechLifeFracIndices that
