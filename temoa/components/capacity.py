@@ -156,7 +156,7 @@ def get_capacity_factor(
 # ============================================================================
 
 
-def capacity_variable_indices(
+def new_capacity_variable_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Technology, Vintage]] | None:
     return model.new_capacity_rtv
@@ -184,6 +184,12 @@ def annual_retirement_variable_indices(
     }
 
 
+def capacity_variable_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Period, Technology, Vintage]] | None:
+    return model.active_capacity_rptv
+
+
 def capacity_available_variable_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology]] | None:
@@ -193,77 +199,57 @@ def capacity_available_variable_indices(
 def regional_exchange_capacity_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Region, Period, Technology, Vintage]]:
-    indices: set[tuple[Region, Region, Period, Technology, Vintage]] = set()
-    for r_e, p, i in model.export_regions:
-        for r_i, t, v, _o in model.export_regions[r_e, p, i]:
-            indices.add((r_e, r_i, p, t, v))
-
-    return indices
+    return {
+        (r_to, r_from, p, t, v)
+        for r_from, p, i in model.export_regions
+        for r_to, t, v, _o in model.export_regions[r_from, p, i]
+    }
 
 
 def capacity_annual_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]]:
-    capacity_indices: set[tuple[Region, Period, Technology, Vintage]] = set()
-    if model.active_activity_rptv:
-        for r, p, t, v in model.active_activity_rptv:
-            if t in model.tech_annual and t not in model.tech_demand:
-                if t not in model.tech_uncap:
-                    capacity_indices.add((r, p, t, v))
-    else:
-        return set()
-
-    return capacity_indices
+    return {
+        (r, p, t, v)
+        for r, p, t, v in model.active_capacity_rptv
+        if t in model.tech_annual and t not in model.tech_demand
+    }
 
 
 def capacity_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    capacity_indices: set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]] = set()
-    if model.active_activity_rptv:
-        for r, p, t, v in model.active_activity_rptv:
-            if t not in model.tech_annual or t in model.tech_demand:
-                if t not in model.tech_uncap:
-                    if t not in model.tech_storage:
-                        for s in model.time_season:
-                            for d in model.time_of_day:
-                                capacity_indices.add((r, p, s, d, t, v))
-    else:
-        return set()
+    return {
+        (r, p, s, d, t, v)
+        for r, p, t, v in model.active_capacity_rptv
+        for s in model.time_season
+        for d in model.time_of_day
+        if t not in model.tech_annual or t in model.tech_demand
+        if t not in model.tech_storage
+    }
 
-    return capacity_indices
+
+def capacity_factor_tech_indices(
+    model: TemoaModel,
+) -> set[tuple[Region, Season, TimeOfDay, Technology]]:
+    return {
+        (r, s, d, t)
+        for r, _p, t in model.active_capacity_available_rpt
+        for s in model.time_season
+        for d in model.time_of_day
+    }
 
 
 @deprecated('switched over to validator... this set is typically VERY empty')
 def capacity_factor_process_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Season, TimeOfDay, Technology, Vintage]]:
-    indices: set[tuple[Region, Season, TimeOfDay, Technology, Vintage]] = set()
-    for r, _i, t, v, _o in model.efficiency.sparse_keys():
-        for s in model.time_season:
-            for d in model.time_of_day:
-                indices.add((r, s, d, t, v))
-    return indices
-
-
-def capacity_factor_tech_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Season, TimeOfDay, Technology]]:
-    all_cfs: set[tuple[Region, Season, TimeOfDay, Technology]] = set()
-    if model.active_capacity_available_rpt:  # in case every tech in the model is unlim_cap
-        for r, _p, t in model.active_capacity_available_rpt:
-            for s in model.time_season:
-                for d in model.time_of_day:
-                    all_cfs.add((r, s, d, t))
-    else:
-        return set()
-    return all_cfs
-
-
-def capacity_available_variable_indices_vintage(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, Vintage]] | None:
-    return model.active_capacity_available_rptv
+    return {
+        (r, s, d, t, v)
+        for r, _i, t, v, _o in model.efficiency.sparse_keys()
+        for s in model.time_season
+        for d in model.time_of_day
+    }
 
 
 # ============================================================================
@@ -660,18 +646,14 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
     # Create active capacity index sets from the now-populated process_vintages
     model.new_capacity_rtv = {
         (r, t, v)
-        for r, p, t in model.process_vintages
-        for v in model.process_vintages[r, p, t]
+        for r, t, v in model.process_periods
         if t not in model.tech_uncap and v in model.time_optimize
     }
     model.active_capacity_available_rpt = {
-        (r, p, t)
-        for r, p, t in model.process_vintages
-        if model.process_vintages[r, p, t] and t not in model.tech_uncap
+        (r, p, t) for r, p, t in model.process_vintages if t not in model.tech_uncap
     }
-    model.active_capacity_available_rptv = {
+    model.active_capacity_rptv = {
         (r, p, t, v)
-        for r, p, t in model.process_vintages
+        for r, p, t in model.active_capacity_available_rpt
         for v in model.process_vintages[r, p, t]
-        if t not in model.tech_uncap
     }

@@ -97,18 +97,11 @@ def get_loan_life(model: TemoaModel, r: Region, t: Technology, v: Vintage) -> in
 
 
 def cost_fixed_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, Vintage]]:
-    # we pull the unlimited capacity techs from this index.  They cannot have fixed costs
-    if model.active_activity_rptv:
-        return {
-            (r, p, t, v) for r, p, t, v in model.active_activity_rptv if t not in model.tech_uncap
-        }
-    return set()
+    return model.active_capacity_rptv
 
 
 def cost_variable_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, Vintage]]:
-    if model.active_activity_rptv:
-        return model.active_activity_rptv
-    return set()
+    return model.active_activity_rptv
 
 
 def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Technology, Vintage]]:
