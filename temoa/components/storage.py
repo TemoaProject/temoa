@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, value
 
-from .utils import Operator, get_variable_efficiency, operator_expression
+from .utils import Operator, get_capacity_factor, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -547,6 +547,7 @@ def storage_throughput_constraint(
     max_throughput = (
         model.v_capacity[r, p, t, v]
         * value(model.capacity_to_activity[r, t])
+        * get_capacity_factor(model, r, s, d, t, v)
         * value(model.segment_fraction[s, d])
     )
     expr = throughput <= max_throughput
