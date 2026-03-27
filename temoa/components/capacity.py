@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING
 from deprecated import deprecated
 from pyomo.environ import value
 
+from .utils import get_capacity_factor
+
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
     from temoa.types import (
@@ -140,15 +142,6 @@ def get_default_capacity_factor(
     :return: the capacity factor
     """
     return value(model.capacity_factor_tech[r, s, d, t])
-
-
-def get_capacity_factor(
-    model: TemoaModel, r: Region, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> float:
-    if model.is_capacity_factor_process[r, t, v]:
-        return value(model.capacity_factor_process[r, s, d, t, v])
-    else:
-        return value(model.capacity_factor_tech[r, s, d, t])
 
 
 # ============================================================================
