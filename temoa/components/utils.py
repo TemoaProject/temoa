@@ -78,8 +78,7 @@ def get_variable_efficiency(
         return value(model.efficiency[r, i, t, v, o]) * value(
             model.efficiency_variable[r, s, d, i, t, v, o]
         )
-    else:
-        return value(model.efficiency[r, i, t, v, o])
+    return value(model.efficiency[r, i, t, v, o])
 
 
 def get_capacity_factor(
@@ -87,5 +86,4 @@ def get_capacity_factor(
 ) -> float:
     if model.is_capacity_factor_process[r, t, v]:
         return value(model.capacity_factor_process[r, s, d, t, v])
-    else:
-        return value(model.capacity_factor_tech[r, s, d, t])
+    return value(model.capacity_factor_tech[r, s, d, t])
