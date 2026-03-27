@@ -175,10 +175,15 @@ def calculate_initial_positions(
         return positions
 
     # Arrange sector "anchors" in a large circle
-    layout_radius = 2000  # The radius of the main circle for sectors
-    jitter_radius = 1000  # How far nodes can be from their sector anchor
-    sector_anchors = {}
+    # Scale radius based on the number of sectors and nodes to handle small models better
     num_sectors = len(sectors_to_place)
+    num_nodes = len(nodes_to_place)
+
+    # Base radius + incremental scaling
+    layout_radius = max(800, min(2000, 400 + 200 * num_sectors + 2 * num_nodes))
+    jitter_radius = layout_radius // 2
+
+    sector_anchors = {}
 
     for i, sector in enumerate(sectors_to_place):
         angle = (i / num_sectors) * 2 * math.pi
@@ -218,18 +223,31 @@ def calculate_tech_graph_positions(
     """
     positions = {}
 
+    # Materialize the iterable to avoid consumption issues
+    all_edges_list = list(all_edges)
+
     # 1. Identify all unique sectors present in the technology list
-    sectors_to_place = sorted({tech.sector for tech in all_edges if tech.sector})
+    sectors_to_place = sorted({edge.sector for edge in all_edges_list if edge.sector})
 
     if not sectors_to_place:
         # If no sectors, just return empty positions and let physics handle it
         return {}
 
     # 2. Arrange sector "anchors" in a large circle
-    layout_radius = 2500  # Use a large radius to ensure initial separation
-    jitter_radius = 600  # Controls the size of the initial clusters
-    sector_anchors = {}
+    # Scale radius based on the number of sectors and unique technologies
+    unique_techs_to_place = sorted(
+        {edge.tech for edge in all_edges_list if edge.tech}, key=lambda t: str(t)
+    )
     num_sectors = len(sectors_to_place)
+    num_nodes = len(unique_techs_to_place)
+
+    if not unique_techs_to_place:
+        return {}
+
+    layout_radius = max(1000, min(2500, 500 + 300 * num_sectors + 5 * num_nodes))
+    jitter_radius = layout_radius // 4
+
+    sector_anchors = {}
 
     for i, sector in enumerate(sectors_to_place):
         angle = (i / num_sectors) * 2 * math.pi
@@ -237,9 +255,12 @@ def calculate_tech_graph_positions(
         cy = layout_radius * math.sin(angle)
         sector_anchors[sector] = (cx, cy)
 
-    # 3. Place each technology node near its sector's anchor point with jitter
-    for edge_tuple in all_edges:
-        primary_sector = edge_tuple.sector
+    # 3. Place each unique technology node near its sector's anchor point with jitter
+    # Create a mapping of tech to its primary sector from the edges
+    tech_to_sector = {edge.tech: edge.sector for edge in all_edges_list if edge.tech}
+
+    for tech in unique_techs_to_place:
+        primary_sector = tech_to_sector.get(tech)
         if not primary_sector or primary_sector not in sector_anchors:
             # Place nodes without a defined sector at the center
             cx, cy = 0, 0
@@ -247,13 +268,13 @@ def calculate_tech_graph_positions(
             cx, cy = sector_anchors[primary_sector]
 
         # Apply deterministic "jitter" to prevent stacking (stable per-tech)
-        seed = uuid.uuid5(uuid.NAMESPACE_DNS, str(edge_tuple.tech)).int
+        seed = uuid.uuid5(uuid.NAMESPACE_DNS, str(tech)).int
         rng = random.Random(seed)
         rand_angle = rng.uniform(0, 2 * math.pi)
         rand_radius = rng.uniform(0, jitter_radius)
         x = cx + rand_radius * math.cos(rand_angle)
         y = cy + rand_radius * math.sin(rand_angle)
 
-        positions[edge_tuple.tech] = {'x': x, 'y': y}
+        positions[tech] = {'x': x, 'y': y}
 
     return positions

@@ -180,7 +180,8 @@ def make_nx_graph(
         if any(info['attrs'].get('dashes', False) for info in techs_info):
             combined_attrs['dashes'] = True
 
-        combined_attrs['value'] = sum(info['attrs'].get('value', 1) for info in techs_info)
+        # Use 'width' for thickness, 'value' breaks font rendering with smooth edges
+        combined_attrs['width'] = 2 + len(techs_info)  # Base width + 1 per tech
         multi_edge_key = f'{ic}-{oc}-{uuid.uuid4().hex[:8]}'
         dg.add_edge(ic, oc, key=multi_edge_key, **combined_attrs)
 
@@ -280,6 +281,7 @@ DEFAULT_VIS_OPTIONS = {
         'width': 2,
         'smooth': {'type': 'continuous', 'roundness': 0.5},
         'arrows': {'to': {'enabled': False, 'scaleFactor': 1}},
+        'font': {'align': 'top', 'size': 14},
     },
     'physics': {
         'enabled': False,
@@ -304,7 +306,7 @@ DEFAULT_VIS_OPTIONS = {
         'navigationButtons': False,
         'keyboard': {'enabled': True, 'bindToWindow': False},
     },
-    'layout': {'randomSeed': None, 'improvedLayout': True},
+    'layout': {'improvedLayout': True},
     'configure': {
         'enabled': True,
         'showButton': False,  # We have our own header, so hide the default floating button
