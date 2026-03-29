@@ -40,23 +40,22 @@ References
 .. |'''| replace:: ``'``\ ``'``\ ``'``
 
 .. _GNU Linear Programming Kit: https://www.gnu.org/software/glpk/
-.. _WinGLPK: http://winglpk.sf.net/
+.. _WinGLPK: https://winglpk.sourceforge.net/
 .. _Github repo: https://github.com/TemoaProject/temoa/
-.. _Temoa model: http://temoaproject.org/download/temoa.py
-.. _temoaproject.org: http://temoaproject.org/
-.. _example data sets: http://temoaproject.org/download/example_data_sets.zip
-.. _mailing list: https://groups.google.com/forum/\#\!forum/temoa-project
-.. _Temoa Forum: https://groups.google.com/forum/\#\!forum/temoa-project
+.. _Temoa model: https://temoaproject.org/download/temoa.py
+.. _temoaproject.org: https://temoaproject.org/
+.. _example data sets: https://temoaproject.org/download/example_data_sets.zip
+
 .. _various: http://xlinux.nist.gov/dads/HTML/optimization.html
-.. _available: http://www.stanford.edu/\~boyd/cvxbook/
+.. _available: https://web.stanford.edu/\~boyd/cvxbook/
 .. _online: https://en.wikipedia.org/wiki/Optimization_problem
 .. _sources: https://en.wikipedia.org/wiki/Mathematical_optimization
 .. _GAMS: http://www.gams.com/
 .. _AMPL: http://www.ampl.com/
 .. _PDF: https://temoacloud.com/wp-content/uploads/2020/02/toolsforenergymodeloptimizationandanalysistemoa.pdf
-.. _HTML: http://temoaproject.org/docs/
+.. _HTML: https://temoaproject.org/docs/
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
-.. _HTML version: http://temoaproject.org/docs/
+.. _HTML version: https://temoaproject.org/docs/
 .. _code smell: https://en.wikipedia.org/wiki/Code_smell
 .. _PEP 8: http://www.python.org/dev/peps/pep-0008/
 .. _PEP 3120: http://www.python.org/dev/peps/pep-3120/
@@ -64,9 +63,9 @@ References
 .. _lambda function: http://docs.python.org/tutorial/controlflow.html\#lambda-forms
 .. _generally accepted relative rates: http://www.forecasts.org/inflation.htm
 .. _Pull Request: https://help.github.com/articles/using-pull-requests
-.. _quick start guide: http://rogerdudler.github.io/git-guide/
+.. _quick start guide: https://rogerdudler.github.io/git-guide/
 .. _sqlite: https://www.sqlite.org/
-.. _Graphviz: http://www.graphviz.org/
+.. _Graphviz: https://graphviz.org/
 .. _ruff: https://docs.astral.sh/ruff/
 
 .. bibliography:: References.bib

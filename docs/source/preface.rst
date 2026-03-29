@@ -1,5 +1,9 @@
 
 
+=======
+Preface
+=======
+
 This manual, in both `PDF`_ and `HTML`_ form, is the official documentation of
 Tools for Energy Model Optimization and Analysis (Temoa).  It describes all
 functionality of the Temoa model, and provides a mathematical description of
@@ -62,9 +66,7 @@ online presence that supports documentation, dissemination, and community
 engagement. Together, these elements are designed to foster collaboration,
 extensibility, and trust in energy system modeling results.
 
-=======
-Preface
-=======
+
 
 
 
@@ -116,11 +118,9 @@ project there are plenty of levels and avenues for error.  If you spot a bug,
 inconsistency, or general "that could be improved", we want to hear about it.
 
 If you are a software developer-type, feel free to open an issue on our `GitHub
-Issue tracker`_\ .  If you would rather not create a GitHub account, feel free
-to let us know the issue on our `mailing list`_\ .
+Issue tracker`_\ .
 
 .. _PDF: https://temoacloud.com/wp-content/uploads/2020/02/toolsforenergymodeloptimizationandanalysistemoa.pdf
-.. _HTML: http://temoaproject.org/docs/
+.. _HTML: https://temoaproject.org/docs/
 .. _GitHub Issues: https://github.com/TemoaProject/temoa/issues
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
-.. _mailing list: https://groups.google.com/forum/#!forum/temoa-project

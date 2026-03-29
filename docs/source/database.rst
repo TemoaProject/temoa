@@ -106,9 +106,10 @@ recommend that you populate input tables in the following order:
   * limit_tech_output_split
 
 
-For help getting started, take a look at how ``data_files/example_dbs/utopia.sql``
-is constructed. To begin building your own database file, use
-``data_files/temoa_schema_v4.sql``, which is a database file with the requisite
+For help getting started, consider using the ``temoa tutorial <model_name>``
+command to generate a template project or inspect the example SQL file at
+``temoa/tutorial_assets/utopia.sql``. To begin building your own database file, use
+``temoa/db_schema/temoa_schema_v4.sql``, which is a database file with the requisite
 structure but no data added. We recommend leaving the database structure intact,
 and simply adding data to the schema file, or constructing an empty database
 from the schema file and then using a script or database editor to import data.
