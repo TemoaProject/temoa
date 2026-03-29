@@ -1,4 +1,8 @@
 
+========================
+Mathematical Formulation
+========================
+
 To understand this section, the reader will need at least a cursory
 understanding of mathematical optimization.  We omit here that introduction,
 and instead refer the reader to `various`_ `available`_ `online`_ `sources`_.

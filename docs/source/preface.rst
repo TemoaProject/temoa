@@ -62,6 +62,10 @@ online presence that supports documentation, dissemination, and community
 engagement. Together, these elements are designed to foster collaboration,
 extensibility, and trust in energy system modeling results.
 
+=======
+Preface
+=======
+
 
 
 Why Temoa?
@@ -120,4 +124,3 @@ to let us know the issue on our `mailing list`_\ .
 .. _GitHub Issues: https://github.com/TemoaProject/temoa/issues
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
 .. _mailing list: https://groups.google.com/forum/#!forum/temoa-project
-

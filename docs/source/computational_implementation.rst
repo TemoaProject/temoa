@@ -1,5 +1,5 @@
-The Temoa Computational Implementation
-======================================
+Computational Implementation
+============================
 
 We have implemented Temoa within an algebraic modeling environment (AME).  AMEs
 provide both a convenient way to describe mathematical optimization models
