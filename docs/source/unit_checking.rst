@@ -55,7 +55,6 @@ Add to your ``config.toml``:
 
 .. code-block:: toml
 
-   [model_checks]
    check_units = true
 
 Via CLI
@@ -366,7 +365,7 @@ Best Practices
 3. **Be consistent**: Use the same unit style across your database (e.g., always "PJ" not mix of "PJ"/"petajoule")
 4. **Test early**: Run unit checker on partial databases during development
 5. **Document assumptions**: Use notes fields to explain unusual unit choices
-6. **Reference implementation**: See ``temoa/tutorial_assets/utopia.sqlite`` for a fully compliant example
+6. **Reference implementation**: See ``temoa/tutorial_assets/utopia.sql`` for a fully compliant example
 
 Quick Reference
 ---------------

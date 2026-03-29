@@ -1,86 +1,72 @@
 Network Diagrams
 ----------------
 
-.. warning::
-   The graphviz visualization tools have not been fully tested with Temoa v4.0.
-   They may require updates. Please report any issues on
-   `GitHub Issues <https://github.com/TemoaProject/temoa/issues>`_.
-
-Since Temoa model consists of an energy network in which technologies are connected
+Since the Temoa model consists of an energy network in which technologies are connected
 by the flow of energy commodities, a directed network graph represents an excellent way
 to visualize a given energy system representation in a Temoa-compatible input database.
-Temoa utilizes an open source graphics package called `Graphviz`_ to create a series of
-data-specific and interactive energy-system maps. Currently, the output graphs consist of
-a full energy system map as well as capacity and activity results per model time period.
-In addition, users can create subgraphs focused on a particular commodity or technology.
 
+Temoa provides two types of network visualizations:
 
-To use graphviz from the command line, navigate to the :code:`data_processing` folder,
-where the graphviz script resides. To review all of the graphviz options, use the
-:code:`--help` flag:
+1. **Interactive HTML Network Graphs** - Dynamic, explorable visualizations showing commodity flows and technology connections
+2. **Graphviz Diagrams** - Static SVG/DOT format diagrams showing the energy system structure
 
-.. parsed-literal::
-  $ python make_graphviz.py --help
+Generating Network Visualizations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The most basic way to use graphviz is to view the full energy system map:
+The easiest way to generate these diagrams is to enable visualization options in your
+configuration TOML file. Add the following to your config file:
 
 .. parsed-literal::
-  $ python make_graphviz.py -i ../data_files/temoa_utopia.sqlite
+  # Enable interactive HTML network graphs (requires source_trace = true)
+  source_trace = true
+  plot_commodity_network = true
 
-In the command above, note that we have to point the Graphviz module to the
-:code:`temoa_utopia` database file, which resides in the :code:`data_files`
-directory. The resultant system map will look like this:
+  # Enable Graphviz static diagrams
+  graphviz_output = true
 
-.. figure:: images/simple_model.*
+When these options are enabled, Temoa will automatically generate visualization files
+in the output directory during model execution.
+
+**Interactive Network Graphs** will be created as HTML files (one per time period) that
+you can open in a web browser. These provide an interactive view where you can:
+
+- Pan and zoom the network
+- Click on nodes to see details
+- Toggle between commodity-centric and technology-centric views
+- Filter by sector using color-coded legends
+
+**Graphviz Diagrams** will be created as both ``.dot`` (source) and ``.svg`` (rendered)
+files in a subdirectory within your output folder. These provide static visualizations
+showing:
+
+- Full energy system maps
+- Capacity and activity results per model time period
+- Technology interconnections via commodity flows
+
+Example Visualizations
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Interactive Network Graph**
+
+The interactive HTML network graphs provide dynamic exploration with pan, zoom, and filtering capabilities:
+
+.. raw:: html
+
+   <iframe src="_static/Network_Graph_utopia_1990.html" width="100%" height="600px" style="border:1px solid #ccc;"></iframe>
+
+*Interactive network graph for the 'utopia' test system in 1990. You can pan, zoom, click nodes for details, and toggle between commodity-centric and technology-centric views. These files are automatically generated when* ``source_trace = true`` *and* ``plot_commodity_network = true`` *are set in the configuration file.*
+
+**Static Graphviz Diagram**
+
+Graphviz also generates static SVG diagrams showing the energy system structure:
+
+.. figure:: images/results1990.*
    :align: center
    :figclass: center
-   :figwidth: 60%
+   :width: 100%
 
-   This is a map of the simple 'Utopia' system, which we often use for testing
-   purposes. The map shows the possible commodity flows through the system,
-   providing a comprehensive overview of the system. Creating the simple system
-   map is useful for debugging purposes in order to make sure that technologies
-   are linked together properly via commodity flows.
-
-It is also possible to create a system map showing the optimal installed capacity
-and technology flows in a particular model time period. These results are associated
-with a specific model run stored in the model database. To view the results, include
-the scenario flag (:code:`-s`) and a specific model year (:code:`-y`).
-
-Note that when Graphiz runs, it creates a folder within the :code:`data_processing`
-folder. The folder itself is assigned the name of the database file, with
-:code:`input_graphviz` appended to the end. This descriptor changes if using Graphviz
-to visualize output graphics. Within this Graphviz-generated folder are two files. The
-graphics file (default: svg) is a viewable image of the network. The dot file is the
-input file to Graphviz that is created programmatically. Note that the dot files provide
-another means to debug the model and create an archive of visualizations for auditing
-purposes. In addition, we have taken care to make these intermediate files well-formatted.
-
-.. parsed-literal::
-  $ python make_graphviz.py -i ../data_files/temoa_utopia.sqlite -s test_run -y 1990
-
-.. figure:: images/global_results.*
-   :align: center
-   :figclass: center
-   :figwidth: 60%
-
-   This graph shows the optimal installed capacity and commodity flows from the
-   'utopia' test system in 2010.
-
-The output can also be fine-tuned to show results associated with a specific
-commodity or technology. For example:
-
-.. parsed-literal::
-  $ python make_graphviz.py -i ../data_files/temoa_utopia.sqlite -s test_run -y 2010 -b E31
-
-.. figure:: images/techvintage_results.*
-   :align: center
-   :figclass: center
-   :figwidth: 60%
-
-   In this case, the graph shows the commodity flow in and out of
-   technology 'E31' in 2010, which is from the 'test_run' scenario drawn from the
-   'temoa_utopia' database.
-
-
-.. _Graphviz: http://www.graphviz.org/
+   Static Graphviz diagram showing the optimal installed capacity and commodity flows
+   for the 'utopia' test system in 1990. Technologies are shown as boxes,
+   commodities as circles, with arrows indicating energy flows. These diagrams
+   are automatically generated when ``graphviz_output = true`` is set in the
+   configuration file.

@@ -373,8 +373,8 @@ def capacity_annual_constraint(
         :label: CapacityAnnual
 
             \text{C2A}_{r, t}
-            \cdot \textbf{CAP}_{r, t, v}
-        =
+            \cdot \textbf{CAP}_{r, p, t, v}
+        \ge
             \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
         \\
@@ -408,11 +408,11 @@ def capacity_constraint(
        :label: Capacity
 
            \left (
-                   \text{CFP}_{r, p, s, d, t, v}
+                   \text{CFP}_{r, s, d, t, v}
              \cdot \text{C2A}_{r, t}
              \cdot \text{SEG}_{s, d}
            \right )
-           \cdot \textbf{CAP}_{r, t, v}
+           \cdot \textbf{CAP}_{r, p, t, v}
            =
            \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
            +

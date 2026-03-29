@@ -77,7 +77,7 @@ def linked_emissions_tech_constraint(
     e: Commodity,
 ) -> ExprLike:
     r"""
-    This constraint is necessary for carbon capture technologies that produce
+    This constraint can be used for carbon capture technologies that produce
     CO2 as an emissions commodity, but the CO2 also serves as a physical
     input commodity to a downstream process, such as synthetic fuel production.
     To accomplish this, a dummy technology is linked to the CO2-producing
@@ -85,16 +85,21 @@ def linked_emissions_tech_constraint(
     amount as follows:
 
     .. math::
-       :label: LinkedEmissionsTech
+       :label: linked_emissions_tech
 
-         - \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o} \cdot EAC_{r, e, i, t, v, o}
-         = \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+            - \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o} \cdot EAC_{r, e, i, t, v, o}
+            = \sum_{I, O} \textbf{FO}_{r, p, s, d, i, \hat{t}, v, o}
 
-        \forall \{r, p, s, d, t, v, e\} \in \Theta_{\text{linked_techs}}
+            \forall \{r, p, s, d, t, v, e\} \in \Theta_{\text{linked\_techs}}
+
+    where :math:`\hat{t} = LT_{r,t,e}` is the linked technology for primary technology
+    :math:`t` and emissions commodity :math:`e`. For annual technologies
+    (:math:`t \in T^a` or :math:`\hat{t} \in T^a`), the corresponding
+    :math:`\textbf{FOA}` variable scaled by :math:`DSD` (for end use demand techs)
+    or :math:`SEG` (for all other annual techs) is used instead.
 
     The relationship between the primary and linked technologies is given
-    in the :code:`linked_techs` table. Note that the primary and linked
-    technologies cannot be part of the :code:`tech_annual` set. It is implicit that
+    in the :code:`linked_techs` table. It is implicit that
     the primary region corresponds to the linked technology as well. The lifetimes
     of the primary and linked technologies should be specified and identical.
     """

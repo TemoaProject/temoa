@@ -620,13 +620,13 @@ def total_cost_rule(model: TemoaModel) -> Expression:
             & \text{where } t \in T^a \\
             &+\\
             C_{emissions} =& \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
-            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{S, D, I, O}
+            \cdot EAC_{r, e, i, t, v, o} \cdot \sum_{S, D, I, O}
             \mathbf{FO}_{r, p, s, d, i, t, v, o}
             && \text{(annual emission cost on flow)} \\
             & \text{where } t \notin T^a \\
             &+\\
             & \sum_{r, p, e \in \Theta_{CE}} CE_{r, p, e}
-            \cdot EAC_{r, i, t, v, o, e} \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
+            \cdot EAC_{r, e, i, t, v, o} \cdot \sum_{I, O} \mathbf{FOA}_{r, p, i, t, v, o}
             && \text{(annual emission cost on annual flows)} \\
             & \text{where } t \in T^a \\
             &+\\

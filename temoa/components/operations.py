@@ -262,31 +262,29 @@ def ramp_up_day_constraint(
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s_{next},d_{next},i,t,v,o}
             }{
-                SEG_{r,p,s_{next},d_{next}} \cdot 24 \cdot DPP
+                SEG_{s_{next},d_{next}} \cdot 24 \cdot DPP
             }
             -
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
             }{
-                SEG_{r,p,s,d} \cdot 24 \cdot DPP
+                SEG_{s,d} \cdot 24 \cdot DPP
             }
             \leq
-            R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
+            RUH_{r,t} \cdot \Delta H \cdot \frac{CAP_{r,p,t,v} \cdot C2A_{r,t}}{24 \cdot DPP}
             \\
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_up\_day}}
             \\
-            \text{where: } \Delta H_{r,p,s,d,s_{next},d_{next}} = \frac{24}{2}
-            \left ( \frac{SEG_{r,p,s,d}}{\sum_{D} SEG_{r,p,s,d'}} +
-            \frac{SEG_{r,p,s_{next},d_{next}}}{\sum_{D} SEG_{r,p,s_{next},d'}} \right )
+            \text{where: } \Delta H = \frac{H_d + H_{d_{next}}}{2}
 
     where:
 
-    - :math:`SEG_{r,p,s,d}` is the fraction of the period in time slice :math:`(s,d)`
+    - :math:`SEG_{s,d}` is the fraction of the period in time slice :math:`(s,d)`
     - :math:`DPP` is the number of days in each period
-    - :math:`R_{r,t}` is the ramp rate per hour
-    - :math:`\Delta H_{r,p,s,d,s_{next},d_{next}}` is the number of elapsed hours between midpoints
-      of time slices
-    - :math:`CAP \cdot C2A` gives the maximum hourly change in activity
+    - :math:`RUH_{r,t}` is the ramp up rate per hour
+    - :math:`\Delta H` is the average of the hours in timeslice :math:`d` and :math:`d_{next}`,
+      i.e. :math:`(H_d + H_{d_{next}}) / 2`
+    - :math:`CAP \cdot C2A / (24 \cdot DPP)` gives the maximum hourly capacity
     """
 
     s_next, d_next = model.time_next[s, d]
@@ -360,18 +358,20 @@ def ramp_down_day_constraint(
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
             }{
-                SEG_{r,p,s,d} \cdot 24 \cdot DPP
+                SEG_{s,d} \cdot 24 \cdot DPP
             }
             -
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s_{next},d_{next},i,t,v,o}
             }{
-                SEG_{r,p,s_{next},d_{next}} \cdot 24 \cdot DPP
+                SEG_{s_{next},d_{next}} \cdot 24 \cdot DPP
             }
             \leq
-            R_{r,t} \cdot \Delta H_{r,p,s,d,s_{next},d_{next}} \cdot CAP_{r,p,t,v} \cdot C2A_{r,t}
+            RDH_{r,t} \cdot \Delta H \cdot \frac{CAP_{r,p,t,v} \cdot C2A_{r,t}}{24 \cdot DPP}
             \\
             \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down\_day}}
+            \\
+            \text{where: } \Delta H = \frac{H_d + H_{d_{next}}}{2}
     """
 
     s_next, d_next = model.time_next[s, d]

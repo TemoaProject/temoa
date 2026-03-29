@@ -28,15 +28,94 @@ To enable Myopic mode, set the ``scenario_mode`` to ``"myopic"`` in your configu
    [myopic]
    view_depth = 2
    step_size = 1
+   evolving = false
+   evolution_script = "temoa/extensions/myopic/evolution_updater.py"
 
 Settings
 ~~~~~~~~
 
 * **view_depth**: The number of future time periods visible to the model in each iteration. For example, a ``view_depth`` of 2 means the model will optimize over two periods at a time.
 * **step_size**: The number of periods to advance the "base year" in each subsequent iteration. A ``step_size`` of 1 means the base year will move forward by one time period at a time.
+* **evolving**: A boolean flag (``true`` or ``false``) that selects between evolving and non-evolving myopic mode. Defaults to ``false``. See :ref:`myopic-modes` below.
+* **evolution_script**: Path to a Python script containing an ``iterate()`` function that is called between iterations in evolving mode. Ignored when ``evolving = false``.
 
 .. important::
    Myopic mode requires that the ``input_database`` and ``output_database`` in your configuration point to the same file. This is because the sequencer needs to write intermediate results (like the ``myopic_efficiency`` table and capacity decisions) back to the database to inform subsequent windows.
+
+.. _myopic-modes:
+
+Evolving vs. Non-Evolving Mode
+------------------------------
+
+Temoa supports two myopic sub-modes that control how iterations are generated and whether the
+database can be modified between solves.
+
+Non-Evolving Mode (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When ``evolving = false``, the sequencer eliminates **redundant iterations** near the end of the
+planning horizon. If multiple consecutive iterations would all see the same final period, only
+the first such iteration is kept. This avoids re-solving windows that cannot produce new information.
+
+For example, consider a model with future periods ``[2025, 2030, 2035, 2040, 2045]``,
+``view_depth = 3``, and ``step_size = 1``:
+
+* Without pruning, the base years would be ``[2025, 2030, 2035, 2040]``.
+* The iterations starting at 2035 and 2040 both see period 2045 as the last demand year, so only the first is kept.
+* **Result**: 3 iterations instead of 4.
+
+Non-evolving mode is appropriate when the model structure (technologies, constraints, costs, etc.) does
+not change between iterations and you want to minimize computation.
+
+Evolving Mode
+~~~~~~~~~~~~~
+
+When ``evolving = true``, the sequencer keeps **all** calculated iterations, stepping forward by exactly
+``step_size`` until the planning horizon is exhausted. Between each iteration, the ``evolution_script``
+is called, giving the modeler an opportunity to modify the database before the next window is solved.
+
+Using the same example (periods ``[2025, 2030, 2035, 2040, 2045]``, ``view_depth = 3``, ``step_size = 1``):
+
+* Base years are ``[2025, 2030, 2035, 2040]``.
+* **All 4 iterations** are kept, because the evolution script may change data between them.
+
+This mode is designed for scenarios where model parameters—such as technology costs, demand levels, or
+policy constraints—need to evolve over time based on previous results or external logic.
+
+.. note::
+   In evolving mode, the view depth may shorten near the end of the planning horizon so that the window
+   does not extend beyond the available periods. All iterations are still performed.
+
+Writing an Evolution Script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The evolution script must define an ``iterate()`` function with the following signature:
+
+.. code-block:: python
+
+   import sqlite3
+   from temoa.extensions.myopic.myopic_index import MyopicIndex
+
+   def iterate(
+       idx: MyopicIndex | None = None,
+       prev_base_year: int | None = None,
+       last_instance_status: str | None = None,
+       db_con: sqlite3.Connection | None = None,
+   ) -> None:
+       """Called between myopic iterations (evolving mode only)."""
+       # Use db_con to read/write the database as needed.
+       pass
+
+Parameters:
+
+* **idx**: The ``MyopicIndex`` for the current iteration, containing the base year, step year, last demand year, and last year.
+* **prev_base_year**: The base year of the previous iteration.
+* **last_instance_status**: ``'optimal'`` if the previous solve succeeded, or ``'roll_back'`` if it failed and triggered a rollback.
+* **db_con**: An open SQLite connection to the myopic database, which can be used to read results from the prior iteration and modify data for the next one.
+
+The function is called *after* results from the current iteration have been written to the database and *before*
+the myopic efficiency table is updated for the next iteration. A template is provided at
+``temoa/extensions/myopic/evolution_updater.py``.
 
 How it Works
 ------------

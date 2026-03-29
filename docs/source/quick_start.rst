@@ -109,6 +109,7 @@ the solver, and (5) to execute several of the modeling extensions.
       COMMAND
         run            Run a Temoa model
         validate       Validate a configuration file
+        check-units    Check unit consistency in a database
         migrate        Migrate a database to the latest schema
         tutorial       Create tutorial files
 
@@ -190,26 +191,24 @@ recommend that you populate input tables in the following order:
     and sub-categorizing can be done in the Technology table itself.
   * time_period_type: Used to distinguish which time periods are simply used to specify pre-existing
     vintages and which represent future optimization periods.
-  * season_label: Unordered unique labels defining seasons in the model.
 
 
 **Group 2: sets used within Temoa**
-  * Commodity: list of commodities used within the database
-  * Technology: list of technologies used within the database
+  * commodity: list of commodities used within the database
+  * technology: list of technologies used within the database
   * time_period: list of both past and future time periods considered in the database
-  * time_season: seasons modeled in the database
+  * time_season: seasons modeled in the database (also contains segment fractions)
   * time_of_day: time of day segments modeled in the database
 
 
 **Group 3: parameters used to define processes within Temoa**
   * metadata_real (global_discount_rate)
-  * metadata (days_per_period)
-  * Demand
+  * demand
   * demand_specific_distribution
   * efficiency
   * existing_capacity
-  * capacity_factor
-  * capacity_factor_process (only if CF varies by vintage; overwrites capacity_factor)
+  * capacity_factor_tech
+  * capacity_factor_process (only if CF varies by vintage; overwrites capacity_factor_tech)
   * capacity_to_activity
   * cost_fixed
   * cost_invest
@@ -217,9 +216,9 @@ recommend that you populate input tables in the following order:
   * emission_activity
   * lifetime_tech
   * lifetime_process (only if LT varies by vintage; overwrites lifetime_tech)
-  * time_segment_fraction: proportion of each period represented by each time slice
 
-**Group 4: parameters used to define constraints within Temoa**
+
+**Group 4: parameters used to define constraints within Temoa** (non-exhaustive)
   * limit_activity
   * limit_capacity
   * limit_emission
@@ -228,6 +227,7 @@ recommend that you populate input tables in the following order:
   * limit_resource
   * limit_tech_input_split
   * limit_tech_output_split
+
 
 For help getting started, take a look at how ``data_files/example_dbs/utopia.sql``
 is constructed. To begin building your own database file, use
