@@ -5,35 +5,35 @@ References
 
 .. rubric:: Footnotes
 
-.. [#open_source_realities] The two main goals behind Temoa are transparency and
+.. [open_source_realities] The two main goals behind Temoa are transparency and
    repeatability, hence the MIT license.  Unfortunately, there are some harsh
    realities in the current climate of energy modeling, so this license is not a
    guarantee of openness.  This documentation touches on the issues involved in
    the final section.
 
-.. [#efficiency_table] The efficiency parameter is often referred to as the
+.. [efficiency_table] The efficiency parameter is often referred to as the
    efficiency table, due to how it looks after even only a few entries in the
    Pyomo input "dot dat" file.
 
-.. [#glpk_presolve] Circa 2013, GLPK uses more memory than commercial
+.. [glpk_presolve] Circa 2013, GLPK uses more memory than commercial
    alternatives and has vastly weaker presolve capabilities.
 
-.. [#esom_definition] For a more in-depth description of energy system
+.. [esom_definition] For a more in-depth description of energy system
    optimization models (ESOMs) and guidance on how to use them, please see:
    DeCarolis et al. (2017) "Formalizing best practice for energy system
    optimization modelling", Applied Energy, 194: 184-198.
 
-.. [#web_browser_svg] SVG support in web browsers is currently hit or miss.  The
+.. [web_browser_svg] SVG support in web browsers is currently hit or miss.  The
    most recent versions of Chromium, Google Chrome, and Mozilla Firefox support
    SVG well enough for Temoa's current use of SVG.
 
-.. [#return_expression] A word on `return` expressions in Pyomo: in most
+.. [return_expression] A word on `return` expressions in Pyomo: in most
    contexts a relational expression is evaluated instantly.  However, in Pyomo,
    a relational expression returns an `expression` object.  That is, `'M.aVar >=
    5'` does not evaluate to a boolean *true* or *false*, and Pyomo will
    manipulate it into the final LP formulation.
 
-.. [#abstract_model] In contrast to a 'concrete' model, an abstract algebraic
+.. [abstract_model] In contrast to a 'concrete' model, an abstract algebraic
    formulation describes the general equations of the model, but requires
    modeler-specified input data before it can compute any results.
 

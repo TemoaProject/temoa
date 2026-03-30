@@ -322,7 +322,7 @@ process, Temoa also utilizes the indices to understand the valid input
 instance, if a modeler does not specify an efficiency for a 2020 vintage coal
 power plant, then Temoa will recognize any mention of a 2020 vintage coal power
 plant elsewhere as an error. Generally, if a process is not specified in the
-efficiency table,\ [#efficiency_table]_ Temoa assumes it is not a valid process
+efficiency table,\ [efficiency_table]_ Temoa assumes it is not a valid process
 and will provide the user a warning with pointed debugging information.
 
 

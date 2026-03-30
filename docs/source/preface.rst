@@ -34,7 +34,7 @@ The energy system on which Temoa and other ESOMs operate can be visualized as
 a directed graph. Primary energy sources represent the points of origin, which
 are transformed by a network of energy conversion and delivery technologies, and
 ultimately produce consumable energy commodities that satisfy end-use demands.
-[#esom_definition]_. Temoa provides tools to explicitly represent this network,
+[esom_definition]_. Temoa provides tools to explicitly represent this network,
 visualize system structure, and trace energy flows through time.
 
 A defining strength of Temoa is its flexible treatment of time. Users may
@@ -50,7 +50,7 @@ driven by specific analytic needs over a decade of model development and
 policy-focused application.
 
 Temoa is implemented within an open-source software stack and is released under
-the MIT license, with source code available on GitHub [#open_source_realities]_.
+the MIT license, with source code available on GitHub [open_source_realities]_.
 The model is written in Python and seamlessly integrates with the broader Python
 ecosystem. Input data are stored in a relational SQLite database, enabling
 transparency, reproducibility, and easy modification. The model maintains a
