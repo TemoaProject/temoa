@@ -107,9 +107,11 @@ class HybridLoader:
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
         self.viable_rtvo: ViableSet | None = None
+        self.viable_rtv_new: ViableSet | None = None
         self.viable_rpt: ViableSet | None = None
         self.viable_rpto: ViableSet | None = None
         self.viable_rtv: ViableSet | None = None
+        self.viable_rtv_eol: ViableSet | None = None
         self.viable_rt: ViableSet | None = None
         self.viable_rpit: ViableSet | None = None
         self.viable_rtt: ViableSet | None = None
@@ -470,6 +472,7 @@ class HybridLoader:
         filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
         self.viable_rtvo = filts['rtvo']
+        self.viable_rtv_new = filts['rtv_new']
         self.viable_rpt = filts['rpt']
         self.viable_rtv = filts['rtv']
         self.viable_rt = filts['rt']
