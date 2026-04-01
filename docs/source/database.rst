@@ -45,7 +45,7 @@ define the ``flag`` column, declares a foreign key reference to the ``label``
 column of the ``time_period_type`` table. As a result, if the user tries to
 enter a label in this table that does not exist in the ``time_period_type``
 table, it will fail with an error. This foreign key reference ensures that the
-modeler doesn't accidently type the wrong label in this table. For context,
+modeler doesn't accidentally type the wrong label in this table. For context,
 there are two basic types of time periods in Temoa, ``e``, which defines
 pre-existing periods, and ``f``, which defines future time periods that are to
 be optimized.
@@ -119,6 +119,27 @@ installing sqlite3 and executing the following command:
 .. parsed-literal::
   $ sqlite3 my_database.sqlite < my_database.sql
 
+.. note::
+  The command above using the ``<`` operator for input redirection is supported
+  in Linux, macOS, and the Windows Command Prompt. Note that PowerShell does not
+  support the Unix-style ``<`` redirection operator. In PowerShell, you can
+  achieve the same result by piping the file content into ``sqlite3``:
+
+  .. code-block:: powershell
+
+     Get-Content my_database.sql | sqlite3 my_database.sqlite
+
+  Alternatively, you can load a SQL file from within the ``sqlite3`` interactive
+  interface using the ``.read`` command:
+
+  .. code-block:: none
+
+     sqlite3 my_database.sqlite
+     sqlite> .read my_database.sql
+
+  When running on Windows, be sure to use the correct path separators (``\``) if you
+  provide absolute paths to your files.
+
 Now you can specify this database as the source for both input and output data
 in the config file.
 
@@ -170,7 +191,7 @@ Temoa works backwards from demands to identify chains of technologies required t
 Source Tracing is designed to ensure that this backward tracing from demands describes a proper
 commodity network without gaps that might allow intermediate commodities to be treated as a free
 "source" commodity.  Further description of possible network problems is included in the
-`commodity network notes.md` file in the `docs` folder.
+:doc:`commodity_network` section.
 
 Source Tracing pre-builds the entire commodity network in each region-period contained in the
 data and analyzes it for "orphans" which likely represent gaps in the network that would lead

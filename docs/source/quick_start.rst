@@ -19,8 +19,17 @@ The standard way to install Temoa:
 First, it is highly recommended to use a Python virtual environment to manage dependencies:
 
 .. parsed-literal::
+  # Linux / macOS
   $ python -m venv temoa_env
   $ source temoa_env/bin/activate
+
+  # Windows (Command Prompt)
+  > python -m venv temoa_env
+  > temoa_env\Scripts\activate
+
+  # Windows (PowerShell)
+  PS> python -m venv temoa_env
+  PS> .\temoa_env\Scripts\Activate.ps1
 
 Then, install Temoa:
 
@@ -37,8 +46,11 @@ Then, install Temoa:
 For faster dependency resolution:
 
 .. parsed-literal::
-  # Install uv
+  # Install uv (Linux / macOS)
   $ curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  # Install uv (Windows)
+  PS> powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
   # Create a uv initialized virtual environment
   $ uv init <dir_name>
