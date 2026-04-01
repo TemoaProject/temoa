@@ -8,6 +8,7 @@ Temoa Project Documentation
    preface
    quick_start
    database
+   commodity_network
    visualization
 
 .. toctree::
