@@ -19,13 +19,13 @@ Temoa Project Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Advanced Features
+   :caption: Advanced Topics
 
+   mga
    monte_carlo
    myopic
-   unit_checking
    stochastics
-   mga
+   unit_checking
 
 .. toctree::
    :maxdepth: 1

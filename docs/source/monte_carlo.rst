@@ -1,5 +1,5 @@
-Monte Carlo Uncertainty Quantification
-========================================
+Monte Carlo Simulation
+======================
 
 Temoa provides a Monte Carlo simulation framework that allows users to perform
 probabilistic analysis by executing multiple model runs with varying input parameters.
