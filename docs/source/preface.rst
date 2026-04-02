@@ -120,7 +120,7 @@ inconsistency, or general "that could be improved", we want to hear about it.
 If you are a software developer-type, feel free to open an issue on our `GitHub
 Issue tracker`_\ .
 
-.. _PDF: https://temoacloud.com/wp-content/uploads/2020/02/toolsforenergymodeloptimizationandanalysistemoa.pdf
-.. _HTML: https://temoaproject.org/docs/
+.. _PDF: https://assets.temoaproject.org/pdf_docs/temoa_docs_2026_04_02.pdf
+.. _HTML: https://docs.temoaproject.org/en/latest/
 .. _GitHub Issues: https://github.com/TemoaProject/temoa/issues
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues

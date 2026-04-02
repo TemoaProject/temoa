@@ -53,7 +53,7 @@ References
 .. _GAMS: http://www.gams.com/
 .. _AMPL: http://www.ampl.com/
 .. _PDF: https://assets.temoaproject.org/pdf_docs/temoa_docs_2026_04_02.pdf
-.. _HTML: https://temoaproject.org/docs/
+.. _HTML: https://docs.temoaproject.org/en/latest/
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
 .. _HTML version: https://docs.temoaproject.org/en/latest/
 .. _code smell: https://en.wikipedia.org/wiki/Code_smell
