@@ -52,7 +52,7 @@ References
 .. _sources: https://en.wikipedia.org/wiki/Mathematical_optimization
 .. _GAMS: http://www.gams.com/
 .. _AMPL: http://www.ampl.com/
-.. _PDF: https://assets.temoaproject.org/pdf_docs/temoa_docs_2026_04_02.pdf
+.. _PDF: https://assets.temoaproject.org/pdf_docs/temoa_docs.pdf
 .. _HTML: https://docs.temoaproject.org/en/latest/
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
 .. _HTML version: https://docs.temoaproject.org/en/latest/

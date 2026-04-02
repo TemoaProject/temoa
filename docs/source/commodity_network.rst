@@ -27,7 +27,7 @@ to help avoid pitfalls....
 
 The energy network in each region and period is built dynamically from the ``techs`` that are
 identified as existing capacity and whatever the model has ability to build from elements in
-the optimization window identified in the ``efficiency`` table.  In order enforce conservation of
+the optimization window identified in the ``efficiency`` table.  In order to enforce conservation of
 flow constraints, the model identifies output flows (commodities), including the demand
 commodities and inventories all possible ``techs`` (existing or available) that *could* produce that commodity from
 any input commodity and enforces flow balance by requiring capacity in one of the available technologies,
@@ -137,7 +137,7 @@ desired behavior and the modeler should be aware of these behaviors logged in th
 
 This screening prevents model errors and helps to reduce the size of the model in most cases.  These processes
 with non-utilized outputs may be the result of erroneous data (perhaps a technology to produce liquid hydrogen
-before there is a user of same) or via myopic actions were a technology in a chain is not selected for build,
+before there is a user of same) or via myopic actions where a technology in a chain is not selected for build,
 rendering other processes in the chain irrelevant in a later period.  The main goal of using tracing and suppression
 is to prevent "free" midstream commodities from erroneously feeding processes and prevent free-running techs that
 might have a negative cost from making the model unbounded or infeasible.

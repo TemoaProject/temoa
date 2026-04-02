@@ -55,7 +55,7 @@ catch typos. As you can imagine, typos happen in plain text files and Excel when
 defining thousands of rows of data. Another big advantage of using databases is
 that the model run outputs are stored in separate database output tables. The
 outputs by model run are indexed by a scenario name, which makes it possible to
-perform thousands of runs, programatically store all the results, and execute
+perform thousands of runs, programmatically store all the results, and execute
 arbitrary queries that instantaneously return the requested
 data.
 
