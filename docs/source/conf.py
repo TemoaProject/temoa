@@ -1,7 +1,6 @@
 #
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Any, cast
 
@@ -32,7 +31,6 @@ project = 'Tools for Energy Model Optimization and Analysis (Temoa)'
 author = ', '.join(
     author['name'] for author in cast('list[dict[str, Any]]', project_metadata.get('authors', []))
 )
-copyright = f'2011-{time.strftime("%Y")}, NC State University'
 
 
 # The short version
@@ -139,3 +137,6 @@ mermaid_d3_zoom = True
 mermaid_fullscreen = True
 mermaid_include_elk = True
 mermaid_include_mindmap = True
+
+# -- Options for LaTeX output ------------------------------------------------
+latex_engine = 'xelatex'

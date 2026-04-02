@@ -1,9 +1,9 @@
-The Temoa Computational Implementation
-======================================
+Computational Implementation
+============================
 
 We have implemented Temoa within an algebraic modeling environment (AME).  AMEs
 provide both a convenient way to describe mathematical optimization models
-for a computational context, and allow for abstract model\ [#abstract_model]_
+for a computational context, and allow for abstract model\ [abstract_model]_
 formulations :cite:`Kallrath_2004`.  In contrast to describing a model in a
 formal computer programming language like C or Java, AMEs generally have syntax
 that directly translates to standard mathematical notation.  Consequently,
@@ -193,7 +193,7 @@ practice extremely useful while building and debugging a model.
 Line 12 creates the actual equality comparison.  This line is superfluous, but
 we leave it in the code as a reminder that comparison operators (i.e. :code:`==`,
 :code:`<=`, :code:`>=`) with a Pyomo object (like supply_annual) generate a Pyomo
-*expression object*, not a boolean True or False as one might expect [#return_expression]_.
+*expression object*, not a boolean True or False as one might expect [return_expression]_.
 It is this expression object that must be returned to Pyomo, as on Line 13.
 
 In the above implementation, the constraint is called for every tuple in the
