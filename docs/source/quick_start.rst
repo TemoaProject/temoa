@@ -25,11 +25,11 @@ First, it is highly recommended to use a Python virtual environment to manage de
 
   # Windows (Command Prompt)
   > python -m venv temoa_env
-  > temoa_env\Scripts\activate
+  > temoa_env\\Scripts\\activate
 
   # Windows (PowerShell)
   PS> python -m venv temoa_env
-  PS> .\temoa_env\Scripts\Activate.ps1
+  PS> .\\temoa_env\\Scripts\\Activate.ps1
 
 Then, install Temoa:
 

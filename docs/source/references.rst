@@ -42,9 +42,9 @@ References
 .. _GNU Linear Programming Kit: https://www.gnu.org/software/glpk/
 .. _WinGLPK: https://winglpk.sourceforge.net/
 .. _Github repo: https://github.com/TemoaProject/temoa/
-.. _Temoa model: https://temoaproject.org/download/temoa.py
+.. _Temoa model: https://github.com/TemoaProject/temoa/
 .. _temoaproject.org: https://temoaproject.org/
-.. _example data sets: https://temoaproject.org/download/example_data_sets.zip
+.. _example data sets: https://datadocs.openenergyoutlook.org/en/latest/datasets.html
 
 .. _various: http://xlinux.nist.gov/dads/HTML/optimization.html
 .. _available: https://web.stanford.edu/\~boyd/cvxbook/
@@ -52,10 +52,10 @@ References
 .. _sources: https://en.wikipedia.org/wiki/Mathematical_optimization
 .. _GAMS: http://www.gams.com/
 .. _AMPL: http://www.ampl.com/
-.. _PDF: https://temoacloud.com/wp-content/uploads/2020/02/toolsforenergymodeloptimizationandanalysistemoa.pdf
+.. _PDF: https://assets.temoaproject.org/pdf_docs/temoa_docs_2026_04_02.pdf
 .. _HTML: https://temoaproject.org/docs/
 .. _GitHub Issue tracker: https://github.com/TemoaProject/temoa/issues
-.. _HTML version: https://temoaproject.org/docs/
+.. _HTML version: https://docs.temoaproject.org/en/latest/
 .. _code smell: https://en.wikipedia.org/wiki/Code_smell
 .. _PEP 8: http://www.python.org/dev/peps/pep-0008/
 .. _PEP 3120: http://www.python.org/dev/peps/pep-3120/
