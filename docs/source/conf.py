@@ -137,3 +137,6 @@ mermaid_d3_zoom = True
 mermaid_fullscreen = True
 mermaid_include_elk = True
 mermaid_include_mindmap = True
+
+# -- Options for LaTeX output ------------------------------------------------
+latex_engine = 'xelatex'
