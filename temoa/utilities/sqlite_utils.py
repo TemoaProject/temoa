@@ -33,20 +33,17 @@ def tune_sqlite_connection(con: sqlite3.Connection, config: 'TemoaConfig | None'
         mmap_size = getattr(config, 'sqlite_mmap_size', mmap_size)
         cache_size = getattr(config, 'sqlite_cache_size', cache_size)
 
-    try:
-        con.execute(f'PRAGMA journal_mode = {journal_mode}')
-        con.execute(f'PRAGMA synchronous = {synchronous}')
-        con.execute(f'PRAGMA temp_store = {temp_store}')
-        con.execute(f'PRAGMA mmap_size = {mmap_size}')
-        con.execute(f'PRAGMA cache_size = {cache_size}')
-        logger.debug(
-            'SQLite tuned: journal_mode=%s, synchronous=%s, temp_store=%s, '
-            'mmap_size=%d, cache_size=%d',
-            journal_mode,
-            synchronous,
-            temp_store,
-            mmap_size,
-            cache_size,
-        )
-    except sqlite3.Error as e:
-        logger.warning('Failed to apply some SQLite performance PRAGMAs: %s', e)
+    pragmas = [
+        ('journal_mode', journal_mode),
+        ('synchronous', synchronous),
+        ('temp_store', temp_store),
+        ('mmap_size', mmap_size),
+        ('cache_size', cache_size),
+    ]
+
+    for name, value in pragmas:
+        try:
+            con.execute(f'PRAGMA {name} = {value}')
+            logger.debug('Applied SQLite PRAGMA: %s = %s', name, value)
+        except sqlite3.Error as e:
+            logger.warning('Failed to apply SQLite PRAGMA %s: %s', name, e)
