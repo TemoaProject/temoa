@@ -21,6 +21,7 @@ from temoa.data_processing.db_to_excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper
 from temoa.model_checking.pricing_check import price_checker
+from temoa.utilities.sqlite_utils import tune_sqlite_connection
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +165,8 @@ class MyopicSequencer:
             logger.error('Run aborted.  I/O database pointers are different')
             sys.exit(-1)
 
+        tune_sqlite_connection(con, self.config)
+
         return con
 
     def start(self) -> None:
@@ -303,8 +306,6 @@ class MyopicSequencer:
             )
             self.output_con.commit()
 
-            # 11.  Compact the db...  lots of writes/deletes leads to bloat
-            self.output_con.execute('VACUUM;')
 
         # Total system cost is, theoretically, sum of discounted costs from output_cost table
         total_cost = self.get_current_total_cost(last_base_year if last_base_year is not None else 0)

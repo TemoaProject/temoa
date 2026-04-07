@@ -159,6 +159,14 @@ class TemoaConfig:
         self.output_threshold_activity = output_threshold_activity
         self.output_threshold_emission = output_threshold_emission
         self.output_threshold_cost = output_threshold_cost
+        self.sqlite_inputs = sqlite or {}
+
+        # SQLite performance defaults
+        self.sqlite_journal_mode = str(self.sqlite_inputs.get('journal_mode', 'WAL'))
+        self.sqlite_synchronous = str(self.sqlite_inputs.get('synchronous', 'NORMAL'))
+        self.sqlite_temp_store = str(self.sqlite_inputs.get('temp_store', 'MEMORY'))
+        self.sqlite_mmap_size = int(self.sqlite_inputs.get('mmap_size', 8589934592))
+        self.sqlite_cache_size = int(self.sqlite_inputs.get('cache_size', -512000))
 
         # Cycle detection limits
         if not isinstance(cycle_count_limit, int) or cycle_count_limit < -1:
@@ -305,6 +313,12 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Pyomo LP write status', width, self.save_lp_file)
         msg += '{:>{}s}: {}\n'.format('Save duals to output db', width, self.save_duals)
         msg += '{:>{}s}: {}\n'.format('Save storage to output db', width, self.save_storage_levels)
+
+        msg += spacer
+        msg += '{:>{}s}: {}\n'.format('SQLite journal mode', width, self.sqlite_journal_mode)
+        msg += '{:>{}s}: {}\n'.format('SQLite synchronous', width, self.sqlite_synchronous)
+        msg += '{:>{}s}: {}\n'.format('SQLite mmap size (bytes)', width, self.sqlite_mmap_size)
+        msg += '{:>{}s}: {}\n'.format('SQLite cache size (pages)', width, self.sqlite_cache_size)
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
