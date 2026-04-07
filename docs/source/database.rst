@@ -213,5 +213,18 @@ Users can configure the cycle detection behavior using the following settings:
 Note that the myopic mode *requires* the use of Source Tracing to ensure accuracy as some orphans
 may be produced by endogenous decisions in myopic runs.
 
+SQLite Performance Tuning
+-------------------------
+
+For large-scale models or long-running simulation modes (such as myopic or MGA), database I/O can become a performance bottleneck. Temoa allows you to tune the SQLite connection parameters in your configuration file under the ``[sqlite]`` section.
+
+The following settings are available:
+
+* **journal_mode**: Sets the SQLite journaling mode. Default is ``WAL`` (Write-Ahead Logging), which provides better performance and concurrency. Note that this will create temporary ``-wal`` and ``-shm`` files alongside your database during execution.
+* **synchronous**: Controls how frequently SQLite flushes data to disk. Default is ``NORMAL``, which provides a good balance between speed and safety.
+* **mmap_size**: The maximum number of bytes for memory-mapped I/O. Default is 8GB (``8589934592``). This allows SQLite to access the database file directly from memory, significantly speeding up reads for large databases.
+* **cache_size**: The number of pages or the size in KiB for the SQLite page cache. If negative, it specifies size in KiB. Default is 500MiB (``-512000``).
+
+These settings are especially impactful in **myopic mode**, where Temoa frequently updates and queries the database between period iterations. By default, Temoa also disables the per-period ``VACUUM`` operation in myopic runs to avoid redundant and expensive full-database rewrites.
 
 .. _sqlite: https://www.sqlite.org/
