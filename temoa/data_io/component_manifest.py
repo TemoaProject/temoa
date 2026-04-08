@@ -661,7 +661,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
         LoadItem(
             component=model.limit_seasonal_capacity_factor,
             table='limit_seasonal_capacity_factor',
-            columns=['region', 'season', 'tech', 'operator', 'factor'],
+            columns=['region', 'season', 'tech_or_group', 'operator', 'factor'],
             validator_name='viable_rt',
             validation_map=(0, 2),
             is_period_filtered=False,
