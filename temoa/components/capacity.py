@@ -331,11 +331,11 @@ def annual_retirement_constraint(
         )
         # next v_capacity also accounts for decision retirement so need to undo that again
         p_next_end = p_next + value(model.period_length[p_next])
-        if t in model.tech_retirement and p_next_end <= eol_year:
+        if t in model.tech_retirement and v < p_next and p_next_end <= eol_year:
             cap_end += model.v_retired_capacity[r, p_next, t, v]
 
     # v_capacity already accounts for decision retirement so need to undo that for beginning cap
-    if t in model.tech_retirement and p_end <= eol_year:
+    if t in model.tech_retirement and v < p and p_end <= eol_year:
         cap_begin += model.v_retired_capacity[r, p, t, v]
 
     annualised_retirement = (cap_begin - cap_end) / value(model.period_length[p])
