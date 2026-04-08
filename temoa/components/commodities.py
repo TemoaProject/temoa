@@ -728,12 +728,20 @@ def create_demands(model: TemoaModel) -> None:
     used_rp_dems = {(r, p, dem) for r, p, dem in model.demand.sparse_keys()}
     all_time_slices = set(cross_product(model.time_season, model.time_of_day))
     expected_key_length = len(all_time_slices)
+    dsd_keys_by_rpd: dict[Any, Any] = {}
+    for _r, _p, _s, _d, _dem in demand_specific_distribution.sparse_keys():
+        dsd_keys_by_rpd.setdefault((_r, _p, _dem), []).append((_r, _p, _s, _d, _dem))
     for r, p, dem in used_rp_dems:
-        keys = [
-            (_r, _p, _s, _d, _dem)
-            for _r, _p, _s, _d, _dem in demand_specific_distribution.sparse_keys()
-            if _r == r and _p == p and _dem == dem
-        ]
+        keys = dsd_keys_by_rpd.get((r, p, dem), [])
+
+        if len(keys) > expected_key_length:
+            msg = (
+                f'Too many demand_specific_distribution keys defined for {(r, p, dem)}. '
+                f'Expected at most one per time slice ({expected_key_length}) '
+                f'but found {len(keys)}. Likely code error.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
         # If DSD is not defined for any r p demand, fill in with segfrac (flat demand)
         if len(keys) == 0:
@@ -746,7 +754,8 @@ def create_demands(model: TemoaModel) -> None:
         # (will just default to zero) but likely not intended behaviour.
         if len(keys) != expected_key_length:
             # this could be very slow but only calls when there's a problem
-            missing = {(s, d) for s, d in all_time_slices if (r, p, s, d, dem) not in keys}
+            defined_slices = {(s, d) for _r, _p, s, d, _dem in keys}
+            missing = all_time_slices - defined_slices
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
                 (r, p, dem),
