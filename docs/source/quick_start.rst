@@ -98,8 +98,8 @@ Running Temoa
 -------------
 
 To run the model, a configuration (``config``) file is needed. An
-example config file called :code:`config_sample.toml` resides within the
-:code:`data_files/my_configs` folder. Running the model with a config file allows
+example config file called :code:`config_sample.toml` is available as a package resource
+in :code:`temoa/tutorial_assets`. Running the model with a config file allows
 the user to (1) use a sqlite database for storing input and output data, (2)
 create a formatted Excel output file, (2) specify the solver to use, (3) return
 the log file produced during model execution, (4) return the lp file utilized by

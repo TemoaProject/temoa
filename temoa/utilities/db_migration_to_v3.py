@@ -11,6 +11,7 @@ import argparse
 import sqlite3
 import sys
 from collections import defaultdict
+from importlib import resources
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -23,14 +24,28 @@ parser.add_argument(
 )
 parser.add_argument(
     '--schema',
-    help='Path to schema file (default=data_files/temoa_schema_v3.sql)',
+    help='Path to v3 schema file (defaults to bundled package resource)',
     required=False,
     dest='schema',
-    default='data_files/temoa_schema_v3.sql',
+    default=None,
 )
 options = parser.parse_args()
 legacy_db: Path = Path(options.source_db)
-schema_file = Path(options.schema)
+
+# Resolve schema path
+if options.schema:
+    schema_file = Path(options.schema)
+else:
+    try:
+        # Try package resources first
+        schema_file = Path(str(resources.files('temoa.db_schema') / 'temoa_schema_v3.sql'))
+    except (ModuleNotFoundError, FileNotFoundError, AttributeError):
+        # Fallback to local path relative to this script
+        schema_file = Path(__file__).parent.parent / 'db_schema' / 'temoa_schema_v3.sql'
+
+if not schema_file.exists():
+    print(f'Error: Schema file not found: {schema_file}')
+    sys.exit(1)
 
 
 new_db_name = legacy_db.stem + '_v3.sqlite'

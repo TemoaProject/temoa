@@ -19,13 +19,13 @@ scenario = "zulu"
 scenario_mode = "perfect_foresight"
 
 # Input database (Mandatory)
-input_database = "data_files/example_dbs/utopia.sqlite"
+input_database = "utopia.sqlite"
 
 # Output file (Mandatory)
 # The output file must be an existing .sqlite file
 # For Perfect Foresight, the user may target the same input file or a separate /
 # copied sqlite file in a different location.  Myopic, MGA require that input_database = output_database
-output_database = "data_files/example_dbs/utopia.sqlite"
+output_database = "utopia.sqlite"
 
 # ------------------------------------
 #        DATABASE CONFIGURATION
@@ -211,4 +211,4 @@ activity_labels = []
 
 [monte_carlo]
 # a path from the PROJECT ROOT to the settings file that contains the run data.
-run_settings = 'data_files/monte_carlo/run_settings_1.csv'
+run_settings = 'mc_settings.csv'

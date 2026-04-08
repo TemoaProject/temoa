@@ -443,7 +443,8 @@ def migrate(
     if input_path.is_dir():
         if output_path is not None:
             rich.print(
-                '[yellow]Warning: --output is ignored when migrating a directory. Originals are overwritten after backup.[/yellow]'
+                '[yellow]Warning: --output is ignored when migrating a directory. Originals are '
+                'overwritten after backup.[/yellow]'
             )
 
         migration_script = Path(__file__).parent / 'utilities' / 'master_migration.py'
@@ -570,6 +571,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         base = resources.files('temoa') / 'tutorial_assets'
         config_resource = base / 'config_sample.toml'
         sql_resource = base / 'utopia.sql'
+        mc_settings_resource = base / 'mc_settings.csv'
 
         # Copy configuration file
         with config_resource.open('rb') as source:
@@ -585,11 +587,18 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         with sqlite3.connect(target_database) as conn:
             conn.executescript(sql_content)
 
+        # Copy Monte Carlo settings
+        with mc_settings_resource.open('rb') as source:
+            target_mc = target_config.parent / 'mc_settings.csv'
+            with open(target_mc, 'wb') as target:
+                shutil.copyfileobj(source, target)
+
     except (ModuleNotFoundError, FileNotFoundError, AttributeError) as e:
         logger.exception('Failed to load tutorial resources from package')
         # Fallback to development paths (for development environments)
         fallback_config = Path(__file__).parent / 'tutorial_assets' / 'config_sample.toml'
         fallback_sql = Path(__file__).parent / 'tutorial_assets' / 'utopia.sql'
+        fallback_mc = Path(__file__).parent / 'tutorial_assets' / 'mc_settings.csv'
 
         if not fallback_config.exists():
             raise FileNotFoundError(
@@ -613,6 +622,9 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         # Generate database from SQL source
         with sqlite3.connect(target_database) as conn:
             conn.executescript(fallback_sql.read_text(encoding='utf-8'))
+
+        # Copy mc_settings from fallback
+        shutil.copy2(fallback_mc, target_config.parent / 'mc_settings.csv')
 
 
 def _update_toml_database_paths(config_path: Path, new_database_name: str) -> None:

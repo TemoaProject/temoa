@@ -67,11 +67,17 @@ morris_root = Path(__file__).parent
 perturbation_coefficient = 0.2  # minus plus 10% of the baseline values
 param_file = morris_root / 'm_params.txt'
 
-db_resource = resources.files('data_files.untracked_data.morris') / 'morris_utopia.sqlite'
-config_resource = resources.files('data_files.untracked_data.morris') / 'morris_utopia.toml'
-with resources.as_file(db_resource) as db_file, \
-     resources.as_file(config_resource) as config_path, \
-     sqlite3.connect(str(db_file)) as con:
+db_file = Path(__file__).parent / 'morris_utopia.sqlite'
+config_path = Path(__file__).parent / 'morris_utopia.toml'
+
+if not db_file.exists() or not config_path.exists():
+    raise FileNotFoundError(
+        "Example Morris data files not found in current directory. "
+        "Please see MM_README.md for instructions on how to generate "
+        "or provide the required 'morris_utopia.sqlite' and 'morris_utopia.toml'."
+    )
+
+with sqlite3.connect(str(db_file)) as con:
     with open(param_file, 'w') as file:
         param_names = {}
         cur = con.cursor()

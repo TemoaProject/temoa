@@ -1,7 +1,6 @@
-
 NOTE:  The below README is OUTDATED but it describes the history of MM application.
 Current users should refer to the MM_README.md file in this directory for how-to and
-walk-through on the example provided in data_files!
+walk-through on the provided example files!
 
 -----------------------
 Method of Morris README
