@@ -279,6 +279,7 @@ def create_survival_curve(model: TemoaModel) -> None:
                 logger.error(msg)
                 raise ValueError(msg)
 
+            # Linearly interpolate to fill in missing years
             if p - p_prev > 1:
                 _between_periods = [cast('Period', _p) for _p in range(p_prev + 1, p, 1)]
                 for _p in _between_periods:
@@ -290,10 +291,13 @@ def create_survival_curve(model: TemoaModel) -> None:
             if lsc < 0.0001:
                 if p != p_last:
                     msg = (
-                        'There is no need to continue a survival curve beyond fraction ~= 0. '
-                        f'ignoring periods beyond {p} for ({r, t, v})'
+                        'Survival curve must be strictly positive during the '
+                        'lifetime of the process. Found non-positive value at '
+                        f'period {p} for ({r, t, v}) which could cause a '
+                        'division by zero error.'
                     )
-                    logger.info(msg)
+                    logger.error(msg)
+                    raise ValueError(msg)
                 continue
 
         model.survival_curve_periods[r, t, v].update(between_periods)
