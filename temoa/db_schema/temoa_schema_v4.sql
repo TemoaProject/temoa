@@ -208,6 +208,8 @@ CREATE TABLE IF NOT EXISTS demand
 CREATE TABLE IF NOT EXISTS demand_specific_distribution
 (
     region      TEXT,
+    period      INTEGER
+        REFERENCES time_period (period),
     season TEXT
         REFERENCES time_season (season),
     tod         TEXT
@@ -216,7 +218,7 @@ CREATE TABLE IF NOT EXISTS demand_specific_distribution
         REFERENCES commodity (name),
     dsd         REAL,
     notes       TEXT,
-    PRIMARY KEY (region, season, tod, demand_name),
+    PRIMARY KEY (region, period, season, tod, demand_name),
     CHECK (dsd >= 0 AND dsd <= 1)
 );
 CREATE TABLE IF NOT EXISTS end_of_life_output

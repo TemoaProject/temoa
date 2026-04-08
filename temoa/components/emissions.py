@@ -107,7 +107,7 @@ def linked_emissions_tech_constraint(
     if t in model.tech_annual:
         primary_flow = quicksum(
             (
-                value(model.demand_specific_distribution[r, s, d, S_o])
+                value(model.demand_specific_distribution[r, p, s, d, S_o])
                 if S_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )
@@ -135,7 +135,7 @@ def linked_emissions_tech_constraint(
     if linked_t in model.tech_annual:
         linked_flow = quicksum(
             (
-                value(model.demand_specific_distribution[r, s, d, S_o])
+                value(model.demand_specific_distribution[r, p, s, d, S_o])
                 if S_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )

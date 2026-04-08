@@ -428,7 +428,7 @@ def capacity_constraint(
         # Annual demand technology
         useful_activity = sum(
             (
-                value(model.demand_specific_distribution[r, s, d, S_o])
+                value(model.demand_specific_distribution[r, p, s, d, S_o])
                 if S_o in model.commodity_demand
                 else value(model.segment_fraction[s, d])
             )
