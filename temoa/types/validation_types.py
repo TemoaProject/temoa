@@ -6,11 +6,11 @@ used in model checking and data validation throughout the Temoa codebase.
 """
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ValidationSeverity(str, Enum):
+class ValidationSeverity(StrEnum):
     """
     Enumeration of validation message severity levels.
 

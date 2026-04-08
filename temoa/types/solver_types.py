@@ -6,7 +6,7 @@ conditions used throughout the Temoa codebase.
 """
 
 from collections.abc import Mapping
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ else:
     PyomoTerminationCondition = Any
 
 
-class SolverStatusEnum(str, Enum):
+class SolverStatusEnum(StrEnum):
     """
     Enumeration of possible solver status values.
 
