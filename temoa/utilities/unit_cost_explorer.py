@@ -8,6 +8,14 @@ from pyomo.environ import value
 from temoa.components.costs import total_cost_rule
 from temoa.components.storage import storage_energy_upper_bound_constraint
 from temoa.core.model import TemoaModel
+from temoa.types.core_types import (
+    Period,
+    Region,
+    Season,
+    Technology,
+    TimeOfDay,
+    Vintage,
+)
 
 # Written by:  J. F. Hyink
 # jeff@westernspark.us
@@ -29,8 +37,8 @@ factors that are used in calculation
 
 
 # indices
-rtv = ('A', 'battery', 2020)  # rtv
-rptv = ('A', 2020, 'battery', 2020)  # rptv
+rtv = (Region('A'), Technology('battery'), Vintage(2020))  # rtv
+rptv = (Region('A'), Period(2020), Technology('battery'), Vintage(2020))  # rptv
 model.time_future.construct([2020, 2025, 2030])  # needs to go 1 period beyond optimize horizon
 model.time_optimize.construct([2020, 2025])
 model.period_length.construct()
@@ -132,21 +140,23 @@ model.process_life_frac.construct(data={('A', 2020, 'battery', 2020): 1.0})
 
 # More VARS
 model.v_storage_level.construct()
-model.segment_fraction_per_season.construct(
-    data=seasonal_fractions
-)
+model.segment_fraction_per_season.construct(data=seasonal_fractions)
 
-model.is_seasonal_storage['battery'] = False
-upper_limit = storage_energy_upper_bound_constraint(model, 'A', 2020, 'winter', 1, 'battery', 2020)
+model.is_seasonal_storage[Technology('battery')] = False
+upper_limit = storage_energy_upper_bound_constraint(
+    model,
+    Region('A'),
+    Period(2020),
+    Season('winter'),
+    TimeOfDay('1'),
+    Technology('battery'),
+    Vintage(2020),
+)
 print('The storage level constraint for the single period in the "super day":\n', upper_limit)
 
 # cross-check the multiplier...
 mulitplier = (
-    storage_dur
-    * model.segment_fraction_per_season['winter']
-    * model.days_per_period
-    * c2a
-    * c
+    storage_dur * model.segment_fraction_per_season['winter'] * model.days_per_period * c2a * c
 )
 print(f'The multiplier for the storage should be: {mulitplier}')
 

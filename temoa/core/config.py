@@ -70,6 +70,7 @@ class TemoaConfig:
         output_threshold_activity: float | None = None,
         output_threshold_emission: float | None = None,
         output_threshold_cost: float | None = None,
+        sqlite: dict[str, object] | None = None,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -166,6 +167,8 @@ class TemoaConfig:
             raise ValueError('cycle_length_limit must be an integer >= 1')
         self.cycle_count_limit = cycle_count_limit
         self.cycle_length_limit = cycle_length_limit
+
+        self.sqlite_settings = sqlite or {}
 
         # warn if output db != input db
         if self.input_database.suffix == self.output_database.suffix:  # they are both .db/.sqlite
