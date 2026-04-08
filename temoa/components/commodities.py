@@ -10,10 +10,8 @@ This module is responsible for:
 
 from __future__ import annotations
 
-import sys
 from itertools import product as cross_product
 from logging import getLogger
-from operator import itemgetter as iget
 from typing import TYPE_CHECKING, Any, cast
 
 from pyomo.environ import Constraint, value
@@ -709,130 +707,62 @@ def create_demands(model: TemoaModel) -> None:
     """
     Steps to create the demand distributions
     1. Use Demand keys to ensure that all demands in commodity_demand are used
-    2. Find any slices not set in DemandDefaultDistribution, and set them based
-    on the associated segment_fraction slice.
-    3. Validate that the DemandDefaultDistribution sums to 1.
-    4. Find any per-demand demand_specific_distribution values not set, and set
-    them from DemandDefaultDistribution.  Note that this only sets a
-    distribution for an end-use demand if the user has *not* specified _any_
-    anything for that end-use demand.  Thus, it is up to the user to fully
-    specify the distribution, or not.  No in-between.
-     5. Validate that the per-demand distributions sum to 1.
+    2. Find any r p demands without any DSD and fill those with segfrac
+    (flat demand distribution)
+    3. Warn if any subset of time slices missing for any r p demand with DSD defined
+    4. Validate that the per-demand distributions sum to 1.
     """
     logger.debug('Started creating demand distributions in CreateDemands()')
 
-    # Step 0: some setup for a couple of reusable items
-    # Get the nth element from the tuple (r, p, s, d, dem))
-    # So we only have to update these indices in one place if they change
-    demand_specific_distribution_region = iget(0)
-    demand_specific_distributon_period = iget(1)
-    demand_specific_distributon_dem = iget(4)
+    demand_specific_distribution = model.demand_specific_distribution
 
-    # Step 1: Check if any demand commodities are going unused
+    # Warn if any demand commodities are going unused
     used_dems = {dem for _r, _p, dem in model.demand.sparse_keys()}
     unused_dems = sorted(model.commodity_demand.difference(used_dems))
     if unused_dems:
         for dem in unused_dems:
             msg = "Warning: Demand '{}' is unused\n"
             logger.warning(msg.format(dem))
-            sys.stderr.write(msg.format(dem))
 
-    # devnote: DDD just clones segment_fraction. Unless we want to specify it in the database,
-    #          makes sense to just use segment_fraction directly
-    # Step 2: Build the demand default distribution (= segment_fraction)
-    # DDD = M.DemandDefaultDistribution  # Shorter, for us lazy programmer types
-    # unset_defaults = set(M.segment_fraction.sparse_keys())
-    # unset_defaults.difference_update(DDD.sparse_keys())
-    # if unset_defaults:
-    # Some hackery because Pyomo thinks that this Param is constructed.
-    # However, in our view, it is not yet, because we're specifically
-    # targeting values that have not yet been constructed, that we know are
-    # valid, and that we will need.
-    # DDD._constructed = False
-    # for tslice in unset_defaults:
-    #     DDD[tslice] = M.segment_fraction[tslice]  # DDD._constructed = True
-
-    # Step 3: Check that DDD sums to 1
-    # devnote: this seems redundant to the segment_fraction sum to 1 check.
-    # total = sum(i for i in DDD.values())
-    # if abs(value(total) - 1.0) > 0.001:
-    #     # We can't explicitly test for "!= 1.0" because of incremental rounding
-    #     # errors associated with the specification of demand shares by time slice,
-    #     # but we check to make sure it is within the specified tolerance.
-
-    #     key_padding = max(map(get_str_padding, DDD.sparse_keys()))
-
-    #     fmt = '%%-%ds = %%s' % key_padding
-    #     # Works out to something like "%-25s = %s"
-
-    #     items = sorted(DDD.items())
-    #     items = '\n   '.join(fmt % (str(k), v) for k, v in items)
-
-    #     msg = (
-    #         'The values of the DemandDefaultDistribution parameter do not '
-    #         'sum to 1.  The DemandDefaultDistribution specifies how end-use '
-    #         'demands are distributed among the time slices (i.e., time_season, '
-    #         'time_of_day), so together, the data must total to 1.  Current '
-    #         'values:\n   {}\n\tsum = {}'
-    #     )
-    #     logger.error(msg.format(items, total))
-    #     raise ValueError(msg.format(items, total))
-
-    # Step 4: Fill out demand specific distribution table and check sums to 1 by region and demand
-    demand_specific_distribution = model.demand_specific_distribution
-
-    demands_specified = set(
-        map(
-            demand_specific_distributon_dem,
-            (i for i in demand_specific_distribution.sparse_keys()),
-        )
-    )
-    unset_demand_distributions = used_dems.difference(
-        demands_specified
-    )  # the demands not mentioned in DSD *at all*
-
-    if unset_demand_distributions:
-        unset_distributions = set(
-            cross_product(
-                model.regions,
-                model.time_optimize,
-                model.time_season,
-                model.time_of_day,
-                unset_demand_distributions,
-            )
-        )
-        for r, p, s, d, dem in unset_distributions:
-            demand_specific_distribution[r, p, s, d, dem] = value(
-                model.segment_fraction[s, d]
-            )  # DSD._constructed = True
-
-    # Step 5: A final "sum to 1" check for all DSD members (which now should be everything)
-    #         Also check that all keys are made...  The demand distro should be supported
-    #         by the full set of (r, p, dem) keys because it is an equality constraint
-    #         and we need to ensure even the zeros are passed in
+    # Iterate over defined r p demands
     used_rp_dems = {(r, p, dem) for r, p, dem in model.demand.sparse_keys()}
+    all_time_slices = set(cross_product(model.time_season, model.time_of_day))
+    expected_key_length = len(all_time_slices)
+    dsd_keys_by_rpd: dict[Any, Any] = {}
+    for _r, _p, _s, _d, _dem in demand_specific_distribution.sparse_keys():
+        dsd_keys_by_rpd.setdefault((_r, _p, _dem), []).append((_r, _p, _s, _d, _dem))
     for r, p, dem in used_rp_dems:
-        expected_key_length = len(model.time_season) * len(model.time_of_day)
-        keys = [
-            k
-            for k in demand_specific_distribution.sparse_keys()
-            if demand_specific_distribution_region(k) == r
-            and demand_specific_distributon_period(k) == p
-            and demand_specific_distributon_dem(k) == dem
-        ]
+        keys = dsd_keys_by_rpd.get((r, p, dem), [])
+
+        if len(keys) > expected_key_length:
+            msg = (
+                f'Too many demand_specific_distribution keys defined for {(r, p, dem)}. '
+                f'Expected at most one per time slice ({expected_key_length}) '
+                f'but found {len(keys)}. Likely code error.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+        # If DSD is not defined for any r p demand, fill in with segfrac (flat demand)
+        if len(keys) == 0:
+            for s, d in all_time_slices:
+                demand_specific_distribution[r, p, s, d, dem] = value(model.segment_fraction[s, d])
+            # Remaining checks would be caught by the validation of segment_fraction so skip
+            continue
+
+        # If any subset of timeslices missing, inform the user. Not technically a problem
+        # (will just default to zero) but likely not intended behaviour.
         if len(keys) != expected_key_length:
             # this could be very slow but only calls when there's a problem
-            missing = {
-                (s, d)
-                for s in model.time_season
-                for d in model.time_of_day
-                if (r, p, s, d, dem) not in keys
-            }
+            defined_slices = {(s, d) for _r, _p, s, d, _dem in keys}
+            missing = all_time_slices - defined_slices
             logger.info(
                 'Missing some time slices for Demand Specific Distribution %s: %s',
                 (r, p, dem),
                 missing,
             )
+
+        # Verify that the distribution sums to 1 (within some tolerance)
         total = sum(value(demand_specific_distribution[i]) for i in keys)
         if abs(value(total) - 1.0) > 0.001:
             # We can't explicitly test for "!= 1.0" because of incremental rounding
