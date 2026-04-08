@@ -233,9 +233,7 @@ def create_survival_curve(model: TemoaModel) -> None:
 
     # Collect rptv indices into (r, t, v): p dictionary
     for r, p, t, v in model.lifetime_survival_curve.sparse_keys():
-        if (r, t, v) not in model.survival_curve_periods:
-            model.survival_curve_periods[r, t, v] = set()
-        model.survival_curve_periods[r, t, v].add(p)
+        model.survival_curve_periods.setdefault((r, t, v), set()).add(p)
         model.is_survival_curve_process[r, t, v] = True
 
     # Go through all the periods for each (r, t, v) in order
@@ -244,22 +242,20 @@ def create_survival_curve(model: TemoaModel) -> None:
 
         p_first = periods_rtv[0]
         p_last = periods_rtv[-1]
+        eol_year = v + value(model.lifetime_process[r, t, v])
 
-        if p_first != v:
+        if (
+            p_first != v
+            or p_last != eol_year
+            or value(model.lifetime_survival_curve[r, v, t, v]) != 1
+            or value(model.lifetime_survival_curve[r, eol_year, t, v]) != 0
+        ):
             msg = (
-                'lifetime_survival_curve must be defined starting in the vintage period. Must '
-                f'define ({r}, >{v}<, {t}, {v})'
+                'lifetime_survival_curve must be defined as 1 at start and 0 at end of life. Must '
+                f'define ({r}, >{v}<, {t}, {v}) = 1 and ({r}, >{eol_year}<, {t}, {v}) = 0.'
             )
             logger.error(msg)
             raise ValueError(msg)
-
-        if value(model.lifetime_survival_curve[r, v, t, v]) != 1:
-            msg_str = (
-                'lifetime_survival_curve must begin at 1 for calculating annual retirements. '
-                f'Got {value(model.lifetime_survival_curve[r, v, t, v])} for ({r}, {v}, {t}, {v})'
-            )
-            logger.error(msg_str)
-            raise ValueError(msg_str)
 
         # Collect a list of processes that needed to be interpolated, for warning
         if periods_rtv != list(range(p_first, p_last + 1, 1)):
@@ -283,6 +279,7 @@ def create_survival_curve(model: TemoaModel) -> None:
                 logger.error(msg)
                 raise ValueError(msg)
 
+            # Linearly interpolate to fill in missing years
             if p - p_prev > 1:
                 _between_periods = [cast('Period', _p) for _p in range(p_prev + 1, p, 1)]
                 for _p in _between_periods:
@@ -294,34 +291,14 @@ def create_survival_curve(model: TemoaModel) -> None:
             if lsc < 0.0001:
                 if p != p_last:
                     msg = (
-                        'There is no need to continue a survival curve beyond fraction ~= 0. '
-                        f'ignoring periods beyond {p} for ({r, t, v})'
-                    )
-                    logger.info(msg)
-
-                # Make sure the lifetime for this process aligns with survival curve end
-                if round(value(model.lifetime_process[r, t, v])) != p - v:
-                    msg = (
-                        f'The lifetime_process parameter '
-                        f'({round(value(model.lifetime_process[r, t, v]))}) for process '
-                        f'{r, t, v} with survival curve does not agree with the end of that '
-                        f'survival curve in {p}. To agree with '
-                        f'the survival curve, set lifetime_process[{r, t, v}] = {p - v}'
+                        'Survival curve must be strictly positive during the '
+                        'lifetime of the process. Found non-positive value at '
+                        f'period {p} for ({r, t, v}) which could cause a '
+                        'division by zero error.'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
-
                 continue
-
-            # Flag if the last period is not fraction = 0. This is important for investment costs
-            if p == p_last and lsc > 0.0001:
-                msg = (
-                    'Any defined survival curve must continue to zero for the purposes of '
-                    'investment cost accounting, even if this period would extend beyond '
-                    f'defined future periods. Continue ({r, t, v}) to fraction == 0.'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
 
         model.survival_curve_periods[r, t, v].update(between_periods)
 
