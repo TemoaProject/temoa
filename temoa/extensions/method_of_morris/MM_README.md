@@ -34,12 +34,14 @@ relevant `config.toml` file which can then be run.
 
 ### Example:  `morris_utopia`
 
-1. Convert the `.sql` file in the `example_dbs` folder back to a database:
+1. Convert the `.sql` source file to a database. If you have the `morris_utopia.sql` file:
 
-`data_files/example_dbs % sqlite3 morris_utopia.sqlite < morris_utopia.sql`
+   ```bash
+   sqlite3 morris_utopia.sqlite < morris_utopia.sql
+   ```
 
 2. Observe the markings (3 groups) in the `MMAnalysis` columns in `cost_variable` and `efficiency`.
-3. Observe the `morris` configuration comments in the corresponding `morris_utopia.toml` file in `my_configs`.
+3. Observe the `morris` configuration comments in the relevant config file (e.g., `morris_utopia.toml`).
 4. Run the config as normal.
 5. MM analysis is reported on screen and in 2 csv files for the objective and `co2` in the Outputs folder
 6. The DB will contain updated values (tagged by scenario name and "dash run") in `output_objective` and `output_emissions`

@@ -593,7 +593,7 @@ You can also explore the various development branches in the repository:
 .. code::
 
    $ ls
-   data_files  stochastic  temoa_model  create_archive.sh  README.txt
+   stochastic  temoa  tests  pyproject.toml  README.md
 
    $ git branch -a
    * energysystem
