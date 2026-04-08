@@ -107,9 +107,11 @@ class HybridLoader:
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
         self.viable_rtvo: ViableSet | None = None
+        self.viable_rtv_new: ViableSet | None = None
         self.viable_rpt: ViableSet | None = None
         self.viable_rpto: ViableSet | None = None
         self.viable_rtv: ViableSet | None = None
+        self.viable_rtv_eol: ViableSet | None = None
         self.viable_rt: ViableSet | None = None
         self.viable_rpit: ViableSet | None = None
         self.viable_rtt: ViableSet | None = None
@@ -470,6 +472,7 @@ class HybridLoader:
         filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
         self.viable_rtvo = filts['rtvo']
+        self.viable_rtv_new = filts['rtv_new']
         self.viable_rpt = filts['rpt']
         self.viable_rtv = filts['rtv']
         self.viable_rt = filts['rt']
@@ -626,60 +629,6 @@ class HybridLoader:
         if rows_to_load:
             tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
-
-    def _load_cost_invest(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles myopic period filtering for cost_invest."""
-        model = TemoaModel()
-        base_year = self.myopic_index.base_year if self.myopic_index else None
-        data_to_load = [
-            row for row in filtered_data if base_year is None or cast('int', row[2]) >= base_year
-        ]
-        self._load_component_data(data, model.cost_invest, data_to_load)
-
-    def _load_loan_rate(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles myopic period filtering for loan_rate."""
-        model = TemoaModel()
-        mi = self.myopic_index
-        data_to_load = [row for row in filtered_data if not mi or row[2] >= mi.base_year]  # type: ignore[operator]
-        self._load_component_data(data, model.loan_rate, data_to_load)
-
-    def _load_construction_input(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles myopic period filtering for construction_input."""
-        model = TemoaModel()
-        base_year = self.myopic_index.base_year if self.myopic_index else None
-        data_to_load = [
-            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
-        ]
-        self._load_component_data(data, model.construction_input, data_to_load)
-
-    def _load_emission_embodied(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles myopic period filtering for emission_embodied."""
-        model = TemoaModel()
-        base_year = self.myopic_index.base_year if self.myopic_index else None
-        data_to_load = [
-            row for row in filtered_data if base_year is None or cast('int', row[3]) >= base_year
-        ]
-        self._load_component_data(data, model.emission_embodied, data_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_global_discount_rate(

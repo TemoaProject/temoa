@@ -8,7 +8,7 @@ building Pyomo expressions from strings or calculating time-variable efficiencie
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class Operator(str, Enum):
+class Operator(StrEnum):
     EQUAL = 'e'
     LESS_EQUAL = 'le'
     GREATER_EQUAL = 'ge'

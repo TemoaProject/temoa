@@ -12,7 +12,7 @@ by other parts of the Temoa framework to ensure only valid data is used.
 from collections import defaultdict
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Any
+from typing import Any, cast
 
 from temoa.core.config import TemoaConfig
 from temoa.model_checking.commodity_graph import visualize_graph
@@ -143,6 +143,11 @@ class CommodityNetworkManager:
                 valid_elements['ic'].add(edge_tuple.input_comm)
                 valid_elements['oc'].add(edge_tuple.output_comm)
 
+                if cast('int', p) == cast('int', edge_tuple.vintage):
+                    valid_elements['rtv_new'].add(
+                        (edge_tuple.region, edge_tuple.tech, edge_tuple.vintage)
+                    )
+
                 for tech_group in tech_groups.get(edge_tuple.tech, {}):
                     valid_elements['rtvo'].add(
                         (
@@ -162,6 +167,11 @@ class CommodityNetworkManager:
                         (edge_tuple.region, p, tech_group, edge_tuple.output_comm)
                     )
 
+                    if cast('int', p) == cast('int', edge_tuple.vintage):
+                        valid_elements['rtv_new'].add(
+                            (edge_tuple.region, tech_group, edge_tuple.vintage)
+                        )
+
         # Good processes that we dont want in the network diagram
         for r, p, t, v in self.orig_data.silent_rptv:
             valid_elements['rpt'].add((r, p, t))
@@ -169,6 +179,9 @@ class CommodityNetworkManager:
             valid_elements['rt'].add((r, t))
             valid_elements['t'].add(t)
             valid_elements['v'].add(v)
+
+            if cast('int', p) == cast('int', v):
+                valid_elements['rtv_new'].add((r, t, v))
 
         return {
             'ritvo': ViableSet(
@@ -178,6 +191,11 @@ class CommodityNetworkManager:
             ),
             'rtvo': ViableSet(
                 elements=valid_elements['rtvo'],
+                exception_loc=0,
+                exception_vals=ViableSet.REGION_REGEXES,
+            ),
+            'rtv_new': ViableSet(
+                elements=valid_elements['rtv_new'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
