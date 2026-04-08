@@ -35,6 +35,7 @@ from temoa.extensions.myopic.myopic_sequencer import MyopicSequencer
 from temoa.extensions.single_vector_mga.sv_mga_sequencer import SvMgaSequencer
 from temoa.extensions.stochastics.stochastic_sequencer import StochasticSequencer
 from temoa.model_checking.pricing_check import price_checker
+from temoa.utilities.sqlite_utils import tune_sqlite_connection
 
 if TYPE_CHECKING:
     import pyomo.opt
@@ -134,6 +135,7 @@ class TemoaSequencer:
                 raise RuntimeError('Database version check failed. See log file for details.')
 
             with sqlite3.connect(self.config.input_database) as con:
+                tune_sqlite_connection(con, self.config)
                 hybrid_loader = HybridLoader(db_connection=con, config=self.config)
                 data_portal = hybrid_loader.load_data_portal(myopic_index=None)
                 instance = build_instance(data_portal, silent=self.config.silent)
@@ -203,6 +205,7 @@ class TemoaSequencer:
     def _run_check_mode(self) -> None:
         """Encapsulated logic for the CHECK mode."""
         with sqlite3.connect(self.config.input_database) as con:
+            tune_sqlite_connection(con, self.config)
             if not self.config.source_trace:
                 logger.warning('Source trace is automatically enabled for CHECK mode.')
                 self.config.source_trace = True
@@ -221,6 +224,7 @@ class TemoaSequencer:
     def _run_perfect_foresight(self) -> None:
         """Encapsulated logic for the PERFECT_FORESIGHT mode."""
         with sqlite3.connect(self.config.input_database) as con:
+            tune_sqlite_connection(con, self.config)
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
             data_portal = hybrid_loader.load_data_portal(myopic_index=None)
             instance = build_instance(

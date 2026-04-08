@@ -159,6 +159,50 @@ class TemoaConfig:
         self.output_threshold_activity = output_threshold_activity
         self.output_threshold_emission = output_threshold_emission
         self.output_threshold_cost = output_threshold_cost
+        self.sqlite_inputs = sqlite or {}
+
+        # SQLite performance settings
+        # journal_mode: DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
+        jm_allowed = {'DELETE', 'TRUNCATE', 'PERSIST', 'MEMORY', 'WAL', 'OFF'}
+        jm = self.sqlite_inputs.get('journal_mode', 'WAL')
+        if isinstance(jm, str) and jm.upper() in jm_allowed:
+            self.sqlite_journal_mode: str | int = jm.upper()
+        elif isinstance(jm, (int, float, str)) and str(jm).isdigit():
+            self.sqlite_journal_mode = int(jm)
+        else:
+            self.sqlite_journal_mode = 'WAL'
+
+        # synchronous: OFF (0) | NORMAL (1) | FULL (2) | EXTRA (3)
+        sync_allowed = {'OFF', 'NORMAL', 'FULL', 'EXTRA'}
+        sync = self.sqlite_inputs.get('synchronous', 'NORMAL')
+        if isinstance(sync, str) and sync.upper() in sync_allowed:
+            self.sqlite_synchronous: str | int = sync.upper()
+        elif isinstance(sync, (int, float, str)) and str(sync).isdigit():
+            self.sqlite_synchronous = int(sync)
+        else:
+            self.sqlite_synchronous = 'NORMAL'
+
+        # temp_store: DEFAULT (0) | FILE (1) | MEMORY (2)
+        temp_allowed = {'DEFAULT', 'FILE', 'MEMORY'}
+        ts = self.sqlite_inputs.get('temp_store', 'MEMORY')
+        if isinstance(ts, str) and ts.upper() in temp_allowed:
+            self.sqlite_temp_store: str | int = ts.upper()
+        elif isinstance(ts, (int, float, str)) and str(ts).isdigit():
+            self.sqlite_temp_store = int(ts)
+        else:
+            self.sqlite_temp_store = 'MEMORY'
+
+        mmap_size = self.sqlite_inputs.get('mmap_size', 8589934592)
+        if isinstance(mmap_size, (int, float, str)):
+            self.sqlite_mmap_size = int(mmap_size)
+        else:
+            self.sqlite_mmap_size = 8589934592
+
+        cache_size = self.sqlite_inputs.get('cache_size', -512000)
+        if isinstance(cache_size, (int, float, str)):
+            self.sqlite_cache_size = int(cache_size)
+        else:
+            self.sqlite_cache_size = -512000
 
         # Cycle detection limits
         if not isinstance(cycle_count_limit, int) or cycle_count_limit < -1:
@@ -305,6 +349,15 @@ class TemoaConfig:
         msg += '{:>{}s}: {}\n'.format('Pyomo LP write status', width, self.save_lp_file)
         msg += '{:>{}s}: {}\n'.format('Save duals to output db', width, self.save_duals)
         msg += '{:>{}s}: {}\n'.format('Save storage to output db', width, self.save_storage_levels)
+
+        msg += spacer
+        msg += '{:>{}s}: {}\n'.format('SQLite journal mode', width, self.sqlite_journal_mode)
+        msg += '{:>{}s}: {}\n'.format('SQLite synchronous', width, self.sqlite_synchronous)
+        msg += '{:>{}s}: {}\n'.format('SQLite temp store', width, self.sqlite_temp_store)
+        msg += '{:>{}s}: {}\n'.format('SQLite mmap size (bytes)', width, self.sqlite_mmap_size)
+        msg += '{:>{}s}: {}\n'.format(
+            'SQLite cache size (pages or KiB if negative)', width, self.sqlite_cache_size
+        )
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Time sequencing', width, self.time_sequencing)
