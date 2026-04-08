@@ -1,4 +1,3 @@
-import argparse
 import logging
 import shutil
 from datetime import UTC, datetime
@@ -16,7 +15,8 @@ from temoa.__about__ import __version__
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
-from temoa.utilities import db_migration_v3_1_to_v4, sql_migration_v3_1_to_v4
+from temoa.utilities import master_migration
+from temoa.utilities.run_all_v4_migrations import run_migrations
 
 # =============================================================================
 # Logging & Helper Setup
@@ -399,7 +399,7 @@ def migrate(
     input_path: Annotated[
         Path,
         typer.Argument(
-            help='Path to input file to migrate (SQL dump or SQLite DB).',
+            help='Path to input file or directory to migrate (SQL dump or SQLite DB).',
             exists=True,
             resolve_path=True,
         ),
@@ -431,7 +431,7 @@ def migrate(
     debug: Annotated[bool, typer.Option('--debug', '-d', help='Enable debug output.')] = False,
 ) -> None:
     """
-    Migrate a single Temoa database file (SQL dump or SQLite DB) from v3.1 to v4 format.
+    Migrate a Temoa database file (SQL dump or SQLite DB) or directory from v3 to v4 format.
     """
     if schema_path is None:
         schema_path = get_default_schema()
@@ -439,21 +439,41 @@ def migrate(
         rich.print(f'[red]Error: Schema file {schema_path} does not exist or is not a file.[/red]')
         raise typer.Exit(1)
 
-    # Validate that input_path is a file, not a directory
-    if not input_path.is_file():
-        rich.print(f'[red]Error: Input path must be a file, not a directory: {input_path}[/red]')
-        raise typer.Exit(1)
+    # 1. Directory Migration
+    if input_path.is_dir():
+        if output_path is not None:
+            rich.print(
+                '[yellow]Warning: --output is ignored when migrating a directory. Originals are overwritten after backup.[/yellow]'
+            )
 
+        migration_script = Path(__file__).parent / 'utilities' / 'master_migration.py'
+        if not silent:
+            rich.print(f'[green]Batch migrating directory: {input_path}[/green]')
+
+        try:
+            run_migrations(
+                input_dir=input_path,
+                migration_script=migration_script,
+                schema_path=schema_path,
+                dry_run=False,
+                silent=silent,
+            )
+            if not silent:
+                rich.print(f'[green]Directory migration completed for {input_path}[/green]')
+        except Exception as e:
+            logger.exception('Directory migration failed')
+            rich.print(f'[red]Directory migration failed for {input_path}: {e}[/red]')
+            raise typer.Exit(1) from e
+        return
+
+    # 2. Single File Migration
     ext = input_path.suffix.lower()
 
-    # Determine the effective output directory and file
     effective_output_dir: Path
     final_output_file: Path
 
     if output_path:
-        # If explicit output_path is provided, its parent is the desired directory
         effective_output_dir = output_path.parent
-        # Ensure the explicitly provided output_path parent exists
         try:
             effective_output_dir.mkdir(parents=True, exist_ok=True)
         except OSError as e:
@@ -463,12 +483,10 @@ def migrate(
             raise typer.Exit(1) from e
         final_output_file = effective_output_dir / output_path.name
     else:
-        # Try to use the input file's directory
         input_dir = input_path.parent
         if _is_writable(input_dir):
             effective_output_dir = input_dir
         else:
-            # Fallback to current working directory if input_dir is not writable
             current_dir = Path.cwd()
             if _is_writable(current_dir):
                 effective_output_dir = current_dir
@@ -485,7 +503,6 @@ def migrate(
                 )
                 raise typer.Exit(1)
 
-        # Ensure the chosen output directory exists
         try:
             effective_output_dir.mkdir(parents=True, exist_ok=True)
         except OSError as e:
@@ -495,26 +512,17 @@ def migrate(
             )
             raise typer.Exit(1) from e
 
-        # For auto-output, derive filename from input_path, place in effective_output_dir
-        # Determine output file extension based on migration type
         if migration_type == 'db' or (migration_type is None and ext in ['.db', '.sqlite']):
-            # If migrating to DB, output should be .sqlite
             final_output_file = effective_output_dir / (input_path.stem + '_v4.sqlite')
         else:
-            # Default to .sql if migrating SQL dump or type 'auto' for .sql input
             final_output_file = effective_output_dir / (input_path.stem + '_v4.sql')
 
     # --- Execute the migration based on type ---
     if migration_type == 'sql' or (migration_type is None and ext == '.sql'):
-        # SQL dump to SQL dump migration
-        args_namespace = argparse.Namespace(
-            input=str(input_path),
-            schema=str(schema_path),
-            output=str(final_output_file),
-            debug=debug,
-        )
         try:
-            sql_migration_v3_1_to_v4.migrate_dump_to_sqlite(args_namespace)
+            master_migration.migrate_sql_dump(
+                source_path=input_path, schema_path=schema_path, output_path=final_output_file
+            )
             if not silent:
                 rich.print(f'[green]SQL dump migration completed: {final_output_file}[/green]')
         except Exception as e:
@@ -524,14 +532,10 @@ def migrate(
             )
             raise typer.Exit(1) from e
     elif migration_type == 'db' or (migration_type is None and ext in ['.db', '.sqlite']):
-        # SQLite DB to SQLite DB migration
-        args_namespace = argparse.Namespace(
-            source=str(input_path),
-            schema=str(schema_path),
-            out=str(final_output_file),
-        )
         try:
-            db_migration_v3_1_to_v4.migrate_all(args_namespace)
+            master_migration.migrate_database(
+                source_path=input_path, schema_path=schema_path, output_path=final_output_file
+            )
             if not silent:
                 rich.print(f'[green]Database migration completed: {final_output_file}[/green]')
         except Exception as e:

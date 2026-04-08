@@ -8,23 +8,33 @@ import pytest
 # Constants
 REPO_ROOT = Path(__file__).parents[1]
 UTILITIES_DIR = REPO_ROOT / 'temoa' / 'utilities'
-SCHEMA_V3_1 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3_1.sql'
 SCHEMA_V4 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
-MOCK_DATA = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql'
+
+SCHEMA_V3 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3.sql'
+SCHEMA_V3_1 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v3_1.sql'
+MOCK_DATA_V3 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_mock.sql'
+MOCK_DATA_V3_1 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql'
 
 
-def test_v4_migrations(tmp_path: Path) -> None:
-    """Test both SQL and SQLite v4 migrators."""
+@pytest.mark.parametrize(
+    ('schema_file', 'mock_data_file'),
+    [
+        (SCHEMA_V3, MOCK_DATA_V3),
+        (SCHEMA_V3_1, MOCK_DATA_V3_1),
+    ]
+)
+def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) -> None:
+    """Test both SQL and SQLite master migrators."""
 
-    # 1. Create v3.1 SQLite DB
-    db_v3_1 = tmp_path / 'test_v3_1.sqlite'
+    # 1. Create SQLite DB
+    db_v3_1 = tmp_path / 'test_db.sqlite'
     with sqlite3.connect(db_v3_1) as conn:
         conn.execute('PRAGMA foreign_keys = OFF')
-        conn.executescript(SCHEMA_V3_1.read_text())
-        conn.executescript(MOCK_DATA.read_text())
+        conn.executescript(schema_file.read_text())
+        conn.executescript(mock_data_file.read_text())
         conn.execute('PRAGMA foreign_keys = ON')
 
-    # 2. Dump v3.1 to SQL
+    # 2. Dump to SQL
     sql_v3_1 = tmp_path / 'test_v3_1.sql'
     with open(sql_v3_1, 'w') as f:
         for line in sqlite3.connect(db_v3_1).iterdump():
@@ -35,7 +45,9 @@ def test_v4_migrations(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            str(UTILITIES_DIR / 'sql_migration_v3_1_to_v4.py'),
+            str(UTILITIES_DIR / 'master_migration.py'),
+            '--type',
+            'sql',
             '--input',
             str(sql_v3_1),
             '--schema',
@@ -57,12 +69,14 @@ def test_v4_migrations(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            str(UTILITIES_DIR / 'db_migration_v3_1_to_v4.py'),
-            '--source',
+            str(UTILITIES_DIR / 'master_migration.py'),
+            '--type',
+            'db',
+            '--input',
             str(db_v3_1),
             '--schema',
             str(SCHEMA_V4),
-            '--out',
+            '--output',
             str(db_v4_migrated),
         ],
         check=True,
@@ -100,6 +114,16 @@ def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     assert len(rows) == 1
     assert rows[0] == ('R1', 'winter', 'day', 'T1', 2030, pytest.approx(0.6))
 
+    # Check operator-added tables (limit_capacity and limit_emission)
+    cap_rows = conn.execute('SELECT region, tech_or_group, period, capacity, operator FROM limit_capacity').fetchall()
+    assert len(cap_rows) == 1
+    assert cap_rows[0] == ('R1', 'T1', 2030, 10.0, 'ge')
+
+    emis_rows = conn.execute('SELECT region, period, value, operator FROM limit_emission').fetchall()
+    assert len(emis_rows) == 1
+    assert emis_rows[0] == ('R1', 2030, 100.0, 'le')
+
     # Check metadata version
     major = conn.execute("SELECT value FROM metadata WHERE element='DB_MAJOR'").fetchone()[0]
     assert int(major) == 4
+    assert int(conn.execute("SELECT value FROM metadata WHERE element='DB_MINOR'").fetchone()[0]) == 0
