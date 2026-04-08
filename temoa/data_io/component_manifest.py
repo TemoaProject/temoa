@@ -294,8 +294,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             columns=['region', 'tech', 'vintage', 'cost'],
             validator_name='viable_rtv_new',
             validation_map=(0, 1, 2),
-            # custom_loader_name='_load_cost_invest',
-            is_period_filtered=False,  # Custom loader handles this
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -324,8 +323,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             columns=['region', 'tech', 'vintage', 'rate'],
             validator_name='viable_rtv_new',
             validation_map=(0, 1, 2),
-            # custom_loader_name='_load_loan_rate',
-            is_period_filtered=False,  # Custom loader handles this
+            is_period_filtered=False,
             is_table_required=False,
         ),
         # =========================================================================
@@ -568,7 +566,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             columns=['region', 'emis_comm', 'tech', 'vintage', 'value'],
             validator_name='viable_rtv_new',
             validation_map=(0, 2, 3),
-            # custom_loader_name='_load_emission_embodied',
             is_period_filtered=False,
             is_table_required=False,
         ),
@@ -587,7 +584,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             columns=['region', 'input_comm', 'tech', 'vintage', 'value'],
             validator_name='viable_rtv_new',
             validation_map=(0, 2, 3),
-            # custom_loader_name='_load_construction_input',
             is_period_filtered=False,
             is_table_required=False,
         ),
