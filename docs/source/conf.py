@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
 #
 import os
 import sys
-import time
+from pathlib import Path
+from typing import Any, cast
+
+import tomlkit
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -14,17 +16,27 @@ sys.path.insert(0, os.path.abspath('../../'))
 # this addition provided direct abbreviated link to the modules in the model
 sys.path.insert(1, os.path.abspath('../../temoa/temoa_model'))
 
+# Import version from source (after sys.path setup)
+from temoa.__about__ import __version__
 
-# -- Project information -----------------------------------------------------
+# -- Project information from pyproject.toml ---------------------------------
 
+# Read metadata from pyproject.toml
+pyproject_path = Path(__file__).parent.parent.parent / 'pyproject.toml'
+with open(pyproject_path) as f:
+    pyproject_data = tomlkit.load(f)
+
+project_metadata = cast('dict[str, Any]', pyproject_data['project'])
 project = 'Tools for Energy Model Optimization and Analysis (Temoa)'
-copyright = '2020, NC State University'
-author = 'Joe DeCarolis, Kevin Hunter'
+author = ', '.join(
+    author['name'] for author in cast('list[dict[str, Any]]', project_metadata.get('authors', []))
+)
 
-# The short X.Y version
-version = '3.0'
-# The full version, including alpha/beta/rc tags
-release = time.strftime('%F', time.gmtime())
+
+# The short version
+version = __version__.rsplit('.', 1)[0]
+# The full version
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -45,6 +57,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'myst_parser',  # Enable Markdown support
+    'sphinxcontrib.mermaid',  # Enable Mermaid diagrams
+    'sphinx.ext.imgconverter',  # Support SVG to PDF conversion for LaTeX
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,10 +68,11 @@ templates_path = ['_templates']
 bibtex_bibfiles = ['References.bib']
 
 # The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-#
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+# Support both reStructuredText and Markdown
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The master toctree document.
 master_doc = 'index'
@@ -75,6 +91,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Suppress warnings for duplicate labels and objects (intentional due to file inclusion and autodoc)
+suppress_warnings = [
+    'ref.duplicate',  # Duplicate labels between included RST files
+    'autosummary',  # Autodoc duplicate object descriptions
+    'ref.footnote',  # Unreferenced footnotes
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -95,26 +118,25 @@ pygments_style = 'sphinx'
 html_static_path = ['default/static']
 
 
-# this stylesheet eliminates fixed width and is located in the _static directory
-def setup(app):
-    app.add_css_file('my_theme.css')
+html_theme = 'sphinx_book_theme'
+html_theme_options = {
+    'repository_url': 'https://github.com/TemoaProject/temoa',
+    'use_repository_button': True,
+    'use_issues_button': True,
+    'use_edit_page_button': True,
+    'path_to_docs': 'docs/source',
+    'show_navbar_depth': 2,
+}
+latex_logo = 'assets/logo_bottom_text.pdf'
+html_logo = 'assets/logo_bottom_text.svg'
 
+myst_enable_extensions = ['amsmath', 'colon_fence', 'dollarmath', 'html_image']
+myst_fence_as_directive = ['mermaid']
 
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# The default sidebars (for documents that don't match any pattern) are
-# defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-# html_sidebars = {}
-# import sphinx_rtd_theme
+mermaid_d3_zoom = True
+mermaid_fullscreen = True
+mermaid_include_elk = True
+mermaid_include_mindmap = True
 
-# extensions = [
-#    "sphinx_rtd_theme"
-# ]
-
-html_theme = 'sphinx_rtd_theme'
-html_logo = 'images/Temoa_logo_color_small.png'
-latex_logo = 'images/TemoaLogo_grayscale.png'
+# -- Options for LaTeX output ------------------------------------------------
+latex_engine = 'xelatex'

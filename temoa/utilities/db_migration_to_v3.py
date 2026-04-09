@@ -1,28 +1,4 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  3/21/24
 
 Transition a legacy database to V3 compliant.
 
@@ -35,8 +11,8 @@ import argparse
 import sqlite3
 import sys
 from collections import defaultdict
+from importlib import resources
 from pathlib import Path
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -48,14 +24,28 @@ parser.add_argument(
 )
 parser.add_argument(
     '--schema',
-    help='Path to schema file (default=../../data_files/temoa_schema_v3.sql)',
+    help='Path to v3 schema file (defaults to bundled package resource)',
     required=False,
     dest='schema',
-    default='../../data_files/temoa_schema_v3.sql',
+    default=None,
 )
 options = parser.parse_args()
 legacy_db: Path = Path(options.source_db)
-schema_file = Path(options.schema)
+
+# Resolve schema path
+if options.schema:
+    schema_file = Path(options.schema)
+else:
+    try:
+        # Try package resources first
+        schema_file = Path(str(resources.files('temoa.db_schema') / 'temoa_schema_v3.sql'))
+    except (ModuleNotFoundError, FileNotFoundError, AttributeError):
+        # Fallback to local path relative to this script
+        schema_file = Path(__file__).parent.parent / 'db_schema' / 'temoa_schema_v3.sql'
+
+if not schema_file.exists():
+    print(f'Error: Schema file not found: {schema_file}')
+    sys.exit(1)
 
 
 new_db_name = legacy_db.stem + '_v3.sqlite'
@@ -66,7 +56,7 @@ con_new = sqlite3.connect(new_db_path)
 cur = con_new.cursor()
 
 # bring in the new schema and execute
-with open(schema_file, 'r') as src:
+with open(schema_file) as src:
     sql_script = src.read()
 con_new.executescript(sql_script)
 
@@ -76,71 +66,71 @@ con_new.execute('PRAGMA foreign_keys = 0;')
 # table mapping for DIRECT transfers
 # fmt: off
 direct_transfer_tables = [
-    ('',                    'CapacityCredit'),
-    ('',                    'CapacityFactorProcess'),
-    ('',                    'CapacityFactorTech'),
-    ('',                    'CapacityToActivity'),
-    ('commodities',         'Commodity'),
-    ('commodity_labels',    'CommodityType'),
-    ('CostEmissions',       'CostEmission'),
-    ('',                    'CostFixed'),
-    ('',                    'CostInvest'),
-    ('',                    'CostVariable'),
-    ('',                    'Demand'),
-    ('',                    'DemandSpecificDistribution'),
-    ('',                    'Efficiency'),
-    ('',                    'EmissionActivity'),
-    ('',                    'EmissionLimit'),
-    ('',                    'ExistingCapacity'),
-    ('',                    'GrowthRateMax'),
-    ('',                    'GrowthRateSeed'),
-    ('',                    'LifetimeProcess'),
-    ('',                    'LifetimeTech'),
-    ('LinkedTechs',         'LinkedTech'),
-    ('LifetimeLoanTech',    'LoanLifetimeTech'),
-    ('DiscountRate',        'LoanRate'),
-    ('',                    'MaxActivity'),
-    ('',                    'MaxActivityShare'),
-    ('',                    'MaxAnnualCapacityFactor'),
-    ('',                    'MaxCapacity'),
-    ('',                    'MaxCapacityShare'),
-    ('',                    'MaxNewCapacity'),
-    ('',                    'MaxNewCapacityGroup'),
-    ('',                    'MaxNewCapacityShare'),
-    ('',                    'MaxResource'),
-    ('',                    'MinActivity'),
-    ('',                    'MinActivityShare'),
-    ('',                    'MinAnnualCapacityFactor'),
-    ('',                    'MinCapacity'),
-    ('',                    'MinCapacityShare'),
-    ('',                    'MinNewCapacity'),
-    ('',                    'MinNewCapacityGroup'),
-    ('',                    'MinNewCapacityShare'),
-    ('',                    'PlanningReserveMargin'),
-    ('',                    'RampDown'),
-    ('',                    'RampUp'),
-    ('regions',             'Region'),
-    ('sector_labels',       'SectorLabel'),
-    ('',                    'StorageDuration'),
-    ('',                    'TechInputSplit'),
-    ('',                    'TechInputSplitAverage'),
-    ('',                    'TechOutputSplit'),
-    ('technology_labels',   'TechnologyType'),
-    ('time_period_labels',  'TimePeriodType'),
-    ('SegFrac',             'TimeSegmentFraction'),
+    ("",                    "CapacityCredit"),
+    ("",                    "CapacityFactorProcess"),
+    ("",                    "CapacityFactorTech"),
+    ("",                    "CapacityToActivity"),
+    ("commodities",         "Commodity"),
+    ("commodity_labels",    "CommodityType"),
+    ("CostEmissions",       "CostEmission"),
+    ("",                    "CostFixed"),
+    ("",                    "CostInvest"),
+    ("",                    "CostVariable"),
+    ("",                    "Demand"),
+    ("",                    "DemandSpecificDistribution"),
+    ("",                    "Efficiency"),
+    ("",                    "EmissionActivity"),
+    ("",                    "EmissionLimit"),
+    ("",                    "ExistingCapacity"),
+    ("",                    "GrowthRateMax"),
+    ("",                    "GrowthRateSeed"),
+    ("",                    "LifetimeProcess"),
+    ("",                    "LifetimeTech"),
+    ("LinkedTechs",         "LinkedTech"),
+    ("LifetimeLoanTech",    "LoanLifetimeTech"),
+    ("DiscountRate",        "LoanRate"),
+    ("",                    "MaxActivity"),
+    ("",                    "MaxActivityShare"),
+    ("",                    "MaxAnnualCapacityFactor"),
+    ("",                    "MaxCapacity"),
+    ("",                    "MaxCapacityShare"),
+    ("",                    "MaxNewCapacity"),
+    ("",                    "MaxNewCapacityGroup"),
+    ("",                    "MaxNewCapacityShare"),
+    ("",                    "MaxResource"),
+    ("",                    "MinActivity"),
+    ("",                    "MinActivityShare"),
+    ("",                    "MinAnnualCapacityFactor"),
+    ("",                    "MinCapacity"),
+    ("",                    "MinCapacityShare"),
+    ("",                    "MinNewCapacity"),
+    ("",                    "MinNewCapacityGroup"),
+    ("",                    "MinNewCapacityShare"),
+    ("",                    "PlanningReserveMargin"),
+    ("",                    "RampDown"),
+    ("",                    "RampUp"),
+    ("regions",             "Region"),
+    ("sector_labels",       "SectorLabel"),
+    ("",                    "StorageDuration"),
+    ("",                    "TechInputSplit"),
+    ("",                    "TechInputSplitAverage"),
+    ("",                    "TechOutputSplit"),
+    ("technology_labels",   "TechnologyType"),
+    ("time_period_labels",  "TimePeriodType"),
+    ("SegFrac",             "TimeSegmentFraction"),
 ]
 
 units_added_tables = [
-    ('',                    'MaxActivityGroup'),
-    ('',                    'MaxCapacityGroup'),
-    ('',                    'MinCapacityGroup'),
-    ('',                    'MinActivityGroup'),
+    ("",                    "MaxActivityGroup"),
+    ("",                    "MaxCapacityGroup"),
+    ("",                    "MinCapacityGroup"),
+    ("",                    "MinActivityGroup"),
 ]
 
 sequence_added_tables = [
-    ('time_season',         'TimeSeason'),
-    ('time_periods',        'TimePeriod'),
-    ('time_of_day',         'TimeOfDay'),
+    ("time_season",         "TimeSeason"),
+    ("time_periods",        "time_period"),
+    ("time_of_day",         "TimeOfDay"),
 ]
 # fmt: on
 
@@ -150,8 +140,13 @@ for name_pair in direct_transfer_tables:
     old_name, new_name = name_pair
     if old_name == '':
         old_name = new_name
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+    cols = str(old_columns[0 : len(new_columns)])[1:-1].replace("'", '')
+
     try:
-        data = con_old.execute(f'SELECT * FROM {old_name}').fetchall()
+        data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
         print('TABLE NOT FOUND: ' + old_name)
         data = []
@@ -174,8 +169,13 @@ for name_pair in units_added_tables:
     old_name, new_name = name_pair
     if old_name == '':
         old_name = new_name
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+    cols = str(old_columns[0 : len(new_columns)])[1:-1].replace("'", '')
+
     try:
-        data = con_old.execute(f'SELECT * FROM {old_name}').fetchall()
+        data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
         print('table not found: ' + old_name)
         data = []
@@ -186,11 +186,13 @@ for name_pair in units_added_tables:
     # quick check for expected number of fields...
     if len(data[0]) != 5:
         print(
-            f'\nWARNING:  unexpected number of fields in table: {old_name}.  Was expecting 5:  region, period, group, value, notes'
+            f'\nWARNING:  unexpected number of fields in table: {old_name}.  Was expecting 5:  '
+            'region, period, group, value, notes'
         )
         print(
-            '\nIt is possible that the older table you have was not indexed by REGION, which might be common'
-            'for old datasets.  If so, that cannot be moved automatically.  You will need to do it manually.'
+            '\nIt is possible that the older table you have was not indexed by REGION, which might '
+            'be common for old datasets.  If so, that cannot be moved automatically.  You will '
+            'need to do it manually.'
         )
         print(f'\n  *** IGNORING TABLE:  {old_name} in transfer!! ***\n')
         continue
@@ -204,13 +206,18 @@ for name_pair in sequence_added_tables:
     old_name, new_name = name_pair
     if old_name == '':
         old_name = new_name
+
+    new_columns = [c[1] for c in con_new.execute(f'PRAGMA table_info({new_name});').fetchall()]
+    old_columns = [c[1] for c in con_old.execute(f'PRAGMA table_info({old_name});').fetchall()]
+    cols = str(old_columns[0 : len(new_columns) - 1])[1:-1].replace("'", '')
+
     try:
-        data = con_old.execute(f'SELECT * FROM {old_name}').fetchall()
+        data = con_old.execute(f'SELECT {cols} FROM {old_name}').fetchall()
     except sqlite3.OperationalError:
         print(f'mandatory table: {old_name} not found.  Operation Failed')
         sys.exit(-1)
     count = 1
-    num_placeholders = len(data[0])
+    num_placeholders = len(new_columns) - 1
     for row in data:
         placeholders = ','.join(['?' for _ in range(num_placeholders)])
         query = f'INSERT INTO {new_name} VALUES ({count}, {placeholders})'
@@ -221,26 +228,27 @@ con_new.commit()
 
 # More complicated stuff.... fixing the groups
 print(
-    '\n --- comparing RPS groups to a common set to see if they can be combined into 1 (except global) ---'
+    '\n --- comparing RPS groups to a common set to see if they can be combined into 1 '
+    '(except global) ---'
 )
 
-groups = defaultdict(set)
+groups: dict[str, set[str]] = defaultdict(set)
 
 # let's ensure all the non-global entries are consistent (same techs in each region)
 skip_rps = False
 try:
-    entries = con_old.execute('SELECT * FROM tech_rps').fetchall()
+    rps_entries = con_old.execute('SELECT * FROM tech_rps').fetchall()
 except sqlite3.OperationalError:
     print('source does not appear to include RPS techs...skipping')
     skip_rps = True
 if not skip_rps:
-    for region, tech, notes in entries:
+    for region, tech, _notes in rps_entries:
         groups[region].add(tech)
 
-    common = set()
-    for group, entries in groups.items():
+    common: set[str] = set()
+    for group, group_entries in groups.items():
         if group != 'global':
-            common |= set(entries)
+            common |= group_entries
 
     techs_common = True
     for group, techs in groups.items():
@@ -249,7 +257,8 @@ if not skip_rps:
             techs_common &= not common ^ techs
             if not techs_common:
                 print(
-                    'combining RPS techs failed.  Some regions are not same.  Must be done manually.'
+                    'combining RPS techs failed.  Some regions are not same.  Must be done '
+                    'manually.'
                 )
 
     if techs_common:
@@ -309,8 +318,8 @@ except ValueError as e:
     skip_tech_groups = True
 if not skip_tech_groups:
     # ------- FIX TABLES THAT USED TO USE tech_groups -----------
-    # We'll do this by modifying the group names similar to above (smashing the region-name together to match
-    # the newly renamed groups
+    # We'll do this by modifying the group names similar to above (smashing the region-name
+    # together to match the newly renamed groups
     tables_using_groups = [
         'MaxActivityGroup',
         'MaxActivityShare',
@@ -365,7 +374,7 @@ if unlim_cap_present:
     # need to convert null -> 0 for unlim_cap to match new schema that does not allow null
     new_data = []
     for row in data:
-        new_row = [t for t in row]
+        new_row = list(row)
         if new_row[4] is None:
             new_row[4] = 0
         new_data.append(tuple(new_row))
@@ -421,22 +430,22 @@ for row in data:
 
 print('\n --- Moving scalar data elements ---')
 try:
-    data = con_old.execute('SELECT * FROM MyopicBaseyear').fetchone()
+    myopic_result = con_old.execute('SELECT * FROM MyopicBaseyear').fetchone()
 except sqlite3.OperationalError:
-    data = None
-if data:
-    mby = data[0]
+    myopic_result = None
+if myopic_result:
+    mby = myopic_result[0]
     cur.execute("INSERT OR REPLACE INTO MetaData VALUES ('myopic_base_year', ? , '')", (mby,))
     print(f'transferred myopic base year: {mby}')
 else:
     print('no myopic base year discovered')
 
 try:
-    data = con_old.execute('SELECT * FROM GlobalDiscountRate').fetchone()
+    discount_result = con_old.execute('SELECT * FROM GlobalDiscountRate').fetchone()
 except sqlite3.OperationalError:
-    data = None
-if data:
-    rate = data[0]
+    discount_result = None
+if discount_result:
+    rate = discount_result[0]
     cur.execute(
         "INSERT OR REPLACE INTO MetaDataReal VALUES ('global_discount_rate', ?, '')", (rate,)
     )

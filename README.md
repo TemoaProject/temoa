@@ -1,192 +1,366 @@
-# Getting Started with TEMOA and Version 3
+# TEMOA
+
+[![PyPI](https://img.shields.io/pypi/v/temoa?label=pypi%20package)](https://pypi.org/project/temoa/)
+[![CI](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml/badge.svg?branch=unstable)](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/temoa/badge/?version=latest)](https://temoa.readthedocs.io/en/latest/?badge=latest)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://pyreadiness.org/3.12/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Type Checked with mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 ## Overview
 
-The main subdirectories in the project are:
+TEMOA (Tools for Energy Model Optimization and Analysis) is a sophisticated energy systems optimization framework that supports various modeling approaches including perfect foresight, myopic planning, uncertainty analysis, and alternative generation.
 
-1. `temoa/`
-Contains the core Temoa model
-2. `temoa/temoa_model`
-The core model code necessary to build and solve a Temoa instance
-3. `temoa/data_processing`
-Code for post-processing solved models and working with output
-4. `temoa/extensions`
-Model extensions to solve the model using differing techniques.  Note:  There is some legacy and non-working
-code in these modules that is planned future work.
+## Quick Start
 
-5. `data_files/`
-Intended to hold input data files and config files.  Examples are included.
-Note that the example file utopia.sql represents a simple system called 'Utopia', which
-is packaged with the MARKAL model generator and has been used
-extensively for benchmarking exercises.
-6. `output_files/`
-The target for run-generated output including log files and other requested products.  Temoa will create
-time-stamped folders to gather output for runs
-4. `docs/`
-Contains the source code for the Temoa project manual, in reStructuredText
-(ReST) format.
-5. `notebooks/`
-jupyter notebooks associated with the project.  Note:  Not all of these are functional at this time, but are
-retained to guide future development
+### Standard Installation
 
-## Guide to Setup
+```bash
+# Install from PyPI in a virtual environment
+python -m venv .venv
 
-1. Obtain a current copy of Python from the python.org website.  The model has been tested with 3.11 and 3.12.  It will
-fail (raise error) on earlier versions.
-2. A `requirements.txt` file has been included to allow for use of `pip` to populate a virtual environment.  In order to use that the steps are:
-- Ensure you have a copy of python 3.11/3.12 installed on your machine ([python.org](https://www.python.org))
-- Make and activate a virtual environment using the `venv` package:
+# Activate virtual environment
+# On Linux/Mac:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+
+# Install temoa
+pip install temoa
+```
+
+### Get Started in 30 Seconds
+
+In a virtual env with temoa installed, run:
+
+```bash
+# Create tutorial files in the current directory
+# Creates tutorial_config.toml and tutorial_database.sqlite
+temoa tutorial
+
+# Run the model
+temoa run tutorial_config.toml
+```
+
+## Package Structure
+
+The Temoa package is organized into clear modules:
+
+- **`temoa.core`** - Public API for end users (TemoaModel, TemoaConfig, TemoaMode)
+- **`temoa.cli`** - Command-line interface and utilities
+- **`temoa.components`** - Model components and constraints
+- **`temoa.data_io`** - Data loading and validation
+- **`temoa.extensions`** - Optional extensions for different modeling approaches
+  - `modeling_to_generate_alternatives` - MGA analysis
+  - `method_of_morris` - Sensitivity analysis
+  - `monte_carlo` - Uncertainty quantification
+  - `myopic` - Sequential decision making
+- **`temoa.model_checking`** - Model validation and integrity checking
+- **`temoa.data_processing`** - Output analysis and visualization
+- **`temoa.utilities`** - Helper scripts and migration tools
+
+## Installation & Setup
+
+### Development Installation
+
+For users who want to contribute to or modify Temoa should install in development mode using `uv`:
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```
-$ python3.11 -m venv venv
-$ source venv/bin/activate   # for linux/osx, windows activation command may differ
-```
-- Verify that you have a prepended indicator on your cursor that you are in the virtual environment (see below)
-- After activating the venv, use `pip` *within* the venv to install everything.  Most IDEs have automated tools to
-help set up and associate this venv with the project.  It is also possible from the command line:
-```
-(venv) $ pip install -r requirements.txt
-```
-- For Conda users, an environment.yml file is provided that is not currently fully tested.  Additional installs may 
-be required.
-3. The entry point for regular execution is now at the top level of the project so a "sample" run should be initiated as:
 
+```bash
+# Clone repository
+git clone https://github.com/TemoaProject/temoa.git
+cd temoa
+
+# Setup development environment with uv
+uv sync --all-extras --dev
+
+# Install pre-commit hooks
+uv run pre-commit install
+
+# Run tests
+uv run pytest
+
+# Run type checking
+uv run mypy
 ```
-(venv) temoa $ python main.py --config data_files/my_configs/config_sample.toml
+
+## Command Line Interface
+
+Temoa provides a modern, user-friendly CLI built with Typer:
+
+### Basic Commands
+
+**Run a model:**
+
+```bash
+temoa run tutorial_config.toml
+temoa run tutorial_config.toml --output results/
+temoa run tutorial_config.toml --build-only  # Build without solving
+```
+
+**Validate configuration:**
+
+```bash
+temoa validate tutorial_config.toml
+temoa validate tutorial_config.toml --debug
+```
+
+**Database migration:**
+
+```bash
+temoa migrate old_database.sql --output new_database.sql
+temoa migrate old_database.db --type db
+temoa migrate old_database.sqlite --output migrated_v4.sqlite
+```
+
+**Generate tutorial files:**
+
+```bash
+temoa tutorial                    # Creates tutorial_config.toml and tutorial_database.sqlite
+temoa tutorial my_model my_db     # Custom names
+```
+
+### Global Options
+
+```bash
+temoa --version                   # Show version information
+temoa --how-to-cite              # Show citation information
+temoa --help                     # Full help
+```
+
+### Using with uv
+
+When working with the source code, use `uv run` to ensure you're using the correct dependencies:
+
+```bash
+uv run temoa run tutorial_config.toml      # Run with project dependencies
+uv run temoa validate tutorial_config.toml # Validate configuration
+uv run temoa tutorial             # Create tutorial files
+```
+
+## Programmatic Usage
+
+You can use Temoa as a Python library:
+
+```python
+import temoa
+from pathlib import Path
+from temoa import TemoaModel, TemoaConfig, TemoaMode
+
+# Create configuration
+config = TemoaConfig(
+    scenario="my_scenario",
+    scenario_mode=TemoaMode.PERFECT_FORESIGHT,
+    input_database=Path("path/to/input.db"),
+    output_database=Path("path/to/output.db"),
+    output_path=Path("path/to/output"),
+    solver_name="appsi_highs"
+)
+
+# Build and solve model
+model = TemoaModel(config)
+result = model.run()  # Equivalent to: temoa run tutorial_config.toml
+
+# Check if run was successful
+if result:
+    print("Model solved successfully!")
+else:
+    print("Model failed to solve")
 ```
 
 ## Database Setup
-- Several sample database files in Version 3 format are provided in SQL format for learning/testing.  These are provided in the 
-`data_files/example_dbs` folder.  In order to use them, they must be converted into sqlite database files.  This can 
-be done from the command line using the sqlite3 engine to convert them.  sqlite3 is packaged with Python and should be
-available.  If not, most configuration managers should be able to install it.  The command to make the `.sqlite` file
-is (for Utopia as an example):
+
+### Quick Setup with Tutorial
+
+The fastest way to get started:
+
+```bash
+temoa tutorial
 ```
-(venv) $ sqlite3 utopia.sqlite < utopia.sql
+
+This creates:
+
+- `tutorial_config.toml` - Configuration file with example settings
+- `tutorial_database.sqlite` - Sample database for learning
+
+**Migration from older versions:**
+
+```bash
+# Migrate from v3.1 to v4
+temoa migrate old_database_v3.1.sql --output new_database_v4.sql
+
+# or for SQLite databases
+temoa migrate old_database_v4.sqlite --output new_database_v4.sqlite
 ```
-- Converting legacy db's to Version 3 can be done with the included database migration tool.  Users who use this
-tool are advised to carefully review the console outputs during conversion to ensure accuracy and check the 
-converted database carefully.  The migration tool will build an empty new Version 3 database and move data from
-the old database, preserving the legacy database in place.  The command can be run from the top level of the 
-project and needs pointers to the target database and the Version 3 schema file.  A typical execution from top level
-should look like:
 
+## Configuration Files
+
+A configuration file is required to run the model. The tutorial command creates a complete example:
+
+```toml
+scenario = "tutorial"
+scenario_mode = "perfect_foresight"
+input_database = "tutorial_database.sqlite"
+output_database = "tutorial_database.sqlite"
+solver_name = "appsi_highs"
 ```
-(venv) $ python temoa/utilities/db_migration_to_v3.py --source data_files/<legacy db>.sqlite  --schema data_files/temoa_schema_v3.sql
-```
-- Users may also create a blank full or minimal version of the database from the two schema files in the `data_files`
-directory as described above using the `sqlite3` command.  The "minimal" version excludes some of the group
-parameters and is recommended as a starting point for entry-level models.  It can be upgraded to the full set of
-tables by executing the full schema SQL command on the resulting database later, which will add the missing tables.
 
-## Config Files
+### Configuration Options
 
-- A configuration (config) file is required to run the model.  The `sample_config.toml` is provided as a reference
-and has all parameters in it.  It can be copied/renamed, etc.
-- Notes on Config Options:
+| Field | Notes |
+|-------|-------|
+| Scenario Name | Name used in output tables (cannot contain '-' symbol) |
+| Temoa Mode | Execution mode (PERFECT_FORESIGHT, MYOPIC, MGA, etc.) |
+| Input/Output DB | Source and output database paths |
+| Price Checking | Run pricing analysis on built model |
+| Source Tracing | Verify commodity flow network integrity |
+| Plot Network | Generate HTML network visualizations |
+| Solver | Solver executable name (appsi_highs, cbc, gurobi, cplex, etc.) |
+| Save Excel | Export core output to Excel files |
+| Save LP | Save LP model files for external solving |
 
-| Field                  | Notes                                                                                                      |
-|------------------------|------------------------------------------------------------------------------------------------------------|
-| Scenario Name          | A name used in output tables for results (cannot contain dash '-' symbol)                                  |
-| Temoa Mode             | The execution mode.  See note below on currently supported modes                                           |
-| Input/Output DB        | The source (and optionally diffent) output database.  Note for myopic, MGA input must be same as output    |
-| Price Checking         | Run the "price checker" on the built model to look for costing deficiencies and log them                   |
-| Source Tracing         | Check the integrity of the commodity flow network in every region-period combination.  Required for Myopic |
-| Plot Commodity Network | Produce HTML (viewable in any browser) displays of the networks built (see note at bottom)                 |
-| Solver                 | The exact name of the solver executable to call                                                            |
-| Save Excel             | Save core output data to excel files.  Needed if user intends to use the graphviz post-processing modules  |
-| Save LP                | Save the created LP model files                                                                            |
-| Save Duals             | Save the values of the Dual Variables in the Output Tables.  (Only supported by some solvers)              |
-| Mode Specific Settings | See the README files within mode folders for up-to-date values                                             |
+## Supported Modes
 
-## Currently Supported Modes
-### Check
-Build the model and run the numerous checks on it.  Results will be in the log file.  No solve is attempted.
-Note:  The LP file for the model can be saved with this option and solved later/independently by selecting
-the ``save_lp_file`` option in the config.
 ### Perfect Foresight
-All-in-one run that solves the entire model at once.  It is possible to run this without source tracing, which will
-use raw data in the model without checking the integrity of the underlying network.  It is highly advised to use
-source tracing for most accurate results.
+
+Solves the entire model at once. Most common mode for optimization.
+
 ### Myopic
-Solve the model sequentially through iterative solves based on Myopic settings.  Source tracing is required to
-accommodate build/no-build decisions made per iteration to ensure follow-on models are well built.
+
+Sequential solving through iterative builds. Required for stepwise decision analysis.
+
 ### MGA (Modeling to Generate Alternatives)
-An iterative solving process to explore near cost-optimal solutions.  See the documentation on this mode.
+
+Explores near cost-optimal solutions for robustness analysis.
+
 ### SVMGA (Single Vector MGA)
-A sequence of 2 model solves that establishes a base optimal cost, then relaxes the cost then minimizes an
-alternate unweighted objective function comprised of variables associated with labels selected in lists in the
-config file.
+
+Two-solve process focusing on specific variables in the objective.
+
 ### Method of Morris
-A limited sensitivity analysis of user-selected variables using a Method of Morris approach.  See the documentation
-on this mode.
+
+Limited sensitivity analysis of user-selected variables.
+
 ### Build Only
-Mostly for test/troubleshooting.  This builds/returns an un-solved model.
 
-Several other options are possible to pass to the main execution command including changing the logging level to
-`debug` or running silent (no console feedback) which may be best for server runs.  Also, redirecting the output
-products is possible.  To see available options invoke the `main.py` file with the `-h` flag:
+Builds model without solving. Useful for validation and troubleshooting.
 
+## Typical Workflow
+
+1. **Setup**: Create configuration and database files:
+
+   ```bash
+   temoa tutorial
+   ```
+
+2. **Configure**: Edit the configuration file to match your scenario
+
+3. **Validate**: Check configuration before running:
+
+   ```bash
+   temoa validate tutorial_config.toml
+   ```
+
+4. **Run**: Execute the model:
+
+   ```bash
+   temoa run tutorial_config.toml
+   ```
+
+5. **Review**: Check results in `output_files/YYYY-MM-DD_HHMMSS/`
+
+6. **Iterate**: Modify configuration and run again
+
+## Advanced Features
+
+### Extensions
+
+Temoa includes optional extensions for advanced analysis:
+
+- **Monte Carlo**: Uncertainty quantification
+- **Stochastic Programming**: Scenario-based optimization
+- **Method of Morris**: Sensitivity analysis
+
+### Data Processing
+
+- Excel output generation
+- Graphviz network visualization
+- Interactive network diagrams
+
+### Model Validation
+
+- Built-in validation checks
+- Commodity flow verification
+- Price consistency analysis
+
+### Solver Dependencies
+
+TEMOA requires at least one optimization solver:
+
+- **Free**: [HiGHS](https://ergo-code.github.io/HiGHS/)
+  - Included via the `highspy` Python package (automatically installed with Temoa)
+  - Default solver for tutorial and testing
+
+- **Free**: [CBC](https://github.com/coin-or/Cbc)
+  - Requires separate installation (see [CBC documentation](https://github.com/coin-or/Cbc))
+  - Alternative free solver option
+
+- **Commercial**: Gurobi, CPLEX, or Xpress
+  - Requires separate license and installation
+  - See individual solver documentation
+
+## Troubleshooting
+
+### Solver Issues
+
+If you encounter solver errors:
+
+```bash
+# For commercial solvers (Gurobi, CPLEX)
+pip install ".[solver]"  # Include specific solver packages
+
+# For free solver
+temoa run tutorial_config.toml --debug  # Get detailed error information
 ```
-(venv) $ python main.py -h
+
+## Documentation & Support
+
+- **Full Documentation**: Built by following docs/README.md
+- **API Reference**: See `temoa.core` module for public API
+- **GitHub Issues**: Report bugs and request features
+- **Tutorials**: Run `temoa tutorial` for guided examples
+
+## Code Style & Quality
+
+For contributors:
+
+- **Ruff**: Code formatting and linting
+- **mypy**: Type checking
+- **pytest**: Testing framework
+- **Pre-commit**: Automated quality checks
+
+See CONTRIBUTING.md for detailed development guidelines.
+
+## Citation
+
+If you use Temoa in your research, please cite:
+
+```bibtex
+@article{hunter2013modeling,
+  title={Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa)},
+  journal={Energy Economics},
+  volume={40},
+  pages={339--349},
+  year={2013},
+  doi={10.1016/j.eneco.2013.07.014}
+}
 ```
 
-## Typical Run
-1. Prepare a database (or copy of one) as described above.  Runs will fill the output tables and overwrite any data with the 
-same scenario name.
-2. Perepare a config file with paths to the database(s) relative to the top of the project, as in the example
-3. Run the model, using the `main.py` entry point from the top-level of the project:
-```
-(venv) temoa $ python main.py --config data_files/my_configs/config_sample.toml
-```
-4. Review the config display and accept
-5. Review the log file and output products which are automatically placed in a time-stamped folder in `output_files`, 
-unless user has redirected output
-6. Review the data in the Output tables
-
-## Testing
-Users who wish to exercise the `pytest` based test in the test folder can do so from the command line or any IDE.
-Note that many of the tests perform solves on small models using the freely available `cbc` solver, which is
-required to run the testing suite.
-
-The tests should all run and pass (several are currently skipped and reflect in-process work).  Tests should normally
-be run from the top level of the `tests folder`.  If `pytest` is installed it will locate tests within the folder and
-run/report them.  Note the dot '.' below indicating current folder:
-
-```
-(venv) temoa/tests pytest .
-```
-Several of the packages used may currently generate warnings during this testing process, but the tests should all PASS
-with the exception of skipped tests.
-
-## Documentation and Additional Information
-
-The full Temoa documentation can be built by following the build README file in the Documentation folder.
-
-## Hot Fix for Network Plots on Windows Machines
-
-Users wishing to utilize the feature to make the html network plots of the energy network using the 
-`plot_commodity_network` option in the config file who are working on Windows Operating System may need to make a
-"hot fix" to the library code.  See note here:  https://github.com/robert-haas/gravis/issues/10
-
-The `gravis` library which nicely makes these plots appears to currently be non-maintained and a 1-line fix is
-likely needed to avoid error on Windows machines:
-1. Within the `venv` that contains project dependencies, navigate to the `gravis` folder
-2. Open the file `gravis/_internal/plotting/data_structures.py` and edit line 120 to include the encoding flag:
-
-
-    `with open(filepath, 'w', encoding='utf-8') as file_handle:`
-
-
-## Hot Fix for Graphviz
-
-Users wishing to utilize the `graphviz` package to visualize results as described in the `README.md` file
-in the `data_processing` package/folder may need to re-install `graphviz` using another delivery means
-other than `pip`.  The current `requirements.txt` will attempt to install `graphviz`, but according to
-their project page, this needs to be done with another configuration manager like `apt` or `homebrew`.
-
-Mac users wishing to use `graphviz` should re-install using `homebrew` with the command:
-
-`brew install graphviz`
-
-(Any Windows users who have tips/info on this are asked to submit a PR to this file to update this section.)
+Or use: `temoa --how-to-cite`

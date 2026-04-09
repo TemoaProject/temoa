@@ -1,0 +1,3 @@
+from pyomo.contrib.parmest.examples.semibatch.semibatch import generate_model as generate_model
+
+def main() -> None: ...

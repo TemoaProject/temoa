@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS OutputMCDelta
+CREATE TABLE IF NOT EXISTS output_mc_delta
 (
     scenario    TEXT NOT NULL,
     run         INT NOT NULL,

@@ -1,0 +1,16 @@
+from _typeshed import Incomplete
+from pyomo.contrib.parmest.experiment import Experiment as Experiment
+from pyomo.dae import ContinuousSet as ContinuousSet
+from pyomo.dae import DerivativeVar as DerivativeVar
+from pyomo.dae import Simulator as Simulator
+
+class ReactorExperiment(Experiment):
+    data: Incomplete
+    nfe: Incomplete
+    ncp: Incomplete
+    model: Incomplete
+    def __init__(self, data, nfe, ncp) -> None: ...
+    def get_labeled_model(self): ...
+    def create_model(self): ...
+    def finalize_model(self): ...
+    def label_experiment(self) -> None: ...

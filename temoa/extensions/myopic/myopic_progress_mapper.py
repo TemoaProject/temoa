@@ -4,39 +4,13 @@ Simple visualizer to track the progress of myopic solve
 
 from datetime import datetime, timedelta
 
+from typing import Literal
+
 from temoa.extensions.myopic.myopic_index import MyopicIndex
-
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  1/22/24
-
-"""
 
 
 class MyopicProgressMapper:
-    def __init__(self, sorted_future_years: list):
+    def __init__(self, sorted_future_years: list[int]) -> None:
         self.leader = '--'
         self.trailer = ''.join(reversed(self.leader))
         self.years = sorted_future_years
@@ -46,7 +20,7 @@ class MyopicProgressMapper:
         }
         self.hack: datetime = datetime.now()
 
-    def draw_header(self):
+    def draw_header(self) -> None:
         time_buffer = ' ' * 10
         tot_length = len(self.years) * self.tag_width + 2 * len(self.years)
         print(time_buffer, end='')
@@ -72,11 +46,23 @@ class MyopicProgressMapper:
 
     def timestamp(self) -> str:
         delta = datetime.now() - self.hack
-        return f'{int(delta.total_seconds()//3600):02d}:{int(delta.total_seconds()%3600//60):02d}:{int(delta.total_seconds())%60:02d}   '
+        return (
+            f'Elapsed: {int(delta.total_seconds()//3600):02d}:'
+            f'{int(delta.total_seconds()%3600//60):02d}:{int(delta.total_seconds())%60:02d}   '
+        )
 
-    def report(self, mi: MyopicIndex, status):
-        if status not in {'load', 'solve', 'report', 'check'}:
+    def report(
+        self, mi: MyopicIndex, status: Literal['load', 'solve', 'report', 'check', 'evolve']
+    ) -> None:
+        if status not in {'load', 'solve', 'report', 'check', 'evolve'}:
             raise ValueError(f'bad status: {status} received in MyopicProgressMapper')
+
+        if status == 'evolve':
+            repeats = self.years.index(mi.last_demand_year) - self.years.index(mi.base_year) + 1
+            print(self.timestamp(), end='')
+            print(' ' * self.pos[mi.base_year], end='')
+            for _ in range(repeats):
+                print('EVLV', end=' ' * (self.tag_width + 2 - 4))  # 4=length('EVLV')
 
         if status == 'load':
             repeats = self.years.index(mi.last_demand_year) - self.years.index(mi.base_year) + 1

@@ -5,9 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = build
-# The below doesn't seem to work properly....  changed to 'build' directory (above) within the docs folder
-# BUILDDIR      = /tmp/TemoaDocumentationBuild
+BUILDDIR      = _build
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -31,7 +29,7 @@ help:
 	@echo "  devhelp    to make HTML files and a Devhelp project"
 	@echo "  epub       to make an epub"
 	@echo "  latex      to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
-	@echo "  latexpdf   to make LaTeX files and run them through pdflatex"
+	@echo "  latexpdf   to make LaTeX files and run them through xelatex"
 	@echo "  text       to make text files"
 	@echo "  man        to make manual pages"
 	@echo "  texinfo    to make Texinfo files"
@@ -102,16 +100,29 @@ latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
-	@echo "Run \`make' in that directory to run these through (pdf)latex" \
+	@echo "Run \`make' in that directory to run these through xelatex" \
 	      "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	@echo "Running LaTeX files through pdflatex..."
-	$(MAKE) -C $(BUILDDIR)/latex \
-	  LATEXOPTS='-interaction=nonstopmode -file-line-error -halt-on-error' \
-	  all-pdf
-	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
+	@echo "Running LaTeX files through xelatex..."
+	@if command -v latexmk > /dev/null 2>&1; then \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			LATEXOPTS='-interaction=nonstopmode -file-line-error -halt-on-error' \
+			all-pdf; \
+	else \
+		echo "latexmk not found, falling back to manual xelatex..."; \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			PDFLATEX="xelatex -interaction=nonstopmode -file-line-error -halt-on-error" \
+			LATEXMKOPTS="" \
+			all-pdf || true; \
+		echo "Running xelatex again for references..."; \
+		$(MAKE) -C $(BUILDDIR)/latex \
+			PDFLATEX="xelatex -interaction=nonstopmode -file-line-error -halt-on-error" \
+			LATEXMKOPTS="" \
+			all-pdf; \
+	fi
+	@echo "xelatex finished; the PDF files are in $(BUILDDIR)/latex."
 
 text:
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
@@ -156,4 +167,3 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
-

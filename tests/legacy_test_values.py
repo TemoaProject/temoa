@@ -2,29 +2,6 @@
 a container for test values from legacy code (Python 3.7 / Pyomo 5.5) captured for
 continuity/development testing
 
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  6/27/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from enum import Enum
@@ -41,17 +18,106 @@ class ExpectedVals(Enum):
 # these values were captured on base level runs of the .dat files in the tests/testing_data folder
 test_vals = {
     'test_system': {
-        ExpectedVals.OBJ_VALUE: 491977.7000753,
+        # reduced after removing ancient 1-year-shift obj function bug
+        # increased by ~25 after removing period index from storagefrac (more constraints)
+        ExpectedVals.OBJ_VALUE: 468575.0703,
         ExpectedVals.EFF_DOMAIN_SIZE: 30720,
         ExpectedVals.EFF_INDEX_SIZE: 74,
-        ExpectedVals.CONSTR_COUNT: 2826,
-        ExpectedVals.VAR_COUNT: 1904,
+        # increased by 2 when reworking storageinit.
+        # increased after making annualretirement derived var
+        # reduced 2025/07/25 by 504 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 10 after removing period index from storagefrac (more constraints)
+        # increased by 48 after tying v_storage_level[d_last] to v_storage_init
+        ExpectedVals.CONSTR_COUNT: 2868,
+        # reduced by 6 when reworking storageinit.
+        # increased after making annualretirement derived var
+        # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
+        # reduced 2025/07/25 by 420 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 48 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 2008,
     },
     'utopia': {
-        ExpectedVals.OBJ_VALUE: 36535.631200,
+        # reduced after reworking storageinit -> storage was less constrained
+        # reduced after removing ancient 1-year-shift obj function bug
+        # increased after rework of inter-season sequencing
+        # reduced after changing fixed costs from MLP to PL
+        # reduced by <1 after changing season definition (segfrac no longer rounded)
+        # increased by 143 after activating CF constraints for storage techs
+        ExpectedVals.OBJ_VALUE: 34853.6835,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
-        ExpectedVals.CONSTR_COUNT: 1452,  # reduced 3/27:  unlim_cap techs now employed
-        ExpectedVals.VAR_COUNT: 1055,  # reduced 3/27:  unlim_cap techs now employed
+        # reduced 3/27:  unlim_cap techs now employed.
+        # increased after making annualretirement derived var
+        # reduced 2025/07/25 by 225 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 27 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 14 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 1499,
+        # reduced 3/27:  unlim_cap techs now employed.
+        # reduced by 4 in storageinit rework.
+        # increased after making annualretirement derived var
+        # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
+        # reduced 2025/07/25 by 200 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 27 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 1122,
+    },
+    'mediumville': {
+        # added 2025/06/12 prior to addition of dynamic reserve margin
+        # reduced 2025/06/16 after fixing bug in db
+        ExpectedVals.OBJ_VALUE: 7035.7275,
+        ExpectedVals.EFF_DOMAIN_SIZE: 2800,
+        ExpectedVals.EFF_INDEX_SIZE: 18,
+        # increased after reviving RampSeason constraints
+        # reduced 2025/07/25 by 24 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 2 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 10 after dropping DAC for single-tech demands
+        # reduced by 8 after disabling season ramp for seasonal_timeslices
+        ExpectedVals.CONSTR_COUNT: 224,
+        # reduced 2025/07/25 by 18 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 2 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 148,
+    },
+    'seasonal_storage': {
+        # added 2025/06/16 after addition of seasonal storage
+        # updated: simplified storage_init to time_next chain with d_last swap
+        ExpectedVals.OBJ_VALUE: 76661.0231,
+        ExpectedVals.EFF_DOMAIN_SIZE: 24,
+        ExpectedVals.EFF_INDEX_SIZE: 4,
+        # reduced 2025/07/25 by 7 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 2 after tying v_storage_level[d_last] to v_storage_init
+        # reduced by 9 after dropping DAC for single-tech demands
+        ExpectedVals.CONSTR_COUNT: 176,
+        # reduced 2025/07/25 by 7 after annualising demands
+        # increased 2025/08/19 after making annual demands optional
+        # increased by 2 after adding v_storage_init variable
+        ExpectedVals.VAR_COUNT: 93,
+    },
+    'survival_curve': {
+        # added 2025/06/19 after addition of survival curves
+        # reduced after changing fixed costs from MLP to PL
+        # increased after adding Periodsurvival_curve
+        ExpectedVals.OBJ_VALUE: 31.9423,
+        ExpectedVals.EFF_DOMAIN_SIZE: 64,
+        ExpectedVals.EFF_INDEX_SIZE: 8,
+        ExpectedVals.CONSTR_COUNT: 127,
+        # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
+        ExpectedVals.VAR_COUNT: 127,
+    },
+    'annualised_demand': {
+        # added 2025/06/19 after addition of survival curves
+        # reduced after changing fixed costs from MLP to PL
+        # increased after adding Periodsurvival_curve
+        ExpectedVals.OBJ_VALUE: 1.9524,
+        ExpectedVals.EFF_DOMAIN_SIZE: 36,
+        ExpectedVals.EFF_INDEX_SIZE: 10,
+        ExpectedVals.CONSTR_COUNT: 15,
+        # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
+        ExpectedVals.VAR_COUNT: 21,
     },
 }

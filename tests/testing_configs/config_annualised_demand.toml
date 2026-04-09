@@ -1,0 +1,22 @@
+scenario = "test run"
+scenario_mode = "perfect_foresight"
+input_database = "tests/testing_outputs/annualised_demand.sqlite"
+output_database = "tests/testing_outputs/annualised_demand.sqlite"
+neos = false
+solver_name = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = false
+time_sequencing = "representative_periods"
+days_per_period = 365
+reserve_margin = "static"
+
+[MGA]
+cost_epsilon = 0.03
+iteration_limit = 15
+time_limit_hrs = 1
+axis = "tech_category_activity"
+weighting = "hull_expansion"
+
+[myopic]
+myopic_view = 2

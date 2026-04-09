@@ -1,34 +1,39 @@
+from __future__ import annotations
+
 import getopt
 import os
 import re
 import sqlite3
 import sys
 from collections import OrderedDict
+from typing import Any
 
 
-def get_tperiods(inp_f):
+def get_tperiods(inp_f: str) -> dict[str, list[int]]:
     file_ty = re.search(r'(\w+)\.(\w+)\b', inp_f)  # Extract the input filename and extension
 
     if not file_ty:
-        raise 'The file type %s is not recognized.' % inp_f
+        raise Exception(f'The file type {inp_f} is not recognized.')
 
     elif file_ty.group(2) not in ('db', 'sqlite', 'sqlite3', 'sqlitedb'):
         raise Exception('Please specify a database for finding scenarios')
 
-    periods_list = {}
-    periods_set = set()
+    periods_list: dict[str, list[int]] = {}
 
     con = sqlite3.connect(inp_f)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+    cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+    # the records in a database
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM OutputFlowOut')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
     x = []
     for row in cur:
         x.append(row[0])
     for y in x:
-        cur.execute("SELECT DISTINCT period FROM OutputFlowOut WHERE scenario is '" + str(y) + "'")
+        cur.execute(
+            'SELECT DISTINCT period FROM output_flow_out WHERE scenario = ?', (y,)
+        )
         periods_list[y] = []
         for per in cur:
             z = per[0]
@@ -39,24 +44,24 @@ def get_tperiods(inp_f):
     return dict(OrderedDict(sorted(periods_list.items(), key=lambda x: x[1])))
 
 
-def get_scenario(inp_f):
+def get_scenario(inp_f: str) -> dict[str, str]:
     file_ty = re.search(r'(\w+)\.(\w+)\b', inp_f)  # Extract the input filename and extension
 
     if not file_ty:
-        raise 'The file type %s is not recognized.' % inp_f
+        raise Exception(f'The file type {inp_f} is not recognized.')
 
     elif file_ty.group(2) not in ('db', 'sqlite', 'sqlite3', 'sqlitedb'):
         raise Exception('Please specify a database for finding scenarios')
 
-    scene_list = {}
-    scene_set = set()
+    scene_list: dict[str, str] = {}
 
     con = sqlite3.connect(inp_f)
-    cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+    cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+    # the records in a database
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM OutputFlowOut')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
     for row in cur:
         x = row[0]
         scene_list[x] = x
@@ -66,14 +71,15 @@ def get_scenario(inp_f):
     return dict(OrderedDict(sorted(scene_list.items(), key=lambda x: x[1])))
 
 
-def get_comm(inp_f, db_dat):
-    comm_list = {}
-    comm_set = set()
+def get_comm(inp_f: str, db_dat: bool) -> OrderedDict[str, str]:
+    comm_list: dict[str, str] = {}
+    comm_set: set[str] = set()
     is_query_empty = False
 
     if not db_dat:
         con = sqlite3.connect(inp_f)
-        cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+        cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+        # the records in a database
         con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
         print(inp_f)
@@ -87,7 +93,8 @@ def get_comm(inp_f, db_dat):
 
         if not is_query_empty:
             cur.execute(
-                'SELECT input_comm FROM OutputFlowOut UNION SELECT output_comm FROM OutputFlowOut'
+                'SELECT input_comm FROM output_flow_out UNION SELECT output_comm FROM '
+                'output_flow_out'
             )
 
         for row in cur:
@@ -103,25 +110,26 @@ def get_comm(inp_f, db_dat):
         with open(inp_f) as f:
             for line in f:
                 if eff_flag is False and re.search(
-                    '^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
+                    r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param Efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the
+                    # commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
-                    if re.search('^\s*;\s*$', line):
+                    if re.search(r'^\s*;\s*$', line):
                         break  #  Finish searching this section when encounter a ';'
-                    if re.search('^\s+$', line):
+                    if re.search(r'^\s+$', line):
                         continue
-                    line = re.sub('^\s+|\s+$', '', line)
-                    row = re.split('\s+', line)
+                    line = re.sub(r'^\s+|\s+$', '', line)
+                    row = re.split(r'\s+', line)
                     if row[0] != 'ethos':
                         comm_set.add(row[0])
                     comm_set.add(row[3])
 
         if eff_flag is False:
             print(
-                'Error: The Efficiency Parameters cannot be found in the specified file - ' + inp_f
+                'Error: The efficiency Parameters cannot be found in the specified file - ' + inp_f
             )
             sys.exit(2)
 
@@ -131,14 +139,15 @@ def get_comm(inp_f, db_dat):
     return OrderedDict(sorted(comm_list.items(), key=lambda x: x[1]))
 
 
-def get_tech(inp_f, db_dat):
-    tech_list = {}
-    tech_set = set()
+def get_tech(inp_f: str, db_dat: bool) -> OrderedDict[str, str]:
+    tech_list: dict[str, str] = {}
+    tech_set: set[str] = set()
     is_query_empty = False
 
     if not db_dat:
         con = sqlite3.connect(inp_f)
-        cur = con.cursor()  # a database cursor is a control structure that enables traversal over the records in a database
+        cur = con.cursor()  # a database cursor is a control structure that enables traversal over
+        # the records in a database
         con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
         print(inp_f)
@@ -150,7 +159,7 @@ def get_tech(inp_f, db_dat):
             tech_list[x] = x
 
         if not is_query_empty:
-            cur.execute('SELECT DISTINCT tech FROM OutputFlowOut')
+            cur.execute('SELECT DISTINCT tech FROM output_flow_out')
 
         for row in cur:
             x = row[0]
@@ -164,23 +173,24 @@ def get_tech(inp_f, db_dat):
         with open(inp_f) as f:
             for line in f:
                 if eff_flag is False and re.search(
-                    '^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
+                    r'^\s*param\s+efficiency\s*[:][=]', line, flags=re.I
                 ):
-                    # Search for the line param Efficiency := (The script recognizes the commodities specified in this section)
+                    # Search for the line param efficiency := (The script recognizes the
+                    # commodities specified in this section)
                     eff_flag = True
                 elif eff_flag:
                     line = re.sub('[#].*$', ' ', line)
-                    if re.search('^\s*;\s*$', line):
+                    if re.search(r'^\s*;\s*$', line):
                         break  #  Finish searching this section when encounter a ';'
-                    if re.search('^\s+$', line):
+                    if re.search(r'^\s+$', line):
                         continue
-                    line = re.sub('^\s+|\s+$', '', line)
-                    row = re.split('\s+', line)
+                    line = re.sub(r'^\s+|\s+$', '', line)
+                    row = re.split(r'\s+', line)
                     tech_set.add(row[1])
 
         if eff_flag is False:
             print(
-                'Error: The Efficiency Parameters cannot be found in the specified file - ' + inp_f
+                'Error: The efficiency Parameters cannot be found in the specified file - ' + inp_f
             )
             sys.exit(2)
 
@@ -190,13 +200,13 @@ def get_tech(inp_f, db_dat):
     return OrderedDict(sorted(tech_list.items(), key=lambda x: x[1]))
 
 
-def is_db_overwritten(db_file, inp_dat_file):
+def is_db_overwritten(db_file: str, inp_dat_file: str) -> bool:
     if os.path.basename(db_file) == '0':
         return False
 
     try:
         con = sqlite3.connect(db_file)
-    except:
+    except sqlite3.Error:
         return False
     cur = con.cursor()  # A database cursor enables traversal over DB records
     con.text_factory = str  # This ensures data is explored with UTF-8 encoding
@@ -205,14 +215,15 @@ def is_db_overwritten(db_file, inp_dat_file):
     # IF output file is empty database.
     cur.execute('SELECT * FROM Technology')
     is_db_empty = False  # False for empty db file
-    for elem in cur:
+    for _ in cur:
         is_db_empty = True  # True for non-empty db file
         break
-    # This file could be schema with populated results from previous run. Or it could be a normal db file.
+    # This file could be schema with populated results from previous run. Or it could be a normal
+    # db file.
     if is_db_empty:
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='input_file';")
         does_input_file_table_exist = False
-        for i in cur:  # This means that the 'input_file' table exists in db.
+        for _ in cur:  # This means that the 'input_file' table exists in db.
             does_input_file_table_exist = True
         if does_input_file_table_exist:  # This block distinguishes normal database from schema.
             # This is schema file.
@@ -237,7 +248,7 @@ def is_db_overwritten(db_file, inp_dat_file):
     return False
 
 
-def help_user():
+def help_user() -> None:
     print(
         """Use as:
     python get_comm_tech.py -i (or --input) <input filename>
@@ -249,8 +260,8 @@ def help_user():
     )
 
 
-def get_info(inputs):
-    inp_file = None
+def get_info(inputs: dict[str, str]) -> Any:
+    inp_file: str | None = None
     tech_flag = False
     comm_flag = False
     scene = False
@@ -261,7 +272,7 @@ def get_info(inputs):
         raise Exception('no arguments found')
 
     for opt, arg in inputs.items():
-        print('%s == %s' % (opt, arg))
+        print(f'{opt} == {arg}')
 
         if opt in ('-i', '--input'):
             inp_file = arg
@@ -297,7 +308,7 @@ def get_info(inputs):
     file_ty = re.search(r'(\w+)\.(\w+)\b', inp_file)  # Extract the input filename and extension
 
     if not file_ty:
-        raise Exception('The file type {} is not recognized.'.format(file_ty))
+        raise Exception(f'The file type {file_ty} is not recognized.')
 
     elif file_ty.group(2) in ('db', 'sqlite', 'sqlite3', 'sqlitedb'):
         db_or_dat = False
@@ -307,8 +318,8 @@ def get_info(inputs):
 
     else:
         print(
-            'The input file type %s is not recognized. Please specify a database or a text file.'
-            % inp_file
+            f'The input file type {inp_file} is not recognized. Please specify a database '
+            'or a text file.'
         )
         sys.exit(2)
 

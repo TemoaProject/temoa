@@ -1,42 +1,31 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/17/24
-
 A thin wrapper on Scipy's ConvexHull to make it more manageable
 """
+from __future__ import annotations
+
 from logging import getLogger
+from typing import Any
 
 import numpy as np
-import scipy
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull  # type: ignore[import-untyped]
 
 logger = getLogger(__name__)
 
 
 class Hull:
-    def __init__(self, points: np.ndarray, **kwargs):
+    dim: int
+    cv_hull: Any
+    volume: float
+    seen_norms: np.ndarray | None
+    _valid_norms: np.ndarray | None
+    tolerance: float
+    norms_checked: int
+    norms_rejected: int
+    good_points: np.ndarray | None
+    all_points: np.ndarray | None
+    norm_index: int
+
+    def __init__(self, points: np.ndarray, **kwargs: Any) -> None:
         """
         Build the initial hull from array of points
         :param points: an array of points [points, hull dimension]
@@ -83,34 +72,39 @@ class Hull:
 
     @property
     def norm_rejection_proportion(self) -> float:
+        if self.norms_checked == 0:
+            return 0.0
         return self.norms_rejected / self.norms_checked
 
-    def update(self):
+    def update(self) -> None:
         """
         Update/rebuild the Hull based on new points.
         :return:
         """
-        if self.all_points is None:
+        if self.all_points is None or len(self.all_points) == 0:
             return
         try:
             self.cv_hull = ConvexHull(self.all_points, qhull_options='Q12 QJ')
-            # Q12:  Allow "wide" facets, which seems to happen with large disparity in scale in model
-            # QJ:  option to "joggle" inputs if errors arise from singularities, etc.  This seems to slow things down
-            #      a moderate amount.
-            # Dev Note:  After significant experiments with building new each time or allowing "incremental"
-            #            additions to the hull, it appears more ROBUST to just rebuild.  More frequent
-            #            abnormal exits when trying to use incremental, and time difference is negligible
-            #            for this few pts.
+            # Q12:  Allow "wide" facets, which seems to happen with large disparity in scale in
+            #       model
+            # QJ:  option to "joggle" inputs if errors arise from singularities, etc.  This seems
+            #      to slow things down a moderate amount.
+            # Dev Note:  After significant experiments with building new each time or allowing
+            #            "incremental" additions to the hull, it appears more ROBUST to just
+            #            rebuild.  More frequent abnormal exits when trying to use incremental, and
+            #            time difference is negligible for this few pts.
             self.good_points = self.cv_hull.points
             logger.info('Hull updated')
             self.volume = self.cv_hull.volume
-        except scipy.spatial._qhull.QhullError as e:
+        except Exception as e:
+            # scipy.spatial._qhull.QhullError may not be easily found by mypy
             logger.error(
                 'Attempt at hull construction from basis vectors failed.'
-                '\nMay be non-recoverable.  Possibly try a set of random vectors to initialize the Hull.'
+                '\nMay be non-recoverable.  Possibly try a set of random vectors to initialize the '
+                'Hull.'
             )
             logger.error(e)
-            raise RuntimeError('Hull construction from vectors failed.  See log file')
+            raise RuntimeError('Hull construction from vectors failed.  See log file') from e
 
         # update the available norms from the new hull
         equations = self.cv_hull.equations[:, 0:-1]
@@ -122,14 +116,14 @@ class Hull:
                 else:
                     self._valid_norms = np.vstack((self._valid_norms, norm))
 
-    def add_point(self, point: np.ndarray):
+    def add_point(self, point: np.ndarray) -> None:
         if len(point) != self.dim:
-            logger.error(
-                'Tried adding a point to hull (dim: %d) with wrong dimensions %d. Point: %s',
-                self.dim,
-                len(point),
-                point,
+            msg = (
+                f'Tried adding a point to hull (dim: {self.dim}) with wrong dimensions {len(point)}. '
+                f'Point: {point}'
             )
+            logger.error(msg)
+            raise ValueError(msg)
         if self.all_points is None:
             self.all_points = np.atleast_2d(point)
         else:
@@ -140,7 +134,7 @@ class Hull:
         pop a new direction norm from the stack
         :return: a new norm vector
         """
-        if self.norm_index < len(self._valid_norms):
+        if self._valid_norms is not None and self.norm_index < len(self._valid_norms):
             if np.ndim(self._valid_norms) == 1:  # only one on the stack
                 res = self._valid_norms
             else:
@@ -151,7 +145,7 @@ class Hull:
 
     def get_all_norms(self) -> np.ndarray:
         """Get a matrix of all unused new vectors"""
-        if self.norms_available > 0:
+        if self._valid_norms is not None and self.norms_available > 0:
             res = np.atleast_2d(self._valid_norms)[self.norm_index :, :]
             self.norm_index = len(self._valid_norms)
             return res

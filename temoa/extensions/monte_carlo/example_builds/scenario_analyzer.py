@@ -1,48 +1,42 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/11/24
-
 Simple analyzer--example only
-
 """
+from importlib import resources
 from math import sqrt
 from pathlib import Path
 from sqlite3 import Connection
 
 from matplotlib import pyplot as plt
 
-from definitions import PROJECT_ROOT
-
 scenario_name = 'Purple Onion'  # must match config file
-db_path = Path(PROJECT_ROOT, 'data_files/example_dbs/utopia.sqlite')
-with Connection(db_path) as conn:
-    cur = conn.cursor()
-    obj_values = cur.execute(
-        f"SELECT total_system_cost FROM OutputObjective WHERE scenario LIKE '{scenario_name}-%'"
-    ).fetchall()
-    obj_values = tuple(t[0] for t in obj_values)
+# To run this example, ensure tutorial_database.sqlite is in your current directory.
+# You can generate it using: temoa tutorial
+# IMPORTANT: You must also run the model to populate results before analyzing:
+#   temoa run tutorial_config.toml
+db_resource = 'tutorial_database.sqlite'
 
-plt.hist(obj_values, bins=int(sqrt(len(obj_values))))
+if not Path(db_resource).exists():
+    raise FileNotFoundError(
+        f"Database file '{db_resource}' not found. "
+        "Please run 'temoa tutorial' to create the base files."
+    )
+
+with Connection(db_resource) as conn:
+    cur = conn.cursor()
+    # Check if results exist before attempting to plot
+    obj_values = cur.execute(
+        "SELECT total_system_cost FROM output_objective WHERE scenario LIKE ?",
+        (f"{scenario_name}-%",)
+    ).fetchall()
+
+    if len(obj_values) == 0:
+        raise RuntimeError(
+            f"No results found for scenario '{scenario_name}-*' in '{db_resource}'. "
+            "Please run 'temoa run tutorial_config.toml' or run the tutorial model "
+            "to populate output_objective with results first."
+        )
+
+    obj_values_tuple = tuple(t[0] for t in obj_values)
+
+plt.hist(obj_values_tuple, bins=int(sqrt(len(obj_values_tuple))))
 plt.show()

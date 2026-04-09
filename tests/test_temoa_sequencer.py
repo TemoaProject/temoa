@@ -1,57 +1,76 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  3/14/24
-
-"""
-
 from pathlib import Path
+from typing import Any
 
 import pytest
+from pyomo.environ import ConcreteModel
 
-from definitions import PROJECT_ROOT
-from temoa.temoa_model.temoa_mode import TemoaMode
-from temoa.temoa_model.temoa_sequencer import TemoaSequencer
+# Import the new dependencies
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
+from temoa.core.modes import TemoaMode
 
-params = [
-    {'name': 'build-only', 'mode': TemoaMode.BUILD_ONLY},
+# Define the config file path once
+TESTING_CONFIGS_DIR = Path(__file__).parent / 'testing_configs'
+UTOPIA_MYOPIC_CONFIG = TESTING_CONFIGS_DIR / 'config_utopia_myopic.toml'
+
+# Define test parameters
+# Note: Separated BUILD_ONLY as it uses a different method now
+run_params = [
     {'name': 'check', 'mode': TemoaMode.CHECK},
     {'name': 'pf', 'mode': TemoaMode.PERFECT_FORESIGHT},
     {'name': 'myopic', 'mode': TemoaMode.MYOPIC},
     {'name': 'MGA', 'mode': TemoaMode.MGA},
 ]
-# using the myopic config file for now below, becuase (a) it is most current db, (b) it is self-referencing
-# for the database, which is needed for myopic, and (c) the mode is overriden anyhow!
-config_file = Path(PROJECT_ROOT, 'tests', 'testing_configs', 'config_utopia_myopic.toml')
 
 
-@pytest.mark.parametrize('run_data', params, ids=lambda p: p['name'])
-def test_start(run_data, tmp_path):
-    options = {'silent': True, 'debug': True, 'mode_override': run_data['mode']}
-    sequencer = TemoaSequencer(
-        config_file=config_file,
+def id_func(p: dict[str, Any]) -> str:
+    return p['name']
+
+
+# Suppress mypy error for pytest.mark.parametrize by using a more specific ignore
+@pytest.mark.parametrize('run_data', run_params, ids=id_func)
+def test_sequencer_start(run_data: dict[str, Any], tmp_path: Path) -> None:
+    """
+    Tests the main `start()` method for various run modes.
+    """
+    # Step 1: Create the TemoaConfig object first.
+    # The 'silent' flag is now part of the config.
+    config = TemoaConfig.build_config(
+        config_file=UTOPIA_MYOPIC_CONFIG,
         output_path=tmp_path,
-        **options,
+        silent=True,
     )
+
+    # Step 2: Instantiate the sequencer with the config object.
+    # The mode is passed as an override.
+    sequencer = TemoaSequencer(
+        config=config,
+        mode_override=run_data['mode'],
+    )
+
+    # Step 3: Call the `start()` method.
+    # Any failure will raise an exception, which pytest will catch.
     sequencer.start()
+
+
+def test_sequencer_build_model(tmp_path: Path) -> None:
+    """
+    Tests the dedicated `build_model()` method for the BUILD_ONLY mode.
+    """
+    # Step 1: Create the config object.
+    config = TemoaConfig.build_config(
+        config_file=UTOPIA_MYOPIC_CONFIG,
+        output_path=tmp_path,
+        silent=True,
+    )
+
+    # Step 2: Instantiate the sequencer.
+    sequencer = TemoaSequencer(
+        config=config,
+        mode_override=TemoaMode.BUILD_ONLY,
+    )
+
+    # Step 3: Call the `build_model()` method and check the return value.
+    model = sequencer.build_model()
+    assert model is not None, 'sequencer.build_model() should return a model'
+    assert isinstance(model, ConcreteModel), 'Should return a Pyomo ConcreteModel'

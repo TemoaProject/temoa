@@ -1,55 +1,42 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  11/9/24
 
 A sequencer for Monte Carlo Runs
-.
+
 """
+from __future__ import annotations
+
 import logging
 import queue
 import sqlite3
 import time
 import tomllib
 from datetime import datetime
+from importlib import resources
 from logging import getLogger
-from multiprocessing import Queue
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
 
-from pyomo.dataportal import DataPortal
-
-from definitions import PROJECT_ROOT, get_OUTPUT_PATH
-from temoa.extensions.monte_carlo.mc_run import MCRunFactory
+from temoa._internal.table_writer import TableWriter
+from temoa.data_io.hybrid_loader import HybridLoader
+from temoa.extensions.monte_carlo.mc_run import MCRun, MCRunFactory
 from temoa.extensions.monte_carlo.mc_worker import MCWorker
-from temoa.temoa_model.data_brick import DataBrick
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
+
+if TYPE_CHECKING:
+    from multiprocessing import Queue
+    from multiprocessing.process import BaseProcess
+
+    from pyomo.dataportal import DataPortal
+
+    from temoa._internal.data_brick import DataBrick
+    from temoa.core.config import TemoaConfig
+
+
 
 logger = getLogger(__name__)
 
-solver_options_path = Path(PROJECT_ROOT, 'temoa/extensions/monte_carlo/MC_solver_options.toml')
+solver_options_path = (
+    resources.files('temoa.extensions.monte_carlo') / 'MC_solver_options.toml'
+)
 
 
 class MCSequencer:
@@ -57,18 +44,54 @@ class MCSequencer:
     A sequencer to control the steps in Monte Carlo run sequence
     """
 
+    num_workers: int
+    worker_solver_options: dict[str, Any]
+    solve_count: int
+    seen_instance_indices: set[int]
+    orig_label: str
+    writer: TableWriter
+    verbose: bool
+
     def __init__(self, config: TemoaConfig):
         self.config = config
 
+        # determine the path to the solver options file
+        custom_path = (
+            self.config.monte_carlo_inputs.get('solver_options')
+            if self.config.monte_carlo_inputs
+            else None
+        )
+        if custom_path:
+            options_file_path: Path | None = Path(cast('str', custom_path))
+            # if the path is relative, make it relative to the config file location if possible
+            if (
+                options_file_path
+                and not options_file_path.is_absolute()
+                and self.config.config_file
+            ):
+                options_file_path = self.config.config_file.parent / options_file_path
+            logger.info('Using custom Monte Carlo solver options from: %s', options_file_path)
+        else:
+            options_file_path = None
+
         # read in the options
+        all_options: dict[str, Any]
         try:
-            with open(solver_options_path, 'rb') as f:
-                all_options = tomllib.load(f)
+            if options_file_path:
+                with open(options_file_path, 'rb') as f:
+                    all_options = tomllib.load(f)
+            else:
+                with resources.as_file(solver_options_path) as path:
+                    with open(path, 'rb') as f:
+                        all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 
         except FileNotFoundError:
-            logger.warning('Unable to find solver options toml file.  Using default options.')
+            if options_file_path:
+                logger.error('Unable to find custom solver options file at: %s', options_file_path)
+            else:
+                logger.warning('Unable to find default solver options toml file.')
             s_options = {}
             all_options = {}
 
@@ -84,7 +107,7 @@ class MCSequencer:
         self.writer = TableWriter(self.config)
         self.verbose = False  # for troubleshooting
 
-    def start(self):
+    def start(self) -> None:
         """Run the sequencer"""
         # ==== basic sequence ====
         # 1. Load the model data, which may involve filtering it down if source tracing
@@ -94,7 +117,6 @@ class MCSequencer:
         # 4. copy & modify the base data to make per-dataset runs
         # 5. farm out the runs to workers
 
-        start_time = datetime.now()
 
         # 0. Set up database for scenario
         self.writer.clear_scenario()
@@ -104,52 +126,58 @@ class MCSequencer:
         # 1. Load data
         with sqlite3.connect(self.config.input_database) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
-        data_store = hybrid_loader.create_data_dict(myopic_index=None)
-        mc_run = MCRunFactory(config=self.config, data_store=data_store)
+            data_store = hybrid_loader.create_data_dict(myopic_index=None)
+        mc_factory = MCRunFactory(config=self.config, data_store=data_store)
 
         # 2. Screen the input file
-        mc_run.prescreen_input_file()
+        mc_factory.prescreen_input_file()
 
         # 3. set up the run generator
-        run_gen = mc_run.run_generator()
+        run_gen = mc_factory.run_generator()
 
         # 4. Set up the workers
+        import multiprocessing
+        ctx = multiprocessing.get_context('spawn')
+
         num_workers = self.num_workers
-        work_queue: Queue[tuple[str, DataPortal] | str] = Queue(
+        work_queue: Queue[tuple[str, DataPortal] | str] = ctx.Queue(
             num_workers + 1
-        )  # must be able to hold all shutdowns at once (could be changed later to not lock on insertion...)
-        result_queue: Queue[DataBrick | str] = Queue(
+        )  # must be able to hold all shutdowns at once (could be changed later to not lock on
+        # insertion...)
+        result_queue: Queue[DataBrick | str] = ctx.Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue = Queue()
+        log_queue: Queue[logging.LogRecord] = ctx.Queue()
         # make workers
-        workers = []
+        workers: list[BaseProcess] = []
         kwargs = {
             'solver_name': self.config.solver_name,
             'solver_options': self.worker_solver_options,
         }
         # construct path for the solver logs
-        s_path = Path(get_OUTPUT_PATH(), 'solver_logs')
+        s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
-        for i in range(num_workers):
+        for _ in range(num_workers):
             w = MCWorker(
                 dp_queue=work_queue,
                 results_queue=result_queue,
                 log_root_name=__name__,
                 log_queue=log_queue,
+                solver_name=self.config.solver_name,
+                solver_options=self.worker_solver_options,
                 log_level=logging.INFO,
                 solver_log_path=s_path,
-                **kwargs,
             )
-            w.start()
-            workers.append(w)
+            p: BaseProcess = ctx.Process(target=w.run, daemon=True)
+            p.start()
+            workers.append(p)
         # workers now running and waiting for jobs...
 
         # 6.  Start the iterative solve process and let the manager run the show
         more_runs = True
         # pull the first instance
-        mc_run = next(run_gen)
+        mc_run: MCRun = next(run_gen)
         # capture the "tweaks"
         self.writer.write_tweaks(iteration=mc_run.run_index, change_records=mc_run.change_records)
         run_name, dp = mc_run.model_dp
@@ -196,7 +224,7 @@ class MCSequencer:
                 next_result = None
                 # print('no result')
             if next_result is not None:
-                self.process_solve_results(next_result)
+                self.process_solve_results(cast('DataBrick', next_result))
                 self.solve_count += 1
                 logger.info('Solve count: %d', self.solve_count)
                 if self.verbose or not self.config.silent:
@@ -247,7 +275,7 @@ class MCSequencer:
                 next_result = None
             if next_result is not None and next_result != 'COYOTE':
                 logger.debug('bagged a result post-shutdown')
-                self.process_solve_results(next_result)
+                self.process_solve_results(cast('DataBrick', next_result))
                 self.solve_count += 1
                 logger.info('Solve count: %d', self.solve_count)
                 if self.verbose or not self.config.silent:
@@ -262,8 +290,8 @@ class MCSequencer:
             if empty == num_workers:
                 break
 
-        for w in workers:
-            w.join()
+        for proc in workers:
+            proc.join()
             logger.debug('worker wrapped up...')
 
         log_queue.close()
@@ -280,12 +308,13 @@ class MCSequencer:
         if self.verbose:
             print('result queue joined')
 
-    def process_solve_results(self, brick: DataBrick):
+    def process_solve_results(self, brick: DataBrick) -> None:
         """write the results as required"""
         # get the instance number from the model name, if provided
         if '-' not in brick.name:
             raise ValueError(
-                'Instance name does not appear to contain a -idx value.  The manager should be tagging/updating this'
+                'Instance name does not appear to contain a -idx value.  The manager should be '
+                'tagging/updating this'
             )
         idx = int(brick.name.split('-')[-1])
         if idx in self.seen_instance_indices:

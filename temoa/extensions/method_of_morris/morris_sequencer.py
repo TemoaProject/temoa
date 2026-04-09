@@ -1,61 +1,40 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-This code is modified from original work on Method of Morris framework
-by Hadi Eshragi.  Original morris.py file can be located in the energysystem
-branch
-
-Modified/Refactored by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  5/30/24
-
-An event sequencer to control the flow of a Method of Morris calculation.  This code uses multiprocessing via
-the joblib library
-
+An event sequencer to control the flow of a Method of Morris calculation.  This code uses
+multiprocessing via the joblib library
 """
+from __future__ import annotations
+
 import csv
 import logging
 import multiprocessing
 import sqlite3
 import sys
 import tomllib
+from importlib import resources
 from logging.handlers import QueueListener
-from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
 
-from SALib.analyze import morris
-from SALib.sample.morris import sample
-from SALib.util import read_param_file, compute_groups_matrix
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed  # type: ignore[import-untyped]
 from numpy import array
+from SALib.analyze import morris  # type: ignore[import-untyped]
+from SALib.sample.morris import sample  # type: ignore[import-untyped]
+from SALib.util import compute_groups_matrix, read_param_file  # type: ignore[import-untyped]
 
-from definitions import PROJECT_ROOT, get_OUTPUT_PATH
+from temoa._internal.table_writer import TableWriter
+from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
-from temoa.temoa_model.hybrid_loader import HybridLoader
-from temoa.temoa_model.table_writer import TableWriter
-from temoa.temoa_model.temoa_config import TemoaConfig
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from temoa.core.config import TemoaConfig
+
+
 
 logger = logging.getLogger(__name__)
 
-solver_options_file = Path(
-    PROJECT_ROOT, 'temoa/extensions/method_of_morris/morris_solver_options.toml'
+solver_options_file = (
+    resources.files('temoa.extensions.method_of_morris') / 'morris_solver_options.toml'
 )
 
 
@@ -79,15 +58,17 @@ class MorrisSequencer:
             config.save_excel = False
         if config.price_check:
             logger.warning(
-                'Price check is disabled during Morris runs.  If you wish to check costs, run "CHECK" on model before MM'
+                'Price check is disabled during Morris runs.  If you wish to check costs, run '
+                '"CHECK" on model before MM'
             )
             config.price_check = False
         self.config = config
 
         # read in the options
         try:
-            with open(solver_options_file, 'rb') as f:
-                all_options = tomllib.load(f)
+            with resources.as_file(solver_options_file) as path:
+                with open(path, 'rb') as f:
+                    all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
             logger.info('Using solver options: %s', s_options)
 
@@ -97,15 +78,16 @@ class MorrisSequencer:
 
         # output handling
         self.verbose = False  # for troubleshooting
-        self.mm_output_folder = get_OUTPUT_PATH() / 'MM_outputs'
+        self.mm_output_folder = self.config.output_path / 'MM_outputs'
         self.mm_output_folder.mkdir(exist_ok=True)
         self.param_file: Path = self.mm_output_folder / 'params.csv'
 
         # MM Options
+        morris_inputs = config.morris_inputs or {}
         # the amount to perturb the marked params
-        pert = config.morris_inputs.get('perturbation')
+        pert = morris_inputs.get('perturbation')
         if pert:
-            self.mm_perturbation = pert
+            self.mm_perturbation = float(cast(str | float, pert))
             logger.info('Morris perturbation: %0.2f', self.mm_perturbation)
         else:
             self.mm_perturbation = 0.10
@@ -113,9 +95,9 @@ class MorrisSequencer:
                 'No value received for perturbation, using default: %0.2f', self.mm_perturbation
             )
 
-        levels = config.morris_inputs.get('levels')
+        levels = morris_inputs.get('levels')
         if levels:
-            self.num_levels = levels
+            self.num_levels = int(cast('Any', levels))
             logger.info('Morris levels: %d', self.num_levels)
         else:
             self.num_levels = (
@@ -123,37 +105,41 @@ class MorrisSequencer:
             )
             logger.warning('No value received for levels, using default: %d', self.num_levels)
 
-        traj = config.morris_inputs.get('trajectories')
+        traj = morris_inputs.get('trajectories')
         if traj:
-            self.trajectories = traj
+            self.trajectories = int(cast('Any', traj))
             logger.info('Morris trajectories: %d', self.trajectories)
         else:
             self.trajectories = 4  # number of morris trajectories to generate
             logger.warning(
                 'No value received for trajectories, using default: %d', self.trajectories
             )
-        # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox (which aren't super)
+        # Note:  Problem size (in general) is (Groups + 1) * trajectories see the SALib Dox (which
+        # aren't super)
 
-        seed = config.morris_inputs.get('seed')
-        self.seed = seed if seed else None
+        seed = morris_inputs.get('seed')
+        self.seed = int(cast('Any', seed)) if seed is not None else None
         logger.info('Morris Seed (None indicates system generated): %s', self.seed)
 
         self.conf_level = 0.95  # confidence level for mu_star analysis
 
-        self.num_cores = config.morris_inputs.get('cores', 0)
+        self.num_cores = morris_inputs.get('cores', 0)
         if self.num_cores == 0:
             self.num_cores = multiprocessing.cpu_count()
         logger.info('Morris number of cores: %d', self.num_cores)
         logger.info('Initialized Morris Sequencer')
         logger.info(
-            'Currently, MM only logs ERROR level messages during model build, which is done repeatedly.'
-            '  If there are issues building the model, run Temoa in CHECK separately to get more detail on the model.'
+            'Currently, MM only logs ERROR level messages during model build, which is done '
+            'repeatedly.'
+            '  If there are issues building the model, run Temoa in CHECK separately to get more '
+            'detail on the model.'
         )
 
-    def start(self):
+    def start(self) -> Any:
         """
         run the sequence of steps to do a MM analysis
-        0.  clear any prior results with this scenario name.  this sequencer appends the DB, so start fresh
+        0.  clear any prior results with this scenario name.  this sequencer appends the DB, so
+            start fresh
         1.  gather the parameters from items marked in the DB
         2.  build a data portal as a basis
         3.  use SALib to construct the sample
@@ -166,7 +152,8 @@ class MorrisSequencer:
         tw = TableWriter(config=self.config)
         tw.clear_scenario()
 
-        # 1.  Gather param info from the DB and construct the param file, which will be basis of the 'problem'
+        # 1.  Gather param info from the DB and construct the param file, which will be basis of
+        # the 'problem'
         param_names = self.gather_parameters()
 
         # 2.  Use the loader to get raw access to the model's data (dictionary)
@@ -214,7 +201,8 @@ class MorrisSequencer:
         # 7.  Return the cost objective Mu_Star for testing purposes...
         return cost_mu_star
 
-    def process_results(self, problem, mm_samples, morris_results):
+    def process_results(self, problem: dict[str, Any], mm_samples: Any,
+                            morris_results: list[Any]) -> Any:
         """
         Process the results of the runs on the mm_samples
         :param problem: the problem structure
@@ -252,13 +240,13 @@ class MorrisSequencer:
             for category in analysis.keys():
                 print(f'\nAnalysis of {category}:')
                 print(
-                    '{0:<30} {1:>10} {2:>10} {3:>20} {4:>10}'.format(
+                    '{:<30} {:>10} {:>10} {:>20} {:>10}'.format(
                         'Parameter', 'Mu_Star', 'Mu', mu_star_conf_label, 'Sigma'
                     )
                 )
                 for j in list(range(number_of_groups)):
                     print(
-                        '{0:30} {1:10.3f} {2:10.3f} {3:20.3f} {4:10.3f}'.format(
+                        '{:30} {:10.3f} {:10.3f} {:20.3f} {:10.3f}'.format(
                             analysis[category]['names'][j],
                             analysis[category]['mu_star'][j],
                             analysis[category]['mu'][j],
@@ -285,7 +273,7 @@ class MorrisSequencer:
                     writer.writerow(row)
         return analysis['cost']
 
-    def gather_parameters(self):
+    def gather_parameters(self) -> dict[int, list[Any]]:
         """
         Scan the annotated DB tables for marked parameters and capture them
         in the parameters file.  Also capture the names in the param_info data
@@ -297,12 +285,13 @@ class MorrisSequencer:
         with open(self.param_file, 'w') as f:
             v_idx = 4  # index of variable to perturb
             raw = cur.execute(
-                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM CostVariable WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, period, tech, vintage, cost, MMAnalysis FROM cost_variable WHERE '
+                'MMAnalysis IS NOT NULL'
             ).fetchall()
             g1 = len(raw)
             for i in range(0, len(raw)):
                 param_names[i] = [
-                    'CostVariable',
+                    'cost_variable',
                     *raw[i][:4],
                     'cost_variable',
                 ]
@@ -316,11 +305,12 @@ class MorrisSequencer:
 
             v_idx = 3
             raw = cur.execute(
-                'SELECT region, tech, vintage, cost, MMAnalysis FROM CostInvest WHERE MMAnalysis IS NOT NULL'
+                'SELECT region, tech, vintage, cost, MMAnalysis FROM cost_invest WHERE MMAnalysis '
+                'IS NOT NULL'
             ).fetchall()
             g2 = len(raw)
             for i in range(0, len(raw)):
-                param_names[i + g1] = ['CostInvest', *raw[i][:3], 'cost_invest']
+                param_names[i + g1] = ['cost_invest', *raw[i][:3], 'cost_invest']
 
                 iter = f'x{i + g1}'
                 low = str(raw[i][v_idx] * (1 - self.mm_perturbation))
@@ -333,13 +323,13 @@ class MorrisSequencer:
             v_idx = 5
             raw = cur.execute(
                 'SELECT DISTINCT region, input_comm, tech, vintage, output_comm, efficiency, '
-                'MMAnalysis FROM Efficiency WHERE MMAnalysis IS NOT NULL'
+                'MMAnalysis FROM efficiency WHERE MMAnalysis IS NOT NULL'
             ).fetchall()
 
             g3 = len(raw)
             for i in range(0, len(raw)):
                 param_names[i + g1 + g2] = [
-                    'Efficiency',
+                    'efficiency',
                     *raw[i][:5],
                     'efficiency',
                 ]
@@ -358,5 +348,5 @@ class MorrisSequencer:
 
         return param_names
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.con.close()

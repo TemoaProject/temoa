@@ -1,0 +1,875 @@
+erDiagram
+capacity_credit {
+ INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL credit
+   TEXT notes
+}
+technology {
+ TEXT tech PK
+   INTEGER annual
+   TEXT category
+   INTEGER curtail
+   TEXT description
+   INTEGER exchange
+   TEXT flag
+   INTEGER flex
+   INTEGER reserve
+   INTEGER retire
+   INTEGER seas_stor
+   TEXT sector
+   TEXT sub_category
+   INTEGER unlim_cap
+}
+technology_type {
+ TEXT label PK
+   TEXT description
+}
+time_period {
+ INTEGER period PK
+   TEXT flag
+   INTEGER sequence
+}
+time_period_type {
+ TEXT label PK
+   TEXT description
+}
+capacity_factor_process {
+ INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL factor
+   TEXT notes
+}
+time_of_day {
+ TEXT tod PK
+   INTEGER sequence
+}
+season_label {
+ TEXT season PK
+   TEXT notes
+}
+capacity_factor_tech {
+ INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   REAL factor
+   TEXT notes
+}
+capacity_to_activity {
+ TEXT region PK
+   TEXT tech PK
+   REAL c2a
+   TEXT notes
+}
+commodity {
+ TEXT name PK
+   TEXT description
+   TEXT flag
+}
+commodity_type {
+ TEXT label PK
+   TEXT description
+}
+construction_input {
+ TEXT input_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   TEXT units
+   REAL value
+}
+cost_emission {
+ TEXT emis_comm PK
+   INTEGER period PK
+   TEXT region PK
+   REAL cost
+   TEXT notes
+   TEXT units
+}
+cost_fixed {
+ INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL cost
+   TEXT notes
+   TEXT units
+}
+cost_invest {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL cost
+   TEXT notes
+   TEXT units
+}
+cost_variable {
+ INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL cost
+   TEXT notes
+   TEXT units
+}
+demand {
+ TEXT commodity PK
+   INTEGER period PK
+   TEXT region PK
+   REAL demand
+   TEXT notes
+   TEXT units
+}
+demand_specific_distribution {
+ TEXT demand_name PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tod PK
+   REAL dsd
+   TEXT notes
+}
+efficiency {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL efficiency
+   TEXT notes
+}
+efficiency_variable {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL efficiency
+   TEXT notes
+}
+emission_activity {
+ TEXT emis_comm PK
+   TEXT input_comm PK
+   TEXT output_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL activity
+   TEXT notes
+   TEXT units
+}
+emission_embodied {
+ TEXT emis_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   TEXT units
+   REAL value
+}
+emission_end_of_life {
+ TEXT emis_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   TEXT units
+   REAL value
+}
+end_of_life_output {
+ TEXT output_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   TEXT units
+   REAL value
+}
+existing_capacity {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL capacity
+   TEXT notes
+   TEXT units
+}
+lifetime_process {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL lifetime
+   TEXT notes
+}
+lifetime_survival_curve {
+ INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL fraction
+   TEXT notes
+}
+lifetime_tech {
+ TEXT region PK
+   TEXT tech PK
+   REAL lifetime
+   TEXT notes
+}
+limit_activity {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL activity
+   TEXT notes
+   TEXT units
+}
+operator {
+ TEXT operator PK
+   TEXT notes
+}
+limit_activity_share {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT sub_group PK
+   TEXT super_group PK
+   TEXT notes
+   REAL share
+}
+limit_annual_capacity_factor {
+ TEXT operator PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   REAL factor
+   TEXT notes
+}
+limit_capacity {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL capacity
+   TEXT notes
+   TEXT units
+}
+limit_capacity_share {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT sub_group PK
+   TEXT super_group PK
+   TEXT notes
+   REAL share
+}
+limit_degrowth_capacity {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_degrowth_new_capacity {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_degrowth_new_capacity_delta {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_emission {
+ TEXT emis_comm PK
+   TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT notes
+   TEXT units
+   REAL value
+}
+limit_growth_capacity {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_growth_new_capacity {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_growth_new_capacity_delta {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT notes
+   REAL rate
+   REAL seed
+   TEXT seed_units
+}
+limit_new_capacity {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL new_cap
+   TEXT notes
+   TEXT units
+}
+limit_new_capacity_share {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT sub_group PK
+   TEXT super_group PK
+   TEXT notes
+   REAL share
+}
+limit_resource {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL cum_act
+   TEXT notes
+   TEXT units
+}
+limit_seasonal_capacity_factor {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   REAL factor
+   TEXT notes
+}
+region {
+ TEXT region PK
+   TEXT notes
+}
+limit_storage_level_fraction {
+ TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL fraction
+   TEXT notes
+}
+limit_tech_input_split {
+ TEXT input_comm PK
+   TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL proportion
+}
+limit_tech_input_split_annual {
+ TEXT input_comm PK
+   TEXT operator PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL proportion
+}
+limit_tech_output_split {
+ TEXT operator PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL proportion
+}
+limit_tech_output_split_annual {
+ TEXT operator PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL proportion
+}
+linked_tech {
+ TEXT emis_comm PK
+   TEXT primary_region PK
+   TEXT primary_tech PK
+   TEXT driven_tech
+   TEXT notes
+}
+loan_lifetime_process {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL lifetime
+   TEXT notes
+}
+loan_rate {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   REAL rate
+}
+metadata {
+ TEXT element PK
+   TEXT notes
+   INTEGER value
+}
+metadata_real {
+ TEXT element PK
+   TEXT notes
+   REAL value
+}
+myopic_efficiency {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   INTEGER base_year
+   REAL efficiency
+   INTEGER lifetime
+}
+output_built_capacity {
+ TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL capacity
+   TEXT sector
+}
+sector_label {
+ TEXT sector PK
+   TEXT notes
+}
+output_cost {
+ INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL d_emiss
+   REAL d_fixed
+   REAL d_invest
+   REAL d_var
+   REAL emiss
+   REAL fixed
+   REAL invest
+   TEXT sector
+   REAL var
+}
+output_curtailment {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL curtailment
+   TEXT sector
+}
+output_dual_variable {
+ TEXT constraint_name PK
+   TEXT scenario PK
+   REAL dual
+}
+output_emission {
+ TEXT emis_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL emission
+   TEXT sector
+}
+output_flow_in {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL flow
+   TEXT sector
+}
+output_flow_out {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL flow
+   TEXT sector
+}
+output_flow_out_summary {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL flow
+   TEXT sector
+}
+output_net_capacity {
+ INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL capacity
+   TEXT sector
+}
+output_objective {
+ TEXT objective_name
+   TEXT scenario
+   REAL total_system_cost
+}
+output_retired_capacity {
+ INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL cap_early
+   REAL cap_eol
+   TEXT sector
+}
+output_storage_level {
+ INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT season PK
+   TEXT tech PK
+   TEXT tod PK
+   INTEGER vintage PK
+   REAL level
+   TEXT sector
+}
+planning_reserve_margin {
+ TEXT region PK
+   REAL margin
+   TEXT notes
+}
+ramp_down_hourly {
+ TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL rate
+}
+ramp_up_hourly {
+ TEXT region PK
+   TEXT tech PK
+   TEXT notes
+   REAL rate
+}
+reserve_capacity_derate {
+ INTEGER period PK
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL factor
+   TEXT notes
+}
+rps_requirement {
+ TEXT notes
+   INTEGER period
+   TEXT region
+   REAL requirement
+   TEXT tech_group
+}
+tech_group {
+ TEXT group_name PK
+   TEXT notes
+}
+storage_duration {
+ TEXT region PK
+   TEXT tech PK
+   REAL duration
+   TEXT notes
+}
+tech_group_member {
+ TEXT group_name PK
+   TEXT tech PK
+}
+time_season {
+ INTEGER period PK
+   TEXT season PK
+   INTEGER sequence PK
+   TEXT notes
+}
+time_season_all {
+ INTEGER period PK
+   TEXT season PK
+   INTEGER sequence PK
+   TEXT notes
+}
+time_season_sequential {
+ INTEGER period PK
+   TEXT seas_seq PK
+   TEXT season PK
+   INTEGER sequence PK
+   TEXT notes
+   REAL num_days
+}
+time_season_to_sequential {
+ INTEGER period PK
+   TEXT seas_seq PK
+   TEXT season PK
+   INTEGER sequence PK
+   TEXT notes
+   REAL num_days
+}
+time_segment_fraction {
+ INTEGER period PK
+   TEXT season PK
+   TEXT tod PK
+   TEXT notes
+   REAL segment_fraction
+}
+technology one or zero--0+ capacity_credit : has
+time_period one or zero--0+ capacity_credit : has
+technology_type 1--0+ technology : has
+time_period_type one or zero--0+ time_period : has
+technology one or zero--0+ capacity_factor_process : has
+time_of_day one or zero--0+ capacity_factor_process : has
+time_period one or zero--0+ capacity_factor_process : has
+season_label one or zero--0+ capacity_factor_process : has
+season_label one or zero--0+ capacity_factor_tech : has
+time_period one or zero--0+ capacity_factor_tech : has
+time_of_day one or zero--0+ capacity_factor_tech : has
+technology one or zero--0+ capacity_factor_tech : has
+technology one or zero--0+ capacity_to_activity : has
+commodity_type one or zero--0+ commodity : has
+time_period one or zero--0+ construction_input : has
+commodity one or zero--0+ construction_input : has
+technology one or zero--0+ construction_input : has
+time_period one or zero--0+ cost_emission : has
+commodity 1--0+ cost_emission : has
+time_period 1--0+ cost_fixed : has
+technology 1--0+ cost_fixed : has
+time_period 1--0+ cost_fixed : has
+technology one or zero--0+ cost_invest : has
+time_period one or zero--0+ cost_invest : has
+time_period 1--0+ cost_variable : has
+time_period 1--0+ cost_variable : has
+technology 1--0+ cost_variable : has
+time_period one or zero--0+ demand : has
+commodity one or zero--0+ demand : has
+time_period one or zero--0+ demand_specific_distribution : has
+season_label one or zero--0+ demand_specific_distribution : has
+time_of_day one or zero--0+ demand_specific_distribution : has
+commodity one or zero--0+ demand_specific_distribution : has
+commodity one or zero--0+ efficiency : has
+technology one or zero--0+ efficiency : has
+time_period one or zero--0+ efficiency : has
+commodity one or zero--0+ efficiency : has
+time_period one or zero--0+ efficiency_variable : has
+season_label one or zero--0+ efficiency_variable : has
+time_of_day one or zero--0+ efficiency_variable : has
+commodity one or zero--0+ efficiency_variable : has
+technology one or zero--0+ efficiency_variable : has
+time_period one or zero--0+ efficiency_variable : has
+commodity one or zero--0+ efficiency_variable : has
+commodity one or zero--0+ emission_activity : has
+commodity one or zero--0+ emission_activity : has
+technology one or zero--0+ emission_activity : has
+time_period one or zero--0+ emission_activity : has
+commodity one or zero--0+ emission_activity : has
+commodity one or zero--0+ emission_embodied : has
+technology one or zero--0+ emission_embodied : has
+time_period one or zero--0+ emission_embodied : has
+time_period one or zero--0+ emission_end_of_life : has
+commodity one or zero--0+ emission_end_of_life : has
+technology one or zero--0+ emission_end_of_life : has
+technology one or zero--0+ end_of_life_output : has
+commodity one or zero--0+ end_of_life_output : has
+time_period one or zero--0+ end_of_life_output : has
+time_period one or zero--0+ existing_capacity : has
+technology one or zero--0+ existing_capacity : has
+technology one or zero--0+ lifetime_process : has
+time_period one or zero--0+ lifetime_process : has
+time_period 1--0+ lifetime_survival_curve : has
+technology 1--0+ lifetime_survival_curve : has
+technology one or zero--0+ lifetime_tech : has
+time_period one or zero--0+ limit_activity : has
+operator 1--0+ limit_activity : has
+time_period one or zero--0+ limit_activity_share : has
+operator 1--0+ limit_activity_share : has
+operator 1--0+ limit_annual_capacity_factor : has
+time_period one or zero--0+ limit_annual_capacity_factor : has
+technology one or zero--0+ limit_annual_capacity_factor : has
+commodity one or zero--0+ limit_annual_capacity_factor : has
+operator 1--0+ limit_capacity : has
+time_period one or zero--0+ limit_capacity : has
+time_period one or zero--0+ limit_capacity_share : has
+operator 1--0+ limit_capacity_share : has
+operator 1--0+ limit_degrowth_capacity : has
+operator 1--0+ limit_degrowth_new_capacity : has
+operator 1--0+ limit_degrowth_new_capacity_delta : has
+commodity one or zero--0+ limit_emission : has
+operator 1--0+ limit_emission : has
+time_period one or zero--0+ limit_emission : has
+operator 1--0+ limit_growth_capacity : has
+operator 1--0+ limit_growth_new_capacity : has
+operator 1--0+ limit_growth_new_capacity_delta : has
+time_period one or zero--0+ limit_new_capacity : has
+operator 1--0+ limit_new_capacity : has
+operator 1--0+ limit_new_capacity_share : has
+time_period one or zero--0+ limit_new_capacity_share : has
+operator 1--0+ limit_resource : has
+region one or zero--0+ limit_seasonal_capacity_factor : has
+time_period one or zero--0+ limit_seasonal_capacity_factor : has
+season_label one or zero--0+ limit_seasonal_capacity_factor : has
+technology one or zero--0+ limit_seasonal_capacity_factor : has
+operator 1--0+ limit_seasonal_capacity_factor : has
+time_of_day one or zero--0+ limit_storage_level_fraction : has
+technology one or zero--0+ limit_storage_level_fraction : has
+time_period one or zero--0+ limit_storage_level_fraction : has
+operator 1--0+ limit_storage_level_fraction : has
+time_period one or zero--0+ limit_storage_level_fraction : has
+season_label one or zero--0+ limit_storage_level_fraction : has
+technology one or zero--0+ limit_tech_input_split : has
+operator 1--0+ limit_tech_input_split : has
+time_period one or zero--0+ limit_tech_input_split : has
+commodity one or zero--0+ limit_tech_input_split : has
+technology one or zero--0+ limit_tech_input_split_annual : has
+operator 1--0+ limit_tech_input_split_annual : has
+time_period one or zero--0+ limit_tech_input_split_annual : has
+commodity one or zero--0+ limit_tech_input_split_annual : has
+commodity one or zero--0+ limit_tech_output_split : has
+operator 1--0+ limit_tech_output_split : has
+time_period one or zero--0+ limit_tech_output_split : has
+technology one or zero--0+ limit_tech_output_split : has
+commodity one or zero--0+ limit_tech_output_split_annual : has
+operator 1--0+ limit_tech_output_split_annual : has
+time_period one or zero--0+ limit_tech_output_split_annual : has
+technology one or zero--0+ limit_tech_output_split_annual : has
+commodity one or zero--0+ linked_tech : has
+technology one or zero--0+ linked_tech : has
+technology one or zero--0+ linked_tech : has
+technology one or zero--0+ loan_lifetime_process : has
+time_period one or zero--0+ loan_lifetime_process : has
+technology one or zero--0+ loan_rate : has
+time_period one or zero--0+ loan_rate : has
+technology one or zero--0+ myopic_efficiency : has
+sector_label one or zero--0+ output_built_capacity : has
+technology one or zero--0+ output_built_capacity : has
+time_period one or zero--0+ output_built_capacity : has
+time_period one or zero--0+ output_cost : has
+sector_label one or zero--0+ output_cost : has
+time_period one or zero--0+ output_cost : has
+technology one or zero--0+ output_cost : has
+time_of_day one or zero--0+ output_curtailment : has
+commodity one or zero--0+ output_curtailment : has
+technology one or zero--0+ output_curtailment : has
+time_period one or zero--0+ output_curtailment : has
+commodity one or zero--0+ output_curtailment : has
+time_period one or zero--0+ output_curtailment : has
+time_period one or zero--0+ output_curtailment : has
+sector_label one or zero--0+ output_emission : has
+time_period one or zero--0+ output_emission : has
+commodity one or zero--0+ output_emission : has
+technology one or zero--0+ output_emission : has
+time_period one or zero--0+ output_emission : has
+sector_label one or zero--0+ output_flow_in : has
+time_period one or zero--0+ output_flow_in : has
+season_label one or zero--0+ output_flow_in : has
+time_of_day one or zero--0+ output_flow_in : has
+commodity one or zero--0+ output_flow_in : has
+technology one or zero--0+ output_flow_in : has
+time_period one or zero--0+ output_flow_in : has
+commodity one or zero--0+ output_flow_in : has
+technology one or zero--0+ output_flow_out : has
+time_period one or zero--0+ output_flow_out : has
+commodity one or zero--0+ output_flow_out : has
+sector_label one or zero--0+ output_flow_out : has
+time_period one or zero--0+ output_flow_out : has
+season_label one or zero--0+ output_flow_out : has
+time_of_day one or zero--0+ output_flow_out : has
+commodity one or zero--0+ output_flow_out : has
+technology 1--0+ output_flow_out_summary : has
+technology one or zero--0+ output_net_capacity : has
+time_period one or zero--0+ output_net_capacity : has
+sector_label one or zero--0+ output_net_capacity : has
+time_period one or zero--0+ output_net_capacity : has
+technology one or zero--0+ output_retired_capacity : has
+time_period one or zero--0+ output_retired_capacity : has
+sector_label one or zero--0+ output_retired_capacity : has
+time_period one or zero--0+ output_retired_capacity : has
+technology one or zero--0+ output_storage_level : has
+time_period one or zero--0+ output_storage_level : has
+sector_label one or zero--0+ output_storage_level : has
+time_period one or zero--0+ output_storage_level : has
+season_label one or zero--0+ output_storage_level : has
+time_of_day one or zero--0+ output_storage_level : has
+region one or zero--1 planning_reserve_margin : has
+technology one or zero--0+ ramp_down_hourly : has
+technology one or zero--0+ ramp_up_hourly : has
+technology one or zero--0+ reserve_capacity_derate : has
+time_period one or zero--0+ reserve_capacity_derate : has
+season_label one or zero--0+ reserve_capacity_derate : has
+time_period 1--0+ rps_requirement : has
+tech_group 1--0+ rps_requirement : has
+region 1--0+ rps_requirement : has
+tech_group one or zero--0+ tech_group_member : has
+technology one or zero--0+ tech_group_member : has
+time_period one or zero--0+ time_season : has
+season_label one or zero--0+ time_season : has
+season_label one or zero--0+ time_season_all : has
+time_period one or zero--0+ time_season_all : has
+time_period one or zero--0+ time_season_sequential : has
+season_label one or zero--0+ time_season_sequential : has
+season_label one or zero--0+ time_season_to_sequential : has
+time_period one or zero--0+ time_season_to_sequential : has
+time_period one or zero--0+ time_segment_fraction : has
+season_label one or zero--0+ time_segment_fraction : has
+time_of_day one or zero--0+ time_segment_fraction : has

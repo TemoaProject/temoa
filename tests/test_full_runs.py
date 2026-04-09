@@ -1,49 +1,40 @@
 """
 Test a couple full-runs to match objective function value and some internals
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  6/27/23
-
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import logging
 import sqlite3
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-import pyomo.environ as pyo
 import pytest
 from pyomo.core import Constraint, Var
+from pyomo.environ import check_optimal_termination, value
+from pyomo.opt import SolverResults
 
 # from src.temoa_model.temoa_model import temoa_create_model
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
+from temoa.core.model import TemoaModel
 from tests.legacy_test_values import ExpectedVals, test_vals
+
+if TYPE_CHECKING:
+    import pyomo.environ as pyo
 
 logger = logging.getLogger(__name__)
 # list of test scenarios for which we have captured results in legacy_test_values.py
 legacy_config_files = [
     {'name': 'utopia', 'filename': 'config_utopia.toml'},
     {'name': 'test_system', 'filename': 'config_test_system.toml'},
+    {'name': 'mediumville', 'filename': 'config_mediumville.toml'},
+    {'name': 'seasonal_storage', 'filename': 'config_seasonal_storage.toml'},
+    {'name': 'survival_curve', 'filename': 'config_survival_curve.toml'},
+    {'name': 'annualised_demand', 'filename': 'config_annualised_demand.toml'},
 ]
 
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]
+mc_files = [{'name': 'utopia mc', 'filename': 'config_utopia_mc.toml'}]
+stochastic_files = [{'name': 'stochastic utopia', 'filename': 'config_utopia_stochastic.toml'}]
 
 
 @pytest.mark.parametrize(
@@ -52,28 +43,44 @@ myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml
     indirect=True,
     ids=[d['name'] for d in legacy_config_files],
 )
-def test_against_legacy_outputs(system_test_run):
+def test_against_legacy_outputs(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
     """
     This test compares tests of legacy models to captured test results
     """
     data_name, res, mdl, _ = system_test_run
     logger.info('Starting output test on scenario: %s', data_name)
-    expected_vals = test_vals.get(data_name)  # a dictionary of expected results
 
-    # inspect some summary results
-    assert res['Solution'][0]['Status'] == 'optimal'
-    assert res['Solution'][0]['Objective']['TotalCost']['Value'] == pytest.approx(
-        expected_vals[ExpectedVals.OBJ_VALUE], 0.00001
+    # Defensive checks for test fixture results
+    assert res is not None, f'No solver results for {data_name}'
+    assert isinstance(res, SolverResults), (
+        f'Expected SolverResults object for {data_name}, got {type(res)}'
     )
+    assert mdl is not None, f'No model for {data_name}'
+
+    expected_vals = test_vals.get(data_name)  # a dictionary of expected results
+    assert expected_vals is not None, f'No expected values for {data_name}'
+
+    # Inspect some summary results
+    # Use check_optimal_termination instead of checking raw status string
+    # Different solvers report status differently (e.g., HiGHS reports 'unknown' but is optimal)
+    assert check_optimal_termination(res), f'Solver did not terminate optimally for {data_name}'
+
+    # Get objective value from the model instance instead of results object
+    # HiGHS doesn't populate the results object the same way as CBC
+    obj_value = value(mdl.total_cost)
+    assert obj_value == pytest.approx(expected_vals[ExpectedVals.OBJ_VALUE], 0.00001)
 
     # inspect a couple set sizes
-    efficiency_param: pyo.Param = mdl.Efficiency
+    efficiency_param: pyo.Param = mdl.efficiency
     # check the set membership
     assert (
-        len(tuple(efficiency_param.sparse_iterkeys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
+        len(tuple(efficiency_param.sparse_keys())) == expected_vals[ExpectedVals.EFF_INDEX_SIZE]
     ), 'should match legacy numbers'
 
-    # check the size of the domain.  NOTE:  The build of the domain here may be "expensive" for large models
+    # check the size of the domain.  NOTE:  The build of the domain here may be "expensive" for
+    # large models
     assert (
         len(efficiency_param.index_set().domain) == expected_vals[ExpectedVals.EFF_DOMAIN_SIZE]
     ), 'should match legacy numbers'
@@ -95,7 +102,9 @@ def test_against_legacy_outputs(system_test_run):
 @pytest.mark.parametrize(
     'system_test_run', argvalues=myopic_files, indirect=True, ids=[d['name'] for d in myopic_files]
 )
-def test_myopic_utopia(system_test_run):
+def test_myopic_utopia(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
     """
     Some cursory tests to ensure Myopic is running...  This is a very weak/simple test
     It mostly just ensures that the mode runs correctly and only checks 1 output.  Much
@@ -106,7 +115,115 @@ def test_myopic_utopia(system_test_run):
     _, _, _, sequencer = system_test_run
     con = sqlite3.connect(sequencer.config.output_database)
     cur = con.cursor()
-    res = cur.execute('SELECT SUM(d_invest) FROM main.OutputCost').fetchone()
+    res = cur.execute('SELECT SUM(d_invest) FROM main.output_cost').fetchone()
     invest_sum = res[0]
-    assert invest_sum == pytest.approx(11564.3985), 'sum of investment costs did not match expected'
+    # reduced this target after storageinit rework
+    # reduced after removing ancient 1-year shift bug from objective function
+    # increased after rework of inter-season sequencing
+    # reduced by <1 after changing season definition (segfrac no longer rounded)
+    # decreased by 41 after activating CF constraints for storage techs
+    assert invest_sum == pytest.approx(10963.1018), 'sum of investment costs did not match expected'
+    con.close()
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=stochastic_files,
+    indirect=True,
+    ids=[d['name'] for d in stochastic_files],
+)
+def test_stochastic_utopia(
+    system_test_run: tuple[str, Any, Any, TemoaSequencer],
+) -> None:
+    """
+    Test the stochastic integration for the utopia model.
+    """
+    _, _, _, sequencer = system_test_run
+
+    # Stochastic Expected Value for current utopia configuration
+    # reduced by <1 after changing season definition (segfrac no longer rounded)
+    # increased by 145 after activating CF constraints for storage techs
+    expected_obj = 34534.1822
+
+    assert sequencer.stochastic_sequencer is not None
+    assert sequencer.stochastic_sequencer.objective_value == pytest.approx(expected_obj, rel=1e-5)
+
+
+def test_graphviz_integration(tmp_path: Path) -> None:
+    """
+    Test that graphviz diagrams are generated during a full run when enabled.
+    """
+    # Use utopia config as a base
+    config_file = Path(__file__).parent / 'testing_configs' / 'config_utopia.toml'
+
+    # Build config with graphviz output enabled
+    config = TemoaConfig.build_config(
+        config_file=config_file,
+        output_path=tmp_path,
+        silent=True,
+    )
+
+    # Enable graphviz output
+    config.graphviz_output = True
+
+    # Run the sequencer
+    sequencer = TemoaSequencer(config=config)
+    sequencer.start()
+
+    # The graphviz generator creates a subdirectory like: {db_name}_{scenario}_graphviz
+    # Find any directory matching the pattern *_graphviz
+    graphviz_dirs = list(tmp_path.glob('*_graphviz'))
+    assert len(graphviz_dirs) > 0, 'Graphviz output directory should be created'
+
+    graphviz_dir = graphviz_dirs[0]
+    assert graphviz_dir.is_dir(), 'Graphviz output should be a directory'
+
+    # Check that at least some output files were generated (DOT or SVG files)
+    output_files = list(graphviz_dir.rglob('*.svg')) + list(graphviz_dir.rglob('*.dot'))
+    assert len(output_files) > 0, 'At least one diagram file should be generated'
+
+    # Check that the files are not empty
+    for output_file in output_files:
+        assert output_file.stat().st_size > 0, f'{output_file.name} should not be empty'
+
+
+@pytest.mark.parametrize(
+    'system_test_run', argvalues=mc_files, indirect=True, ids=[d['name'] for d in mc_files]
+)
+def test_mc_utopia(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
+    """
+    Test Monte Carlo run logic and output database contents
+    """
+    data_name, _, _, sequencer = system_test_run
+
+    # Connect to the output database
+    con = sqlite3.connect(sequencer.config.output_database)
+    cur = con.cursor()
+
+    # 1. Check output_mc_delta table
+    res = cur.execute('SELECT run, param, old_val, new_val FROM main.output_mc_delta').fetchall()
+    assert len(res) == 2, 'Should have 2 tweaks recorded'
+
+    # Tweak 1: cost_invest, utopia|TXD|2010, a, -44.0
+    # The old value for TXD cost_invest in 2010 in Utopia is 1044.0
+    # New value should be 1000.0
+    assert res[0][0] == 1
+    assert res[0][1] == 'cost_invest'
+    assert res[0][3] == pytest.approx(1000.0)
+
+    # Tweak 2: demand, utopia|2010|RH, r, 0.1
+    # Old value for RH demand in 2010 in Utopia is approx 56.7
+    # New value should be approx 62.37
+    assert res[1][0] == 2
+    assert res[1][1] == 'demand'
+    assert res[1][3] == pytest.approx(56.7 * 1.1, rel=1e-3)
+
+    # 2. Check output_objective table
+    res = cur.execute('SELECT scenario FROM main.output_objective').fetchall()
+    scenarios = [r[0] for r in res]
+    assert 'utopia_mc-1' in scenarios
+    assert 'utopia_mc-2' in scenarios
+
     con.close()

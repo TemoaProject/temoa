@@ -1,0 +1,6 @@
+from pyomo.common.cmake_builder import build_cmake_project as build_cmake_project
+
+def build_ampl_function_demo(user_args=[], parallel=None): ...
+
+class AMPLFunctionDemoBuilder:
+    def __call__(self, parallel): ...

@@ -1,37 +1,23 @@
-# this config is used for testing in test_full_runs.py
 scenario = "test myopic"
 scenario_mode = "myopic"
-
-# note that myopic currently only supports input = output.  Test code will be responsible
-# for making a fresh copy (if desired) and moving it to the output folder
-input_database = "testing_outputs/myo_utopia.sqlite"
-output_database = "testing_outputs/myo_utopia.sqlite"
+input_database = "tests/testing_outputs/myo_utopia.sqlite"
+output_database = "tests/testing_outputs/myo_utopia.sqlite"
 neos = false
-
-# solver
-solver_name = "cbc"
-
-# generate an excel file in the output_files folder
+solver_name = "appsi_highs"
 save_excel = true
-
-# save the duals in the output .sqlite database
 save_duals = true
+save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+days_per_period = 365
+reserve_margin = "static"
 
-# save a copy of the pyomo-generated lp file to the outputs folder (may be large file!)
-save_lp_file = true
-
-# ---------------------------------------------------
-#                   MODE OPTIONS
-# options below are mode-specific and will be ignored
-# if the run is not executed in that mode.
-# ---------------------------------------------------
 [MGA]
 slack = 0.1
 iterations = 4
-weight = "integer"   # currently supported: [integer, normalized]
+weight = "integer"
 
 [myopic]
-view_depth = 2  # number of periods seen/analyzed per iteration
-step_size = 1    # number of periods to step by
-
-
+view_depth = 2
+step_size = 1
+evolving = false
+evolution_script = ''

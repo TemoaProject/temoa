@@ -1,35 +1,12 @@
-"""
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
+from typing import Any
 
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/25/24
-
-"""
 import pytest
 
-from temoa.temoa_model.model_checking.element_checker import ViableSet, filter_elements
+from temoa.model_checking.element_checker import ViableSet, filter_elements
 
-params = [
+ParamType = dict[str, Any]
+ElementType = tuple[Any, ...] | str | int
+params: list[ParamType] = [
     {
         'name': 'group 1',
         'filt': ViableSet(
@@ -130,8 +107,8 @@ params = [
 ]
 
 
-@pytest.mark.parametrize('data', params, ids=(param['name'] for param in params))
-def test_filter_elements(data):
+@pytest.mark.parametrize('data', params, ids=[param['name'] for param in params])
+def test_filter_elements(data: ParamType) -> None:
     # use the 'tester' elements against the filter to ensure we get expected results
     assert (
         filter_elements(
@@ -141,9 +118,9 @@ def test_filter_elements(data):
     )
 
 
-def test_dimension_measurement():
+def test_dimension_measurement() -> None:
     """quick test to ensure we are getting the correct dimension esp. when elements are not tuple"""
-    elements = [(1, 2), (3, 4)]
+    elements: list[ElementType] = [(1, 2), (3, 4)]
     assert ViableSet(elements).dim == 2
 
     elements = ['dog', 'pig', 'uncle bob']

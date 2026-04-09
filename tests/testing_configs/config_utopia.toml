@@ -1,38 +1,22 @@
-# this config is used for testing in test_full_runs.py
 scenario = "test run"
 scenario_mode = "perfect_foresight"
-
-input_database = "testing_outputs/utopia.sqlite"
-output_database = "testing_outputs/utopia.sqlite"
+input_database = "tests/testing_outputs/utopia.sqlite"
+output_database = "tests/testing_outputs/utopia.sqlite"
 neos = false
-
-# solver
-solver_name = "cbc"
-
-# generate an excel file in the output_files folder
+solver_name = "appsi_highs"
 save_excel = false
-
-# save the duals in the output .sqlite database
 save_duals = false
-
-# save a copy of the pyomo-generated lp file to the outputs folder (may be large file!)
 save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+days_per_period = 365
+reserve_margin = "static"
 
-# ---------------------------------------------------
-#                   MODE OPTIONS
-# options below are mode-specific and will be ignored
-# if the run is not executed in that mode.
-# ---------------------------------------------------
 [MGA]
-cost_epsilon = 0.03    # 3% relaxation on optimal cost
-iteration_limit = 15   # max iterations to perform
-time_limit_hrs = 1     # max time
-axis = "tech_category_activity"   # use the tech activity Manager to control exploration based on categories in Tech
-weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight exploration
+cost_epsilon = 0.03
+iteration_limit = 15
+time_limit_hrs = 1
+axis = "tech_category_activity"
+weighting = "hull_expansion"
 
 [myopic]
-myopic_view = 2  # number of periods seen at one iteration
-
-
-
-
+myopic_view = 2

@@ -1,0 +1,3 @@
+run,param,index,mod,value,notes
+1,cost_invest,utopia|TXD|2010,a,-44.0,reduce invest cost to 1000
+2,demand,utopia|2010|RH,r,0.1,increase demand by 10%

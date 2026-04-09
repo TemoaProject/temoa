@@ -1,0 +1,19 @@
+[scenarios]
+low_coal = { probability = 0.5 }
+high_coal = { probability = 0.5 }
+
+[[perturbations]]
+scenario = "low_coal"
+table = "cost_variable"
+column = "cost"
+filter = { tech = "IMPHCO1" }
+action = "multiply"
+value = 0.5
+
+[[perturbations]]
+scenario = "high_coal"
+table = "cost_variable"
+column = "cost"
+filter = { tech = "IMPHCO1" }
+action = "multiply"
+value = 1.5

@@ -1,36 +1,16 @@
 """
-Tools for Energy Model Optimization and Analysis (Temoa):
-An open source framework for energy systems optimization modeling
-
-Copyright (C) 2015,  NC State University
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-A complete copy of the GNU General Public License v2 (GPLv2) is available
-in LICENSE.txt.  Users uncompressing this from an archive may not have
-received this license file.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Written by:  J. F. Hyink
-jeff@westernspark.us
-https://westernspark.us
-Created on:  4/15/24
-
 An ABC to serve as a framework for future Vector Managers
 """
-import sqlite3
-from abc import ABC, abstractmethod
-from collections.abc import Iterator, Iterable
+from __future__ import annotations
 
-from temoa.temoa_model.temoa_model import TemoaModel
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import sqlite3
+    from collections.abc import Iterable, Iterator
+
+    from temoa.core.model import TemoaModel
 
 
 class VectorManager(ABC):
@@ -41,7 +21,7 @@ class VectorManager(ABC):
         base_model: TemoaModel,
         optimal_cost: float,
         cost_relaxation: float,
-    ):
+    ) -> None:
         """
         Initialize a new manager
         :param conn: connection to the current database
@@ -58,7 +38,7 @@ class VectorManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def group_members(self, group) -> list[str]:
+    def group_members(self, group: str) -> list[str]:
         """The members (by string name) in the group"""
         raise NotImplementedError()
 
@@ -69,9 +49,10 @@ class VectorManager(ABC):
         Indicator that this manager has no more vectors to generate
         :return: True if expired
         """
+        raise NotImplementedError()
 
     @abstractmethod
-    def group_variable_names(self, tech) -> list[str]:
+    def group_variable_names(self, tech: str) -> list[str]:
         """The variable NAMES associated with the individual group members"""
         raise NotImplementedError()
 
@@ -86,10 +67,10 @@ class VectorManager(ABC):
         raise NotImplementedError('the manager subclass must implement instance_generator')
 
     @abstractmethod
-    def process_results(self, M: TemoaModel):
+    def process_results(self, model: TemoaModel) -> Any:
         raise NotImplementedError('the manager subclass must implement process_results')
 
     @abstractmethod
-    def finalize_tracker(self):
+    def finalize_tracker(self) -> None:
         """Finalize any tracker employed by the manager"""
         pass

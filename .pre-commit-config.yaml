@@ -1,0 +1,60 @@
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.9.17
+    hooks:
+      # Dependency management
+      - id: uv-lock
+        name: uv-lock (Update uv.lock if pyproject.toml changed)
+        files: ^pyproject\.toml$
+
+      # Compile requirements
+      - id: pip-compile
+        name: pip-compile requirements.txt (core dependencies)
+        args:
+          - pyproject.toml # Input file
+          - -o # Output flag
+          - requirements.txt # Output file name
+        files: ^pyproject\.toml$
+
+      - id: pip-compile
+        name: pip-compile requirements-dev.txt (core + all optional dependencies)
+        args:
+          - pyproject.toml
+          - --all-extras # Include all optional dependency groups
+          - -o
+          - requirements-dev.txt # Output file name
+        files: ^pyproject\.toml$
+
+        # Code quality and formatting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: debug-statements
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+      - id: pyupgrade
+        args: ["--py312-plus"]
+    # Python Linting & Formatting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: "v0.14.8"
+    hooks:
+      - id: ruff
+        name: ruff (linter)
+        args: [--fix, --exit-non-zero-on-fix]
+        # --fix: attempts to automatically fix linting issues.
+        # --exit-non-zero-on-fix: ensures that if fixes were made,
+        #                         the commit fails, prompting you to
+        #                         review and re-stage the changes.
+      - id: ruff-format
+        name: ruff-format (formatter)

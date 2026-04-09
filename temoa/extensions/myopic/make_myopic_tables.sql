@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS MyopicEfficiency
+CREATE TABLE IF NOT EXISTS myopic_efficiency
 (
     base_year   integer,
     region      text,
@@ -11,11 +11,11 @@ CREATE TABLE IF NOT EXISTS MyopicEfficiency
     efficiency  real,
     lifetime    integer,
 
-    FOREIGN KEY (tech) REFERENCES Technology (tech),
+    FOREIGN KEY (tech) REFERENCES technology (tech),
     PRIMARY KEY (region, input_comm, tech, vintage, output_comm)
 );
 -- for efficient searching by rtv:
-CREATE INDEX IF NOT EXISTS region_tech_vintage ON MyopicEfficiency (region, tech, vintage);
+CREATE INDEX IF NOT EXISTS region_tech_vintage ON myopic_efficiency (region, tech, vintage);
 
 
 COMMIT;
