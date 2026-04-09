@@ -64,7 +64,8 @@ pdflatex toolsforenergymodeloptimizationandanalysistemoa.tex
 
 The Temoa documentation draws from two main sources:
 
-1. **Static descriptions** - Model elements and concepts described in `source/Documentation.rst`
+1. **Static descriptions** - Model elements and concepts described in `.rst` files in `source/` (e.g., `mathematical_formulation.rst`, `database.rst`)
+
 2. **Code docstrings** - Objective function and constraint documentation from module docstrings in:
    - `temoa/components/costs.py` - Objective function
    - `temoa/components/*.py` - Constraint implementations

@@ -37,10 +37,11 @@ In a virtual env with temoa installed, run:
 
 ```bash
 # Create tutorial files in the current directory
-temoa tutorial quick_start
+# Creates tutorial_config.toml and tutorial_database.sqlite
+temoa tutorial
 
 # Run the model
-temoa run quick_start.toml
+temoa run tutorial_config.toml
 ```
 
 ## Package Structure
@@ -99,16 +100,16 @@ Temoa provides a modern, user-friendly CLI built with Typer:
 **Run a model:**
 
 ```bash
-temoa run config.toml
-temoa run config.toml --output results/
-temoa run config.toml --build-only  # Build without solving
+temoa run tutorial_config.toml
+temoa run tutorial_config.toml --output results/
+temoa run tutorial_config.toml --build-only  # Build without solving
 ```
 
 **Validate configuration:**
 
 ```bash
-temoa validate config.toml
-temoa validate config.toml --debug
+temoa validate tutorial_config.toml
+temoa validate tutorial_config.toml --debug
 ```
 
 **Database migration:**
@@ -139,9 +140,9 @@ temoa --help                     # Full help
 When working with the source code, use `uv run` to ensure you're using the correct dependencies:
 
 ```bash
-uv run temoa run config.toml      # Run with project dependencies
-uv run temoa validate config.toml # Validate configuration
-uv run temoa tutorial my_first_model # Create tutorial files
+uv run temoa run tutorial_config.toml      # Run with project dependencies
+uv run temoa validate tutorial_config.toml # Validate configuration
+uv run temoa tutorial             # Create tutorial files
 ```
 
 ## Programmatic Usage
@@ -165,7 +166,7 @@ config = TemoaConfig(
 
 # Build and solve model
 model = TemoaModel(config)
-result = model.run()  # Equivalent to: temoa run config.toml
+result = model.run()  # Equivalent to: temoa run tutorial_config.toml
 
 # Check if run was successful
 if result:
@@ -256,7 +257,7 @@ Builds model without solving. Useful for validation and troubleshooting.
 1. **Setup**: Create configuration and database files:
 
    ```bash
-   temoa tutorial my_project
+   temoa tutorial
    ```
 
 2. **Configure**: Edit the configuration file to match your scenario
@@ -264,13 +265,13 @@ Builds model without solving. Useful for validation and troubleshooting.
 3. **Validate**: Check configuration before running:
 
    ```bash
-   temoa validate my_project_config.toml
+   temoa validate tutorial_config.toml
    ```
 
 4. **Run**: Execute the model:
 
    ```bash
-   temoa run my_project_config.toml
+   temoa run tutorial_config.toml
    ```
 
 5. **Review**: Check results in `output_files/YYYY-MM-DD_HHMMSS/`
@@ -326,7 +327,7 @@ If you encounter solver errors:
 pip install ".[solver]"  # Include specific solver packages
 
 # For free solver
-temoa run config.toml --debug  # Get detailed error information
+temoa run tutorial_config.toml --debug  # Get detailed error information
 ```
 
 ## Documentation & Support
