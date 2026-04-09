@@ -1,31 +1,45 @@
+import shutil
 import subprocess
-import sys
+
 import temoa
 
+
+def _find_temoa_path() -> str:
+    path = shutil.which('temoa')
+    if not path:
+        raise RuntimeError('temoa executable not found in PATH')
+    return path
+
+
 def test_import() -> None:
-    print(f"Importing temoa version: {temoa.__version__}")
+    print(f'Importing temoa version: {temoa.__version__}')
     assert temoa.__version__ is not None
 
+
 def test_cli() -> None:
-    print("Running temoa --version CLI command...")
-    result = subprocess.run(["temoa", "--version"], capture_output=True, text=True)
-    print(f"CLI output: {result.stdout.strip()}")
-    assert result.returncode == 0
-    assert "Temoa Version:" in result.stdout
+    print('Running temoa --version CLI command...')
+    temoa_path = _find_temoa_path()
+
+    result = subprocess.run(
+        [temoa_path, '--version'], capture_output=True, text=True, timeout=10, check=True
+    )
+    print(f'CLI output: {result.stdout.strip()}')
+    assert 'Temoa Version:' in result.stdout
     assert temoa.__version__ in result.stdout
 
-def test_help() -> None:
-    print("Running temoa --help CLI command...")
-    result = subprocess.run(["temoa", "--help"], capture_output=True, text=True)
-    assert result.returncode == 0
-    assert "The Temoa Project" in result.stdout
 
-if __name__ == "__main__":
-    try:
-        test_import()
-        test_cli()
-        test_help()
-        print("\n✅ Smoke test passed!")
-    except Exception as e:
-        print(f"\n❌ Smoke test failed: {e}")
-        sys.exit(1)
+def test_help() -> None:
+    print('Running temoa --help CLI command...')
+    temoa_path = _find_temoa_path()
+
+    result = subprocess.run(
+        [temoa_path, '--help'], capture_output=True, text=True, timeout=10, check=True
+    )
+    assert 'The Temoa Project' in result.stdout
+
+
+if __name__ == '__main__':
+    test_import()
+    test_cli()
+    test_help()
+    print('\n✅ Smoke test passed!')

@@ -25,7 +25,7 @@ jobs:
         run: uv build
       - name: Verify tag matches version
         run: |
-          VERSION=$(grep "__version__ =" temoa/__about__.py | cut -d "'" -f 2)
+          VERSION=$(python3 -c "import ast; d = {}; content = open('temoa/__about__.py').read(); exec(compile(ast.parse(content), 'temoa/__about__.py', 'exec'), d); print(d['__version__'])")
           TAG=${GITHUB_REF#refs/tags/v}
           if [ "$VERSION" != "$TAG" ]; then
             echo "Error: Tag v$TAG does not match version $VERSION in temoa/__about__.py"
