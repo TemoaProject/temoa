@@ -688,10 +688,13 @@ def tutorial(
 
     # Check for existing files and handle conflicts
     existing_files = []
+    target_mc_settings = target_config.parent / 'mc_settings.csv'
     if target_config.exists():
         existing_files.append(str(target_config))
     if target_database.exists():
         existing_files.append(str(target_database))
+    if target_mc_settings.exists():
+        existing_files.append(str(target_mc_settings))
 
     if existing_files and not force:
         rich.print('[yellow]Tutorial files already exist:[/yellow]')

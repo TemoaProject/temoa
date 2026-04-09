@@ -60,30 +60,6 @@ cycle_count_limit = 100
 cycle_length_limit = 1
 
 # ------------------------------------
-#      SQLITE PERFORMANCE TUNING
-# ------------------------------------
-
-[sqlite]
-# These settings improve database performance, especially for large-scale
-# runs and myopic/MGA modes which perform many small writes.
-
-# journal_mode: WAL (Write-Ahead Logging) provides better concurrency and speed.
-# Note: This creates sidecar files (-wal and -shm) during execution.
-journal_mode = 'WAL'
-
-# synchronous: NORMAL reduces disk flushes while remaining safe against
-# application-level crashes.
-synchronous = 'NORMAL'
-
-# mmap_size: Memory-map the database file for faster reads (bytes).
-# 8589934592 = 8GB
-mmap_size = 8589934592
-
-# cache_size: SQLite page cache size. Negative values specify size in KiB.
-# -512000 = 500MiB
-cache_size = -512000
-
-# ------------------------------------
 #             SOLVER
 #        Solver Selection
 # ------------------------------------
@@ -166,6 +142,30 @@ days_per_period = 365
 #       For storage, contributions are (derated) actual output in each time slice:
 #                   capacity value = flow out * reserve capacity derate
 reserve_margin = 'dynamic'
+
+# ------------------------------------
+#      SQLITE PERFORMANCE TUNING
+# ------------------------------------
+
+[sqlite]
+# These settings improve database performance, especially for large-scale
+# runs and myopic/MGA modes which perform many small writes.
+
+# journal_mode: WAL (Write-Ahead Logging) provides better concurrency and speed.
+# Note: This creates sidecar files (-wal and -shm) during execution.
+journal_mode = 'WAL'
+
+# synchronous: NORMAL reduces disk flushes while remaining safe against
+# application-level crashes.
+synchronous = 'NORMAL'
+
+# mmap_size: Memory-map the database file for faster reads (bytes).
+# 8589934592 = 8GB
+mmap_size = 8589934592
+
+# cache_size: SQLite page cache size. Negative values specify size in KiB.
+# -512000 = 500MiB
+cache_size = -512000
 
 # ---------------------------------------------------
 #                   MODE OPTIONS
