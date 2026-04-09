@@ -34,15 +34,18 @@ relevant `config.toml` file which can then be run.
 
 ### Example:  `morris_utopia`
 
-1. Convert the `.sql` source file to a database. If you have the `morris_utopia.sql` file:
+The files for this example must reside in the same directory as the extension code (`temoa/extensions/method_of_morris/`) because `morris.py` resolves them relative to its own path.
+
+1. **Prepare the database**: Obtain or create `morris_utopia.sql` and convert it to a SQLite database in the extension directory:
 
    ```bash
+   # From the temoa/extensions/method_of_morris/ directory:
    sqlite3 morris_utopia.sqlite < morris_utopia.sql
    ```
 
-2. Observe the markings (3 groups) in the `MMAnalysis` columns in `cost_variable` and `efficiency`.
-3. Observe the `morris` configuration comments in the relevant config file (e.g., `morris_utopia.toml`).
-4. Run the config as normal.
+2. **Ensure the configuration file is present**: Place `morris_utopia.toml` in the same directory.
+3. Observe the markings (3 groups) in the `MMAnalysis` columns in `cost_variable` and `efficiency`.
+4. Run the example from the extension directory.
 5. MM analysis is reported on screen and in 2 csv files for the objective and `co2` in the Outputs folder
 6. The DB will contain updated values (tagged by scenario name and "dash run") in `output_objective` and `output_emissions`
 _only_ which might be of secondary value to the modeler.  Other output tables are _not_ updated.

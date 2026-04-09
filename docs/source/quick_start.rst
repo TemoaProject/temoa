@@ -97,9 +97,12 @@ solver. HiGHS is automatically available when you install Temoa and requires no 
 Running Temoa
 -------------
 
-To run the model, a configuration (``config``) file is needed. An
+To run the model, a configuration (``config``) file is needed. While an
 example config file called :code:`config_sample.toml` is available as a package resource
-in :code:`temoa/tutorial_assets`. Running the model with a config file allows
+in :code:`temoa/tutorial_assets`, it is not directly runnable on its own. The tutorial
+flow also generates the SQLite database and copies :code:`mc_settings.csv` alongside it.
+Users should follow the **temoa tutorial** command (see below) to obtain a fully runnable
+setup. Running the model with a config file allows
 the user to (1) use a sqlite database for storing input and output data, (2)
 create a formatted Excel output file, (2) specify the solver to use, (3) return
 the log file produced during model execution, (4) return the lp file utilized by
