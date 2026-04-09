@@ -134,6 +134,10 @@ filterwarnings = [
     "error::FutureWarning:tests.*",
     "error::RuntimeWarning:tests.*",
     "error::UserWarning:tests.*",
+    # Ignore SyntaxWarning from mpi-sppy (third-party package).
+    # These are caused by invalid escape sequences in regex strings within sputils.py.
+    # Mitigation should be removed once mpi-sppy is upgraded to a version where these are fixed (0.13.1+).
+    "ignore:invalid escape sequence:SyntaxWarning:mpisppy.utils.sputils",
 ]
 
 [tool.mypy]
