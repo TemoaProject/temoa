@@ -31,7 +31,7 @@ jobs:
         run: |
           uv lock --upgrade
           uv pip compile pyproject.toml -o requirements.txt
-          uv pip compile pyproject.toml --all-extras -o requirements-dev.txt
+          uv pip compile pyproject.toml --all-extras --all-groups -o requirements-dev.txt
 
       - name: Install the project
         run: uv sync --all-extras --dev
@@ -56,7 +56,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: ['dependency-canary']
+              labels: 'dependency-canary'
             });
 
             const issueTitle = '🚨 Dependency Canary Failure';
