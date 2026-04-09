@@ -38,8 +38,8 @@ Then, install Temoa:
   $ pip install temoa
 
   # Get started
-  $ python -m temoa tutorial my_first_model
-  $ python -m temoa run my_first_model.toml
+  $ temoa tutorial
+  $ temoa run tutorial_config.toml
 
 **Using uv (Alternative)**:
 
@@ -60,8 +60,8 @@ For faster dependency resolution:
   $ uv add temoa
 
   # Get started
-  $ uv run temoa tutorial my_first_model
-  $ uv run temoa run my_first_model.toml
+  $ uv run temoa tutorial
+  $ uv run temoa run tutorial_config.toml
 
 **For Contributors (Development Installation)**:
 
@@ -109,28 +109,27 @@ the log file produced during model execution, (4) return the lp file utilized by
 the solver, and (5) to execute several of the modeling extensions.
 
 .. parsed-literal::
-  $ temoa run config.toml
+  $ temoa run tutorial_config.toml
 
 **For general help, use --help:**
 
 .. parsed-literal::
   $ **temoa --help**
-    usage: temoa [-h] [--version] [--how-to-cite] COMMAND ...
+    Usage: temoa [OPTIONS] COMMAND [ARGS]...
 
     Tools for Energy Model Optimization and Analysis (Temoa)
 
-    options:
-      -h, --help       show this help message and exit
-      --version        Show version information
-      --how-to-cite    Show citation information
+    Options:
+      -v, --version           Show Temoa version and exit.
+      --how-to-cite           Show citation information and exit.
+      -h, --help              Show this message and exit.
 
-    commands:
-      COMMAND
-        run            Run a Temoa model
-        validate       Validate a configuration file
-        check-units    Check unit consistency in a database
-        migrate        Migrate a database to the latest schema
-        tutorial       Create tutorial files
+    Commands:
+      validate     Validates a configuration file and database.
+      run          Builds and solves a Temoa model.
+      check-units  Check units consistency in a Temoa database.
+      migrate      Migrate a Temoa database file or directory.
+      tutorial     Create tutorial configuration and database files.
 
 ..
     dated references, preserved as comment here:
