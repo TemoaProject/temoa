@@ -584,6 +584,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
 
         # Generate database from SQL source (single source of truth)
         sql_content = sql_resource.read_text(encoding='utf-8')
+
         with sqlite3.connect(target_database) as conn:
             conn.executescript(sql_content)
 
@@ -620,6 +621,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
             target_database.unlink()
 
         # Generate database from SQL source
+
         with sqlite3.connect(target_database) as conn:
             conn.executescript(fallback_sql.read_text(encoding='utf-8'))
 

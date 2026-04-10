@@ -74,35 +74,36 @@ def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, A
     status = run_actions.check_solve_status(res)
     if not status:
         raise RuntimeError('Bad solve during Method of Morris')
-    table_writer = TableWriter(config)
-    table_writer.write_mm_results(model=mdl, iteration=i)
-    con = sqlite3.connect(config.input_database)
-    cur = con.cursor()
-    scenario_name = config.scenario + f'-{i}'
-    cur.execute(
-        'SELECT total_system_cost FROM output_objective where scenario = ?', (scenario_name,)
-    )
-    output_query = cur.fetchall()
-    if len(output_query) > 1:
-        raise RuntimeError(
-            'Multiple outputs found in Objective table matching scenario name.  Coding error.'
+    with TableWriter(config) as table_writer:
+        table_writer.write_mm_results(model=mdl, iteration=i)
+    import contextlib
+    with contextlib.closing(sqlite3.connect(config.input_database)) as con:
+        cur = con.cursor()
+        scenario_name = config.scenario + f'-{i}'
+        cur.execute(
+            'SELECT total_system_cost FROM output_objective where scenario = ?', (scenario_name,)
         )
-    else:
-        y_of = output_query[0][0] if output_query[0][0] is not None else 0.0
-    cur.execute(
-        "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
-        (scenario_name,),
-    )
-    output_query = cur.fetchall()
-    if len(output_query) == 0:
-        y_cumulative_co2 = 0.0
-    elif len(output_query) > 1:
-        raise RuntimeError(
-            'Multiple outputs found in output_emissions table matching scenario name.  Coding '
-            'error.'
+        output_query = cur.fetchall()
+        if len(output_query) > 1:
+            raise RuntimeError(
+                'Multiple outputs found in Objective table matching scenario name.  Coding error.'
+            )
+        else:
+            y_of = output_query[0][0] if output_query[0][0] is not None else 0.0
+        cur.execute(
+            "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
+            (scenario_name,),
         )
-    else:
-        y_cumulative_co2 = output_query[0][0] if output_query[0][0] is not None else 0.0
+        output_query = cur.fetchall()
+        if len(output_query) == 0:
+            y_cumulative_co2 = 0.0
+        elif len(output_query) > 1:
+            raise RuntimeError(
+                'Multiple outputs found in output_emissions table matching scenario name.  Coding '
+                'error.'
+            )
+        else:
+            y_cumulative_co2 = output_query[0][0] if output_query[0][0] is not None else 0.0
     morris_objectives = [float(y_of), float(y_cumulative_co2)]
     logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, y_of)
     if not config.silent:

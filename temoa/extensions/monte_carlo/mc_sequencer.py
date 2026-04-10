@@ -124,7 +124,8 @@ class MCSequencer:
         self.writer.make_summary_flow_table()  # add the summary flow table, if not exists
 
         # 1. Load data
-        with sqlite3.connect(self.config.input_database) as con:
+        import contextlib
+        with contextlib.closing(sqlite3.connect(self.config.input_database)) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
             data_store = hybrid_loader.create_data_dict(myopic_index=None)
         mc_factory = MCRunFactory(config=self.config, data_store=data_store)

@@ -134,7 +134,9 @@ class TemoaSequencer:
             ):
                 raise RuntimeError('Database version check failed. See log file for details.')
 
-            with sqlite3.connect(self.config.input_database) as con:
+            import contextlib
+
+            with contextlib.closing(sqlite3.connect(self.config.input_database)) as con:
                 tune_sqlite_connection(con, self.config)
                 hybrid_loader = HybridLoader(db_connection=con, config=self.config)
                 data_portal = hybrid_loader.load_data_portal(myopic_index=None)
@@ -204,7 +206,9 @@ class TemoaSequencer:
 
     def _run_check_mode(self) -> None:
         """Encapsulated logic for the CHECK mode."""
-        with sqlite3.connect(self.config.input_database) as con:
+        import contextlib
+
+        with contextlib.closing(sqlite3.connect(self.config.input_database)) as con:
             tune_sqlite_connection(con, self.config)
             if not self.config.source_trace:
                 logger.warning('Source trace is automatically enabled for CHECK mode.')
@@ -223,7 +227,9 @@ class TemoaSequencer:
 
     def _run_perfect_foresight(self) -> None:
         """Encapsulated logic for the PERFECT_FORESIGHT mode."""
-        with sqlite3.connect(self.config.input_database) as con:
+        import contextlib
+
+        with contextlib.closing(sqlite3.connect(self.config.input_database)) as con:
             tune_sqlite_connection(con, self.config)
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
             data_portal = hybrid_loader.load_data_portal(myopic_index=None)

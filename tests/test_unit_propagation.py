@@ -26,7 +26,9 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def propagator() -> Generator[UnitPropagator, None, None]:
     """Create a UnitPropagator from the valid units database."""
-    with sqlite3.connect(VALID_UNITS_DB) as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(VALID_UNITS_DB)) as conn:
         yield UnitPropagator(conn)
 
 
@@ -78,7 +80,9 @@ def test_missing_tech_capacity_returns_none(propagator: UnitPropagator) -> None:
 def test_empty_database_graceful_fallback() -> None:
     """Test that an empty/minimal database doesn't crash the propagator."""
     # Create in-memory database with minimal schema - use context manager to avoid leaks
-    with sqlite3.connect(':memory:') as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(':memory:')) as conn:
         conn.execute('CREATE TABLE commodity (name TEXT, flag TEXT, description TEXT, units TEXT)')
         conn.execute('CREATE TABLE metadata (element TEXT, value INT)')
         conn.execute("INSERT INTO metadata VALUES ('DB_MAJOR', 4)")
@@ -154,7 +158,9 @@ def solved_db_with_units(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 def test_units_propagated_to_output_flow_tables(solved_db_with_units: Path) -> None:
     """Verify that output flow tables have units populated."""
-    with sqlite3.connect(solved_db_with_units) as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(solved_db_with_units)) as conn:
         # Check output_flow_out
         row = conn.execute(
             'SELECT COUNT(*), SUM(CASE WHEN units IS NOT NULL THEN 1 ELSE 0 END)'
@@ -187,7 +193,9 @@ def test_units_propagated_to_output_flow_tables(solved_db_with_units: Path) -> N
 
 def test_units_propagated_to_capacity_tables(solved_db_with_units: Path) -> None:
     """Verify that capacity output tables have units populated."""
-    with sqlite3.connect(solved_db_with_units) as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(solved_db_with_units)) as conn:
         for table in ['output_built_capacity', 'output_net_capacity']:
             row = conn.execute(
                 f'SELECT COUNT(*), SUM(CASE WHEN units IS NOT NULL THEN 1 ELSE 0 END) FROM {table}'
@@ -206,7 +214,9 @@ def test_units_propagated_to_capacity_tables(solved_db_with_units: Path) -> None
 
 def test_units_propagated_to_cost_table(solved_db_with_units: Path) -> None:
     """Verify that output_cost table has units populated."""
-    with sqlite3.connect(solved_db_with_units) as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(solved_db_with_units)) as conn:
         row = conn.execute(
             'SELECT COUNT(*), SUM(CASE WHEN units IS NOT NULL THEN 1 ELSE 0 END) FROM output_cost'
         ).fetchone()

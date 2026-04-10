@@ -35,7 +35,8 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
 
     # 1. Load base data
     try:
-        with sqlite3.connect(temoa_config.input_database) as con:
+        import contextlib
+        with contextlib.closing(sqlite3.connect(temoa_config.input_database)) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=temoa_config)
             data_dict = hybrid_loader.create_data_dict(myopic_index=None)
 

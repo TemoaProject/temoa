@@ -113,17 +113,20 @@ def test_myopic_utopia(
     # the model itself is fairly useless here, because several were run
     # we just want a hook to the output database...
     _, _, _, sequencer = system_test_run
-    con = sqlite3.connect(sequencer.config.output_database)
-    cur = con.cursor()
-    res = cur.execute('SELECT SUM(d_invest) FROM main.output_cost').fetchone()
-    invest_sum = res[0]
-    # reduced this target after storageinit rework
-    # reduced after removing ancient 1-year shift bug from objective function
-    # increased after rework of inter-season sequencing
-    # reduced by <1 after changing season definition (segfrac no longer rounded)
-    # decreased by 41 after activating CF constraints for storage techs
-    assert invest_sum == pytest.approx(10963.1018), 'sum of investment costs did not match expected'
-    con.close()
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
+        cur = con.cursor()
+        res = cur.execute('SELECT SUM(d_invest) FROM main.output_cost').fetchone()
+        invest_sum = res[0]
+        # reduced this target after storageinit rework
+        # reduced after removing ancient 1-year shift bug from objective function
+        # increased after rework of inter-season sequencing
+        # reduced by <1 after changing season definition (segfrac no longer rounded)
+        # decreased by 41 after activating CF constraints for storage techs
+        assert invest_sum == pytest.approx(10963.1018), (
+            'sum of investment costs did not match expected'
+        )
 
 
 @pytest.mark.parametrize(
@@ -199,31 +202,33 @@ def test_mc_utopia(
     data_name, _, _, sequencer = system_test_run
 
     # Connect to the output database
-    con = sqlite3.connect(sequencer.config.output_database)
-    cur = con.cursor()
+    import contextlib
 
-    # 1. Check output_mc_delta table
-    res = cur.execute('SELECT run, param, old_val, new_val FROM main.output_mc_delta').fetchall()
-    assert len(res) == 2, 'Should have 2 tweaks recorded'
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
+        cur = con.cursor()
 
-    # Tweak 1: cost_invest, utopia|TXD|2010, a, -44.0
-    # The old value for TXD cost_invest in 2010 in Utopia is 1044.0
-    # New value should be 1000.0
-    assert res[0][0] == 1
-    assert res[0][1] == 'cost_invest'
-    assert res[0][3] == pytest.approx(1000.0)
+        # 1. Check output_mc_delta table
+        res = cur.execute(
+            'SELECT run, param, old_val, new_val FROM main.output_mc_delta'
+        ).fetchall()
+        assert len(res) == 2, 'Should have 2 tweaks recorded'
 
-    # Tweak 2: demand, utopia|2010|RH, r, 0.1
-    # Old value for RH demand in 2010 in Utopia is approx 56.7
-    # New value should be approx 62.37
-    assert res[1][0] == 2
-    assert res[1][1] == 'demand'
-    assert res[1][3] == pytest.approx(56.7 * 1.1, rel=1e-3)
+        # Tweak 1: cost_invest, utopia|TXD|2010, a, -44.0
+        # The old value for TXD cost_invest in 2010 in Utopia is 1044.0
+        # New value should be 1000.0
+        assert res[0][0] == 1
+        assert res[0][1] == 'cost_invest'
+        assert res[0][3] == pytest.approx(1000.0)
 
-    # 2. Check output_objective table
-    res = cur.execute('SELECT scenario FROM main.output_objective').fetchall()
-    scenarios = [r[0] for r in res]
-    assert 'utopia_mc-1' in scenarios
-    assert 'utopia_mc-2' in scenarios
+        # Tweak 2: demand, utopia|2010|RH, r, 0.1
+        # Old value for RH demand in 2010 in Utopia is approx 56.7
+        # New value should be approx 62.37
+        assert res[1][0] == 2
+        assert res[1][1] == 'demand'
+        assert res[1][3] == pytest.approx(56.7 * 1.1, rel=1e-3)
 
-    con.close()
+        # 2. Check output_objective table
+        res = cur.execute('SELECT scenario FROM main.output_objective').fetchall()
+        scenarios = [r[0] for r in res]
+        assert 'utopia_mc-1' in scenarios
+        assert 'utopia_mc-2' in scenarios
