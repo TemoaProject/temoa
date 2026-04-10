@@ -337,14 +337,14 @@ def handle_results(
     iteration: int | None = None,
 ) -> None:
     with task_timer('Processing results', silent=config.silent):
-        table_writer = TableWriter(config=config)
-        table_writer.write_results(
-            model=instance,
-            results_with_duals=results if config.save_duals else None,
-            save_storage_levels=config.save_storage_levels,
-            append=append,
-            iteration=iteration,
-        )
+        with TableWriter(config=config) as table_writer:
+            table_writer.write_results(
+                model=instance,
+                results_with_duals=results if config.save_duals else None,
+                save_storage_levels=config.save_storage_levels,
+                append=append,
+                iteration=iteration,
+            )
 
     if config.save_excel:
         scenario_name = (

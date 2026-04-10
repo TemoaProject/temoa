@@ -21,14 +21,16 @@ MOCK_DATA_V3_1 = REPO_ROOT / 'tests' / 'testing_data' / 'migration_v3_1_mock.sql
     [
         (SCHEMA_V3, MOCK_DATA_V3),
         (SCHEMA_V3_1, MOCK_DATA_V3_1),
-    ]
+    ],
 )
 def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) -> None:
     """Test both SQL and SQLite master migrators."""
 
     # 1. Create SQLite DB
     db_v3_1 = tmp_path / 'test_db.sqlite'
-    with sqlite3.connect(db_v3_1) as conn:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(db_v3_1)) as conn:
         conn.execute('PRAGMA foreign_keys = OFF')
         conn.executescript(schema_file.read_text())
         conn.executescript(mock_data_file.read_text())
@@ -37,8 +39,9 @@ def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) 
     # 2. Dump to SQL
     sql_v3_1 = tmp_path / 'test_v3_1.sql'
     with open(sql_v3_1, 'w') as f:
-        for line in sqlite3.connect(db_v3_1).iterdump():
-            f.write(line + '\n')
+        with contextlib.closing(sqlite3.connect(db_v3_1)) as con_dump:
+            for line in con_dump.iterdump():
+                f.write(line + '\n')
 
     # 3. Verify SQL migration script
     sql_v4_migrated = tmp_path / 'test_v4_migrated.sql'
@@ -59,10 +62,9 @@ def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) 
     )
 
     # Load SQL result into memory to verify
-    conn_sql = sqlite3.connect(':memory:')
-    conn_sql.executescript(sql_v4_migrated.read_text())
-
-    _verify_migrated_data(conn_sql)
+    with contextlib.closing(sqlite3.connect(':memory:')) as conn_sql:
+        conn_sql.executescript(sql_v4_migrated.read_text())
+        _verify_migrated_data(conn_sql)
 
     # 4. Verify SQLite direct migration script
     db_v4_migrated = tmp_path / 'test_v4_migrated.sqlite'
@@ -82,7 +84,9 @@ def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) 
         check=True,
     )
 
-    with sqlite3.connect(db_v4_migrated) as conn_db:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(db_v4_migrated)) as conn_db:
         _verify_migrated_data(conn_db)
 
 
@@ -115,15 +119,21 @@ def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     assert rows[0] == ('R1', 'winter', 'day', 'T1', 2030, pytest.approx(0.6))
 
     # Check operator-added tables (limit_capacity and limit_emission)
-    cap_rows = conn.execute('SELECT region, tech_or_group, period, capacity, operator FROM limit_capacity').fetchall()
+    cap_rows = conn.execute(
+        'SELECT region, tech_or_group, period, capacity, operator FROM limit_capacity'
+    ).fetchall()
     assert len(cap_rows) == 1
     assert cap_rows[0] == ('R1', 'T1', 2030, 10.0, 'ge')
 
-    emis_rows = conn.execute('SELECT region, period, value, operator FROM limit_emission').fetchall()
+    emis_rows = conn.execute(
+        'SELECT region, period, value, operator FROM limit_emission'
+    ).fetchall()
     assert len(emis_rows) == 1
     assert emis_rows[0] == ('R1', 2030, 100.0, 'le')
 
     # Check metadata version
     major = conn.execute("SELECT value FROM metadata WHERE element='DB_MAJOR'").fetchone()[0]
     assert int(major) == 4
-    assert int(conn.execute("SELECT value FROM metadata WHERE element='DB_MINOR'").fetchone()[0]) == 0
+    assert (
+        int(conn.execute("SELECT value FROM metadata WHERE element='DB_MINOR'").fetchone()[0]) == 0
+    )

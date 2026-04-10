@@ -176,11 +176,11 @@ def test_cli_migrate_accepts_directory_input(tmp_path: Path) -> None:
     """Test that the migrate command accepts a directory as input for batch processing."""
     dummy_dir = tmp_path / 'my_dummy_dir'
     dummy_dir.mkdir()
-    
+
     src_file = UTOPIA_SQL_FIXTURE
     input_file = dummy_dir / src_file.name
     shutil.copy2(src_file, input_file)
-    
+
     args = ['migrate', str(dummy_dir)]
     result = runner.invoke(app, args)
 
@@ -255,7 +255,7 @@ def test_cli_migrate_sql_file_auto_output_non_writable_input_dir_fallback_cwd(
     # Normalize whitespace to handle platform-specific line breaks from rich.print()
     normalized_output = ' '.join(result.stdout.split())
     clean_output = re.sub(r'\s+', '', result.stdout)
-    
+
     assert 'SQL dump migration completed' in normalized_output
     assert 'Warning: Input directory' in normalized_output
     assert 'mock_non_writable_input_parent' in clean_output
@@ -358,11 +358,12 @@ def test_cli_migrate_sql_file_silent(tmp_path: Path) -> None:
 def test_cli_migrate_db_file_silent(tmp_path: Path) -> None:
     """Test migrating a DB file with --silent flag."""
     input_file = tmp_path / 'test_v3_1_silent.sqlite'
-    conn = sqlite3.connect(input_file)
-    conn.execute('CREATE TABLE MetaData (name TEXT, value TEXT)')
-    conn.execute("INSERT INTO MetaData VALUES ('DB_MAJOR', '3')")
-    conn.commit()
-    conn.close()
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(input_file)) as conn:
+        conn.execute('CREATE TABLE MetaData (name TEXT, value TEXT)')
+        conn.execute("INSERT INTO MetaData VALUES ('DB_MAJOR', '3')")
+        conn.commit()
 
     output_file = tmp_path / 'migrated_silent.sqlite'
     args = ['migrate', str(input_file), '--output', str(output_file), '--silent']  # Use --silent

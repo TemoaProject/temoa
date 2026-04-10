@@ -41,8 +41,9 @@ def solved_connection(
 
     sequencer.start()
 
-    con = sqlite3.connect(sequencer.config.output_database)
-    try:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         # Pass all necessary params for this specific test
         yield (
             con,
@@ -52,8 +53,6 @@ def solved_connection(
             request.param['target'],
             mode,
         )
-    finally:
-        con.close()
 
 
 # List of tech archetypes to test and their correct flowout value

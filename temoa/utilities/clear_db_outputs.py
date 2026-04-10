@@ -34,7 +34,9 @@ if proceed == 'y':
         print(f'path provided to database is invalid: {target_db}')
         sys.exit(-1)
     try:
-        with sqlite3.connect(target_db) as conn:
+        import contextlib
+
+        with contextlib.closing(sqlite3.connect(target_db)) as conn:
             for table in basic_output_tables:
                 conn.execute('DELETE FROM ' + table + ' WHERE 1')
             for table in optional_output_tables:

@@ -38,7 +38,11 @@ def run_command(
 
 
 def run_migrations(
-    input_dir: Path, migration_script: Path, schema_path: Path, dry_run: bool = False, silent: bool = False
+    input_dir: Path,
+    migration_script: Path,
+    schema_path: Path,
+    dry_run: bool = False,
+    silent: bool = False,
 ) -> None:
     if not input_dir.is_dir():
         raise FileNotFoundError(f'Error: Input directory not found at {input_dir}')
@@ -115,13 +119,17 @@ def run_migrations(
             else:
                 # 4. On failure, restore original file
                 if not silent:
-                    print(f'FAILED: Migration for {target_file.name} failed. Restoring original file.')
+                    print(
+                        f'FAILED: Migration for {target_file.name} failed. Restoring original file.'
+                    )
                 shutil.copy2(original_backup_file, target_file)
                 failed_files.append(target_file.name)
 
         except Exception as e:
             if not silent:
-                print(f'CRITICAL ERROR processing {target_file.name}: {e}. Restoring original file.')
+                print(
+                    f'CRITICAL ERROR processing {target_file.name}: {e}. Restoring original file.'
+                )
             if original_backup_file.exists():
                 shutil.copy2(original_backup_file, target_file)
             failed_files.append(target_file.name)
@@ -143,7 +151,8 @@ def run_migrations(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='Run script migration on all .sql/.sqlite/.db files in a directory, overwriting originals.'
+        description='Run script migration on all .sql/.sqlite/.db files in a directory, '
+        'overwriting originals.'
     )
     parser.add_argument(
         '--input_dir',
