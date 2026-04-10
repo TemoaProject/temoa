@@ -29,9 +29,15 @@ jobs:
 
       - name: Upgrade dependencies
         run: |
-          uv lock --upgrade
-          uv pip compile pyproject.toml -o requirements.txt
-          uv pip compile pyproject.toml --all-extras --all-groups -o requirements-dev.txt
+            # 1. Solve the environment and upgrade everything
+            uv lock --upgrade
+
+            # 2. Export the lockfile to requirements formats
+            # --no-dev gives you the production stack
+            uv export --no-dev -o requirements.txt
+
+            # --all-extras and --dev (or --all-groups) gives you the full stack
+            uv export --all-extras --dev -o requirements-dev.txt
 
       - name: Install the project
         run: uv sync --all-extras --dev
