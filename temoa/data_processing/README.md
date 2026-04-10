@@ -16,4 +16,3 @@ Python script that queries database output tables to create an Excel file contai
 ```bash
 uv run python temoa/data_processing/db_to_excel.py -i path/to/database.sqlite -s scenario_name
 ```
-

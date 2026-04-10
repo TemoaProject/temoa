@@ -64,9 +64,7 @@ ActiveRegionsForTechDict = dict[tuple[Period, Technology], set[Region]]
 
 
 # Switching/boolean flag dictionary types
-EfficiencyVariableDict = dict[
-    tuple[Region, Commodity, Technology, Vintage, Commodity], bool
-]
+EfficiencyVariableDict = dict[tuple[Region, Commodity, Technology, Vintage, Commodity], bool]
 CapacityFactorProcessDict = dict[tuple[Region, Technology, Vintage], bool]
 SeasonalStorageDict = dict[Technology, bool]
 SurvivalCurveProcessDict = dict[tuple[Region, Technology, Vintage], bool]
