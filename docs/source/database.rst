@@ -106,6 +106,81 @@ recommend that you populate input tables in the following order:
   * limit_tech_output_split
 
 
+---------------------------------------
+Group Region and Technology Constraints
+---------------------------------------
+
+Some constraint tables support summation over groups of regions or technologies. Note that each row in these tables will still only create one constraint, but that constraint will be a summation over the defined group. For example, the ``limit_capacity`` table will limit the total summed capacity of all technologies in the technology group (if used) and over all the regions in the region group (if used). Consider behaviour carefully. For example, the ``limit_annual_capacity_factor`` table will constrain the total summed capacity factor of the group, which would allow for varying capacity factors of processes within that group as long as the limit is met in aggregate.
+
+**Group Regions:**
+
+For the supported tables, the ``region`` column can be populated with either a single region (e.g., ``"east"``), a subset of regions delineated with a ``+`` (e.g., ``"east+west"``), or ``"global"`` to indicate summation over all model regions.
+
+.. important::
+   When grouped or global region constraints are used with exchange technologies,
+   exchange flows are only counted if the relevant exchange-technology keys are
+   explicitly included in the region string used by the constraint row.
+   Exchange-technology keys are directional and use a hyphen to separate the
+   two regions (e.g., ``east-west`` and ``west-east`` are distinct keys).
+
+   For example, to constrain activity across the ``east`` and ``west`` regions
+   including all exchange flows between them, the region string should be:
+
+   .. code-block:: none
+
+      east+east-west+west-east+west
+
+   If exchange keys are omitted (e.g., using only ``east+west``), flows through
+   exchange technologies between those regions will *not* be included in the
+   constrained summation.
+
+Supported tables:
+
+* limit_annual_capacity_factor
+* limit_seasonal_capacity_factor
+* limit_resource
+* limit_activity
+* limit_capacity
+* limit_new_capacity
+* limit_activity_share
+* limit_capacity_share
+* limit_new_capacity_share
+* limit_emission
+* limit_growth_capacity
+* limit_growth_new_capacity
+* limit_growth_new_capacity_delta
+* limit_degrowth_capacity
+* limit_degrowth_new_capacity
+* limit_degrowth_new_capacity_delta
+
+**Technology Groups:**
+
+For the supported tables, the following columns accept either technologies or technology groups, over which the constraint is summed. Technology groups are defined in the ``tech_group`` and ``tech_group_member`` tables.
+
+* tech
+* tech_or_group
+* sub_group
+* super_group
+
+Supported tables:
+
+* limit_annual_capacity_factor
+* limit_seasonal_capacity_factor
+* limit_resource
+* limit_activity
+* limit_capacity
+* limit_new_capacity
+* limit_activity_share
+* limit_capacity_share
+* limit_new_capacity_share
+* limit_growth_capacity
+* limit_growth_new_capacity
+* limit_growth_new_capacity_delta
+* limit_degrowth_capacity
+* limit_degrowth_new_capacity
+* limit_degrowth_new_capacity_delta
+
+
 For help getting started, consider using the ``temoa tutorial``
 command to generate a template project or inspect the example SQL file at
 ``temoa/tutorial_assets/utopia.sql``. To begin building your own database file, use
