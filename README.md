@@ -2,6 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/temoa?label=pypi%20package)](https://pypi.org/project/temoa/)
 [![CI](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml/badge.svg?branch=unstable)](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/TemoaProject/temoa/graph/badge.svg?token=ZAXU1VM8YN)](https://codecov.io/gh/TemoaProject/temoa)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/TemoaProject/temoa/main.svg)](https://results.pre-commit.ci/latest/github/TemoaProject/temoa/main)
 [![Documentation Status](https://readthedocs.org/projects/temoa/badge/?version=latest)](https://temoa.readthedocs.io/en/latest/?badge=latest)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://pyreadiness.org/3.12/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
