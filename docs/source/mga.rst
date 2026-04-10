@@ -5,7 +5,7 @@ Modeling to Generate Alternatives (MGA)
 
 Temoa provides two extensions for Modeling to Generate Alternatives (MGA), an
 algorithm to explore the near-optimal solution space: hull expansion and
-single-vector MGA. Both are described in more detail below. 
+single-vector MGA. Both are described in more detail below.
 
 Hull Expansion
 --------------

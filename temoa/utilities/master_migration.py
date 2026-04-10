@@ -2,7 +2,6 @@ import argparse
 import os
 import re
 import sqlite3
-
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -251,7 +250,8 @@ def _migrate_loan_lifetime(con_old: sqlite3.Connection, con_new: sqlite3.Connect
                 for v in vints:
                     new_data.append((row[0], row[1], v, row[2], row[3]))
             con_new.executemany(
-                'INSERT OR REPLACE INTO loan_lifetime_process (region, tech, vintage, lifetime, notes) VALUES (?,?,?,?,?)',
+                'INSERT OR REPLACE INTO loan_lifetime_process '
+                '(region, tech, vintage, lifetime, notes) VALUES (?,?,?,?,?)',
                 new_data,
             )
             print(f'Migrated {len(new_data)} rows: LoanLifetimeTech -> loan_lifetime_process')
@@ -270,7 +270,8 @@ def _migrate_time_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connectio
         cols = [c[1] for c in get_table_info(con_old, 'TimeSegmentFraction')]
         if 'period' in cols:
             old_data = con_old.execute(
-                'SELECT season, SUM(segfrac) / COUNT(DISTINCT period) FROM TimeSegmentFraction GROUP BY season'
+                'SELECT season, SUM(segfrac) / COUNT(DISTINCT period) '
+                'FROM TimeSegmentFraction GROUP BY season'
             ).fetchall()
         else:
             old_data = con_old.execute(
@@ -332,7 +333,8 @@ def _migrate_time_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connectio
             ).fetchone()[0]
             if first_period:
                 old_data = con_old.execute(
-                    'SELECT seas_seq, season, (num_days / 365.25) FROM TimeSeasonSequential WHERE period = ?',
+                    'SELECT seas_seq, season, (num_days / 365.25) '
+                    'FROM TimeSeasonSequential WHERE period = ?',
                     (first_period,),
                 ).fetchall()
         else:
@@ -362,8 +364,8 @@ def _migrate_capacity_factor(con_old: sqlite3.Connection, con_new: sqlite3.Conne
         if cols:
             if 'period' in cols:
                 old_data = con_old.execute(
-                    'SELECT region, season, tod, tech, vintage, AVG(factor) FROM CapacityFactorProcess '
-                    'GROUP BY region, season, tod, tech, vintage'
+                    'SELECT region, season, tod, tech, vintage, AVG(factor) '
+                    'FROM CapacityFactorProcess GROUP BY region, season, tod, tech, vintage'
                 ).fetchall()
             else:
                 old_data = con_old.execute(
@@ -371,7 +373,8 @@ def _migrate_capacity_factor(con_old: sqlite3.Connection, con_new: sqlite3.Conne
                 ).fetchall()
             if old_data:
                 con_new.executemany(
-                    'INSERT OR REPLACE INTO capacity_factor_process (region, season, tod, tech, vintage, factor) VALUES (?,?,?,?,?,?)',
+                    'INSERT OR REPLACE INTO capacity_factor_process '
+                    '(region, season, tod, tech, vintage, factor) VALUES (?,?,?,?,?,?)',
                     old_data,
                 )
                 print(
@@ -403,9 +406,9 @@ def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Con
 
 def migrate_database(source_path: Path, schema_path: Path, output_path: Path) -> None:
     if not source_path.is_file():
-        raise FileNotFoundError(f"Input database not found: {source_path}")
+        raise FileNotFoundError(f'Input database not found: {source_path}')
     if not schema_path.is_file():
-        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+        raise FileNotFoundError(f'Schema file not found: {schema_path}')
 
     fd, temp_path_str = tempfile.mkstemp(
         suffix='.sqlite', prefix='temp_migration_', dir=output_path.parent
@@ -441,9 +444,9 @@ def migrate_database(source_path: Path, schema_path: Path, output_path: Path) ->
 
 def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) -> None:
     if not source_path.is_file():
-        raise FileNotFoundError(f"Input SQL dump not found: {source_path}")
+        raise FileNotFoundError(f'Input SQL dump not found: {source_path}')
     if not schema_path.is_file():
-        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+        raise FileNotFoundError(f'Schema file not found: {schema_path}')
 
     con_old_in_memory = sqlite3.connect(':memory:')
     with open(source_path, encoding='utf-8') as f:

@@ -75,7 +75,7 @@ Please provide details about your environment. This helps us reproduce the issue
 *   **Operating System:**
 *   **Python Version:**
 *   **Project Version:**
-*   **Relevant Dependencies:** 
+*   **Relevant Dependencies:**
 
 ## Checklist
 

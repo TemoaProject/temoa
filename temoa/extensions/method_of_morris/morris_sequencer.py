@@ -149,8 +149,8 @@ class MorrisSequencer:
         :return:
         """
         # 0.  clear the scenario
-        tw = TableWriter(config=self.config)
-        tw.clear_scenario()
+        with TableWriter(config=self.config) as tw:
+            tw.clear_scenario()
 
         # 1.  Gather param info from the DB and construct the param file, which will be basis of
         # the 'problem'

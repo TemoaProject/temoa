@@ -48,7 +48,9 @@ def _build_test_db(
     if db_file.exists():
         db_file.unlink()
 
-    with sqlite3.connect(db_file) as con:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(db_file)) as con:
         con.execute('PRAGMA foreign_keys = OFF')
         # 1. Load central schema
         con.executescript(SCHEMA_PATH.read_text(encoding='utf-8'))

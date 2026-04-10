@@ -47,11 +47,10 @@ def solved_connection(
     # Step 3: Run the sequencer to completion.
     sequencer.start()
 
-    con = sqlite3.connect(sequencer.config.output_database)
-    try:
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         yield con, param['name'], param['tech'], param['target']
-    finally:
-        con.close()
 
 
 # List of tech archetypes to test and their correct emission value

@@ -43,19 +43,20 @@ def evaluate(param_names: dict[int, list[Any]], param_values: Any,
     status = run_actions.check_solve_status(res)
     if not status:
         raise RuntimeError('Bad solve during Method of Morris')
-    table_writer = TableWriter(config)
-    table_writer.write_results(model=mdl)
+    with TableWriter(config) as table_writer:
+        table_writer.write_results(model=mdl)
 
-    con = sqlite3.connect(db_file)
-    cur = con.cursor()
-    cur.execute('SELECT * FROM output_objective')
-    output_query = cur.fetchall()
-    for row in output_query:
-        y_of = row[-1]
-    cur.execute("SELECT emis_comm, SUM(emission) FROM output_emission WHERE emis_comm='co2'")
-    output_query = cur.fetchall()
-    for row in output_query:
-        y_cumulative_co2 = row[-1]
+    import contextlib
+    with contextlib.closing(sqlite3.connect(db_file)) as con:
+        cur = con.cursor()
+        cur.execute('SELECT * FROM output_objective')
+        output_query = cur.fetchall()
+        for row in output_query:
+            y_of = row[-1]
+        cur.execute("SELECT emis_comm, SUM(emission) FROM output_emission WHERE emis_comm='co2'")
+        output_query = cur.fetchall()
+        for row in output_query:
+            y_cumulative_co2 = row[-1]
     morris_objectives = []
     morris_objectives.append(y_of)
     morris_objectives.append(y_cumulative_co2)
@@ -77,7 +78,8 @@ if not db_file.exists() or not config_path.exists():
         "or provide the required 'morris_utopia.sqlite' and 'morris_utopia.toml'."
     )
 
-with sqlite3.connect(str(db_file)) as con:
+import contextlib
+with contextlib.closing(sqlite3.connect(str(db_file))) as con:
     with open(param_file, 'w') as file:
         param_names = {}
         cur = con.cursor()

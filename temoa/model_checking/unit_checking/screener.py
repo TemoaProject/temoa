@@ -258,7 +258,9 @@ def screen(*db_paths: Path, report_dir: Path | None = None) -> bool:
         report_entries.append(initialization_msg)
         logger.info('Starting Units Check on DB: %s', db_path)
 
-        with sqlite3.connect(db_path) as conn:
+        import contextlib
+
+        with contextlib.closing(sqlite3.connect(db_path)) as conn:
             # test 1: DB version
             db_version_ok, _major_version, _minor_version = _check_db_version(conn, report_entries)
             if not db_version_ok:
