@@ -1,0 +1,33 @@
+# Test: texas electricity only
+scenario = "tx_test"
+scenario_mode = "perfect_foresight"
+input_database = "data/texasp_base.sqlite"
+output_database = "data/texasp_base.sqlite"
+
+neos = false
+solver_name = "gurobi"
+price_check = false
+source_trace = false
+plot_commodity_network = false
+check_units = false
+save_excel = false
+save_duals = true
+save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+reserve_margin = "static"
+
+output_threshold_cost = 10.0
+output_threshold_emission = 10.0
+output_threshold_activity = 10.0
+output_threshold_capacity = 10.0
+
+[sqlite]
+journal_mode = 'WAL'
+synchronous = 'NORMAL'
+mmap_size = 8589934592
+cache_size = -512000
+
+[myopic]
+view_depth = 1
+step_size = 1
+capacity_threshold = 10
