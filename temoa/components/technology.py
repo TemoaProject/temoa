@@ -430,8 +430,7 @@ def check_existing_capacity(model: TemoaModel) -> None:
         if (r, t, v) not in model.process_periods and v + life > model.time_optimize.first():
             msg = (
                 f'Existing capacity {r, t, v} with lifetime {life} and capacity {cap} '
-                'should extend into future periods but it is not in process periods. '
+                'should extend into future periods but it is not a valid process. '
                 'Was it included in the Efficiency table?'
             )
-            logger.error(msg)
-            raise ValueError(msg)
+            logger.warning(msg)
