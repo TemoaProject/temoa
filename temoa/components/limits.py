@@ -941,7 +941,7 @@ def limit_emission_constraint(
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated
         msg = "Warning: No technology produces emission '%s', though limit was specified as %s.\n"
-        logger.warning(msg, (e, emission_limit))
+        logger.warning(msg % (e, emission_limit))
         sys.stderr.write(msg % (e, emission_limit))
         return Constraint.Skip
 
