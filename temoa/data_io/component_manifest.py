@@ -289,6 +289,14 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
+            component=model.retired_existing_capacity,
+            table='output_retired_capacity',
+            columns=['region', 'period', 'tech', 'vintage', 'cap_early'],
+            custom_loader_name='_load_retired_existing_capacity',
+            is_period_filtered=False,  # Custom loader handles all logic
+            is_table_required=False,
+        ),
+        LoadItem(
             component=model.cost_invest,
             table='cost_invest',
             columns=['region', 'tech', 'vintage', 'cost'],
