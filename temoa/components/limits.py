@@ -20,7 +20,12 @@ from pyomo.environ import Constraint, quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
-from temoa.components.utils import Operator, get_variable_efficiency, operator_expression
+from temoa.components.utils import (
+    Operator,
+    get_adjusted_existing_capacity,
+    get_variable_efficiency,
+    operator_expression,
+)
 
 if TYPE_CHECKING:
     from pyomo.core import Expression
@@ -1046,7 +1051,7 @@ def limit_growth_capacity(
         # Adjust in-line for past PLF because we are constraining available capacity
         p_prev = model.time_exist.last()
         capacity_prev = sum(
-            value(model.existing_capacity[_r, _t, _v])
+            get_adjusted_existing_capacity(model, _r, _t, _v)
             * min(1.0, (_v + value(model.lifetime_process[_r, _t, _v]) - p_prev) / (p - p_prev))
             for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions

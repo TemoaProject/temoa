@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import value
 
+from temoa.components.utils import get_adjusted_existing_capacity
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -426,12 +428,15 @@ def check_existing_capacity(model: TemoaModel) -> None:
             continue
         if t not in model.tech_all:
             continue
+        if get_adjusted_existing_capacity(model, r, t, v) <= 0:
+            # It was just retired earlier
+            continue
         life = value(model.lifetime_process[r, t, v])
         if (r, t, v) not in model.process_periods and v + life > model.time_optimize.first():
             msg = (
                 f'Existing capacity {r, t, v} with lifetime {life} and capacity {cap} '
                 'should extend into future periods but it is not in process periods. '
-                'Was it included in the Efficiency table?'
+                'May be missing from Efficiency table or too small to carry forward '
+                'if running in myopic mode.'
             )
-            logger.error(msg)
-            raise ValueError(msg)
+            logger.warning(msg)
