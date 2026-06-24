@@ -383,6 +383,10 @@ class TemoaModel(AbstractModel):
         self.capacity_to_activity = Param(self.regional_indices, self.tech_all, default=1)
 
         self.existing_capacity = Param(self.regional_indices, self.tech_exist, self.vintage_exist)
+        # This is needed to handle past retirements in myopic mode. Maybe it will find other uses.
+        self.retired_existing_capacity = Param(
+            self.regional_indices, self.time_exist, self.tech_exist, self.vintage_exist, default=0
+        )
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find
         # set violations
