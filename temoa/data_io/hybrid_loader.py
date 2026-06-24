@@ -630,6 +630,37 @@ class HybridLoader:
             tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
 
+    def _load_retired_existing_capacity(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """
+        Handles different queries for myopic vs. standard runs and also
+        populates the `tech_exist` set.
+        """
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if not mi:
+            # for now, we only use this in myopic mode
+            return
+
+        rows_to_load = []
+        prev_period_res = cur.execute(
+            'SELECT MAX(period) FROM time_period WHERE period < ?', (mi.base_year,)
+        ).fetchone()
+        prev_period = prev_period_res[0] if prev_period_res else -1
+        rows_to_load = cur.execute(
+            'SELECT region, period, tech, vintage, cap_early FROM output_retired_capacity WHERE '
+            'period <= ? AND scenario = ? AND cap_early > 0 ',
+            (prev_period, self.config.scenario),
+        ).fetchall()
+
+        self._load_component_data(data, model.retired_existing_capacity, rows_to_load)
+
     # --- Singleton and Configuration-based Components ---
     def _load_global_discount_rate(
         self,
