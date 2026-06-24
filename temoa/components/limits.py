@@ -1048,11 +1048,10 @@ def limit_growth_capacity(
 
     if p == model.time_optimize.first():
         # First future period. Grab available capacity in last existing period
-        # Adjust in-line for past PLF because we are constraining available capacity
         p_prev = model.time_exist.last()
         capacity_prev = sum(
             get_adjusted_existing_capacity(model, _r, _t, _v)
-            * min(1.0, (_v + value(model.lifetime_process[_r, _t, _v]) - p_prev) / (p - p_prev))
+            * value(model.process_life_frac[_r, p_prev, _t, _v])
             for _r, _t, _v in model.existing_capacity.sparse_keys()
             if _r in regions
             and _t in techs
