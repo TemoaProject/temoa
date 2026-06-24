@@ -445,7 +445,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             component=model.lifetime_survival_curve,
             table='lifetime_survival_curve',
             columns=['region', 'period', 'tech', 'vintage', 'fraction'],
-            validator_name='viable_rtv',
             validation_map=(0, 2, 3),
             is_period_filtered=False,
             is_table_required=False,
