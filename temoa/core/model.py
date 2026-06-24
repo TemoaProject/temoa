@@ -335,7 +335,9 @@ class TemoaModel(AbstractModel):
         # Define time-related parameters
         # Basic period construction
         self.time_sequencing = Set()  # How do states carry between time segments?
-        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
+        self.period_length = Param(
+            self.time_optimize | self.time_exist, initialize=time.param_period_length
+        )
         self.days_per_period = Param(domain=PositiveReals, default=365.0)
         self.time_of_day_hours = Param(self.time_of_day, domain=PositiveReals, default=1.0)
         self.segment_fraction_per_season = Param(self.time_season)

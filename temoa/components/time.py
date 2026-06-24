@@ -196,6 +196,11 @@ def init_set_vintage_optimize(model: TemoaModel) -> list[int]:
 
 def param_period_length(model: TemoaModel, p: Period) -> int:
     """Rule to calculate the length of each optimization period in years."""
+    if model.time_exist and p == model.time_exist.last():
+        # Need this for one specific use case (capacity growth constraints)
+        return model.time_future.first() - model.time_exist.last()
+    elif p in model.time_exist:
+        return -1  # Period length is not defined for existing periods except the last
     periods: list[int] = sorted(model.time_future)
     i: int = periods.index(p)
     return periods[i + 1] - periods[i]
