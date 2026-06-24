@@ -87,3 +87,20 @@ def get_capacity_factor(
     if model.is_capacity_factor_process[r, t, v]:
         return value(model.capacity_factor_process[r, s, d, t, v])
     return value(model.capacity_factor_tech[r, s, d, t])
+
+
+def get_adjusted_existing_capacity(
+    model: TemoaModel, r: Region, t: Technology, v: Vintage
+) -> float:
+    """
+    Returns the built existing capacity adjusted for any early retirements.
+
+    Needed for early retirements in myopic mode. Takes into account survival curves
+    and any early retirements that may have occurred prior to this planning step.
+    """
+    capacity_adjustment = sum(
+        value(model.retired_existing_capacity[r, _p, t, v])
+        / (value(model.lifetime_survival_curve[r, _p, t, v]) or 1)
+        for _p in model.time_exist
+    )
+    return value(model.existing_capacity[r, t, v]) - capacity_adjustment
