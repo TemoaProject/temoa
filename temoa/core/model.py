@@ -212,9 +212,9 @@ class TemoaModel(AbstractModel):
             ordered=True, initialize=time.init_set_time_optimize, within=self.time_future
         )
         # Define time period vintages to track capacity installation
-        self.vintage_exist = Set(ordered=True, initialize=time.init_set_vintage_exist)
+        self.vintage_exist = Set(ordered=True)
         self.vintage_optimize = Set(ordered=True, initialize=time.init_set_vintage_optimize)
-        self.vintage_all = Set(initialize=self.time_exist | self.time_optimize)
+        self.vintage_all = Set(initialize=self.vintage_exist | self.time_optimize)
         # Perform some basic validation on the specified time periods.
         self.validate_time = BuildAction(rule=time.validate_time)
 
@@ -437,9 +437,8 @@ class TemoaModel(AbstractModel):
             default=1,
         )
 
-        self.lifetime_tech = Param(
-            self.regional_indices, self.tech_all, default=TemoaModel.default_lifetime_tech
-        )
+        self.lifetime_tech_rt = Set(dimen=2, initialize=technology.lifetime_tech_indices)
+        self.lifetime_tech = Param(self.lifetime_tech_rt, default=TemoaModel.default_lifetime_tech)
 
         self.lifetime_process_rtv = Set(dimen=3, initialize=technology.lifetime_process_indices)
         self.lifetime_process = Param(
@@ -449,7 +448,7 @@ class TemoaModel(AbstractModel):
         self.lifetime_survival_curve = Param(
             self.regional_indices,
             Integers,
-            self.tech_all,
+            self.tech_all | self.tech_exist,
             self.vintage_all,
             default=technology.get_default_survival,
             validate=validate_0to1,
