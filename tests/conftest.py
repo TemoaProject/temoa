@@ -88,6 +88,7 @@ def refresh_databases() -> None:
         ('mediumville.sql', 'mediumville.sqlite'),
         ('seasonal_storage.sql', 'seasonal_storage.sqlite'),
         ('survival_curve.sql', 'survival_curve.sqlite'),
+        ('myopic_capacities.sql', 'myopic_capacities.sqlite'),
         ('annualised_demand.sql', 'annualised_demand.sqlite'),
         # Feature tests (separate for temporal consistency)
         ('emissions.sql', 'emissions.sqlite'),
@@ -206,6 +207,11 @@ def system_test_run(
         output_path=tmp_path,
         silent=True,
     )
+
+    # Allow parametrized tests to override myopic settings per case.
+    myopic_overrides = request.param.get('myopic')
+    if myopic_overrides is not None:
+        config.myopic_inputs = {**(config.myopic_inputs or {}), **myopic_overrides}
 
     sequencer = TemoaSequencer(config=config)
 
