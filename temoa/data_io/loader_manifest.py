@@ -50,6 +50,7 @@ class LoadItem:
     component: ComponentType
     table: str
     columns: list[str]
+    index_length: int | None = None
     validator_name: str | None = None
     validation_map: tuple[int, ...] = field(default_factory=tuple)
     where_clause: str | None = None
