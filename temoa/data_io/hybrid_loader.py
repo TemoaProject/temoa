@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 
     from temoa.core.config import TemoaConfig
     from temoa.data_io.loader_manifest import LoadItem
+    from temoa.types.core_types import Region, Technology, Vintage
 
 logger = getLogger(__name__)
 
@@ -99,7 +100,8 @@ class HybridLoader:
         self.manager: CommodityNetworkManager | None = None
         self.efficiency_values: list[tuple[object, ...]] = []
         self.data: dict[str, object] | None = None
-        self.tech_exist_data: set[str] = set()
+        self.viable_existing_rt: set[tuple[Region, Technology]] = set()
+        self.viable_existing_rtv: set[tuple[Region, Technology, Vintage]] = set()
 
         # --- Viable sets for source-trace filtering ---
         self.viable_techs: ViableSet | None = None
@@ -635,9 +637,13 @@ class HybridLoader:
         if rows_to_load:
             tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
-            self.tech_exist_data = {row[1] for row in rows_to_load}
             vintage_exist_data = sorted({(row[2],) for row in rows_to_load})
             self._load_component_data(data, model.vintage_exist, vintage_exist_data)
+
+            # Collect existing capacity data indices
+            self.viable_existing_techs = {row[1] for row in rows_to_load}
+            self.viable_existing_rt = {(row[0], row[1]) for row in rows_to_load}
+            self.viable_existing_rtv = {(row[0], row[1], row[2]) for row in rows_to_load}
 
     def _load_retired_existing_capacity(
         self,
@@ -680,10 +686,10 @@ class HybridLoader:
         model = TemoaModel()
         cur = self.con.cursor()
         rows_to_load = cur.execute('SELECT region, tech, lifetime FROM lifetime_tech').fetchall()
-        tech_getter = itemgetter(1)
-        if self.viable_techs:
-            valid_techs = self.viable_techs.members | self.tech_exist_data
-            rows_to_load = [item for item in rows_to_load if tech_getter(item) in valid_techs]
+        rt_getter = itemgetter(0, 1)
+        if self.viable_rt:
+            valid_rt = self.viable_rt.members | self.viable_existing_rt
+            rows_to_load = [item for item in rows_to_load if rt_getter(item) in valid_rt]
         self._load_component_data(data, model.lifetime_tech, rows_to_load)
 
     def _load_lifetime_process(
@@ -706,6 +712,10 @@ class HybridLoader:
             rows_to_load = cur.execute(
                 'SELECT region, tech, vintage, lifetime FROM lifetime_process'
             ).fetchall()
+        rtv_getter = itemgetter(0, 1, 2)
+        if self.viable_rtv:
+            valid_rtv = self.viable_rtv.member_tuples | self.viable_existing_rtv
+            rows_to_load = [item for item in rows_to_load if rtv_getter(item) in valid_rtv]
         self._load_component_data(data, model.lifetime_process, rows_to_load)
 
     def _load_lifetime_survival_curve(
@@ -729,6 +739,10 @@ class HybridLoader:
             rows_to_load = cur.execute(
                 'SELECT region, period, tech, vintage, fraction FROM lifetime_survival_curve'
             ).fetchall()
+        rtv_getter = itemgetter(0, 2, 3)
+        if self.viable_rtv:
+            valid_rtv = self.viable_rtv.member_tuples | self.viable_existing_rtv
+            rows_to_load = [item for item in rows_to_load if rtv_getter(item) in valid_rtv]
         self._load_component_data(data, model.lifetime_survival_curve, rows_to_load)
 
     # --- Singleton and Configuration-based Components ---
