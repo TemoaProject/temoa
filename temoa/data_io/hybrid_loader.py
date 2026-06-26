@@ -24,6 +24,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from logging import getLogger
+from operator import itemgetter
 from sqlite3 import Connection, Cursor, OperationalError
 from typing import TYPE_CHECKING, cast
 
@@ -98,6 +99,7 @@ class HybridLoader:
         self.manager: CommodityNetworkManager | None = None
         self.efficiency_values: list[tuple[object, ...]] = []
         self.data: dict[str, object] | None = None
+        self.tech_exist_data: set[str] = set()
 
         # --- Viable sets for source-trace filtering ---
         self.viable_techs: ViableSet | None = None
@@ -629,6 +631,9 @@ class HybridLoader:
         if rows_to_load:
             tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
+            self.tech_exist_data = {row[1] for row in rows_to_load}
+            vintage_exist_data = sorted({(row[2],) for row in rows_to_load})
+            self._load_component_data(data, model.vintage_exist, vintage_exist_data)
 
     def _load_retired_existing_capacity(
         self,
@@ -637,8 +642,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """
-        Handles different queries for myopic vs. standard runs and also
-        populates the `tech_exist` set.
+        Only needed in myopic to bring past early retirement decisions forward
         """
         model = TemoaModel()
         cur = self.con.cursor()
@@ -660,6 +664,68 @@ class HybridLoader:
         ).fetchall()
 
         self._load_component_data(data, model.retired_existing_capacity, rows_to_load)
+
+    # --- Lifetime components ---
+    def _load_lifetime_tech(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_tech component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        rows_to_load = cur.execute('SELECT region, tech, lifetime FROM lifetime_tech').fetchall()
+        tech_getter = itemgetter(1)
+        if self.viable_techs:
+            valid_techs = self.viable_techs.members | self.tech_exist_data
+            rows_to_load = [item for item in rows_to_load if tech_getter(item) in valid_techs]
+        self._load_component_data(data, model.lifetime_tech, rows_to_load)
+
+    def _load_lifetime_process(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_process component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if mi:
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, lifetime FROM lifetime_process WHERE vintage <= ?',
+                (mi.last_demand_year,),
+            ).fetchall()
+        else:
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, lifetime FROM lifetime_process'
+            ).fetchall()
+        self._load_component_data(data, model.lifetime_process, rows_to_load)
+
+    def _load_lifetime_survival_curve(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_survival_curve component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if mi:
+            rows_to_load = cur.execute(
+                'SELECT region, period, tech, vintage, fraction FROM lifetime_survival_curve '
+                'WHERE vintage <= ?',
+                (mi.last_demand_year,),
+            ).fetchall()
+        else:
+            rows_to_load = cur.execute(
+                'SELECT region, period, tech, vintage, fraction FROM lifetime_survival_curve'
+            ).fetchall()
+        self._load_component_data(data, model.lifetime_survival_curve, rows_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_global_discount_rate(
