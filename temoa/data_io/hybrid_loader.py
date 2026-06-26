@@ -233,6 +233,10 @@ class HybridLoader:
         for item in self.manifest:
             # 1. Fetch data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
+            if item.index_length:
+                raw_data = [
+                    (*row[0 : item.index_length], row[item.index_length :]) for row in raw_data
+                ]
 
             # 2. Validate/filter data
             filtered_data = self._filter_data(raw_data, item, use_raw_data)
