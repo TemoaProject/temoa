@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
+    Any,
     BuildAction,
     Constraint,
     Integers,
@@ -626,22 +627,22 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_growth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_growth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_growth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
 
         self.limit_emission_constraint_rpe = Set(
