@@ -184,11 +184,6 @@ def init_set_time_optimize(model: TemoaModel) -> list[int]:
     return sorted(model.time_future)[:-1]
 
 
-def init_set_vintage_exist(model: TemoaModel) -> list[int]:
-    """Initializes the `vintage_exist` set."""
-    return sorted(model.time_exist)
-
-
 def init_set_vintage_optimize(model: TemoaModel) -> list[int]:
     """Initializes the `vintage_optimize` set."""
     return sorted(model.time_optimize)
