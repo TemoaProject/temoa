@@ -5,7 +5,7 @@ Test a couple full-runs to match objective function value and some internals
 import logging
 import sqlite3
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import pytest
 from pyomo.core import Constraint, Var
@@ -36,7 +36,20 @@ myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml
 mc_files = [{'name': 'utopia mc', 'filename': 'config_utopia_mc.toml'}]
 stochastic_files = [{'name': 'stochastic utopia', 'filename': 'config_utopia_stochastic.toml'}]
 
-myopic_stress_tests = [
+
+class MyopicSettings(TypedDict):
+    view_depth: int
+    step_size: int
+    evolving: bool
+
+
+class MyopicStressCase(TypedDict):
+    name: str
+    filename: str
+    myopic: MyopicSettings
+
+
+myopic_stress_tests: list[MyopicStressCase] = [
     {
         'name': (
             f'myopic capacities | {"evolving" if evolving else "non-evolving"}'
