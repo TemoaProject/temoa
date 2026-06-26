@@ -654,6 +654,13 @@ class HybridLoader:
         """
         Only needed in myopic to bring past early retirement decisions forward
         """
+        if not self.table_exists('output_retired_capacity'):
+            logger.info(
+                "Table 'output_retired_capacity' not found. Skipping loading "
+                'of retired existing capacity.'
+            )
+            return
+
         model = TemoaModel()
         cur = self.con.cursor()
         mi = self.myopic_index
