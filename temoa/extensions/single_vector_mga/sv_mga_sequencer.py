@@ -79,6 +79,7 @@ class SvMgaSequencer:
             silent=self.config.silent,
             keep_lp_file=self.config.save_lp_file,
             lp_path=lp_path,
+            extensions=self.config.extensions,
         )
         if self.config.price_check:
             good_prices = price_checker(instance)
