@@ -16,11 +16,14 @@ To add a new standard component to the model, a developer typically only needs
 to add a new `LoadItem` to this manifest.
 """
 
+from collections.abc import Sequence
+
 from temoa.core.model import TemoaModel
 from temoa.data_io.loader_manifest import LoadItem
+from temoa.extensions.framework import append_extension_manifest_items, resolve_extension_specs
 
 
-def build_manifest(model: TemoaModel) -> list[LoadItem]:
+def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None) -> list[LoadItem]:
     """
     Builds the manifest of all data components to be loaded into the Pyomo model.
 
@@ -794,4 +797,5 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
     ]
-    return manifest
+    extension_specs = resolve_extension_specs(extension_ids)
+    return append_extension_manifest_items(model, manifest, extension_specs)
