@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 """
 
 import logging
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from pyomo.core import BuildCheck, Set, Var
@@ -39,6 +40,7 @@ from temoa.components import (
     technology,
     time,
 )
+from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
@@ -100,8 +102,15 @@ class TemoaModel(AbstractModel):
     # this is used in several places outside this class, and this provides no-build access to it
     default_lifetime_tech = 40
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(
+        self,
+        *args: object,
+        extensions: Sequence[str] | None = None,
+        **kwargs: object,
+    ) -> None:
         AbstractModel.__init__(self, *args, **kwargs)
+        self.enabled_extensions = tuple(extensions or ())
+        self.extension_specs = resolve_extension_specs(self.enabled_extensions)
 
         ################################################
         #       Internally used Data Containers        #
@@ -1149,6 +1158,8 @@ class TemoaModel(AbstractModel):
             self.linked_emissions_tech_constraint_rpsdtve,
             rule=emissions.linked_emissions_tech_constraint,
         )
+
+        apply_model_extension_hooks(self, self.extension_specs)
 
         self.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)
 
