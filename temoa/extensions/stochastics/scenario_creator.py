@@ -96,7 +96,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
 
     # 3. Build instance
     data_portal = HybridLoader.data_portal_from_data(data_dict)
-    instance = build_instance(data_portal, silent=True)
+    instance = build_instance(data_portal, silent=True, extensions=temoa_config.extensions)
 
     # 4. Attach root node (Stage 1)
     periods = sorted(instance.time_optimize)

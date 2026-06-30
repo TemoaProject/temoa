@@ -16,11 +16,14 @@ To add a new standard component to the model, a developer typically only needs
 to add a new `LoadItem` to this manifest.
 """
 
+from collections.abc import Sequence
+
 from temoa.core.model import TemoaModel
 from temoa.data_io.loader_manifest import LoadItem
+from temoa.extensions.framework import append_extension_manifest_items, resolve_extension_specs
 
 
-def build_manifest(model: TemoaModel) -> list[LoadItem]:
+def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None) -> list[LoadItem]:
     """
     Builds the manifest of all data components to be loaded into the Pyomo model.
 
@@ -289,6 +292,14 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
+            component=model.retired_existing_capacity,
+            table='output_retired_capacity',
+            columns=['region', 'period', 'tech', 'vintage', 'cap_early'],
+            custom_loader_name='_load_retired_existing_capacity',
+            is_period_filtered=False,  # Custom loader handles all logic
+            is_table_required=False,
+        ),
+        LoadItem(
             component=model.cost_invest,
             table='cost_invest',
             columns=['region', 'tech', 'vintage', 'cost'],
@@ -419,8 +430,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             component=model.lifetime_tech,
             table='lifetime_tech',
             columns=['region', 'tech', 'lifetime'],
-            validator_name='viable_rt',
-            validation_map=(0, 1),
+            custom_loader_name='_load_lifetime_tech',
             is_period_filtered=False,
             is_table_required=False,
         ),
@@ -428,8 +438,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             component=model.lifetime_process,
             table='lifetime_process',
             columns=['region', 'tech', 'vintage', 'lifetime'],
-            validator_name='viable_rtv',
-            validation_map=(0, 1, 2),
+            custom_loader_name='_load_lifetime_process',
             is_period_filtered=False,
             is_table_required=False,
         ),
@@ -437,8 +446,7 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             component=model.lifetime_survival_curve,
             table='lifetime_survival_curve',
             columns=['region', 'period', 'tech', 'vintage', 'fraction'],
-            validator_name='viable_rtv',
-            validation_map=(0, 2, 3),
+            custom_loader_name='_load_lifetime_survival_curve',
             is_period_filtered=False,
             is_table_required=False,
         ),
@@ -729,4 +737,5 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
     ]
-    return manifest
+    extension_specs = resolve_extension_specs(extension_ids)
+    return append_extension_manifest_items(model, manifest, extension_specs)

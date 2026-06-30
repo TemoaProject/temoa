@@ -5,7 +5,7 @@ Test a couple full-runs to match objective function value and some internals
 import logging
 import sqlite3
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import pytest
 from pyomo.core import Constraint, Var
@@ -35,6 +35,37 @@ legacy_config_files = [
 myopic_files = [{'name': 'myopic utopia', 'filename': 'config_utopia_myopic.toml'}]
 mc_files = [{'name': 'utopia mc', 'filename': 'config_utopia_mc.toml'}]
 stochastic_files = [{'name': 'stochastic utopia', 'filename': 'config_utopia_stochastic.toml'}]
+
+
+class MyopicSettings(TypedDict):
+    view_depth: int
+    step_size: int
+    evolving: bool
+
+
+class MyopicStressCase(TypedDict):
+    name: str
+    filename: str
+    myopic: MyopicSettings
+
+
+myopic_stress_tests: list[MyopicStressCase] = [
+    {
+        'name': (
+            f'myopic capacities | {"evolving" if evolving else "non-evolving"}'
+            f' | view={view_depth} step={step_size}'
+        ),
+        'filename': 'config_myopic_capacities.toml',
+        'myopic': {
+            'view_depth': view_depth,
+            'step_size': step_size,
+            'evolving': evolving,
+        },
+    }
+    for evolving in (False, True)
+    for view_depth in [1, 3, 6]
+    for step_size in range(1, view_depth + 1, 2)
+]
 
 
 @pytest.mark.parametrize(
@@ -126,6 +157,33 @@ def test_myopic_utopia(
         # decreased by 41 after activating CF constraints for storage techs
         assert invest_sum == pytest.approx(10963.1018), (
             'sum of investment costs did not match expected'
+        )
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=myopic_stress_tests,
+    indirect=True,
+    ids=[d['name'] for d in myopic_stress_tests],
+)
+def test_myopic_stress_tests(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
+    """
+    The idea of these is that they should be tightly constrained so that if anything
+    is wrong the model will fail to find a feasible solution. Use lots of equality constraints
+    """
+    _, _, _, sequencer = system_test_run
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
+        cur = con.cursor()
+        res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
+        obj = res[0]
+        # This part is just a very rough check on the objective function. Constraints inside the
+        # model are extremely tight so any other changes will lead to infeasibility
+        assert obj == pytest.approx(32, abs=1), (
+            'objective function value did not match expected for myopic stress test'
         )
 
 
