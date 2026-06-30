@@ -24,6 +24,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from logging import getLogger
+from operator import itemgetter
 from sqlite3 import Connection, Cursor, OperationalError
 from typing import TYPE_CHECKING, cast
 
@@ -33,6 +34,12 @@ from pyomo.dataportal import DataPortal
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
 from temoa.data_io.component_manifest import build_manifest
+from temoa.extensions.framework import (
+    assert_disabled_extension_tables_are_empty,
+    ensure_enabled_extension_tables_exist,
+    merge_regional_group_tables,
+    resolve_extension_specs,
+)
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
@@ -43,11 +50,12 @@ if TYPE_CHECKING:
 
     from temoa.core.config import TemoaConfig
     from temoa.data_io.loader_manifest import LoadItem
+    from temoa.types.core_types import Region, Technology, Vintage
 
 logger = getLogger(__name__)
 
 # A manifest of tables that may contain region groups, used by a custom loader.
-tables_with_regional_groups = {
+BASE_REGIONAL_GROUP_TABLES = {
     'limit_annual_capacity_factor': 'region',
     'limit_emission': 'region',
     'limit_seasonal_capacity_factor': 'region',
@@ -58,12 +66,6 @@ tables_with_regional_groups = {
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
-    'limit_growth_capacity': 'region',
-    'limit_degrowth_capacity': 'region',
-    'limit_growth_new_capacity': 'region',
-    'limit_degrowth_new_capacity': 'region',
-    'limit_growth_new_capacity_delta': 'region',
-    'limit_degrowth_new_capacity_delta': 'region',
 }
 
 
@@ -88,16 +90,29 @@ class HybridLoader:
         self.con = db_connection
         self.config = config
         self.myopic_index: MyopicIndex | None = None
+        self.extension_specs = resolve_extension_specs(self.config.extensions)
+        self.model = TemoaModel(extensions=self.config.extensions)
+        self.tables_with_regional_groups = merge_regional_group_tables(
+            BASE_REGIONAL_GROUP_TABLES, self.extension_specs
+        )
+        ensure_enabled_extension_tables_exist(
+            self.con,
+            self.extension_specs,
+            input_database=str(self.config.input_database),
+            silent=self.config.silent,
+        )
+        assert_disabled_extension_tables_are_empty(self.con, self.extension_specs)
 
         # Build the data loading manifest and a name-based map for quick lookup
-        model = TemoaModel()
-        self.manifest = build_manifest(model)
+        self.manifest = build_manifest(self.model, extension_ids=self.config.extensions)
         self.manifest_map = {item.component.name: item for item in self.manifest}
 
         # --- Data containers and filters populated during loading ---
         self.manager: CommodityNetworkManager | None = None
         self.efficiency_values: list[tuple[object, ...]] = []
         self.data: dict[str, object] | None = None
+        self.viable_existing_rt: set[tuple[Region, Technology]] = set()
+        self.viable_existing_rtv: set[tuple[Region, Technology, Vintage]] = set()
 
         # --- Viable sets for source-trace filtering ---
         self.viable_techs: ViableSet | None = None
@@ -201,7 +216,7 @@ class HybridLoader:
 
         data: dict[str, object] = {}
         cur = self.con.cursor()
-        model = TemoaModel()
+        model = self.model
 
         # Load critical time sets first, as they index other components
         if myopic_index:
@@ -231,6 +246,10 @@ class HybridLoader:
         for item in self.manifest:
             # 1. Fetch data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
+            if item.index_length:
+                raw_data = [
+                    (*row[0 : item.index_length], row[item.index_length :]) for row in raw_data
+                ]
 
             # 2. Validate/filter data
             filtered_data = self._filter_data(raw_data, item, use_raw_data)
@@ -517,7 +536,7 @@ class HybridLoader:
         """
         Aggregates region and group names from the Region table and all Limit tables.
         """
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         regions_and_groups: set[str] = set()
 
@@ -526,7 +545,7 @@ class HybridLoader:
                 t[0] for t in cur.execute('SELECT region FROM main.region').fetchall()
             )
 
-        for table, field_name in tables_with_regional_groups.items():
+        for table, field_name in self.tables_with_regional_groups.items():
             if self.table_exists(table):
                 regions_and_groups.update(
                     t[0] for t in cur.execute(f'SELECT {field_name} FROM main.{table}').fetchall()
@@ -629,6 +648,120 @@ class HybridLoader:
         if rows_to_load:
             tech_exist_data = sorted({(row[1],) for row in rows_to_load})
             self._load_component_data(data, model.tech_exist, tech_exist_data)
+            vintage_exist_data = sorted({(row[2],) for row in rows_to_load})
+            self._load_component_data(data, model.vintage_exist, vintage_exist_data)
+
+            # Collect existing capacity data indices
+            self.viable_existing_techs = {row[1] for row in rows_to_load}
+            self.viable_existing_rt = {(row[0], row[1]) for row in rows_to_load}
+            self.viable_existing_rtv = {(row[0], row[1], row[2]) for row in rows_to_load}
+
+    def _load_retired_existing_capacity(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """
+        Only needed in myopic to bring past early retirement decisions forward
+        """
+        if not self.table_exists('output_retired_capacity'):
+            logger.info(
+                "Table 'output_retired_capacity' not found. Skipping loading "
+                'of retired existing capacity.'
+            )
+            return
+
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if not mi:
+            # for now, we only use this in myopic mode
+            return
+
+        rows_to_load = []
+        prev_period_res = cur.execute(
+            'SELECT MAX(period) FROM time_period WHERE period < ?', (mi.base_year,)
+        ).fetchone()
+        prev_period = prev_period_res[0] if prev_period_res else -1
+        rows_to_load = cur.execute(
+            'SELECT region, period, tech, vintage, cap_early FROM output_retired_capacity WHERE '
+            'period <= ? AND scenario = ? AND cap_early > 0 ',
+            (prev_period, self.config.scenario),
+        ).fetchall()
+
+        self._load_component_data(data, model.retired_existing_capacity, rows_to_load)
+
+    # --- Lifetime components ---
+    def _load_lifetime_tech(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_tech component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        rows_to_load = cur.execute('SELECT region, tech, lifetime FROM lifetime_tech').fetchall()
+        rt_getter = itemgetter(0, 1)
+        if self.viable_rt:
+            valid_rt = self.viable_rt.members | self.viable_existing_rt
+            rows_to_load = [item for item in rows_to_load if rt_getter(item) in valid_rt]
+        self._load_component_data(data, model.lifetime_tech, rows_to_load)
+
+    def _load_lifetime_process(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_process component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if mi:
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, lifetime FROM lifetime_process WHERE vintage <= ?',
+                (mi.last_demand_year,),
+            ).fetchall()
+        else:
+            rows_to_load = cur.execute(
+                'SELECT region, tech, vintage, lifetime FROM lifetime_process'
+            ).fetchall()
+        rtv_getter = itemgetter(0, 1, 2)
+        if self.viable_rtv:
+            valid_rtv = self.viable_rtv.member_tuples | self.viable_existing_rtv
+            rows_to_load = [item for item in rows_to_load if rtv_getter(item) in valid_rtv]
+        self._load_component_data(data, model.lifetime_process, rows_to_load)
+
+    def _load_lifetime_survival_curve(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Loads the lifetime_survival_curve component."""
+        model = TemoaModel()
+        cur = self.con.cursor()
+        mi = self.myopic_index
+
+        if mi:
+            rows_to_load = cur.execute(
+                'SELECT region, period, tech, vintage, fraction FROM lifetime_survival_curve '
+                'WHERE vintage <= ?',
+                (mi.last_demand_year,),
+            ).fetchall()
+        else:
+            rows_to_load = cur.execute(
+                'SELECT region, period, tech, vintage, fraction FROM lifetime_survival_curve'
+            ).fetchall()
+        rtv_getter = itemgetter(0, 2, 3)
+        if self.viable_rtv:
+            valid_rtv = self.viable_rtv.member_tuples | self.viable_existing_rtv
+            rows_to_load = [item for item in rows_to_load if rtv_getter(item) in valid_rtv]
+        self._load_component_data(data, model.lifetime_survival_curve, rows_to_load)
 
     # --- Singleton and Configuration-based Components ---
     def _load_global_discount_rate(

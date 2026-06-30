@@ -164,7 +164,10 @@ class MgaSequencer:
         hybrid_loader = HybridLoader(db_connection=self.con, config=self.config)
         data_portal: DataPortal = hybrid_loader.load_data_portal(myopic_index=None)
         instance: TemoaModel = build_instance(
-            loaded_portal=data_portal, model_name=self.config.scenario, silent=self.config.silent
+            loaded_portal=data_portal,
+            model_name=self.config.scenario,
+            silent=self.config.silent,
+            extensions=self.config.extensions,
         )
         if self.config.price_check:
             good_prices = price_checker(instance)
