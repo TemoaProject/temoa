@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from deprecated import deprecated
 from pyomo.environ import value
 
-from .utils import get_capacity_factor
+from .utils import get_adjusted_existing_capacity, get_capacity_factor
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -292,7 +292,9 @@ def annual_retirement_constraint(
         # Exact EOL. No v_capacity or v_retired_capacity for this period.
         if p == model.time_optimize.first():
             # Must be existing capacity. Apply survival curve to existing cap
-            cap_begin = model.existing_capacity[r, t, v] * model.lifetime_survival_curve[r, p, t, v]
+            cap_begin = get_adjusted_existing_capacity(model, r, t, v) * value(
+                model.lifetime_survival_curve[r, p, t, v]
+            )
         else:
             # Get previous capacity and continue survival curve
             p_prev = model.time_optimize.prev(p)
@@ -545,8 +547,9 @@ def adjusted_capacity_constraint(
     the time when that retirement occurred (treated here as at the beginning of each period).
     """
 
+    built_capacity: ExprLike
     if v in model.time_exist:
-        built_capacity = value(model.existing_capacity[r, t, v])
+        built_capacity = get_adjusted_existing_capacity(model, r, t, v)
     else:
         built_capacity = model.v_new_capacity[r, t, v]
 
