@@ -53,12 +53,9 @@ def normalize_extension_ids(extension_ids: Sequence[str] | None) -> tuple[str, .
 def get_known_extension_specs() -> dict[str, ExtensionSpec]:
     """Return all extension specs known to this installation."""
     from temoa.extensions.growth_rates.extension import GROWTH_RATES_EXTENSION
+    from temoa.extensions.integer_capacity.extension import INTEGER_CAPACITY_EXTENSION
 
-    # TEMPLATE: To activate a new extension copied from ``temoa/extensions/template``,
-    # import its spec here and add it to ``specs`` below, e.g.:
-    #   from temoa.extensions.<your_extension>.extension import <YOUR_EXTENSION>
-    #   specs = [GROWTH_RATES_EXTENSION, <YOUR_EXTENSION>]
-    specs = [GROWTH_RATES_EXTENSION]
+    specs = [GROWTH_RATES_EXTENSION, INTEGER_CAPACITY_EXTENSION]
     return {spec.extension_id: spec for spec in specs}
 
 

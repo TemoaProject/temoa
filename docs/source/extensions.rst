@@ -244,3 +244,4 @@ as new extensions are added.
    :maxdepth: 1
 
    extensions/growth_rates
+   extensions/integer_capacity
