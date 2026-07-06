@@ -444,10 +444,8 @@ def limit_annual_capacity_factor_constraint(
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)
 
-    if TYPE_CHECKING:
-        activity_rptvo = cast('Expression', 0)
-    else:
-        activity_rptvo = 0
+    activity_rptvo = 0
+
     for _t in techs:
         if _t not in model.tech_annual:
             activity_rptvo += quicksum(

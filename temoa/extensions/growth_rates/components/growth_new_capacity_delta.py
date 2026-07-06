@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
@@ -106,34 +106,40 @@ def limit_growth_new_capacity_delta(
     if len(periods) == 0:
         return Constraint.Skip
 
-    new_cap = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+    new_cap = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+
+    new_cap_prev = 0.0
+    new_cap_prev2 = 0.0
 
     if p == model.time_optimize.first():
-        p_prev = model.time_exist.last()
-        new_cap_prev = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev
-        )
-        p_prev2 = model.time_exist.prev(p_prev)
-        new_cap_prev2 = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev2
-        )
-    else:
-        p_prev = model.time_optimize.prev(p)
-        new_cap_prev = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
-        if p == model.time_optimize.at(2):
-            p_prev2 = model.time_exist.last()
-            new_cap_prev2 = sum(
+        if model.time_exist:
+            p_prev = model.time_exist.last()
+            new_cap_prev = quicksum(
+                value(model.existing_capacity[_r, _t, _v])
+                for _r, _t, _v in model.existing_capacity.sparse_keys()
+                if _r in regions and _t in techs and _v == p_prev
+            )
+        if len(model.time_exist) >= 2:
+            p_prev2 = model.time_exist.prev(p_prev)
+            new_cap_prev2 = quicksum(
                 value(model.existing_capacity[_r, _t, _v])
                 for _r, _t, _v in model.existing_capacity.sparse_keys()
                 if _r in regions and _t in techs and _v == p_prev2
             )
+    else:
+        p_prev = model.time_optimize.prev(p)
+        new_cap_prev = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
+        if p == model.time_optimize.at(2):
+            if model.time_exist:
+                p_prev2 = model.time_exist.last()
+                new_cap_prev2 = quicksum(
+                    value(model.existing_capacity[_r, _t, _v])
+                    for _r, _t, _v in model.existing_capacity.sparse_keys()
+                    if _r in regions and _t in techs and _v == p_prev2
+                )
         else:
             p_prev2 = model.time_optimize.prev(p_prev)
-            new_cap_prev2 = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
+            new_cap_prev2 = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
 
     nc_delta_prev = new_cap_prev - new_cap_prev2
     nc_delta = new_cap - new_cap_prev

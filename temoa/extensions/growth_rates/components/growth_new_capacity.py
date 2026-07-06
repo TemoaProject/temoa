@@ -100,16 +100,19 @@ def limit_growth_new_capacity(
 
     new_cap = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
 
+    new_cap_prev = 0.0
+
     if p == model.time_optimize.first():
-        p_prev = model.time_exist.last()
-        new_cap_prev = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev
-        )
+        if model.time_exist:
+            p_prev = model.time_exist.last()
+            new_cap_prev = quicksum(
+                value(model.existing_capacity[_r, _t, _v])
+                for _r, _t, _v in model.existing_capacity.sparse_keys()
+                if _r in regions and _t in techs and _v == p_prev
+            )
     else:
         p_prev = model.time_optimize.prev(p)
-        new_cap_prev = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
+        new_cap_prev = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
 
     if degrowth:
         expr = operator_expression(new_cap_prev, Operator(op), seed + new_cap * rate)

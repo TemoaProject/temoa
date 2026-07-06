@@ -246,7 +246,7 @@ class HybridLoader:
         for item in self.manifest:
             # 1. Fetch data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
-            if item.index_length:
+            if item.index_length and len(item.columns) - item.index_length > 1:
                 raw_data = [
                     (*row[0 : item.index_length], row[item.index_length :]) for row in raw_data
                 ]

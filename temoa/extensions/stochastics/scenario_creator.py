@@ -45,7 +45,10 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
             table_index_map: dict[str, list[str]] = {}
             for item in cast('Iterable[LoadItem]', hybrid_loader.manifest):
                 if item.table not in table_index_map and item.columns:
-                    table_index_map[item.table] = list(item.columns[:-1])
+                    if item.index_length:
+                        table_index_map[item.table] = list(item.columns[:item.index_length])
+                    else:
+                        table_index_map[item.table] = list(item.columns[:-1])
     except Exception as e:
         logger.exception('Failed to connect to database %s', temoa_config.input_database)
         raise RuntimeError(f'Failed to connect to database {temoa_config.input_database}') from e

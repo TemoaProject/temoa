@@ -32,6 +32,8 @@ class LoadItem:
         table: The name of the source table in the SQLite database.
         columns: A list of column names to select from the table. The last
             column is assumed to be the value for a `Param`.
+        index_length: Optional. The number of columns that form the index for
+            a `Param`, for tables with multiple value columns.
         validator_name: Optional. The name of a `ViableSet` attribute on the
             `HybridLoader` instance, used for source-trace filtering.
         validation_map: A tuple indicating which column indices in the data

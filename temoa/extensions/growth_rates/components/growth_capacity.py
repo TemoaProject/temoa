@@ -99,16 +99,19 @@ def limit_growth_capacity(
 
     capacity = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p)
 
+    capacity_prev = 0.0
+
     if p == model.time_optimize.first():
-        p_prev = model.time_exist.last()
-        capacity_prev = sum(
-            get_adjusted_existing_capacity(model, _r, _t, _v)
-            * value(model.process_life_frac[_r, p_prev, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions
-            and _t in techs
-            and _v + value(model.lifetime_process[_r, _t, _v]) > p_prev
-        )
+        if model.time_exist:
+            p_prev = model.time_exist.last()
+            capacity_prev = quicksum(
+                get_adjusted_existing_capacity(model, _r, _t, _v)
+                * value(model.process_life_frac[_r, p_prev, _t, _v])
+                for _r, _t, _v in model.existing_capacity.sparse_keys()
+                if _r in regions
+                and _t in techs
+                and _v + value(model.lifetime_process[_r, _t, _v]) > p_prev
+            )
     else:
         p_prev = model.time_optimize.prev(p)
         capacity_prev = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p_prev)

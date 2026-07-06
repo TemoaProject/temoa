@@ -564,6 +564,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         target_config: Path where configuration file should be copied
         target_database: Path where database file should be created
     """
+    import contextlib
     import sqlite3
 
     try:
@@ -587,7 +588,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         schema_content = schema_resource.read_text(encoding='utf-8')
         sql_content = sql_resource.read_text(encoding='utf-8')
 
-        with sqlite3.connect(target_database) as conn:
+        with contextlib.closing(sqlite3.connect(target_database)) as conn:
             conn.executescript(schema_content)
             conn.execute('PRAGMA foreign_keys = OFF;')
             conn.executescript(sql_content)
@@ -597,6 +598,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
                 raise sqlite3.IntegrityError(
                     f'Foreign key check failed after tutorial data load: {fk_violations[:5]}'
                 )
+            conn.commit()
 
         # Copy Monte Carlo settings
         with mc_settings_resource.open('rb') as source:
@@ -640,7 +642,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         # Generate database from canonical schema and tutorial data source
         sql_content = fallback_sql.read_text(encoding='utf-8')
 
-        with sqlite3.connect(target_database) as conn:
+        with contextlib.closing(sqlite3.connect(target_database)) as conn:
             conn.executescript(fallback_schema.read_text(encoding='utf-8'))
             conn.execute('PRAGMA foreign_keys = OFF;')
             conn.executescript(sql_content)
@@ -649,7 +651,8 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
             if fk_violations:
                 raise sqlite3.IntegrityError(
                     f'Foreign key check failed after tutorial data load: {fk_violations[:5]}'
-                ) from e
+                ) from None
+            conn.commit()
 
         # Copy mc_settings from fallback
         shutil.copy2(fallback_mc, target_config.parent / 'mc_settings.csv')
