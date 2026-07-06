@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
-    Any,
     BuildAction,
     Constraint,
     Integers,
@@ -635,25 +634,6 @@ class TemoaModel(AbstractModel):
             self.limit_annual_capacity_factor_constraint_rtvo, validate=validate_0to1
         )
 
-        self.limit_growth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_growth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_growth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-
         self.limit_emission_constraint_rpe = Set(
             within=self.regional_global_indices
             * self.time_optimize
@@ -1000,51 +980,6 @@ class TemoaModel(AbstractModel):
         )
         self.progress_marker_7 = BuildAction(
             ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
-        )
-
-        self.limit_growth_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_capacity_indices
-        )
-        self.limit_growth_capacity_constraint = Constraint(
-            self.limit_growth_capacity_constraint_rpt,
-            rule=limits.limit_growth_capacity_constraint_rule,
-        )
-        self.limit_degrowth_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_capacity_indices
-        )
-        self.limit_degrowth_capacity_constraint = Constraint(
-            self.limit_degrowth_capacity_constraint_rpt,
-            rule=limits.limit_degrowth_capacity_constraint_rule,
-        )
-
-        self.limit_growth_new_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_new_capacity_indices
-        )
-        self.limit_growth_new_capacity_constraint = Constraint(
-            self.limit_growth_new_capacity_constraint_rpt,
-            rule=limits.limit_growth_new_capacity_constraint_rule,
-        )
-        self.limit_degrowth_new_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_new_capacity_indices
-        )
-        self.limit_degrowth_new_capacity_constraint = Constraint(
-            self.limit_degrowth_new_capacity_constraint_rpt,
-            rule=limits.limit_degrowth_new_capacity_constraint_rule,
-        )
-
-        self.limit_growth_new_capacity_delta_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_new_capacity_delta_indices
-        )
-        self.limit_growth_new_capacity_delta_constraint = Constraint(
-            self.limit_growth_new_capacity_delta_constraint_rpt,
-            rule=limits.limit_growth_new_capacity_delta_constraint_rule,
-        )
-        self.limit_degrowth_new_capacity_delta_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_new_capacity_delta_indices
-        )
-        self.limit_degrowth_new_capacity_delta_constraint = Constraint(
-            self.limit_degrowth_new_capacity_delta_constraint_rpt,
-            rule=limits.limit_degrowth_new_capacity_delta_constraint_rule,
         )
 
         self.limit_activity_constraint = Constraint(

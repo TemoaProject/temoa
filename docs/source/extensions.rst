@@ -230,3 +230,17 @@ The template extension
 ``get_known_extension_specs``, it cannot be enabled until you register it, so it
 never affects normal runs. Copy the folder as the starting point for a new
 extension; every file carries ``# TEMPLATE:`` comments explaining what to change.
+
+.. _extension-catalog:
+
+Available extensions
+--------------------
+
+The extensions that ship with Temoa are documented on their own pages below.
+Each page describes the extension's parameters and constraints. This list grows
+as new extensions are added.
+
+.. toctree::
+   :maxdepth: 1
+
+   extensions/growth_rates

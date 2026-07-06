@@ -66,12 +66,6 @@ BASE_REGIONAL_GROUP_TABLES = {
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
-    'limit_growth_capacity': 'region',
-    'limit_degrowth_capacity': 'region',
-    'limit_growth_new_capacity': 'region',
-    'limit_degrowth_new_capacity': 'region',
-    'limit_growth_new_capacity_delta': 'region',
-    'limit_degrowth_new_capacity_delta': 'region',
 }
 
 
