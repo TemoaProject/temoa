@@ -92,7 +92,7 @@ def limit_growth_capacity(
     cap_rpt = model.v_capacity_available_by_period_and_tech
 
     cap_indices = {(_r, _p, _t) for _r, _p, _t in cap_rpt.keys() if _t in techs and _r in regions}
-    periods = sorted({_p for _r, _p, _t in cap_rpt})
+    periods = sorted({_p for _r, _p, _t in cap_indices})
 
     if len(periods) == 0:
         return Constraint.Skip
