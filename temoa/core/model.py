@@ -39,6 +39,9 @@ from temoa.components import (
     technology,
     time,
 )
+from temoa.extensions.economies_of_scale.core.model import (
+    register_early_eos_components,
+)
 from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
@@ -562,6 +565,9 @@ class TemoaModel(AbstractModel):
             within=self.regional_indices * self.tech_all * self.time_optimize
         )
         self.cost_invest = Param(self.cost_invest_rtv)
+
+        # Inject cost_invest_eos extension components prior to loan params, if active
+        register_early_eos_components(self)
 
         self.default_loan_rate = Param(domain=NonNegativeReals)
         self.loan_rate = Param(
