@@ -26,6 +26,6 @@ GROWTH_RATES_EXTENSION = ExtensionSpec(
     },
     register_model_components=register_model_components,
     build_manifest_items=build_manifest_items,
-    schema_sql_path=str(Path(__file__).parents[0] / 'tables.sql'),
+    schema_sql_path=str(Path(__file__).parent / 'tables.sql'),
     fail_if_tables_populated_when_disabled=True,
 )
