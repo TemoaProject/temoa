@@ -2,7 +2,7 @@ from typing import TypedDict
 
 import pytest
 
-from temoa._internal.table_data_puller import loan_costs
+from temoa.components.costs import poll_loan_costs
 
 
 class LoanCostInput(TypedDict):
@@ -31,7 +31,7 @@ params: list[LoanCostTestCase] = [
             'capacity': 100_000.0,  # units
             'invest_cost': 1.0,  # $/unit of capacity
             'loan_life': 40.0,
-            'loan_rate': 0.10,
+            'loan_annualize': 0.102259414,
             'global_discount_rate': 0.000000000001,
             'process_life': 40,
             'p_0': 2020,  # the "myopic base year" to which all prices are discounted
@@ -47,7 +47,7 @@ params: list[LoanCostTestCase] = [
             'capacity': 100_000.0,
             'invest_cost': 1.0,
             'loan_life': 40.0,
-            'loan_rate': 0.08,
+            'loan_annualize': 0.083860162,
             'global_discount_rate': 0.05,
             'process_life': 50,
             'p_0': 2020,
@@ -65,7 +65,7 @@ params_with_zero_gdr: list[LoanCostTestCase] = [
             'capacity': 100_000.0,  # units
             'invest_cost': 1.0,  # $/unit of capacity
             'loan_life': 40.0,
-            'loan_rate': 0.10,
+            'loan_annualize': 0.102259414,
             'global_discount_rate': 0,
             'process_life': 40,
             'p_0': 2020,  # the "myopic base year" to which all prices are discounted
@@ -84,7 +84,7 @@ def test_loan_costs(test_case: LoanCostTestCase) -> None:
     Test the loan cost calculations
     """
     # we will test with a 1% error to accommodate the approximation of GDR=0
-    model_cost, undiscounted_cost = loan_costs(**test_case['input'])
+    model_cost, undiscounted_cost = poll_loan_costs(**test_case['input'])
     assert model_cost == pytest.approx(test_case['expected_model_cost'], rel=0.01)
     assert undiscounted_cost == pytest.approx(test_case['expected_undiscounted_cost'], rel=0.01)
 
@@ -99,6 +99,6 @@ def test_loan_costs_with_zero_gdr(test_case: LoanCostTestCase) -> None:
     Test the formula with zero for GDR to make sure it is handled correctly.  The formula
     risks division by zero if this is not correct.
     """
-    model_cost, undiscounted_cost = loan_costs(**test_case['input'])
+    model_cost, undiscounted_cost = poll_loan_costs(**test_case['input'])
     assert model_cost == pytest.approx(test_case['expected_model_cost'], abs=0.01)
     assert undiscounted_cost == pytest.approx(test_case['expected_undiscounted_cost'], abs=0.01)

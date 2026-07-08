@@ -922,7 +922,7 @@ CREATE TABLE IF NOT EXISTS output_cost
     region   TEXT,
     sector   TEXT REFERENCES sector_label (sector),
     period   INTEGER REFERENCES time_period (period),
-    tech     TEXT REFERENCES technology (tech),
+    tech     TEXT,
     vintage  INTEGER REFERENCES time_period (period),
     d_invest REAL,
     d_fixed  REAL,
@@ -934,8 +934,7 @@ CREATE TABLE IF NOT EXISTS output_cost
     emiss    REAL,
     units    TEXT,
     PRIMARY KEY (scenario, region, period, tech, vintage),
-    FOREIGN KEY (vintage) REFERENCES time_period (period),
-    FOREIGN KEY (tech) REFERENCES technology (tech)
+    FOREIGN KEY (vintage) REFERENCES time_period (period)
 );
 
 CREATE TABLE IF NOT EXISTS time_season
