@@ -244,7 +244,10 @@ def solve_instance(
     with task_timer(f'Solving model {instance.name}', silent=silent):
         try:
             # currently, the highs solver call will puke if the suffixes are passed
+            # it also doesn't seem to support duals properly so disable those
             if solver_name == 'appsi_highs':
+                dual_suffix = instance.component('dual')
+                dual_suffix._direction = Suffix.LOCAL
                 result = optimizer.solve(instance)
             else:
                 result = optimizer.solve(instance, suffixes=solver_suffixes_list)
