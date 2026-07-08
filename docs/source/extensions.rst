@@ -245,3 +245,4 @@ as new extensions are added.
 
    extensions/growth_rates
    extensions/discrete_capacity
+   extensions/eos
