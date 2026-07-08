@@ -247,7 +247,8 @@ def solve_instance(
             # it also doesn't seem to support duals properly so disable those
             if solver_name == 'appsi_highs':
                 dual_suffix = instance.component('dual')
-                dual_suffix._direction = Suffix.LOCAL
+                if dual_suffix is not None:
+                    dual_suffix.direction = Suffix.LOCAL
                 result = optimizer.solve(instance)
             else:
                 result = optimizer.solve(instance, suffixes=solver_suffixes_list)

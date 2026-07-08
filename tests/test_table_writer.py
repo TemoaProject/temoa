@@ -9,7 +9,7 @@ class LoanCostInput(TypedDict):
     capacity: float
     invest_cost: float
     loan_life: float
-    loan_rate: float
+    loan_annualize: float
     global_discount_rate: float
     process_life: int
     p_0: int

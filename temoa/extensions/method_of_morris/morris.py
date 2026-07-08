@@ -47,8 +47,6 @@ def evaluate(
     with TableWriter(config) as table_writer:
         table_writer.write_results(model=mdl)
 
-    import contextlib
-
     with contextlib.closing(sqlite3.connect(db_file)) as con:
         cur = con.cursor()
         cur.execute('SELECT * FROM output_objective')

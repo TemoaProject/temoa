@@ -98,21 +98,17 @@ def poll_costs(
         else:
             # The period `p` for an investment cost is its vintage `v`.
             key = (cast('Region', r), cast('Period', p), cast('Technology', t), cast('Vintage', p))
-            if CostType.INVEST in entries.get(key, {}):
-                entries[key][CostType.D_INVEST] += discounted_cost
-                entries[key][CostType.INVEST] += undiscounted_cost
-            else:
-                entries[key].update(
-                    {CostType.D_INVEST: discounted_cost, CostType.INVEST: undiscounted_cost}
-                )
+            entry = entries[key]
+            entry[CostType.D_INVEST] = entry.get(CostType.D_INVEST, 0.0) + discounted_cost
+            entry[CostType.INVEST] = entry.get(CostType.INVEST, 0.0) + undiscounted_cost
 
     for r, p, t in model.cost_fixed_eos_period_rpt:
         fixed_cost = value(cost_fixed_eos.period_cost(model, r, p, t))
         if fixed_cost < epsilon:
             continue
 
-        undiscounted_fixed_cost = fixed_cost * value(model.period_length[p])
-        discounted_fixed_cost = costs.fixed_or_variable_cost(
+        ud_fixed = float(fixed_cost * value(model.period_length[p]))
+        d_fixed = costs.fixed_or_variable_cost(
             1,
             fixed_cost,
             value(model.period_length[p]),
@@ -120,6 +116,7 @@ def poll_costs(
             p_0=p_0,
             p=p,
         )
+        d_fixed = float(value(d_fixed))
 
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -127,7 +124,7 @@ def poll_costs(
                 period=p,
                 tech=t,
                 vintage=p,
-                cost=float(value(discounted_fixed_cost)),
+                cost=d_fixed,
                 cost_type=CostType.D_FIXED,
             )
             exchange_costs.add_cost_record(
@@ -135,24 +132,22 @@ def poll_costs(
                 period=p,
                 tech=t,
                 vintage=p,
-                cost=float(undiscounted_fixed_cost),
+                cost=ud_fixed,
                 cost_type=CostType.FIXED,
             )
         else:
-            entries[r, p, t, p].update(
-                {
-                    CostType.D_FIXED: float(value(discounted_fixed_cost)),
-                    CostType.FIXED: float(undiscounted_fixed_cost),
-                }
-            )
+            key = (cast('Region', r), cast('Period', p), cast('Technology', t), cast('Vintage', p))
+            entry = entries[key]
+            entry[CostType.D_FIXED] = entry.get(CostType.D_FIXED, 0.0) + d_fixed
+            entry[CostType.FIXED] = entry.get(CostType.FIXED, 0.0) + ud_fixed
 
-    for r, p, t in model.cost_fixed_eos_period_rpt:
+    for r, p, t in model.cost_variable_eos_period_rpt:
         variable_cost = value(cost_variable_eos.period_cost(model, r, p, t))
         if variable_cost < epsilon:
             continue
 
-        undiscounted_variable_cost = variable_cost * value(model.period_length[p])
-        discounted_variable_cost = costs.fixed_or_variable_cost(
+        ud_variable = float(variable_cost * value(model.period_length[p]))
+        d_variable = costs.fixed_or_variable_cost(
             1,
             variable_cost,
             value(model.period_length[p]),
@@ -160,6 +155,7 @@ def poll_costs(
             p_0=p_0,
             p=p,
         )
+        d_variable = float(value(d_variable))
 
         if '-' in r:
             exchange_costs.add_cost_record(
@@ -167,7 +163,7 @@ def poll_costs(
                 period=p,
                 tech=t,
                 vintage=p,
-                cost=float(value(discounted_variable_cost)),
+                cost=d_variable,
                 cost_type=CostType.D_VARIABLE,
             )
             exchange_costs.add_cost_record(
@@ -175,13 +171,11 @@ def poll_costs(
                 period=p,
                 tech=t,
                 vintage=p,
-                cost=float(undiscounted_variable_cost),
+                cost=ud_variable,
                 cost_type=CostType.VARIABLE,
             )
         else:
-            entries[r, p, t, p].update(
-                {
-                    CostType.D_VARIABLE: float(value(discounted_variable_cost)),
-                    CostType.VARIABLE: float(undiscounted_variable_cost),
-                }
-            )
+            key = (cast('Region', r), cast('Period', p), cast('Technology', t), cast('Vintage', p))
+            entry = entries[key]
+            entry[CostType.D_VARIABLE] = entry.get(CostType.D_VARIABLE, 0.0) + d_variable
+            entry[CostType.VARIABLE] = entry.get(CostType.VARIABLE, 0.0) + ud_variable

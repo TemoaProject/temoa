@@ -8,6 +8,7 @@ cost_variable_eos.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import matplotlib
 import matplotlib.patches as mpatches
@@ -109,7 +110,12 @@ ax.set_yticks(y_ticks)
 ax.set_yticklabels(y_labels, fontsize=8.5, color=PALETTE['tick'])
 
 # ——— Dashed reference lines to axes from segment endpoints ———————————————————
-dash_kw = {'color': PALETTE['inactive'], 'linewidth': 0.8, 'linestyle': ':', 'zorder': 1}
+dash_kw: dict[str, Any] = {
+    'color': PALETTE['inactive'],
+    'linewidth': 0.8,
+    'linestyle': ':',
+    'zorder': 1,
+}
 for ql, qu, cl, cu in segments:
     ax.plot([ql, ql], [0, cl], **dash_kw)
     ax.plot([qu, qu], [0, cu], **dash_kw)

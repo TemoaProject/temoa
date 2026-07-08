@@ -169,6 +169,8 @@ def register_model_components(model: TemoaModel) -> None:
         rule=cost_fixed_eos.cost_fixed_eos_capacity_upper_bound_constraint,
     )
 
+    m.append_cost_fixed_eos_to_total_cost = BuildAction(rule=cost_fixed_eos.total_cost)
+
     # -- cost_variable_eos ---
     m.cost_variable_eos_segments = {}
 
