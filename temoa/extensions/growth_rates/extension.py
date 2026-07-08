@@ -6,7 +6,6 @@ from temoa.extensions.framework import ExtensionSpec
 from temoa.extensions.growth_rates.core.model import register_model_components
 from temoa.extensions.growth_rates.data_manifest import build_manifest_items
 
-
 GROWTH_RATES_EXTENSION = ExtensionSpec(
     extension_id='growth_rates',
     owned_tables=(

@@ -139,7 +139,9 @@ def limit_growth_new_capacity_delta(
                 )
         else:
             p_prev2 = model.time_optimize.prev(p_prev)
-            new_cap_prev2 = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
+            new_cap_prev2 = quicksum(
+                new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2
+            )
 
     nc_delta_prev = new_cap_prev - new_cap_prev2
     nc_delta = new_cap - new_cap_prev

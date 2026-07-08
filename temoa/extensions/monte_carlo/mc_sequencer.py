@@ -3,6 +3,7 @@
 A sequencer for Monte Carlo Runs
 
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,12 +32,9 @@ if TYPE_CHECKING:
     from temoa.core.config import TemoaConfig
 
 
-
 logger = getLogger(__name__)
 
-solver_options_path = (
-    resources.files('temoa.extensions.monte_carlo') / 'MC_solver_options.toml'
-)
+solver_options_path = resources.files('temoa.extensions.monte_carlo') / 'MC_solver_options.toml'
 
 
 class MCSequencer:
@@ -117,7 +115,6 @@ class MCSequencer:
         # 4. copy & modify the base data to make per-dataset runs
         # 5. farm out the runs to workers
 
-
         # 0. Set up database for scenario
         self.writer.clear_scenario()
         self.writer.make_mc_tweaks_table()  # add the output table for tweaks, if not exists
@@ -125,6 +122,7 @@ class MCSequencer:
 
         # 1. Load data
         import contextlib
+
         with contextlib.closing(sqlite3.connect(self.config.input_database)) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=self.config)
             data_store = hybrid_loader.create_data_dict(myopic_index=None)
@@ -138,6 +136,7 @@ class MCSequencer:
 
         # 4. Set up the workers
         import multiprocessing
+
         ctx = multiprocessing.get_context('spawn')
 
         num_workers = self.num_workers
@@ -151,10 +150,10 @@ class MCSequencer:
         log_queue: Queue[logging.LogRecord] = ctx.Queue()
         # make workers
         workers: list[BaseProcess] = []
-        kwargs = {
-            'solver_name': self.config.solver_name,
-            'solver_options': self.worker_solver_options,
-        }
+        # kwargs = {
+        #     'solver_name': self.config.solver_name,
+        #     'solver_options': self.worker_solver_options,
+        # }
         # construct path for the solver logs
         s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():

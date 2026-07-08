@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import sqlite3
 from typing import TYPE_CHECKING, Any, cast
-from collections.abc import Iterable
 
 from mpisppy.utils.sputils import attach_root_node  # type: ignore[import-untyped]
 
@@ -12,6 +11,8 @@ from temoa.components.costs import period_cost_rule
 from temoa.data_io.hybrid_loader import HybridLoader
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from temoa.core.config import TemoaConfig
     from temoa.data_io.hybrid_loader import LoadItem
     from temoa.extensions.stochastics.stochastic_config import StochasticConfig
@@ -36,6 +37,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
     # 1. Load base data
     try:
         import contextlib
+
         with contextlib.closing(sqlite3.connect(temoa_config.input_database)) as con:
             hybrid_loader = HybridLoader(db_connection=con, config=temoa_config)
             data_dict = hybrid_loader.create_data_dict(myopic_index=None)
@@ -46,7 +48,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
             for item in cast('Iterable[LoadItem]', hybrid_loader.manifest):
                 if item.table not in table_index_map and item.columns:
                     if item.index_length:
-                        table_index_map[item.table] = list(item.columns[:item.index_length])
+                        table_index_map[item.table] = list(item.columns[: item.index_length])
                     else:
                         table_index_map[item.table] = list(item.columns[:-1])
     except Exception as e:
@@ -58,7 +60,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
         if p.scenario != scenario_name:
             continue
 
-        target_param = cast(dict[Any, Any] | None, data_dict.get(p.table))
+        target_param = cast('dict[Any, Any] | None', data_dict.get(p.table))
         if target_param is None:
             logger.warning(
                 'Table %s not found in data_dict for scenario %s', p.table, scenario_name

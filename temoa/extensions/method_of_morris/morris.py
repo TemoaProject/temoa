@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import csv
 import sqlite3
-from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -21,8 +21,9 @@ from temoa.data_io.hybrid_loader import HybridLoader
 seed = 42
 
 
-def evaluate(param_names: dict[int, list[Any]], param_values: Any,
-            data: dict[str, Any], k: int) -> list[Any]:
+def evaluate(
+    param_names: dict[int, list[Any]], param_values: Any, data: dict[str, Any], k: int
+) -> list[Any]:
     m = len(param_values)
     for j in range(0, m):
         names = param_names[j]
@@ -47,6 +48,7 @@ def evaluate(param_names: dict[int, list[Any]], param_values: Any,
         table_writer.write_results(model=mdl)
 
     import contextlib
+
     with contextlib.closing(sqlite3.connect(db_file)) as con:
         cur = con.cursor()
         cur.execute('SELECT * FROM output_objective')
@@ -73,12 +75,11 @@ config_path = Path(__file__).parent / 'morris_utopia.toml'
 
 if not db_file.exists() or not config_path.exists():
     raise FileNotFoundError(
-        "Example Morris data files not found in current directory. "
-        "Please see MM_README.md for instructions on how to generate "
+        'Example Morris data files not found in current directory. '
+        'Please see MM_README.md for instructions on how to generate '
         "or provide the required 'morris_utopia.sqlite' and 'morris_utopia.toml'."
     )
 
-import contextlib
 with contextlib.closing(sqlite3.connect(str(db_file))) as con:
     with open(param_file, 'w') as file:
         param_names = {}
@@ -152,7 +153,12 @@ with contextlib.closing(sqlite3.connect(str(db_file))) as con:
 
         problem = read_param_file(str(param_file), delimiter=' ')
         param_values = sample(
-            problem, N=10, num_levels=8, optimal_trajectories=False, local_optimization=False, seed=seed
+            problem,
+            N=10,
+            num_levels=8,
+            optimal_trajectories=False,
+            local_optimization=False,
+            seed=seed,
         )
         print(param_values)
         print(param_names)

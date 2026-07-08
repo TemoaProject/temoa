@@ -21,10 +21,10 @@ Let's make a set of 500 runs and explore output
 """
 
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import cast
 
 # distro for the related cost vars
 
@@ -34,7 +34,7 @@ from typing import cast
 num_runs = 1000
 cov = np.array([[0.4, -0.1], [-0.1, 0.1]])
 price_devs = np.random.multivariate_normal([0, 0], cov, size=num_runs)
-corr_matrix = cast(np.typing.NDArray[np.float64], np.corrcoef(price_devs.T))
+corr_matrix = cast('np.typing.NDArray[np.float64]', np.corrcoef(price_devs.T))
 print(f'correlation check: {corr_matrix[0, 1]}')
 
 # verify with a peek...

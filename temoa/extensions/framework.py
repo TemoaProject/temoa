@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-from pathlib import Path
-from dataclasses import dataclass, field
-from sqlite3 import Connection
-from typing import TYPE_CHECKING
-
 from collections.abc import Callable
+from dataclasses import dataclass, field
+from logging import getLogger
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from sqlite3 import Connection
 
     from temoa.core.model import TemoaModel
     from temoa.data_io.loader_manifest import LoadItem
 
 ModelHook = Callable[['TemoaModel'], None]
 ManifestHook = Callable[['TemoaModel'], list['LoadItem']]
+
+logger = getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -30,7 +32,7 @@ class ExtensionSpec:
     fail_if_tables_populated_when_disabled: bool = False
 
 
-def normalize_extension_ids(extension_ids: Sequence[str] | None) -> tuple[str, ...]:
+def normalize_extension_ids(extension_ids: Sequence[str | object] | None) -> tuple[str, ...]:
     """Normalize configured extension ids while preserving user-provided order."""
     if not extension_ids:
         return ()
@@ -39,7 +41,9 @@ def normalize_extension_ids(extension_ids: Sequence[str] | None) -> tuple[str, .
     seen: set[str] = set()
     for ext_id in extension_ids:
         if not isinstance(ext_id, str):
-            raise ValueError(f'Extension ids must be strings. Received: {type(ext_id).__name__}')
+            msg = f'Extension ids must be strings. Received: {type(ext_id).__name__}'
+            logger.error(msg)
+            raise ValueError(msg)
         cleaned = ext_id.strip().lower()
         if not cleaned:
             continue
@@ -52,8 +56,8 @@ def normalize_extension_ids(extension_ids: Sequence[str] | None) -> tuple[str, .
 
 def get_known_extension_specs() -> dict[str, ExtensionSpec]:
     """Return all extension specs known to this installation."""
-    from temoa.extensions.growth_rates.extension import GROWTH_RATES_EXTENSION
     from temoa.extensions.discrete_capacity.extension import DISCRETE_CAPACITY_EXTENSION
+    from temoa.extensions.growth_rates.extension import GROWTH_RATES_EXTENSION
 
     specs = [GROWTH_RATES_EXTENSION, DISCRETE_CAPACITY_EXTENSION]
     return {spec.extension_id: spec for spec in specs}
@@ -67,9 +71,9 @@ def resolve_extension_specs(extension_ids: Sequence[str] | None) -> tuple[Extens
     if unknown:
         known_ids = ', '.join(sorted(known))
         unknown_ids = ', '.join(sorted(unknown))
-        raise ValueError(
-            f'Unknown extension id(s): {unknown_ids}. Known extension ids: {known_ids}.'
-        )
+        msg = f'Unknown extension id(s): {unknown_ids}. Known extension ids: {known_ids}.'
+        logger.error(msg)
+        raise ValueError(msg)
 
     return tuple(known[ext_id] for ext_id in normalized_ids)
 
@@ -101,10 +105,12 @@ def merge_regional_group_tables(
         for table_name, field_name in spec.regional_group_tables.items():
             existing = merged.get(table_name)
             if existing is not None and existing != field_name:
-                raise ValueError(
+                msg = (
                     f"Regional-group table '{table_name}' has conflicting field mappings: "
                     f"'{existing}' vs '{field_name}' from extension '{spec.extension_id}'."
                 )
+                logger.error(msg)
+                raise ValueError(msg)
             merged[table_name] = field_name
     return merged
 
@@ -127,10 +133,11 @@ def assert_disabled_extension_tables_are_empty(
 
         if populated:
             table_list = ', '.join(sorted(populated))
-            raise RuntimeError(
+            msg = (
                 f"Extension '{spec.extension_id}' is not enabled, but extension-owned table(s) "
                 f'contain data: {table_list}. Enable the extension or remove those rows.'
             )
+            logger.warning(msg)
 
 
 def ensure_enabled_extension_tables_exist(
@@ -148,36 +155,42 @@ def ensure_enabled_extension_tables_exist(
 
         missing_list = ', '.join(sorted(missing_tables))
         if not spec.schema_sql_path:
-            raise RuntimeError(
+            msg = (
                 f"Extension '{spec.extension_id}' is enabled, but required table(s) are missing: "
                 f'{missing_list}. No schema SQL path is registered for this extension.'
             )
+            logger.error(msg)
+            raise RuntimeError(msg)
 
         should_apply = False
         if not silent:
             prompt = (
                 f"Extension '{spec.extension_id}' is enabled but missing table(s): {missing_list}. "
-                f"Append schema from '{spec.schema_sql_path}' to input database '{input_database}' now? "
-                '[y/N]: '
+                f"Append schema from '{spec.schema_sql_path}' to input database '{input_database} "
+                'now? [y/N]: '
             )
             response = input(prompt).strip().lower()
             should_apply = response in {'y', 'yes'}
 
         if not should_apply:
-            raise RuntimeError(
+            msg = (
                 f"Extension '{spec.extension_id}' is enabled, but required table(s) are missing: "
-                f"{missing_list}. Re-run and accept the prompt, or append schema manually from "
+                f'{missing_list}. Re-run and accept the prompt, or append schema manually from '
                 f"'{spec.schema_sql_path}' to '{input_database}'."
             )
+            logger.error(msg)
+            raise RuntimeError(msg)
 
         _append_extension_schema(con, spec)
         still_missing = [table for table in spec.owned_tables if not _table_exists(con, table)]
         if still_missing:
             still_missing_list = ', '.join(sorted(still_missing))
-            raise RuntimeError(
-                f"Schema append for extension '{spec.extension_id}' completed but table(s) are still "
-                f'missing: {still_missing_list}.'
+            msg = (
+                f"Schema append for extension '{spec.extension_id}' completed "
+                f'but table(s) are still missing: {still_missing_list}.'
             )
+            logger.error(msg)
+            raise RuntimeError(msg)
 
 
 def _table_has_rows(con: Connection, table_name: str) -> bool:
@@ -202,13 +215,15 @@ def _table_exists(con: Connection, table_name: str) -> bool:
 
 def _append_extension_schema(con: Connection, spec: ExtensionSpec) -> None:
     if spec.schema_sql_path is None:
-        raise RuntimeError(f"Extension '{spec.extension_id}' has no schema SQL path configured.")
+        msg = f"Extension '{spec.extension_id}' has no schema SQL path configured."
+        logger.error(msg)
+        raise RuntimeError(msg)
 
     schema_path = Path(spec.schema_sql_path)
     if not schema_path.is_file():
-        raise FileNotFoundError(
-            f"Schema SQL file for extension '{spec.extension_id}' not found: {schema_path}"
-        )
+        msg = f"Schema SQL file for extension '{spec.extension_id}' not found: {schema_path}"
+        logger.error(msg)
+        raise FileNotFoundError(msg)
 
     sql = schema_path.read_text(encoding='utf-8')
     con.executescript(sql)
