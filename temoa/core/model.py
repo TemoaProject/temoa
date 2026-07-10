@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
+    Any,
     BuildAction,
     Constraint,
     Integers,
@@ -212,9 +213,9 @@ class TemoaModel(AbstractModel):
             ordered=True, initialize=time.init_set_time_optimize, within=self.time_future
         )
         # Define time period vintages to track capacity installation
-        self.vintage_exist = Set(ordered=True, initialize=time.init_set_vintage_exist)
+        self.vintage_exist = Set(ordered=True)
         self.vintage_optimize = Set(ordered=True, initialize=time.init_set_vintage_optimize)
-        self.vintage_all = Set(initialize=self.time_exist | self.time_optimize)
+        self.vintage_all = Set(initialize=self.vintage_exist | self.time_optimize)
         # Perform some basic validation on the specified time periods.
         self.validate_time = BuildAction(rule=time.validate_time)
 
@@ -335,7 +336,9 @@ class TemoaModel(AbstractModel):
         # Define time-related parameters
         # Basic period construction
         self.time_sequencing = Set()  # How do states carry between time segments?
-        self.period_length = Param(self.time_optimize, initialize=time.param_period_length)
+        self.period_length = Param(
+            self.time_optimize | self.time_exist, initialize=time.param_period_length
+        )
         self.days_per_period = Param(domain=PositiveReals, default=365.0)
         self.time_of_day_hours = Param(self.time_of_day, domain=PositiveReals, default=1.0)
         self.segment_fraction_per_season = Param(self.time_season)
@@ -383,6 +386,10 @@ class TemoaModel(AbstractModel):
         self.capacity_to_activity = Param(self.regional_indices, self.tech_all, default=1)
 
         self.existing_capacity = Param(self.regional_indices, self.tech_exist, self.vintage_exist)
+        # This is needed to handle past retirements in myopic mode. Maybe it will find other uses.
+        self.retired_existing_capacity = Param(
+            self.regional_indices, self.time_exist, self.tech_exist, self.vintage_exist, default=0
+        )
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find
         # set violations
@@ -431,9 +438,8 @@ class TemoaModel(AbstractModel):
             default=1,
         )
 
-        self.lifetime_tech = Param(
-            self.regional_indices, self.tech_all, default=TemoaModel.default_lifetime_tech
-        )
+        self.lifetime_tech_rt = Set(dimen=2, initialize=technology.lifetime_tech_indices)
+        self.lifetime_tech = Param(self.lifetime_tech_rt, default=TemoaModel.default_lifetime_tech)
 
         self.lifetime_process_rtv = Set(dimen=3, initialize=technology.lifetime_process_indices)
         self.lifetime_process = Param(
@@ -443,7 +449,7 @@ class TemoaModel(AbstractModel):
         self.lifetime_survival_curve = Param(
             self.regional_indices,
             Integers,
-            self.tech_all,
+            self.tech_all | self.tech_exist,
             self.vintage_all,
             default=technology.get_default_survival,
             validate=validate_0to1,
@@ -621,22 +627,22 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_growth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_growth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_growth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
         self.limit_degrowth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator
+            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
 
         self.limit_emission_constraint_rpe = Set(
