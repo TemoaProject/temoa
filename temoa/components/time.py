@@ -400,3 +400,21 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
                 f', time_season_sequential: {(s, season_frac_seq)}'
             )
             logger.warning(msg)
+
+
+def tod_elapsed_hours(
+    model: TemoaModel,
+    d: TimeOfDay,
+    d_next: TimeOfDay,
+) -> float:
+    """Helper function to get elapsed hours from one time slice to another.
+    Note this uses unadjusted time; i.e., we ignore the segment_fraction_per_season
+    adjustment where one season could be representing multiple days, enlarging
+    the segment fraction of each time slice."""
+    return (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
+
+
+def hours_in_time_slice(model: TemoaModel, s: Season, d: TimeOfDay) -> float:
+    """Helper function to get the number of hours represented by a time slice.
+    Useful for, e.g., adjusting activity to activity per hour."""
+    return value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
