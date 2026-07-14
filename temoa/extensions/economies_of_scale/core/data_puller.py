@@ -33,8 +33,6 @@ def poll_costs(
     Poll the fixed and variable costs for all EOS clusters in the planning horizon
     and add them to the cost entries for the model.
     """
-    if 'eos' not in model.enabled_extensions:
-        return
     model = cast('EOSModel', model)
 
     global_discount_rate = value(model.global_discount_rate)

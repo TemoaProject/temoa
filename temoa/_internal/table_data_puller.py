@@ -20,7 +20,6 @@ from pyomo.core import Objective
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
 from temoa.components.utils import get_variable_efficiency
-from temoa.extensions.economies_of_scale.core import data_puller as eos
 from temoa.types.model_types import EI, FI, SLI, CapData, FlowType
 
 if TYPE_CHECKING:
@@ -491,14 +490,10 @@ def poll_cost_results(
                 }
             )
 
-    # Get nonlinear costs from the EOS extension, if active
-    eos.poll_costs(
-        model=model,
-        exchange_costs=exchange_costs,
-        entries=entries,
-        p_0=p_0_true,
-        epsilon=epsilon,
-    )
+    if 'eos' in model.enabled_extensions:
+        import temoa.extensions.economies_of_scale.core.data_puller as eos
+
+        eos.poll_costs(model, exchange_costs, entries, p_0_true, epsilon)
 
     exchange_entries = exchange_costs.get_entries()
     return entries, exchange_entries

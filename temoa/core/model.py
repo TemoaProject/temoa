@@ -687,9 +687,13 @@ class TemoaModel(AbstractModel):
         self.seasonal_storage_constraints_rpsdtv = Set(
             dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
-        self.limit_storage_fraction_param_rsdt = (
-            Set()
-        )  # populated by hybrid_loader with (r, s, d, t, op) keys
+        self.limit_storage_fraction_param_rsdt = Set(
+            within=self.regional_global_indices
+            * (self.time_season | self.time_season_sequential)
+            * self.time_of_day
+            * self.tech_storage
+            * self.operator
+        )
         self.limit_storage_fraction = Param(
             self.limit_storage_fraction_param_rsdt, validate=validate_0to1
         )
