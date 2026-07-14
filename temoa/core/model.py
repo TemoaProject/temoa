@@ -952,30 +952,17 @@ class TemoaModel(AbstractModel):
             rule=storage.limit_storage_fraction_constraint,
         )
 
-        self.ramp_up_day_constraint_rpsdtv = Set(
-            dimen=6, initialize=operations.ramp_up_day_constraint_indices
+        self.ramp_up_constraint_rpsdtv = Set(
+            dimen=6, initialize=operations.ramp_up_constraint_indices
         )
-        self.ramp_up_day_constraint = Constraint(
-            self.ramp_up_day_constraint_rpsdtv, rule=operations.ramp_up_day_constraint
+        self.ramp_down_constraint_rpsdtv = Set(
+            dimen=6, initialize=operations.ramp_down_constraint_indices
         )
-        self.ramp_down_day_constraint_rpsdtv = Set(
-            dimen=6, initialize=operations.ramp_down_day_constraint_indices
+        self.ramp_down_constraint = Constraint(
+            self.ramp_down_constraint_rpsdtv, rule=operations.ramp_down_constraint
         )
-        self.ramp_down_day_constraint = Constraint(
-            self.ramp_down_day_constraint_rpsdtv, rule=operations.ramp_down_day_constraint
-        )
-
-        self.ramp_up_season_constraint_rpsstv = Set(
-            dimen=6, initialize=operations.ramp_up_season_constraint_indices
-        )
-        self.ramp_up_season_constraint = Constraint(
-            self.ramp_up_season_constraint_rpsstv, rule=operations.ramp_up_season_constraint
-        )
-        self.ramp_down_season_constraint_rpsstv = Set(
-            dimen=6, initialize=operations.ramp_down_season_constraint_indices
-        )
-        self.ramp_down_season_constraint = Constraint(
-            self.ramp_down_season_constraint_rpsstv, rule=operations.ramp_down_season_constraint
+        self.ramp_up_constraint = Constraint(
+            self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
         )
 
         self.reserve_margin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
