@@ -31,9 +31,7 @@ def get_tperiods(inp_f: str) -> dict[str, list[int]]:
     for row in cur:
         x.append(row[0])
     for y in x:
-        cur.execute(
-            'SELECT DISTINCT period FROM output_flow_out WHERE scenario = ?', (y,)
-        )
+        cur.execute('SELECT DISTINCT period FROM output_flow_out WHERE scenario = ?', (y,))
         periods_list[y] = []
         for per in cur:
             z = per[0]

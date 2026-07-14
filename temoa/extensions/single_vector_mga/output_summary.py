@@ -1,6 +1,7 @@
 """
 A tabular summation of the results from an SVMGA run
 """
+
 from __future__ import annotations
 
 import sqlite3

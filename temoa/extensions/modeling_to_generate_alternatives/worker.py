@@ -1,6 +1,7 @@
 """
 Class to contain Workers that execute solves in separate processes
 """
+
 from __future__ import annotations
 
 import logging.handlers
@@ -52,15 +53,16 @@ class Worker(Process):
         self.solver_name = solver_name
         self.solver_options = solver_options or {}
         self.solver_log_path = solver_log_path
-        self.opt = None # Initialize in run()
+        self.opt = None  # Initialize in run()
 
         self.log_root_name = log_root_name
         self.log_level = log_level
         self.solve_count = 0
 
     def run(self) -> None:
-        logger: logging.Logger = getLogger('.'.join(
-            (self.log_root_name, 'worker', str(self.worker_number))))
+        logger: logging.Logger = getLogger(
+            '.'.join((self.log_root_name, 'worker', str(self.worker_number)))
+        )
         logger.propagate = False  # prevent duplicate logs
         # add a handler that pushes to the queue
         handler = logging.handlers.QueueHandler(self.log_queue)
@@ -133,7 +135,8 @@ class Worker(Process):
                         status = solve_res['Solver'].termination_condition
                         logger.info(
                             'Worker %d did not solve.  Results status: %s',
-                            self.worker_number, status
+                            self.worker_number,
+                            status,
                         )
             except AttributeError:
                 pass
