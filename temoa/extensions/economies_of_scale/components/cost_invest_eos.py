@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from itertools import product as cross_product
 from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.costs import loan_cost, loan_cost_survival_curve
 
 if TYPE_CHECKING:
@@ -26,13 +26,10 @@ def cost_invest_eos_cumulative_capacity_indices(
     model: EOSModel,
 ) -> set[tuple[Region, Period, Technology, int]]:
     return {
-        (r, cast('Period', v), t, n)
+        (r, _p, t, n)
         for r, t, n in model.cost_invest_eos.sparse_keys()
-        for _r in geography.gather_group_regions(model, r)
-        for _t in technology.gather_group_techs(model, t)
         for _p in model.time_optimize
-        for v in model.process_vintages.get((_r, _p, _t), set())
-        if v == _p
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, _p)
     }
 
 
@@ -49,11 +46,8 @@ def append_cost_invest_eos_rtv(model: EOSModel) -> None:
     discounting in the objective function.
     """
     for r, p, t in model.cost_invest_eos_period_rpt:
-        regions = geography.gather_group_regions(model, r)
-        techs = technology.gather_group_techs(model, t)
-
         valid_rtv = {
-            (_r, _t, p) for _r in regions for _t in techs if (_r, _t, p) in model.process_periods
+            (_r, _t, p) for _r, _t in capacity.gather_group_built_processes(model, r, t, p)
         }
         for rtv in valid_rtv:
             if rtv not in model.cost_invest_rtv:
@@ -124,35 +118,31 @@ def initialize_cost_invest_eos(model: EOSModel) -> None:
     # parameters.  Check that all r, t combos in the cluster share the same
     # lifetime and loan parameters.
     for r, p, t in model.cost_invest_eos_period_rpt:
-        regions = geography.gather_group_regions(model, r)
-        techs = technology.gather_group_techs(model, t)
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, p):
+            # Store first valid process as our reference for this period
+            if (r, p, t) not in model.cost_invest_eos_reference_process:
+                model.cost_invest_eos_reference_process[r, p, t] = _r, _t
 
-        for _r, _t in cross_product(regions, techs):
-            if (_r, _t, p) in model.process_periods:
-                # Store first valid process as our reference for this period
-                if (r, p, t) not in model.cost_invest_eos_reference_process:
-                    model.cost_invest_eos_reference_process[r, p, t] = _r, _t
-
-                # Check that the assumptions hold
-                r0, t0 = model.cost_invest_eos_reference_process[r, p, t]
-                if any(
-                    (
-                        abs(life[r0, t0, p] - life[_r, _t, p]) >= 0.001,
-                        abs(loan_life[r0, t0, p] - loan_life[_r, _t, p]) >= 0.001,
-                        abs(loan_rate[r0, t0, p] - loan_rate[_r, _t, p]) >= 0.001,
-                    )
-                ):
-                    msg = (
-                        'Processes assigned to the same cost_invest_eos cost curve must all have '
-                        'the same process lifetime, loan lifetime, and loan rate. These two '
-                        'processes do not match:\n '
-                        f'({r0}, {t0}, {p}) : lifetime = {life[r0, t0, p]}, '
-                        f'loan life = {loan_life[r0, t0, p]}, loan rate = {loan_rate[r0, t0, p]}\n'
-                        f'({_r}, {_t}, {p}) : lifetime = {life[_r, _t, p]}, '
-                        f'loan life = {loan_life[_r, _t, p]}, loan rate = {loan_rate[_r, _t, p]}'
-                    )
-                    logger.error(msg)
-                    raise ValueError(msg)
+            # Check that the assumptions hold
+            r0, t0 = model.cost_invest_eos_reference_process[r, p, t]
+            if any(
+                (
+                    abs(life[r0, t0, p] - life[_r, _t, p]) >= 0.001,
+                    abs(loan_life[r0, t0, p] - loan_life[_r, _t, p]) >= 0.001,
+                    abs(loan_rate[r0, t0, p] - loan_rate[_r, _t, p]) >= 0.001,
+                )
+            ):
+                msg = (
+                    'Processes assigned to the same cost_invest_eos cost curve must all have '
+                    'the same process lifetime, loan lifetime, and loan rate. These two '
+                    'processes do not match:\n '
+                    f'({r0}, {t0}, {p}) : lifetime = {life[r0, t0, p]}, '
+                    f'loan life = {loan_life[r0, t0, p]}, loan rate = {loan_rate[r0, t0, p]}\n'
+                    f'({_r}, {_t}, {p}) : lifetime = {life[_r, _t, p]}, '
+                    f'loan life = {loan_life[_r, _t, p]}, loan rate = {loan_rate[_r, _t, p]}'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
 
 
 # --- Enforce the rules of cumulative capacity progression up the cost curve ---

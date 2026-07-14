@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import quicksum, value
 
-import temoa.components.geography as geography
-import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.costs import fixed_or_variable_cost
 
 if TYPE_CHECKING:
@@ -212,19 +211,14 @@ def cost_fixed_eos_capacity_constraint(
     :code:`v_capacity_available_by_period_and_tech[r', p, t']`.
     """
 
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
     cap_eos = quicksum(
         model.v_cost_fixed_eos_capacity[r, p, t, n] for n in model.cost_fixed_eos_segments[r, p, t]
     )
-    capacity = quicksum(
+    cap = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
-        for _t in techs
-        for _r in regions
-        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
     )
-    return capacity == cap_eos
+    return cap == cap_eos
 
 
 # --- Calculating costs ---
