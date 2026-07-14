@@ -125,6 +125,29 @@ def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     assert len(cap_rows) == 1
     assert cap_rows[0] == ('R1', 'T1', 2030, 10.0, 'ge')
 
+    # Split-table routing: an annual tech's split must land in the *_annual table —
+    # the seasonal split constraints silently skip annual techs, so a mis-routed row
+    # disappears from the model without error.
+    in_seasonal = conn.execute(
+        'SELECT region, period, input_comm, tech, operator, proportion FROM limit_tech_input_split'
+    ).fetchall()
+    assert in_seasonal == [('R1', 2030, 'In', 'T1', 'ge', pytest.approx(0.3))]
+    in_annual = conn.execute(
+        'SELECT region, period, input_comm, tech, operator, proportion '
+        'FROM limit_tech_input_split_annual'
+    ).fetchall()
+    assert in_annual == [('R1', 2030, 'In', 'T2', 'ge', pytest.approx(0.4))]
+    out_seasonal = conn.execute(
+        'SELECT region, period, tech, output_comm, operator, proportion '
+        'FROM limit_tech_output_split'
+    ).fetchall()
+    assert out_seasonal == [('R1', 2030, 'T1', 'Out', 'ge', pytest.approx(0.5))]
+    out_annual = conn.execute(
+        'SELECT region, period, tech, output_comm, operator, proportion '
+        'FROM limit_tech_output_split_annual'
+    ).fetchall()
+    assert out_annual == [('R1', 2030, 'T2', 'Out', 'ge', pytest.approx(0.6))]
+
     emis_rows = conn.execute(
         'SELECT region, period, value, operator FROM limit_emission'
     ).fetchall()

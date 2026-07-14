@@ -30,3 +30,11 @@ INSERT INTO CapacityFactorProcess (region, period, season, tod, tech, vintage, f
 INSERT INTO Efficiency (region, input_comm, tech, vintage, output_comm, efficiency) VALUES ('R1', 'In', 'T1', 2030, 'Out', 0.9);
 INSERT INTO LimitCapacity (region, period, tech_or_group, operator, capacity, units, notes) VALUES ('R1', 2030, 'T1', 'ge', 10.0, 'GW', 'test op');
 INSERT INTO LimitEmission (region, period, emis_comm, operator, value, units, notes) VALUES ('R1', 2030, 'Out', 'le', 100.0, 'kt', 'test op');
+
+-- Split tables (explicit seasonal/annual in v3.1) — verify placement survives migration.
+INSERT INTO Technology (tech, flag, unlim_cap, annual, reserve, curtail, retire, flex, exchange, seas_stor) VALUES ('T2', 'p', 0, 1, 0, 0, 0, 0, 0, 0);
+INSERT INTO Efficiency (region, input_comm, tech, vintage, output_comm, efficiency) VALUES ('R1', 'In', 'T2', 2030, 'Out', 0.9);
+INSERT INTO LimitTechInputSplit (region, period, input_comm, tech, operator, proportion, notes) VALUES ('R1', 2030, 'In', 'T1', 'ge', 0.3, 'seasonal-tech split');
+INSERT INTO LimitTechInputSplitAnnual (region, period, input_comm, tech, operator, proportion, notes) VALUES ('R1', 2030, 'In', 'T2', 'ge', 0.4, 'annual-tech split');
+INSERT INTO LimitTechOutputSplit (region, period, tech, output_comm, operator, proportion, notes) VALUES ('R1', 2030, 'T1', 'Out', 'ge', 0.5, 'seasonal-tech split');
+INSERT INTO LimitTechOutputSplitAnnual (region, period, tech, output_comm, operator, proportion, notes) VALUES ('R1', 2030, 'T2', 'Out', 'ge', 0.6, 'annual-tech split');
