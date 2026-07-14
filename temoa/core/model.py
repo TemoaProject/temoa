@@ -39,9 +39,6 @@ from temoa.components import (
     technology,
     time,
 )
-from temoa.extensions.economies_of_scale.core.model import (
-    register_early_eos_components,
-)
 from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
@@ -570,7 +567,10 @@ class TemoaModel(AbstractModel):
         self.cost_invest = Param(self.cost_invest_rtv)
 
         # Inject cost_invest_eos extension components prior to loan params, if active
-        register_early_eos_components(self)
+        if 'eos' in self.enabled_extensions:
+            import temoa.extensions.economies_of_scale.core.model as eos
+
+            eos.register_early_eos_components(self)
 
         self.default_loan_rate = Param(domain=NonNegativeReals)
         self.loan_rate = Param(
@@ -687,9 +687,13 @@ class TemoaModel(AbstractModel):
         self.seasonal_storage_constraints_rpsdtv = Set(
             dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
-        self.limit_storage_fraction_param_rsdt = (
-            Set()
-        )  # populated by hybrid_loader with (r, s, d, t, op) keys
+        self.limit_storage_fraction_param_rsdt = Set(
+            within=self.regional_global_indices
+            * (self.time_season | self.time_season_sequential)
+            * self.time_of_day
+            * self.tech_storage
+            * self.operator
+        )
         self.limit_storage_fraction = Param(
             self.limit_storage_fraction_param_rsdt, validate=validate_0to1
         )

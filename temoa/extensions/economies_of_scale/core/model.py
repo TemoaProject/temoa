@@ -82,8 +82,6 @@ if TYPE_CHECKING:
 
 def register_early_eos_components(model: TemoaModel) -> None:
     """Build cost_invest_eos components that must be instantiated before loan parameters."""
-    if 'eos' not in model.enabled_extensions:
-        return
     m = cast('EOSModel', model)
 
     m.cost_invest_eos_rtn = Set(
