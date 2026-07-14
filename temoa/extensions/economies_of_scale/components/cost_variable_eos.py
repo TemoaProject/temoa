@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import quicksum, value
 
-import temoa.components.geography as geography
-import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.costs import fixed_or_variable_cost
 
 if TYPE_CHECKING:
@@ -218,18 +217,14 @@ def cost_variable_eos_activity_constraint(
     :code:`v_flow_out_annual` for annual technologies (no :math:`s,d` indices).
     """
 
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
     activity_eos = quicksum(
         model.v_cost_variable_eos_activity[r, p, t, n]
         for n in model.cost_variable_eos_segments[r, p, t]
     )
     activity = quicksum(
         model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if _t not in model.tech_annual
-        for _r in regions
         for S_v in model.process_vintages.get((_r, p, _t), [])
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
@@ -238,9 +233,8 @@ def cost_variable_eos_activity_constraint(
     )
     activity += quicksum(
         model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if _t in model.tech_annual
-        for _r in regions
         for S_v in model.process_vintages.get((_r, p, _t), [])
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]

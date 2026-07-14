@@ -168,6 +168,9 @@ class TemoaModel(AbstractModel):
         # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         self.retirement_periods: t.RetirementPeriodsDict = {}
         self.process_vintages: t.ProcessVintagesDict = {}
+        """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
+        self.group_built_processes: t.GroupBuiltProcessesDict = {}
+        self.group_active_processes: t.GroupActiveProcessesDict = {}
         # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         self.survival_curve_periods: t.SurvivalCurvePeriodsDict = {}
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""

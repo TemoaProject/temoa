@@ -6,6 +6,7 @@ from pyomo.environ import Constraint, quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.utils import Operator, get_adjusted_existing_capacity, operator_expression
 
 if TYPE_CHECKING:
@@ -89,15 +90,11 @@ def limit_growth_capacity(
     growth = model.limit_degrowth_capacity if degrowth else model.limit_growth_capacity
     rate = 1 + value(growth[r, t, op][0])
     seed = value(growth[r, t, op][1])
-    cap_rpt = model.v_capacity_available_by_period_and_tech
 
-    cap_indices = {(_r, _p, _t) for _r, _p, _t in cap_rpt.keys() if _t in techs and _r in regions}
-    periods = sorted({_p for _r, _p, _t in cap_indices})
-
-    if len(periods) == 0:
-        return Constraint.Skip
-
-    capacity = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p)
+    cap = quicksum(
+        model.v_capacity_available_by_period_and_tech[_r, p, _t]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+    )
 
     capacity_prev = 0.0
 
@@ -114,12 +111,15 @@ def limit_growth_capacity(
             )
     else:
         p_prev = model.time_optimize.prev(p)
-        capacity_prev = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p_prev)
+        capacity_prev = quicksum(
+            model.v_capacity_available_by_period_and_tech[_r, p_prev, _t]
+            for _r, _t in capacity.gather_group_active_processes(model, r, p_prev, t)
+        )
 
     if degrowth:
-        expr = operator_expression(capacity_prev, Operator(op), seed + capacity * rate)
+        expr = operator_expression(capacity_prev, Operator(op), seed + cap * rate)
     else:
-        expr = operator_expression(capacity, Operator(op), seed + capacity_prev * rate)
+        expr = operator_expression(cap, Operator(op), seed + capacity_prev * rate)
 
     if isinstance(expr, bool):
         return Constraint.Skip
