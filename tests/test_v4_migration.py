@@ -90,6 +90,24 @@ def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) 
         _verify_migrated_data(conn_db)
 
 
+def test_get_annual_techs_source_variants() -> None:
+    """_get_annual_techs must read Technology.annual, fall back to a tech_annual
+    table (older v3 databases), and return an empty set when neither exists."""
+    from temoa.utilities.master_migration import _get_annual_techs
+
+    con = sqlite3.connect(':memory:')
+    con.execute('CREATE TABLE Technology (tech TEXT, annual INTEGER)')
+    con.executemany('INSERT INTO Technology VALUES (?, ?)', [('T1', 0), ('T2', 1)])
+    assert _get_annual_techs(con) == {'T2'}
+
+    con_old = sqlite3.connect(':memory:')
+    con_old.execute('CREATE TABLE tech_annual (tech TEXT)')
+    con_old.execute("INSERT INTO tech_annual VALUES ('T9')")
+    assert _get_annual_techs(con_old) == {'T9'}
+
+    assert _get_annual_techs(sqlite3.connect(':memory:')) == set()
+
+
 def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     # Check time_season restructuring (aggregated from TimeSegmentFraction)
     # Summer: 0.4 + 0.3 = 0.7
