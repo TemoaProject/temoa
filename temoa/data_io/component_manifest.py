@@ -16,11 +16,14 @@ To add a new standard component to the model, a developer typically only needs
 to add a new `LoadItem` to this manifest.
 """
 
+from collections.abc import Sequence
+
 from temoa.core.model import TemoaModel
 from temoa.data_io.loader_manifest import LoadItem
+from temoa.extensions.framework import append_extension_manifest_items, resolve_extension_specs
 
 
-def build_manifest(model: TemoaModel) -> list[LoadItem]:
+def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None) -> list[LoadItem]:
     """
     Builds the manifest of all data components to be loaded into the Pyomo model.
 
@@ -655,66 +658,6 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
         LoadItem(
-            component=model.limit_growth_capacity,
-            table='limit_growth_capacity',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=model.limit_growth_new_capacity,
-            table='limit_growth_new_capacity',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=model.limit_growth_new_capacity_delta,
-            table='limit_growth_new_capacity_delta',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=model.limit_degrowth_capacity,
-            table='limit_degrowth_capacity',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=model.limit_degrowth_new_capacity,
-            table='limit_degrowth_new_capacity',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
-            component=model.limit_degrowth_new_capacity_delta,
-            table='limit_degrowth_new_capacity_delta',
-            columns=['region', 'tech_or_group', 'operator', 'rate', 'seed'],
-            index_length=3,
-            validator_name='viable_rt',
-            validation_map=(0, 1),
-            is_period_filtered=False,
-            is_table_required=False,
-        ),
-        LoadItem(
             component=model.limit_resource,
             table='limit_resource',
             columns=['region', 'tech_or_group', 'operator', 'cum_act'],
@@ -794,4 +737,5 @@ def build_manifest(model: TemoaModel) -> list[LoadItem]:
             is_table_required=False,
         ),
     ]
-    return manifest
+    extension_specs = resolve_extension_specs(extension_ids)
+    return append_extension_manifest_items(model, manifest, extension_specs)
