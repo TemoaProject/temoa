@@ -118,6 +118,29 @@ def get_table_info(conn: sqlite3.Connection, table: str) -> list[tuple[Any, ...]
         return []
 
 
+# v3-style split tables carry BOTH seasonal- and annual-tech rows; the v4 target depends
+# on the tech's `annual` flag. Temoa's seasonal split constraints skip annual techs, so an
+# annual tech's split row migrated into the seasonal table is silently dropped from the model.
+ANNUAL_SPLIT_TABLES = {
+    'TechInputSplit': 'limit_tech_input_split_annual',
+    'TechOutputSplit': 'limit_tech_output_split_annual',
+}
+
+
+def _get_annual_techs(con_old: sqlite3.Connection) -> set[str]:
+    """Techs flagged annual in the source DB (`Technology.annual`, with a `tech_annual`
+    table fallback for older v3 databases). Empty set if neither exists."""
+    for query in (
+        'SELECT tech FROM Technology WHERE annual = 1',
+        'SELECT tech FROM tech_annual',
+    ):
+        try:
+            return {r[0] for r in con_old.execute(query).fetchall()}
+        except sqlite3.OperationalError:
+            continue
+    return set()
+
+
 def _migrate_operator_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
     """Migrate max/min tables to operator constraints."""
     print('--- Migrating max/min tables to operator constraints ---')
@@ -156,6 +179,25 @@ def _migrate_operator_tables(con_old: sqlite3.Connection, con_new: sqlite3.Conne
                 ]
 
         placeholders = ','.join(['?'] * len(data[0]))
+
+        if old_name in ANNUAL_SPLIT_TABLES:
+            # Route by the tech's `annual` flag (see ANNUAL_SPLIT_TABLES note). The
+            # seasonal and annual targets are column-identical, so the transformed
+            # rows insert into either.
+            annual_techs = _get_annual_techs(con_old)
+            tech_index = new_cols.index('tech')
+            for target, rows in (
+                (new_name, [r for r in data if r[tech_index] not in annual_techs]),
+                (ANNUAL_SPLIT_TABLES[old_name], [r for r in data if r[tech_index] in annual_techs]),
+            ):
+                if rows:
+                    con_new.executemany(
+                        f'INSERT OR REPLACE INTO {target} VALUES ({placeholders})', rows
+                    )
+                    print(f'Migrated {len(rows)} rows: {old_name} -> {target}')
+            total += len(data)
+            continue
+
         query = f'INSERT OR REPLACE INTO {new_name} VALUES ({placeholders})'
         con_new.executemany(query, data)
         print(f'Migrated {len(data)} rows: {old_name} -> {new_name}')

@@ -30,3 +30,11 @@ INSERT INTO CapacityFactorProcess (region, season, tod, tech, vintage, factor) V
 INSERT INTO Efficiency (region, input_comm, tech, vintage, output_comm, efficiency) VALUES ('R1', 'In', 'T1', 2030, 'Out', 0.9);
 INSERT INTO MinCapacity (region, tech, period, min_cap, units, notes) VALUES ('R1', 'T1', 2030, 10.0, 'GW', 'test op');
 INSERT INTO EmissionLimit (region, period, emis_comm, value, units, notes) VALUES ('R1', 2030, 'Out', 100.0, 'kt', 'test op');
+
+-- Split-table routing: T2 is an annual tech; its split rows must land in the *_annual tables.
+INSERT INTO Technology (tech, flag, unlim_cap, annual, reserve, curtail, retire, flex, exchange) VALUES ('T2', 'p', 0, 1, 0, 0, 0, 0, 0);
+INSERT INTO Efficiency (region, input_comm, tech, vintage, output_comm, efficiency) VALUES ('R1', 'In', 'T2', 2030, 'Out', 0.9);
+INSERT INTO TechInputSplit (region, period, input_comm, tech, min_proportion, notes) VALUES ('R1', 2030, 'In', 'T1', 0.3, 'seasonal-tech split');
+INSERT INTO TechInputSplit (region, period, input_comm, tech, min_proportion, notes) VALUES ('R1', 2030, 'In', 'T2', 0.4, 'annual-tech split');
+INSERT INTO TechOutputSplit (region, period, tech, output_comm, min_proportion, notes) VALUES ('R1', 2030, 'T1', 'Out', 0.5, 'seasonal-tech split');
+INSERT INTO TechOutputSplit (region, period, tech, output_comm, min_proportion, notes) VALUES ('R1', 2030, 'T2', 'Out', 0.6, 'annual-tech split');
