@@ -10,6 +10,7 @@ from pyomo.opt import SolverResults
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.extensions.framework import get_known_extension_specs
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,13 @@ def _build_test_db(
         con.executescript(SCHEMA_PATH.read_text(encoding='utf-8'))
         # Force FK OFF again as schema file might turn it on at the end
         con.execute('PRAGMA foreign_keys = OFF')
+
+        # 1b. Load extension-owned tables so data scripts can populate them.
+        # Extension tables are not part of the central schema, so apply each
+        # known extension's schema (CREATE TABLE IF NOT EXISTS) here.
+        for spec in get_known_extension_specs().values():
+            if spec.schema_sql_path:
+                con.executescript(Path(spec.schema_sql_path).read_text(encoding='utf-8'))
 
         # 2. Load data scripts
         for script_path in data_scripts:

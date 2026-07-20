@@ -14,8 +14,6 @@ if TYPE_CHECKING:
     from temoa.extensions.modeling_to_generate_alternatives.vector_manager import VectorManager
 
 
-
-
 def get_manager(
     axis: MgaAxis,
     weighting: MgaWeighting,

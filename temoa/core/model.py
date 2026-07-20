@@ -9,12 +9,12 @@ SPDX-License-Identifier: MIT
 """
 
 import logging
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from pyomo.core import BuildCheck, Set, Var
 from pyomo.environ import (
     AbstractModel,
-    Any,
     BuildAction,
     Constraint,
     Integers,
@@ -39,6 +39,10 @@ from temoa.components import (
     technology,
     time,
 )
+from temoa.extensions.economies_of_scale.core.model import (
+    register_early_eos_components,
+)
+from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
     no_slash_or_pipe,
     region_check,
@@ -100,8 +104,15 @@ class TemoaModel(AbstractModel):
     # this is used in several places outside this class, and this provides no-build access to it
     default_lifetime_tech = 40
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(
+        self,
+        *args: object,
+        extensions: Sequence[str] | None = None,
+        **kwargs: object,
+    ) -> None:
         AbstractModel.__init__(self, *args, **kwargs)
+        self.enabled_extensions = tuple(extensions or ())
+        self.extension_specs = resolve_extension_specs(self.enabled_extensions)
 
         ################################################
         #       Internally used Data Containers        #
@@ -555,6 +566,9 @@ class TemoaModel(AbstractModel):
         )
         self.cost_invest = Param(self.cost_invest_rtv)
 
+        # Inject cost_invest_eos extension components prior to loan params, if active
+        register_early_eos_components(self)
+
         self.default_loan_rate = Param(domain=NonNegativeReals)
         self.loan_rate = Param(
             self.cost_invest_rtv, domain=NonNegativeReals, default=costs.get_default_loan_rate
@@ -624,25 +638,6 @@ class TemoaModel(AbstractModel):
         )
         self.limit_annual_capacity_factor = Param(
             self.limit_annual_capacity_factor_constraint_rtvo, validate=validate_0to1
-        )
-
-        self.limit_growth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_growth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_new_capacity = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_growth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
-        )
-        self.limit_degrowth_new_capacity_delta = Param(
-            self.regional_global_indices, self.tech_or_group, self.operator, within=Any
         )
 
         self.limit_emission_constraint_rpe = Set(
@@ -993,51 +988,6 @@ class TemoaModel(AbstractModel):
             ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
         )
 
-        self.limit_growth_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_capacity_indices
-        )
-        self.limit_growth_capacity_constraint = Constraint(
-            self.limit_growth_capacity_constraint_rpt,
-            rule=limits.limit_growth_capacity_constraint_rule,
-        )
-        self.limit_degrowth_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_capacity_indices
-        )
-        self.limit_degrowth_capacity_constraint = Constraint(
-            self.limit_degrowth_capacity_constraint_rpt,
-            rule=limits.limit_degrowth_capacity_constraint_rule,
-        )
-
-        self.limit_growth_new_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_new_capacity_indices
-        )
-        self.limit_growth_new_capacity_constraint = Constraint(
-            self.limit_growth_new_capacity_constraint_rpt,
-            rule=limits.limit_growth_new_capacity_constraint_rule,
-        )
-        self.limit_degrowth_new_capacity_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_new_capacity_indices
-        )
-        self.limit_degrowth_new_capacity_constraint = Constraint(
-            self.limit_degrowth_new_capacity_constraint_rpt,
-            rule=limits.limit_degrowth_new_capacity_constraint_rule,
-        )
-
-        self.limit_growth_new_capacity_delta_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_growth_new_capacity_delta_indices
-        )
-        self.limit_growth_new_capacity_delta_constraint = Constraint(
-            self.limit_growth_new_capacity_delta_constraint_rpt,
-            rule=limits.limit_growth_new_capacity_delta_constraint_rule,
-        )
-        self.limit_degrowth_new_capacity_delta_constraint_rpt = Set(
-            dimen=4, initialize=limits.limit_degrowth_new_capacity_delta_indices
-        )
-        self.limit_degrowth_new_capacity_delta_constraint = Constraint(
-            self.limit_degrowth_new_capacity_delta_constraint_rpt,
-            rule=limits.limit_degrowth_new_capacity_delta_constraint_rule,
-        )
-
         self.limit_activity_constraint = Constraint(
             self.limit_activity_constraint_rpt, rule=limits.limit_activity_constraint
         )
@@ -1149,6 +1099,8 @@ class TemoaModel(AbstractModel):
             self.linked_emissions_tech_constraint_rpsdtve,
             rule=emissions.linked_emissions_tech_constraint,
         )
+
+        apply_model_extension_hooks(self, self.extension_specs)
 
         self.progress_marker_9 = BuildAction(['Finished Constraints'], rule=progress_check)
 

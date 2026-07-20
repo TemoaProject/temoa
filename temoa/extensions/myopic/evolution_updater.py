@@ -1,15 +1,17 @@
-import sqlite3
 import logging
+import sqlite3
+
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 
 logger = logging.getLogger(__name__)
 
+
 def iterate(
-        idx: MyopicIndex | None = None,
-        prev_base_year: int | None = None,
-        last_instance_status: str | None = None,
-        db_con: sqlite3.Connection | None = None,
-    ) -> None:
+    idx: MyopicIndex | None = None,
+    prev_base_year: int | None = None,
+    last_instance_status: str | None = None,
+    db_con: sqlite3.Connection | None = None,
+) -> None:
     """
     This function is called at the end of each myopic iteration,
     after the results have been recorded to the myopic database.
@@ -29,7 +31,7 @@ def iterate(
     """
 
     assert idx is not None
-    logger.info(f"Running myopic iteration updater for base year {idx.base_year}")
+    logger.info('Running myopic iteration updater for base year %s', idx.base_year)
 
     # Update your myopic database here.
 

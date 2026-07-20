@@ -171,18 +171,41 @@ def test_myopic_stress_tests(
 ) -> None:
     """
     The idea of these is that they should be tightly constrained so that if anything
-    is wrong the model will fail to find a feasible solution. Use lots of equality constraints
+    is wrong the model will fail to find a feasible solution. Use lots of equality constraints.
+
+    Two new paths test limit_discrete_capacity and limit_discrete_new_capacity with EoS costs
+    and survival curves.
     """
     _, _, _, sequencer = system_test_run
     import contextlib
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
+        dc_fixed = cur.execute(
+            "SELECT SUM(fixed) FROM output_cost WHERE tech='tech_discrete_cap'"
+        ).fetchone()[0]
+        dc_variable = cur.execute(
+            "SELECT SUM(var) FROM output_cost WHERE tech='tech_discrete_cap'"
+        ).fetchone()[0]
+        dnc_invest = cur.execute(
+            "SELECT SUM(invest) FROM output_cost WHERE tech='tech_discrete_new_cap'"
+        ).fetchone()[0]
+
+        assert dc_fixed == pytest.approx(37, rel=1e-5), (
+            'tech_discrete_cap fixed cost did not match expected'
+        )
+        assert dc_variable == pytest.approx(24, rel=1e-5), (
+            'tech_discrete_cap variable cost did not match expected'
+        )
+        assert dnc_invest == pytest.approx(2.5, rel=1e-5), (
+            'tech_discrete_new_cap invest cost did not match expected'
+        )
+
+        # This part is just a very rough check on the objective function. Constraints inside the
+        # model are extremely tight so other changes will likely lead to infeasibility
         res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
         obj = res[0]
-        # This part is just a very rough check on the objective function. Constraints inside the
-        # model are extremely tight so any other changes will lead to infeasibility
-        assert obj == pytest.approx(32, abs=1), (
+        assert obj == pytest.approx(309, rel=0.01), (
             'objective function value did not match expected for myopic stress test'
         )
 

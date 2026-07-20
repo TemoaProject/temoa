@@ -34,6 +34,12 @@ from pyomo.dataportal import DataPortal
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
 from temoa.data_io.component_manifest import build_manifest
+from temoa.extensions.framework import (
+    assert_disabled_extension_tables_are_empty,
+    ensure_enabled_extension_tables_exist,
+    merge_regional_group_tables,
+    resolve_extension_specs,
+)
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
@@ -49,7 +55,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 # A manifest of tables that may contain region groups, used by a custom loader.
-tables_with_regional_groups = {
+BASE_REGIONAL_GROUP_TABLES = {
     'limit_annual_capacity_factor': 'region',
     'limit_emission': 'region',
     'limit_seasonal_capacity_factor': 'region',
@@ -60,12 +66,6 @@ tables_with_regional_groups = {
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
-    'limit_growth_capacity': 'region',
-    'limit_degrowth_capacity': 'region',
-    'limit_growth_new_capacity': 'region',
-    'limit_degrowth_new_capacity': 'region',
-    'limit_growth_new_capacity_delta': 'region',
-    'limit_degrowth_new_capacity_delta': 'region',
 }
 
 
@@ -90,10 +90,21 @@ class HybridLoader:
         self.con = db_connection
         self.config = config
         self.myopic_index: MyopicIndex | None = None
+        self.extension_specs = resolve_extension_specs(self.config.extensions)
+        self.model = TemoaModel(extensions=self.config.extensions)
+        self.tables_with_regional_groups = merge_regional_group_tables(
+            BASE_REGIONAL_GROUP_TABLES, self.extension_specs
+        )
+        ensure_enabled_extension_tables_exist(
+            self.con,
+            self.extension_specs,
+            input_database=str(self.config.input_database),
+            silent=self.config.silent,
+        )
+        assert_disabled_extension_tables_are_empty(self.con, self.extension_specs)
 
         # Build the data loading manifest and a name-based map for quick lookup
-        model = TemoaModel()
-        self.manifest = build_manifest(model)
+        self.manifest = build_manifest(self.model, extension_ids=self.config.extensions)
         self.manifest_map = {item.component.name: item for item in self.manifest}
 
         # --- Data containers and filters populated during loading ---
@@ -205,7 +216,7 @@ class HybridLoader:
 
         data: dict[str, object] = {}
         cur = self.con.cursor()
-        model = TemoaModel()
+        model = self.model
 
         # Load critical time sets first, as they index other components
         if myopic_index:
@@ -235,7 +246,7 @@ class HybridLoader:
         for item in self.manifest:
             # 1. Fetch data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
-            if item.index_length:
+            if item.index_length and len(item.columns) - item.index_length > 1:
                 raw_data = [
                     (*row[0 : item.index_length], row[item.index_length :]) for row in raw_data
                 ]
@@ -525,7 +536,7 @@ class HybridLoader:
         """
         Aggregates region and group names from the Region table and all Limit tables.
         """
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         regions_and_groups: set[str] = set()
 
@@ -534,7 +545,7 @@ class HybridLoader:
                 t[0] for t in cur.execute('SELECT region FROM main.region').fetchall()
             )
 
-        for table, field_name in tables_with_regional_groups.items():
+        for table, field_name in self.tables_with_regional_groups.items():
             if self.table_exists(table):
                 regions_and_groups.update(
                     t[0] for t in cur.execute(f'SELECT {field_name} FROM main.{table}').fetchall()
@@ -959,36 +970,11 @@ class HybridLoader:
         :param data: The main data dictionary.
         :return: A dictionary of the new index sets to be added.
         """
-        model = TemoaModel()
-        param_idx_sets = {
-            model.cost_invest.name: model.cost_invest_rtv.name,
-            model.cost_emission.name: model.cost_emission_rpe.name,
-            model.demand.name: model.demand_constraint_rpc.name,
-            model.limit_emission.name: model.limit_emission_constraint_rpe.name,
-            model.limit_activity.name: model.limit_activity_constraint_rpt.name,
-            model.limit_seasonal_capacity_factor.name: (
-                model.limit_seasonal_capacity_factor_constraint_rst.name
-            ),
-            model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
-            model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rtvo.name
-            ),
-            model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
-            model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
-            model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rggv.name
-            ),
-            model.limit_resource.name: model.limit_resource_constraint_rt.name,
-            model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,
-            model.renewable_portfolio_standard.name: (
-                model.renewable_portfolio_standard_constraint_rpg.name
-            ),
-        }
-
         res: dict[str, object] = {}
-        for p_name, s_name in param_idx_sets.items():
-            param_data = data.get(p_name)
+        for item in self.manifest:
+            if item.index_set is None:
+                continue
+            param_data = data.get(item.component.name)
             if isinstance(param_data, dict):
-                res[s_name] = list(param_data.keys())
+                res[item.index_set.name] = list(param_data.keys())
         return res
