@@ -397,25 +397,26 @@ def period_cost(model: EOSModel, r: Region, p: Period, t: Technology) -> Express
         # Existing capacity costs to subtract (needed for myopic)
         regions = geography.gather_group_regions(model, r)
         techs = technology.gather_group_techs(model, t)
-        existing_capacity = quicksum(
+        existing_capacity = sum(
             value(model.existing_capacity[_r, _t, _v])
             for _r, _t, _v in model.existing_capacity
             if _r in regions and _t in techs
         )
-        if existing_capacity:
-            for n in model.cost_invest_eos_segments[r, t]:
-                cap_lower, cap_upper, _, _ = model.cost_invest_eos[r, t, n]
-                if value(cap_lower) <= existing_capacity <= value(cap_upper):
-                    prev_cum_cost = cost_invest_eos_segment_cost(model, r, t, n, existing_capacity)
-                    continue  # in case we're exactly on the boundary of two segments
-            if not prev_cum_cost:
-                msg = (
-                    'Existing capacity for a cost_invest_eos cluster is outside the bounds of '
-                    'the cost curve. Check the cost_invest_eos table and existing_capacity '
-                    f'for {r, t}: {existing_capacity}'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
+        in_bounds = False
+        for n in model.cost_invest_eos_segments[r, t]:
+            cap_lower, cap_upper, _, _ = model.cost_invest_eos[r, t, n]
+            if value(cap_lower) <= existing_capacity <= value(cap_upper):
+                prev_cum_cost = cost_invest_eos_segment_cost(model, r, t, n, existing_capacity)
+                in_bounds = True
+                break
+        if not in_bounds:
+            msg = (
+                'Existing capacity for a cost_invest_eos cluster is outside the bounds of '
+                'the cost curve. Check the cost_invest_eos table and existing_capacity '
+                f'for {r, t}: {existing_capacity}'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
     return cumulative_cost - prev_cum_cost
 

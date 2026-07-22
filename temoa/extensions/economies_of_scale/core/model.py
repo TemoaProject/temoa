@@ -14,9 +14,11 @@ from pyomo.environ import (
     Var,
 )
 
-import temoa.extensions.economies_of_scale.components.cost_fixed_eos as cost_fixed_eos
-import temoa.extensions.economies_of_scale.components.cost_invest_eos as cost_invest_eos
-import temoa.extensions.economies_of_scale.components.cost_variable_eos as cost_variable_eos
+from temoa.extensions.economies_of_scale.components import (
+    cost_fixed_eos,
+    cost_invest_eos,
+    cost_variable_eos,
+)
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel

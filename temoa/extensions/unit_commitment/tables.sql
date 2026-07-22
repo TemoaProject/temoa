@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS unit_commitment_startup_cost
 (
     region                          TEXT NOT NULL,
     tech                            TEXT NOT NULL,
-    cost_per_cap                    REAL NOT NULL DEFAULT 0.0,
+    cost_per_cap                    REAL NOT NULL,
     units                           TEXT,
     notes                           TEXT,
     CHECK (cost_per_cap > 0),
@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS unit_commitment_startup_cost
 CREATE TABLE IF NOT EXISTS unit_commitment_startup_emissions
 (
     region                          TEXT NOT NULL,
-    emis_comm                       TEXT NOT NULL DEFAULT '',
+    emis_comm                       TEXT NOT NULL,
     tech                            TEXT NOT NULL,
-    emis_per_cap                    REAL NOT NULL DEFAULT 0.0,
+    emis_per_cap                    REAL NOT NULL,
     units                           TEXT,
     notes                           TEXT,
     CHECK (emis_per_cap > 0),
@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS unit_commitment_startup_emissions
 CREATE TABLE IF NOT EXISTS unit_commitment_startup_input
 (
     region                          TEXT NOT NULL,
-    input_comm                      TEXT NOT NULL DEFAULT '',
+    input_comm                      TEXT NOT NULL,
     tech                            TEXT NOT NULL,
-    input_per_cap                   REAL NOT NULL DEFAULT 0.0,
+    input_per_cap                   REAL NOT NULL,
     units                           TEXT,
     notes                           TEXT,
     CHECK (input_per_cap > 0),

@@ -564,7 +564,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads members into the indexed set `tech_group_members`."""
-        model = TemoaModel()
+        model = self.model
         validator = self.viable_techs.members if self.viable_techs else None
         for group_name, tech in filtered_data:
             if validator is None or tech in validator:
@@ -582,7 +582,7 @@ class HybridLoader:
         """
         Loads time_season as a flat ordered set of season names.
         """
-        model = TemoaModel()
+        model = self.model
         if not filtered_data:
             logger.warning('No time_season table found. Loading a single filler season "S".')
             seasons_to_load: list[tuple[object, ...]] = [('S',)]
@@ -599,7 +599,7 @@ class HybridLoader:
         """
         Composite loader for time_season_sequential and its associated index sets.
         """
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             seg_frac_data = [
                 (row[0], row[2]) for row in filtered_data
@@ -623,7 +623,7 @@ class HybridLoader:
         Handles different queries for myopic vs. standard runs and also
         populates the `tech_exist` set.
         """
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -652,7 +652,6 @@ class HybridLoader:
             self._load_component_data(data, model.vintage_exist, vintage_exist_data)
 
             # Collect existing capacity data indices
-            self.viable_existing_techs = {row[1] for row in rows_to_load}
             self.viable_existing_rt = {(row[0], row[1]) for row in rows_to_load}
             self.viable_existing_rtv = {(row[0], row[1], row[2]) for row in rows_to_load}
 
@@ -672,7 +671,7 @@ class HybridLoader:
             )
             return
 
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -701,12 +700,12 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_tech component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         rows_to_load = cur.execute('SELECT region, tech, lifetime FROM lifetime_tech').fetchall()
         rt_getter = itemgetter(0, 1)
         if self.viable_rt:
-            valid_rt = self.viable_rt.members | self.viable_existing_rt
+            valid_rt = self.viable_rt.member_tuples | self.viable_existing_rt
             rows_to_load = [item for item in rows_to_load if rt_getter(item) in valid_rt]
         self._load_component_data(data, model.lifetime_tech, rows_to_load)
 
@@ -717,7 +716,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_process component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -743,7 +742,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_survival_curve component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -771,7 +770,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the required singleton global_discount_rate."""
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             data[model.global_discount_rate.name] = {None: cast('float', filtered_data[0][0])}
         else:
@@ -787,7 +786,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the optional singleton default_loan_rate."""
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             data[model.default_loan_rate.name] = {None: cast('float', filtered_data[0][0])}
 
@@ -799,7 +798,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the main efficiency parameter, which is pre-calculated."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.efficiency, self.efficiency_values)
 
     def _load_linked_techs(
@@ -832,7 +831,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Composite loader for ramp_down_hourly and its index set `tech_downramping`."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.ramp_down_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted({(row[1],) for row in filtered_data})
@@ -848,7 +847,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Composite loader for ramp_up_hourly and its index set `tech_upramping`."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.ramp_up_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted({(row[1],) for row in filtered_data})
@@ -864,7 +863,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Handles deprecation warning for renewable_portfolio_standard."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
         if filtered_data:
             logger.warning(
