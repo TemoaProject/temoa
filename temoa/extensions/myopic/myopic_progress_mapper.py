@@ -3,7 +3,6 @@ Simple visualizer to track the progress of myopic solve
 """
 
 from datetime import datetime, timedelta
-
 from typing import Literal
 
 from temoa.extensions.myopic.myopic_index import MyopicIndex
@@ -38,7 +37,7 @@ class MyopicProgressMapper:
         print(time_buffer, end='')
         print('*' * tot_length)
         print()
-        print(f"{'HH:MM:SS':10s}", end='')
+        print(f'{"HH:MM:SS":10s}', end='')
         print(' ', end='')
         for year in self.years:
             print(f'{self.leader}{year}{self.trailer}  ', end='')
@@ -47,8 +46,9 @@ class MyopicProgressMapper:
     def timestamp(self) -> str:
         delta = datetime.now() - self.hack
         return (
-            f'Elapsed: {int(delta.total_seconds()//3600):02d}:'
-            f'{int(delta.total_seconds()%3600//60):02d}:{int(delta.total_seconds())%60:02d}   '
+            f'Elapsed: {int(delta.total_seconds() // 3600):02d}:'
+            f'{int(delta.total_seconds() % 3600 // 60):02d}:'
+            f'{int(delta.total_seconds()) % 60:02d}   '
         )
 
     def report(

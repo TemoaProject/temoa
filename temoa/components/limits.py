@@ -14,22 +14,19 @@ from __future__ import annotations
 
 import sys
 from logging import getLogger
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, quicksum, value
 
 import temoa.components.geography as geography
-import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.utils import (
     Operator,
-    get_adjusted_existing_capacity,
     get_variable_efficiency,
     operator_expression,
 )
 
 if TYPE_CHECKING:
-    from pyomo.core import Expression
-
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike, Period, Region, Technology, Vintage
     from temoa.types.core_types import Commodity, Season, TimeOfDay
@@ -135,64 +132,6 @@ def limit_tech_output_split_average_constraint_indices(
     }
 
 
-def limit_growth_capacity_indices(model: TemoaModel) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_growth_capacity.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
-def limit_degrowth_capacity_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_degrowth_capacity.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
-def limit_growth_new_capacity_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_growth_new_capacity.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
-def limit_degrowth_new_capacity_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_degrowth_new_capacity.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
-def limit_growth_new_capacity_delta_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_growth_new_capacity_delta.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
-def limit_degrowth_new_capacity_delta_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Technology, str]]:
-    return {
-        (r, p, t, op)
-        for r, t, op in model.limit_degrowth_new_capacity_delta.sparse_keys()
-        for p in model.time_optimize
-    }
-
-
 def limit_seasonal_capacity_factor_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, Technology, str]]:
@@ -210,9 +149,8 @@ def limit_annual_capacity_factor_indices(
     return {
         (r, p, t, v, o, op)
         for r, t, v, o, op in model.limit_annual_capacity_factor_constraint_rtvo
-        for _r in geography.gather_group_regions(model, r)
-        for _t in technology.gather_group_techs(model, t)
         for p in model.time_optimize
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if o in model.process_outputs.get((_r, p, _t, v), [])
     }
 
@@ -280,27 +218,20 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
     # dev note:  this would generally be applied to a "dummy import" technology to restrict
     #            something like oil/mineral extraction across all model periods. Looks fine to me.
 
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
     activity = quicksum(
         model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs
-        if _t in model.tech_annual
         for p in model.time_optimize
-        for _r in regions
-        if (_r, p, _t) in model.process_vintages
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t in model.tech_annual
         for S_v in model.process_vintages[_r, p, _t]
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
     )
     activity += quicksum(
         model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs
-        if _t not in model.tech_annual
         for p in model.time_optimize
-        for _r in regions
-        if (_r, p, _t) in model.process_vintages
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t not in model.tech_annual
         for S_v in model.process_vintages[_r, p, _t]
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
@@ -340,50 +271,42 @@ def limit_activity_share_constraint(
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit\_activity\_share}}
     """
 
-    regions = geography.gather_group_regions(model, r)
-
-    sub_group = technology.gather_group_techs(model, g1)
     sub_activity = quicksum(
-        model.v_flow_out[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in sub_group
+        model.v_flow_out[S_r, p, s, d, S_i, S_t, S_v, S_o]
+        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g1)
         if S_t not in model.tech_annual
-        for _r in regions
-        for S_v in model.process_vintages.get((_r, p, S_t), [])
-        for S_i in model.process_inputs[_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((S_r, p, S_t), [])
+        for S_i in model.process_inputs[S_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
         for s in model.time_season
         for d in model.time_of_day
     )
     sub_activity += quicksum(
-        model.v_flow_out_annual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in sub_group
+        model.v_flow_out_annual[S_r, p, S_i, S_t, S_v, S_o]
+        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g1)
         if S_t in model.tech_annual
-        for _r in regions
-        for S_v in model.process_vintages.get((_r, p, S_t), [])
-        for S_i in model.process_inputs[_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((S_r, p, S_t), [])
+        for S_i in model.process_inputs[S_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
     )
 
-    super_group = technology.gather_group_techs(model, g2)
     super_activity = quicksum(
-        model.v_flow_out[_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_t in super_group
+        model.v_flow_out[S_r, p, s, d, S_i, S_t, S_v, S_o]
+        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g2)
         if S_t not in model.tech_annual
-        for _r in regions
-        for S_v in model.process_vintages.get((_r, p, S_t), [])
-        for S_i in model.process_inputs[_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((S_r, p, S_t), [])
+        for S_i in model.process_inputs[S_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
         for s in model.time_season
         for d in model.time_of_day
     )
     super_activity += quicksum(
-        model.v_flow_out_annual[_r, p, S_i, S_t, S_v, S_o]
-        for S_t in super_group
+        model.v_flow_out_annual[S_r, p, S_i, S_t, S_v, S_o]
+        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g2)
         if S_t in model.tech_annual
-        for _r in regions
-        for S_v in model.process_vintages.get((_r, p, S_t), [])
-        for S_i in model.process_inputs[_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, S_t, S_v, S_i]
+        for S_v in model.process_vintages.get((S_r, p, S_t), [])
+        for S_i in model.process_inputs[S_r, p, S_t, S_v]
+        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
     )
 
     share_lim = value(model.limit_activity_share[r, p, g1, g2, op])
@@ -410,22 +333,13 @@ def limit_capacity_share_constraint(
     technology or technology group as a fraction of another technology or group.
     """
 
-    regions = geography.gather_group_regions(model, r)
-
-    sub_group = technology.gather_group_techs(model, g1)
     sub_capacity = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
-        for _t in sub_group
-        for _r in regions
-        if (_r, p, _t) in model.process_vintages
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, g1)
     )
-
-    super_group = technology.gather_group_techs(model, g2)
     super_capacity = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
-        for _t in super_group
-        for _r in regions
-        if (_r, p, _t) in model.process_vintages
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, g2)
     )
     share_lim = value(model.limit_capacity_share[r, p, g1, g2, op])
 
@@ -443,22 +357,13 @@ def limit_new_capacity_share_constraint(
     of a given technology or group as a fraction of another technology or
     group."""
 
-    regions = geography.gather_group_regions(model, r)
-
-    sub_group = technology.gather_group_techs(model, g1)
     sub_new_cap = quicksum(
         model.v_new_capacity[_r, _t, v]
-        for _t in sub_group
-        for _r in regions
-        if (_r, _t, v) in model.process_periods
+        for _r, _t in capacity.gather_group_built_processes(model, r, g1, v)
     )
-
-    super_group = technology.gather_group_techs(model, g2)
     super_new_cap = quicksum(
         model.v_new_capacity[_r, _t, v]
-        for _t in super_group
-        for _r in regions
-        if (_r, _t, v) in model.process_periods
+        for _r, _t in capacity.gather_group_built_processes(model, r, g2, v)
     )
 
     share_lim = value(model.limit_new_capacity_share[r, g1, g2, v, op])
@@ -500,33 +405,27 @@ def limit_annual_capacity_factor_constraint(
     # r can be an individual region (r='US'), or a combination of regions separated by plus
     # (r='Mexico+US+Canada'), or 'global'.
     # if r == 'global', the constraint is system-wide
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
 
-    if TYPE_CHECKING:
-        activity_rptvo = cast('Expression', 0)
-    else:
-        activity_rptvo = 0
-    for _t in techs:
-        if _t not in model.tech_annual:
-            activity_rptvo += quicksum(
-                model.v_flow_out[_r, p, s, d, S_i, _t, v, o]
-                for _r in regions
-                for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
-                for s in model.time_season
-                for d in model.time_of_day
-            )
-        else:
-            activity_rptvo += quicksum(
-                model.v_flow_out_annual[_r, p, S_i, _t, v, o]
-                for _r in regions
-                for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
-            )
+    activity_rptvo = 0
+
+    activity_rptvo += quicksum(
+        model.v_flow_out[_r, p, s, d, S_i, _t, v, o]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t not in model.tech_annual
+        for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
+        for s in model.time_season
+        for d in model.time_of_day
+    )
+    activity_rptvo += quicksum(
+        model.v_flow_out_annual[_r, p, S_i, _t, v, o]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t in model.tech_annual
+        for S_i in model.process_inputs_by_output.get((_r, p, _t, v, o), [])
+    )
 
     possible_activity_rptvo = quicksum(
         model.v_capacity[_r, p, _t, v] * value(model.capacity_to_activity[_r, _t])
-        for _r in regions
-        for _t in techs
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if v in model.process_vintages.get((_r, p, _t), [])
     )
     annual_cf = value(model.limit_annual_capacity_factor[r, t, v, o, op])
@@ -564,52 +463,31 @@ def limit_seasonal_capacity_factor_constraint(
 
         \forall \{r, p, s, t \in T^{a}\} \in \Theta_{\text{limit\_seasonal\_capacity\_factor}}
     """
-    # r can be an individual region (r='US'), or a combination of regions separated by plus
-    # (r='Mexico+US+Canada'), or 'global'.
-    # if r == 'global', the constraint is system-wide
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
 
-    # we need to screen here because it is possible that the restriction extends beyond the
-    # lifetime of any vintage of the tech...
-    if all(
-        (_r, p, _t) not in model.v_capacity_available_by_period_and_tech
-        for _r in regions
-        for _t in techs
-    ):
-        return Constraint.Skip
-
-    if TYPE_CHECKING:
-        activity_rpst = cast('Expression', 0)
-    else:
-        activity_rpst = 0
-    for _t in techs:
-        if _t not in model.tech_annual:
-            activity_rpst += quicksum(
-                model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-                for _r in regions
-                for S_v in model.process_vintages.get((_r, p, _t), [])
-                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
-                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
-                for d in model.time_of_day
-            )
-        else:
-            activity_rpst += quicksum(
-                model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-                * model.segment_fraction_per_season[s]
-                for _r in regions
-                for S_v in model.process_vintages.get((_r, p, _t), [])
-                for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
-                for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
-            )
+    activity_rpst = 0
+    activity_rpst += quicksum(
+        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t not in model.tech_annual
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+        for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+        for d in model.time_of_day
+    )
+    activity_rpst += quicksum(
+        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o] * model.segment_fraction_per_season[s]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t in model.tech_annual
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs.get((_r, p, _t, S_v), [])
+        for S_o in model.process_outputs_by_input.get((_r, p, _t, S_v, S_i), [])
+    )
 
     possible_activity_rpst = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
         * value(model.capacity_to_activity[_r, _t])
         * value(model.segment_fraction_per_season[s])
-        for _r in regions
-        for _t in techs
-        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
     )
     seasonal_cf = value(model.limit_seasonal_capacity_factor[r, s, t, op])
     expr = operator_expression(activity_rpst, Operator(op), seasonal_cf * possible_activity_rpst)
@@ -917,6 +795,13 @@ def limit_emission_constraint(
         if (reg, p, S_t, S_v) in model.process_inputs
     )
 
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.components import startup
+
+        process_emissions += quicksum(
+            startup.uc_startup_emissions_rpe(model, reg, p, e) for reg in regions
+        )
+
     embodied_emissions = quicksum(
         model.v_new_capacity[reg, t, v]
         * value(model.emission_embodied[reg, e, t, v])
@@ -953,392 +838,6 @@ def limit_emission_constraint(
     return expr
 
 
-def limit_growth_capacity_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp up rate of available capacity"""
-    return limit_growth_capacity(model, r, p, t, op, False)
-
-
-def limit_degrowth_capacity_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp down rate of available capacity"""
-    return limit_growth_capacity(model, r, p, t, op, True)
-
-
-def limit_growth_capacity(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str, degrowth: bool = False
-) -> ExprLike:
-    r"""
-    Constrain the change of capacity available between periods.
-    Forces the model to ramp up and down the availability of new technologies
-    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
-    (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
-    instead of one technology, in which case, capacity available is summed over
-    all technologies in the group. In the first period, previous available
-    capacity :math:`\mathbf{CAPAVL}_{r,p,t}` is replaced by previous existing
-    capacity, if any can be found.
-
-    .. math::
-        :label: Limit (De)Growth Capacity
-
-            \begin{aligned}\text{Growth:}\\
-            &\mathbf{CAPAVL}_{r,p,t}
-            \quad \le, \ge, \text{or} = \quad
-            S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p_{prev},t}
-            \end{aligned}
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity}}
-
-
-            \begin{aligned}\text{Degrowth:}\\
-            &\mathbf{CAPAVL}_{r,p_{prev},t}
-            \quad \le, \ge, \text{or} = \quad S_{r,t} + (1+R_{r,t}) \cdot \mathbf{CAPAVL}_{r,p,t}
-            \end{aligned}
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity}}
-    """
-
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
-    growth = model.limit_degrowth_capacity if degrowth else model.limit_growth_capacity
-    rate = 1 + value(growth[r, t, op][0])
-    seed = value(growth[r, t, op][1])
-    cap_rpt = model.v_capacity_available_by_period_and_tech
-
-    # relevant r, p, t indices
-    cap_indices = {(_r, _p, _t) for _r, _p, _t in cap_rpt.keys() if _t in techs and _r in regions}
-    # periods the technology can have capacity in this region (sorted)
-    periods = sorted({_p for _r, _p, _t in cap_rpt})
-
-    if len(periods) == 0:
-        if p == model.time_optimize.first():
-            msg = (
-                'Tried to set {}rowthCapacity constraint {} but there are no periods where this '
-                'technology is available in this region. Constraint skipped.'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.warning(msg)
-        return Constraint.Skip
-
-    # Only warn in p0 so we dont dump multiple warnings
-    if p == periods[0]:
-        if seed == 0:
-            msg = (
-                'No constant term (seed) provided for {}rowthCapacity constraint {}. '
-                'No capacity will be built in any period following one with zero capacity.'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.info(msg)
-        gaps = [
-            _p
-            for _p in model.time_optimize
-            if _p not in periods and min(periods) < _p < max(periods)
-        ]
-        if gaps:
-            msg = (
-                'Constructing {}rowthCapacity constraint {} and there are period gaps in which'
-                'capacity cannot exist in this region ({}). Capacity in these periods '
-                'will be treated as zero which may cause infeasibility or other problems.'
-            ).format('Deg' if degrowth else 'G', (r, t), gaps)
-            logger.warning(msg)
-
-    # sum available capacity in this period
-    capacity = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p)
-
-    if p == model.time_optimize.first():
-        # First future period. Grab available capacity in last existing period
-        p_prev = model.time_exist.last()
-        capacity_prev = sum(
-            get_adjusted_existing_capacity(model, _r, _t, _v)
-            * value(model.process_life_frac[_r, p_prev, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions
-            and _t in techs
-            and _v + value(model.lifetime_process[_r, _t, _v]) > p_prev
-        )
-    else:
-        # Otherwise, grab previous future period
-        p_prev = model.time_optimize.prev(p)
-        capacity_prev = quicksum(cap_rpt[_r, _p, _t] for _r, _p, _t in cap_indices if _p == p_prev)
-
-    if degrowth:
-        expr = operator_expression(capacity_prev, Operator(op), seed + capacity * rate)
-    else:
-        expr = operator_expression(capacity, Operator(op), seed + capacity_prev * rate)
-
-    # Check if any variables are actually included before returning
-    if isinstance(expr, bool):
-        return Constraint.Skip
-    return expr
-
-
-def limit_growth_new_capacity_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp up rate of new capacity deployment"""
-    return limit_growth_new_capacity(model, r, p, t, op, False)
-
-
-def limit_degrowth_new_capacity_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp down rate of new capacity deployment"""
-    return limit_growth_new_capacity(model, r, p, t, op, True)
-
-
-def limit_growth_new_capacity(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str, degrowth: bool = False
-) -> ExprLike:
-    r"""
-    Constrain the change of new capacity deployed between periods.
-    Forces the model to ramp up and down the deployment of new technologies
-    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
-    (rate, :math:`R_{r,t}`) terms. This can be defined for a technology group
-    instead of one technology, in which case, new capacity is summed over
-    all technologies in the group. In the first period, previous new capacity
-    :math:`\mathbf{NCAP}_{r,t,v_prev}` is replaced by previous existing capacity,
-    if any can be found.
-
-    .. math::
-        :label: Limit (De)Growth New Capacity
-
-            \begin{aligned}\text{Growth:}\\
-            &\mathbf{NCAP}_{r,t,v}
-            \quad \le, \ge, \text{or} = \quad
-            S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v_{prev}}
-            \text{ where } v=p
-            \end{aligned}
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity}}
-
-            \begin{aligned}\text{Degrowth:}\\
-            &\mathbf{NCAP}_{r,t,v_{prev}}
-            \quad \le, \ge, \text{or} = \quad S_{r,t} + (1+R_{r,t}) \cdot \mathbf{NCAP}_{r,t,v}
-            \text{ where } v=p
-            \end{aligned}
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity}}
-    """
-
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
-    growth = model.limit_degrowth_new_capacity if degrowth else model.limit_growth_new_capacity
-    rate = 1 + value(growth[r, t, op][0])
-    seed = value(growth[r, t, op][1])
-    new_cap_rtv = model.v_new_capacity
-
-    # relevant r, t, v indices
-    cap_rtv = {(_r, _t, _v) for _r, _t, _v in new_cap_rtv.keys() if _t in techs and _r in regions}
-    # periods the technology can be built in this region (sorted)
-    periods = sorted({_v for _r, _t, _v in cap_rtv})
-
-    if len(periods) == 0:
-        if p == model.time_optimize.first():
-            msg = (
-                'Tried to set {}rowthNewCapacity constraint {} but there are no periods where this '
-                'technology can be built in this region. Constraint skipped.'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.warning(msg)
-        return Constraint.Skip
-
-    # Only warn in p0 so we dont dump multiple warnings
-    if p == periods[0]:
-        if seed == 0:
-            msg = (
-                'No constant term (seed) provided for {}rowthNewCapacity constraint {}. '
-                'No capacity will be built in any period following one with zero new capacity.'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.info(msg)
-        gaps = [
-            _p
-            for _p in model.time_optimize
-            if _p not in periods and min(periods) < _p < max(periods)
-        ]
-        if gaps:
-            msg = (
-                'Constructing {}rowthNewCapacity constraint {} and there are period gaps in which'
-                'new capacity cannot be built in this region ({}). New capacity in these periods '
-                'will be treated as zero which may cause infeasibility or other problems.'
-            ).format('Deg' if degrowth else 'G', (r, t), gaps)
-            logger.warning(msg)
-
-    # sum new capacity in this period
-    new_cap = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
-
-    if p == model.time_optimize.first():
-        # First future period. Grab last existing vintage
-        p_prev = model.time_exist.last()
-        new_cap_prev = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev
-        )
-    else:
-        # Otherwise, grab previous future vintage
-        p_prev = model.time_optimize.prev(p)
-        new_cap_prev = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
-
-    if degrowth:
-        expr = operator_expression(new_cap_prev, Operator(op), seed + new_cap * rate)
-    else:
-        expr = operator_expression(new_cap, Operator(op), seed + new_cap_prev * rate)
-
-    # Check if any variables are actually included before returning
-    if isinstance(expr, bool):
-        return Constraint.Skip
-    return expr
-
-
-def limit_growth_new_capacity_delta_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp up rate of change in new capacity deployment"""
-    return limit_growth_new_capacity_delta(model, r, p, t, op, False)
-
-
-def limit_degrowth_new_capacity_delta_constraint_rule(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str
-) -> ExprLike:
-    r"""Constrain ramp down rate of change in new capacity deployment"""
-    return limit_growth_new_capacity_delta(model, r, p, t, op, True)
-
-
-def limit_growth_new_capacity_delta(
-    model: TemoaModel, r: Region, p: Period, t: Technology, op: str, degrowth: bool = False
-) -> ExprLike:
-    r"""
-    Constrain the acceleration of new capacity deployed between periods.
-    Forces the model to ramp up and down the change in deployment of new technologies
-    more smoothly. Has constant (seed, :math:`S_{r,t}`) and proportional
-    (rate, :math:`R_{r,t}`) terms. It is recommended to leave the rate term empty
-    as it would prevent the possibility of inflection in the rate of deployment.
-    This constraint can be defined for a technology group instead of one technology,
-    in which case, new capacity is summed over all technologies in the group. In the
-    first period, previous new capacities are replaced by previous existing capacities,
-    if any can be found.
-
-    .. math::
-        :label: Limit (De)Growth New Capacity Delta
-
-            \begin{aligned}\text{Growth:}\\
-            &\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}}
-            \quad \le, \ge, \text{or} = \quad S_{r,t} + (1+R_{r,t}) \cdot
-            (\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}})
-            \end{aligned}
-
-            \text{ where } v_i=p
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacityDelta}}
-
-            \begin{aligned}\text{Degrowth:}\\
-            &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
-            \quad \le, \ge, \text{or} = \quad
-            S_{r,t} + (1+R_{r,t}) \cdot (\mathbf{NCAP}_{r,t,v_i} - \mathbf{NCAP}_{r,t,v_{i-1}})
-            \end{aligned}
-
-            \text{ where } v_i=p
-
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacityDelta}}
-    """
-
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
-    growth = (
-        model.limit_degrowth_new_capacity_delta
-        if degrowth
-        else model.limit_growth_new_capacity_delta
-    )
-    rate = 1 + value(growth[r, t, op][0])
-    seed = value(growth[r, t, op][1])
-    new_cap_rtv = model.v_new_capacity
-
-    # relevant r, t, v indices
-    cap_rtv = {(_r, _t, _v) for _r, _t, _v in new_cap_rtv.keys() if _t in techs and _r in regions}
-    # periods the technology can be built in this region (sorted)
-    periods = sorted({_v for _r, _t, _v in cap_rtv})
-
-    if len(periods) == 0:
-        if p == model.time_optimize.first():
-            msg = (
-                'Tried to set {}rowthNewCapacityDelta constraint {} but there are no periods where '
-                'this technology can be built in this region. Constraint skipped.'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.warning(msg)
-        return Constraint.Skip
-
-    # Only warn in p0 so we dont dump multiple warnings
-    if p == periods[0]:
-        if seed == 0:
-            msg = (
-                'No constant term (seed) provided for {}rowthNewCapacityDelta constraint {}. '
-                'This is not recommended as deployment rates cannot inflect (change from '
-                'accelerating to decelerating or vice-versa).'
-            ).format('Deg' if degrowth else 'G', (r, t))
-            logger.warning(msg)
-        gaps = [
-            _p
-            for _p in model.time_optimize
-            if _p not in periods and min(periods) < _p < max(periods)
-        ]
-        if gaps:
-            msg = (
-                'Constructing {}rowthNewCapacityDelta constraint {} and there are period gaps in '
-                'which new capacity cannot be built in this region ({}). New capacity in these '
-                'periods will be treated as zero which may cause infeasibility or other problems.'
-            ).format('Deg' if degrowth else 'G', (r, t), gaps)
-            logger.warning(msg)
-
-    # sum new capacity in this period
-    new_cap = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
-
-    if p == model.time_optimize.first():
-        # First planning period, pull last two existing vintages
-        p_prev = model.time_exist.last()
-        new_cap_prev = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev
-        )
-        p_prev2 = model.time_exist.prev(p_prev)
-        new_cap_prev2 = sum(
-            value(model.existing_capacity[_r, _t, _v])
-            for _r, _t, _v in model.existing_capacity.sparse_keys()
-            if _r in regions and _t in techs and _v == p_prev2
-        )
-    else:
-        # Not the first future period. Grab previous future period
-        p_prev = model.time_optimize.prev(p)
-        new_cap_prev = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
-        if p == model.time_optimize.at(2):  # apparently pyomo sets are indexed 1-based
-            # Second future period, grab last existing vintage
-            p_prev2 = model.time_exist.last()
-            new_cap_prev2 = sum(
-                value(model.existing_capacity[_r, _t, _v])
-                for _r, _t, _v in model.existing_capacity.sparse_keys()
-                if _r in regions and _t in techs and _v == p_prev2
-            )
-        else:
-            # At least the third future period. Grab last two future vintages
-            p_prev2 = model.time_optimize.prev(p_prev)
-            new_cap_prev2 = sum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
-
-    nc_delta_prev = new_cap_prev - new_cap_prev2
-    nc_delta = new_cap - new_cap_prev
-
-    if degrowth:
-        expr = operator_expression(nc_delta_prev, Operator(op), seed + nc_delta * rate)
-    else:
-        expr = operator_expression(nc_delta, Operator(op), seed + nc_delta_prev * rate)
-
-    # Check if any variables are actually included before returning
-    if isinstance(expr, bool):
-        return Constraint.Skip
-    return expr
-
-
 def limit_activity_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, op: str
 ) -> ExprLike:
@@ -1364,17 +863,11 @@ def limit_activity_constraint(
 
        \quad \le, \ge, \text{or} = \quad LA_{r, p, t}
     """
-    # r can be an individual region (r='US'), or a combination of regions separated by
-    # a + (r='Mexico+US+Canada'), or 'global'.
-    # if r == 'global', the constraint is system-wide
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
 
     activity = quicksum(
         model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _t in techs
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if _t not in model.tech_annual
-        for _r in regions
         for S_v in model.process_vintages.get((_r, p, _t), [])
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
@@ -1383,9 +876,8 @@ def limit_activity_constraint(
     )
     activity += quicksum(
         model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-        for _t in techs
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if _t in model.tech_annual
-        for _r in regions
         for S_v in model.process_vintages.get((_r, p, _t), [])
         for S_i in model.process_inputs[_r, p, _t, S_v]
         for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
@@ -1411,14 +903,10 @@ def limit_new_capacity_constraint(
 
         \textbf{NCAP}_{r, t, v} \quad \le, \ge, \text{or} = \quad LNC_{r, t, v}
     """
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_new_capacity[r, t, v, op])
     new_cap = quicksum(
         model.v_new_capacity[_r, _t, v]
-        for _t in techs
-        for _r in regions
-        if (_r, _t, v) in model.process_periods
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, v)
     )
     expr = operator_expression(new_cap, Operator(op), cap_lim)
     if isinstance(expr, bool):
@@ -1441,16 +929,12 @@ def limit_capacity_constraint(
        \textbf{CAPAVL}_{r, p, t} \quad \le, \ge, \text{or} = \quad LC_{r, p, t}
 
        \forall \{r, p, t\} \in \Theta_{\text{limit\_capacity}}"""
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
     cap_lim = value(model.limit_capacity[r, p, t, op])
-    capacity = quicksum(
+    cap = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
-        for _t in techs
-        for _r in regions
-        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
     )
-    expr = operator_expression(capacity, Operator(op), cap_lim)
+    expr = operator_expression(cap, Operator(op), cap_lim)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr

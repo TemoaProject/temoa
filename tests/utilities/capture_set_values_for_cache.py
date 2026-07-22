@@ -13,7 +13,7 @@ from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
 from tests.conftest import refresh_databases
-from tests.utilities.hash_utils import hash_set
+from tests.utilities.hash_utils import encode_hashes, hash_set
 
 output_path = Path(__file__).parent.parent / 'testing_log'  # capture the log here
 output_path.mkdir(parents=True, exist_ok=True)
@@ -50,4 +50,4 @@ for scenario in scenarios:
 
     # stash the result in a json file...
     with open(scenario['output_file'], 'w') as f_out:
-        json.dump(sets_dict, f_out, indent=2, sort_keys=True)
+        json.dump(encode_hashes(sets_dict), f_out, indent=2, sort_keys=True)

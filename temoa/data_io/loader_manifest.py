@@ -32,6 +32,8 @@ class LoadItem:
         table: The name of the source table in the SQLite database.
         columns: A list of column names to select from the table. The last
             column is assumed to be the value for a `Param`.
+        index_length: Optional. The number of columns that form the index for
+            a `Param`, for tables with multiple value columns.
         validator_name: Optional. The name of a `ViableSet` attribute on the
             `HybridLoader` instance, used for source-trace filtering.
         validation_map: A tuple indicating which column indices in the data
@@ -45,6 +47,9 @@ class LoadItem:
             `HybridLoader` to handle non-standard loading logic for this component.
         fallback_data: Optional. A list of default data tuples to use if the
             table is missing or returns no data.
+        index_set: Optional. The Pyomo `Set` that is indexed by the keys of
+            this `Param`. When set, the loader will automatically derive the
+            set's data from the param's loaded keys during finalization.
     """
 
     component: ComponentType
@@ -59,3 +64,4 @@ class LoadItem:
     custom_loader_name: str | None = None
     fallback_data: list[tuple[object, ...]] | None = None
     order_by: list[str] | None = None
+    index_set: ComponentType | None = None

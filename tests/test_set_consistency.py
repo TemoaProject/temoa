@@ -12,7 +12,7 @@ from pyomo import environ as pyo
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
-from tests.utilities.hash_utils import hash_set
+from tests.utilities.hash_utils import decode_hashes, hash_set
 
 TESTING_CONFIGS_DIR = pathlib.Path(__file__).parent / 'testing_configs'
 
@@ -48,7 +48,7 @@ def test_set_consistency(
     # retrieve the cache which now stores hashes
     cache_file = pathlib.Path(__file__).parent / 'testing_data' / set_file
     with open(cache_file) as src:
-        cached_sets = json.load(src)
+        cached_sets = decode_hashes(json.load(src))
 
     # compare hashes where they exist in the model.
     mismatched_sets = {}

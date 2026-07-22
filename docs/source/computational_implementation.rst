@@ -268,7 +268,7 @@ which determines the valid indices from other model components. This second meth
 when the indices of a constraint do not exactly align with the indices of the database
 table. For example, the database table :code:`ramp_up_hourly` is indexed by :code:`region`,
 :code:`tech` in the database but one of its inheriting constraints,
-:code:`ramp_up_day_constraint`, is indexed by :code:`region`, :code:`period`,
+:code:`ramp_up_constraint`, is indexed by :code:`region`, :code:`period`,
 :code:`season`, :code:`time_of_day`, :code:`tech`, :code:`vintage` in the model. In this case,
 an index function is needed to determine the valid indices for the constraint.
 
@@ -277,11 +277,11 @@ an index function is needed to determine the valid indices for the constraint.
    .. code-block:: python
       :linenos:
 
-      self.ramp_up_day_constraint_rpsdtv = Set(
-         dimen=6, initialize=operations.ramp_up_day_constraint_indices
+      self.ramp_up_constraint_rpsdtv = Set(
+         dimen=6, initialize=operations.ramp_up_constraint_indices
       )
-      self.ramp_up_day_constraint = Constraint(
-         self.ramp_up_day_constraint_rpsdtv, rule=operations.ramp_up_day_constraint
+      self.ramp_up__constraint = Constraint(
+         self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
       )
 
 .. topic:: in ``temoa/components/operations.py`` (return valid indices)
@@ -289,7 +289,7 @@ an index function is needed to determine the valid indices for the constraint.
    .. code-block:: python
       :linenos:
 
-      def ramp_up_day_constraint_indices(
+      def ramp_up_constraint_indices(
          model: TemoaModel,
       ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
          indices = {
@@ -302,7 +302,7 @@ an index function is needed to determine the valid indices for the constraint.
 
          return indices
 
-With the sparse set (:code:`demand_constraint_rpc` or :code:`ramp_up_day_constraint_rpsdtv`)
+With the sparse set (:code:`demand_constraint_rpc` or :code:`ramp_up_constraint_rpsdtv`)
 created, we can now can use it in place of the sets specified in the non-sparse
 implementation.  Pyomo will now call the constraint implementation rule the
 minimum number of times.
@@ -320,6 +320,11 @@ dimensionality of 3, and (following the :ref:`naming scheme
 :code:`region`, the second an element of :code:`time_optimize`,
 and third a demand commodity.
 
+.. seealso::
+   The same component pattern (index set, parameter, and constraint declared in a
+   ``model.py`` and implemented in component modules) can be packaged as an
+   optional, self-contained add-on. See :ref:`extensions` for the extension
+   framework and a copy-from template.
 
 
 

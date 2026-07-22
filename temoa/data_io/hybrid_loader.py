@@ -34,6 +34,12 @@ from pyomo.dataportal import DataPortal
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
 from temoa.data_io.component_manifest import build_manifest
+from temoa.extensions.framework import (
+    assert_disabled_extension_tables_are_empty,
+    ensure_enabled_extension_tables_exist,
+    merge_regional_group_tables,
+    resolve_extension_specs,
+)
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.model_checking import element_checker, network_model_data
 from temoa.model_checking.commodity_network_manager import CommodityNetworkManager
@@ -49,7 +55,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 # A manifest of tables that may contain region groups, used by a custom loader.
-tables_with_regional_groups = {
+BASE_REGIONAL_GROUP_TABLES = {
     'limit_annual_capacity_factor': 'region',
     'limit_emission': 'region',
     'limit_seasonal_capacity_factor': 'region',
@@ -60,12 +66,6 @@ tables_with_regional_groups = {
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
-    'limit_growth_capacity': 'region',
-    'limit_degrowth_capacity': 'region',
-    'limit_growth_new_capacity': 'region',
-    'limit_degrowth_new_capacity': 'region',
-    'limit_growth_new_capacity_delta': 'region',
-    'limit_degrowth_new_capacity_delta': 'region',
 }
 
 
@@ -90,10 +90,21 @@ class HybridLoader:
         self.con = db_connection
         self.config = config
         self.myopic_index: MyopicIndex | None = None
+        self.extension_specs = resolve_extension_specs(self.config.extensions)
+        self.model = TemoaModel(extensions=self.config.extensions)
+        self.tables_with_regional_groups = merge_regional_group_tables(
+            BASE_REGIONAL_GROUP_TABLES, self.extension_specs
+        )
+        ensure_enabled_extension_tables_exist(
+            self.con,
+            self.extension_specs,
+            input_database=str(self.config.input_database),
+            silent=self.config.silent,
+        )
+        assert_disabled_extension_tables_are_empty(self.con, self.extension_specs)
 
         # Build the data loading manifest and a name-based map for quick lookup
-        model = TemoaModel()
-        self.manifest = build_manifest(model)
+        self.manifest = build_manifest(self.model, extension_ids=self.config.extensions)
         self.manifest_map = {item.component.name: item for item in self.manifest}
 
         # --- Data containers and filters populated during loading ---
@@ -205,7 +216,7 @@ class HybridLoader:
 
         data: dict[str, object] = {}
         cur = self.con.cursor()
-        model = TemoaModel()
+        model = self.model
 
         # Load critical time sets first, as they index other components
         if myopic_index:
@@ -235,7 +246,7 @@ class HybridLoader:
         for item in self.manifest:
             # 1. Fetch data from the database
             raw_data = self._fetch_data(cur, item, myopic_index)
-            if item.index_length:
+            if item.index_length and len(item.columns) - item.index_length > 1:
                 raw_data = [
                     (*row[0 : item.index_length], row[item.index_length :]) for row in raw_data
                 ]
@@ -525,7 +536,7 @@ class HybridLoader:
         """
         Aggregates region and group names from the Region table and all Limit tables.
         """
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         regions_and_groups: set[str] = set()
 
@@ -534,7 +545,7 @@ class HybridLoader:
                 t[0] for t in cur.execute('SELECT region FROM main.region').fetchall()
             )
 
-        for table, field_name in tables_with_regional_groups.items():
+        for table, field_name in self.tables_with_regional_groups.items():
             if self.table_exists(table):
                 regions_and_groups.update(
                     t[0] for t in cur.execute(f'SELECT {field_name} FROM main.{table}').fetchall()
@@ -553,7 +564,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads members into the indexed set `tech_group_members`."""
-        model = TemoaModel()
+        model = self.model
         validator = self.viable_techs.members if self.viable_techs else None
         for group_name, tech in filtered_data:
             if validator is None or tech in validator:
@@ -571,7 +582,7 @@ class HybridLoader:
         """
         Loads time_season as a flat ordered set of season names.
         """
-        model = TemoaModel()
+        model = self.model
         if not filtered_data:
             logger.warning('No time_season table found. Loading a single filler season "S".')
             seasons_to_load: list[tuple[object, ...]] = [('S',)]
@@ -588,7 +599,7 @@ class HybridLoader:
         """
         Composite loader for time_season_sequential and its associated index sets.
         """
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             seg_frac_data = [
                 (row[0], row[2]) for row in filtered_data
@@ -612,7 +623,7 @@ class HybridLoader:
         Handles different queries for myopic vs. standard runs and also
         populates the `tech_exist` set.
         """
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -641,7 +652,6 @@ class HybridLoader:
             self._load_component_data(data, model.vintage_exist, vintage_exist_data)
 
             # Collect existing capacity data indices
-            self.viable_existing_techs = {row[1] for row in rows_to_load}
             self.viable_existing_rt = {(row[0], row[1]) for row in rows_to_load}
             self.viable_existing_rtv = {(row[0], row[1], row[2]) for row in rows_to_load}
 
@@ -661,7 +671,7 @@ class HybridLoader:
             )
             return
 
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -690,12 +700,12 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_tech component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         rows_to_load = cur.execute('SELECT region, tech, lifetime FROM lifetime_tech').fetchall()
         rt_getter = itemgetter(0, 1)
         if self.viable_rt:
-            valid_rt = self.viable_rt.members | self.viable_existing_rt
+            valid_rt = self.viable_rt.member_tuples | self.viable_existing_rt
             rows_to_load = [item for item in rows_to_load if rt_getter(item) in valid_rt]
         self._load_component_data(data, model.lifetime_tech, rows_to_load)
 
@@ -706,7 +716,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_process component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -732,7 +742,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the lifetime_survival_curve component."""
-        model = TemoaModel()
+        model = self.model
         cur = self.con.cursor()
         mi = self.myopic_index
 
@@ -760,7 +770,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the required singleton global_discount_rate."""
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             data[model.global_discount_rate.name] = {None: cast('float', filtered_data[0][0])}
         else:
@@ -776,7 +786,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the optional singleton default_loan_rate."""
-        model = TemoaModel()
+        model = self.model
         if filtered_data:
             data[model.default_loan_rate.name] = {None: cast('float', filtered_data[0][0])}
 
@@ -788,7 +798,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Loads the main efficiency parameter, which is pre-calculated."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.efficiency, self.efficiency_values)
 
     def _load_linked_techs(
@@ -821,7 +831,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Composite loader for ramp_down_hourly and its index set `tech_downramping`."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.ramp_down_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted({(row[1],) for row in filtered_data})
@@ -837,7 +847,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Composite loader for ramp_up_hourly and its index set `tech_upramping`."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.ramp_up_hourly, filtered_data)
         if filtered_data:
             tech_data = sorted({(row[1],) for row in filtered_data})
@@ -853,7 +863,7 @@ class HybridLoader:
         filtered_data: Sequence[tuple[object, ...]],
     ) -> None:
         """Handles deprecation warning for renewable_portfolio_standard."""
-        model = TemoaModel()
+        model = self.model
         self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
         if filtered_data:
             logger.warning(
@@ -959,36 +969,11 @@ class HybridLoader:
         :param data: The main data dictionary.
         :return: A dictionary of the new index sets to be added.
         """
-        model = TemoaModel()
-        param_idx_sets = {
-            model.cost_invest.name: model.cost_invest_rtv.name,
-            model.cost_emission.name: model.cost_emission_rpe.name,
-            model.demand.name: model.demand_constraint_rpc.name,
-            model.limit_emission.name: model.limit_emission_constraint_rpe.name,
-            model.limit_activity.name: model.limit_activity_constraint_rpt.name,
-            model.limit_seasonal_capacity_factor.name: (
-                model.limit_seasonal_capacity_factor_constraint_rst.name
-            ),
-            model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
-            model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rtvo.name
-            ),
-            model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
-            model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
-            model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rggv.name
-            ),
-            model.limit_resource.name: model.limit_resource_constraint_rt.name,
-            model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,
-            model.renewable_portfolio_standard.name: (
-                model.renewable_portfolio_standard_constraint_rpg.name
-            ),
-        }
-
         res: dict[str, object] = {}
-        for p_name, s_name in param_idx_sets.items():
-            param_data = data.get(p_name)
+        for item in self.manifest:
+            if item.index_set is None:
+                continue
+            param_data = data.get(item.component.name)
             if isinstance(param_data, dict):
-                res[s_name] = list(param_data.keys())
+                res[item.index_set.name] = list(param_data.keys())
         return res

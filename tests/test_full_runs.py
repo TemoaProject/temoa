@@ -49,6 +49,12 @@ class MyopicStressCase(TypedDict):
     myopic: MyopicSettings
 
 
+class TimeSequenceCase(TypedDict):
+    name: str
+    filename: str
+    time_sequencing: str
+
+
 myopic_stress_tests: list[MyopicStressCase] = [
     {
         'name': (
@@ -65,6 +71,16 @@ myopic_stress_tests: list[MyopicStressCase] = [
     for evolving in (False, True)
     for view_depth in [1, 3, 6]
     for step_size in range(1, view_depth + 1, 2)
+]
+
+
+time_sequence_tests: list[TimeSequenceCase] = [
+    {
+        'name': (f'test_week | {time_sequencing}'),
+        'filename': 'config_test_week.toml',
+        'time_sequencing': time_sequencing,
+    }
+    for time_sequencing in ['consecutive_days', 'representative_periods', 'seasonal_timeslices']
 ]
 
 
@@ -171,19 +187,71 @@ def test_myopic_stress_tests(
 ) -> None:
     """
     The idea of these is that they should be tightly constrained so that if anything
-    is wrong the model will fail to find a feasible solution. Use lots of equality constraints
+    is wrong the model will fail to find a feasible solution. Use lots of equality constraints.
+
+    Two new paths test limit_discrete_capacity and limit_discrete_new_capacity with EoS costs
+    and survival curves.
     """
     _, _, _, sequencer = system_test_run
     import contextlib
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
+        dc_fixed = cur.execute(
+            "SELECT SUM(fixed) FROM output_cost WHERE tech='tech_discrete_cap'"
+        ).fetchone()[0]
+        dc_variable = cur.execute(
+            "SELECT SUM(var) FROM output_cost WHERE tech='tech_discrete_cap'"
+        ).fetchone()[0]
+        dnc_invest = cur.execute(
+            "SELECT SUM(invest) FROM output_cost WHERE tech='tech_discrete_new_cap'"
+        ).fetchone()[0]
+
+        assert dc_fixed == pytest.approx(37, rel=1e-5), (
+            'tech_discrete_cap fixed cost did not match expected'
+        )
+        assert dc_variable == pytest.approx(24, rel=1e-5), (
+            'tech_discrete_cap variable cost did not match expected'
+        )
+        assert dnc_invest == pytest.approx(2.5, rel=1e-5), (
+            'tech_discrete_new_cap invest cost did not match expected'
+        )
+
+        # This part is just a very rough check on the objective function. Constraints inside the
+        # model are extremely tight so other changes will likely lead to infeasibility
         res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
         obj = res[0]
-        # This part is just a very rough check on the objective function. Constraints inside the
-        # model are extremely tight so any other changes will lead to infeasibility
-        assert obj == pytest.approx(32, abs=1), (
+        assert obj == pytest.approx(309, rel=0.01), (
             'objective function value did not match expected for myopic stress test'
+        )
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=time_sequence_tests,
+    indirect=True,
+    ids=[d['name'] for d in time_sequence_tests],
+)
+def test_time_sequence_tests(
+    system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
+) -> None:
+    _, _, _, sequencer = system_test_run
+    import contextlib
+
+    objectives = {
+        'consecutive_days': 1445.875735,
+        'representative_periods': 1467.912766,
+        'seasonal_timeslices': 1467.912766,
+    }
+    time_sequencing = str(sequencer.config.time_sequencing)
+    expected_obj = objectives[time_sequencing]
+
+    with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
+        cur = con.cursor()
+        res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
+        obj = res[0]
+        assert obj == pytest.approx(expected_obj, abs=0.00001), (
+            'objective function value did not match expected for time sequencing test'
         )
 
 

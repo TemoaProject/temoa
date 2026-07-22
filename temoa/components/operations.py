@@ -15,9 +15,13 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, quicksum, value
+
+from temoa.components import time
 
 if TYPE_CHECKING:
+    from pyomo.core.base import Expression
+
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike
     from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
@@ -41,7 +45,7 @@ def baseload_diurnal_constraint_indices(
     }
 
 
-def ramp_up_day_constraint_indices(
+def ramp_up_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return {
@@ -53,7 +57,7 @@ def ramp_up_day_constraint_indices(
     }
 
 
-def ramp_down_day_constraint_indices(
+def ramp_down_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
     return {
@@ -62,44 +66,6 @@ def ramp_down_day_constraint_indices(
         for v in model.ramp_down_vintages[r, p, t]
         for s in model.time_season
         for d in model.time_of_day
-    }
-
-
-def ramp_up_season_constraint_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    # Season-to-season ramp constraints require full inter-season ordering;
-    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
-    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
-        return set()
-
-    # s, s_next indexing ensures we dont build redundant constraints
-    return {
-        (r, p, s, s_next, t, v)
-        for r, p, t in model.ramp_up_vintages
-        for v in model.ramp_up_vintages[r, p, t]
-        for s_seq, s in model.ordered_season_sequential
-        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
-        if s_next != model.time_next[s, model.time_of_day.last()][0]
-    }
-
-
-def ramp_down_season_constraint_indices(
-    model: TemoaModel,
-) -> set[tuple[Region, Period, Season, Season, Technology, Vintage]]:
-    # Season-to-season ramp constraints require full inter-season ordering;
-    # skip for consecutive_days (no season links) and seasonal_timeslices (no TOD ordering).
-    if model.time_sequencing.first() in ('consecutive_days', 'seasonal_timeslices'):
-        return set()
-
-    # s, s_next indexing ensures we dont build redundant constraints
-    return {
-        (r, p, s, s_next, t, v)
-        for r, p, t in model.ramp_down_vintages
-        for v in model.ramp_down_vintages[r, p, t]
-        for s_seq, s in model.ordered_season_sequential
-        for s_next in (model.sequential_to_season[model.time_next_sequential[s_seq]],)
-        if s_next != model.time_next[s, model.time_of_day.last()][0]
     }
 
 
@@ -168,13 +134,13 @@ def baseload_diurnal_constraint(
     # So:   (ActA / SegA) == (ActB / SegB)
     #   computationally, however, multiplication is cheaper than division, so:
     #       (ActA * SegB) == (ActB * SegA)
-    activity_sd = sum(
+    activity_sd = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    activity_sd_0 = sum(
+    activity_sd_0 = quicksum(
         model.v_flow_out[r, p, s, d_0, S_i, t, v, S_o]
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
@@ -228,7 +194,95 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
         model.is_seasonal_storage[t] = t in model.tech_seasonal_storage
 
 
-def ramp_up_day_constraint(
+def _ramp_activity_increase(
+    model: TemoaModel,
+    ramp_up: bool,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    s_next: Season,
+    d_next: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> tuple[Expression, float] | None:
+    """Compute the hourly activity increase between adjacent time slices and the
+    ramp fraction for the given direction.
+
+    Returns ``(activity_increase, ramp_fraction)`` or ``None`` when the ramp
+    rate is so large that the constraint would never bind (skip).
+    """
+    ramping_param = model.ramp_up_hourly if ramp_up else model.ramp_down_hourly
+
+    hourly_activity_sd = quicksum(
+        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
+    ) / time.hours_in_time_slice(model, s, d)
+    hourly_activity_sd_next = quicksum(
+        model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
+    ) / time.hours_in_time_slice(model, s_next, d_next)
+
+    # Elapsed hours from middle of this time slice to middle of next time slice
+    hours_elapsed = time.tod_elapsed_hours(model, d, d_next)
+    ramp_fraction = hours_elapsed * value(ramping_param[r, t])
+    if ramp_fraction >= 1:
+        msg = (
+            'Warning: Rate for {}[{}, {}] is too large to be constraining from '
+            '({}, {}, {}) to ({}, {}, {}). '
+            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
+        )
+        logger.warning(msg.format(ramping_param.name, r, t, p, s, d, p, s_next, d_next))
+        return None
+
+    activity_increase = hourly_activity_sd_next - hourly_activity_sd
+    return activity_increase, ramp_fraction
+
+
+def _rampable_activity(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    t: Technology,
+    v: Vintage,
+    ramp_fraction: float,
+) -> ExprLike:
+    """Rampable activity for the core model: fraction of total installed capacity."""
+    return (
+        ramp_fraction
+        * model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        / (24 * value(model.days_per_period))
+    )
+
+
+def _ramp_constraint(
+    model: TemoaModel,
+    ramp_up: bool,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    """Helper that composes :func:`_ramp_activity_increase` and
+    :func:`_rampable_activity` into the core-model ramp constraint."""
+    s_next, d_next = model.time_next[s, d]
+    result = _ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
+    if result is None:
+        return Constraint.Skip
+    activity_increase, ramp_fraction = result
+    rampable = _rampable_activity(model, r, p, t, v, ramp_fraction)
+    if ramp_up:
+        return activity_increase <= rampable
+    else:
+        return -activity_increase <= rampable
+
+
+def ramp_up_constraint(
     model: TemoaModel,
     r: Region,
     p: Period,
@@ -238,12 +292,6 @@ def ramp_up_day_constraint(
     v: Vintage,
 ) -> ExprLike:
     r"""
-    One of two constraints built from the ramp_up_hourly table, along with the
-    ramp_up_season_constraint. ramp_up_day constrains ramp rates between time slices
-    within each season and ramp_up_season constrains ramp rates between sequential
-    seasons. If the :code:`time_sequencing` parameter is set to :code:`consecutive_days`
-    then the ramp_up_season constraint is skipped as seasons already connect together.
-
     The ramp rate constraint is utilized to limit the rate of electricity generation
     increase and decrease between two adjacent time slices in order to account for
     physical limits associated with thermal power plants. This constraint is only
@@ -254,10 +302,11 @@ def ramp_up_day_constraint(
 
     In a representative periods or seasonal time slices model, the next time slice,
     :math:`(s_{next},d_{next})`, from the end of each season, :math:`(s,d_{last})`
-    is the beginning of the same season, :math:`(s,d_{first})`
+    is the beginning of the same season, :math:`(s,d_{first})`. For these time
+    sequencing modes, ramp rates do not apply between seasons.
 
     .. math::
-       :label: ramp_up_day
+       :label: ramp_up
 
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s_{next},d_{next},i,t,v,o}
@@ -273,7 +322,7 @@ def ramp_up_day_constraint(
             \leq
             RUH_{r,t} \cdot \Delta H \cdot \frac{CAP_{r,p,t,v} \cdot C2A_{r,t}}{24 \cdot DPP}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_up\_day}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_up}}
             \\
             \text{where: } \Delta H = \frac{H_d + H_{d_{next}}}{2}
 
@@ -286,59 +335,19 @@ def ramp_up_day_constraint(
       i.e. :math:`(H_d + H_{d_{next}}) / 2`
     - :math:`CAP \cdot C2A / (24 \cdot DPP)` gives the maximum hourly capacity
     """
-
-    s_next, d_next = model.time_next[s, d]
-
-    # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
-    hours_adjust_next = (
-        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
+    return _ramp_constraint(
+        model=model,
+        ramp_up=True,
+        r=r,
+        p=p,
+        s=s,
+        d=d,
+        t=t,
+        v=v,
     )
 
-    hourly_activity_sd = (
-        sum(
-            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
 
-    hourly_activity_sd_next = (
-        sum(
-            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust_next
-    )
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
-    ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from '
-            '({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
-    rampable_activity = (
-        ramp_fraction
-        * model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
-    )
-    expr = activity_increase <= rampable_activity
-
-    return expr
-
-
-def ramp_down_day_constraint(
+def ramp_down_constraint(
     model: TemoaModel,
     r: Region,
     p: Period,
@@ -349,11 +358,11 @@ def ramp_down_day_constraint(
 ) -> ExprLike:
     r"""
 
-    Similar to the :code`ramp_up_day` constraint, we use the :code:`ramp_down_day`
+    Similar to the :code`ramp_up` constraint, we use the :code:`ramp_down`
     constraint to limit ramp down rates between any two adjacent time slices.
 
     .. math::
-       :label: ramp_down_day
+       :label: ramp_down
 
             \frac{
                 \sum_{I,O} \mathbf{FO}_{r,p,s,d,i,t,v,o}
@@ -369,197 +378,17 @@ def ramp_down_day_constraint(
             \leq
             RDH_{r,t} \cdot \Delta H \cdot \frac{CAP_{r,p,t,v} \cdot C2A_{r,t}}{24 \cdot DPP}
             \\
-            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down\_day}}
+            \forall \{r, p, s, d, t, v\} \in \Theta_{\text{ramp\_down}}
             \\
             \text{where: } \Delta H = \frac{H_d + H_{d_{next}}}{2}
     """
-
-    s_next, d_next = model.time_next[s, d]
-
-    # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
-    hours_adjust_next = (
-        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
+    return _ramp_constraint(
+        model=model,
+        ramp_up=False,
+        r=r,
+        p=p,
+        s=s,
+        d=d,
+        t=t,
+        v=v,
     )
-
-    hourly_activity_sd = (
-        sum(
-            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust_next
-    )
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
-    ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp down rate  ({}, {}) is too large to be constraining from '
-            '({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
-    rampable_activity = (
-        ramp_fraction
-        * model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
-    )
-    expr = activity_decrease <= rampable_activity
-
-    return expr
-
-
-def ramp_up_season_constraint(
-    model: TemoaModel,
-    r: Region,
-    p: Period,
-    s: Season,
-    s_next: Season,
-    t: Technology,
-    v: Vintage,
-) -> ExprLike:
-    r"""
-    Constrains the ramp up rate of activity between time slices at the boundary
-    of sequential seasons. Same as ramp_up_day but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to
-    :math:`(s^{seq}_{next},d_{first})`
-    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    time_season table.
-    """
-
-    d = model.time_of_day.last()
-    d_next = model.time_of_day.first()
-
-    # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
-    hours_adjust_next = (
-        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
-    )
-
-    hourly_activity_sd = (
-        sum(
-            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust_next
-    )
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
-    ramp_fraction = hours_elapsed * value(model.ramp_up_hourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp up rate ({}, {}) is too large to be constraining from '
-            '({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_increase = hourly_activity_sd_next - hourly_activity_sd  # opposite sign from rampdown
-    rampable_activity = (
-        ramp_fraction
-        * model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
-    )
-    expr = activity_increase <= rampable_activity
-
-    return expr
-
-
-def ramp_down_season_constraint(
-    model: TemoaModel,
-    r: Region,
-    p: Period,
-    s: Season,
-    s_next: Season,
-    t: Technology,
-    v: Vintage,
-) -> ExprLike:
-    r"""
-    Constrains the ramp down rate of activity between time slices at the boundary
-    of sequential seasons. Same as ramp_down_day but only applies to the boundary
-    between sequential seasons, i.e., :math:`(s^{seq},d_{last})` to
-    :math:`(s^{seq}_{next},d_{first})`
-    and :math:`s^{seq}_{next}` is based on the TimeSequential table rather than the
-    time_season table.
-    """
-
-    d = model.time_of_day.last()
-    d_next = model.time_of_day.first()
-
-    # How many hours does this time slice represent
-    hours_adjust = value(model.segment_fraction[s, d]) * value(model.days_per_period) * 24
-    hours_adjust_next = (
-        value(model.segment_fraction[s_next, d_next]) * value(model.days_per_period) * 24
-    )
-
-    hourly_activity_sd = (
-        sum(
-            model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust
-    )
-
-    hourly_activity_sd_next = (
-        sum(
-            model.v_flow_out[r, p, s_next, d_next, S_i, t, v, S_o]
-            for S_i in model.process_inputs[r, p, t, v]
-            for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-        )
-        / hours_adjust_next
-    )
-
-    # elapsed hours from middle of this time slice to middle of next time slice
-    hours_elapsed = (model.time_of_day_hours[d] + model.time_of_day_hours[d_next]) / 2
-    ramp_fraction = hours_elapsed * value(model.ramp_down_hourly[r, t])
-
-    if ramp_fraction >= 1:
-        msg = (
-            'Warning: Hourly ramp down rate ({}, {}) is too large to be constraining from '
-            '({}, {}, {}) to ({}, {}, {}). '
-            f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
-        )
-        logger.warning(msg.format(r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
-
-    activity_decrease = hourly_activity_sd - hourly_activity_sd_next  # opposite sign from rampup
-    rampable_activity = (
-        ramp_fraction
-        * model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        / (24 * value(model.days_per_period))  # adjust capacity to hourly basis
-    )
-    expr = activity_decrease <= rampable_activity
-
-    return expr

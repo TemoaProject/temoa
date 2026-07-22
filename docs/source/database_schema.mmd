@@ -275,33 +275,6 @@ limit_capacity_share {
    TEXT notes
    REAL share
 }
-limit_degrowth_capacity {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
-}
-limit_degrowth_new_capacity {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
-}
-limit_degrowth_new_capacity_delta {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
-}
 limit_emission {
  TEXT emis_comm PK
    TEXT operator PK
@@ -310,33 +283,6 @@ limit_emission {
    TEXT notes
    TEXT units
    REAL value
-}
-limit_growth_capacity {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
-}
-limit_growth_new_capacity {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
-}
-limit_growth_new_capacity_delta {
- TEXT operator PK
-   TEXT region PK
-   TEXT tech_or_group PK
-   TEXT notes
-   REAL rate
-   REAL seed
-   TEXT seed_units
 }
 limit_new_capacity {
  TEXT operator PK
