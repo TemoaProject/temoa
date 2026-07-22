@@ -20,6 +20,8 @@ from pyomo.environ import Constraint, quicksum, value
 from temoa.components import time
 
 if TYPE_CHECKING:
+    from pyomo.core.base import Expression
+
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike
     from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
@@ -192,7 +194,7 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
         model.is_seasonal_storage[t] = t in model.tech_seasonal_storage
 
 
-def _ramp_constraint(
+def _ramp_activity_increase(
     model: TemoaModel,
     ramp_up: bool,
     r: Region,
@@ -203,25 +205,12 @@ def _ramp_constraint(
     d_next: TimeOfDay,
     t: Technology,
     v: Vintage,
-) -> ExprLike:
-    """
-    Helper function to compute ramping constraints for both ramp-up and ramp-down.
+) -> tuple[Expression, float] | None:
+    """Compute the hourly activity increase between adjacent time slices and the
+    ramp fraction for the given direction.
 
-    Args:
-        model (TemoaModel): The Temoa model instance.
-        ramp_up (bool): True for ramp-up constraints, False for ramp-down constraints.
-        r (Region): The region.
-        p (Period): The period.
-        s (Season): The season.
-        d (TimeOfDay): The time of day.
-        s_next (Season): The next season.
-        d_next (TimeOfDay): The next time of day.
-        t (Technology): The technology.
-        v (Vintage): The vintage.
-
-    Returns:
-        Expression | Constraint.Skip: A tuple containing the activity increase
-        and rampable activity expressions or a constraint skip.
+    Returns ``(activity_increase, ramp_fraction)`` or ``None`` when the ramp
+    rate is so large that the constraint would never bind (skip).
     """
     ramping_param = model.ramp_up_hourly if ramp_up else model.ramp_down_hourly
 
@@ -246,19 +235,51 @@ def _ramp_constraint(
             f'Should be less than {1 / hours_elapsed:.4f}. Constraint skipped.'
         )
         logger.warning(msg.format(ramping_param.name, r, t, p, s, d, p, s_next, d_next))
-        return Constraint.Skip
+        return None
 
     activity_increase = hourly_activity_sd_next - hourly_activity_sd
-    rampable_activity = (
+    return activity_increase, ramp_fraction
+
+
+def _rampable_activity(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    t: Technology,
+    v: Vintage,
+    ramp_fraction: float,
+) -> ExprLike:
+    """Rampable activity for the core model: fraction of total installed capacity."""
+    return (
         ramp_fraction
         * model.v_capacity[r, p, t, v]
         * value(model.capacity_to_activity[r, t])
         / (24 * value(model.days_per_period))
     )
+
+
+def _ramp_constraint(
+    model: TemoaModel,
+    ramp_up: bool,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    """Helper that composes :func:`_ramp_activity_increase` and
+    :func:`_rampable_activity` into the core-model ramp constraint."""
+    s_next, d_next = model.time_next[s, d]
+    result = _ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
+    if result is None:
+        return Constraint.Skip
+    activity_increase, ramp_fraction = result
+    rampable = _rampable_activity(model, r, p, t, v, ramp_fraction)
     if ramp_up:
-        return activity_increase <= rampable_activity
+        return activity_increase <= rampable
     else:
-        return -activity_increase <= rampable_activity
+        return -activity_increase <= rampable
 
 
 def ramp_up_constraint(
@@ -314,8 +335,6 @@ def ramp_up_constraint(
       i.e. :math:`(H_d + H_{d_{next}}) / 2`
     - :math:`CAP \cdot C2A / (24 \cdot DPP)` gives the maximum hourly capacity
     """
-
-    s_next, d_next = model.time_next[s, d]
     return _ramp_constraint(
         model=model,
         ramp_up=True,
@@ -323,8 +342,6 @@ def ramp_up_constraint(
         p=p,
         s=s,
         d=d,
-        s_next=s_next,
-        d_next=d_next,
         t=t,
         v=v,
     )
@@ -365,8 +382,6 @@ def ramp_down_constraint(
             \\
             \text{where: } \Delta H = \frac{H_d + H_{d_{next}}}{2}
     """
-
-    s_next, d_next = model.time_next[s, d]
     return _ramp_constraint(
         model=model,
         ramp_up=False,
@@ -374,8 +389,6 @@ def ramp_down_constraint(
         p=p,
         s=s,
         d=d,
-        s_next=s_next,
-        d_next=d_next,
         t=t,
         v=v,
     )

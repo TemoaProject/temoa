@@ -38,6 +38,7 @@ from temoa.components import (
     storage,
     technology,
     time,
+    utils,
 )
 from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
@@ -110,6 +111,7 @@ class TemoaModel(AbstractModel):
         AbstractModel.__init__(self, *args, **kwargs)
         self.enabled_extensions = tuple(extensions or ())
         self.extension_specs = resolve_extension_specs(self.enabled_extensions)
+        utils.available_output_function = utils.available_output_base
 
         ################################################
         #       Internally used Data Containers        #
