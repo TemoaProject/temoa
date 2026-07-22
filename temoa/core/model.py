@@ -557,6 +557,11 @@ class TemoaModel(AbstractModel):
         self.initialize_CapacityFactors = BuildAction(rule=capacity.check_capacity_factor_process)
         self.initialize_efficiency_variable = BuildAction(rule=technology.check_efficiency_variable)
 
+        if 'unit_commitment' in self.enabled_extensions:
+            import temoa.extensions.unit_commitment.core.model as uc
+
+            uc.register_early_components(self)
+
         # Define technology cost parameters
         self.cost_fixed_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
         self.cost_fixed = Param(self.cost_fixed_rptv)
@@ -964,12 +969,13 @@ class TemoaModel(AbstractModel):
         self.ramp_down_constraint_rpsdtv = Set(
             dimen=6, initialize=operations.ramp_down_constraint_indices
         )
-        self.ramp_down_constraint = Constraint(
-            self.ramp_down_constraint_rpsdtv, rule=operations.ramp_down_constraint
-        )
-        self.ramp_up_constraint = Constraint(
-            self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
-        )
+        if 'unit_commitment' not in self.enabled_extensions:
+            self.ramp_down_constraint = Constraint(
+                self.ramp_down_constraint_rpsdtv, rule=operations.ramp_down_constraint
+            )
+            self.ramp_up_constraint = Constraint(
+                self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
+            )
 
         self.reserve_margin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
         self.validate_reserve_margin = BuildAction(rule=validate_reserve_margin)

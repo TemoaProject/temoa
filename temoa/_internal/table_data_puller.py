@@ -246,6 +246,11 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
                         continue
                     res[fi][FlowType.OUT] = flow
 
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_input_results(model, res, epsilon)
+
     return res
 
 
@@ -494,6 +499,10 @@ def poll_cost_results(
         import temoa.extensions.economies_of_scale.core.data_puller as eos
 
         eos.poll_costs(model, exchange_costs, entries, p_0_true, epsilon)
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_cost_results(model, exchange_costs, entries, p_0_true, epsilon)
 
     exchange_entries = exchange_costs.get_entries()
     return entries, exchange_entries
@@ -557,6 +566,11 @@ def poll_emissions(
             value(model.v_flow_out_annual[r, p, i, t, v, o])
             * model.emission_activity[r, e, i, t, v, o]
         )
+
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.core import data_puller as uc
+
+        uc.poll_emission_results(model, flows)
 
     # gather costs
     ud_costs: dict[tuple[Region, Period, Technology, Vintage], float] = defaultdict(float)

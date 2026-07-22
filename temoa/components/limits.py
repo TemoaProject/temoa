@@ -795,6 +795,13 @@ def limit_emission_constraint(
         if (reg, p, S_t, S_v) in model.process_inputs
     )
 
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.components import startup
+
+        process_emissions += quicksum(
+            startup.uc_startup_emissions_rpe(model, reg, p, e) for reg in regions
+        )
+
     embodied_emissions = quicksum(
         model.v_new_capacity[reg, t, v]
         * value(model.emission_embodied[reg, e, t, v])

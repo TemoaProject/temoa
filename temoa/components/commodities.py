@@ -425,6 +425,11 @@ def commodity_balance_constraint(
             for s_o in model.process_outputs_by_input[r, p, s_t, s_v, c]
         )
 
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.components import startup
+
+        consumed += startup.uc_startup_input_rpsdc(model, r, p, s, d, c)
+
     if (r, p, c) in model.capacity_consumption_techs:
         # Consumed by building capacity
         # Assume evenly distributed over a year
@@ -572,6 +577,11 @@ def annual_commodity_balance_constraint(
             if s_t in model.tech_annual
             for s_o in model.process_outputs_by_input[r, p, s_t, s_v, c]
         )
+
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.components import startup
+
+        consumed += startup.uc_startup_input_rpc(model, r, p, c)
 
     if (r, p, c) in model.capacity_consumption_techs:
         # Consumed by building capacity

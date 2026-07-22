@@ -59,8 +59,14 @@ def get_known_extension_specs() -> dict[str, ExtensionSpec]:
     from temoa.extensions.discrete_capacity.extension import DISCRETE_CAPACITY_EXTENSION
     from temoa.extensions.economies_of_scale.extension import EOS_EXTENSION
     from temoa.extensions.growth_rates.extension import GROWTH_RATES_EXTENSION
+    from temoa.extensions.unit_commitment.extension import UNIT_COMMITMENT_EXTENSION
 
-    specs = [GROWTH_RATES_EXTENSION, DISCRETE_CAPACITY_EXTENSION, EOS_EXTENSION]
+    specs = [
+        GROWTH_RATES_EXTENSION,
+        DISCRETE_CAPACITY_EXTENSION,
+        EOS_EXTENSION,
+        UNIT_COMMITMENT_EXTENSION,
+    ]
     return {spec.extension_id: spec for spec in specs}
 
 
