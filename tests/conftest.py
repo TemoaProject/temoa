@@ -222,7 +222,7 @@ def system_test_run(
     if myopic_overrides is not None:
         config.myopic_inputs = {**(config.myopic_inputs or {}), **myopic_overrides}
 
-    # Allow parametrized tests to override myopic settings per case.
+    # Allow parametrized tests to override time sequencing mode per case.
     time_sequencing_override = request.param.get('time_sequencing')
     if time_sequencing_override is not None:
         config.time_sequencing = time_sequencing_override

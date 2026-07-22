@@ -29,7 +29,6 @@ class ExtensionSpec:
     register_model_components: ModelHook | None = None
     build_manifest_items: ManifestHook | None = None
     schema_sql_path: str | None = None
-    fail_if_tables_populated_when_disabled: bool = False
 
 
 def normalize_extension_ids(extension_ids: Sequence[str | object] | None) -> tuple[str, ...]:
@@ -43,7 +42,7 @@ def normalize_extension_ids(extension_ids: Sequence[str | object] | None) -> tup
         if not isinstance(ext_id, str):
             msg = f'Extension ids must be strings. Received: {type(ext_id).__name__}'
             logger.error(msg)
-            raise ValueError(msg)
+            raise TypeError(msg)
         cleaned = ext_id.strip().lower()
         if not cleaned:
             continue
@@ -125,24 +124,19 @@ def merge_regional_group_tables(
 def assert_disabled_extension_tables_are_empty(
     con: Connection, enabled_specs: Sequence[ExtensionSpec]
 ) -> None:
-    """Fail if disabled extensions with strict guards own tables populated with data."""
+    """Warn if disabled extension has table populated with data."""
     enabled_ids = {spec.extension_id for spec in enabled_specs}
     for spec in get_known_extension_specs().values():
         if spec.extension_id in enabled_ids:
             continue
-        if not spec.fail_if_tables_populated_when_disabled:
-            continue
 
-        populated: list[str] = []
-        for table in spec.owned_tables:
-            if _table_has_rows(con, table):
-                populated.append(table)
+        populated = [table for table in spec.owned_tables if _table_has_rows(con, table)]
 
         if populated:
             table_list = ', '.join(sorted(populated))
             msg = (
                 f"Extension '{spec.extension_id}' is not enabled, but extension-owned table(s) "
-                f'contain data: {table_list}. Enable the extension or remove those rows.'
+                f'contain data: {table_list}.'
             )
             logger.warning(msg)
 

@@ -308,13 +308,7 @@ def create_time_sequence(model: TemoaModel) -> None:
 
 
 def create_time_season_to_sequential(model: TemoaModel) -> None:
-    if all(
-        (
-            not model.tech_seasonal_storage,
-            not model.ramp_up_hourly,
-            not model.ramp_down_hourly,
-        )
-    ):
+    if not model.tech_seasonal_storage:
         # Don't need it anyway
         return
 
@@ -334,11 +328,9 @@ def create_time_season_to_sequential(model: TemoaModel) -> None:
         else:
             msg = (
                 f'No data in time_season_sequential but time_sequencing parameter set to '
-                f'{model.time_sequencing.first()} and inter-season features used. '
+                f'{model.time_sequencing.first()} and seasonal storage used. '
                 'time_season_sequential must be filled for this type of time sequencing if '
-                'seasonal storage or inter-season constraints like ramp_up/ramp_down are used. '
-                'Check '
-                'the config file.'
+                'seasonal storage is used. Check the config file.'
             )
             logger.error(msg)
             raise ValueError(msg)
