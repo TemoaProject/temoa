@@ -103,6 +103,7 @@ def refresh_databases() -> None:
         ('materials.sql', 'materials.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
+        ('test_week.sql', 'test_week.sqlite'),
         (None, 'utopia_stochastic.sqlite'),
     ]
 
@@ -220,6 +221,11 @@ def system_test_run(
     myopic_overrides = request.param.get('myopic')
     if myopic_overrides is not None:
         config.myopic_inputs = {**(config.myopic_inputs or {}), **myopic_overrides}
+
+    # Allow parametrized tests to override myopic settings per case.
+    time_sequencing_override = request.param.get('time_sequencing')
+    if time_sequencing_override is not None:
+        config.time_sequencing = time_sequencing_override
 
     sequencer = TemoaSequencer(config=config)
 
