@@ -20,7 +20,7 @@ from pyomo.environ import value
 
 from temoa.components import geography, technology
 
-from .utils import get_adjusted_existing_capacity, get_capacity_factor
+from .utils import get_adjusted_existing_capacity, get_available_output
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -463,21 +463,9 @@ def capacity_constraint(
             for S_i in model.process_inputs[r, p, t, v]
             for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
-        return (
-            get_capacity_factor(model, r, s, d, t, v)
-            * value(model.capacity_to_activity[r, t])
-            * value(model.segment_fraction[s, d])
-            * model.v_capacity[r, p, t, v]
-            == useful_activity + curtailment
-        )
+        return get_available_output(model, r, p, s, d, t, v) == useful_activity + curtailment
     else:
-        return (
-            get_capacity_factor(model, r, s, d, t, v)
-            * value(model.capacity_to_activity[r, t])
-            * value(model.segment_fraction[s, d])
-            * model.v_capacity[r, p, t, v]
-            >= useful_activity
-        )
+        return get_available_output(model, r, p, s, d, t, v) >= useful_activity
 
 
 def adjusted_capacity_constraint(
