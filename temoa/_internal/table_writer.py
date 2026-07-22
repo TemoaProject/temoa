@@ -483,6 +483,16 @@ class TableWriter:
         cap_data = poll_capacity_results(model=model, epsilon=self.output_threshold_capacity)
         self._insert_capacity_results(cap_data=cap_data, iteration=iteration)
 
+        if 'unit_commitment' in model.enabled_extensions:
+            import temoa.extensions.unit_commitment.core.data_puller as uc_puller
+
+            uc_puller.write_uc_results(
+                model=model,
+                writer=self,
+                iteration=iteration,
+                epsilon=self.output_threshold_capacity,
+            )
+
     def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:
         if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
