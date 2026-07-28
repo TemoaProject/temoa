@@ -711,35 +711,6 @@ controls the bound direction. The group columns accept either
 a single technology name or a technology group name.
 
 
-limit_degrowth_capacity
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{LDGC}_{r \in R, t \in T}`
-
-The :code:`limit_degrowth_capacity` parameter defines the maximum annual rate
-at which the total capacity of a technology (or group) can shrink between
-periods.  The :code:`tech_or_group` column accepts a technology name or group name.
-
-
-limit_degrowth_new_capacity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{LDGNC}_{r \in R, t \in T}`
-
-The :code:`limit_degrowth_new_capacity` parameter constrains the rate of decrease
-in new capacity deployment between consecutive periods.
-
-
-limit_degrowth_new_capacity_delta
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`\mathrm{LDGNC}_{\Delta,r \in R, t \in T}`
-
-The :code:`limit_degrowth_new_capacity_delta` parameter constrains the
-deceleration of new capacity degrowth between periods, essentially adding
-"intertia" to the degrowth of new capacity deployment.
-
-
 limit_emission
 ~~~~~~~~~~~~~~
 
@@ -749,35 +720,6 @@ The :code:`limit_emission` parameter ensures that Temoa finds a solution that
 fits within the modeler-specified limit on emission :math:`e` in time period
 :math:`p`.  The operator column controls whether this is an upper bound, lower
 bound, or equality.
-
-
-limit_growth_capacity
-~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{LGC}_{r \in R, t \in T}`
-
-The :code:`limit_growth_capacity` parameter defines the maximum annual rate at
-which the total capacity of a technology (or group) can grow between periods.
-The :code:`tech_or_group` column accepts a technology name or group name.
-
-
-limit_growth_new_capacity
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{LGNC}_{r \in R, t \in T}`
-
-The :code:`limit_growth_new_capacity` parameter constrains the rate of increase
-in new capacity deployment between consecutive periods.
-
-
-limit_growth_new_capacity_delta
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`\mathrm{LGNC}_{\Delta,r \in R, t \in T}`
-
-The :code:`limit_growth_new_capacity_delta` parameter constrains the acceleration
-of new capacity growth between periods. This essentially adds "inertia" to the
-growth of new capacity deployment.
 
 
 limit_new_capacity
@@ -1436,12 +1378,6 @@ User-Specific Constraints
 .. autofunction:: temoa.components.limits.limit_seasonal_capacity_factor_constraint
 
 .. autofunction:: temoa.components.storage.limit_storage_fraction_constraint
-
-.. autofunction:: temoa.components.limits.limit_growth_capacity
-
-.. autofunction:: temoa.components.limits.limit_growth_new_capacity
-
-.. autofunction:: temoa.components.limits.limit_growth_new_capacity_delta
 
 General Caveats
 ---------------

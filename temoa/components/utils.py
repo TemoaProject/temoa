@@ -12,10 +12,10 @@ from enum import StrEnum
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.environ import value
+from pyomo.environ import Expression, value
 
 if TYPE_CHECKING:
-    from pyomo.core import Expression
+    from pyomo.core.expr.numeric_expr import NumericValue
 
     from temoa.core.model import TemoaModel
     from temoa.types import (
@@ -39,7 +39,11 @@ class Operator(StrEnum):
     GREATER_EQUAL = 'ge'
 
 
-def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) -> ExprLike:
+def operator_expression(
+    lhs: Expression | NumericValue | float,
+    operator: Operator,
+    rhs: Expression | NumericValue | float,
+) -> ExprLike:
     match operator:
         case Operator.EQUAL:
             return lhs == rhs

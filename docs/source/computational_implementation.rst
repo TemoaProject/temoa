@@ -320,6 +320,11 @@ dimensionality of 3, and (following the :ref:`naming scheme
 :code:`region`, the second an element of :code:`time_optimize`,
 and third a demand commodity.
 
+.. seealso::
+   The same component pattern (index set, parameter, and constraint declared in a
+   ``model.py`` and implemented in component modules) can be packaged as an
+   optional, self-contained add-on. See :ref:`extensions` for the extension
+   framework and a copy-from template.
 
 
 

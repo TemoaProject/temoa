@@ -1,5 +1,6 @@
 scenario = "test myopic capacities"
 scenario_mode = "myopic"
+extensions= ["growth_rates"]
 input_database = "tests/testing_outputs/myopic_capacities.sqlite"
 output_database = "tests/testing_outputs/myopic_capacities.sqlite"
 neos = false

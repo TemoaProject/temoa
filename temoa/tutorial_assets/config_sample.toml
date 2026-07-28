@@ -18,6 +18,12 @@ scenario = "zulu"
 #     [perfect_foresight, MGA, myopic, method_of_morris, build_only, check, monte_carlo]
 scenario_mode = "perfect_foresight"
 
+# Optional extensions list
+# Use this to enable modular model features that are not part of the base core model.
+# Example: extensions = ["unit_commitment", "growth_rates"]
+# Leave empty for default core-only behavior.
+extensions = []
+
 # Input database (Mandatory)
 input_database = "utopia.sqlite"
 

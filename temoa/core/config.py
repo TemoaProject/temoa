@@ -5,6 +5,7 @@ from logging import getLogger
 from pathlib import Path
 
 from temoa.core.modes import TemoaMode
+from temoa.extensions.framework import normalize_extension_ids, resolve_extension_specs
 
 logger = getLogger(__name__)
 
@@ -71,6 +72,7 @@ class TemoaConfig:
         output_threshold_emission: float | None = None,
         output_threshold_cost: float | None = None,
         sqlite: dict[str, object] | None = None,
+        extensions: list[str] | tuple[str, ...] | None = None,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -160,6 +162,9 @@ class TemoaConfig:
         self.output_threshold_emission = output_threshold_emission
         self.output_threshold_cost = output_threshold_cost
         self.sqlite_inputs = sqlite or {}
+        self.extensions = normalize_extension_ids(extensions)
+        # Validate extension ids eagerly so config failures happen before model build.
+        resolve_extension_specs(self.extensions)
 
         # SQLite performance settings
         # journal_mode: DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
@@ -326,6 +331,7 @@ class TemoaConfig:
 
         msg += '{:>{}s}: {}\n'.format('Scenario', width, self.scenario)
         msg += '{:>{}s}: {}\n'.format('Scenario mode', width, self.scenario_mode.name)
+        msg += '{:>{}s}: {}\n'.format('Enabled extensions', width, ', '.join(self.extensions))
         msg += '{:>{}s}: {}\n'.format('Config file', width, self.config_file)
         msg += '{:>{}s}: {}\n'.format('Data source', width, self.input_database)
         msg += '{:>{}s}: {}\n'.format('Output database target', width, self.output_database)

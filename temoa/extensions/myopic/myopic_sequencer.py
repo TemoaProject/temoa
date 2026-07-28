@@ -252,6 +252,7 @@ class MyopicSequencer:
                 keep_lp_file=self.config.save_lp_file,
                 lp_path=self.config.output_path
                 / ''.join(('LP', str(idx.base_year))),  # base year folder
+                extensions=self.config.extensions,
             )
 
             # 8.  Run checks...

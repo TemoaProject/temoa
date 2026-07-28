@@ -38,7 +38,7 @@ def evaluate(param_names: dict[int, list[Any]], param_values: Any,
                 raise ValueError(f'Unrecognized parameter: {names[0]}')
 
     dp = DataPortal(data_dict={None: data})
-    instance = run_actions.build_instance(loaded_portal=dp)
+    instance = run_actions.build_instance(loaded_portal=dp, extensions=config.extensions)
     mdl, res = run_actions.solve_instance(instance=instance, solver_name=config.solver_name)
     status = run_actions.check_solve_status(res)
     if not status:

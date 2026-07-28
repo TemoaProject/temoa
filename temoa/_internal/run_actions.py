@@ -124,6 +124,7 @@ def build_instance(
     silent: bool = False,
     keep_lp_file: bool = False,
     lp_path: Path | None = None,
+    extensions: Iterable[str] | None = None,
 ) -> TemoaModel:
     """
     Build a Temoa Instance from data
@@ -134,7 +135,7 @@ def build_instance(
     :param model_name: Optional name for this instance
     :return: a built TemoaModel
     """
-    model = TemoaModel()
+    model = TemoaModel(extensions=tuple(extensions or ()))
 
     model.dual = Suffix(direction=Suffix.IMPORT)
     # self.model.rc = Suffix(direction=Suffix.IMPORT)

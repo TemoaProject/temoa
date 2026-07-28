@@ -67,7 +67,11 @@ def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, A
     logger.debug('\n  '.join(log_entry))
 
     dp = DataPortal(data_dict={None: data})
-    instance = run_actions.build_instance(loaded_portal=dp, silent=True)
+    instance = run_actions.build_instance(
+        loaded_portal=dp,
+        silent=True,
+        extensions=config.extensions,
+    )
     mdl, res = run_actions.solve_instance(
         instance=instance, solver_name=config.solver_name, silent=True
     )
