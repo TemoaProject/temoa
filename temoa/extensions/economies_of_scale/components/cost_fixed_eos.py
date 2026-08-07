@@ -228,13 +228,13 @@ def cost_fixed_eos_segment_cost(
     p: Period,
     t: Technology,
     n: int,
-    capacity: ExprLike,
+    cap: ExprLike,
     binary: VarData | bool = True,
 ) -> ExprLike:
     """Fixed cost within a segment, if capacity were in that segment"""
     cap_lower, cap_upper, cost_lower, cost_upper = model.cost_fixed_eos[r, p, t, n]
     m = (value(cost_upper) - value(cost_lower)) / (value(cap_upper) - value(cap_lower))
-    return m * capacity + binary * (value(cost_lower) - m * value(cap_lower))
+    return m * cap + binary * (value(cost_lower) - m * value(cap_lower))
 
 
 def period_cost(model: EOSModel, r: Region, p: Period, t: Technology) -> Expression:

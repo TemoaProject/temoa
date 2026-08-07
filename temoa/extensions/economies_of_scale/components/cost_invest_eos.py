@@ -288,7 +288,7 @@ def cost_invest_eos_cumulative_capacity_constraint(
     )
 
     # Sum all actually built capacity so far
-    cap_deployed = quicksum(
+    cap_deployed = sum(
         value(model.existing_capacity[_r, _t, _v])
         for _r, _t, _v in model.existing_capacity.sparse_keys()
         if _r in regions and _t in techs
@@ -311,13 +311,13 @@ def cost_invest_eos_segment_cost(
     r: Region,
     t: Technology,
     n: int,
-    cumulative_capacity: ExprLike,
+    cum_cap: ExprLike,
     binary: VarData | bool = True,
 ) -> ExprLike:
     """Cumulative investment cost within an EOS invest segment, if capacity were in that segment"""
     cap_lower, cap_upper, cost_lower, cost_upper = model.cost_invest_eos[r, t, n]
     m = (value(cost_upper) - value(cost_lower)) / (value(cap_upper) - value(cap_lower))
-    return m * cumulative_capacity + binary * (value(cost_lower) - m * value(cap_lower))
+    return m * cum_cap + binary * (value(cost_lower) - m * value(cap_lower))
 
 
 def cost_invest_eos_cluster_cumulative_cost(

@@ -280,7 +280,7 @@ an index function is needed to determine the valid indices for the constraint.
       self.ramp_up_constraint_rpsdtv = Set(
          dimen=6, initialize=operations.ramp_up_constraint_indices
       )
-      self.ramp_up__constraint = Constraint(
+      self.ramp_up_constraint = Constraint(
          self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
       )
 

@@ -135,7 +135,7 @@ def get_available_output(
     v: Vintage,
 ) -> ExprLike:
     """The maximum available output for a process in a specific time slice."""
-    return available_output_function(model, r, p, s, d, t, v)
+    return model.available_output_function(model, r, p, s, d, t, v)
 
 
 def get_adjusted_existing_capacity(

@@ -480,6 +480,8 @@ class TableWriter:
         self.connection.commit()
 
     def write_capacity_tables(self, model: TemoaModel, iteration: int | None = None) -> None:
+        if not self.tech_sectors:
+            self._set_tech_sectors()
         cap_data = poll_capacity_results(model=model, epsilon=self.output_threshold_capacity)
         self._insert_capacity_results(cap_data=cap_data, iteration=iteration)
 

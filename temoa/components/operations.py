@@ -194,7 +194,7 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
         model.is_seasonal_storage[t] = t in model.tech_seasonal_storage
 
 
-def _ramp_activity_increase(
+def ramp_activity_increase(
     model: TemoaModel,
     ramp_up: bool,
     r: Region,
@@ -271,7 +271,7 @@ def _ramp_constraint(
     """Helper that composes :func:`_ramp_activity_increase` and
     :func:`_rampable_activity` into the core-model ramp constraint."""
     s_next, d_next = model.time_next[s, d]
-    result = _ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
+    result = ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
     if result is None:
         return Constraint.Skip
     activity_increase, ramp_fraction = result

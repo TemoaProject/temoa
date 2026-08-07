@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS unit_commitment
     CHECK (unit_capacity > 0),
     CHECK (0 <= min_output_fraction AND min_output_fraction <= 1),
     CHECK (0 < max_output_fraction AND max_output_fraction <= 1),
+    CHECK (min_output_fraction <= max_output_fraction),
     CHECK (min_up_time_hours >= 0),
     CHECK (min_down_time_hours >= 0),
     CHECK (linearized IN (0, 1)),

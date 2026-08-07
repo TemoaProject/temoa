@@ -111,7 +111,7 @@ class TemoaModel(AbstractModel):
         AbstractModel.__init__(self, *args, **kwargs)
         self.enabled_extensions = tuple(extensions or ())
         self.extension_specs = resolve_extension_specs(self.enabled_extensions)
-        utils.available_output_function = utils.available_output_base
+        self.available_output_function = utils.available_output_base
 
         ################################################
         #       Internally used Data Containers        #
@@ -626,7 +626,12 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity = Param(self.limit_activity_constraint_rpt)
 
-        self.limit_seasonal_capacity_factor_constraint_rst = Set()
+        self.limit_seasonal_capacity_factor_constraint_rst = Set(
+            within=self.regional_global_indices
+            * self.time_season
+            * self.tech_or_group
+            * self.operator
+        )
         self.limit_seasonal_capacity_factor = Param(
             self.limit_seasonal_capacity_factor_constraint_rst, validate=validate_0to1
         )

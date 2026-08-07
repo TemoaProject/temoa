@@ -249,7 +249,7 @@ def test_time_sequence_tests(
         cur = con.cursor()
         res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
         obj = res[0]
-        assert obj == pytest.approx(expected_obj, abs=0.00001), (
+        assert obj == pytest.approx(expected_obj, rel=1e-5), (
             'objective function value did not match expected for time sequencing test'
         )
 

@@ -14,18 +14,18 @@ Implements:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Constraint, NonNegativeIntegers, quicksum, value
 
-import temoa.components.utils as utils
-from temoa.components.operations import _ramp_activity_increase
+from temoa.components.operations import ramp_activity_increase
 from temoa.components.time import tod_elapsed_hours
 from temoa.components.utils import available_output_base
 
 if TYPE_CHECKING:
     from pyomo.environ import Expression
 
+    from temoa.core.model import TemoaModel
     from temoa.extensions.unit_commitment.core.model import UnitCommitmentModel
     from temoa.types import ExprLike
     from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
@@ -55,8 +55,8 @@ def apply_integer_domains(model: UnitCommitmentModel) -> None:
 def initialize_unit_commitment(model: UnitCommitmentModel) -> None:
     """Initialize the unit commitment index set."""
 
-    # Override get_available_output with the UC-aware version for this run.
-    utils.available_output_function = uc_available_output
+    # Override get_available_output with the UC-aware version for this model instance.
+    model.available_output_function = uc_available_output
 
     # Annual techs cant use unit commitment as their flows are not flexible
     bad_techs = {t for _, t in model.uc_unit_capacity.sparse_keys() if t in model.tech_annual}
@@ -141,13 +141,6 @@ def uc_constraint_indices(
     }
 
 
-def capacity_constraint_indices(
-    model: UnitCommitmentModel,
-) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
-    # Non uc processes back to default capacity constraint
-    return set(model.capacity_constraint_rpsdtv - model.uc_indices_rpsdtv)
-
-
 def ramp_up_constraint_indices(
     model: UnitCommitmentModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
@@ -205,7 +198,7 @@ def _flow_out_sum(
 
 
 def uc_available_output(
-    model: UnitCommitmentModel,
+    model: TemoaModel,
     r: Region,
     p: Period,
     s: Season,
@@ -239,6 +232,7 @@ def uc_available_output(
     so it is called transparently by :func:`~temoa.components.utils.get_available_output`
     throughout the core model.
     """
+    model = cast('UnitCommitmentModel', model)
     if (r, t) not in model.uc_unit_capacity:
         return available_output_base(model, r, p, s, d, t, v)
     base = (
@@ -401,6 +395,8 @@ def uc_min_up_time_constraint(
         \le \textbf{UCN}_{r,p,s,d,t,v}
     """
     hours_back = int(value(model.uc_min_up_time_hours[r, t]))
+    if hours_back <= 0:
+        return Constraint.Skip
     started_sum = quicksum(
         model.v_uc_started[r, p, _s, _d, t, v] for _s, _d in model.uc_backslices[s, d, hours_back]
     )
@@ -441,6 +437,8 @@ def uc_min_down_time_constraint(
         mis-classified by one time slice.
     """
     hours_back = int(value(model.uc_min_down_time_hours[r, t]))
+    if hours_back <= 0:
+        return Constraint.Skip
     stopped_sum = quicksum(
         model.v_uc_stopped[r, p, _s, _d, t, v] for _s, _d in model.uc_backslices[s, d, hours_back]
     )
@@ -486,7 +484,7 @@ def _ramp_constraint(
     v: Vintage,
 ) -> ExprLike:
     s_next, d_next = model.time_next[s, d]
-    result = _ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
+    result = ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
     if result is None:
         return Constraint.Skip
     activity_increase, ramp_fraction = result

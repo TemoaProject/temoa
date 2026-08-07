@@ -76,7 +76,7 @@ def poll_costs(
             )
 
         # screen for linked region...
-        if '-' in r:
+        if '-' in r and '+' not in r:
             exchange_costs.add_cost_record(
                 r,
                 period=p,
@@ -116,7 +116,7 @@ def poll_costs(
         )
         d_fixed = float(value(d_fixed))
 
-        if '-' in r:
+        if '-' in r and '+' not in r:
             exchange_costs.add_cost_record(
                 r,
                 period=p,
@@ -155,7 +155,7 @@ def poll_costs(
         )
         d_variable = float(value(d_variable))
 
-        if '-' in r:
+        if '-' in r and '+' not in r:
             exchange_costs.add_cost_record(
                 r,
                 period=p,

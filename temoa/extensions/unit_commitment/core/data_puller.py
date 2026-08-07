@@ -159,13 +159,14 @@ def poll_startup_cost_results(
 
     global_discount_rate = value(model.global_discount_rate)
 
-    keys = {
+    # Variable
+    valid_rptv = {
         (r, p, t, v)
         for r, t in model.uc_startup_cost.sparse_keys()
         for p in model.time_optimize
         for v in model.process_vintages.get((r, p, t), [])
     }
-    for r, p, t, v in keys:
+    for r, p, t, v in valid_rptv:
         cost = float(value(startup.uc_startup_cost_rptv(model, r, p, t, v)))
         if abs(cost) < epsilon:
             continue
@@ -202,3 +203,59 @@ def poll_startup_cost_results(
             entry = entries[r, p, t, v]
             entry[CostType.D_VARIABLE] = entry.get(CostType.D_VARIABLE, 0.0) + d_variable
             entry[CostType.VARIABLE] = entry.get(CostType.VARIABLE, 0.0) + ud_variable
+
+    # Emission
+    valid_rpetv = {
+        (r, p, e, t, v)
+        for r, e, t in model.uc_startup_emissions.sparse_keys()
+        for p in model.time_optimize
+        if (r, p, e) in model.cost_emission
+        for v in model.process_vintages.get((r, p, t), [])
+    }
+    for r, p, e, t, v in valid_rpetv:
+        startups = sum(
+            value(model.v_uc_started[r, p, s, d, t, v])
+            for s in model.time_season
+            for d in model.time_of_day
+        )
+        cost = (
+            startups
+            * value(model.uc_unit_capacity[r, t])
+            * value(model.uc_startup_emissions[r, e, t])
+            * value(model.cost_emission[r, p, e])
+        )
+        if abs(cost) < epsilon:
+            continue
+
+        ud_emission = float(cost * value(model.period_length[p]))
+        d_emission = costs.fixed_or_variable_cost(
+            cap_or_flow=1.0,
+            cost_factor=cost,
+            cost_years=value(model.period_length[p]),
+            global_discount_rate=global_discount_rate,
+            p_0=float(p_0),
+            p=p,
+        )
+        d_emission = float(value(d_emission))
+
+        if '-' in r:
+            exchange_costs.add_cost_record(
+                r,
+                period=p,
+                tech=t,
+                vintage=v,
+                cost=d_emission,
+                cost_type=CostType.D_EMISS,
+            )
+            exchange_costs.add_cost_record(
+                r,
+                period=p,
+                tech=t,
+                vintage=v,
+                cost=ud_emission,
+                cost_type=CostType.EMISS,
+            )
+        else:
+            entry = entries[r, p, t, v]
+            entry[CostType.D_EMISS] = entry.get(CostType.D_EMISS, 0.0) + d_emission
+            entry[CostType.EMISS] = entry.get(CostType.EMISS, 0.0) + ud_emission

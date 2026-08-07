@@ -197,9 +197,9 @@ to relax them to continuous non-negative reals.
    :header: "Variable", "Domain", "Description"
    :widths: 36, 16, 48
 
-   ":math:`\textbf{UCN}_{r,p,s,d,t,v}` (:code:`v_uc_online`)", ":math:`\mathbb{Z}_{\ge 0}`", "number of units online at the start of timeslice :math:`(s,d)`"
-   ":math:`\textbf{UCST}_{r,p,s,d,t,v}` (:code:`v_uc_started`)", ":math:`\mathbb{Z}_{\ge 0}`", "number of units that start up during timeslice :math:`(s,d)`"
-   ":math:`\textbf{UCSP}_{r,p,s,d,t,v}` (:code:`v_uc_stopped`)", ":math:`\mathbb{Z}_{\ge 0}`", "number of units that shut down during timeslice :math:`(s,d)`"
+   ":math:`\textbf{UCN}_{r,p,s,d,t,v}` (:code:`v_uc_online`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units online at the start of timeslice :math:`(s,d)`"
+   ":math:`\textbf{UCST}_{r,p,s,d,t,v}` (:code:`v_uc_started`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units that start up during timeslice :math:`(s,d)`"
+   ":math:`\textbf{UCSP}_{r,p,s,d,t,v}` (:code:`v_uc_stopped`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units that shut down during timeslice :math:`(s,d)`"
 
 Constraints
 -----------

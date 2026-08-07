@@ -42,7 +42,6 @@ if TYPE_CHECKING:
 
         # --- Index sets ---
         uc_indices_rpsdtv: Set  # all (r,p,s,d,t,v) subject to UC
-        default_capacity_constraint_rpsdtv: Set
         default_ramp_up_constraint_rpsdtv: Set
         default_ramp_down_constraint_rpsdtv: Set
         uc_ramp_up_constraint_rpsdtv: Set
@@ -61,7 +60,6 @@ if TYPE_CHECKING:
         # --- Constraints ---
         uc_online_upper_constraint: Constraint
         uc_min_output_constraint: Constraint
-        uc_max_output_constraint: Constraint
         uc_started_upper_tightening_constraint: Constraint
         uc_stopped_upper_tightening_constraint: Constraint
         uc_transition_constraint: Constraint
@@ -79,24 +77,28 @@ def register_early_components(model: TemoaModel) -> None:
     m.uc_backslices = {}
 
     # Params
-    m.uc_unit_capacity = Param(m.regions, m.tech_with_capacity, domain=PositiveReals)
+    m.uc_unit_capacity = Param(m.regional_indices, m.tech_with_capacity, domain=PositiveReals)
     m.uc_min_output_fraction = Param(
-        m.regions, m.tech_with_capacity, domain=NonNegativeReals, default=0.0
+        m.regional_indices, m.tech_with_capacity, domain=NonNegativeReals, default=0.0
     )
     m.uc_max_output_fraction = Param(
-        m.regions, m.tech_with_capacity, domain=NonNegativeReals, default=1.0
+        m.regional_indices, m.tech_with_capacity, domain=NonNegativeReals, default=1.0
     )
-    m.uc_min_up_time_hours = Param(m.regions, m.tech_with_capacity, domain=Integers, default=0)
-    m.uc_min_down_time_hours = Param(m.regions, m.tech_with_capacity, domain=Integers, default=0)
-    m.uc_linearized = Param(m.regions, m.tech_with_capacity, domain=Binary, default=0)
+    m.uc_min_up_time_hours = Param(
+        m.regional_indices, m.tech_with_capacity, domain=Integers, default=0
+    )
+    m.uc_min_down_time_hours = Param(
+        m.regional_indices, m.tech_with_capacity, domain=Integers, default=0
+    )
+    m.uc_linearized = Param(m.regional_indices, m.tech_with_capacity, domain=Binary, default=0)
 
     # Startup params
-    m.uc_startup_cost = Param(m.regions, m.tech_with_capacity, domain=PositiveReals)
+    m.uc_startup_cost = Param(m.regional_indices, m.tech_with_capacity, domain=PositiveReals)
     m.uc_startup_emissions = Param(
-        m.regions, m.commodity_emissions, m.tech_with_capacity, domain=PositiveReals
+        m.regional_indices, m.commodity_emissions, m.tech_with_capacity, domain=PositiveReals
     )
     m.uc_startup_input = Param(
-        m.regions, m.commodity_physical, m.tech_with_capacity, domain=PositiveReals
+        m.regional_indices, m.commodity_physical, m.tech_with_capacity, domain=PositiveReals
     )
 
     # Index sets
