@@ -37,7 +37,7 @@ logging.getLogger('pyutilib').setLevel(logging.WARNING)
 # Central paths
 TEST_DATA_PATH = Path(__file__).parent / 'testing_data'
 TEST_OUTPUT_PATH = Path(__file__).parent / 'testing_outputs'
-SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
+SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / 'temoa_schema_v4_1.sql'
 
 
 def _build_test_db(

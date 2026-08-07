@@ -1,10 +1,27 @@
 erDiagram
-capacity_credit {
- INTEGER period PK
+planning_reserve_credit {
    TEXT region PK
    TEXT tech PK
-   INTEGER vintage PK
-   REAL credit
+   REAL factor
+   TEXT notes
+}
+operating_reserve_derate {
+   TEXT region PK
+   TEXT season PK
+   TEXT tech PK
+   REAL factor
+   TEXT notes
+}
+planning_reserve_margin {
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL margin
+   TEXT notes
+}
+operating_reserve_margin {
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL margin
    TEXT notes
 }
 technology {
@@ -16,7 +33,6 @@ technology {
    INTEGER exchange
    TEXT flag
    INTEGER flex
-   INTEGER reserve
    INTEGER retire
    INTEGER seas_stor
    TEXT sector
@@ -539,11 +555,6 @@ output_storage_level {
    REAL level
    TEXT sector
 }
-planning_reserve_margin {
- TEXT region PK
-   REAL margin
-   TEXT notes
-}
 ramp_down_hourly {
  TEXT region PK
    TEXT tech PK
@@ -555,22 +566,6 @@ ramp_up_hourly {
    TEXT tech PK
    TEXT notes
    REAL rate
-}
-reserve_capacity_derate {
- INTEGER period PK
-   TEXT region PK
-   TEXT season PK
-   TEXT tech PK
-   INTEGER vintage PK
-   REAL factor
-   TEXT notes
-}
-rps_requirement {
- TEXT notes
-   INTEGER period
-   TEXT region
-   REAL requirement
-   TEXT tech_group
 }
 tech_group {
  TEXT group_name PK
@@ -621,8 +616,11 @@ time_segment_fraction {
    TEXT notes
    REAL segment_fraction
 }
-technology one or zero--0+ capacity_credit : has
-time_period one or zero--0+ capacity_credit : has
+region one or zero--0+ planning_reserve_credit : has
+technology one or zero--0+ planning_reserve_credit : has
+region one or zero--0+ operating_reserve_derate : has
+technology one or zero--0+ operating_reserve_derate : has
+time_season one or zero--0+ operating_reserve_derate : has
 technology_type 1--0+ technology : has
 time_period_type one or zero--0+ time_period : has
 technology one or zero--0+ capacity_factor_process : has
@@ -698,15 +696,9 @@ operator 1--0+ limit_capacity : has
 time_period one or zero--0+ limit_capacity : has
 time_period one or zero--0+ limit_capacity_share : has
 operator 1--0+ limit_capacity_share : has
-operator 1--0+ limit_degrowth_capacity : has
-operator 1--0+ limit_degrowth_new_capacity : has
-operator 1--0+ limit_degrowth_new_capacity_delta : has
 commodity one or zero--0+ limit_emission : has
 operator 1--0+ limit_emission : has
 time_period one or zero--0+ limit_emission : has
-operator 1--0+ limit_growth_capacity : has
-operator 1--0+ limit_growth_new_capacity : has
-operator 1--0+ limit_growth_new_capacity_delta : has
 time_period one or zero--0+ limit_new_capacity : has
 operator 1--0+ limit_new_capacity : has
 operator 1--0+ limit_new_capacity_share : has
@@ -797,15 +789,8 @@ sector_label one or zero--0+ output_storage_level : has
 time_period one or zero--0+ output_storage_level : has
 season_label one or zero--0+ output_storage_level : has
 time_of_day one or zero--0+ output_storage_level : has
-region one or zero--1 planning_reserve_margin : has
 technology one or zero--0+ ramp_down_hourly : has
 technology one or zero--0+ ramp_up_hourly : has
-technology one or zero--0+ reserve_capacity_derate : has
-time_period one or zero--0+ reserve_capacity_derate : has
-season_label one or zero--0+ reserve_capacity_derate : has
-time_period 1--0+ rps_requirement : has
-tech_group 1--0+ rps_requirement : has
-region 1--0+ rps_requirement : has
 tech_group one or zero--0+ tech_group_member : has
 technology one or zero--0+ tech_group_member : has
 time_period one or zero--0+ time_season : has
