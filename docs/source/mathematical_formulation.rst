@@ -338,18 +338,7 @@ efficiency values.  If not specified for a given process, it defaults to 1,
 meaning the base :code:`efficiency` value applies uniformly.  Note that there is
 no period index: the time-varying efficiency applies to all periods.
 
-
 .. _capacity_factor_tech:
-
-capacity_credit
-~~~~~~~~~~~~~~~
-
-:math:`{CC}_{r \in R, p \in P, t \in T, v \in V}`
-
-The capacity credit represents the fraction of total installed capacity of
-a process that can be relied upon during the time slice in which peak
-electricity demand occurs. This parameter is used in the 'static' version of
-the :math:`reserve_margin` constraint.
 
 capacity_factor_tech
 ~~~~~~~~~~~~~~~~~~~~
@@ -822,13 +811,51 @@ level to vary.
 planning_reserve_margin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{PRM}_{r \in R}`
+:math:`{PRM}_{r_g \in R, t_g \in T}`
 
-The :code:`planning_reserve_margin` parameter specifies the capacity reserve margin
-in the electric sector by region. The capacity reserve margin represents the
-installed generating capacity — expressed as a share of peak load — that must be
-available in reserve to meet contingencies. Temoa estimates peak demand from electricity
-production by time slice.
+The required excess of credited installed capacity above demand, expressed
+as a fraction of demand, keyed by a region-or-group :math:`r_g` and a
+technology-or-group :math:`t_g`.  For example, a value of 0.2 requires that
+credited capacity be at least 120% of demand.  Demand is estimated from production
+by time slice.  When a region group is used, any exchange region (e.g. ``r1-r2``)
+where exactly one endpoint belongs to the group is automatically included in the
+reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
+
+
+planning_reserve_credit
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{PRC}_{r \in R, t \in T}`
+
+The fraction of a technology's installed capacity that can be reliably counted
+toward the reserve margin.  A firm, fully dispatchable process (e.g. a gas turbine)
+typically receives a credit near 1, while a weather-dependent process (e.g. wind
+or solar) receives a lower value.
+
+
+operating_reserve_margin
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{ORM}_{r_g \in R, t_g \in T}`
+
+The dynamic counterpart to :code:`planning_reserve_margin`, indexed the same
+way by region-or-group and technology-or-group. Rather than crediting
+installed capacity, it requires that available (derated) generation in each
+time slice exceed the region-group's proxy demand by this margin.  When a region
+group is used, any exchange region (e.g. ``r1-r2``)
+where exactly one endpoint belongs to the group is automatically included in the
+reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
+
+
+operating_reserve_derate
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{ORD}_{r \in R, s \in S, t \in T}`
+
+The fraction of a technology's available output that can be depended upon in a
+given season.  A value less than 1 reflects the fact that not all of a process's
+capacity is reliably available — for example, due to scheduled maintenance or
+seasonal resource constraints.  Defaults to 1.
 
 
 ramp_down_hourly
@@ -849,18 +876,6 @@ ramp_up_hourly
 The :code:`ramp_up_hourly` parameter specifies the fraction of installed capacity
 by which a technology can ramp output up per hour.  This is used in the
 :code:`ramp_up_constraint`.
-
-
-reserve_capacity_derate
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{RCD}_{r \in R, s \in S, t \in T^{res}, v \in V}`
-
-The :code:`reserve_capacity_derate` parameter allows the modeler to derate
-the capacity of a reserve technology in specific seasons — for example, to
-account for seasonal availability.  Values default to 1 (no derate). This
-parameter is used in the 'dynamic' version of the :code:`reserve_margin`
-constraint.
 
 
 .. _segment_fraction:
@@ -1313,9 +1328,11 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa.components.operations.ramp_down_constraint
 
-.. autofunction:: temoa.components.reserves.reserve_margin_static
+.. autofunction:: temoa.components.reserves.planning_reserve_margin_constraint
 
-.. autofunction:: temoa.components.reserves.reserve_margin_dynamic
+.. autofunction:: temoa.components.reserves.operating_reserve_margin_constraint
+
+.. autofunction:: temoa.components.reserves.reserve_margin_proxy_demand
 
 .. autofunction:: temoa.components.emissions.linked_emissions_tech_constraint
 
