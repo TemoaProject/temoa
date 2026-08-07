@@ -248,8 +248,13 @@ def solve_instance(
             if solver_name == 'appsi_highs':
                 dual_suffix = instance.component('dual')
                 if dual_suffix is not None:
+                    original_direction = dual_suffix.direction
                     dual_suffix.direction = Suffix.LOCAL
-                result = optimizer.solve(instance)
+                try:
+                    result = optimizer.solve(instance)
+                finally:
+                    if dual_suffix is not None:
+                        dual_suffix.direction = original_direction
             else:
                 result = optimizer.solve(instance, suffixes=solver_suffixes_list)
         except RuntimeError as error:
