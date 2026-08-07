@@ -39,7 +39,6 @@ __all__ = [
     'validate_0to1',
     'validate_efficiency',
     'validate_linked_tech',
-    'validate_reserve_margin',
     'validate_tech_sets',
 ]
 
@@ -335,17 +334,6 @@ def validate_efficiency(
     print('vintage', v in model.vintage_all)
     print('output_commodity', so in model.commodity_carrier)
     return False
-
-
-def validate_reserve_margin(model: TemoaModel) -> None:
-    for r in model.planning_reserve_margin.sparse_keys():
-        if all((r, p) not in model.process_reserve_periods for p in model.time_optimize):
-            logger.warning(
-                'Planning reserve margin provided but there are no reserve technologies serving '
-                'this '
-                'region: %s',
-                (r, model.planning_reserve_margin[r]),
-            )
 
 
 def validate_tech_sets(model: TemoaModel) -> None:
