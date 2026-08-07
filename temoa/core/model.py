@@ -263,7 +263,6 @@ class TemoaModel(AbstractModel):
         self.tech_demand = Set(within=self.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         self.tech_storage = Set(within=self.tech_all)
-        self.tech_reserve = Set(within=self.tech_all)
         self.tech_upramping = Set(within=self.tech_all)
         self.tech_downramping = Set(within=self.tech_all)
         self.tech_curtailment = Set(within=self.tech_all)
@@ -279,7 +278,7 @@ class TemoaModel(AbstractModel):
         self.tech_seasonal_storage = Set(within=self.tech_storage)
         """storage technologies using the interseasonal storage feature"""
 
-        self.tech_uncap = Set(within=self.tech_all - self.tech_reserve)
+        self.tech_uncap = Set(within=self.tech_all)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
 
         self.tech_exist = Set()
@@ -515,13 +514,6 @@ class TemoaModel(AbstractModel):
             self.commodity_carrier,
             self.operator,
             validate=validate_0to1,
-        )
-
-        self.renewable_portfolio_standard_constraint_rpg = Set(
-            within=self.regions * self.time_optimize * self.tech_group_names
-        )
-        self.renewable_portfolio_standard = Param(
-            self.renewable_portfolio_standard_constraint_rpg, validate=validate_0to1
         )
 
         # The method below creates a series of helper functions that are used to
@@ -1090,11 +1082,6 @@ class TemoaModel(AbstractModel):
         self.limit_tech_output_split_average_constraint = Constraint(
             self.limit_tech_output_split_average_constraint_rptvo,
             rule=limits.limit_tech_output_split_average_constraint,
-        )
-
-        self.renewable_portfolio_standard_constraint = Constraint(
-            self.renewable_portfolio_standard_constraint_rpg,
-            rule=limits.renewable_portfolio_standard_constraint,
         )
 
         self.linked_emissions_tech_constraint_rpsdtve = Set(

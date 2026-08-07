@@ -102,15 +102,6 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
             is_period_filtered=False,
         ),
         LoadItem(
-            component=model.tech_reserve,
-            table='technology',
-            columns=['tech'],
-            where_clause='reserve > 0',
-            validator_name='viable_techs',
-            validation_map=(0,),
-            is_period_filtered=False,
-        ),
-        LoadItem(
             component=model.tech_curtailment,
             table='technology',
             columns=['tech'],
@@ -497,14 +488,6 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
             validator_name='viable_techs',
             validation_map=(0,),
             is_period_filtered=False,
-        ),
-        LoadItem(
-            component=model.renewable_portfolio_standard,
-            table='rps_requirement',
-            columns=['region', 'period', 'tech_group', 'requirement'],
-            custom_loader_name='_load_rps_requirement',
-            is_table_required=False,
-            index_set=model.renewable_portfolio_standard_constraint_rpg,
         ),
         LoadItem(
             component=model.planning_reserve_credit,
