@@ -657,34 +657,34 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
 
 
 def gather_group_active_processes(
-    model: TemoaModel, r: Region, p: Period, t: Technology
+    model: TemoaModel, r_g: Region, p: Period, t_g: Technology
 ) -> set[tuple[Region, Technology]]:
     """
     A utility to get the valid active processes for a group-region, tech-group pair in period p.
     Caches the result if its a new call so we don't repeat these O(n2) lookups.
     """
-    if (r, p, t) not in model.group_active_processes:
-        model.group_active_processes[r, p, t] = {
-            (_r, _t)
-            for _r in geography.gather_group_regions(model, r)
-            for _t in technology.gather_group_techs(model, t)
-            if (_r, p, _t) in model.process_vintages
+    if (r_g, p, t_g) not in model.group_active_processes:
+        model.group_active_processes[r_g, p, t_g] = {
+            (r, t)
+            for r in geography.gather_group_regions(model, r_g)
+            for t in technology.gather_group_techs(model, t_g)
+            if (r, p, t) in model.process_vintages
         }
-    return model.group_active_processes[r, p, t]
+    return model.group_active_processes[r_g, p, t_g]
 
 
 def gather_group_built_processes(
-    model: TemoaModel, r: Region, t: Technology, v: Vintage
+    model: TemoaModel, r_g: Region, t_g: Technology, v: Vintage
 ) -> set[tuple[Region, Technology]]:
     """
     A utility to get the valid built processes for a group-region, tech-group, vintage index.
     Caches the result if its a new call so we don't repeat these O(n2) lookups.
     """
-    if (r, t, v) not in model.group_built_processes:
-        model.group_built_processes[r, t, v] = {
-            (_r, _t)
-            for _r in geography.gather_group_regions(model, r)
-            for _t in technology.gather_group_techs(model, t)
-            if (_r, _t, v) in model.process_periods
+    if (r_g, t_g, v) not in model.group_built_processes:
+        model.group_built_processes[r_g, t_g, v] = {
+            (r, t)
+            for r in geography.gather_group_regions(model, r_g)
+            for t in technology.gather_group_techs(model, t_g)
+            if (r, t, v) in model.process_periods
         }
-    return model.group_built_processes[r, t, v]
+    return model.group_built_processes[r_g, t_g, v]
