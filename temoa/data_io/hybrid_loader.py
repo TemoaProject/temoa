@@ -855,22 +855,6 @@ class HybridLoader:
             )
             self._load_component_data(data, model.tech_upramping, tech_filtered)
 
-    def _load_rps_requirement(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles deprecation warning for renewable_portfolio_standard."""
-        model = self.model
-        self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
-        if filtered_data:
-            logger.warning(
-                'The renewable_portfolio_standard constraint is deprecated. Use '
-                'limit_activity_share instead. '
-                'The constraint has been applied but this feature may be removed in the future.'
-            )
-
     def _load_limit_tech_input_split(
         self,
         data: dict[str, object],

@@ -160,42 +160,6 @@ def limit_annual_capacity_factor_indices(
 # ============================================================================
 
 
-# @deprecated('Deprecated. Use limit_activityGroupShare instead') # doesn't play well with pyomo
-def renewable_portfolio_standard_constraint(
-    model: TemoaModel, r: Region, p: Period, g: str
-) -> ExprLike:
-    r"""
-    Allows users to specify the share of electricity generation in a region
-    coming from RPS-eligible technologies.
-    """
-    # devnote: this formulation leans on the reserve set, which is not necessarily
-    # the super set we want. We can also generalise this to all groups and so
-    # it has been deprecated in favour of the limit_activityGroupShare constraint.
-
-    inp = quicksum(
-        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-        for t in model.tech_group_members[g]
-        for (_t, v) in model.process_reserve_periods.get((r, p), [])
-        if _t == t
-        for s in model.time_season
-        for d in model.time_of_day
-        for S_i in model.process_inputs[r, p, t, v]
-        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-    )
-
-    total_inp = quicksum(
-        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-        for (t, v) in model.process_reserve_periods[r, p]
-        for s in model.time_season
-        for d in model.time_of_day
-        for S_i in model.process_inputs[r, p, t, v]
-        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-    )
-
-    expr = inp >= (value(model.renewable_portfolio_standard[r, p, g]) * total_inp)
-    return expr
-
-
 def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: str) -> ExprLike:
     r"""
 

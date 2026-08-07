@@ -175,7 +175,6 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
     for r, p, t in model.process_vintages:
         for v in model.process_vintages[r, p, t]:
             key_rpt = (r, p, t)
-            key_rp = (r, p)
             if t in model.tech_curtailment:
                 model.curtailment_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_baseload:
@@ -186,8 +185,6 @@ def create_operational_vintage_sets(model: TemoaModel) -> None:
                 model.ramp_up_vintages.setdefault(key_rpt, set()).add(v)
             if t in model.tech_downramping:
                 model.ramp_down_vintages.setdefault(key_rpt, set()).add(v)
-            if t in model.tech_reserve:
-                model.process_reserve_periods.setdefault(key_rp, set()).add((t, v))
 
     # A dictionary of whether a storage tech is seasonal, just to speed things up
     for t in model.tech_storage:

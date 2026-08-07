@@ -349,7 +349,6 @@ def validate_tech_sets(model: TemoaModel) -> None:
             check_no_intersection(model.tech_annual, model.tech_curtailment),
             check_no_intersection(model.tech_curtailment, model.tech_flex),
             check_no_intersection(model.tech_all, model.tech_group_names),
-            check_no_intersection(model.tech_uncap, model.tech_reserve),
         )
     ):
         raise ValueError('Technology sets failed to validate. Check log file for details.')
