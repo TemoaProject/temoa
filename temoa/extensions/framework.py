@@ -167,7 +167,7 @@ def ensure_enabled_extension_tables_exist(
         if not silent:
             prompt = (
                 f"Extension '{spec.extension_id}' is enabled but missing table(s): {missing_list}. "
-                f"Append schema from '{spec.schema_sql_path}' to input database '{input_database} "
+                f"Append schema from '{spec.schema_sql_path}' to input database '{input_database}' "
                 'now? [y/N]: '
             )
             response = input(prompt).strip().lower()
