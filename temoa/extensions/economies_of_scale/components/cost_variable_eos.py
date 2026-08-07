@@ -312,11 +312,14 @@ def period_cost(model: EOSModel, r: Region, p: Period, t: Technology) -> Express
 
 def total_cost(model: EOSModel) -> None:
     """
-    Discounted fixed costs for all EOS clusters in the planning horizon
+    Discounted variable costs for all EOS clusters in the planning horizon
     """
 
     p_0 = min(model.time_optimize)
     global_discount_rate = value(model.global_discount_rate)
+
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
 
     total_cost = quicksum(
         fixed_or_variable_cost(

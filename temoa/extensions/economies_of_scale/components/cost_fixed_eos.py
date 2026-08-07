@@ -297,6 +297,9 @@ def total_cost(model: EOSModel) -> None:
     p_0 = min(model.time_optimize)
     global_discount_rate = value(model.global_discount_rate)
 
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
+
     total_cost = quicksum(
         fixed_or_variable_cost(
             1,

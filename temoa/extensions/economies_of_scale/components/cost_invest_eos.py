@@ -439,6 +439,9 @@ def total_cost(model: EOSModel) -> None:
     p_e = model.time_future.last()
     global_discount_rate = value(model.global_discount_rate)
 
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
+
     total_cost = 0.0
 
     for _r, _p, _t in model.cost_invest_eos_period_rpt:
