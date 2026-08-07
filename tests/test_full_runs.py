@@ -2,6 +2,7 @@
 Test a couple full-runs to match objective function value and some internals
 """
 
+import contextlib
 import logging
 import sqlite3
 from pathlib import Path
@@ -144,7 +145,6 @@ def test_myopic_utopia(
     # the model itself is fairly useless here, because several were run
     # we just want a hook to the output database...
     _, _, _, sequencer = system_test_run
-    import contextlib
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
@@ -177,7 +177,6 @@ def test_myopic_stress_tests(
     and survival curves.
     """
     _, _, _, sequencer = system_test_run
-    import contextlib
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
@@ -281,9 +280,6 @@ def test_mc_utopia(
     Test Monte Carlo run logic and output database contents
     """
     data_name, _, _, sequencer = system_test_run
-
-    # Connect to the output database
-    import contextlib
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
