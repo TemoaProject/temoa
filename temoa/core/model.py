@@ -563,6 +563,12 @@ class TemoaModel(AbstractModel):
         )
         self.cost_invest = Param(self.cost_invest_rtv)
 
+        # Inject cost_invest_eos extension components prior to loan params, if active
+        if 'eos' in self.enabled_extensions:
+            import temoa.extensions.economies_of_scale.core.model as eos
+
+            eos.register_early_eos_components(self)
+
         self.default_loan_rate = Param(domain=NonNegativeReals)
         self.loan_rate = Param(
             self.cost_invest_rtv, domain=NonNegativeReals, default=costs.get_default_loan_rate

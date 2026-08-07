@@ -9,7 +9,7 @@ import sys
 from collections import deque
 from importlib import resources, util
 from pathlib import Path
-from sqlite3 import Connection, Cursor
+from sqlite3 import Connection
 from typing import Any, cast
 
 from temoa._internal import run_actions
@@ -87,7 +87,7 @@ class MyopicSequencer:
         default_cap_threshold = 1e-3
         if config and config.myopic_inputs:
             self.capacity_epsilon = float(
-                cast(Any, config.myopic_inputs.get('capacity_threshold', default_cap_threshold))
+                cast('Any', config.myopic_inputs.get('capacity_threshold', default_cap_threshold))
             )
         else:
             self.capacity_epsilon = default_cap_threshold
@@ -110,10 +110,10 @@ class MyopicSequencer:
                 )
                 raise RuntimeError('No myopic options received.  See log file.')
             else:
-                self.view_depth = int(cast(Any, myopic_options.get('view_depth')))
+                self.view_depth = int(cast('Any', myopic_options.get('view_depth')))
                 if not isinstance(self.view_depth, int) or self.view_depth < 1:
                     raise ValueError(f'view_depth is not a positive integer {self.view_depth}')
-                self.step_size = int(cast(Any, myopic_options.get('step_size')))
+                self.step_size = int(cast('Any', myopic_options.get('step_size')))
                 if not isinstance(self.step_size, int) or self.step_size < 1:
                     raise ValueError(f'step_size is not a positive integer {self.step_size}')
                 if self.step_size > self.view_depth:
@@ -224,8 +224,9 @@ class MyopicSequencer:
                 raise RuntimeError('Illegal state in myopic iteration.')
             logger.info('Processing Myopic Index: %s', idx)
 
-            # 4. If evolving, call the evolution script and pass it the myopic index and last instance status
-            if self.evolving and last_instance_status is not None: # don't evolve before first iteration (pointless)
+            # 4. If evolving, call the evolution script and pass it the myopic index
+            # and last instance status, unless is first iteration (pointless)
+            if self.evolving and last_instance_status is not None:
                 self.run_evolution_script(
                     idx=idx,
                     last_base_year=last_base_year,
@@ -298,7 +299,7 @@ class MyopicSequencer:
                 self.table_writer.write_dual_variables(results=results, iteration=idx.base_year)
 
             # prep next loop
-            last_base_year = idx.base_year if idx else last_base_year # update
+            last_base_year = idx.base_year if idx else last_base_year  # update
 
             # delete anything in the output_objective table, it is nonsensical...
             assert self.output_con is not None
@@ -307,13 +308,15 @@ class MyopicSequencer:
             )
             self.output_con.commit()
 
-
         # Total system cost is, theoretically, sum of discounted costs from output_cost table
-        total_cost = self.get_current_total_cost(last_base_year if last_base_year is not None else 0)
+        total_cost = self.get_current_total_cost(
+            last_base_year if last_base_year is not None else 0
+        )
 
         assert self.output_con is not None
         self.output_con.execute(
-            f"INSERT INTO output_objective(scenario, objective_name, total_system_cost) VALUES('{self.config.scenario}', 'total_cost', {total_cost})"
+            'INSERT INTO output_objective(scenario, objective_name, total_system_cost) '
+            f"VALUES('{self.config.scenario}', 'total_cost', {total_cost})"
         )
         self.output_con.commit()
 
@@ -385,12 +388,12 @@ class MyopicSequencer:
             print(list(res))
 
     def run_evolution_script(
-            self,
-            idx: MyopicIndex | None,
-            last_base_year: int | None,
-            last_instance_status: str | None,
-            con: sqlite3.Connection | None
-        ) -> None:
+        self,
+        idx: MyopicIndex | None,
+        last_base_year: int | None,
+        last_instance_status: str | None,
+        con: sqlite3.Connection | None,
+    ) -> None:
         """
         Run the evolution script to update the myopic database before the next iteration.
         """
@@ -402,21 +405,21 @@ class MyopicSequencer:
         # import the script as a module and call the iterate function
         script_path = Path(self.evolution_script).expanduser()
         if not script_path.is_file():
-            msg = f"Myopic evolution script not found: {script_path}"
+            msg = f'Myopic evolution script not found: {script_path}'
             logger.error(msg)
             raise FileNotFoundError(msg)
 
-        spec = util.spec_from_file_location("evolution_script", script_path)
+        spec = util.spec_from_file_location('evolution_script', script_path)
         if spec is None or spec.loader is None:
-            msg = f"Could not load evolution script module spec from: {script_path}"
+            msg = f'Could not load evolution script module spec from: {script_path}'
             logger.error(msg)
             raise RuntimeError(msg)
 
         evolution_module = util.module_from_spec(spec)
         spec.loader.exec_module(evolution_module)
-        iterate = getattr(evolution_module, "iterate", None)
+        iterate = getattr(evolution_module, 'iterate', None)
         if not callable(iterate):
-            msg = f"Evolution script must define callable iterate(...): {script_path}"
+            msg = f'Evolution script must define callable iterate(...): {script_path}'
             logger.error(msg)
             raise AttributeError(msg)
 
@@ -571,21 +574,22 @@ class MyopicSequencer:
             raise RuntimeError('view_depth not initialized')
         if len(future_periods) < self.view_depth + 1:
             msg = (
-                'Not enough future periods for view depth. Need {} including end period. Got {}.'
-            ).format(self.view_depth+1, len(future_periods))
+                'Not enough future periods for view depth. '
+                f'Need {self.view_depth + 1} including end period. Got {len(future_periods)}.'
+            )
             logger.error(msg)
             raise RuntimeError(msg)
         self.optimization_periods = future_periods.copy()
         if self.step_size is None:
             raise RuntimeError('step_size not initialized')
         last_base_year = ((len(future_periods) - 2) // self.step_size) * self.step_size
-        base_years = list(range(0, last_base_year+1, self.step_size))
+        base_years = list(range(0, last_base_year + 1, self.step_size))
         if not self.evolving:
             # Remove redundant iterations near end of horizon if not evolving
-            catch_Pe = [i for i in base_years if i + self.view_depth >= len(future_periods) - 1]
-            if len(catch_Pe) > 1:
+            catch_pe = [i for i in base_years if i + self.view_depth >= len(future_periods) - 1]
+            if len(catch_pe) > 1:
                 # keep only one iteration that captures the end of the horizon
-                base_years = base_years[:-len(catch_Pe) + 1]
+                base_years = base_years[: -len(catch_pe) + 1]
         for n, idx in enumerate(base_years):
             depth = min(self.view_depth, len(future_periods) - idx - 1)
             if idx == base_years[-1]:
@@ -593,13 +597,13 @@ class MyopicSequencer:
                 step = depth
             else:
                 # record to next base year
-                step = base_years[n+1] - idx
+                step = base_years[n + 1] - idx
             if depth < 1:
                 msg = (
                     'Calculated MyopicIndex with non-positive depth. '
                     'This should never happen. Code error likely. '
-                    'idx: {}, step: {}, depth: {}, future_periods: {}'
-                ).format(idx, step, depth, future_periods)
+                    f'idx: {idx}, step: {step}, depth: {depth}, future_periods: {future_periods}'
+                )
                 logger.error(msg)
                 raise RuntimeError(msg)
             myopic_idx = MyopicIndex(
@@ -708,9 +712,7 @@ class MyopicSequencer:
     def report_total_demand(self, mi: MyopicIndex) -> None:
         assert self.output_con is not None
         assert self.cursor is not None
-        self.cursor.execute(
-            "SELECT SUM(demand) FROM output_demand WHERE scenario='original'"
-        )
+        self.cursor.execute("SELECT SUM(demand) FROM output_demand WHERE scenario='original'")
         self.output_con.commit()
 
     def write_myopic_efficiency(self, mi: MyopicIndex, status: str) -> None:
@@ -737,9 +739,7 @@ class MyopicSequencer:
     def report_cumulative_capacity(self, mi: MyopicIndex) -> None:
         assert self.output_con is not None
         assert self.cursor is not None
-        self.cursor.execute(
-            "SELECT SUM(capacity) FROM output_capacity WHERE scenario='original'"
-        )
+        self.cursor.execute("SELECT SUM(capacity) FROM output_capacity WHERE scenario='original'")
         self.output_con.commit()
 
     def __del__(self) -> None:

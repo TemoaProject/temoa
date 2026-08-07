@@ -55,9 +55,7 @@ def register_model_components(model: TemoaModel) -> None:
     m = cast('ExampleModel', model)
 
     # Param: a per-(region, tech-or-group) cap on cumulative new capacity.
-    m.example_new_capacity_limit = Param(
-        m.regional_global_indices, m.tech_or_group, within=Any
-    )
+    m.example_new_capacity_limit = Param(m.regional_global_indices, m.tech_or_group, within=Any)
 
     # Sparse index set for the constraint, built from the param's populated keys.
     m.example_new_capacity_limit_constraint_rpt = Set(

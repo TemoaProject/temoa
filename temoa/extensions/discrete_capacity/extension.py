@@ -11,10 +11,10 @@ DISCRETE_CAPACITY_EXTENSION = ExtensionSpec(
     owned_tables=('limit_discrete_new_capacity', 'limit_discrete_capacity'),
     regional_group_tables={
         'limit_discrete_new_capacity': 'region',
-        'limit_discrete_capacity': 'region'
+        'limit_discrete_capacity': 'region',
     },
     register_model_components=register_model_components,
     build_manifest_items=build_manifest_items,
-    schema_sql_path=str(Path(__file__).parents[0] / 'tables.sql'),
+    schema_sql_path=str(Path(__file__).parent / 'tables.sql'),
     fail_if_tables_populated_when_disabled=True,
 )

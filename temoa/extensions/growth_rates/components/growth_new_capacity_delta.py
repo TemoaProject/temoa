@@ -75,7 +75,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity_\delta}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
@@ -85,7 +85,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacityDelta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity_\delta}}
     """
 
     regions = geography.gather_group_regions(model, r)
@@ -139,7 +139,9 @@ def limit_growth_new_capacity_delta(
                 )
         else:
             p_prev2 = model.time_optimize.prev(p_prev)
-            new_cap_prev2 = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2)
+            new_cap_prev2 = quicksum(
+                new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev2
+            )
 
     nc_delta_prev = new_cap_prev - new_cap_prev2
     nc_delta = new_cap - new_cap_prev

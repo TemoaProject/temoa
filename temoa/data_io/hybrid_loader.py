@@ -970,36 +970,11 @@ class HybridLoader:
         :param data: The main data dictionary.
         :return: A dictionary of the new index sets to be added.
         """
-        model = TemoaModel()
-        param_idx_sets = {
-            model.cost_invest.name: model.cost_invest_rtv.name,
-            model.cost_emission.name: model.cost_emission_rpe.name,
-            model.demand.name: model.demand_constraint_rpc.name,
-            model.limit_emission.name: model.limit_emission_constraint_rpe.name,
-            model.limit_activity.name: model.limit_activity_constraint_rpt.name,
-            model.limit_seasonal_capacity_factor.name: (
-                model.limit_seasonal_capacity_factor_constraint_rst.name
-            ),
-            model.limit_activity_share.name: model.limit_activity_share_constraint_rpgg.name,
-            model.limit_annual_capacity_factor.name: (
-                model.limit_annual_capacity_factor_constraint_rtvo.name
-            ),
-            model.limit_capacity.name: model.limit_capacity_constraint_rpt.name,
-            model.limit_capacity_share.name: model.limit_capacity_share_constraint_rpgg.name,
-            model.limit_new_capacity.name: model.limit_new_capacity_constraint_rtv.name,
-            model.limit_new_capacity_share.name: (
-                model.limit_new_capacity_share_constraint_rggv.name
-            ),
-            model.limit_resource.name: model.limit_resource_constraint_rt.name,
-            model.limit_storage_fraction.name: model.limit_storage_fraction_param_rsdt.name,
-            model.renewable_portfolio_standard.name: (
-                model.renewable_portfolio_standard_constraint_rpg.name
-            ),
-        }
-
         res: dict[str, object] = {}
-        for p_name, s_name in param_idx_sets.items():
-            param_data = data.get(p_name)
+        for item in self.manifest:
+            if item.index_set is None:
+                continue
+            param_data = data.get(item.component.name)
             if isinstance(param_data, dict):
-                res[s_name] = list(param_data.keys())
+                res[item.index_set.name] = list(param_data.keys())
         return res

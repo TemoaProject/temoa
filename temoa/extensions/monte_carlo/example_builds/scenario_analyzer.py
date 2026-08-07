@@ -1,7 +1,7 @@
 """
 Simple analyzer--example only
 """
-from importlib import resources
+
 from math import sqrt
 from pathlib import Path
 from sqlite3 import Connection
@@ -25,15 +25,15 @@ with Connection(db_resource) as conn:
     cur = conn.cursor()
     # Check if results exist before attempting to plot
     obj_values = cur.execute(
-        "SELECT total_system_cost FROM output_objective WHERE scenario LIKE ?",
-        (f"{scenario_name}-%",)
+        'SELECT total_system_cost FROM output_objective WHERE scenario LIKE ?',
+        (f'{scenario_name}-%',),
     ).fetchall()
 
     if len(obj_values) == 0:
         raise RuntimeError(
             f"No results found for scenario '{scenario_name}-*' in '{db_resource}'. "
             "Please run 'temoa run tutorial_config.toml' or run the tutorial model "
-            "to populate output_objective with results first."
+            'to populate output_objective with results first.'
         )
 
     obj_values_tuple = tuple(t[0] for t in obj_values)

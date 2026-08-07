@@ -124,7 +124,7 @@ def lifetime_loan_process_indices(model: TemoaModel) -> set[tuple[Region, Techno
 
 def loan_cost(
     capacity: float | Var | ComponentData,
-    invest_cost: float,
+    invest_cost: float | Expression,
     loan_annualize: float,
     lifetime_loan_process: float | int,
     lifetime_process: float,
@@ -190,7 +190,7 @@ def loan_cost_survival_curve(
     t: Technology,
     v: Vintage,
     capacity: float | Var | ComponentData,
-    invest_cost: float,
+    invest_cost: float | Expression,
     loan_annualize: float,
     lifetime_loan_process: float | int,
     p_0: Period,
@@ -266,7 +266,7 @@ def loan_cost_survival_curve(
 
 def fixed_or_variable_cost(
     cap_or_flow: float | Var | ComponentData,
-    cost_factor: float,
+    cost_factor: float | Expression,
     cost_years: float | ComponentData,
     global_discount_rate: float | None,
     p_0: float,
@@ -715,3 +715,102 @@ def param_loan_annualize_rule(
     lln = value(model.loan_lifetime_process[r, t, v])
     annualized_rate = pv_to_annuity(dr, lln)
     return annualized_rate
+
+
+# ============================================================================
+# DATA PULLING UTILITIES
+# ============================================================================
+
+
+def poll_loan_costs(
+    loan_life: float,
+    loan_annualize: float,
+    capacity: float,
+    invest_cost: float,
+    process_life: int,
+    p_0: int,
+    p_e: int,
+    global_discount_rate: float,
+    vintage: int,
+    **kwargs: object,
+) -> tuple[float, float]:
+    """
+    Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
+    :return: tuple of [model-view discounted cost, un-discounted annuity]
+    """
+    # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
+    #            model uses for these costs
+    discounted_cost = loan_cost(
+        capacity,
+        invest_cost,
+        loan_annualize=loan_annualize,
+        lifetime_loan_process=loan_life,
+        lifetime_process=process_life,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
+        vintage=vintage,
+    )
+    # Override the GDR to get the undiscounted value
+    undiscounted_cost = loan_cost(
+        capacity,
+        invest_cost,
+        loan_annualize=loan_annualize,
+        lifetime_loan_process=loan_life,
+        lifetime_process=process_life,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=0,
+        vintage=vintage,
+    )
+    return float(value(discounted_cost)), float(value(undiscounted_cost))
+
+
+def poll_loan_costs_survival_curve(
+    model: TemoaModel,
+    r: Region,
+    t: Technology,
+    v: Vintage,
+    loan_life: float,
+    loan_annualize: float,
+    capacity: float,
+    invest_cost: float,
+    p_0: Period,
+    p_e: Period,
+    global_discount_rate: float,
+    **kwargs: object,
+) -> tuple[float, float]:
+    """
+    Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
+    :return: tuple of [model-view discounted cost, un-discounted annuity]
+    """
+    # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
+    #            model uses for these costs
+    discounted_cost = loan_cost_survival_curve(
+        model,
+        r,
+        t,
+        v,
+        capacity,
+        invest_cost,
+        loan_annualize,
+        lifetime_loan_process=loan_life,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=global_discount_rate,
+    )
+    # Override the GDR to get the undiscounted value
+    undiscounted_cost = loan_cost_survival_curve(
+        model,
+        r,
+        t,
+        v,
+        capacity,
+        invest_cost,
+        loan_annualize,
+        lifetime_loan_process=loan_life,
+        p_0=p_0,
+        p_e=p_e,
+        global_discount_rate=0,
+    )
+    return float(value(discounted_cost)), float(value(undiscounted_cost))

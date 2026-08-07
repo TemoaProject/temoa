@@ -2,6 +2,7 @@
 This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated
 (outside of class) to enable parallelization.
 """
+
 from __future__ import annotations
 
 import logging
@@ -19,7 +20,6 @@ if TYPE_CHECKING:
     from temoa.core.config import TemoaConfig
 
 
-
 def configure_worker_logger(log_queue: Any, log_level: int) -> logging.Logger:
     """configure the logger"""
     worker_logger = logging.getLogger('MM evaluate')
@@ -35,8 +35,15 @@ def configure_worker_logger(log_queue: Any, log_level: int) -> logging.Logger:
     return worker_logger
 
 
-def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, Any],
-            i: int, config: TemoaConfig, log_queue: Any, log_level: int) -> list[float]:
+def evaluate(
+    param_info: dict[int, list[Any]],
+    mm_sample: Any,
+    data: dict[str, Any],
+    i: int,
+    config: TemoaConfig,
+    log_queue: Any,
+    log_level: int,
+) -> list[float]:
     """
     Run model for params provided and return objective value and emission value
     Note:  This function needs to be a static instance to enable the parallel
@@ -81,6 +88,7 @@ def evaluate(param_info: dict[int, list[Any]], mm_sample: Any, data: dict[str, A
     with TableWriter(config) as table_writer:
         table_writer.write_mm_results(model=mdl, iteration=i)
     import contextlib
+
     with contextlib.closing(sqlite3.connect(config.input_database)) as con:
         cur = con.cursor()
         scenario_name = config.scenario + f'-{i}'

@@ -2,6 +2,7 @@
 An event sequencer to control the flow of a Method of Morris calculation.  This code uses
 multiprocessing via the joblib library
 """
+
 from __future__ import annotations
 
 import csv
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from temoa.core.config import TemoaConfig
-
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class MorrisSequencer:
         # the amount to perturb the marked params
         pert = morris_inputs.get('perturbation')
         if pert:
-            self.mm_perturbation = float(cast(str | float, pert))
+            self.mm_perturbation = float(cast('str | float', pert))
             logger.info('Morris perturbation: %0.2f', self.mm_perturbation)
         else:
             self.mm_perturbation = 0.10
@@ -201,8 +201,9 @@ class MorrisSequencer:
         # 7.  Return the cost objective Mu_Star for testing purposes...
         return cost_mu_star
 
-    def process_results(self, problem: dict[str, Any], mm_samples: Any,
-                            morris_results: list[Any]) -> Any:
+    def process_results(
+        self, problem: dict[str, Any], mm_samples: Any, morris_results: list[Any]
+    ) -> Any:
         """
         Process the results of the runs on the mm_samples
         :param problem: the problem structure

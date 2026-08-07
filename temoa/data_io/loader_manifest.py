@@ -47,6 +47,9 @@ class LoadItem:
             `HybridLoader` to handle non-standard loading logic for this component.
         fallback_data: Optional. A list of default data tuples to use if the
             table is missing or returns no data.
+        index_set: Optional. The Pyomo `Set` that is indexed by the keys of
+            this `Param`. When set, the loader will automatically derive the
+            set's data from the param's loaded keys during finalization.
     """
 
     component: ComponentType
@@ -61,3 +64,4 @@ class LoadItem:
     custom_loader_name: str | None = None
     fallback_data: list[tuple[object, ...]] | None = None
     order_by: list[str] | None = None
+    index_set: ComponentType | None = None

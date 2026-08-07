@@ -86,9 +86,7 @@ path = "temoa/__about__.py"
 [tool.ruff]
 line-length = 100
 indent-width = 4
-exclude = ["stubs",
-    "temoa/extensions/"
-]
+exclude = ["stubs"]
 
 [tool.ruff.format]
 quote-style = "single"
