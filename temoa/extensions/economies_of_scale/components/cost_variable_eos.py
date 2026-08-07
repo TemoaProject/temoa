@@ -44,12 +44,12 @@ def initialize_components(model: EOSModel) -> None:
             # skills to edit this code.
             if not all(
                 (
-                    act_lower >= 0,
-                    act_upper >= 0,
-                    cost_lower >= 0,
-                    cost_upper >= 0,
-                    act_upper > act_lower,
-                    cost_upper > cost_lower,
+                    value(act_lower) >= 0,
+                    value(act_upper) >= 0,
+                    value(cost_lower) >= 0,
+                    value(cost_upper) >= 0,
+                    value(act_upper) > value(act_lower),
+                    value(cost_upper) > value(cost_lower),
                 )
             ):
                 msg = (
@@ -69,8 +69,8 @@ def initialize_components(model: EOSModel) -> None:
 
             if not all(
                 (
-                    abs(act_lower - prev_act_upper) <= 0.001,
-                    abs(cost_lower - prev_cost_upper) <= 0.001,
+                    abs(value(act_lower) - value(prev_act_upper)) <= 0.001,
+                    abs(value(cost_lower) - value(prev_cost_upper)) <= 0.001,
                 )
             ):
                 msg = (

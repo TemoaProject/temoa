@@ -80,12 +80,12 @@ def initialize_cost_invest_eos(model: EOSModel) -> None:
             # skills to edit this code.
             if not all(
                 (
-                    cap_lower >= 0,
-                    cap_upper >= 0,
-                    cost_lower >= 0,
-                    cost_upper >= 0,
-                    cap_upper > cap_lower,
-                    cost_upper > cost_lower,
+                    value(cap_lower) >= 0,
+                    value(cap_upper) >= 0,
+                    value(cost_lower) >= 0,
+                    value(cost_upper) >= 0,
+                    value(cap_upper) > value(cap_lower),
+                    value(cost_upper) > value(cost_lower),
                 )
             ):
                 msg = (
@@ -103,8 +103,8 @@ def initialize_cost_invest_eos(model: EOSModel) -> None:
 
             if not all(
                 (
-                    abs(cap_lower - prev_cap_upper) <= 0.001,
-                    abs(cost_lower - prev_cost_upper) <= 0.001,
+                    abs(value(cap_lower) - value(prev_cap_upper)) <= 0.001,
+                    abs(value(cost_lower) - value(prev_cost_upper)) <= 0.001,
                 )
             ):
                 msg = (
