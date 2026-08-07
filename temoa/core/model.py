@@ -721,7 +721,6 @@ class TemoaModel(AbstractModel):
         self.linked_techs = Param(self.regional_indices, self.tech_all, self.commodity_emissions)
 
         # Define parameters associated with electric sector operation
-        self.reserve_margin_method = Set()  # How contributions to the reserve margin are calculated
         self.planning_reserve_margin = Param(self.regional_global_indices, self.tech_or_group)
         self.planning_reserve_credit = Param(
             self.regional_indices,

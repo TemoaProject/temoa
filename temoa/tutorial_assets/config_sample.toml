@@ -136,19 +136,6 @@ time_sequencing = 'seasonal_timeslices'
 # E.g. 365 if all seasons collectively represent a year, 7 if modelling a single representative week.
 days_per_period = 365
 
-# How contributions to the planning reserve margin are calculated
-# Options:
-#   'static'
-#       Traditional planning reserve formulation. Contributions are independent of hourly availability:
-#                   capacity value = net capacity * capacity credit
-#   'dynamic'
-#       Contributions are available output including a capacity derate factor (e.g., forced outage rate).
-#       For most generators, contributions are available (derated) output in each time slice:
-#                   capacity value = net capacity * reserve capacity derate * capacity factor
-#       For storage, contributions are (derated) actual output in each time slice:
-#                   capacity value = flow out * reserve capacity derate
-reserve_margin = 'dynamic'
-
 # ------------------------------------
 #      SQLITE PERFORMANCE TUNING
 # ------------------------------------

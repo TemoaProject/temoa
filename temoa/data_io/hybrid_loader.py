@@ -286,9 +286,6 @@ class HybridLoader:
         # Load simple config-based or myopic-specific values
         self._load_component_data(data, model.time_sequencing, [(self.config.time_sequencing,)])
         self._load_component_data(data, model.days_per_period, [(self.config.days_per_period,)])
-        self._load_component_data(
-            data, model.reserve_margin_method, [(self.config.reserve_margin,)]
-        )
         if myopic_index:
             p0_result = cur.execute(
                 "SELECT min(period) FROM time_period WHERE flag == 'f'"
