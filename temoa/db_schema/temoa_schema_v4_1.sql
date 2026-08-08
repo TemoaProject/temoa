@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS metadata
 REPLACE INTO metadata
 VALUES ('DB_MAJOR', 4, 'DB major version number');
 REPLACE INTO metadata
-VALUES ('DB_MINOR', 0, 'DB minor version number');
+VALUES ('DB_MINOR', 1, 'DB minor version number');
 
 CREATE TABLE IF NOT EXISTS metadata_real
 (
