@@ -235,7 +235,6 @@ def test_time_sequence_tests(
     system_test_run: tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer],
 ) -> None:
     _, _, _, sequencer = system_test_run
-    import contextlib
 
     objectives = {
         'consecutive_days': 1445.875735,
@@ -247,10 +246,15 @@ def test_time_sequence_tests(
 
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         cur = con.cursor()
-        res = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()
-        obj = res[0]
+        obj = cur.execute('SELECT SUM(total_system_cost) FROM main.output_objective').fetchone()[0]
         assert obj == pytest.approx(expected_obj, rel=1e-5), (
             'objective function value did not match expected for time sequencing test'
+        )
+        summed = cur.execute(
+            'SELECT SUM(d_invest+d_fixed+d_var+d_emiss) FROM main.output_cost'
+        ).fetchone()[0]
+        assert obj == pytest.approx(summed, rel=1e-10), (
+            'summed discounted costs from output_cost did not match objective function'
         )
 
 
