@@ -44,7 +44,7 @@ def reserve_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[TemoaModel, P
     return instance, lp_files[0]
 
 
-def test_planning_ab_group_includes_exchange(reserve_run: tuple[TemoaModel, Path]):
+def test_planning_ab_group_includes_exchange(reserve_run: tuple[TemoaModel, Path]) -> None:
     model, _ = reserve_run
     exchange_regions = {
         r
@@ -58,7 +58,7 @@ def test_planning_ab_group_includes_exchange(reserve_run: tuple[TemoaModel, Path
     )
 
 
-def test_single_region_a_includes_exchange(reserve_run: tuple[TemoaModel, Path]):
+def test_single_region_a_includes_exchange(reserve_run: tuple[TemoaModel, Path]) -> None:
     model, _ = reserve_run
     exchange_regions = {
         r
@@ -72,7 +72,7 @@ def test_single_region_a_includes_exchange(reserve_run: tuple[TemoaModel, Path])
     )
 
 
-def test_single_tech_region_a_not_includes_exchange(reserve_run: tuple[TemoaModel, Path]):
+def test_single_tech_region_a_not_includes_exchange(reserve_run: tuple[TemoaModel, Path]) -> None:
     model, _ = reserve_run
     exchange_regions = {
         r
@@ -87,7 +87,7 @@ def test_single_tech_region_a_not_includes_exchange(reserve_run: tuple[TemoaMode
     )
 
 
-def test_lp_matches(reserve_run: tuple[TemoaModel, Path]):
+def test_lp_matches(reserve_run: tuple[TemoaModel, Path]) -> None:
     _, lp_path = reserve_run
 
     if not CACHED_LP.exists():

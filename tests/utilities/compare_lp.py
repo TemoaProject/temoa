@@ -10,9 +10,10 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
 _CAMEL_RE = re.compile(r'([a-z0-9])([A-Z])')
@@ -56,20 +57,20 @@ def _needs_normalization(path: Path, sample: int = 2000) -> bool:
     return False
 
 
-def _stream(path: Path, normalize: bool):
+def _stream(path: Path, normalize: bool) -> Generator[tuple[Any, ...]]:
     tok = _norm if normalize else (lambda t: t)
     section = 'preamble'
     obj_name = None
     obj_terms: list[tuple[float, str]] = []
-    con_label = None
+    con_label: str | None = None
     con_terms: list[tuple[float, str]] = []
-    con_rel = None
-    con_rhs = None
+    con_rel: str | None = None
+    con_rhs: float | None = None
 
-    def _flush():
+    def _flush() -> tuple[str, str, list[tuple[float, str]], str | None, float | None] | None:
         nonlocal con_label, con_terms, con_rel, con_rhs
-        result = None
-        if con_label and con_rel is not None:
+        result: tuple[str, str, list[tuple[float, str]], str | None, float | None] | None = None
+        if con_label is not None and con_rel is not None:
             result = ('con', con_label, list(con_terms), con_rel, con_rhs)
         con_label = None
         con_terms = []
@@ -241,7 +242,7 @@ def compare_lp_files(path_a: Path, path_b: Path, rtol: float = 1e-6) -> LpDiff:
                     cd.relation_changed = (rel_a, rel)
                 if abs(rhs_a - rhs) > rtol * max(abs(rhs_a), abs(rhs), 1e-15):
                     cd.rhs_changed = (rhs_a, rhs)
-                all_vars = set(td_a) | set(td)
+                all_vars = sorted(set(td_a) | set(td))
                 for v in all_vars:
                     c1, c2 = td_a.get(v), td.get(v)
                     if c1 is None:

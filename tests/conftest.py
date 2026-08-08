@@ -101,6 +101,7 @@ def refresh_databases() -> None:
         # Feature tests (separate for temporal consistency)
         ('emissions.sql', 'emissions.sqlite'),
         ('materials.sql', 'materials.sqlite'),
+        ('reserve_margins.sql', 'reserve_margins.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
         ('test_week.sql', 'test_week.sqlite'),
