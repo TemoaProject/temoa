@@ -53,17 +53,23 @@ CREATE TABLE IF NOT EXISTS unit_commitment_startup_input
 );
 CREATE TABLE IF NOT EXISTS output_unit_commitment
 (
-    scenario                        TEXT NOT NULL,
-    region                          TEXT NOT NULL,
-    sector                          TEXT NOT NULL,
-    period                          INTEGER NOT NULL,
-    season                          TEXT NOT NULL,
-    tod                             TEXT NOT NULL,
-    tech                            TEXT NOT NULL,
-    vintage                         INTEGER NOT NULL,
-    online_cap                      REAL,
-    start_cap                       REAL,
-    stop_cap                        REAL,
-    units                           TEXT,
+    scenario        TEXT,
+    region          TEXT,
+    sector          TEXT
+        REFERENCES sector_label (sector),
+    period          INTEGER
+        REFERENCES time_period (period),
+    season          TEXT
+        REFERENCES time_season (season),
+    tod             TEXT
+        REFERENCES time_of_day (tod),
+    tech            TEXT
+        REFERENCES technology (tech),
+    vintage         INTEGER
+        REFERENCES time_period (period),
+    online_cap      REAL,
+    start_cap       REAL,
+    stop_cap        REAL,
+    units           TEXT,
     PRIMARY KEY (scenario, region, sector, period, season, tod, tech, vintage)
 );

@@ -76,7 +76,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_capacity_\delta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_growth\_new\_capacity\_delta}}
 
             \begin{aligned}\text{Degrowth:}\\
             &\mathbf{NCAP}_{r,t,v_{i-1}} - \mathbf{NCAP}_{r,t,v_{i-2}}
@@ -86,7 +86,7 @@ def limit_growth_new_capacity_delta(
 
             \text{ where } v_i=p
 
-            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity_\delta}}
+            \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_new\_capacity\_delta}}
     """
     regions = geography.gather_group_regions(model, r)
     techs = technology.gather_group_techs(model, t)

@@ -268,7 +268,7 @@ def _ramp_constraint(
     t: Technology,
     v: Vintage,
 ) -> ExprLike:
-    """Helper that composes :func:`_ramp_activity_increase` and
+    """Helper that composes :func:`ramp_activity_increase` and
     :func:`_rampable_activity` into the core-model ramp constraint."""
     s_next, d_next = model.time_next[s, d]
     result = ramp_activity_increase(model, ramp_up, r, p, s, d, s_next, d_next, t, v)
@@ -358,7 +358,7 @@ def ramp_down_constraint(
 ) -> ExprLike:
     r"""
 
-    Similar to the :code`ramp_up` constraint, we use the :code:`ramp_down`
+    Similar to the :code:`ramp_up` constraint, we use the :code:`ramp_down`
     constraint to limit ramp down rates between any two adjacent time slices.
 
     .. math::
