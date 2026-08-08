@@ -159,6 +159,30 @@ def initialize_reserve_margins(model: TemoaModel) -> None:
 # ============================================================================
 
 
+def _into_region(model: TemoaModel, r: Region, t: Technology, regions: set[Region]) -> int:
+    """
+    Returns +1 if not an exchange tech or is an exchange tech importing into the region group.
+    """
+    if t not in model.tech_exchange:
+        return 1
+    r1, r2 = r.split('-')
+    if r2 in regions and r1 not in regions:
+        return 1
+    return 0
+
+
+def _out_of_region(model: TemoaModel, r: Region, t: Technology, regions: set[Region]) -> int:
+    """
+    Returns +1 if and only if is an exchange tech exporting out of the region group.
+    """
+    if t not in model.tech_exchange:
+        return 0
+    r1, r2 = r.split('-')
+    if r1 in regions and r2 not in regions:
+        return 1
+    return 0
+
+
 def reserve_margin_proxy_demand(
     model: TemoaModel,
     processes: set[tuple[Region, Technology, Vintage]],
@@ -193,36 +217,40 @@ def reserve_margin_proxy_demand(
 
         \begin{aligned}
             D^{proxy}_{r_g,p,s,d} =&
-                \sum_{(r,t,v) \in \Theta^{res} \setminus T^a \setminus T^x,\, I, O}
+                \sum_{\substack{(r,t,v) \in \Theta^{res} \setminus T^a \\ \uparrow_{r,r_g},\, I, O}}
                 \mathbf{FO}_{r, p, s, d, i, t, v, o}
-                && \text{(production, non-annual, includes storage)} \\
-            &+ \sum_{(r,t,v) \in \Theta^{res} \cap T^a,\, I, O}
+                && \text{(non-annual production and imports)} \\
+            &+ \sum_{\substack{(r,t,v) \in \Theta^{res} \cap T^a \\ \uparrow_{r,r_g},\, I, O}}
                 \begin{cases} DSD_{r,s,d,o} & o \in C^d \\ SEG_{s,d} & \text{otherwise}
                 \end{cases} \cdot \mathbf{FOA}_{r, p, i, t, v, o}
-                && \text{(production, annual)} \\
+                && \text{(annual production and imports)} \\
             &- \sum_{(r,t,v) \in \Theta^{res} \cap T^s,\, I, O}
                 \mathbf{FI}_{r, p, s, d, i, t, v, o}
                 && \text{(storage inputs)} \\
-            &+ \sum_{\substack{(r,t,v) \in \Theta^{res} \cap T^x \\ r_2 \in r_g,\, I, O}}
-                \mathbf{FO}_{r, p, s, d, i, t, v, o}
-                && \text{(imports)} \\
-            &- \sum_{\substack{(r,t,v) \in \Theta^{res} \cap T^x \\ r_1 \in r_g,\, I, O}}
+            &- \sum_{\substack{(r,t,v) \in \Theta^{res} \cap T^x \setminus T^a \\
+                \downarrow_{r,r_g},\, I, O}}
                 \mathbf{FO}_{r, p, s, d, i, t, v, o} / EFF_{r,p,s,d,i,t,v,o}
-                && \text{(exports)}
+                && \text{(non-annual exports)} \\
+            &- \sum_{\substack{(r,t,v) \in \Theta^{res} \cap T^x \cap T^a \\
+                \downarrow_{r,r_g},\, I, O}}
+                \begin{cases} DSD_{r,s,d,o} & o \in C^d \\ SEG_{s,d} & \text{otherwise}
+                \end{cases} \cdot \mathbf{FOA}_{r, p, i, t, v, o} / EFF_{r,p,i,t,v,o}
+                && \text{(annual exports)}
         \end{aligned}
 
-    where :math:`\Theta^{res} = \Theta^{res}_{r_g,p,t_g}` is the set of all :math:`(r,t,v)`
-    processes contributing to this reserve margin in this period, and for an exchange process
-    :math:`r = r_1{-}r_2`, imports (:math:`r_2 \in r_g,\ r_1 \notin r_g`) add delivered energy
-    while exports (:math:`r_1 \in r_g,\ r_2 \notin r_g`) subtract the energy drawn from
-    :math:`r_1`.
+    where :math:`\uparrow_{r,r_g}` selects non-exchange processes and exchange imports
+    (:math:`r_2 \in r_g,\ r_1 \notin r_g`), and :math:`\downarrow_{r,r_g}` selects exchange
+    exports (:math:`r_1 \in r_g,\ r_2 \notin r_g`).  :math:`\Theta^{res} = \Theta^{res}_{r_g,p,t_g}`
+    is the set of all :math:`(r,t,v)` processes contributing to this reserve margin in this period.
     """
+
+    regions = geography.gather_group_regions(model, r_g)
 
     # Non-annual activity
     activity = quicksum(
         model.v_flow_out[r, p, s, d, i, t, v, o]
         for (r, t, v) in processes
-        if t not in model.tech_annual and t not in model.tech_exchange
+        if t not in model.tech_annual and _into_region(model, r, t, regions)
         for i in model.process_inputs[r, p, t, v]
         for o in model.process_outputs_by_input[r, p, t, v, i]
     )
@@ -236,7 +264,7 @@ def reserve_margin_proxy_demand(
         )
         * model.v_flow_out_annual[r, p, i, t, v, o]
         for (r, t, v) in processes
-        if t in model.tech_annual and t not in model.tech_exchange
+        if t in model.tech_annual and _into_region(model, r, t, regions)
         for i in model.process_inputs[r, p, t, v]
         for o in model.process_outputs_by_input[r, p, t, v, i]
     )
@@ -252,29 +280,30 @@ def reserve_margin_proxy_demand(
         for o in model.process_outputs_by_input[r, p, t, v, i]
     )
 
-    # Exchange technologies
-    # Add imports into the group, subtract exports out of it
-    regions = geography.gather_group_regions(model, r_g)
-    for r1r2, t, v in processes:
-        if t not in model.tech_exchange:
-            continue
-
-        r1, r2 = r1r2.split('-')
-        if r2 in regions and r1 not in regions:
-            # Import into the group: add the energy delivered to r2
-            activity += quicksum(
-                model.v_flow_out[r1r2, p, s, d, i, t, v, o]
-                for i in model.process_inputs[r1r2, p, t, v]
-                for o in model.process_outputs_by_input[r1r2, p, t, v, i]
-            )
-        elif r1 in regions and r2 not in regions:
-            # Export out of the group: subtract the energy drawn from r1
-            activity -= quicksum(
-                model.v_flow_out[r1r2, p, s, d, i, t, v, o]
-                / get_variable_efficiency(model, r1r2, p, s, d, i, t, v, o)
-                for i in model.process_inputs[r1r2, p, t, v]
-                for o in model.process_outputs_by_input[r1r2, p, t, v, i]
-            )
+    # Subtract exchange exports
+    # Non-annual exports
+    activity -= quicksum(
+        model.v_flow_out[r, p, s, d, i, t, v, o]
+        / get_variable_efficiency(model, r, p, s, d, i, t, v, o)
+        for (r, t, v) in processes
+        if t not in model.tech_annual and _out_of_region(model, r, t, regions)
+        for i in model.process_inputs[r, p, t, v]
+        for o in model.process_outputs_by_input[r, p, t, v, i]
+    )
+    # Annual exports (could feed a demand)
+    activity -= quicksum(
+        (
+            value(model.demand_specific_distribution[r, p, s, d, o])
+            if o in model.commodity_demand
+            else value(model.segment_fraction[s, d])
+        )
+        * model.v_flow_out_annual[r, p, i, t, v, o]
+        / value(model.efficiency[r, i, t, v, o])
+        for (r, t, v) in processes
+        if t in model.tech_annual and _out_of_region(model, r, t, regions)
+        for i in model.process_inputs[r, p, t, v]
+        for o in model.process_outputs_by_input[r, p, t, v, i]
+    )
 
     return activity
 
