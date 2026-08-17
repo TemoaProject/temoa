@@ -13,7 +13,7 @@ from typing import Any
 import matplotlib
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
+from matplotlib import ticker
 
 matplotlib.rcParams.update(
     {

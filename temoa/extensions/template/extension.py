@@ -28,7 +28,4 @@ EXAMPLE_EXTENSION = ExtensionSpec(
     build_manifest_items=build_manifest_items,
     # Schema applied (with consent) when enabled but tables are missing.
     schema_sql_path=str(Path(__file__).parents[0] / 'tables.sql'),
-    # If True, loading fails when this extension is DISABLED but its tables hold
-    # data, preventing silently-ignored inputs.
-    fail_if_tables_populated_when_disabled=True,
 )

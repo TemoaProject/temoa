@@ -11,16 +11,15 @@ technology group) in a region. Replace it with your own logic.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Constraint, quicksum, value
 
-import temoa.components.geography as geography
-import temoa.components.technology as technology
+from temoa.components import capacity
 
 if TYPE_CHECKING:
     from temoa.extensions.template.core.model import ExampleModel
-    from temoa.types import ExprLike, Period, Region, Technology
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
 
 def example_new_capacity_limit_indices(
@@ -43,16 +42,13 @@ def example_new_capacity_limit_constraint_rule(
     model: ExampleModel, r: Region, p: Period, t: Technology
 ) -> ExprLike:
     """Cap total new capacity built in period ``p`` for region/group ``r``/``t``."""
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
 
     limit = value(model.example_new_capacity_limit[r, t])
 
     new_cap_rtv = model.v_new_capacity
     new_cap = quicksum(
-        new_cap_rtv[_r, _t, _v]
-        for _r, _t, _v in new_cap_rtv.keys()
-        if _r in regions and _t in techs and _v == p
+        new_cap_rtv[_r, _t, p]
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, cast('Vintage', p))
     )
 
     if isinstance(new_cap, (int, float)):

@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Constraint, quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
+from temoa.components import capacity
 from temoa.components.utils import Operator, operator_expression
 
 if TYPE_CHECKING:
     from temoa.extensions.growth_rates.core.model import GrowthRatesModel
-    from temoa.types import ExprLike, Period, Region, Technology
+    from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
 
 def limit_growth_new_capacity_indices(
@@ -84,26 +85,21 @@ def limit_growth_new_capacity(
             \qquad \forall \{r, p, t\} \in \Theta_{\text{limit\_degrowth\_capacity}}
     """
 
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-
     growth = model.limit_degrowth_new_capacity if degrowth else model.limit_growth_new_capacity
     rate = 1 + value(growth[r, t, op][0])
     seed = value(growth[r, t, op][1])
-    new_cap_rtv = model.v_new_capacity
 
-    cap_rtv = {(_r, _t, _v) for _r, _t, _v in new_cap_rtv.keys() if _t in techs and _r in regions}
-    periods = sorted({_v for _r, _t, _v in cap_rtv})
-
-    if len(periods) == 0:
-        return Constraint.Skip
-
-    new_cap = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p)
+    new_cap = quicksum(
+        model.v_new_capacity[_r, _t, p]
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, cast('Vintage', p))
+    )
 
     new_cap_prev = 0.0
 
     if p == model.time_optimize.first():
         if model.time_exist:
+            regions = geography.gather_group_regions(model, r)
+            techs = technology.gather_group_techs(model, t)
             p_prev = model.time_exist.last()
             new_cap_prev = quicksum(
                 value(model.existing_capacity[_r, _t, _v])
@@ -112,7 +108,12 @@ def limit_growth_new_capacity(
             )
     else:
         p_prev = model.time_optimize.prev(p)
-        new_cap_prev = quicksum(new_cap_rtv[_r, _t, _v] for _r, _t, _v in cap_rtv if _v == p_prev)
+        new_cap_prev = quicksum(
+            model.v_new_capacity[_r, _t, p_prev]
+            for _r, _t in capacity.gather_group_built_processes(
+                model, r, t, cast('Vintage', p_prev)
+            )
+        )
 
     if degrowth:
         expr = operator_expression(new_cap_prev, Operator(op), seed + new_cap * rate)

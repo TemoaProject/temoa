@@ -732,7 +732,6 @@ def poll_loan_costs(
     p_e: int,
     global_discount_rate: float,
     vintage: int,
-    **kwargs: object,
 ) -> tuple[float, float]:
     """
     Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
@@ -778,7 +777,6 @@ def poll_loan_costs_survival_curve(
     p_0: Period,
     p_e: Period,
     global_discount_rate: float,
-    **kwargs: object,
 ) -> tuple[float, float]:
     """
     Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules

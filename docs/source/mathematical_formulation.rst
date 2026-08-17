@@ -838,9 +838,7 @@ ramp_down_hourly
 
 The :code:`ramp_down_hourly` parameter specifies the fraction of installed capacity
 by which a technology can ramp output down per hour.  This is used in the
-:code:`ramp_down_day_constraint` (between time-of-day slices) and
-:code:`ramp_down_season_constraint` (between the last time-of-day slice in one
-season and the first in the next).
+:code:`ramp_down_constraint`.
 
 
 ramp_up_hourly
@@ -850,8 +848,7 @@ ramp_up_hourly
 
 The :code:`ramp_up_hourly` parameter specifies the fraction of installed capacity
 by which a technology can ramp output up per hour.  This is used in the
-:code:`ramp_up_day_constraint` (between time-of-day slices) and
-:code:`ramp_up_season_constraint` (between seasons).
+:code:`ramp_up_constraint`.
 
 
 reserve_capacity_derate
@@ -1312,13 +1309,9 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa.components.storage.storage_throughput_constraint
 
-.. autofunction:: temoa.components.operations.ramp_up_day_constraint
+.. autofunction:: temoa.components.operations.ramp_up_constraint
 
-.. autofunction:: temoa.components.operations.ramp_down_day_constraint
-
-.. autofunction:: temoa.components.operations.ramp_up_season_constraint
-
-.. autofunction:: temoa.components.operations.ramp_down_season_constraint
+.. autofunction:: temoa.components.operations.ramp_down_constraint
 
 .. autofunction:: temoa.components.reserves.reserve_margin_static
 

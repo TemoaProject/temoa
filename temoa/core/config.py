@@ -302,6 +302,12 @@ class TemoaConfig:
         else:
             raise SolverNotAvailableError('No solver name specified in the configuration.')
 
+        if data.get('solver_name') == 'appsi_highs' and data.get('save_duals', False):
+            raise ValueError(
+                'save_duals is not supported with appsi_highs (it does not expose duals via the '
+                'APPSI interface). Disable save_duals or choose a different solver.'
+            )
+
         if 'stochastic' in data:
             stoch_data = data.pop('stochastic')
             if 'stochastic_config' in stoch_data:

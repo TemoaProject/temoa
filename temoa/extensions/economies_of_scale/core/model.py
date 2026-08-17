@@ -14,9 +14,11 @@ from pyomo.environ import (
     Var,
 )
 
-import temoa.extensions.economies_of_scale.components.cost_fixed_eos as cost_fixed_eos
-import temoa.extensions.economies_of_scale.components.cost_invest_eos as cost_invest_eos
-import temoa.extensions.economies_of_scale.components.cost_variable_eos as cost_variable_eos
+from temoa.extensions.economies_of_scale.components import (
+    cost_fixed_eos,
+    cost_invest_eos,
+    cost_variable_eos,
+)
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -82,8 +84,6 @@ if TYPE_CHECKING:
 
 def register_early_eos_components(model: TemoaModel) -> None:
     """Build cost_invest_eos components that must be instantiated before loan parameters."""
-    if 'eos' not in model.enabled_extensions:
-        return
     m = cast('EOSModel', model)
 
     m.cost_invest_eos_rtn = Set(

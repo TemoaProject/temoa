@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING
 from deprecated import deprecated
 from pyomo.environ import value
 
-from .utils import get_adjusted_existing_capacity, get_capacity_factor
+from temoa.components import geography, technology
+
+from .utils import get_adjusted_existing_capacity, get_available_output
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -456,23 +458,14 @@ def capacity_constraint(
     if t in model.tech_curtailment:
         # If technologies are present in the curtailment set, then enough
         # capacity must be available to cover both activity and curtailment.
-        return get_capacity_factor(model, r, s, d, t, v) * value(
-            model.capacity_to_activity[r, t]
-        ) * value(model.segment_fraction[s, d]) * model.v_capacity[
-            r, p, t, v
-        ] == useful_activity + sum(
+        curtailment = sum(
             model.v_curtailment[r, p, s, d, S_i, t, v, S_o]
             for S_i in model.process_inputs[r, p, t, v]
             for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
         )
+        return get_available_output(model, r, p, s, d, t, v) == useful_activity + curtailment
     else:
-        return (
-            get_capacity_factor(model, r, s, d, t, v)
-            * value(model.capacity_to_activity[r, t])
-            * value(model.segment_fraction[s, d])
-            * model.v_capacity[r, p, t, v]
-            >= useful_activity
-        )
+        return get_available_output(model, r, p, s, d, t, v) >= useful_activity
 
 
 def adjusted_capacity_constraint(
@@ -661,3 +654,37 @@ def create_capacity_and_retirement_sets(model: TemoaModel) -> None:
         for r, p, t in model.active_capacity_available_rpt
         for v in model.process_vintages[r, p, t]
     }
+
+
+def gather_group_active_processes(
+    model: TemoaModel, r: Region, p: Period, t: Technology
+) -> set[tuple[Region, Technology]]:
+    """
+    A utility to get the valid active processes for a group-region, tech-group pair in period p.
+    Caches the result if its a new call so we don't repeat these O(n2) lookups.
+    """
+    if (r, p, t) not in model.group_active_processes:
+        model.group_active_processes[r, p, t] = {
+            (_r, _t)
+            for _r in geography.gather_group_regions(model, r)
+            for _t in technology.gather_group_techs(model, t)
+            if (_r, p, _t) in model.process_vintages
+        }
+    return model.group_active_processes[r, p, t]
+
+
+def gather_group_built_processes(
+    model: TemoaModel, r: Region, t: Technology, v: Vintage
+) -> set[tuple[Region, Technology]]:
+    """
+    A utility to get the valid built processes for a group-region, tech-group, vintage index.
+    Caches the result if its a new call so we don't repeat these O(n2) lookups.
+    """
+    if (r, t, v) not in model.group_built_processes:
+        model.group_built_processes[r, t, v] = {
+            (_r, _t)
+            for _r in geography.gather_group_regions(model, r)
+            for _t in technology.gather_group_techs(model, t)
+            if (_r, _t, v) in model.process_periods
+        }
+    return model.group_built_processes[r, t, v]

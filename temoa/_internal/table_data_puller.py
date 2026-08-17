@@ -20,7 +20,6 @@ from pyomo.core import Objective
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
 from temoa.components.utils import get_variable_efficiency
-from temoa.extensions.economies_of_scale.core import data_puller as eos
 from temoa.types.model_types import EI, FI, SLI, CapData, FlowType
 
 if TYPE_CHECKING:
@@ -246,6 +245,11 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
                     if abs(flow) < epsilon:
                         continue
                     res[fi][FlowType.OUT] = flow
+
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_input_results(model, res, epsilon)
 
     return res
 
@@ -491,14 +495,14 @@ def poll_cost_results(
                 }
             )
 
-    # Get nonlinear costs from the EOS extension, if active
-    eos.poll_costs(
-        model=model,
-        exchange_costs=exchange_costs,
-        entries=entries,
-        p_0=p_0_true,
-        epsilon=epsilon,
-    )
+    if 'eos' in model.enabled_extensions:
+        import temoa.extensions.economies_of_scale.core.data_puller as eos
+
+        eos.poll_costs(model, exchange_costs, entries, p_0_true, epsilon)
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_cost_results(model, exchange_costs, entries, p_0_true, epsilon)
 
     exchange_entries = exchange_costs.get_entries()
     return entries, exchange_entries
@@ -562,6 +566,11 @@ def poll_emissions(
             value(model.v_flow_out_annual[r, p, i, t, v, o])
             * model.emission_activity[r, e, i, t, v, o]
         )
+
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.core import data_puller as uc
+
+        uc.poll_emission_results(model, flows)
 
     # gather costs
     ud_costs: dict[tuple[Region, Period, Technology, Vintage], float] = defaultdict(float)

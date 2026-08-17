@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, quicksum, value
 
-import temoa.components.geography as geography
-import temoa.components.technology as technology
+from temoa.components import capacity
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +17,11 @@ if TYPE_CHECKING:
 def limit_discrete_new_capacity_indices(
     model: DiscreteCapacityModel,
 ) -> set[tuple[Region, Technology, Vintage]]:
-
     indices = {
         (r, t, v)
         for r, t in model.limit_discrete_new_capacity.sparse_keys()
-        for _r in geography.gather_group_regions(model, r)
-        for _t in technology.gather_group_techs(model, t)
         for v in model.vintage_optimize
-        if (_r, _t, v) in model.process_periods
+        if capacity.gather_group_built_processes(model, r, t, v)
     }
     return indices
 
@@ -45,18 +41,12 @@ def limit_discrete_new_capacity_constraint_rule(
 
        \forall \{r, t, v\} \in \Theta_{\text{limit\_discrete\_new\_capacity}}
     """
-
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-    unit_cap = value(model.limit_discrete_new_capacity[r, t])
-
+    discrete_cap = value(model.limit_discrete_new_capacity[r, t])
     new_capacity = quicksum(
         model.v_new_capacity[_r, _t, v]
-        for _r in regions
-        for _t in techs
-        if (_r, _t, v) in model.process_periods
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, v)
     )
-    expr = new_capacity == unit_cap * model.v_discrete_new_capacity[r, t, v]
+    expr = new_capacity == discrete_cap * model.v_discrete_new_capacity[r, t, v]
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr
@@ -68,10 +58,8 @@ def limit_discrete_capacity_indices(
     indices = {
         (r, p, t)
         for r, t in model.limit_discrete_capacity.sparse_keys()
-        for _r in geography.gather_group_regions(model, r)
-        for _t in technology.gather_group_techs(model, t)
         for p in model.time_optimize
-        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
+        if capacity.gather_group_active_processes(model, r, p, t)
     }
     return indices
 
@@ -91,18 +79,12 @@ def limit_discrete_capacity_constraint_rule(
 
        \forall \{r, p, t\} \in \Theta_{\text{limit\_discrete\_net\_capacity}}
     """
-
-    regions = geography.gather_group_regions(model, r)
-    techs = technology.gather_group_techs(model, t)
-    capacity = value(model.limit_discrete_capacity[r, t])
-
+    discrete_cap = value(model.limit_discrete_capacity[r, t])
     net_capacity = quicksum(
         model.v_capacity_available_by_period_and_tech[_r, p, _t]
-        for _r in regions
-        for _t in techs
-        if (_r, p, _t) in model.v_capacity_available_by_period_and_tech
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
     )
-    expr = net_capacity == capacity * model.v_discrete_capacity[r, p, t]
+    expr = net_capacity == discrete_cap * model.v_discrete_capacity[r, p, t]
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr

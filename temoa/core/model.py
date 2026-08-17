@@ -38,6 +38,7 @@ from temoa.components import (
     storage,
     technology,
     time,
+    utils,
 )
 from temoa.extensions.framework import apply_model_extension_hooks, resolve_extension_specs
 from temoa.model_checking.validators import (
@@ -110,6 +111,7 @@ class TemoaModel(AbstractModel):
         AbstractModel.__init__(self, *args, **kwargs)
         self.enabled_extensions = tuple(extensions or ())
         self.extension_specs = resolve_extension_specs(self.enabled_extensions)
+        self.available_output_function = utils.available_output_base
 
         ################################################
         #       Internally used Data Containers        #
@@ -165,6 +167,9 @@ class TemoaModel(AbstractModel):
         # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         self.retirement_periods: t.RetirementPeriodsDict = {}
         self.process_vintages: t.ProcessVintagesDict = {}
+        """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
+        self.group_built_processes: t.GroupBuiltProcessesDict = {}
+        self.group_active_processes: t.GroupActiveProcessesDict = {}
         # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         self.survival_curve_periods: t.SurvivalCurvePeriodsDict = {}
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
@@ -552,6 +557,11 @@ class TemoaModel(AbstractModel):
         self.initialize_CapacityFactors = BuildAction(rule=capacity.check_capacity_factor_process)
         self.initialize_efficiency_variable = BuildAction(rule=technology.check_efficiency_variable)
 
+        if 'unit_commitment' in self.enabled_extensions:
+            import temoa.extensions.unit_commitment.core.model as uc
+
+            uc.register_early_components(self)
+
         # Define technology cost parameters
         self.cost_fixed_rptv = Set(dimen=4, initialize=costs.cost_fixed_indices)
         self.cost_fixed = Param(self.cost_fixed_rptv)
@@ -616,7 +626,12 @@ class TemoaModel(AbstractModel):
         )
         self.limit_activity = Param(self.limit_activity_constraint_rpt)
 
-        self.limit_seasonal_capacity_factor_constraint_rst = Set()
+        self.limit_seasonal_capacity_factor_constraint_rst = Set(
+            within=self.regional_global_indices
+            * self.time_season
+            * self.tech_or_group
+            * self.operator
+        )
         self.limit_seasonal_capacity_factor = Param(
             self.limit_seasonal_capacity_factor_constraint_rst, validate=validate_0to1
         )
@@ -684,9 +699,13 @@ class TemoaModel(AbstractModel):
         self.seasonal_storage_constraints_rpsdtv = Set(
             dimen=6, initialize=storage.seasonal_storage_constraint_indices
         )
-        self.limit_storage_fraction_param_rsdt = (
-            Set()
-        )  # populated by hybrid_loader with (r, s, d, t, op) keys
+        self.limit_storage_fraction_param_rsdt = Set(
+            within=self.regional_global_indices
+            * (self.time_season | self.time_season_sequential)
+            * self.time_of_day
+            * self.tech_storage
+            * self.operator
+        )
         self.limit_storage_fraction = Param(
             self.limit_storage_fraction_param_rsdt, validate=validate_0to1
         )
@@ -949,31 +968,19 @@ class TemoaModel(AbstractModel):
             rule=storage.limit_storage_fraction_constraint,
         )
 
-        self.ramp_up_day_constraint_rpsdtv = Set(
-            dimen=6, initialize=operations.ramp_up_day_constraint_indices
+        self.ramp_up_constraint_rpsdtv = Set(
+            dimen=6, initialize=operations.ramp_up_constraint_indices
         )
-        self.ramp_up_day_constraint = Constraint(
-            self.ramp_up_day_constraint_rpsdtv, rule=operations.ramp_up_day_constraint
+        self.ramp_down_constraint_rpsdtv = Set(
+            dimen=6, initialize=operations.ramp_down_constraint_indices
         )
-        self.ramp_down_day_constraint_rpsdtv = Set(
-            dimen=6, initialize=operations.ramp_down_day_constraint_indices
-        )
-        self.ramp_down_day_constraint = Constraint(
-            self.ramp_down_day_constraint_rpsdtv, rule=operations.ramp_down_day_constraint
-        )
-
-        self.ramp_up_season_constraint_rpsstv = Set(
-            dimen=6, initialize=operations.ramp_up_season_constraint_indices
-        )
-        self.ramp_up_season_constraint = Constraint(
-            self.ramp_up_season_constraint_rpsstv, rule=operations.ramp_up_season_constraint
-        )
-        self.ramp_down_season_constraint_rpsstv = Set(
-            dimen=6, initialize=operations.ramp_down_season_constraint_indices
-        )
-        self.ramp_down_season_constraint = Constraint(
-            self.ramp_down_season_constraint_rpsstv, rule=operations.ramp_down_season_constraint
-        )
+        if 'unit_commitment' not in self.enabled_extensions:
+            self.ramp_down_constraint = Constraint(
+                self.ramp_down_constraint_rpsdtv, rule=operations.ramp_down_constraint
+            )
+            self.ramp_up_constraint = Constraint(
+                self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
+            )
 
         self.reserve_margin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
         self.validate_reserve_margin = BuildAction(rule=validate_reserve_margin)
