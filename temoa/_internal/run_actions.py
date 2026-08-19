@@ -202,24 +202,32 @@ def solve_instance(
         raise NotImplementedError('Neos based solve is not currently supported')
 
     # Solver Configuration
+    #
+    # Note: no custom solver options are set here.  We deliberately let every solver
+    # run with its own default settings so that models are solved correctly regardless
+    # of whether they are pure LPs or MILPs (integer extensions).
+    #
+    # The LP-tuned options that used to live here (barrier method, crossover disabled,
+    # and loose barrier/feasibility tolerances, matching mip-dev / PyPSA) could crash
+    # MIP solves and produce inappropriate tolerances for integer problems.  They were
+    # removed to keep MILP solves robust.  For reference, the previous values were:
+    #
+    #   cplex:  lpmethod=4 (barrier), solutiontype=2 (no crossover),
+    #           'barrier convergetol'=1.0e-3, 'feasopt tolerance'=1.0e-4
+    #   gurobi: Method=2 (barrier), Crossover=0 (no crossover),
+    #           BarConvTol=1.0e-3, FeasibilityTol=1.0e-4, BarOrder=-1 (auto)
+    #   (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
+    #
+    # Users who need to tune solver performance for large LPs should set options
+    # explicitly (e.g. via the *_solver_options.toml files used by the extensions).
     if solver_name == 'cbc':
         pass
 
     elif solver_name == 'cplex':
-        # Note: these parameter values match mip-dev / PyPSA
-        # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-        optimizer.options['lpmethod'] = 4  # barrier
-        optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
-        optimizer.options['barrier convergetol'] = 1.0e-3
-        optimizer.options['feasopt tolerance'] = 1.0e-4
+        pass
 
     elif solver_name == 'gurobi':
-        # Note: these parameter values match mip-dev / PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-        optimizer.options['Method'] = 2  # barrier
-        optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
-        optimizer.options['BarConvTol'] = 1.0e-3
-        optimizer.options['FeasibilityTol'] = 1.0e-4
-        optimizer.options['BarOrder'] = -1  # auto ordering; 2-4x faster than AMD on large models
+        pass
 
     elif solver_name == 'appsi_highs':
         pass
