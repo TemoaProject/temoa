@@ -817,8 +817,8 @@ The required excess of credited installed capacity above demand, expressed
 as a fraction of demand, keyed by a region-or-group :math:`r_g` and a
 technology-or-group :math:`t_g`.  For example, a value of 0.2 requires that
 credited capacity be at least 120% of demand.  Demand is estimated from production
-by time slice.  When a region group is used, any exchange region (e.g. ``r1-r2``)
-where exactly one endpoint belongs to the group is automatically included in the
+by time slice.  Any exchange region (e.g. ``r1-r2``) where exactly one endpoint
+connects to the region or group is automatically included in the
 reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
 
 
@@ -841,9 +841,9 @@ operating_reserve_margin
 The dynamic counterpart to :code:`planning_reserve_margin`, indexed the same
 way by region-or-group and technology-or-group. Rather than crediting
 installed capacity, it requires that available (derated) generation in each
-time slice exceed the region-group's proxy demand by this margin.  When a region
-group is used, any exchange region (e.g. ``r1-r2``)
-where exactly one endpoint belongs to the group is automatically included in the
+time slice exceed the region-group's proxy demand by this margin.
+Any exchange region (e.g. ``r1-r2``) where exactly one endpoint
+connects to the region or group is automatically included in the
 reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
 
 
