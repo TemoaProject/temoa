@@ -495,6 +495,7 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
             columns=['region', 'tech', 'credit'],
             validator_name='viable_rt',
             validation_map=(0, 1),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
@@ -512,6 +513,7 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
             columns=['region', 'season', 'tech', 'factor'],
             validator_name='viable_rt',
             validation_map=(0, 2),
+            is_period_filtered=False,
             is_table_required=False,
         ),
         LoadItem(
