@@ -143,7 +143,7 @@ REPLACE INTO "lifetime_tech" VALUES('region', 'tech_old', 35.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('region', 'tech_current', 35.0, NULL, NULL);
 REPLACE INTO "lifetime_tech" VALUES('region', 'tech_future', 35.0, NULL, NULL);
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "operator" VALUES('e','equal to');

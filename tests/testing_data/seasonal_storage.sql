@@ -43,7 +43,7 @@ REPLACE INTO "efficiency" VALUES('region', 'electricity', 'demand', 2000, 'deman
 REPLACE INTO "limit_storage_level_fraction" VALUES('region','winter','b','seas_stor','e',0.5,NULL);
 REPLACE INTO "limit_storage_level_fraction" VALUES('region','charge','b','dly_stor','e',0.5,NULL);
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "operator" VALUES('e','equal to');

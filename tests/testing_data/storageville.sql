@@ -42,7 +42,7 @@ REPLACE INTO "limit_capacity" VALUES('electricville',2025,'EH','le',200.0,'','')
 REPLACE INTO "limit_capacity" VALUES('electricville',2025,'batt','le',100.0,'','');
 REPLACE INTO "limit_storage_level_fraction" VALUES('electricville','s1','d1','batt','e',0.5,NULL);
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'');
 REPLACE INTO "operator" VALUES('e','equal to');
