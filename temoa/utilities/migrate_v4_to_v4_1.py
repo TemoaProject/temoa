@@ -38,6 +38,10 @@ def _migrate_planning_reserve_credit(
         return 0
     if not rows:
         return 0
+    print(
+        'WARNING: Dropping period and vintage from capacity_credit; '
+        'using average credit for each region/tech'
+    )
     con_new.executemany(
         'INSERT OR REPLACE INTO planning_reserve_credit (region, tech, credit, notes) '
         'VALUES (?, ?, ?, ?)',
@@ -60,6 +64,10 @@ def _migrate_operating_reserve_derate(
         return 0
     if not rows:
         return 0
+    print(
+        'WARNING: Dropping vintage from reserve_capacity_derate; '
+        'using average factor for each region/season/tech'
+    )
     con_new.executemany(
         'INSERT OR REPLACE INTO operating_reserve_derate (region, season, tech, factor, notes) '
         'VALUES (?, ?, ?, ?, ?)',
@@ -79,7 +87,7 @@ def _build_reserve_tech_group(
     try:
         reserve_techs = [
             r[0]
-            for r in con_old.execute('SELECT tech FROM technology WHERE reserve = 1').fetchall()
+            for r in con_old.execute('SELECT tech FROM technology WHERE reserve > 0').fetchall()
         ]
     except sqlite3.OperationalError:
         return []
@@ -172,7 +180,6 @@ def _migrate_common_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connect
         'rps_requirement',
         'planning_reserve_margin',
         'metadata',
-        'metadata_real',
         'operator',
         'commodity_type',
     }
@@ -266,19 +273,22 @@ def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) ->
         raise FileNotFoundError(f'Schema file not found: {schema_path}')
 
     con_old = sqlite3.connect(':memory:')
-    con_old.executescript(source_path.read_text(encoding='utf-8'))
-
     con_new = sqlite3.connect(':memory:')
-    con_new.executescript(schema_path.read_text(encoding='utf-8'))
+    temp_path: Path | None = None
 
-    con_new.execute('PRAGMA foreign_keys = 0;')
-    execute_v4_to_v4_1_migration(con_old, con_new)
-    con_new.commit()
-    con_new.execute('PRAGMA foreign_keys = 1;')
-
-    fd, temp_str = tempfile.mkstemp(suffix='.sql', prefix='temp_v4_1_sql_', dir=output_path.parent)
-    temp_path = Path(temp_str)
     try:
+        con_old.executescript(source_path.read_text(encoding='utf-8'))
+        con_new.executescript(schema_path.read_text(encoding='utf-8'))
+
+        con_new.execute('PRAGMA foreign_keys = 0;')
+        execute_v4_to_v4_1_migration(con_old, con_new)
+        con_new.commit()
+        con_new.execute('PRAGMA foreign_keys = 1;')
+
+        fd, temp_str = tempfile.mkstemp(
+            suffix='.sql', prefix='temp_v4_1_sql_', dir=output_path.parent
+        )
+        temp_path = Path(temp_str)
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
             for line in con_new.iterdump():
                 f.write(line + '\n')
@@ -286,7 +296,7 @@ def migrate_sql_dump(source_path: Path, schema_path: Path, output_path: Path) ->
             os.fsync(f.fileno())
         os.replace(temp_path, output_path)
     except Exception:
-        if temp_path.exists():
+        if temp_path is not None and temp_path.exists():
             os.remove(temp_path)
         raise
     finally:
