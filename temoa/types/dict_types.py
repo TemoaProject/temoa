@@ -17,7 +17,6 @@ ProcessInputsByOutputDict = dict[
 ProcessOutputsByInputDict = dict[
     tuple[Region, Period, Technology, Vintage, Commodity], set[Commodity]
 ]
-ProcessTechsDict = dict[tuple[Region, Period, Commodity], set[Technology]]
 ReserveProcessesDict = dict[
     tuple[Region, Period, Technology], set[tuple[Region, Technology, Vintage]]
 ]
