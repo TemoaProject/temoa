@@ -811,11 +811,11 @@ level to vary.
 planning_reserve_margin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{PRM}_{r_g \in R, t_g \in T}`
+:math:`{PRM}_{r \in R, t \in T}`
 
 The required excess of credited installed capacity above demand, expressed
-as a fraction of demand, keyed by a region-or-group :math:`r_g` and a
-technology-or-group :math:`t_g`.  For example, a value of 0.2 requires that
+as a fraction of demand, keyed by a region-or-group :math:`r` and a
+technology-or-group :math:`t`.  For example, a value of 0.2 requires that
 credited capacity be at least 120% of demand.  Demand is estimated from production
 by time slice.  Any exchange region (e.g. ``r1-r2``) where exactly one endpoint
 connects to the region or group is automatically included in the
@@ -836,7 +836,7 @@ or solar) receives a lower value.
 operating_reserve_margin
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{ORM}_{r_g \in R, t_g \in T}`
+:math:`{ORM}_{r \in R, t \in T}`
 
 The dynamic counterpart to :code:`planning_reserve_margin`, indexed the same
 way by region-or-group and technology-or-group. Rather than crediting
