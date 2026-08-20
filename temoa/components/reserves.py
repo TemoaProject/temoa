@@ -142,7 +142,8 @@ def initialize_reserve_margins(model: TemoaModel) -> None:
             else:
                 logger.info(
                     'Planning reserve margin %s has no contributors in period %s',
-                    ((r_g, t_g), p),
+                    (r_g, t_g),
+                    p,
                 )
 
         if not any(
