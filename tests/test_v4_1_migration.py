@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from temoa.utilities.migrate_v4_to_v4_1 import migrate_database, migrate_sql_dump
+
 REPO_ROOT = Path(__file__).parents[1]
 UTILITIES_DIR = REPO_ROOT / 'temoa' / 'utilities'
 SCHEMA_V4 = REPO_ROOT / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
@@ -149,6 +151,35 @@ def test_v4_1_migration_sql(tmp_path: Path) -> None:
         ],
         check=True,
     )
+
+    with contextlib.closing(sqlite3.connect(':memory:')) as conn:
+        conn.executescript(sql_v4_1.read_text())
+        _verify_migrated_db(conn)
+
+
+def test_v4_1_migration_db_inthread(tmp_path: Path) -> None:
+    """In-process variant of test_v4_1_migration_db for coverage."""
+    db_v4 = _make_v4_db(tmp_path)
+    db_v4_1 = tmp_path / 'test_v4_1.sqlite'
+
+    migrate_database(db_v4, SCHEMA_V4_1, db_v4_1)
+
+    with contextlib.closing(sqlite3.connect(db_v4_1)) as conn:
+        _verify_migrated_db(conn)
+
+
+def test_v4_1_migration_sql_inthread(tmp_path: Path) -> None:
+    """In-process variant of test_v4_1_migration_sql for coverage."""
+    db_v4 = _make_v4_db(tmp_path)
+
+    sql_v4 = tmp_path / 'test_v4.sql'
+    with open(sql_v4, 'w') as f:
+        with contextlib.closing(sqlite3.connect(db_v4)) as conn:
+            for line in conn.iterdump():
+                f.write(line + '\n')
+
+    sql_v4_1 = tmp_path / 'test_v4_1.sql'
+    migrate_sql_dump(sql_v4, SCHEMA_V4_1, sql_v4_1)
 
     with contextlib.closing(sqlite3.connect(':memory:')) as conn:
         conn.executescript(sql_v4_1.read_text())
