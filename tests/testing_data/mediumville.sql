@@ -141,7 +141,7 @@ REPLACE INTO "loan_lifetime_process" VALUES('B', 'GeoThermal', 2025, 10.0, NULL,
 REPLACE INTO "loan_lifetime_process" VALUES('A-B', 'FGF_pipe', 2025, 10.0, NULL, NULL);
 REPLACE INTO "loan_lifetime_process" VALUES('B-A', 'FGF_pipe', 2025, 10.0, NULL, NULL);
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',4.2000000000000004e-01,'');
 REPLACE INTO "operator" VALUES('e','equal to');

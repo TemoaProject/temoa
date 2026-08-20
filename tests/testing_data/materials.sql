@@ -330,7 +330,7 @@ REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2010,'diesel','CAR
 REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2020,'electricity','CAR_PHEV','le',0.2,'');
 REPLACE INTO "limit_tech_input_split_annual" VALUES('regionB',2020,'diesel','CAR_PHEV','le',0.8,NULL);
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'Discount Rate for future costs');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "operator" VALUES('e','equal to');

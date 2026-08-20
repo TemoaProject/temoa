@@ -1,5 +1,5 @@
 REPLACE INTO metadata VALUES('DB_MAJOR',4,'');
-REPLACE INTO metadata VALUES('DB_MINOR',0,'');
+REPLACE INTO metadata VALUES('DB_MINOR',1,'');
 REPLACE INTO metadata_real VALUES('global_discount_rate',0.05000000000000000277,'Discount Rate for future costs');
 REPLACE INTO metadata_real VALUES('default_loan_rate',0.05000000000000000277,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO sector_label VALUES('energy',NULL);

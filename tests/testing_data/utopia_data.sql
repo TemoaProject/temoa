@@ -414,7 +414,7 @@ REPLACE INTO "limit_tech_output_split" VALUES('utopia',1990,'SRE','GSL','ge',0.3
 REPLACE INTO "limit_tech_output_split" VALUES('utopia',2000,'SRE','GSL','ge',0.3,'');
 REPLACE INTO "limit_tech_output_split" VALUES('utopia',2010,'SRE','GSL','ge',0.3,'');
 REPLACE INTO "metadata" VALUES('DB_MAJOR',4,'');
-REPLACE INTO "metadata" VALUES('DB_MINOR',0,'');
+REPLACE INTO "metadata" VALUES('DB_MINOR',1,'');
 REPLACE INTO "metadata_real" VALUES('default_loan_rate',0.05,'Default Loan Rate if not specified in loan_rate table');
 REPLACE INTO "metadata_real" VALUES('global_discount_rate',0.05,'');
 REPLACE INTO "operator" VALUES('e','equal to');
