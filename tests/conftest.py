@@ -7,6 +7,7 @@ import pytest
 from _pytest.config import Config
 from pyomo.opt import SolverResults
 
+from temoa.__about__ import DB_SCHEMA
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
@@ -37,7 +38,7 @@ logging.getLogger('pyutilib').setLevel(logging.WARNING)
 # Central paths
 TEST_DATA_PATH = Path(__file__).parent / 'testing_data'
 TEST_OUTPUT_PATH = Path(__file__).parent / 'testing_outputs'
-SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / 'temoa_schema_v4_1.sql'
+SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / DB_SCHEMA
 
 
 def _build_test_db(
