@@ -11,7 +11,7 @@ import typer
 from rich.logging import RichHandler
 from rich.text import Text
 
-from temoa.__about__ import __version__
+from temoa.__about__ import DB_SCHEMA, __version__
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
@@ -137,7 +137,7 @@ def _cite_callback(value: bool) -> None:
 def get_default_schema() -> Path:
     """Get the default path to the v4 schema file, handling both installed and development cases."""
     try:
-        schema_path = resources.files('temoa.db_schema') / 'temoa_schema_v4.sql'
+        schema_path = resources.files('temoa.db_schema') / DB_SCHEMA
 
         if not schema_path.is_file():
             raise FileNotFoundError(
@@ -149,7 +149,7 @@ def get_default_schema() -> Path:
         # The fallback for development needs to reflect the current repository structure
         # assuming `cli.py` is in `temoa/` and `db_schema/` is a sibling of `cli.py` within
         # `temoa/`.
-        fallback_path = Path(__file__).parent / 'db_schema' / 'temoa_schema_v4.sql'
+        fallback_path = Path(__file__).parent / 'db_schema' / DB_SCHEMA
         if fallback_path.is_file():
             logger.warning(
                 'Using fallback schema path: %s. '
@@ -573,7 +573,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         config_resource = base / 'config_sample.toml'
         sql_resource = base / 'utopia.sql'
         mc_settings_resource = base / 'mc_settings.csv'
-        schema_resource = resources.files('temoa.db_schema') / 'temoa_schema_v4.sql'
+        schema_resource = resources.files('temoa.db_schema') / DB_SCHEMA
 
         # Copy configuration file
         with config_resource.open('rb') as source:
@@ -612,7 +612,7 @@ def _copy_tutorial_resources(target_config: Path, target_database: Path) -> None
         fallback_config = Path(__file__).parent / 'tutorial_assets' / 'config_sample.toml'
         fallback_sql = Path(__file__).parent / 'tutorial_assets' / 'utopia.sql'
         fallback_mc = Path(__file__).parent / 'tutorial_assets' / 'mc_settings.csv'
-        fallback_schema = Path(__file__).parent / 'db_schema' / 'temoa_schema_v4.sql'
+        fallback_schema = Path(__file__).parent / 'db_schema' / DB_SCHEMA
 
         if not fallback_config.exists():
             raise FileNotFoundError(
