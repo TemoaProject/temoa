@@ -20,8 +20,6 @@ from pyomo.environ import value
 from temoa.components.utils import get_adjusted_existing_capacity
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from temoa.core.model import TemoaModel
     from temoa.types import Period, Region, Technology, Vintage
 
@@ -32,13 +30,11 @@ logger = getLogger(__name__)
 # ============================================================================
 
 
-def gather_group_techs(model: TemoaModel, t_or_g: Technology) -> Iterable[Technology]:
+def gather_group_techs(model: TemoaModel, t_or_g: Technology) -> set[Technology]:
     if t_or_g in model.tech_group_names:
-        return model.tech_group_members[t_or_g]
-    elif '+' in t_or_g:
-        return [cast('Technology', tech) for tech in t_or_g.split('+')]
+        return set(model.tech_group_members[t_or_g])
     else:
-        return (t_or_g,)
+        return {t_or_g}
 
 
 # ============================================================================

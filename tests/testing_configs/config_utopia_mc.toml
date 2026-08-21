@@ -11,7 +11,6 @@ solver_name = "appsi_highs"
 
 time_sequencing = 'seasonal_timeslices'
 days_per_period = 365
-reserve_margin = 'static'
 
 [monte_carlo]
 run_settings = "tests/testing_data/mc_settings_utopia.csv"
