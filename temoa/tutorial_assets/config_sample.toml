@@ -87,7 +87,7 @@ solver_name = "appsi_highs"
 save_excel = true
 
 # save the duals in the output Database (may slow execution slightly?)
-save_duals = true
+save_duals = false
 
 # save storage levels by time slice (may be a large amount of data)
 save_storage_levels = true
