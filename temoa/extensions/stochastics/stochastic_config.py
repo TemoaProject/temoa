@@ -33,7 +33,6 @@ class StochasticConfig:
     perturbations: list[Perturbation] = field(default_factory=list)
     solver_options: dict[str, Any] = field(default_factory=dict)
 
-
     @classmethod
     def from_toml(cls, path: Path) -> Self:
         with open(path, 'rb') as f:

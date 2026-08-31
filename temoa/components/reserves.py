@@ -13,9 +13,9 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, Expression, value
 
-from .utils import get_capacity_factor, get_variable_efficiency
+from .utils import get_available_output, get_variable_efficiency
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -45,66 +45,15 @@ def reserve_margin_indices(model: TemoaModel) -> set[tuple[Region, Period, Seaso
 # ============================================================================
 
 
-def reserve_margin_dynamic(
+def _available_activity_dynamic(
     model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
-) -> ExprLike:
-    r"""
-    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
-    are calculated from availability of generation in each hour—like an operating reserve margin—\
-    accounting for a capacity derate factor subtracting, for example, forced outage due to icing.
-
-    .. math::
-        :label: reserve_margin_dynamic
-
-            &\sum_{t \in T^{res} \setminus T^{x} \setminus T^s,\ V} CFP_{r,s^*,d^*,t,v}\
-                \cdot RCD_{r,s^*,t,v}\
-                \cdot \mathbf{CAP}_{r,p,t,v} \cdot SEG_{s^*,d^*}\
-                \cdot C2A_{r,t} \\
-            &+ \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r_i - r, s^*, d^*, t, v}\
-                \cdot RCD_{r_i - r, s^*, t, v}\
-                \cdot \mathbf{CAP}_{r_i - r,p,t,v} \cdot SEG_{s^*,d^*}\
-                \cdot C2A_{r_i - r, t} \\
-            &- \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r - r_i, s^*, d^*, t, v}\
-                \cdot RCD_{r - r_i, s^*, t, v}\
-                \cdot \mathbf{CAP}_{r - r_i,p,t,v}\
-                \cdot SEG_{s^*,d^*} \cdot C2A_{r - r_i, t} \\
-            &+ \sum_{t \in (T^s \cap T^{res}), V, I, O} \
-                \left(\
-                \mathbf{FO}_{r,p,s,d,i,t,v,o} - \mathbf{FI}_{r,p,s,d,i,t,v,o}\
-                \right)\
-                \cdot RCD_{r,s,t,v} \\
-            &\geq\
-                \left[\
-                \sum_{t \in T^{res} \setminus T^{x} \setminus T^a, V, I, O}\
-                \mathbf{FO}_{r, p, s, d, i, t, v, o}\
-                \right. \\
-            &+ \sum_{t \in T^{res} \cap T^a, V, I, O}
-                \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
-                SEG_{s,d} & \text{otherwise} \end{cases}
-                \cdot \mathbf{FOA}_{r, p, i, t, v, o} \\
-            &+ \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
-                \mathbf{FO}_{r_i - r, p, s, d, i, t, v, o} \\
-            &- \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
-                \mathbf{FI}_{r - r_i, p, s, d, i, t, v, o} \\
-            &- \left. \sum_{t \in T^{res} \cap T^{s}, V, I, O} \
-                \mathbf{FI}_{r, p, s, d, i, t, v, o} \right] \cdot (1 + PRM_r) \\
-            \\
-            &\qquad \qquad \forall \{r, p, s, d\} \in \
-            \Theta_{\text{ReserveMargin}} \text{ and } \forall r_i \in R
-    """
-    if (not model.tech_reserve) or (
-        (r, p) not in model.process_reserve_periods
-    ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
-        return Constraint.Skip
+) -> Expression:
 
     # Everything but storage and exchange techs
     # Derated available generation
     available = sum(
-        model.v_capacity[r, p, t, v]
+        get_available_output(model, r, p, s, d, t, v)
         * value(model.reserve_capacity_derate[r, s, t, v])
-        * get_capacity_factor(model, r, s, d, t, v)
-        * value(model.capacity_to_activity[r, t])
-        * value(model.segment_fraction[s, d])
         for (t, v) in model.process_reserve_periods[r, p]
         if t not in model.tech_uncap and t not in model.tech_storage
     )
@@ -144,85 +93,28 @@ def reserve_margin_dynamic(
             continue
         r1, r2 = r1r2.split('-')
 
+        output = sum(
+            get_available_output(model, r1r2, p, s, d, t, v)
+            * value(model.reserve_capacity_derate[r1r2, s, t, v])
+            for (t, v) in model.process_reserve_periods[r1r2, p]
+        )
+
         # Only consider exchange technologies connecting to this region
         if r2 == r:
             # Add the firm capacity commitment TO this region
             # (this region was guaranteed an import of power)
-            available += sum(
-                model.v_capacity[r1r2, p, t, v]
-                * value(model.reserve_capacity_derate[r1r2, s, t, v])
-                * get_capacity_factor(model, r1r2, s, d, t, v)
-                * value(model.capacity_to_activity[r1r2, t])
-                * value(model.segment_fraction[s, d])
-                for (t, v) in model.process_reserve_periods[r1r2, p]
-            )
+            available += output
         elif r1 == r:
             # Subtract the firm capacity commitment FROM this region
             # (this region guaranteed an export of power)
-            available -= sum(
-                model.v_capacity[r1r2, p, t, v]
-                * value(model.reserve_capacity_derate[r1r2, s, t, v])
-                * get_capacity_factor(model, r1r2, s, d, t, v)
-                * value(model.capacity_to_activity[r1r2, t])
-                * value(model.segment_fraction[s, d])
-                for (t, v) in model.process_reserve_periods[r1r2, p]
-            )
+            available -= output
 
     return available
 
 
-def reserve_margin_static(
+def _available_activity_static(
     model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
-) -> ExprLike:
-    r"""
-
-    During each period :math:`p`, the sum of capacity values of all reserve
-    technologies :math:`\sum_{t \in T^{res}} \textbf{CAP}_{r,p,t,v}`, which are
-    defined in the set :math:`\textbf{T}^{res}`, should exceed the peak load by
-    :math:`PRM`, the regional reserve margin. Note that the reserve
-    margin is expressed in percentage of the peak load. Generally speaking, in
-    a database we may not know the peak demand before running the model, therefore,
-    we write this equation for all the time-slices defined in the database in each region.
-    Each generator is allowed to contribute its available capacity times a pre-defined
-    capacity credit, :math:`CC_{r,p,t,v}`.
-
-    For exchange technologies (i.e., inter-regional transmission), reserve contributions
-    are added to the downstream region but *subtracted* from the upstream region. This is
-    because, since they are not generating any power, their summed contribution across
-    regions should be zero.
-
-    .. math::
-        :label: reserve_margin_static
-
-            &\sum_{t \in T^{res} \setminus T^{x}, V} {CC_{r,p,t,v}
-            \cdot \textbf{CAP}_{r,p,t,v} \cdot
-            SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
-            &+ \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r_i-r,p,t,v}
-            \cdot \textbf{CAP}_{r_i-r,p,t,v} \cdot
-            SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
-            &- \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r-r_i,p,t,v}
-            \cdot \textbf{CAP}_{r-r_i,p,t,v} \cdot
-            SEG_{s^*,d^*} \cdot C2A_{r-r_i,t} }\\
-            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x} \setminus T^a,V,I,O }
-            \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
-            &+ \sum_{ t \in T^{res} \cap T^a,V,I,O }
-            \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
-            SEG_{s,d} & \text{otherwise} \end{cases}
-            \cdot \textbf{FOA}_{r, p, i, t, v, o}\\
-            &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
-            &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
-            &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}
-            \right]
-            \cdot (1 + PRM_r)\\
-
-            \\
-            &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall
-            r_i \in R
-    """
-    if (not model.tech_reserve) or (
-        (r, p) not in model.process_reserve_periods
-    ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
-        return Constraint.Skip
+) -> Expression:
 
     available = sum(
         value(model.capacity_credit[r, p, t, v])
@@ -276,27 +168,9 @@ def reserve_margin_static(
     return available
 
 
-# ============================================================================
-# PYOMO CONSTRAINT RULE
-# ============================================================================
-
-
-def reserve_margin_constraint(
+def _required_available_activity(
     model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
 ) -> ExprLike:
-    # Get available generation in this time slice depending on method specified in config file
-    match model.reserve_margin_method.first():
-        case 'static':
-            available = reserve_margin_static(model, r, p, s, d)
-        case 'dynamic':
-            available = reserve_margin_dynamic(model, r, p, s, d)
-        case _:
-            msg = (
-                f"Invalid reserve margin parameter '{model.reserve_margin_method.first()}'. "
-                'Check the config file.'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
 
     # In most Temoa input databases, demand is endogenous, so we use electricity
     # generation instead as a proxy for electricity demand.
@@ -367,4 +241,136 @@ def reserve_margin_constraint(
             )
 
     requirement = total_generation * (1 + value(model.planning_reserve_margin[r]))
-    return available >= requirement
+    return requirement
+
+
+# ============================================================================
+# PYOMO CONSTRAINT RULE
+# ============================================================================
+
+
+def reserve_margin_dynamic(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
+) -> Constraint:
+    r"""
+    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
+    are calculated from availability of generation in each hour—like an operating reserve margin—\
+    accounting for a capacity derate factor subtracting, for example, forced outage due to icing.
+
+    .. math::
+        :label: reserve_margin_dynamic
+
+            &\sum_{t \in T^{res} \setminus T^{x} \setminus T^s,\ V} CFP_{r,s^*,d^*,t,v}\
+                \cdot RCD_{r,s^*,t,v}\
+                \cdot \mathbf{CAP}_{r,p,t,v} \cdot SEG_{s^*,d^*}\
+                \cdot C2A_{r,t} \\
+            &+ \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r_i - r, s^*, d^*, t, v}\
+                \cdot RCD_{r_i - r, s^*, t, v}\
+                \cdot \mathbf{CAP}_{r_i - r,p,t,v} \cdot SEG_{s^*,d^*}\
+                \cdot C2A_{r_i - r, t} \\
+            &- \sum_{t \in T^{res} \cap T^{x} \setminus T^s,\ V} CFP_{r - r_i, s^*, d^*, t, v}\
+                \cdot RCD_{r - r_i, s^*, t, v}\
+                \cdot \mathbf{CAP}_{r - r_i,p,t,v}\
+                \cdot SEG_{s^*,d^*} \cdot C2A_{r - r_i, t} \\
+            &+ \sum_{t \in (T^s \cap T^{res}), V, I, O} \
+                \left(\
+                \mathbf{FO}_{r,p,s,d,i,t,v,o} - \mathbf{FI}_{r,p,s,d,i,t,v,o}\
+                \right)\
+                \cdot RCD_{r,s,t,v} \\
+            &\geq\
+                \left[\
+                \sum_{t \in T^{res} \setminus T^{x} \setminus T^a, V, I, O}\
+                \mathbf{FO}_{r, p, s, d, i, t, v, o}\
+                \right. \\
+            &+ \sum_{t \in T^{res} \cap T^a, V, I, O}
+                \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
+                SEG_{s,d} & \text{otherwise} \end{cases}
+                \cdot \mathbf{FOA}_{r, p, i, t, v, o} \\
+            &+ \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
+                \mathbf{FO}_{r_i - r, p, s, d, i, t, v, o} \\
+            &- \sum_{t \in T^{res} \cap T^{x}, V, I, O} \
+                \mathbf{FI}_{r - r_i, p, s, d, i, t, v, o} \\
+            &- \left. \sum_{t \in T^{res} \cap T^{s}, V, I, O} \
+                \mathbf{FI}_{r, p, s, d, i, t, v, o} \right] \cdot (1 + PRM_r) \\
+            \\
+            &\qquad \qquad \forall \{r, p, s, d\} \in \
+            \Theta_{\text{ReserveMargin}} \text{ and } \forall r_i \in R
+    """
+    return _available_activity_dynamic(model, r, p, s, d) >= _required_available_activity(
+        model, r, p, s, d
+    )
+
+
+def reserve_margin_static(
+    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
+) -> Constraint:
+    r"""
+    During each period :math:`p`, the sum of capacity values of all reserve
+    technologies :math:`\sum_{t \in T^{res}} \textbf{CAP}_{r,p,t,v}`, which are
+    defined in the set :math:`\textbf{T}^{res}`, should exceed the peak load by
+    :math:`PRM`, the regional reserve margin. Note that the reserve
+    margin is expressed in percentage of the peak load. Generally speaking, in
+    a database we may not know the peak demand before running the model, therefore,
+    we write this equation for all the time-slices defined in the database in each region.
+    Each generator is allowed to contribute its available capacity times a pre-defined
+    capacity credit, :math:`CC_{r,p,t,v}`.
+
+    For exchange technologies (i.e., inter-regional transmission), reserve contributions
+    are added to the downstream region but *subtracted* from the upstream region. This is
+    because, since they are not generating any power, their summed contribution across
+    regions should be zero.
+
+    .. math::
+        :label: reserve_margin_static
+
+            &\sum_{t \in T^{res} \setminus T^{x}, V} {CC_{r,p,t,v}
+            \cdot \textbf{CAP}_{r,p,t,v} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r,t} }\\
+            &+ \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r_i-r,p,t,v}
+            \cdot \textbf{CAP}_{r_i-r,p,t,v} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r_i-r,t} }\\
+            &- \sum_{t \in T^{res} \cap T^{x}, V} {CC_{r-r_i,p,t,v}
+            \cdot \textbf{CAP}_{r-r_i,p,t,v} \cdot
+            SEG_{s^*,d^*} \cdot C2A_{r-r_i,t} }\\
+            &\geq \left [ \sum_{ t \in T^{res} \setminus T^{x} \setminus T^a,V,I,O }
+            \textbf{FO}_{r, p, s, d, i, t, v, o}\right.\\
+            &+ \sum_{ t \in T^{res} \cap T^a,V,I,O }
+            \begin{cases} DSD_{r,s,d,o} & \text{if } o \in C^d \\
+            SEG_{s,d} & \text{otherwise} \end{cases}
+            \cdot \textbf{FOA}_{r, p, i, t, v, o}\\
+            &+ \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FO}_{r_i-r, p, s, d, i, t, v, o}\\
+            &- \sum_{ t \in T^{res} \cap T^{x},V,I,O } \textbf{FI}_{r-r_i, p, s, d, i, t, v, o}\\
+            &- \left.\sum_{ t \in T^{res} \cap T^{s},V,I,O } \textbf{FI}_{r, p, s, d, i, t, v, o}
+            \right]
+            \cdot (1 + PRM_r)\\
+
+            \\
+            &\qquad\qquad\forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}} \text{and} \forall
+            r_i \in R
+    """
+    return _available_activity_static(model, r, p, s, d) >= _required_available_activity(
+        model, r, p, s, d
+    )
+
+
+def reserve_margin_constraint(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+) -> ExprLike:
+    """Returns the appropriate reserve margin constraint rule."""
+    if (not model.tech_reserve) or (
+        (r, p) not in model.process_reserve_periods
+    ):  # If reserve set empty or if r,p not in M.processReservePeriod, skip the constraint
+        return Constraint.Skip
+    mode = model.reserve_margin_method.first()
+    if mode == 'dynamic':
+        return reserve_margin_dynamic(model, r, p, s, d)
+    elif mode == 'static':
+        return reserve_margin_static(model, r, p, s, d)
+    else:
+        raise ValueError(
+            f"Invalid reserve margin method: {mode}. Must be either 'dynamic' or 'static'."
+        )

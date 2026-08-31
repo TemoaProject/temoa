@@ -1,6 +1,5 @@
-"""
+""" """
 
-"""
 from __future__ import annotations
 
 from collections import defaultdict, namedtuple
@@ -25,8 +24,6 @@ RowData = namedtuple('RowData', ['run', 'param_name', 'indices', 'adjustment', '
 """cleaned and converted tuple from data in a row of the csv file"""
 ChangeRecord = namedtuple('ChangeRecord', ['param_name', 'param_index', 'old_value', 'new_value'])
 """a record of a data element change, for an element acted on by a Tweak"""
-
-
 
 
 class Tweak:
@@ -235,9 +232,11 @@ class MCRunFactory:
                 "Monte Carlo mode requires 'run_settings' path in 'monte_carlo_inputs'."
             )
 
-        self.settings_file = Path(cast(str, settings_path))
+        self.settings_file = Path(cast('str', settings_path))
         if not self.settings_file.exists():
-            raise FileNotFoundError(f'Monte Carlo run settings file not found: {self.settings_file}')
+            raise FileNotFoundError(
+                f'Monte Carlo run settings file not found: {self.settings_file}'
+            )
 
     def prescreen_input_file(self) -> bool:
         """
@@ -330,9 +329,7 @@ class MCRunFactory:
             )
         raw_indices = param_data.keys()
         matches = [
-            k
-            for k in raw_indices
-            if all(k[idx] == target_index[idx] for idx in non_wildcard_locs)
+            k for k in raw_indices if all(k[idx] == target_index[idx] for idx in non_wildcard_locs)
         ]
         return matches
 

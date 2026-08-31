@@ -181,7 +181,6 @@ REPLACE INTO "technology_type" VALUES('pb','baseload production technology');
 REPLACE INTO "technology_type" VALUES('ps','storage production technology');
 REPLACE INTO "time_of_day" VALUES(1,'d1',12,NULL);
 REPLACE INTO "time_of_day" VALUES(2,'d2',12,NULL);
-REPLACE INTO "time_period" VALUES(1,2020,'e');
 REPLACE INTO "time_period" VALUES(2,2025,'f');
 REPLACE INTO "time_period" VALUES(3,2030,'f');
 REPLACE INTO "time_period_type" VALUES('e','existing vintages');
