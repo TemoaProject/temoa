@@ -158,12 +158,12 @@ from temoa import TemoaModel, TemoaConfig, TemoaMode
 
 # Create configuration
 config = TemoaConfig(
-    scenario="my_scenario",
+    scenario='my_scenario',
     scenario_mode=TemoaMode.PERFECT_FORESIGHT,
-    input_database=Path("path/to/input.db"),
-    output_database=Path("path/to/output.db"),
-    output_path=Path("path/to/output"),
-    solver_name="appsi_highs"
+    input_database=Path('path/to/input.db'),
+    output_database=Path('path/to/output.db'),
+    output_path=Path('path/to/output'),
+    solver_name='appsi_highs',
 )
 
 # Build and solve model
@@ -172,9 +172,9 @@ result = model.run()  # Equivalent to: temoa run tutorial_config.toml
 
 # Check if run was successful
 if result:
-    print("Model solved successfully!")
+    print('Model solved successfully!')
 else:
-    print("Model failed to solve")
+    print('Model failed to solve')
 ```
 
 ## Database Setup
