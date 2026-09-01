@@ -552,6 +552,9 @@ class TemoaModel(AbstractModel):
             default=capacity.get_default_capacity_factor,
         )
 
+        self.capacity_annual_constraint_rptv = Set(
+            dimen=4, initialize=capacity.capacity_annual_constraint_indices
+        )
         self.capacity_constraint_rpsdtv = Set(
             dimen=6, initialize=capacity.capacity_constraint_indices
         )
@@ -847,10 +850,6 @@ class TemoaModel(AbstractModel):
         # Declare constraints to calculate derived decision variables
         self.capacity_constraint = Constraint(
             self.capacity_constraint_rpsdtv, rule=capacity.capacity_constraint
-        )
-
-        self.capacity_annual_constraint_rptv = Set(
-            dimen=4, initialize=capacity.capacity_annual_constraint_indices
         )
         self.capacity_annual_constraint = Constraint(
             self.capacity_annual_constraint_rptv, rule=capacity.capacity_annual_constraint

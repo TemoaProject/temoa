@@ -204,10 +204,21 @@ def regional_exchange_capacity_constraint_indices(
 def capacity_annual_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage]]:
+    # Optimisation: We use the capacity annual constraint if the tech is annual
+    # so we only have one capacity constraint per process per period.
+    # Exceptions:
+    #   - Techs with capacity factor tech/process constraints (timeslice-level constraints)
+    #   - Feeds a defined DSD (will have variable output due to DSD shape)
+    cf_techs = {t for _r, _s, _d, t in model.capacity_factor_tech.sparse_iterkeys()}
+    cf_techs = cf_techs | {
+        t for _r, _s, _d, t, _v in model.capacity_factor_process.sparse_iterkeys()
+    }
     return {
         (r, p, t, v)
         for r, p, t, v in model.active_capacity_rptv
-        if t in model.tech_annual and t not in model.tech_demand
+        if t in model.tech_annual
+        and t not in cf_techs
+        and not any(o in model.commodity_dsd for o in model.process_outputs[r, p, t, v])
     }
 
 
@@ -217,9 +228,9 @@ def capacity_constraint_indices(
     return {
         (r, p, s, d, t, v)
         for r, p, t, v in model.active_capacity_rptv
+        if (r, p, t, v) not in model.capacity_annual_constraint_rptv
         for s in model.time_season
         for d in model.time_of_day
-        if t not in model.tech_annual or t in model.tech_demand
         if t not in model.tech_storage
     }
 
