@@ -315,6 +315,7 @@ class TemoaModel(AbstractModel):
             initialize=self.commodity_carrier | self.commodity_emissions,
             validate=no_slash_or_pipe,
         )
+        self.commodity_dsd = Set()  # time-varying demands (not flatlined)
 
         ################################################
         #              Model Parameters                #
