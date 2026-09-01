@@ -224,7 +224,6 @@ def demand_constraint(model: TemoaModel, r: Region, p: Period, dem: Commodity) -
     return expr
 
 
-# devnote: no longer needed
 def demand_activity_constraint(
     model: TemoaModel,
     r: Region,
