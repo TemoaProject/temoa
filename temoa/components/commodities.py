@@ -760,6 +760,9 @@ def create_demands(model: TemoaModel) -> None:
             # Remaining checks would be caught by the validation of segment_fraction so skip
             continue
 
+        # Time-varying demands
+        model.commodity_dsd.add(dem)
+
         # If any subset of timeslices missing, inform the user. Not technically a problem
         # (will just default to zero) but likely not intended behaviour.
         if len(keys) != expected_key_length:
