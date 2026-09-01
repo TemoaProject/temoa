@@ -209,10 +209,8 @@ def capacity_annual_constraint_indices(
     # Exceptions:
     #   - Techs with capacity factor tech/process constraints (timeslice-level constraints)
     #   - Feeds a defined DSD (will have variable output due to DSD shape)
-    cf_techs = {t for _r, _s, _d, t in model.capacity_factor_tech.sparse_iterkeys()}
-    cf_techs = cf_techs | {
-        t for _r, _s, _d, t, _v in model.capacity_factor_process.sparse_iterkeys()
-    }
+    cf_techs = {t for _r, _s, _d, t in model.capacity_factor_tech.sparse_keys()}
+    cf_techs = cf_techs | {t for _r, _s, _d, t, _v in model.capacity_factor_process.sparse_keys()}
     return {
         (r, p, t, v)
         for r, p, t, v in model.active_capacity_rptv
