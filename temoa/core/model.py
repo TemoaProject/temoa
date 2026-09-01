@@ -297,7 +297,7 @@ class TemoaModel(AbstractModel):
         #        process, which is currently incapable of reducing initializations on retirements.
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
         #        it was the old storage_init constraint
-        self.tech_retirement = Set(within=self.tech_with_capacity)  # - M.tech_storage)
+        self.tech_retirement = Set(within=self.tech_with_capacity)
 
         self.validate_techs = BuildAction(rule=validate_tech_sets)
 
@@ -886,7 +886,6 @@ class TemoaModel(AbstractModel):
             self.demand_constraint_rpc, rule=commodities.demand_constraint
         )
 
-        # devnote: testing a workaround
         self.demand_activity_constraint_rpsdtv_dem = Set(
             dimen=7, initialize=commodities.demand_activity_constraint_indices
         )
@@ -908,10 +907,6 @@ class TemoaModel(AbstractModel):
             self.annual_commodity_balance_constraint_rpc,
             rule=commodities.annual_commodity_balance_constraint,
         )
-
-        # M.ResourceExtractionConstraint = Constraint(
-        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_constraint
-        # )
 
         self.baseload_diurnal_constraint_rpsdtv = Set(
             dimen=6, initialize=operations.baseload_diurnal_constraint_indices
