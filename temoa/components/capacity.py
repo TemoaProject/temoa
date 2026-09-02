@@ -207,15 +207,16 @@ def capacity_annual_constraint_indices(
     # Optimisation: We use the capacity annual constraint if the tech is annual
     # so we only have one capacity constraint per process per period.
     # Exceptions:
-    #   - Techs with capacity factor tech/process constraints (timeslice-level constraints)
-    #   - Feeds a defined DSD (will have variable output due to DSD shape)
-    cf_techs = {t for _r, _s, _d, t in model.capacity_factor_tech.sparse_keys()}
-    cf_techs = cf_techs | {t for _r, _s, _d, t, _v in model.capacity_factor_process.sparse_keys()}
+    #   - Has capacity factor tech/process constraints (which could be time-varying)
+    #   - Feeds a defined DSD (so could have variable output due to DSD shape)
+    cft_rt = {(r, t) for r, _s, _d, t in model.capacity_factor_tech.sparse_keys()}
+    cfp_rtv = {(r, t, v) for r, _s, _d, t, v in model.capacity_factor_process.sparse_keys()}
     return {
         (r, p, t, v)
         for r, p, t, v in model.active_capacity_rptv
         if t in model.tech_annual
-        and t not in cf_techs
+        and (r, t) not in cft_rt
+        and (r, t, v) not in cfp_rtv
         and not any(o in model.commodity_dsd for o in model.process_outputs[r, p, t, v])
     }
 
