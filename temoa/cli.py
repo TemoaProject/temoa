@@ -31,7 +31,7 @@ def _create_output_folder() -> Path:
     return output_path
 
 
-def _setup_logging(output_path: Path, debug: bool = False, silent: bool = False) -> None:
+def setup_logging(output_path: Path, debug: bool = False, silent: bool = False) -> None:
     """Set up logging with different levels for console and file."""
     # The root logger should be set to the most verbose level required by any handler.
     # The file handler will always be more verbose than the console in silent mode.
@@ -90,7 +90,7 @@ def _setup_sequencer(
     final_output_path.mkdir(parents=True, exist_ok=True)
 
     # Pass the silent flag to the logging setup
-    _setup_logging(final_output_path, debug=debug, silent=silent)
+    setup_logging(final_output_path, debug=debug, silent=silent)
 
     config = TemoaConfig.build_config(
         config_file=config_file, output_path=final_output_path, silent=silent
