@@ -1295,7 +1295,10 @@ For large models this can eliminate millions of redundant constraints, substanti
 reducing solver pre-processing time and memory use. Processes that feed any commodity
 present in :code:`commodity_dsd` (the set of demand commodities with a defined,
 non-trivial distribution) retain the timeslice-level constraints to preserve
-feasibility.
+feasibility. The same applies when a technology has a defined
+:code:`capacity_factor_tech` or :code:`capacity_factor_process`: even if the DSD is
+flat, those capacity factors can vary by season or time-of-day, and the resulting
+hourly capacity limits may still be structurally meaningful for the model.
 
 Constraints
 ~~~~~~~~~~~
