@@ -1044,7 +1044,7 @@ v_flow_out
 The most fundamental variable in the Temoa formulation is the
 :code:`v_flow_out` variable. It describes the commodity flow out of a
 process in a given time slice. To balance input and output flows in the
-:code:`CommodityBalance_constraint`, the commodity flow into a given
+:code:`commodity_balance_constraint`, the commodity flow into a given
 process can be calculated as
 :math:`\sum_{T, V, O} \textbf{FO}_{p, s, d, c, t, v, o}
 /EFF_{c,t,v,o}`.
@@ -1078,7 +1078,7 @@ the :code:`tech_flex` set allows for the overproduction of propane and
 kerosene, allowing the model to fulfill the endogenous demand
 for gasoline. This flexible technology designation activates a slack
 variable (:math:`\textbf{FLX}_{r, p, s, d, i, t, v, c}`)representing
-the excess production in the :code:`CommodityBalanceAnnual_constraint`.
+the excess production in the :code:`annual_commodity_balance_constraint`.
 
 
 v_flex_annual
@@ -1220,23 +1220,88 @@ Equations
 ---------
 
 There are four main equations that govern the flow of energy through the model
-network.  The :code:`Demand_Constrant` :eq:`Demand` ensures that the supply meets
-demand in every time slice.  For each process, the :code:`Capacity_constraint` :eq:`Capacity`
+network.  The :code:`demand_constraint` :eq:`Demand` ensures that the supply meets
+demand in every time slice.  For each process, the :code:`capacity_constraint` :eq:`Capacity`
 ensures that there is sufficient capacity to meet the optimal commodity flows across all
-time slices. Between processes, the :code:`CommodityBalance_constraint` :eq:`CommodityBalance`
+time slices. Between processes, the :code:`commodity_balance_constraint` :eq:`CommodityBalance`
 ensures that global commodity production across the energy system is sufficient to meet the
 endogenous demands for that commodity. Finally, the objective function :eq:`obj_invest` drives
 the model to minimize the system-wide cost of energy supply by optimizing the deployment and
 utilization of energy technologies across the system.
 
-One additional point regarding the model formulation. Technologies that
-produce constant annual output can be placed in the :code:`tech_annual` set.
-While not required, doing so improves computational performance by eliminating the
-season and time of day :code:`(s,d)` indices associated with these technologies.
-In order to ensure the model functions correctly with these simplified technologies,
-slightly different formulations of the capacity and commodity balance constraints
-are required. See the :code:`AnnualCommodityBalance_constraint` and
-:code:`CapacityAnnual_constraint` :eq:`CapacityAnnual` below for details.
+Two modelling features deserve additional explanation before the constraints are
+presented, as they significantly affect model size and must be used with care.
+
+Annual commodities (:math:`\text{C}^a`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Commodities flagged :code:`a` (or :code:`wa` for waste variants) belong to
+:code:`commodity_annual` and are balanced only at the *period* level by the
+:code:`annual_commodity_balance_constraint`, rather than at each individual
+timeslice. This can produce very large reductions in model size: every
+technology that consumes or produces an annual commodity loses its
+:code:`(s,d)` balance constraints for that flow.
+
+The trade-off is that annual commodities *decouple timeslice synchronisation*
+between the technologies upstream and downstream of that commodity. This is
+often intentional — for example, connecting an annual tech to a non-annual tech
+via an annual intermediate commodity lets the two sides of the network operate
+at different temporal resolutions without explicit time-aggregation constraints.
+However, the same decoupling can silently break physical consistency when
+synchronisation matters. A clear example is electricity: modelling an
+electricity carrier as annual would allow a generator and a load to be
+"balanced" over the year even if the generator only runs in summer and the load
+is in winter, which is physically meaningless. Annual commodities should
+therefore be reserved for carriers where within-year timing genuinely does not
+matter (e.g., fuel stocks, annual hydrogen allocations), or where the explicit
+goal is to abstract away timeslice detail for a portion of the network.
+
+Annual technologies (:code:`tech_annual`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Technologies that produce constant annual output can be placed in the
+:code:`tech_annual` set. While not required, doing so improves computational
+performance by eliminating the season and time of day :code:`(s,d)` indices
+associated with these technologies. Slightly different formulations of the
+capacity and commodity balance constraints are used for these technologies; see
+:code:`annual_commodity_balance_constraint` and :code:`capacity_annual_constraint`
+:eq:`CapacityAnnual` below for details.
+
+Annualised demand technologies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Technologies in :code:`tech_annual` that serve demand commodities are a common and
+important case. The DSD already pins the share of annual output delivered to each
+timeslice, and the :code:`demand_activity_constraint` locks all processes serving
+the same demand to the same proportional dispatch — so per-:code:`(s,d)` flow
+variables carry no additional information and can be dropped, saving a large number
+of variables and constraints. The *physical* output to each timeslice is still
+implicitly shaped by the DSD:
+even though the solver sees only a single annual flow variable, the
+:code:`demand_constraint` scales it by the DSD fraction to determine what must be
+delivered in each :code:`(s,d)`. The installed capacity must therefore be sufficient
+to meet the peak-DSD timeslice, not merely the annual average. For technologies with
+a non-flat DSD this binding timeslice constraint is preserved via the full
+:code:`capacity_constraint` :eq:`Capacity`.
+
+When an annual process's output demands all have a *flatline* DSD — that is, demand is
+distributed uniformly across all timeslices — the timeslice-level capacity constraint
+reduces exactly to the annual constraint: every timeslice imposes the same limit, so
+only one representative constraint is needed. Temoa exploits this: processes in
+:code:`tech_annual` whose outputs are all either non-demand commodities or demand
+commodities with a flatline DSD are assigned only the single
+:code:`capacity_annual_constraint`, omitting the full set of :code:`(s,d)` constraints.
+For large models this can eliminate millions of redundant constraints, substantially
+reducing solver pre-processing time and memory use. Processes that feed any commodity
+present in :code:`commodity_dsd` (the set of demand commodities with a defined,
+non-trivial distribution) retain the timeslice-level constraints to preserve
+feasibility. The same applies when a process has a defined
+:code:`capacity_factor_tech` or :code:`capacity_factor_process`: even if the DSD is
+flat, those capacity factors can vary by season or time-of-day, and the resulting
+hourly capacity limits may still be structurally meaningful for the model.
+
+Constraints
+~~~~~~~~~~~
 
 The rest of this section defines each model constraint, with a rationale for
 existence.  We use the implementation-specific names for the constraints to
@@ -1255,7 +1320,7 @@ constraint is only defined for the exact indices that the modeler specified.
 
 Capacity-Defining Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We begin with the :code:`Capacity_constraint` and :code:`CapacityAnnual_constraint`,
+We begin with the :code:`capacity_constraint` and :code:`capacity_annual_constraint`,
 which are particularly important because they define the relationship between
 installed capacity and allowable commodity flow.
 

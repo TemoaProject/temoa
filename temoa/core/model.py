@@ -297,7 +297,7 @@ class TemoaModel(AbstractModel):
         #        process, which is currently incapable of reducing initializations on retirements.
         # Note2: I think this has been fixed but I can't tell what the problem was. Suspect
         #        it was the old storage_init constraint
-        self.tech_retirement = Set(within=self.tech_with_capacity)  # - M.tech_storage)
+        self.tech_retirement = Set(within=self.tech_with_capacity)
 
         self.validate_techs = BuildAction(rule=validate_tech_sets)
 
@@ -315,6 +315,7 @@ class TemoaModel(AbstractModel):
             initialize=self.commodity_carrier | self.commodity_emissions,
             validate=no_slash_or_pipe,
         )
+        self.commodity_dsd = Set()  # time-varying demands (not flatlined)
 
         ################################################
         #              Model Parameters                #
@@ -551,6 +552,9 @@ class TemoaModel(AbstractModel):
             default=capacity.get_default_capacity_factor,
         )
 
+        self.capacity_annual_constraint_rptv = Set(
+            dimen=4, initialize=capacity.capacity_annual_constraint_indices
+        )
         self.capacity_constraint_rpsdtv = Set(
             dimen=6, initialize=capacity.capacity_constraint_indices
         )
@@ -847,10 +851,6 @@ class TemoaModel(AbstractModel):
         self.capacity_constraint = Constraint(
             self.capacity_constraint_rpsdtv, rule=capacity.capacity_constraint
         )
-
-        self.capacity_annual_constraint_rptv = Set(
-            dimen=4, initialize=capacity.capacity_annual_constraint_indices
-        )
         self.capacity_annual_constraint = Constraint(
             self.capacity_annual_constraint_rptv, rule=capacity.capacity_annual_constraint
         )
@@ -886,7 +886,6 @@ class TemoaModel(AbstractModel):
             self.demand_constraint_rpc, rule=commodities.demand_constraint
         )
 
-        # devnote: testing a workaround
         self.demand_activity_constraint_rpsdtv_dem = Set(
             dimen=7, initialize=commodities.demand_activity_constraint_indices
         )
@@ -908,10 +907,6 @@ class TemoaModel(AbstractModel):
             self.annual_commodity_balance_constraint_rpc,
             rule=commodities.annual_commodity_balance_constraint,
         )
-
-        # M.ResourceExtractionConstraint = Constraint(
-        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_constraint
-        # )
 
         self.baseload_diurnal_constraint_rpsdtv = Set(
             dimen=6, initialize=operations.baseload_diurnal_constraint_indices

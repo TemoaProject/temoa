@@ -224,7 +224,6 @@ def demand_constraint(model: TemoaModel, r: Region, p: Period, dem: Commodity) -
     return expr
 
 
-# devnote: no longer needed
 def demand_activity_constraint(
     model: TemoaModel,
     r: Region,
@@ -759,6 +758,9 @@ def create_demands(model: TemoaModel) -> None:
                 demand_specific_distribution[r, p, s, d, dem] = value(model.segment_fraction[s, d])
             # Remaining checks would be caught by the validation of segment_fraction so skip
             continue
+
+        # Time-varying demands
+        model.commodity_dsd.add(dem)
 
         # If any subset of timeslices missing, inform the user. Not technically a problem
         # (will just default to zero) but likely not intended behaviour.
