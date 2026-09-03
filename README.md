@@ -160,7 +160,7 @@ from temoa.core.modes import TemoaMode
 from temoa.cli import setup_logging
 from pyomo.environ import value, check_optimal_termination
 
-output_path = Path("output_files/my_run")
+output_path = Path('output_files/my_run')
 output_path.mkdir(parents=True, exist_ok=True)
 
 setup_logging(output_path, debug=False, silent=False)
@@ -173,35 +173,35 @@ logger = getLogger(__name__)
 
 # OPTION 1: build the config in code
 config = TemoaConfig(
-    scenario="zulu",
+    scenario='zulu',
     scenario_mode=TemoaMode.PERFECT_FORESIGHT,
-    time_sequencing="seasonal_timeslices",
-    input_database="tutorial_database.sqlite",
-    output_database="tutorial_database.sqlite",
-    solver_name="appsi_highs",
+    time_sequencing='seasonal_timeslices',
+    input_database='tutorial_database.sqlite',
+    output_database='tutorial_database.sqlite',
+    solver_name='appsi_highs',
     output_path=output_path,
     silent=False,
 )
 # OPTION 2: load the config from a file
 config = TemoaConfig.build_config(
-    config_file=Path("tutorial_config.toml"),
+    config_file=Path('tutorial_config.toml'),
     output_path=output_path,
     silent=False,
 )
 
 ts = TemoaSequencer(config=config)
-ts.start() # TemoaSequencer runs the model and handles results
+ts.start()  # TemoaSequencer runs the model and handles results
 
 # Results are saved to your output_database but can also be accessed in code, here
-solved_instance = ts.pf_solved_instance # solved Temoa instance with solution values
-solver_results = ts.pf_results # information from the solver
+solved_instance = ts.pf_solved_instance  # solved Temoa instance with solution values
+solver_results = ts.pf_results  # information from the solver
 
 # Example code usage of the solved instance and solver results
-logger.info(f"Solver results: {solver_results["solver"]}")
+logger.info(f'Solver results: {solver_results["solver"]}')
 if check_optimal_termination(solver_results):
-    logger.info(f"Model solved! Objective value: {value(solved_instance.total_cost):.2f}")
-    built_capacity = value(solved_instance.v_new_capacity["utopia", "E51", 2010])
-    logger.info(f"Built {built_capacity:.2f} GW of storage in 2010")
+    logger.info(f'Model solved! Objective value: {value(solved_instance.total_cost):.2f}')
+    built_capacity = value(solved_instance.v_new_capacity['utopia', 'E51', 2010])
+    logger.info(f'Built {built_capacity:.2f} GW of storage in 2010')
 ```
 
 ## Database Setup
