@@ -167,6 +167,10 @@ setup_logging(output_path, debug=False, silent=False)
 
 logger = getLogger(__name__)
 
+#  ======================================================================
+#  Choose ONE of the following two options for configuring the model run:
+#  ======================================================================
+
 # OPTION 1: build the config in code
 config = TemoaConfig(
     scenario="zulu",
@@ -186,8 +190,9 @@ config = TemoaConfig.build_config(
 )
 
 ts = TemoaSequencer(config=config)
-ts.start()
+ts.start() # TemoaSequencer runs the model and handles results
 
+# Results are saved to your output_database but can also be accessed in code, here
 solved_instance = ts.pf_solved_instance # solved Temoa instance with solution values
 solver_results = ts.pf_results # information from the solver
 
