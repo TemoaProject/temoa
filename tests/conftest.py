@@ -7,6 +7,7 @@ import pytest
 from _pytest.config import Config
 from pyomo.opt import SolverResults
 
+from temoa.__about__ import DB_SCHEMA
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
@@ -37,7 +38,7 @@ logging.getLogger('pyutilib').setLevel(logging.WARNING)
 # Central paths
 TEST_DATA_PATH = Path(__file__).parent / 'testing_data'
 TEST_OUTPUT_PATH = Path(__file__).parent / 'testing_outputs'
-SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / 'temoa_schema_v4.sql'
+SCHEMA_PATH = Path(__file__).parent.parent / 'temoa' / 'db_schema' / DB_SCHEMA
 
 
 def _build_test_db(
@@ -101,6 +102,7 @@ def refresh_databases() -> None:
         # Feature tests (separate for temporal consistency)
         ('emissions.sql', 'emissions.sqlite'),
         ('materials.sql', 'materials.sqlite'),
+        ('reserve_margins.sql', 'reserve_margins.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
         ('test_week.sql', 'test_week.sqlite'),

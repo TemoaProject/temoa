@@ -24,12 +24,13 @@ characteristics**.
    :widths: 15, 20, 25, 40
 
    ":math:`\text{C2A}_{r,t}`", ":code:`capacity_to_activity`", ":code:`capacity_to_activity`", "converts from capacity to activity units"
-   ":math:`\text{CC}_{r,p,t,v}`", ":code:`capacity_credit`", ":code:`capacity_credit`", "process-specific capacity credit used in the static reserve margin constraint"
+   ":math:`\text{PRC}_{r,t}`", ":code:`planning_reserve_credit`", ":code:`planning_reserve_credit`", "fraction of installed capacity that can be relied upon (default 0)"
    ":math:`\text{CFT}_{r,s,d,t}`", ":code:`capacity_factor_tech`", ":code:`capacity_factor_tech`", "technology-specific capacity factor"
    ":math:`\text{CFP}_{r,s,d,t,v}`", ":code:`capacity_factor_process`", ":code:`capacity_factor_process`", "process-specific capacity factor; allows capacity factor to change with technology vintage"
    ":math:`\text{ECAP}_{r,t,v}`", ":code:`existing_capacity`", ":code:`existing_capacity`", "installed capacity that exists prior to first model time period"
-   ":math:`\text{PRM}_{r}`", ":code:`planning_reserve_margin`", ":code:`planning_reserve_margin`", "planning reserve margin used to ensure sufficient generating capacity"
-   ":math:`\text{RCD}_{r,s,t,v}`", ":code:`reserve_capacity_derate`", ":code:`reserve_capacity_derate`", "capacity derate factor for dynamic reserve margin constraint"
+   ":math:`\text{PRM}_{r_g,t_g}`", ":code:`planning_reserve_margin`", ":code:`planning_reserve_margin`", "required excess of credited capacity above demand in each time slice, as a fraction of demand"
+   ":math:`\text{ORM}_{r_g,t_g}`", ":code:`operating_reserve_margin`", ":code:`operating_reserve_margin`", "required excess of available (derated) output above demand in each time slice, as a fraction of that demand"
+   ":math:`\text{ORD}_{r,s,t}`", ":code:`operating_reserve_derate`", ":code:`operating_reserve_derate`", "fraction of available output that can be relied upon in a given season (default 1)"
    ":math:`\text{RUH}_{r,t}`", ":code:`ramp_up_hourly`", ":code:`ramp_up_hourly`", "hourly rate at which generation techs can ramp output up"
    ":math:`\text{RDH}_{r,t}`", ":code:`ramp_down_hourly`", ":code:`ramp_down_hourly`", "hourly rate at which generation techs can ramp output down"
 
@@ -125,7 +126,6 @@ Parameters in the table below relate to the specification of **policy**.
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   "", ":code:`rps_requirement`", ":code:`renewable_portfolio_standard`", "**[Deprecated]** RPS requirements; use :code:`limit_activity_share` instead"
    ":math:`\text{LIT}_{r,t,e,t'}`", ":code:`linked_tech`", ":code:`linked_techs`", "dummy techs used to convert CO2 emissions to physical commodity"
 
 Parameters in the table below relate to the specification of **construction and

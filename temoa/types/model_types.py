@@ -105,7 +105,6 @@ class TemoaModelProtocol(Protocol):
     tech_all: Set
     tech_production: Set
     tech_storage: Set
-    tech_reserve: Set
     tech_exchange: Set
 
     # Commodity sets
@@ -176,7 +175,6 @@ if TYPE_CHECKING:
         tech_baseload: Set
         tech_annual: Set
         tech_storage: Set
-        tech_reserve: Set
         tech_exchange: Set
         tech_uncap: Set
         tech_with_capacity: Set

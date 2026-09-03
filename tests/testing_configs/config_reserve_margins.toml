@@ -1,0 +1,11 @@
+scenario = "reserve_margins"
+scenario_mode = "perfect_foresight"
+input_database = "tests/testing_outputs/reserve_margins.sqlite"
+output_database = "tests/testing_outputs/reserve_margins.sqlite"
+neos = false
+solver_name = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = true
+time_sequencing = "seasonal_timeslices"
+days_per_period = 365

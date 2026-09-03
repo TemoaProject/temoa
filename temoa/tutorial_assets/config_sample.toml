@@ -87,7 +87,7 @@ solver_name = "appsi_highs"
 save_excel = true
 
 # save the duals in the output Database (may slow execution slightly?)
-save_duals = true
+save_duals = false
 
 # save storage levels by time slice (may be a large amount of data)
 save_storage_levels = true
@@ -135,19 +135,6 @@ time_sequencing = 'seasonal_timeslices'
 # Used to adjust flow variables for number of days represented by each season.
 # E.g. 365 if all seasons collectively represent a year, 7 if modelling a single representative week.
 days_per_period = 365
-
-# How contributions to the planning reserve margin are calculated
-# Options:
-#   'static'
-#       Traditional planning reserve formulation. Contributions are independent of hourly availability:
-#                   capacity value = net capacity * capacity credit
-#   'dynamic'
-#       Contributions are available output including a capacity derate factor (e.g., forced outage rate).
-#       For most generators, contributions are available (derated) output in each time slice:
-#                   capacity value = net capacity * reserve capacity derate * capacity factor
-#       For storage, contributions are (derated) actual output in each time slice:
-#                   capacity value = flow out * reserve capacity derate
-reserve_margin = 'dynamic'
 
 # ------------------------------------
 #      SQLITE PERFORMANCE TUNING
