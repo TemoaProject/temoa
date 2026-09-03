@@ -140,7 +140,11 @@ class TemoaSequencer:
                 tune_sqlite_connection(con, self.config)
                 hybrid_loader = HybridLoader(db_connection=con, config=self.config)
                 data_portal = hybrid_loader.load_data_portal(myopic_index=None)
-                instance = build_instance(data_portal, silent=self.config.silent)
+                instance = build_instance(
+                    data_portal,
+                    silent=self.config.silent,
+                    extensions=self.config.extensions,
+                )
 
             logger.info('Model build process complete.')
             return instance
@@ -220,6 +224,7 @@ class TemoaSequencer:
                 silent=self.config.silent,
                 keep_lp_file=self.config.save_lp_file,
                 lp_path=self.config.output_path,
+                extensions=self.config.extensions,
             )
             if not self.config.price_check:
                 logger.warning('Price check is automatically enabled for CHECK mode.')
@@ -238,6 +243,7 @@ class TemoaSequencer:
                 silent=self.config.silent,
                 keep_lp_file=self.config.save_lp_file,
                 lp_path=self.config.output_path,
+                extensions=self.config.extensions,
             )
             if self.config.price_check:
                 price_checker(instance)

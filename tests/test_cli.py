@@ -12,7 +12,7 @@ runner = CliRunner()
 
 # Path to the configuration file template we will use for tests.
 TESTING_CONFIGS_DIR = Path(__file__).parent / 'testing_configs'
-UTOPIA_SQL_FIXTURE = Path(__file__).parent.parent / 'temoa' / 'tutorial_assets' / 'utopia.sql'
+UTOPIA_SQL_FIXTURE = Path(__file__).parent / 'testing_data' / 'utopia_v3.sql'
 UTOPIA_CONFIG_TEMPLATE = TESTING_CONFIGS_DIR / 'config_utopia.toml'
 
 

@@ -389,78 +389,6 @@ CREATE TABLE IF NOT EXISTS operator
 REPLACE INTO operator VALUES('e','equal to');
 REPLACE INTO operator VALUES('le','less than or equal to');
 REPLACE INTO operator VALUES('ge','greater than or equal to');
-CREATE TABLE IF NOT EXISTS limit_growth_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE IF NOT EXISTS limit_degrowth_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE IF NOT EXISTS limit_growth_new_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE IF NOT EXISTS limit_degrowth_new_capacity
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE IF NOT EXISTS limit_growth_new_capacity_delta
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
-CREATE TABLE IF NOT EXISTS limit_degrowth_new_capacity_delta
-(
-    region TEXT,
-    tech_or_group   TEXT,
-    operator TEXT NOT NULL DEFAULT "le"
-    	REFERENCES operator (operator),
-    rate   REAL NOT NULL DEFAULT 0,
-    seed   REAL NOT NULL DEFAULT 0,
-    seed_units TEXT,
-    notes  TEXT,
-    PRIMARY KEY (region, tech_or_group, operator)
-);
 CREATE TABLE IF NOT EXISTS limit_storage_level_fraction
 (
     region   TEXT,
@@ -994,7 +922,7 @@ CREATE TABLE IF NOT EXISTS output_cost
     region   TEXT,
     sector   TEXT REFERENCES sector_label (sector),
     period   INTEGER REFERENCES time_period (period),
-    tech     TEXT REFERENCES technology (tech),
+    tech     TEXT,
     vintage  INTEGER REFERENCES time_period (period),
     d_invest REAL,
     d_fixed  REAL,
@@ -1006,8 +934,7 @@ CREATE TABLE IF NOT EXISTS output_cost
     emiss    REAL,
     units    TEXT,
     PRIMARY KEY (scenario, region, period, tech, vintage),
-    FOREIGN KEY (vintage) REFERENCES time_period (period),
-    FOREIGN KEY (tech) REFERENCES technology (tech)
+    FOREIGN KEY (vintage) REFERENCES time_period (period)
 );
 
 CREATE TABLE IF NOT EXISTS time_season

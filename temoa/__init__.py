@@ -19,7 +19,6 @@ from temoa._internal.run_actions import (
     solve_instance,
 )
 from temoa._internal.table_data_puller import (
-    loan_costs,
     poll_capacity_results,
     poll_cost_results,
     poll_emissions,
@@ -27,6 +26,7 @@ from temoa._internal.table_data_puller import (
 )
 from temoa._internal.table_writer import TableWriter
 from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.components.costs import poll_loan_costs
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
@@ -48,7 +48,7 @@ __all__ = [
     'solve_instance',
     'handle_results',
     'save_lp',
-    'loan_costs',
+    'poll_loan_costs',
     'poll_capacity_results',
     'poll_emissions',
     'poll_flow_results',
