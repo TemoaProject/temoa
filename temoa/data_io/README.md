@@ -32,15 +32,17 @@ This is the most common case, for a component that maps directly to a database t
     # temoa/data_io/component_manifest.py
 
     # ... inside the manifest list
-    LoadItem(
-        component=M.MyNewParam,
-        table='MyNewParamTableName',
-        columns=['region', 'tech', 'value'],
-        # Optional: Add validation if this component should be filtered
-        # by the source-trace analysis.
-        validator_name='viable_rt',
-        validation_map=(0, 1), # Corresponds to 'region' and 'tech' columns
-    ),
+    (
+        LoadItem(
+            component=M.MyNewParam,
+            table='MyNewParamTableName',
+            columns=['region', 'tech', 'value'],
+            # Optional: Add validation if this component should be filtered
+            # by the source-trace analysis.
+            validator_name='viable_rt',
+            validation_map=(0, 1),  # Corresponds to 'region' and 'tech' columns
+        ),
+    )
     # ...
     ```
 
@@ -60,13 +62,15 @@ If a component is optional and should have a default value if its table is missi
     ```python
     # temoa/data_io/component_manifest.py
 
-    LoadItem(
-        component=M.MyOptionalSet,
-        table='MyOptionalSetTable',
-        columns=['some_value'],
-        is_table_required=False,  # Mark the table as optional
-        fallback_data=[('A',), ('B',)] # Provide default data
-    ),
+    (
+        LoadItem(
+            component=M.MyOptionalSet,
+            table='MyOptionalSetTable',
+            columns=['some_value'],
+            is_table_required=False,  # Mark the table as optional
+            fallback_data=[('A',), ('B',)],  # Provide default data
+        ),
+    )
     ```
 
 ### Case 3: Adding a Component with Complex Logic
@@ -85,12 +89,14 @@ If a component requires logic that doesn't fit the standard pattern (e.g., aggre
     # temoa/data_io/hybrid_loader.py
 
     # ... inside the HybridLoader class, in the custom loaders section
-    def _load_my_complex_param(self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]):
+    def _load_my_complex_param(
+        self, data: dict, raw_data: Sequence[tuple], filtered_data: Sequence[tuple]
+    ):
         """Custom loader for MyComplexParam."""
         M = TemoaModel()
         # --- Add your custom logic here ---
         # For example, perform a special query or transform the data.
-        final_data_to_load = [(r, t, v * 2) for r, t, v in filtered_data] # Example transformation
+        final_data_to_load = [(r, t, v * 2) for r, t, v in filtered_data]  # Example transformation
 
         # Use the standard helper to load the final data
         self._load_component_data(data, M.MyComplexParam, final_data_to_load)
@@ -102,14 +108,16 @@ If a component requires logic that doesn't fit the standard pattern (e.g., aggre
     ```python
     # temoa/data_io/component_manifest.py
 
-    LoadItem(
-        component=M.MyComplexParam,
-        table='MyComplexParamTable', # Can be a real table or a placeholder
-        columns=['region', 'tech', 'value'],
-        # Point to your new method
-        custom_loader_name='_load_my_complex_param',
-        is_table_required=False # Usually False if the loader has complex logic
-    ),
+    (
+        LoadItem(
+            component=M.MyComplexParam,
+            table='MyComplexParamTable',  # Can be a real table or a placeholder
+            columns=['region', 'tech', 'value'],
+            # Point to your new method
+            custom_loader_name='_load_my_complex_param',
+            is_table_required=False,  # Usually False if the loader has complex logic
+        ),
+    )
     ```
 
 This pattern keeps the main engine clean while providing unlimited flexibility to handle any data loading scenario.

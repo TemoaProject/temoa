@@ -29,17 +29,14 @@ If the bug involves code or configuration, please provide a minimal, reproducibl
 import my_library
 
 # Setup or initialization
-config = {
-    "setting_a": "value",
-    "setting_b": 123
-}
+config = {'setting_a': 'value', 'setting_b': 123}
 processor = my_library.Processor(**config)
 
 # Action that triggers the bug
 try:
     processor.process_data(invalid_data)
 except Exception as e:
-    print(f"Error: {e}")
+    print(f'Error: {e}')
 ```
 
 ## Error Message / Stack Trace
