@@ -16,9 +16,9 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, quicksum, value
 
-from .utils import Operator, get_capacity_factor, get_variable_efficiency, operator_expression
+from .utils import Operator, get_available_output, get_variable_efficiency, operator_expression
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -152,14 +152,14 @@ def storage_energy_constraint(
     if model.is_seasonal_storage[t] and d == model.time_of_day.last():
         return Constraint.Skip
 
-    charge = sum(
+    charge = quicksum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
         * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    discharge = sum(
+    discharge = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for S_o in model.process_outputs[r, p, t, v]
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
@@ -244,7 +244,7 @@ def seasonal_storage_energy_constraint(
 
     # This is the sum of all input=i sent TO storage tech t of vintage v with
     # output=o in p,s
-    charge = sum(
+    charge = quicksum(
         model.v_flow_in[r, p, s, model.time_of_day.last(), S_i, t, v, S_o]
         * get_variable_efficiency(model, r, p, s, model.time_of_day.last(), S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
@@ -253,7 +253,7 @@ def seasonal_storage_energy_constraint(
 
     # This is the sum of all output=o withdrawn FROM storage tech t of vintage v
     # with input=i in p,s
-    discharge = sum(
+    discharge = quicksum(
         model.v_flow_out[r, p, s, model.time_of_day.last(), S_i, t, v, S_o]
         for S_o in model.process_outputs[r, p, t, v]
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
@@ -441,24 +441,15 @@ def storage_charge_rate_constraint(
 
     """
     # Calculate energy charge in each time slice
-    slice_charge = sum(
+    slice_charge = quicksum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
         * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
 
-    # Maximum energy charge in each time slice
-    max_charge = (
-        model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        * value(model.segment_fraction[s, d])
-    )
-
     # Energy charge cannot exceed the power capacity of the storage unit
-    expr = slice_charge <= max_charge
-
-    return expr
+    return slice_charge <= get_available_output(model, r, p, s, d, t, v)
 
 
 def storage_discharge_rate_constraint(
@@ -480,23 +471,14 @@ def storage_discharge_rate_constraint(
           \forall \{r,p, s, d, t, v\} \in \Theta_{\text{StorageDischargeRate}}
     """
     # Calculate energy discharge in each time slice
-    slice_discharge = sum(
+    slice_discharge = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for S_o in model.process_outputs[r, p, t, v]
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
     )
 
-    # Maximum energy discharge in each time slice
-    max_discharge = (
-        model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        * value(model.segment_fraction[s, d])
-    )
-
     # Energy discharge cannot exceed the capacity of the storage unit
-    expr = slice_discharge <= max_discharge
-
-    return expr
+    return slice_discharge <= get_available_output(model, r, p, s, d, t, v)
 
 
 def storage_throughput_constraint(
@@ -520,13 +502,13 @@ def storage_throughput_constraint(
           \\
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
     """
-    discharge = sum(
+    discharge = quicksum(
         model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
         for S_o in model.process_outputs[r, p, t, v]
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
     )
 
-    charge = sum(
+    charge = quicksum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
         * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
@@ -534,14 +516,7 @@ def storage_throughput_constraint(
     )
 
     throughput = charge + discharge
-    max_throughput = (
-        model.v_capacity[r, p, t, v]
-        * value(model.capacity_to_activity[r, t])
-        * get_capacity_factor(model, r, s, d, t, v)
-        * value(model.segment_fraction[s, d])
-    )
-    expr = throughput <= max_throughput
-    return expr
+    return throughput <= get_available_output(model, r, p, s, d, t, v)
 
 
 # A limit but more cohesive here than in limits.py

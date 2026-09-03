@@ -27,6 +27,7 @@ Temoa Project Documentation
    myopic
    stochastics
    unit_checking
+   extensions
 
 .. toctree::
    :maxdepth: 1

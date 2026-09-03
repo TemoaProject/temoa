@@ -34,7 +34,9 @@ class StochasticSequencer:
             self.stoch_config = StochasticConfig.from_toml(sc_path)
         except Exception as e:
             logger.exception('Failed to load stochastic config from %s', sc_path)
-            raise ValueError(f'Error parsing stochastic config {sc_path}. Original error: {e}') from e
+            raise ValueError(
+                f'Error parsing stochastic config {sc_path}. Original error: {e}'
+            ) from e
 
     def start(self) -> None:
         """
