@@ -66,6 +66,8 @@ BASE_REGIONAL_GROUP_TABLES = {
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
+    'planning_reserve_margin': 'region',
+    'operating_reserve_margin': 'region',
 }
 
 
@@ -284,9 +286,6 @@ class HybridLoader:
         # Load simple config-based or myopic-specific values
         self._load_component_data(data, model.time_sequencing, [(self.config.time_sequencing,)])
         self._load_component_data(data, model.days_per_period, [(self.config.days_per_period,)])
-        self._load_component_data(
-            data, model.reserve_margin_method, [(self.config.reserve_margin,)]
-        )
         if myopic_index:
             p0_result = cur.execute(
                 "SELECT min(period) FROM time_period WHERE flag == 'f'"
@@ -855,22 +854,6 @@ class HybridLoader:
                 tech_data, self.manifest_map[model.tech_upramping.name], use_raw_data=False
             )
             self._load_component_data(data, model.tech_upramping, tech_filtered)
-
-    def _load_rps_requirement(
-        self,
-        data: dict[str, object],
-        raw_data: Sequence[tuple[object, ...]],
-        filtered_data: Sequence[tuple[object, ...]],
-    ) -> None:
-        """Handles deprecation warning for renewable_portfolio_standard."""
-        model = self.model
-        self._load_component_data(data, model.renewable_portfolio_standard, filtered_data)
-        if filtered_data:
-            logger.warning(
-                'The renewable_portfolio_standard constraint is deprecated. Use '
-                'limit_activity_share instead. '
-                'The constraint has been applied but this feature may be removed in the future.'
-            )
 
     def _load_limit_tech_input_split(
         self,

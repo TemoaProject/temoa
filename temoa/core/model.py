@@ -48,7 +48,6 @@ from temoa.model_checking.validators import (
     validate_0to1,
     validate_efficiency,
     validate_linked_tech,
-    validate_reserve_margin,
     validate_tech_sets,
 )
 
@@ -162,8 +161,9 @@ class TemoaModel(AbstractModel):
         self.retirement_production_processes: t.RetirementProductionProcessesDict = {}
         self.process_inputs_by_output: t.ProcessInputsByOutputDict = {}
         self.process_outputs_by_input: t.ProcessOutputsByInputDict = {}
-        self.process_reserve_periods: t.ProcessReservePeriodsDict = {}
         self.process_periods: t.ProcessPeriodsDict = {}  # {(r, t, v): set(p)}
+        self.planning_reserve_processes: t.ReserveProcessesDict = {}
+        self.operating_reserve_processes: t.ReserveProcessesDict = {}
         # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         self.retirement_periods: t.RetirementPeriodsDict = {}
         self.process_vintages: t.ProcessVintagesDict = {}
@@ -263,7 +263,6 @@ class TemoaModel(AbstractModel):
         self.tech_demand = Set(within=self.tech_all)
         # annual storage not supported in Storage constraint or TableWriter, so exclude from domain
         self.tech_storage = Set(within=self.tech_all)
-        self.tech_reserve = Set(within=self.tech_all)
         self.tech_upramping = Set(within=self.tech_all)
         self.tech_downramping = Set(within=self.tech_all)
         self.tech_curtailment = Set(within=self.tech_all)
@@ -279,7 +278,7 @@ class TemoaModel(AbstractModel):
         self.tech_seasonal_storage = Set(within=self.tech_storage)
         """storage technologies using the interseasonal storage feature"""
 
-        self.tech_uncap = Set(within=self.tech_all - self.tech_reserve)
+        self.tech_uncap = Set(within=self.tech_all)
         """techs with unlimited capacity, ALWAYS available within lifespan"""
 
         self.tech_exist = Set()
@@ -517,13 +516,6 @@ class TemoaModel(AbstractModel):
             validate=validate_0to1,
         )
 
-        self.renewable_portfolio_standard_constraint_rpg = Set(
-            within=self.regions * self.time_optimize * self.tech_group_names
-        )
-        self.renewable_portfolio_standard = Param(
-            self.renewable_portfolio_standard_constraint_rpg, validate=validate_0to1
-        )
-
         # The method below creates a series of helper functions that are used to
         # perform the sparse matrix of indexing for the parameters, variables, and
         # equations below.
@@ -721,24 +713,21 @@ class TemoaModel(AbstractModel):
         self.linked_techs = Param(self.regional_indices, self.tech_all, self.commodity_emissions)
 
         # Define parameters associated with electric sector operation
-        self.reserve_margin_method = Set()  # How contributions to the reserve margin are calculated
-        self.capacity_credit = Param(
+        self.planning_reserve_margin = Param(self.regional_global_indices, self.tech_or_group)
+        self.planning_reserve_credit = Param(
             self.regional_indices,
-            self.time_optimize,
-            self.tech_reserve,
-            self.vintage_all,
+            self.tech_all,
             default=0,
             validate=validate_0to1,
         )
-        self.reserve_capacity_derate = Param(
+        self.operating_reserve_margin = Param(self.regional_global_indices, self.tech_or_group)
+        self.operating_reserve_derate = Param(
             self.regional_indices,
             self.time_season,
-            self.tech_reserve,
-            self.vintage_all,
+            self.tech_all,
             default=1,
             validate=validate_0to1,
         )
-        self.planning_reserve_margin = Param(self.regions)
 
         self.emission_embodied = Param(
             self.regions,
@@ -982,10 +971,14 @@ class TemoaModel(AbstractModel):
                 self.ramp_up_constraint_rpsdtv, rule=operations.ramp_up_constraint
             )
 
-        self.reserve_margin_rpsd = Set(dimen=4, initialize=reserves.reserve_margin_indices)
-        self.validate_reserve_margin = BuildAction(rule=validate_reserve_margin)
-        self.reserve_margin_constraint = Constraint(
-            self.reserve_margin_rpsd, rule=reserves.reserve_margin_constraint
+        self.initialize_reserve_margins = BuildAction(rule=reserves.initialize_reserve_margins)
+        self.operating_reserve_rpsdt = Set(dimen=5, initialize=reserves.operating_reserve_indices)
+        self.operating_reserve_margin_constraint = Constraint(
+            self.operating_reserve_rpsdt, rule=reserves.operating_reserve_margin_constraint
+        )
+        self.planning_reserve_rpsdt = Set(dimen=5, initialize=reserves.planning_reserve_indices)
+        self.planning_reserve_margin_constraint = Constraint(
+            self.planning_reserve_rpsdt, rule=reserves.planning_reserve_margin_constraint
         )
 
         self.limit_emission_constraint = Constraint(
@@ -1089,11 +1082,6 @@ class TemoaModel(AbstractModel):
         self.limit_tech_output_split_average_constraint = Constraint(
             self.limit_tech_output_split_average_constraint_rptvo,
             rule=limits.limit_tech_output_split_average_constraint,
-        )
-
-        self.renewable_portfolio_standard_constraint = Constraint(
-            self.renewable_portfolio_standard_constraint_rpg,
-            rule=limits.renewable_portfolio_standard_constraint,
         )
 
         self.linked_emissions_tech_constraint_rpsdtve = Set(

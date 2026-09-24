@@ -21,4 +21,7 @@ MIN_PYTHON_MINOR = 12
 
 # db is tested for match on major and >= on minor
 DB_MAJOR_VERSION = 4
-MIN_DB_MINOR_VERSION = 0
+MIN_DB_MINOR_VERSION = 1
+
+# Also needs updating in database.rst
+DB_SCHEMA = 'temoa_schema_v4_1.sql'

@@ -9,7 +9,6 @@ save_excel = false
 save_duals = false
 save_lp_file = false
 days_per_period = 7
-reserve_margin = "static"
 
 [MGA]
 slack = 0.1

@@ -19,8 +19,6 @@ from deprecated import deprecated
 from pyomo.environ import value
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike, Period, Region, Technology, Vintage
 
@@ -33,15 +31,13 @@ logger = getLogger(name=__name__)
 # ============================================================================
 
 
-def gather_group_regions(model: TemoaModel, region: Region) -> Iterable[Region]:
-    regions: list[Region]
+def gather_group_regions(model: TemoaModel, region: Region) -> set[Region]:
     if region == 'global':
-        regions = list(model.regions)
+        return set(model.regional_indices)
     elif '+' in region:
-        regions = [cast('Region', r) for r in region.split('+')]
+        return {cast('Region', r) for r in region.split('+')}
     else:
-        regions = [region]
-    return regions
+        return {region}
 
 
 # ============================================================================

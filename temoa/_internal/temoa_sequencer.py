@@ -144,6 +144,8 @@ class TemoaSequencer:
                     data_portal,
                     silent=self.config.silent,
                     extensions=self.config.extensions,
+                    keep_lp_file=self.config.save_lp_file,
+                    lp_path=self.config.output_path,
                 )
 
             logger.info('Model build process complete.')
