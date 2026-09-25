@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from temoa.core.modes import TemoaMode
-from temoa.core.solver_spec import SolverSpec
+from temoa.core.solver_spec import SolverSpec, redact_solver_options
 from temoa.extensions.framework import normalize_extension_ids, resolve_extension_specs
 
 logger = getLogger(__name__)
@@ -397,7 +397,9 @@ class TemoaConfig:
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Selected solver', width, self.solver_name)
-        msg += '{:>{}s}: {}\n'.format('Solver options', width, dict(self.solver.options))
+        msg += '{:>{}s}: {}\n'.format(
+            'Solver options', width, redact_solver_options(self.solver.options)
+        )
         msg += '{:>{}s}: {}\n'.format('NEOS status', width, self.neos)
 
         msg += spacer

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from temoa._internal.table_writer import TableWriter
-from temoa.core.solver_spec import resolve_solver_options
+from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.monte_carlo.mc_run import MCRun, MCRunFactory
 from temoa.extensions.monte_carlo.mc_worker import MCWorker
@@ -96,7 +96,7 @@ class MCSequencer:
         # worker options pulled from file
         self.num_workers = all_options.get('num_workers', 1)
         self.worker_solver_options = resolve_solver_options(self.config.solver, s_options)
-        logger.info('Using solver options: %s', self.worker_solver_options)
+        logger.info('Using solver options: %s', redact_solver_options(self.worker_solver_options))
 
         # internal records
         self.solve_count = 0

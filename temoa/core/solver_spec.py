@@ -71,6 +71,23 @@ class SolverSpec:
         raise TypeError(f'solver must be a str or a table/dict, got: {type(raw).__name__}')
 
 
+# substrings (lowercase) of option names whose values are credentials, e.g. gurobi's WLSSecret,
+# CloudSecretKey, CSAPIAccessID, ServerPassword, LicenseID
+_SENSITIVE_OPTION_MARKERS = ('secret', 'password', 'accessid', 'licenseid', 'key')
+
+
+def redact_solver_options(options: Mapping[str, Any]) -> dict[str, Any]:
+    """
+    Return a copy of the options that is safe to log or print, with credential values masked
+    """
+    return {
+        option: '***'
+        if any(marker in option.lower() for marker in _SENSITIVE_OPTION_MARKERS)
+        else option_value
+        for option, option_value in options.items()
+    }
+
+
 def resolve_solver_options(
     spec: SolverSpec,
     extension_options: Mapping[str, Any] | None = None,

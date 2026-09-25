@@ -33,7 +33,7 @@ from pyomo.opt import check_optimal_termination
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
 from temoa.components.costs import total_cost_rule
-from temoa.core.solver_spec import resolve_solver_options
+from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
@@ -108,7 +108,9 @@ class MgaSequencer:
         ).items():
             self.opt.options[option] = option_value
         self.worker_solver_options = resolve_solver_options(self.config.solver, s_options)
-        logger.info('Using worker solver options: %s', self.worker_solver_options)
+        logger.info(
+            'Using worker solver options: %s', redact_solver_options(self.worker_solver_options)
+        )
 
         # some defaults, etc.
         self.internal_stop = False
