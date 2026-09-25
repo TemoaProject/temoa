@@ -16,6 +16,7 @@ from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.core.solver_spec import resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.data_processing.db_to_excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
@@ -268,7 +269,10 @@ class MyopicSequencer:
             if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'solve')
             model, results = run_actions.solve_instance(
-                instance=instance, solver_name=self.config.solver_name, silent=True
+                instance=instance,
+                solver_name=self.config.solver_name,
+                silent=True,
+                solver_options=resolve_solver_options(self.config.solver),
             )
 
             optimal, status = run_actions.check_solve_status(results)

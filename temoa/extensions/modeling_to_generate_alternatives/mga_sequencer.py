@@ -33,6 +33,7 @@ from pyomo.opt import check_optimal_termination
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import TableWriter
 from temoa.components.costs import total_cost_rule
+from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
@@ -93,16 +94,23 @@ class MgaSequencer:
                 with open(path, 'rb') as f:
                     all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
-            logger.info('Using solver options: %s', s_options)
 
         except FileNotFoundError:
             logger.warning('Unable to find solver options toml file.  Using default options.')
             s_options = {}
             all_options = {}
 
-        # get handle on solver instance
+        # get handle on solver instance.  The base solve only receives the user's
+        # [solver.options] (no Temoa defaults, no worker options) to get a more precise base cost
         self.opt = pyo.SolverFactory(self.config.solver_name)
-        self.worker_solver_options = s_options
+        for option, option_value in resolve_solver_options(
+            self.config.solver, include_defaults=False
+        ).items():
+            self.opt.options[option] = option_value
+        self.worker_solver_options = resolve_solver_options(self.config.solver, s_options)
+        logger.info(
+            'Using worker solver options: %s', redact_solver_options(self.worker_solver_options)
+        )
 
         # some defaults, etc.
         self.internal_stop = False
