@@ -16,6 +16,7 @@ from SALib.util import compute_groups_matrix, read_param_file  # type: ignore[im
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
+from temoa.core.solver_spec import resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 
 seed = 42
@@ -40,7 +41,11 @@ def evaluate(
 
     dp = DataPortal(data_dict={None: data})
     instance = run_actions.build_instance(loaded_portal=dp, extensions=config.extensions)
-    mdl, res = run_actions.solve_instance(instance=instance, solver_name=config.solver_name)
+    mdl, res = run_actions.solve_instance(
+        instance=instance,
+        solver_name=config.solver_name,
+        solver_options=resolve_solver_options(config.solver),
+    )
     status = run_actions.check_solve_status(res)
     if not status:
         raise RuntimeError('Bad solve during Method of Morris')

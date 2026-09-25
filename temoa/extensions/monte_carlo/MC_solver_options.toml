@@ -1,5 +1,7 @@
 # A container for solver options
 # the top level solver name in brackets should align with the solver name in the config.toml
+# These are layered on top of Temoa's solver defaults and the config's [solver.options], and take
+# precedence over both.  (see temoa/core/solver_spec.py)
 
 num_workers = 11
 
@@ -11,6 +13,7 @@ BarConvTol = 1.0e-2  # Relative Barrier Tolerance primal-dual
 FeasibilityTol= 1.0e-2  # pretty loose
 Crossover= 0  # Disabled
 TimeLimit= 18000  # 5 hrs
+BarOrder = -1  # auto ordering (gurobi default)
 
 # regarding BarConvTol:  https://www.gurobi.com/documentation/current/refman/barrier_logging.html
 # note that ref above seems to imply that FeasibilyTol is NOT used when using barrier only...?
@@ -18,6 +21,13 @@ TimeLimit= 18000  # 5 hrs
 # for records ...
 # 'LogFile': './my_gurobi_log.log',
 # 'LPWarmStart': 2,  # pass basis
+
+[cplex]
+# CPLEX's own defaults, restating them overrides the Temoa cplex defaults for MC workers
+lpmethod = 0  # automatic
+solutiontype = 0  # automatic
+'barrier convergetol' = 1.0e-8
+'feasopt tolerance' = 1.0e-6
 
 [cbc]
 primalT = 1e-3

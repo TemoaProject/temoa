@@ -22,6 +22,7 @@ from SALib.sample.morris import sample  # type: ignore[import-untyped]
 from SALib.util import compute_groups_matrix, read_param_file  # type: ignore[import-untyped]
 
 from temoa._internal.table_writer import TableWriter
+from temoa.core.solver_spec import resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
 
@@ -70,11 +71,12 @@ class MorrisSequencer:
                 with open(path, 'rb') as f:
                     all_options = tomllib.load(f)
             s_options = all_options.get(self.config.solver_name, {})
-            logger.info('Using solver options: %s', s_options)
 
         except FileNotFoundError:
             logger.warning('Unable to find solver options toml file.  Using default options.')
             s_options = {}
+        self.solver_options = resolve_solver_options(self.config.solver, s_options)
+        logger.info('Using solver options: %s', self.solver_options)
 
         # output handling
         self.verbose = False  # for troubleshooting
@@ -189,7 +191,14 @@ class MorrisSequencer:
             sys.stdout.flush()
         morris_results = Parallel(n_jobs=self.num_cores)(
             delayed(evaluate)(
-                param_names, mm_samples[i, :], data, i, self.config, log_queue, log_level
+                param_names,
+                mm_samples[i, :],
+                data,
+                i,
+                self.config,
+                log_queue,
+                log_level,
+                solver_options=self.solver_options,
             )
             for i in range(0, len(mm_samples))
         )

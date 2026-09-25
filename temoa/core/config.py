@@ -1,10 +1,14 @@
 import shutil
 import sys
 import tomllib
+import warnings
+from collections.abc import Mapping
 from logging import getLogger
 from pathlib import Path
+from typing import Any
 
 from temoa.core.modes import TemoaMode
+from temoa.core.solver_spec import SolverSpec
 from temoa.extensions.framework import normalize_extension_ids, resolve_extension_specs
 
 logger = getLogger(__name__)
@@ -42,7 +46,7 @@ class TemoaConfig:
         input_database: Path,
         output_database: Path,
         output_path: Path,
-        solver_name: str,
+        solver_name: str | None = None,
         neos: bool = False,
         save_excel: bool = False,
         save_duals: bool = False,
@@ -73,6 +77,7 @@ class TemoaConfig:
         output_threshold_cost: float | None = None,
         sqlite: dict[str, object] | None = None,
         extensions: list[str] | tuple[str, ...] | None = None,
+        solver: str | Mapping[str, Any] | SolverSpec | None = None,
     ):
         if '-' in scenario:
             raise ValueError(
@@ -129,7 +134,20 @@ class TemoaConfig:
         self.neos = neos
         if self.neos:
             raise NotImplementedError('Neos is currently not supported.')
-        self.solver_name = solver_name
+
+        # Validate solver input
+        if solver_name is not None:
+            if solver is not None:
+                raise ValueError("Specify either 'solver' or 'solver_name', not both")
+            warnings.warn(
+                "The 'solver_name' argument is deprecated, use 'solver' instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            solver = solver_name
+        if solver is None:
+            raise SolverNotAvailableError('No solver specified in the configuration.')
+        self.solver = SolverSpec.parse(solver)
 
         self.save_excel = save_excel
         self.save_duals = save_duals
@@ -230,6 +248,17 @@ class TemoaConfig:
                 if not self.silent:
                     sys.stderr.write('Warning: ' + msg)
 
+    @property
+    def solver_name(self) -> str:
+        """The name of the selected solver (shorthand for self.solver.name)"""
+        return self.solver.name
+
+    @solver_name.setter
+    def solver_name(self, value: str) -> None:
+        # retained for backward compatibility.  Changing solvers drops any configured options,
+        # as they are specific to the previous solver
+        self.solver = SolverSpec.parse(value)
+
     @staticmethod
     def _check_solver_availability(solver_name: str) -> tuple[bool, str | None]:
         """
@@ -282,27 +311,41 @@ class TemoaConfig:
             data = tomllib.load(f)
 
         if 'solver_name' in data:
-            is_available, location = TemoaConfig._check_solver_availability(data['solver_name'])
-            if not is_available:
-                error_message = (
-                    f"The specified solver '{data['solver_name']}' was not found.\n"
-                    'Please ensure the solver is installed and accessible.\n'
+            if 'solver' in data:
+                raise ValueError(
+                    "Config specifies both 'solver' and 'solver_name'.  Use only 'solver' "
+                    "('solver_name' is deprecated)."
                 )
-                if data['solver_name'].lower() in SOLVER_DOC_LINKS:
-                    link = SOLVER_DOC_LINKS[data['solver_name'].lower()]
-                    error_message += f'For installation instructions, refer to: {link}\n'
-                else:
-                    error_message += (
-                        "Refer to the solver's official documentation for "
-                        'installation instructions.'
-                    )
-                raise SolverNotAvailableError(error_message)
-            else:
-                logger.info('Using solver: %s (%s)', data['solver_name'], location)
-        else:
-            raise SolverNotAvailableError('No solver name specified in the configuration.')
+            logger.warning(
+                "The 'solver_name' config key is deprecated and will be removed in a future "
+                'release.  Replace it with: solver = "%s"',
+                data['solver_name'],
+            )
+            data['solver'] = data.pop('solver_name')
 
-        if data.get('solver_name') == 'appsi_highs' and data.get('save_duals', False):
+        if 'solver' not in data:
+            raise SolverNotAvailableError('No solver name specified in the configuration.')
+        solver = SolverSpec.parse(data['solver'])
+        data['solver'] = solver
+
+        is_available, location = TemoaConfig._check_solver_availability(solver.name)
+        if not is_available:
+            error_message = (
+                f"The specified solver '{solver.name}' was not found.\n"
+                'Please ensure the solver is installed and accessible.\n'
+            )
+            if solver.name.lower() in SOLVER_DOC_LINKS:
+                link = SOLVER_DOC_LINKS[solver.name.lower()]
+                error_message += f'For installation instructions, refer to: {link}\n'
+            else:
+                error_message += (
+                    "Refer to the solver's official documentation for installation instructions."
+                )
+            raise SolverNotAvailableError(error_message)
+        else:
+            logger.info('Using solver: %s (%s)', solver.name, location)
+
+        if solver.name == 'appsi_highs' and data.get('save_duals', False):
             raise ValueError(
                 'save_duals is not supported with appsi_highs (it does not expose duals via the '
                 'APPSI interface). Disable save_duals or choose a different solver.'
@@ -354,6 +397,7 @@ class TemoaConfig:
 
         msg += spacer
         msg += '{:>{}s}: {}\n'.format('Selected solver', width, self.solver_name)
+        msg += '{:>{}s}: {}\n'.format('Solver options', width, dict(self.solver.options))
         msg += '{:>{}s}: {}\n'.format('NEOS status', width, self.neos)
 
         msg += spacer
