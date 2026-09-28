@@ -128,7 +128,7 @@ def test_cli_validate_failure_on_invalid_db(tmp_path: Path) -> None:
     args = ['validate', str(test_config_path), '--output', str(tmp_path)]
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0, 'CLI should exit with a non-zero code on failure'
+    assert result.exit_code == 1, 'validate should exit 1 on a failed validation'
     assert 'Validation failed' in result.stdout
     # Check that the log was still created, containing the detailed error
     assert (tmp_path / 'temoa-run.log').exists()
@@ -139,7 +139,7 @@ def test_cli_run_missing_config() -> None:
     args = ['run', 'non_existent_file.toml']
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 2, 'missing config file should be rejected as a bad argument'
     # Check that the error mentions the missing file (more robust than exact string match)
     assert 'non_existent_file.toml' in result.stderr
 
@@ -293,7 +293,7 @@ def test_cli_migrate_sql_file_auto_output_no_writable_location(
     args = ['migrate', str(input_file)]
     result = runner.invoke(app, args, catch_exceptions=False)
 
-    assert result.exit_code != 0, 'Migration should fail with a non-zero exit code'
+    assert result.exit_code == 1, 'migrate should exit 1 when no writable output location exists'
     # Normalize whitespace to handle platform-specific line breaks from rich.print()
     normalized_output = ' '.join(result.stdout.split())
     assert 'Error: Neither input directory' in normalized_output
@@ -309,7 +309,7 @@ def test_cli_migrate_invalid_file() -> None:
     args = ['migrate', 'non_existent.sql']
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 2, 'missing input file should be rejected as a bad argument'
     # Typer handles file existence check, so error is in stderr
     assert 'does not exist' in result.stderr or 'does not exist' in str(result.exception)
 
@@ -321,7 +321,7 @@ def test_cli_migrate_unknown_type(tmp_path: Path) -> None:
     args = ['migrate', str(unknown_file)]
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 1, 'migrate should exit 1 for an undeterminable migration type'
     assert 'Cannot determine migration type' in result.stdout
 
 
@@ -434,7 +434,7 @@ def test_cli_validate_fails_if_solver_missing(
     args = ['validate', str(test_config_path), '--output', str(tmp_path)]
     result = runner.invoke(app, args, catch_exceptions=False)
 
-    assert result.exit_code != 0, (
+    assert result.exit_code == 1, (
         f'Validate should have failed: {result.exception}\n{result.stderr}\n{result.stdout}'
     )
     assert isinstance(result.exception, SystemExit)
@@ -460,7 +460,7 @@ def test_cli_run_fails_if_solver_missing(tmp_path: Path, monkeypatch: pytest.Mon
     args = ['run', str(test_config_path), '--output', str(tmp_path)]
     result = runner.invoke(app, args, catch_exceptions=False)
 
-    assert result.exit_code != 0, (
+    assert result.exit_code == 1, (
         f'Run should have failed: {result.exception}\n{result.stderr}\n{result.stdout}'
     )
     assert isinstance(result.exception, SystemExit)
@@ -599,7 +599,7 @@ def test_cli_check_units_detects_issues(tmp_path: Path) -> None:
     args = ['check-units', str(INVALID_CURRENCY_DB), '--output', str(tmp_path)]
     result = runner.invoke(app, args, catch_exceptions=False)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 1, 'check-units should exit 1 when issues are found'
     assert 'Unit check found issues' in result.stdout
     assert 'Detailed report saved to' in result.stdout
     assert 'Report Summary:' in result.stdout
@@ -613,7 +613,7 @@ def test_cli_check_units_detects_issues_silent(tmp_path: Path) -> None:
     args = ['check-units', str(INVALID_CURRENCY_DB), '--output', str(tmp_path), '--silent']
     result = runner.invoke(app, args, catch_exceptions=False)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 1, 'check-units should exit 1 when issues are found'
     assert 'Unit check found issues' not in result.stdout
     reports = list(tmp_path.glob('units_check_*.txt'))
     assert len(reports) == 1
@@ -638,7 +638,7 @@ def test_cli_check_units_missing_database() -> None:
     args = ['check-units', 'non_existent_db.sqlite']
     result = runner.invoke(app, args)
 
-    assert result.exit_code != 0
+    assert result.exit_code == 2, 'missing database file should be rejected as a bad argument'
     assert 'non_existent_db.sqlite' in result.stderr
 
 
