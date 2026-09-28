@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+import tomlkit
 from typer.testing import CliRunner
 
 from temoa.cli import _is_writable, app
@@ -469,3 +470,194 @@ def test_cli_run_fails_if_solver_missing(tmp_path: Path, monkeypatch: pytest.Mon
     # Use the more robust phrase for checking installation instructions
     assert 'Please ensure the solver is installed and accessible.' in result.stdout
     assert (tmp_path / 'temoa-run.log').exists()
+
+
+# =============================================================================
+# Tests for the `tutorial` command
+# =============================================================================
+
+
+def test_cli_tutorial_creates_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that `temoa tutorial` creates the config, database, and mc_settings files."""
+    monkeypatch.chdir(tmp_path)
+
+    args = ['tutorial', 'my_config', 'my_database']
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code == 0, f'CLI crashed with error: {result.exception}\n{result.stdout}'
+    assert (tmp_path / 'my_config.toml').exists()
+    assert (tmp_path / 'my_database.sqlite').exists()
+    assert (tmp_path / 'mc_settings.csv').exists()
+    assert 'Tutorial Setup Complete!' in result.stdout
+
+
+def test_cli_tutorial_default_names(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that `temoa tutorial` uses its default file names when none are given."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['tutorial'], catch_exceptions=False)
+
+    assert result.exit_code == 0, f'CLI crashed with error: {result.exception}\n{result.stdout}'
+    assert (tmp_path / 'tutorial_config.toml').exists()
+    assert (tmp_path / 'tutorial_database.sqlite').exists()
+
+
+def test_cli_tutorial_updates_toml_database_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the generated config file points at the newly created database."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['tutorial', 'cfg', 'db_name'], catch_exceptions=False)
+
+    assert result.exit_code == 0, f'CLI crashed with error: {result.exception}\n{result.stdout}'
+    doc = tomlkit.parse((tmp_path / 'cfg.toml').read_text())
+    assert doc['input_database'] == 'db_name.sqlite'
+    assert doc['output_database'] == 'db_name.sqlite'
+
+
+def test_cli_tutorial_verbose_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that `--verbose` prints the extra progress and guidance messages."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['tutorial', 'cfg', 'db', '--verbose'], catch_exceptions=False)
+
+    assert result.exit_code == 0
+    assert 'Copying tutorial resources...' in result.stdout
+    assert 'Updating database paths in configuration...' in result.stdout
+    assert 'Tutorial files created successfully' in result.stdout
+
+
+def test_cli_tutorial_existing_files_aborts_without_force(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that existing tutorial files trigger a confirmation prompt that can be declined."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / 'cfg.toml').write_text('placeholder')
+
+    result = runner.invoke(app, ['tutorial', 'cfg', 'db'], input='n\n')
+
+    # A declined confirmation is a graceful, non-error cancellation.
+    assert result.exit_code == 0
+    assert 'Tutorial files already exist' in result.stdout
+    assert 'Tutorial setup cancelled' in result.stdout
+    # The placeholder file should be untouched since the user declined.
+    assert (tmp_path / 'cfg.toml').read_text() == 'placeholder'
+
+
+def test_cli_tutorial_existing_files_force_overwrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that `--force` overwrites existing tutorial files without prompting."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / 'cfg.toml').write_text('placeholder')
+
+    result = runner.invoke(app, ['tutorial', 'cfg', 'db', '--force'], catch_exceptions=False)
+
+    assert result.exit_code == 0, f'CLI crashed with error: {result.exception}\n{result.stdout}'
+    assert (tmp_path / 'db.sqlite').exists()
+    assert (tmp_path / 'cfg.toml').read_text() != 'placeholder'
+    assert 'Tutorial setup cancelled' not in result.stdout
+
+
+# =============================================================================
+# Tests for the `check-units` command
+# =============================================================================
+
+VALID_UNITS_DB = Path(__file__).parent / 'testing_outputs' / 'utopia_valid_units.sqlite'
+INVALID_CURRENCY_DB = Path(__file__).parent / 'testing_outputs' / 'utopia_invalid_currency.sqlite'
+
+requires_unit_dbs = pytest.mark.skipif(
+    not (VALID_UNITS_DB.exists() and INVALID_CURRENCY_DB.exists()),
+    reason='Test databases not created. Ensure conftest.py setup completed successfully.',
+)
+
+
+@requires_unit_dbs
+def test_cli_check_units_all_clear(tmp_path: Path) -> None:
+    """Test `temoa check-units` reports success on a valid database."""
+    args = ['check-units', str(VALID_UNITS_DB), '--output', str(tmp_path)]
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code == 0, f'CLI crashed with error: {result.exception}\n{result.stdout}'
+    assert 'All unit checks passed' in result.stdout
+
+
+@requires_unit_dbs
+def test_cli_check_units_all_clear_silent(tmp_path: Path) -> None:
+    """Test that `--silent` suppresses the success message."""
+    args = ['check-units', str(VALID_UNITS_DB), '--output', str(tmp_path), '--silent']
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code == 0
+    assert 'All unit checks passed' not in result.stdout
+
+
+@requires_unit_dbs
+def test_cli_check_units_detects_issues(tmp_path: Path) -> None:
+    """Test that `temoa check-units` fails and writes a report for a bad database."""
+    args = ['check-units', str(INVALID_CURRENCY_DB), '--output', str(tmp_path)]
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code != 0
+    assert 'Unit check found issues' in result.stdout
+    assert 'Detailed report saved to' in result.stdout
+    assert 'Report Summary:' in result.stdout
+    reports = list(tmp_path.glob('units_check_*.txt'))
+    assert len(reports) == 1
+
+
+@requires_unit_dbs
+def test_cli_check_units_detects_issues_silent(tmp_path: Path) -> None:
+    """Test that `--silent` suppresses the issue report summary but still fails and writes it."""
+    args = ['check-units', str(INVALID_CURRENCY_DB), '--output', str(tmp_path), '--silent']
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code != 0
+    assert 'Unit check found issues' not in result.stdout
+    reports = list(tmp_path.glob('units_check_*.txt'))
+    assert len(reports) == 1
+
+
+@requires_unit_dbs
+def test_cli_check_units_default_output_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that omitting `--output` defaults the report to ./unit_check_reports."""
+    monkeypatch.chdir(tmp_path)
+
+    args = ['check-units', str(VALID_UNITS_DB)]
+    result = runner.invoke(app, args, catch_exceptions=False)
+
+    assert result.exit_code == 0
+    assert (tmp_path / 'unit_check_reports').is_dir()
+
+
+def test_cli_check_units_missing_database() -> None:
+    """Test graceful failure for a missing database file."""
+    args = ['check-units', 'non_existent_db.sqlite']
+    result = runner.invoke(app, args)
+
+    assert result.exit_code != 0
+    assert 'non_existent_db.sqlite' in result.stderr
+
+
+# =============================================================================
+# Tests for `_is_writable`
+# =============================================================================
+
+
+def test_is_writable_true_for_writable_dir(tmp_path: Path) -> None:
+    """Test that a normal, writable directory is reported as writable."""
+    assert _is_writable(tmp_path) is True
+
+
+def test_is_writable_false_on_oserror(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Test that `_is_writable` returns False when touching the probe file raises OSError."""
+
+    def _raise_oserror(*_args: object, **_kwargs: object) -> None:
+        raise OSError('mocked failure')
+
+    monkeypatch.setattr(Path, 'touch', _raise_oserror)
+
+    assert _is_writable(tmp_path) is False
