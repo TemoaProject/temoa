@@ -73,7 +73,7 @@ class SolverSpec:
 
 # substrings (lowercase) of option names whose values are credentials, e.g. gurobi's WLSSecret,
 # CloudSecretKey, CSAPIAccessID, ServerPassword, LicenseID
-_SENSITIVE_OPTION_MARKERS = ('secret', 'password', 'accessid', 'licenseid', 'key')
+_SENSITIVE_OPTION_MARKERS = ('secret', 'password', 'accessid', 'licenseid', 'key', 'token')
 
 
 def redact_solver_options(options: Mapping[str, Any]) -> dict[str, Any]:

@@ -77,7 +77,7 @@ neos = false
 # Depending on what client machine has installed.
 #  [appsi_highs, cbc, gurobi, cplex, ...]  (any solver available through pyomo's SolverFactory)
 # Either a solver name, which uses Temoa's default options for that solver:
-solver = "gurobi"
+solver = "appsi_highs"
 # or a name plus options passed through to the solver, which are merged over Temoa's defaults
 # (use an inline table here, as a [solver] table header would capture the keys that follow it):
 # solver = { name = "gurobi", options = { Method = 2, Crossover = 0, BarConvTol = 1.0e-3, FeasibilityTol = 1.0e-4, BarOrder = -1 } }
