@@ -3,8 +3,7 @@ from importlib import resources as importlib_resources
 from pint import UnitRegistry
 from pint.errors import DefinitionSyntaxError
 
-# UnitRegistry is generic but doesn't require type args at instantiation
-ureg: UnitRegistry = UnitRegistry()  # type: ignore[type-arg]
+ureg: UnitRegistry = UnitRegistry()
 
 # Load custom unit definitions from the package resources
 _resource_path = 'temoa.model_checking.unit_checking/temoa_units.txt'
