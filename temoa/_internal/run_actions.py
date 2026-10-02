@@ -3,12 +3,13 @@ Basic-level atomic functions that can be used by a sequencer, as needed
 """
 
 import sqlite3
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Mapping
 from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
 from sys import version_info
 from time import perf_counter
+from typing import Any
 
 from pyomo.environ import (
     Constraint,
@@ -25,6 +26,7 @@ from pyomo.opt import SolverResults
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from temoa.core.solver_spec import DEFAULT_SOLVER_OPTIONS
 from temoa.data_processing.db_to_excel import make_excel
 
 logger = getLogger(__name__)
@@ -174,6 +176,7 @@ def solve_instance(
     solver_name: str,
     silent: bool = False,
     solver_suffixes: Iterable[str] | None = None,
+    solver_options: Mapping[str, Any] | None = None,
 ) -> tuple[TemoaModel, SolverResults]:
     """
     Solve the instance and return a loaded instance
@@ -181,6 +184,8 @@ def solve_instance(
     'duals' is supported in the Temoa Framework.  Some solvers may not support duals.
     :param silent: Run silently
     :param solver_name: The name of the solver to request from the SolverFactory
+    :param solver_options: options to set on the solver (see resolve_solver_options).  If None,
+    the Temoa defaults for the solver are used
     :param instance: the instance to solve
     :return: loaded instance
     """
@@ -202,28 +207,11 @@ def solve_instance(
     if solver_name == 'neos':
         raise NotImplementedError('Neos based solve is not currently supported')
 
-    # Solver Configuration
-    if solver_name == 'cbc':
-        pass
-
-    elif solver_name == 'cplex':
-        # Note: these parameter values match mip-dev / PyPSA
-        # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-        optimizer.options['lpmethod'] = 4  # barrier
-        optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
-        optimizer.options['barrier convergetol'] = 1.0e-3
-        optimizer.options['feasopt tolerance'] = 1.0e-4
-
-    elif solver_name == 'gurobi':
-        # Note: these parameter values match mip-dev / PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
-        optimizer.options['Method'] = 2  # barrier
-        optimizer.options['Crossover'] = 0  # non basic solution, ie no crossover
-        optimizer.options['BarConvTol'] = 1.0e-3
-        optimizer.options['FeasibilityTol'] = 1.0e-4
-        optimizer.options['BarOrder'] = -1  # auto ordering; 2-4x faster than AMD on large models
-
-    elif solver_name == 'appsi_highs':
-        pass
+    # Solver Configuration (defaults live in temoa.core.solver_spec.DEFAULT_SOLVER_OPTIONS)
+    if solver_options is None:
+        solver_options = DEFAULT_SOLVER_OPTIONS.get(solver_name, {})
+    for option, option_value in solver_options.items():
+        optimizer.options[option] = option_value
 
     # Suffix Handling
     solver_suffixes_list: list[str] = []

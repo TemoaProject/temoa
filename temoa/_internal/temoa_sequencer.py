@@ -27,6 +27,7 @@ from temoa._internal.run_actions import (
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.modes import TemoaMode
+from temoa.core.solver_spec import resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_sequencer import MorrisSequencer
 from temoa.extensions.modeling_to_generate_alternatives.mga_sequencer import MgaSequencer
@@ -254,6 +255,7 @@ class TemoaSequencer:
                 self.config.solver_name,
                 silent=self.config.silent,
                 solver_suffixes=suffixes,
+                solver_options=resolve_solver_options(self.config.solver),
             )
             good_solve, msg = check_solve_status(self.pf_results)
             if not good_solve:

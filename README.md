@@ -178,7 +178,7 @@ config = TemoaConfig(
     time_sequencing="seasonal_timeslices",
     input_database="tutorial_database.sqlite",
     output_database="tutorial_database.sqlite",
-    solver_name="appsi_highs",
+    solver="appsi_highs",
     output_path=output_path,
     silent=False,
 )
@@ -238,7 +238,7 @@ scenario = "tutorial"
 scenario_mode = "perfect_foresight"
 input_database = "tutorial_database.sqlite"
 output_database = "tutorial_database.sqlite"
-solver_name = "appsi_highs"
+solver = "appsi_highs"
 ```
 
 ### Configuration Options

@@ -43,6 +43,7 @@ def evaluate(
     config: TemoaConfig,
     log_queue: Any,
     log_level: int,
+    solver_options: dict[str, Any] | None = None,
 ) -> list[float]:
     """
     Run model for params provided and return objective value and emission value
@@ -54,6 +55,7 @@ def evaluate(
     :param data: Data used to build the Data Portal
     :param i: indexing number
     :param config: The config file to pull run data from
+    :param solver_options: resolved solver options.  If None, the Temoa defaults are used
     :return: list of objective value and CO2 emission value
     """
     # get the logger configured...
@@ -80,7 +82,10 @@ def evaluate(
         extensions=config.extensions,
     )
     mdl, res = run_actions.solve_instance(
-        instance=instance, solver_name=config.solver_name, silent=True
+        instance=instance,
+        solver_name=config.solver_name,
+        silent=True,
+        solver_options=solver_options,
     )
     status = run_actions.check_solve_status(res)
     if not status:
