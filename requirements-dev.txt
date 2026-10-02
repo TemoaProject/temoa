@@ -1036,6 +1036,7 @@ packaging==26.3 \
     #   matplotlib
     #   pytest
     #   sphinx
+    #   virtualenv
 pandas==3.0.5 \
     --hash=sha256:0d298e951f23016ce4699951d044ae6418dbc91bf68cefca0f77666fcbb4e5c6 \
     --hash=sha256:1c10461f6eeb35d8f05b6184c65c8b9991663b66c46b1d559b682cb34ae7c6ea \
@@ -1497,13 +1498,13 @@ tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32' \
     --hash=sha256:4a1518b8993086a7982523e071643f3c0e5f213e75b21318e78bcabfff9d1415 \
     --hash=sha256:dc096730c87af6cab1b171c9d532be840741ff5d459015e7f6947bd7d7e54931
     # via pandas
-urllib3==2.7.0 \
-    --hash=sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c \
-    --hash=sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
+urllib3==2.8.0 \
+    --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3 \
+    --hash=sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63
     # via requests
-virtualenv==21.7.8 \
-    --hash=sha256:1dc49c790072a9072cb1803f9bd62aa69cd583077cada32390f75505cdc64c9b \
-    --hash=sha256:3040eb3cbf5d32b10ffd57d167e6a162237ad82ba7d8cf1400a1efed593d85ac
+virtualenv==21.14.5 \
+    --hash=sha256:b0651e0174982bba17cc6f0aaa2ef496730cb85a3f35eb5d1119d1c904f7d1da \
+    --hash=sha256:c4cb6c13e46b57225a999c7e22a09b163393878facc7ac4c059a57f46faa1647
     # via pre-commit
 wrapt==2.4.0 \
     --hash=sha256:0191d717dfbb8e519e7bfd4775e5b9bd57e359b3a09ab5db1ea47f6025b4d845 \
