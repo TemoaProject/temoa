@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import pyomo.environ as pyo
 
+from temoa.core.solver_spec import resolve_solver_options
 from temoa.extensions.stochastics.stochastic_config import StochasticConfig
 
 if TYPE_CHECKING:
@@ -50,8 +51,13 @@ class StochasticSequencer:
 
         from temoa.extensions.stochastics.scenario_creator import scenario_creator
 
-        # Merge solver options from stoch_config
-        solver_options = self.stoch_config.solver_options.get(self.config.solver_name, {})
+        # Merge solver options: [solver.options] < stoch_config.  Temoa defaults are excluded to
+        # preserve the behavior of stochastic runs prior to the [solver] table
+        solver_options = resolve_solver_options(
+            self.config.solver,
+            self.stoch_config.solver_options.get(self.config.solver_name, {}),
+            include_defaults=False,
+        )
 
         options = {
             'solver': self.config.solver_name,

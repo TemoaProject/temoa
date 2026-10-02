@@ -185,8 +185,11 @@ def create_unit_test_dbs() -> None:
         logger.info('Created unit test DB: %s', db_name)
 
 
-def pytest_configure(config: Config) -> None:  # noqa: ARG001
+def pytest_configure(config: Config) -> None:
     """Setup test databases before test collection."""
+    # Skip for collect-only (e.g. IDE test discovery) so it can't race a real run for DB locks.
+    if config.getoption('collectonly'):
+        return
     refresh_databases()
     try:
         create_unit_test_dbs()
