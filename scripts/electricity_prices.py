@@ -38,8 +38,23 @@ from pathlib import Path
 import pandas as pd
 
 # Multipliers to convert a commodity unit to MWh and a cost unit to dollars.
-ENERGY_TO_MWH = {'PJ': 1e15 / 3.6e9, 'TJ': 1e12 / 3.6e9, 'GJ': 1 / 3.6, 'TWH': 1e6, 'GWH': 1e3, 'MWH': 1.0}
-COST_TO_USD = {'MUSD': 1e6, 'M$': 1e6, 'MDOLLAR': 1e6, 'BUSD': 1e9, 'KUSD': 1e3, 'USD': 1.0, '$': 1.0}
+ENERGY_TO_MWH = {
+    'PJ': 1e15 / 3.6e9,
+    'TJ': 1e12 / 3.6e9,
+    'GJ': 1 / 3.6,
+    'TWH': 1e6,
+    'GWH': 1e3,
+    'MWH': 1.0,
+}
+COST_TO_USD = {
+    'MUSD': 1e6,
+    'M$': 1e6,
+    'MDOLLAR': 1e6,
+    'BUSD': 1e9,
+    'KUSD': 1e3,
+    'USD': 1.0,
+    '$': 1.0,
+}
 
 NAME_RE = re.compile(r'^(?P<con>\w+)\[(?P<idx>.*)\]$')
 
@@ -52,14 +67,18 @@ def connect(path: Path) -> sqlite3.Connection:
     return sqlite3.connect(f'file:{path}?mode=ro&immutable=1', uri=True)
 
 
-def discount_factors(con: sqlite3.Connection, base_year: int | None) -> tuple[pd.DataFrame, float, int]:
+def discount_factors(
+    con: sqlite3.Connection, base_year: int | None
+) -> tuple[pd.DataFrame, float, int]:
     row = con.execute(
         "SELECT value FROM metadata_real WHERE element = 'global_discount_rate'"
     ).fetchone()
     if row is None:
         sys.exit('global_discount_rate missing from metadata_real (Temoa requires it).')
     gdr = float(row[0])
-    future = [r[0] for r in con.execute("SELECT period FROM time_period WHERE flag = 'f' ORDER BY period")]
+    future = [
+        r[0] for r in con.execute("SELECT period FROM time_period WHERE flag = 'f' ORDER BY period")
+    ]
     p0 = base_year if base_year is not None else future[0]
     rows = []
     for p, p_next in zip(future[:-1], future[1:]):
@@ -73,13 +92,14 @@ def discount_factors(con: sqlite3.Connection, base_year: int | None) -> tuple[pd
     return pd.DataFrame(rows), gdr, p0
 
 
-def unit_conversion(con: sqlite3.Connection, commodity: str, cost_scale: float | None,
-                    energy_to_mwh: float | None) -> tuple[float, str]:
+def unit_conversion(
+    con: sqlite3.Connection, commodity: str, cost_scale: float | None, energy_to_mwh: float | None
+) -> tuple[float, str]:
     """Return multiplier taking (cost unit / commodity unit) to $/MWh."""
     c_units = con.execute('SELECT units FROM commodity WHERE name = ?', (commodity,)).fetchone()
     c_units = (c_units[0] or '').strip() if c_units else ''
     cost_units = con.execute(
-        "SELECT units FROM output_cost WHERE units IS NOT NULL LIMIT 1"
+        'SELECT units FROM output_cost WHERE units IS NOT NULL LIMIT 1'
     ).fetchone()
     cost_units = (cost_units[0] or '').strip() if cost_units else ''
 
@@ -90,7 +110,9 @@ def unit_conversion(con: sqlite3.Connection, commodity: str, cost_scale: float |
     if cost_scale is None:
         cost_scale = COST_TO_USD.get(cost_units.upper().replace(' ', ''))
         if cost_scale is None:
-            sys.exit(f'Unknown cost unit {cost_units!r}; pass --cost-scale (dollars per cost unit).')
+            sys.exit(
+                f'Unknown cost unit {cost_units!r}; pass --cost-scale (dollars per cost unit).'
+            )
     note = f'{cost_units or "?"}/{c_units or "?"} -> $/MWh (x{cost_scale / energy_to_mwh:g})'
     return cost_scale / energy_to_mwh, note
 
@@ -98,10 +120,12 @@ def unit_conversion(con: sqlite3.Connection, commodity: str, cost_scale: float |
 def window_year(dual_scenario: str, scenario: str) -> int:
     """Myopic runs save each window's duals as '<scenario>-<base_year>'; perfect foresight uses
     '<scenario>' alone (treated as one window starting before every period)."""
-    return -1 if dual_scenario == scenario else int(dual_scenario[len(scenario) + 1:])
+    return -1 if dual_scenario == scenario else int(dual_scenario[len(scenario) + 1 :])
 
 
-def load_duals(con: sqlite3.Connection, scenario: str, commodities: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_duals(
+    con: sqlite3.Connection, scenario: str, commodities: list[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (per-slice duals for the requested commodities, all commodity-balance duals).
 
     For myopic runs, each period's dual is taken from the latest window whose base year is
@@ -109,7 +133,7 @@ def load_duals(con: sqlite3.Connection, scenario: str, commodities: list[str]) -
     clear and rewrite results from their base year on, but output_dual_variable is never
     cleared, so look-ahead periods of earlier windows are still in it)."""
     raw = con.execute(
-        "SELECT scenario, constraint_name, dual FROM output_dual_variable "
+        'SELECT scenario, constraint_name, dual FROM output_dual_variable '
         "WHERE (scenario = ? OR scenario GLOB ? || '-[0-9][0-9][0-9][0-9]') "
         "AND (constraint_name LIKE 'commodity_balance_constraint[%' "
         "OR constraint_name LIKE 'annual_commodity_balance_constraint[%')",
@@ -134,8 +158,11 @@ def load_duals(con: sqlite3.Connection, scenario: str, commodities: list[str]) -
     annual = pd.DataFrame(annual_rows, columns=['window', 'region', 'period', 'commodity', 'dual'])
     hit = annual[annual.commodity.isin(commodities)]
     if not hit.empty:
-        print(f'NOTE: {sorted(hit.commodity.unique())} are annual commodities; '
-              'their duals are annual-balance duals and are not per-slice.', file=sys.stderr)
+        print(
+            f'NOTE: {sorted(hit.commodity.unique())} are annual commodities; '
+            'their duals are annual-balance duals and are not per-slice.',
+            file=sys.stderr,
+        )
     return all_slice[all_slice.commodity.isin(commodities)].copy(), all_slice
 
 
@@ -143,17 +170,19 @@ def load_weights(con: sqlite3.Connection, scenario: str, commodities: list[str])
     """Energy consumed from the commodity node in each region/slice (excludes storage charging
     and exports, which are recorded under 'A-B' exchange regions)."""
     q = (
-        "SELECT f.region, f.period, f.season, f.tod, f.input_comm AS commodity, SUM(f.flow) AS load "
-        "FROM output_flow_in f JOIN technology t ON t.tech = f.tech "
-        f"WHERE f.scenario = ? AND f.input_comm IN ({','.join('?' * len(commodities))}) "
+        'SELECT f.region, f.period, f.season, f.tod, f.input_comm AS commodity, SUM(f.flow) AS load '
+        'FROM output_flow_in f JOIN technology t ON t.tech = f.tech '
+        f'WHERE f.scenario = ? AND f.input_comm IN ({",".join("?" * len(commodities))}) '
         "AND t.flag NOT LIKE '%s%' AND f.input_comm != f.output_comm "
-        "GROUP BY f.region, f.period, f.season, f.tod, f.input_comm"
+        'GROUP BY f.region, f.period, f.season, f.tod, f.input_comm'
     )
     return pd.read_sql_query(q, con, params=[scenario, *commodities])
 
 
 def segment_fractions(con: sqlite3.Connection) -> pd.DataFrame:
-    seasons = pd.read_sql_query('SELECT season, segment_fraction AS sf_season FROM time_season', con)
+    seasons = pd.read_sql_query(
+        'SELECT season, segment_fraction AS sf_season FROM time_season', con
+    )
     tods = pd.read_sql_query('SELECT tod, hours FROM time_of_day', con)
     tods['tod_frac'] = tods.hours / tods.hours.sum()
     seg = seasons.merge(tods[['tod', 'tod_frac']], how='cross')
@@ -167,14 +196,24 @@ def weighted(g: pd.DataFrame, w: str) -> float:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument('database', type=Path)
     ap.add_argument('--scenario', help='scenario name (default: the only one with duals)')
-    ap.add_argument('--commodity', nargs='+', default=['ELC'], help='commodities to price (default ELC)')
+    ap.add_argument(
+        '--commodity', nargs='+', default=['ELC'], help='commodities to price (default ELC)'
+    )
     ap.add_argument('--base-year', type=int, help='override P0 (default: first future period)')
-    ap.add_argument('--cost-scale', type=float, help='dollars per objective cost unit (default from units)')
-    ap.add_argument('--energy-to-mwh', type=float, help='MWh per commodity unit (default from units)')
-    ap.add_argument('--flip-sign', action='store_true', help='negate duals (only if your solver flips them)')
+    ap.add_argument(
+        '--cost-scale', type=float, help='dollars per objective cost unit (default from units)'
+    )
+    ap.add_argument(
+        '--energy-to-mwh', type=float, help='MWh per commodity unit (default from units)'
+    )
+    ap.add_argument(
+        '--flip-sign', action='store_true', help='negate duals (only if your solver flips them)'
+    )
     ap.add_argument('--spike', type=float, default=500.0, help='flag slice prices above this $/MWh')
     ap.add_argument('--out-dir', type=Path, default=Path('.'), help='where to write CSVs')
     args = ap.parse_args()
@@ -202,13 +241,18 @@ def main() -> None:
     dfs, gdr, p0 = discount_factors(con, args.base_year)
     duals, all_balance = load_duals(con, scenario, args.commodity)
     if duals.empty:
-        sys.exit(f'No commodity_balance_constraint duals for {args.commodity} in scenario {scenario}.')
+        sys.exit(
+            f'No commodity_balance_constraint duals for {args.commodity} in scenario {scenario}.'
+        )
 
     # Sign sanity check: across all commodity balances, nonzero duals should be mostly positive.
     nz = all_balance.dual[all_balance.dual.abs() > 1e-9]
     if len(nz) and (nz < 0).mean() > 0.5 and not args.flip_sign:
-        print(f'WARNING: {100 * (nz < 0).mean():.0f}% of nonzero commodity-balance duals are negative; '
-              'your solver may report the opposite sign convention (see --flip-sign).', file=sys.stderr)
+        print(
+            f'WARNING: {100 * (nz < 0).mean():.0f}% of nonzero commodity-balance duals are negative; '
+            'your solver may report the opposite sign convention (see --flip-sign).',
+            file=sys.stderr,
+        )
 
     duals = duals.merge(dfs, on='period', how='left')
     if duals.discount_factor.isna().any():
@@ -233,26 +277,44 @@ def main() -> None:
     # annual summaries
     rows = []
     for (c, r, p), g in prices.groupby(['commodity', 'region', 'period']):
-        rows.append({
-            'commodity': c, 'region': r, 'period': p,
-            'load_weighted': weighted(g, 'load'),
-            'time_weighted': weighted(g, 'segment_fraction'),
-            'min': g.price.min(), 'median': g.price.median(), 'max': g.price.max(),
-            'load_PJ': g['load'].sum(),
-            'n_slices': len(g),
-            'n_negative': int((g.price < -1e-6).sum()),
-            'n_zero': int((g.price.abs() <= 1e-6).sum()),
-            'n_zero_with_load': int(((g.price.abs() <= 1e-6) & (g['load'] > 0)).sum()),
-            'n_spike': int((g.price > args.spike).sum()),
-        })
+        rows.append(
+            {
+                'commodity': c,
+                'region': r,
+                'period': p,
+                'load_weighted': weighted(g, 'load'),
+                'time_weighted': weighted(g, 'segment_fraction'),
+                'min': g.price.min(),
+                'median': g.price.median(),
+                'max': g.price.max(),
+                'load_PJ': g['load'].sum(),
+                'n_slices': len(g),
+                'n_negative': int((g.price < -1e-6).sum()),
+                'n_zero': int((g.price.abs() <= 1e-6).sum()),
+                'n_zero_with_load': int(((g.price.abs() <= 1e-6) & (g['load'] > 0)).sum()),
+                'n_spike': int((g.price > args.spike).sum()),
+            }
+        )
     annual = pd.DataFrame(rows)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stem = f'{args.database.stem}_{scenario}'
-    slice_cols = ['commodity', 'region', 'period', 'season', 'tod', 'window', 'dual',
-                  'discount_factor', 'price', 'load', 'segment_fraction']
-    prices.sort_values(keys)[slice_cols].rename(columns={'price': 'price_usd_per_mwh', 'load': 'load_PJ'}) \
-        .to_csv(args.out_dir / f'{stem}_prices_by_slice.csv', index=False)
+    slice_cols = [
+        'commodity',
+        'region',
+        'period',
+        'season',
+        'tod',
+        'window',
+        'dual',
+        'discount_factor',
+        'price',
+        'load',
+        'segment_fraction',
+    ]
+    prices.sort_values(keys)[slice_cols].rename(
+        columns={'price': 'price_usd_per_mwh', 'load': 'load_PJ'}
+    ).to_csv(args.out_dir / f'{stem}_prices_by_slice.csv', index=False)
     annual.to_csv(args.out_dir / f'{stem}_prices_annual.csv', index=False)
 
     pd.set_option('display.width', 200)
@@ -260,18 +322,24 @@ def main() -> None:
     print(dfs.to_string(index=False))
     for c, g in annual.groupby('commodity'):
         print(f'\n{c}: load-weighted average price ($/MWh), region x period')
-        print(g.pivot(index='region', columns='period', values='load_weighted').round(1).to_string())
+        print(
+            g.pivot(index='region', columns='period', values='load_weighted').round(1).to_string()
+        )
 
     # diagnostics
     print('\nDiagnostics')
     neg = prices[prices.price < -1e-6]
-    print(f'  negative slice prices: {len(neg)} of {len(prices)}'
-          + (f' (min {neg.price.min():.1f} $/MWh)' if len(neg) else ''))
+    print(
+        f'  negative slice prices: {len(neg)} of {len(prices)}'
+        + (f' (min {neg.price.min():.1f} $/MWh)' if len(neg) else '')
+    )
     zero_load = prices[(prices.price.abs() <= 1e-6) & (prices['load'] > 0)]
     print(f'  zero prices in slices with load: {len(zero_load)}')
     spikes = prices[prices.price > args.spike]
-    print(f'  slice prices > {args.spike:g} $/MWh: {len(spikes)}'
-          + (f' (max {spikes.price.max():.0f})' if len(spikes) else ''))
+    print(
+        f'  slice prices > {args.spike:g} $/MWh: {len(spikes)}'
+        + (f' (max {spikes.price.max():.0f})' if len(spikes) else '')
+    )
     # Degeneracy hint: duals that jump between adjacent slices with nearly identical load,
     # or many slices sharing one exact price with a few far-off outliers.
     ratio = annual.load_weighted / annual.time_weighted
@@ -279,7 +347,9 @@ def main() -> None:
     print(f'  region-periods where load- and time-weighted averages differ >1.5x: {len(off)}')
     no_load = annual[annual.load_PJ <= 0]
     if len(no_load):
-        print(f'  region-periods with no recorded load (load-weighted average undefined): {len(no_load)}')
+        print(
+            f'  region-periods with no recorded load (load-weighted average undefined): {len(no_load)}'
+        )
     print(f'\nWrote {args.out_dir / (stem + "_prices_by_slice.csv")}')
     print(f'Wrote {args.out_dir / (stem + "_prices_annual.csv")}')
 
