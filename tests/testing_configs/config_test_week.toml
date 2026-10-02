@@ -1,0 +1,23 @@
+scenario = "test_week"
+scenario_mode = "perfect_foresight"
+extensions= ["unit_commitment"]
+input_database = "tests/testing_outputs/test_week.sqlite"
+output_database = "tests/testing_outputs/test_week.sqlite"
+neos = false
+solver_name = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = false
+days_per_period = 7
+reserve_margin = "static"
+
+[MGA]
+slack = 0.1
+iterations = 4
+weight = "integer"
+
+[myopic]
+view_depth = 1
+step_size = 1
+evolving = false
+evolution_script = ''

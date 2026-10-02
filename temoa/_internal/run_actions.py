@@ -124,6 +124,7 @@ def build_instance(
     silent: bool = False,
     keep_lp_file: bool = False,
     lp_path: Path | None = None,
+    extensions: Iterable[str] | None = None,
 ) -> TemoaModel:
     """
     Build a Temoa Instance from data
@@ -134,7 +135,7 @@ def build_instance(
     :param model_name: Optional name for this instance
     :return: a built TemoaModel
     """
-    model = TemoaModel()
+    model = TemoaModel(extensions=tuple(extensions or ()))
 
     model.dual = Suffix(direction=Suffix.IMPORT)
     # self.model.rc = Suffix(direction=Suffix.IMPORT)
@@ -243,8 +244,17 @@ def solve_instance(
     with task_timer(f'Solving model {instance.name}', silent=silent):
         try:
             # currently, the highs solver call will puke if the suffixes are passed
+            # it also doesn't seem to support duals properly so disable those
             if solver_name == 'appsi_highs':
-                result = optimizer.solve(instance)
+                dual_suffix = instance.component('dual')
+                if dual_suffix is not None:
+                    original_direction = dual_suffix.direction
+                    dual_suffix.direction = Suffix.LOCAL
+                try:
+                    result = optimizer.solve(instance)
+                finally:
+                    if dual_suffix is not None:
+                        dual_suffix.direction = original_direction
             else:
                 result = optimizer.solve(instance, suffixes=solver_suffixes_list)
         except RuntimeError as error:

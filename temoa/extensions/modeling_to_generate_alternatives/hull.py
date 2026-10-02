@@ -1,6 +1,7 @@
 """
 A thin wrapper on Scipy's ConvexHull to make it more manageable
 """
+
 from __future__ import annotations
 
 from logging import getLogger
@@ -119,8 +120,8 @@ class Hull:
     def add_point(self, point: np.ndarray) -> None:
         if len(point) != self.dim:
             msg = (
-                f'Tried adding a point to hull (dim: {self.dim}) with wrong dimensions {len(point)}. '
-                f'Point: {point}'
+                f'Tried adding a point to hull (dim: {self.dim}) with '
+                f'wrong dimensions {len(point)}. Point: {point}'
             )
             logger.error(msg)
             raise ValueError(msg)

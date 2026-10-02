@@ -246,6 +246,11 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
                         continue
                     res[fi][FlowType.OUT] = flow
 
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_input_results(model, res, epsilon)
+
     return res
 
 
@@ -340,30 +345,30 @@ def poll_cost_results(
         cap = value(model.v_new_capacity[r, t, v])
         if abs(cap) < epsilon:
             continue
+        cost_invest = value(model.cost_invest[r, t, v])
         loan_life = value(loan_lifetime_process[r, t, v])
-        loan_rate = value(model.loan_rate[r, t, v])
+        loan_annualize = value(model.loan_annualize[r, t, v])
 
         if model.is_survival_curve_process[r, t, v]:
-            model_loan_cost, undiscounted_cost = loan_costs_survival_curve(
+            discounted_cost, undiscounted_cost = costs.poll_loan_costs_survival_curve(
                 model=model,
                 r=r,
                 t=t,
                 v=v,
-                loan_rate=loan_rate,
                 loan_life=loan_life,
+                loan_annualize=loan_annualize,
                 capacity=cap,
-                invest_cost=value(model.cost_invest[r, t, v]),
+                invest_cost=cost_invest,
                 p_0=p_0_true,
                 p_e=p_e,
                 global_discount_rate=global_discount_rate,
-                vintage=v,
             )
         else:
-            model_loan_cost, undiscounted_cost = loan_costs(
-                loan_rate=loan_rate,
+            discounted_cost, undiscounted_cost = costs.poll_loan_costs(
                 loan_life=loan_life,
+                loan_annualize=loan_annualize,
                 capacity=cap,
-                invest_cost=value(model.cost_invest[r, t, v]),
+                invest_cost=cost_invest,
                 process_life=value(model.lifetime_process[r, t, v]),
                 p_0=p_0_true,
                 p_e=p_e,
@@ -377,7 +382,7 @@ def poll_cost_results(
                 period=v,
                 tech=t,
                 vintage=v,
-                cost=model_loan_cost,
+                cost=discounted_cost,
                 cost_type=CostType.D_INVEST,
             )
             exchange_costs.add_cost_record(
@@ -392,7 +397,7 @@ def poll_cost_results(
             # The period `p` for an investment cost is its vintage `v`.
             key = (cast('Region', r), cast('Period', v), cast('Technology', t), cast('Vintage', v))
             entries[key].update(
-                {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
+                {CostType.D_INVEST: discounted_cost, CostType.INVEST: undiscounted_cost}
             )
 
     for r, p, t, v in model.cost_fixed.sparse_keys():
@@ -489,107 +494,18 @@ def poll_cost_results(
                     CostType.VARIABLE: float(value(undiscounted_var_cost)),
                 }
             )
+
+    if 'eos' in model.enabled_extensions:
+        import temoa.extensions.economies_of_scale.core.data_puller as eos
+
+        eos.poll_costs(model, exchange_costs, entries, p_0_true, epsilon)
+    if 'unit_commitment' in model.enabled_extensions:
+        import temoa.extensions.unit_commitment.core.data_puller as uc
+
+        uc.poll_startup_cost_results(model, exchange_costs, entries, p_0_true, epsilon)
+
     exchange_entries = exchange_costs.get_entries()
     return entries, exchange_entries
-
-
-def loan_costs(
-    loan_rate: float,  # this is referred to as loan_rate in parameters
-    loan_life: float,
-    capacity: float,
-    invest_cost: float,
-    process_life: int,
-    p_0: int,
-    p_e: int,
-    global_discount_rate: float,
-    vintage: int,
-    **kwargs: object,
-) -> tuple[float, float]:
-    """
-    Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
-    :return: tuple of [model-view discounted cost, un-discounted annuity]
-    """
-    # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
-    #            model uses for these costs
-    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=int(loan_life))
-    model_ic = costs.loan_cost(
-        capacity,
-        invest_cost,
-        loan_annualize=float(value(loan_ar)),
-        lifetime_loan_process=loan_life,
-        lifetime_process=process_life,
-        p_0=p_0,
-        p_e=p_e,
-        global_discount_rate=global_discount_rate,
-        vintage=vintage,
-    )
-    # Override the GDR to get the undiscounted value
-    global_discount_rate = 0
-    undiscounted_cost = costs.loan_cost(
-        capacity,
-        invest_cost,
-        loan_annualize=float(value(loan_ar)),
-        lifetime_loan_process=loan_life,
-        lifetime_process=process_life,
-        p_0=p_0,
-        p_e=p_e,
-        global_discount_rate=global_discount_rate,
-        vintage=vintage,
-    )
-    return float(value(model_ic)), float(value(undiscounted_cost))
-
-
-def loan_costs_survival_curve(
-    model: TemoaModel,
-    r: Region,
-    t: Technology,
-    v: Vintage,
-    loan_rate: float,  # this is referred to as loan_rate in parameters
-    loan_life: float,
-    capacity: float,
-    invest_cost: float,
-    p_0: Period,
-    p_e: Period,
-    global_discount_rate: float,
-    vintage: Vintage,
-    **kwargs: object,
-) -> tuple[float, float]:
-    """
-    Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
-    :return: tuple of [model-view discounted cost, un-discounted annuity]
-    """
-    # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
-    #            model uses for these costs
-    loan_ar = costs.pv_to_annuity(rate=loan_rate, periods=int(loan_life))
-    model_ic = costs.loan_cost_survival_curve(
-        model,
-        r,
-        t,
-        v,
-        capacity,
-        invest_cost,
-        loan_annualize=float(value(loan_ar)),
-        lifetime_loan_process=loan_life,
-        p_0=p_0,
-        p_e=p_e,
-        global_discount_rate=global_discount_rate,
-    )
-    # Override the GDR to get the undiscounted value
-    global_discount_rate = 0
-    undiscounted_cost = costs.loan_cost_survival_curve(
-        model,
-        r,
-        t,
-        v,
-        capacity,
-        invest_cost,
-        loan_annualize=float(value(loan_ar)),
-        lifetime_loan_process=loan_life,
-        p_0=p_0,
-        p_e=p_e,
-        global_discount_rate=global_discount_rate,
-    )
-    return float(value(model_ic)), float(value(undiscounted_cost))
 
 
 def poll_emissions(
@@ -650,6 +566,11 @@ def poll_emissions(
             value(model.v_flow_out_annual[r, p, i, t, v, o])
             * model.emission_activity[r, e, i, t, v, o]
         )
+
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.core import data_puller as uc
+
+        uc.poll_emission_results(model, flows)
 
     # gather costs
     ud_costs: dict[tuple[Region, Period, Technology, Vintage], float] = defaultdict(float)

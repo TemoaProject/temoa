@@ -90,6 +90,24 @@ def test_v4_migrations(tmp_path: Path, schema_file: Path, mock_data_file: Path) 
         _verify_migrated_data(conn_db)
 
 
+def test_get_annual_techs_source_variants() -> None:
+    """_get_annual_techs must read Technology.annual, fall back to a tech_annual
+    table (older v3 databases), and return an empty set when neither exists."""
+    from temoa.utilities.master_migration import _get_annual_techs
+
+    con = sqlite3.connect(':memory:')
+    con.execute('CREATE TABLE Technology (tech TEXT, annual INTEGER)')
+    con.executemany('INSERT INTO Technology VALUES (?, ?)', [('T1', 0), ('T2', 1)])
+    assert _get_annual_techs(con) == {'T2'}
+
+    con_old = sqlite3.connect(':memory:')
+    con_old.execute('CREATE TABLE tech_annual (tech TEXT)')
+    con_old.execute("INSERT INTO tech_annual VALUES ('T9')")
+    assert _get_annual_techs(con_old) == {'T9'}
+
+    assert _get_annual_techs(sqlite3.connect(':memory:')) == set()
+
+
 def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     # Check time_season restructuring (aggregated from TimeSegmentFraction)
     # Summer: 0.4 + 0.3 = 0.7
@@ -124,6 +142,29 @@ def _verify_migrated_data(conn: sqlite3.Connection) -> None:
     ).fetchall()
     assert len(cap_rows) == 1
     assert cap_rows[0] == ('R1', 'T1', 2030, 10.0, 'ge')
+
+    # Split-table routing: an annual tech's split must land in the *_annual table —
+    # the seasonal split constraints silently skip annual techs, so a mis-routed row
+    # disappears from the model without error.
+    in_seasonal = conn.execute(
+        'SELECT region, period, input_comm, tech, operator, proportion FROM limit_tech_input_split'
+    ).fetchall()
+    assert in_seasonal == [('R1', 2030, 'In', 'T1', 'ge', pytest.approx(0.3))]
+    in_annual = conn.execute(
+        'SELECT region, period, input_comm, tech, operator, proportion '
+        'FROM limit_tech_input_split_annual'
+    ).fetchall()
+    assert in_annual == [('R1', 2030, 'In', 'T2', 'ge', pytest.approx(0.4))]
+    out_seasonal = conn.execute(
+        'SELECT region, period, tech, output_comm, operator, proportion '
+        'FROM limit_tech_output_split'
+    ).fetchall()
+    assert out_seasonal == [('R1', 2030, 'T1', 'Out', 'ge', pytest.approx(0.5))]
+    out_annual = conn.execute(
+        'SELECT region, period, tech, output_comm, operator, proportion '
+        'FROM limit_tech_output_split_annual'
+    ).fetchall()
+    assert out_annual == [('R1', 2030, 'T2', 'Out', 'ge', pytest.approx(0.6))]
 
     emis_rows = conn.execute(
         'SELECT region, period, value, operator FROM limit_emission'

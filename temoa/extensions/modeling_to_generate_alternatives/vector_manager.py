@@ -1,6 +1,7 @@
 """
 An ABC to serve as a framework for future Vector Managers
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

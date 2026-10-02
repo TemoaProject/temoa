@@ -9,6 +9,7 @@ will ingest DataPortal objects to make new models.  The MGA will (in future) lik
 new obj functions
 
 """
+
 from __future__ import annotations
 
 import logging.handlers
@@ -60,7 +61,7 @@ class MCWorker:
         self.results_queue = results_queue
         self.solver_name = solver_name
         self.solver_options = solver_options
-        self.opt = None # Initialize in run()
+        self.opt = None  # Initialize in run()
         self.log_queue = log_queue
         self.log_level = log_level
         self.root_logger_name = log_root_name

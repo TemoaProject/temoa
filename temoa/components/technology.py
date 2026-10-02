@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import value
 
+from temoa.components.utils import get_adjusted_existing_capacity
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -52,7 +54,23 @@ def model_process_life_indices(
     the periods in which a process is active, distinct from TechLifeFracIndices that
     returns indices only for processes that EOL mid-period.
     """
-    return model.active_activity_rptv
+    indices = {
+        (r, model.time_exist.last(), t, v) for r, t, v in model.existing_capacity.sparse_keys()
+    }
+    indices = indices | model.active_activity_rptv
+
+    return indices
+
+
+def lifetime_tech_indices(model: TemoaModel) -> set[tuple[Region, Technology]]:
+    """
+    Based on the efficiency parameter's indices, this function returns the set of
+    process indices that may be specified in the lifetime_tech parameter.
+    """
+    indices = {(r, t) for r, _, t, _, _ in set(model.efficiency.sparse_keys())}
+    indices = indices | {(r, t) for r, t, _ in model.existing_capacity.sparse_keys()}
+
+    return indices
 
 
 def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology, Vintage]]:
@@ -60,7 +78,7 @@ def lifetime_process_indices(model: TemoaModel) -> set[tuple[Region, Technology,
     Based on the efficiency parameter's indices, this function returns the set of
     process indices that may be specified in the lifetime_process parameter.
     """
-    indices = {(r, t, v) for r, i, t, v, o in set(model.efficiency.sparse_keys())}
+    indices = {(r, t, v) for r, _, t, v, _ in set(model.efficiency.sparse_keys())}
     indices = indices | set(model.existing_capacity.sparse_keys())
 
     return indices
@@ -424,14 +442,18 @@ def check_existing_capacity(model: TemoaModel) -> None:
             )
             logger.warning(msg)
             continue
-        if t not in model.tech_all:
+        adjusted_cap = get_adjusted_existing_capacity(model, r, t, v)
+        if adjusted_cap <= 0.0:
+            # Was retired in a previous period (myopic mode)
             continue
+        p = model.time_optimize.first()
         life = value(model.lifetime_process[r, t, v])
-        if (r, t, v) not in model.process_periods and v + life > model.time_optimize.first():
+        if (r, t, v) not in model.process_periods and v + life > p:
+            surviving_cap = adjusted_cap * value(model.lifetime_survival_curve[r, p, t, v])
             msg = (
-                f'Existing capacity {r, t, v} with lifetime {life} and capacity {cap} '
-                'should extend into future periods but it is not in process periods. '
-                'Was it included in the Efficiency table?'
+                f'Existing capacity {r, t, v} with lifetime {life} and surviving capacity '
+                f'{surviving_cap} should extend into future periods but is not an active '
+                'process. It may be missing from the Efficiency table or have too little '
+                'capacity to output and carry forward if running in myopic mode.'
             )
-            logger.error(msg)
-            raise ValueError(msg)
+            logger.warning(msg)

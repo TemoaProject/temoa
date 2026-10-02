@@ -12,10 +12,12 @@ from enum import StrEnum
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from pyomo.environ import value
+from pyomo.environ import Expression, value
 
 if TYPE_CHECKING:
-    from pyomo.core import Expression
+    from collections.abc import Callable
+
+    from pyomo.core.expr.numeric_expr import NumericValue
 
     from temoa.core.model import TemoaModel
     from temoa.types import (
@@ -39,7 +41,11 @@ class Operator(StrEnum):
     GREATER_EQUAL = 'ge'
 
 
-def operator_expression(lhs: Expression, operator: Operator, rhs: Expression) -> ExprLike:
+def operator_expression(
+    lhs: Expression | NumericValue | float,
+    operator: Operator,
+    rhs: Expression | NumericValue | float,
+) -> ExprLike:
     match operator:
         case Operator.EQUAL:
             return lhs == rhs
@@ -81,9 +87,69 @@ def get_variable_efficiency(
     return value(model.efficiency[r, i, t, v, o])
 
 
-def get_capacity_factor(
-    model: TemoaModel, r: Region, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> float:
+def available_output_base(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""
+    Maximum available output for a process in a specific time slice.
+
+    .. math::
+
+        \textit{available} =
+        \mathbf{CAP}_{r,p,t,v}
+        \cdot CF_{r,s,d,t,v}
+        \cdot C2A_{r,t}
+        \cdot SEG_{s,d}
+
+    where :math:`CF_{r,s,d,t,v}` is taken from ``capacity_factor_process`` if a
+    process-specific value exists, otherwise from ``capacity_factor_tech``.
+    """
+    base = (
+        model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        * value(model.segment_fraction[s, d])
+    )
     if model.is_capacity_factor_process[r, t, v]:
-        return value(model.capacity_factor_process[r, s, d, t, v])
-    return value(model.capacity_factor_tech[r, s, d, t])
+        return base * value(model.capacity_factor_process[r, s, d, t, v])
+    else:
+        return base * value(model.capacity_factor_tech[r, s, d, t])
+
+
+# May be replaced by extensions (e.g. unit_commitment) during model initialization.
+available_output_function: Callable[..., ExprLike] = available_output_base
+
+
+def get_available_output(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    """The maximum available output for a process in a specific time slice."""
+    return model.available_output_function(model, r, p, s, d, t, v)
+
+
+def get_adjusted_existing_capacity(
+    model: TemoaModel, r: Region, t: Technology, v: Vintage
+) -> float:
+    """
+    Returns the built existing capacity adjusted for any early retirements.
+
+    Needed for early retirements in myopic mode. Takes into account survival curves
+    and any early retirements that may have occurred prior to this planning step.
+    """
+    capacity_adjustment = sum(
+        value(model.retired_existing_capacity[r, _p, t, v])
+        / (value(model.lifetime_survival_curve[r, _p, t, v]) or 1)
+        for _p in model.time_exist
+    )
+    return value(model.existing_capacity[r, t, v]) - capacity_adjustment

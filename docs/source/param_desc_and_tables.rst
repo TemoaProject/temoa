@@ -94,20 +94,6 @@ capacity, activity and emissions**.
    ":math:`\text{LE}_{r,p,e}`", ":code:`limit_emission`", ":code:`limit_emission`", "limit on emissions by region and period"
    ":math:`\text{LS}_{r,t}`", ":code:`limit_resource`", ":code:`limit_resource`", "cumulative activity limit across time periods (not supported in myopic); :code:`tech_or_group` column accepts a technology name or group name"
 
-Parameters in the table below relate to the specification of **growth and degrowth
-limits**.
-
-.. csv-table::
-   :header: "Parameter", "Database Table", "Model Element", "Notes"
-   :widths: 15, 20, 25, 40
-
-   ":math:`\text{LGC}_{r,t}`", ":code:`limit_growth_capacity`", ":code:`limit_growth_capacity`", "capacity growth rate limits; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\text{LDGC}_{r,t}`", ":code:`limit_degrowth_capacity`", ":code:`limit_degrowth_capacity`", "capacity degrowth rate limits; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\text{LGNC}_{r,t}`", ":code:`limit_growth_new_capacity`", ":code:`limit_growth_new_capacity`", "new capacity growth rate limits; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\text{LDGNC}_{r,t}`", ":code:`limit_degrowth_new_capacity`", ":code:`limit_degrowth_new_capacity`", "new capacity degrowth rate limits; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\mathrm{LGNC}_{\Delta,r,t}`", ":code:`limit_growth_new_capacity_delta`", ":code:`limit_growth_new_capacity_delta`", "new capacity growth acceleration limits; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\mathrm{LDGNC}_{\Delta,r,t}`", ":code:`limit_degrowth_new_capacity_delta`", ":code:`limit_degrowth_new_capacity_delta`", "new capacity degrowth deceleration limits; :code:`tech_or_group` column accepts a technology name or group name"
-
 Parameters in the table below relate to the specification of **operational and
 split limits**.
 

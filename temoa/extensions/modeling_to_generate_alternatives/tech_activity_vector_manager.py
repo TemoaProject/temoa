@@ -137,7 +137,9 @@ class TechActivityVectorManager(VectorManager):
         for idx_annual in self.base_model.active_flow_rpitvo or set():
             tech = idx_annual[3]
             self.technology_size[tech] += 1
-            self.variable_index_mapping[tech][self.base_model.v_flow_out_annual.name].append(idx_annual)
+            self.variable_index_mapping[tech][self.base_model.v_flow_out_annual.name].append(
+                idx_annual
+            )
         logger.debug('Catalogued %d Technology Variables', sum(self.technology_size.values()))
 
     @property
@@ -364,8 +366,9 @@ class TechActivityVectorManager(VectorManager):
         A little function to track the size of the hull, after it is built initially
         Note:  This hull is a "throw away" and only used for volume calc, but it is pretty quick
         """
-        if self.hull is not None and \
-           self.hull_points is not None:  # don't try until after first hull is built
+        if (
+            self.hull is not None and self.hull_points is not None
+        ):  # don't try until after first hull is built
             hull = Hull(self.hull_points)
             volume = hull.volume
             logger.info('Tracking hull at %0.2f', volume)

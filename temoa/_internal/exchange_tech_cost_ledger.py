@@ -57,7 +57,11 @@ class ExchangeTechCostLedger:
         if not r1 and r2:
             raise ValueError(f'problem splitting region-region: {link}')
         # add to the "seen" records for appropriate cost type
-        self.cost_records[cost_type][r1, r2, tech, vintage, period] = cost
+        key = (r1, r2, tech, vintage, period)
+        if key in self.cost_records[cost_type]:
+            self.cost_records[cost_type][key] += cost
+        else:
+            self.cost_records[cost_type][key] = cost
 
     def get_use_ratio(
         self, exporter: Region, importer: Region, period: Period, tech: Technology, vintage: Vintage
