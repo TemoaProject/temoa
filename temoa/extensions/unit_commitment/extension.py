@@ -18,6 +18,7 @@ UNIT_COMMITMENT_EXTENSION = ExtensionSpec(
         'output_unit_commitment',
         'output_operating_reserve',
     ),
+    output_tables=('output_unit_commitment', 'output_operating_reserve'),
     regional_group_tables={'operating_reserve_margin': 'region'},
     register_model_components=register_model_components,
     build_manifest_items=build_manifest_items,

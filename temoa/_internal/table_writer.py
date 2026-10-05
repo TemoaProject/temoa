@@ -28,6 +28,7 @@ from temoa._internal.table_data_puller import (
     poll_storage_level_results,
 )
 from temoa.core.modes import TemoaMode
+from temoa.extensions.framework import get_extension_output_tables
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -376,7 +377,10 @@ class TableWriter:
         cur = self.connection.cursor()
         for table in BASIC_OUTPUT_TABLES:
             cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
-        for table in OPTIONAL_OUTPUT_TABLES:
+        for table in (
+            *OPTIONAL_OUTPUT_TABLES,
+            *get_extension_output_tables(self.config.extensions),
+        ):
             try:
                 cur.execute(f'DELETE FROM {table} WHERE scenario == ?', (self.config.scenario,))
             except sqlite3.OperationalError:
@@ -387,7 +391,11 @@ class TableWriter:
     def clear_iterative_runs(self) -> None:
         target = self.config.scenario + '-%'
         cur = self.connection.cursor()
-        tables = BASIC_OUTPUT_TABLES + OPTIONAL_OUTPUT_TABLES
+        tables = (
+            *BASIC_OUTPUT_TABLES,
+            *OPTIONAL_OUTPUT_TABLES,
+            *get_extension_output_tables(self.config.extensions),
+        )
         for table in tables:
             try:
                 cur.execute(f'DELETE FROM {table} WHERE scenario like ?', (target,))

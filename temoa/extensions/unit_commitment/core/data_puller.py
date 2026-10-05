@@ -9,6 +9,7 @@ from pyomo.environ import quicksum, value
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
 from temoa.components.reserves import reserve_margin_proxy_demand
+from temoa.core.modes import TemoaMode
 from temoa.extensions.unit_commitment.components import operating_reserves, startup
 from temoa.types.model_types import EI, FI, FlowType
 
@@ -27,6 +28,16 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
+
+
+def _clear_scenario_rows(writer: TableWriter, table: str, scenario: str) -> None:
+    """Replace prior rows for this scenario, except in myopic runs where steps accumulate."""
+    if writer.config.scenario_mode == TemoaMode.MYOPIC:
+        return
+    try:
+        writer.connection.execute(f'DELETE FROM {table} WHERE scenario == ?', (scenario,))
+    except sqlite3.OperationalError:
+        pass
 
 
 class UCI(NamedTuple):
@@ -89,12 +100,7 @@ def write_uc_results(
             'units': unit_prop.get_capacity_units(uci.t) if unit_prop else None,
         }
         records.append(row)
-    try:
-        writer.connection.execute(
-            'DELETE FROM output_unit_commitment WHERE scenario == ?', (scenario,)
-        )
-    except sqlite3.OperationalError:
-        pass
+    _clear_scenario_rows(writer, 'output_unit_commitment', scenario)
 
     writer._bulk_insert('output_unit_commitment', records)
     writer.connection.commit()
@@ -178,12 +184,7 @@ def write_operating_reserve_results(
                 'offline_credit': offline,
             }
         )
-    try:
-        writer.connection.execute(
-            'DELETE FROM output_operating_reserve WHERE scenario == ?', (scenario,)
-        )
-    except sqlite3.OperationalError:
-        pass
+    _clear_scenario_rows(writer, 'output_operating_reserve', scenario)
 
     writer._bulk_insert('output_operating_reserve', records)
     writer.connection.commit()

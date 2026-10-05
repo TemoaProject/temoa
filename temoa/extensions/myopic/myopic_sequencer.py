@@ -19,6 +19,7 @@ from temoa.core.model import TemoaModel
 from temoa.core.solver_spec import resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.data_processing.db_to_excel import make_excel
+from temoa.extensions.framework import get_extension_output_tables
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper
 from temoa.model_checking.pricing_check import price_checker
@@ -635,6 +636,9 @@ class MyopicSequencer:
         self.cursor.executescript(sql_commands)
         self.output_con.commit()
 
+    def _extension_output_tables(self) -> tuple[str, ...]:
+        return get_extension_output_tables(self.config.extensions if self.config else None)
+
     def clear_old_results(self) -> None:
         """
         Clear old results from tables
@@ -644,7 +648,7 @@ class MyopicSequencer:
         assert self.output_con is not None
         scenario_name = self.config.scenario if self.config else None
         logger.debug('Deleting old results for scenario name %s', scenario_name)
-        for table in self.tables_with_scenario_reference:
+        for table in (*self.tables_with_scenario_reference, *self._extension_output_tables()):
             try:
                 self.cursor.execute(
                     f'DELETE FROM {table} WHERE scenario = ? OR scenario like ?',
@@ -693,7 +697,7 @@ class MyopicSequencer:
 
         assert self.cursor is not None
         assert self.output_con is not None
-        for table in self.tables_with_period:
+        for table in (*self.tables_with_period, *self._extension_output_tables()):
             scenario_name = self.config.scenario if self.config else None
             try:
                 self.cursor.execute(

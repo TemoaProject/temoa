@@ -25,6 +25,8 @@ class ExtensionSpec:
 
     extension_id: str
     owned_tables: tuple[str, ...] = ()
+    # Result tables with `scenario` and `period` columns; cleared by run/myopic cleanup
+    output_tables: tuple[str, ...] = ()
     regional_group_tables: dict[str, str] = field(default_factory=dict)
     register_model_components: ModelHook | None = None
     build_manifest_items: ManifestHook | None = None
@@ -82,6 +84,13 @@ def resolve_extension_specs(extension_ids: Sequence[str] | None) -> tuple[Extens
         raise ValueError(msg)
 
     return tuple(known[ext_id] for ext_id in normalized_ids)
+
+
+def get_extension_output_tables(extension_ids: Sequence[str] | None) -> tuple[str, ...]:
+    """Return the output tables declared by the enabled extensions."""
+    return tuple(
+        table for spec in resolve_extension_specs(extension_ids) for table in spec.output_tables
+    )
 
 
 def apply_model_extension_hooks(model: TemoaModel, specs: Sequence[ExtensionSpec]) -> None:
