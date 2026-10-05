@@ -67,20 +67,14 @@ def initialize_operating_reserve_margins(model: UnitCommitmentModel) -> None:
         model.operating_reserve_margin,
         model.operating_reserve_processes,
     )
-    for orm, r_g, t_g in model.operating_reserve_margin.sparse_keys():
-        for p in model.time_optimize:
-            if not any(
-                (orm, r, t) in model.operating_reserve_activity_credit
-                or (orm, r, t) in model.operating_reserve_online_credit
-                or (orm, r, t) in model.operating_reserve_offline_credit
-                for r, t, _v in model.operating_reserve_processes[orm, r_g, t_g, p]
-            ):
-                logger.warning(
-                    'No credits available for reserve %s in region group %s and period %s',
-                    orm,
-                    r_g,
-                    p,
-                )
+    for (orm, r_g, t_g, p), processes in model.operating_reserve_processes.items():
+        if not any(
+            (orm, r, t) in model.operating_reserve_activity_credit
+            or (orm, r, t) in model.operating_reserve_online_credit
+            or (orm, r, t) in model.operating_reserve_offline_credit
+            for r, t, _v in processes
+        ):
+            logger.warning('No credits defined for reserve %s', (orm, r_g, t_g, p))
 
 
 def has_activity_credit(

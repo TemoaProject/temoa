@@ -120,18 +120,9 @@ def initialize_planning_reserve_margins(model: TemoaModel) -> None:
         model.planning_reserve_margin,
         model.planning_reserve_processes,
     )
-    for prm, r_g, t_g in model.planning_reserve_margin.sparse_keys():
-        for p in model.time_optimize:
-            if not any(
-                model.planning_reserve_credit[prm, _r, t]
-                for _r, t, _v in model.planning_reserve_processes[prm, r_g, t_g, p]
-            ):
-                logger.warning(
-                    'No credits available for reserve %s in region group %s and period %s',
-                    prm,
-                    r_g,
-                    p,
-                )
+    for (prm, r_g, t_g, p), processes in model.planning_reserve_processes.items():
+        if not any(model.planning_reserve_credit[prm, r, t] for r, t, _v in processes):
+            logger.warning('No non-zero credits for reserve %s', (prm, r_g, t_g, p))
 
 
 # ============================================================================
