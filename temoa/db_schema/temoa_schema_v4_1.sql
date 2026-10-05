@@ -368,27 +368,6 @@ CREATE TABLE IF NOT EXISTS lifetime_tech
     notes    TEXT,
     PRIMARY KEY (region, tech)
 );
-CREATE TABLE IF NOT EXISTS operating_reserve_derate
-(
-    region			TEXT,
-    season  		TEXT
-    	REFERENCES time_season (season),
-    tech 			TEXT
-    	REFERENCES technology (tech),
-    factor  		REAL,
-    notes   		TEXT,
-    PRIMARY KEY (region, season, tech),
-    CHECK (factor >= 0 AND factor <= 1)
-);
-CREATE TABLE IF NOT EXISTS operating_reserve_margin
-(
-    region  		TEXT,
-    tech_or_group	TEXT,
-    margin 			REAL,
-    notes 			TEXT,
-    PRIMARY KEY (region, tech_or_group),
-    CHECK (margin >= 0)
-);
 CREATE TABLE IF NOT EXISTS operator
 (
 	operator TEXT PRIMARY KEY,
@@ -751,24 +730,28 @@ CREATE TABLE IF NOT EXISTS output_storage_level
     units TEXT,
     PRIMARY KEY (scenario, region, period, season, tod, tech, vintage)
 );
-CREATE TABLE IF NOT EXISTS planning_reserve_credit
-(
-    region			TEXT,
-    tech 			TEXT
-    	REFERENCES technology (tech),
-    credit  		REAL,
-    notes   		TEXT,
-    PRIMARY KEY (region, tech),
-    CHECK (credit >= 0 AND credit <= 1)
-);
 CREATE TABLE IF NOT EXISTS planning_reserve_margin
 (
-    region  		TEXT,
-    tech_or_group	TEXT,
-    margin 			REAL,
-    notes 			TEXT,
-    PRIMARY KEY (region, tech_or_group),
-    CHECK (margin >= 0)
+    reserve_name    TEXT,
+    region          TEXT,
+    tech_or_group   TEXT,
+    margin          REAL,
+    notes           TEXT,
+    type            TEXT DEFAULT 'static',
+    PRIMARY KEY (reserve_name, region, tech_or_group),
+    CHECK (margin >= 0),
+    CHECK (type IN ('static', 'dynamic'))
+);
+CREATE TABLE IF NOT EXISTS planning_reserve_credit
+(
+    reserve_name    TEXT,
+    region          TEXT,
+    tech            TEXT
+        REFERENCES technology (tech),
+    credit          REAL,
+    notes           TEXT,
+    PRIMARY KEY (reserve_name, region, tech),
+    CHECK (credit >= 0 AND credit <= 1)
 );
 CREATE TABLE IF NOT EXISTS ramp_down_hourly
 (

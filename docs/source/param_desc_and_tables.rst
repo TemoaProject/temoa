@@ -24,13 +24,12 @@ characteristics**.
    :widths: 15, 20, 25, 40
 
    ":math:`\text{C2A}_{r,t}`", ":code:`capacity_to_activity`", ":code:`capacity_to_activity`", "converts from capacity to activity units"
-   ":math:`\text{PRC}_{r,t}`", ":code:`planning_reserve_credit`", ":code:`planning_reserve_credit`", "fraction of installed capacity that can be relied upon (default 0)"
+   ":math:`\text{PRC}_{n,t}`", ":code:`planning_reserve_credit`", ":code:`planning_reserve_credit`", "fraction of installed capacity (static) or available output (dynamic) that can be relied upon for planning reserve name :math:`n` (default 0)"
    ":math:`\text{CFT}_{r,s,d,t}`", ":code:`capacity_factor_tech`", ":code:`capacity_factor_tech`", "technology-specific capacity factor"
    ":math:`\text{CFP}_{r,s,d,t,v}`", ":code:`capacity_factor_process`", ":code:`capacity_factor_process`", "process-specific capacity factor; allows capacity factor to change with technology vintage"
    ":math:`\text{ECAP}_{r,t,v}`", ":code:`existing_capacity`", ":code:`existing_capacity`", "installed capacity that exists prior to first model time period"
-   ":math:`\text{PRM}_{r_g,t_g}`", ":code:`planning_reserve_margin`", ":code:`planning_reserve_margin`", "required excess of credited capacity above demand in each time slice, as a fraction of demand"
-   ":math:`\text{ORM}_{r_g,t_g}`", ":code:`operating_reserve_margin`", ":code:`operating_reserve_margin`", "required excess of available (derated) output above demand in each time slice, as a fraction of that demand"
-   ":math:`\text{ORD}_{r,s,t}`", ":code:`operating_reserve_derate`", ":code:`operating_reserve_derate`", "fraction of available output that can be relied upon in a given season (default 1)"
+   ":math:`\text{PRM}_{n,r_g,t_g}`", ":code:`planning_reserve_margin`", ":code:`planning_reserve_margin`", "required excess of credited capacity above demand in each time slice for planning reserve product :math:`(n,r_g,t_g)`, as a fraction of demand"
+   "", ":code:`planning_reserve_margin` (:code:`type`)", ":code:`planning_reserve_type`", "``static`` (default) or ``dynamic`` planning reserve formulation for product :math:`(n,r_g,t_g)`"
    ":math:`\text{RUH}_{r,t}`", ":code:`ramp_up_hourly`", ":code:`ramp_up_hourly`", "hourly rate at which generation techs can ramp output up"
    ":math:`\text{RDH}_{r,t}`", ":code:`ramp_down_hourly`", ":code:`ramp_down_hourly`", "hourly rate at which generation techs can ramp output down"
 

@@ -1,26 +1,14 @@
 erDiagram
 planning_reserve_credit {
-   TEXT region PK
+   TEXT reserve_name PK
    TEXT tech PK
    REAL credit
    TEXT notes
 }
-operating_reserve_derate {
-   TEXT region PK
-   TEXT season PK
-   TEXT tech PK
-   REAL factor
-   TEXT notes
-}
 planning_reserve_margin {
-   TEXT region PK
-   TEXT tech_or_group PK
-   REAL margin
-   TEXT notes
-}
-operating_reserve_margin {
-   TEXT region PK
-   TEXT tech_or_group PK
+   TEXT reserve_name PK
+   TEXT region
+   TEXT tech_or_group
    REAL margin
    TEXT notes
 }
@@ -616,11 +604,8 @@ time_segment_fraction {
    TEXT notes
    REAL segment_fraction
 }
-region one or zero--0+ planning_reserve_credit : has
+planning_reserve_margin one or zero--0+ planning_reserve_credit : has
 technology one or zero--0+ planning_reserve_credit : has
-region one or zero--0+ operating_reserve_derate : has
-technology one or zero--0+ operating_reserve_derate : has
-time_season one or zero--0+ operating_reserve_derate : has
 technology_type 1--0+ technology : has
 time_period_type one or zero--0+ time_period : has
 technology one or zero--0+ capacity_factor_process : has

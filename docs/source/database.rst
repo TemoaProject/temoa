@@ -143,7 +143,8 @@ For the supported tables, the ``region`` column can be populated with either a s
    constraint summation.
 
    The only exception to this rule is reserve margin constraints,
-   :code:`planning_reserve_margin` and :code:`operating_reserve_margin`,
+   :code:`planning_reserve_margin` and :code:`operating_reserve_margin`
+   (:ref:`unit_commitment extension <extension-unit-commitment>`),
    which automatically include all exchange flows into and out of the region
    or region group due to their specific logic requiring this behaviour.
 
@@ -160,7 +161,7 @@ Supported tables:
 * limit_new_capacity_share
 * limit_emission
 * planning_reserve_margin
-* operating_reserve_margin
+* operating_reserve_margin (unit_commitment extension)
 
 **Technology Groups:**
 
@@ -186,7 +187,7 @@ Supported tables:
 * limit_capacity_share
 * limit_new_capacity_share
 * planning_reserve_margin
-* operating_reserve_margin
+* operating_reserve_margin (unit_commitment extension)
 
 
 For help getting started, consider using the ``temoa tutorial``

@@ -505,7 +505,7 @@ The Temoa model code is organized into clear, purpose-driven packages:
   * ``flows.py`` - Commodity flow balance constraints
   * ``capacity.py`` - Capacity and activity constraints
   * ``emissions.py`` - Emission accounting and constraints
-  * ``reserves.py`` - Reserve margin requirements
+  * ``reserves.py`` - Planning reserve margin and shared reserve helpers
   * ``limits.py`` - Various limit constraints (capacity, activity, emissions, etc.)
   * ``storage.py`` - Energy storage constraints
   * ``operations.py`` - Baseload and ramping constraints for generators

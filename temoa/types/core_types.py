@@ -7,6 +7,7 @@ and fundamental data structures.
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, NewType
 
 # Core type aliases for commonly used dimensions
@@ -19,6 +20,15 @@ Season = NewType('Season', str)
 TimeOfDay = NewType('TimeOfDay', str)
 Commodity = NewType('Commodity', str)
 Process = NewType('Process', str)
+ReserveName = NewType('ReserveName', str)
+
+
+class ReserveMarginType(StrEnum):
+    """Formulation variant for a planning reserve margin row."""
+
+    STATIC = 'static'
+    DYNAMIC = 'dynamic'
+
 
 # Type aliases for common data structures
 SparseIndex = (

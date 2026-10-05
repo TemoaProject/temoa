@@ -67,7 +67,6 @@ BASE_REGIONAL_GROUP_TABLES = {
     'limit_new_capacity_share': 'region',
     'limit_resource': 'region',
     'planning_reserve_margin': 'region',
-    'operating_reserve_margin': 'region',
 }
 
 

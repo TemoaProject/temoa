@@ -811,51 +811,50 @@ level to vary.
 planning_reserve_margin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{PRM}_{r \in R, t \in T}`
+:math:`{PRM}_{n, r \in R, t \in T}`
 
-The required excess of credited installed capacity above demand, expressed
-as a fraction of demand, keyed by a region-or-group :math:`r` and a
-technology-or-group :math:`t`.  For example, a value of 0.2 requires that
+The required excess of credited capacity above demand, expressed
+as a fraction of demand, for planning reserve product :math:`(n, r_g, t_g)`
+(``reserve_name``, ``region``, ``tech_or_group``).  The same reserve name may be
+repeated over several region-groups and tech-groups, in which case they share the
+planning reserve credits of that name.  For example, a value of 0.2 requires that
 credited capacity be at least 120% of demand.  Demand is estimated from production
 by time slice.  Any exchange region (e.g. ``r1-r2``) where exactly one endpoint
 connects to the region or group is automatically included in the
 reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
 
+The ``type`` column selects how credited capacity is calculated for each product:
+
+* ``static`` (default): credit times installed capacity, the same in every time slice
+  (:eq:`planning_reserve_margin_static`).  Credits typically represent the expected
+  availability of nameplate capacity during peak demand.
+* ``dynamic``: credit times the output actually available in each time slice, so
+  capacity factors and, with the unit commitment extension, online units are applied
+  automatically (:eq:`planning_reserve_margin_dynamic`).  Credits then act as a derate,
+  e.g. for forced outages.  Storage is credited only for its net output in each time
+  slice.
+
 
 planning_reserve_credit
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{PRC}_{r \in R, t \in T}`
+:math:`{PRC}_{n, t \in T}`
 
-The fraction of a technology's installed capacity that can be reliably counted
-toward the reserve margin.  A firm, fully dispatchable process (e.g. a gas turbine)
-typically receives a credit near 1, while a weather-dependent process (e.g. wind
-or solar) receives a lower value.
+The fraction of a technology's capacity that can be reliably counted toward planning
+reserve name :math:`n`.  For ``static`` reserves this is a fraction of installed
+capacity: a firm, fully dispatchable process (e.g. a gas turbine) typically receives a
+credit near 1, while a weather-dependent process (e.g. wind or solar) receives a lower
+value.  For ``dynamic`` reserves it is a derate on available output, which already
+includes capacity factors, so weather-dependent processes may also receive a credit
+near 1.  Credits are keyed by reserve name only, so they apply to every region-group
+and tech-group using that name; use a different reserve name to give a region
+different credits.
 
+.. note::
 
-operating_reserve_margin
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{ORM}_{r \in R, t \in T}`
-
-The dynamic counterpart to :code:`planning_reserve_margin`, indexed the same
-way by region-or-group and technology-or-group. Rather than crediting
-installed capacity, it requires that available (derated) generation in each
-time slice exceed the region-group's proxy demand by this margin.
-Any exchange region (e.g. ``r1-r2``) where exactly one endpoint
-connects to the region or group is automatically included in the
-reserve calculation; this auto-inclusion is unique to the reserve margin constraints.
-
-
-operating_reserve_derate
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:math:`{ORD}_{r \in R, s \in S, t \in T}`
-
-The fraction of a technology's available output that can be depended upon in a
-given season.  A value less than 1 reflects the fact that not all of a process's
-capacity is reliably available — for example, due to scheduled maintenance or
-seasonal resource constraints.  Defaults to 1.
+   The operating reserve margin, which credits online, offline, and currently
+   generating units in each time slice, is part of the
+   :ref:`unit_commitment extension <extension-unit-commitment>`.
 
 
 ramp_down_hourly
@@ -1330,7 +1329,9 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa.components.reserves.planning_reserve_margin_constraint
 
-.. autofunction:: temoa.components.reserves.operating_reserve_margin_constraint
+.. autofunction:: temoa.components.reserves._planning_reserve_margin_static
+
+.. autofunction:: temoa.components.reserves._planning_reserve_margin_dynamic
 
 .. autofunction:: temoa.components.reserves.reserve_margin_proxy_demand
 
