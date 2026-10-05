@@ -15,7 +15,7 @@ from temoa.__about__ import DB_SCHEMA, __version__
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
-from temoa.utilities import master_migration
+from temoa.utilities import migration_chain
 from temoa.utilities.run_all_v4_migrations import run_migrations
 
 # =============================================================================
@@ -415,7 +415,7 @@ def migrate(
     ] = None,
     schema_path: Annotated[
         Path | None,
-        typer.Option('--schema', '-s', help='Path to v4 schema SQL file.'),
+        typer.Option('--schema', '-s', help='Path to the (target) schema SQL file.'),
     ] = None,
     migration_type: Annotated[
         str | None,
@@ -431,7 +431,7 @@ def migrate(
     debug: Annotated[bool, typer.Option('--debug', '-d', help='Enable debug output.')] = False,
 ) -> None:
     """
-    Migrate a Temoa database file (SQL dump or SQLite DB) or directory from v3 to v4 format.
+    Migrate a Temoa database file (SQL dump or SQLite DB) or directory to the target version.
     """
     if schema_path is None:
         schema_path = get_default_schema()
@@ -447,7 +447,7 @@ def migrate(
                 'overwritten after backup.[/yellow]'
             )
 
-        migration_script = Path(__file__).parent / 'utilities' / 'master_migration.py'
+        migration_script = Path(__file__).parent / 'utilities' / 'migration_chain.py'
         if not silent:
             rich.print(f'[green]Batch migrating directory: {input_path}[/green]')
 
@@ -521,7 +521,7 @@ def migrate(
     # --- Execute the migration based on type ---
     if migration_type == 'sql' or (migration_type is None and ext == '.sql'):
         try:
-            master_migration.migrate_sql_dump(
+            migration_chain.migrate_sql_dump(
                 source_path=input_path, schema_path=schema_path, output_path=final_output_file
             )
             if not silent:
@@ -534,7 +534,7 @@ def migrate(
             raise typer.Exit(1) from e
     elif migration_type == 'db' or (migration_type is None and ext in ['.db', '.sqlite']):
         try:
-            master_migration.migrate_database(
+            migration_chain.migrate_database(
                 source_path=input_path, schema_path=schema_path, output_path=final_output_file
             )
             if not silent:
