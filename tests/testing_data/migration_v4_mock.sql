@@ -37,7 +37,7 @@ INSERT INTO capacity_credit (region, period, tech, vintage, credit)
 INSERT INTO capacity_credit (region, period, tech, vintage, credit)
     VALUES ('R1', 2030, 'WindFarm', 2030, 0.25);
 
--- reserve_capacity_derate will migrate to operating_reserve_derate (dropping vintage)
+-- reserve_capacity_derate migrates to planning_reserve_credit too, averaged in with capacity_credit
 INSERT INTO reserve_capacity_derate (region, season, tech, vintage, factor)
     VALUES ('R1', 'summer', 'GasTurbine', 2030, 0.95);
 INSERT INTO reserve_capacity_derate (region, season, tech, vintage, factor)

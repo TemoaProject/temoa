@@ -5,11 +5,13 @@ migrate_v4_to_v4_1.py
 Migrates a Temoa v4 database (SQLite or SQL dump) to v4.1 schema format.
 
 Key changes from v4 to v4.1:
-  - capacity_credit         -> planning_reserve_credit  (period, vintage dropped; AVG credit)
-  - reserve_capacity_derate -> operating_reserve_derate (vintage dropped; AVG factor)
-  - planning_reserve_margin -> planning_reserve_margin  (tech_or_group from reserve-flagged techs)
+  - planning_reserve_margin -> planning_reserve_margin  (reserve_name = region;
+                               tech_or_group from reserve-flagged techs)
+  - capacity_credit,
+    reserve_capacity_derate -> planning_reserve_credit  (keyed by reserve_name and tech;
+                               AVG credit/factor over period, season, vintage and the
+                               reserve's regions)
   - rps_requirement         -> limit_activity_share     (tech_group=sub_group, reserve=super_group)
-  - operating_reserve_margin is new (no v4 equivalent)
   - DB_MINOR bumped: 0 -> 1
 """
 
@@ -27,54 +29,65 @@ def get_table_cols(conn: sqlite3.Connection, table: str) -> list[str]:
 
 
 def _migrate_planning_reserve_credit(
-    con_old: sqlite3.Connection, con_new: sqlite3.Connection
+    con_old: sqlite3.Connection, con_new: sqlite3.Connection, reserve_names: list[str]
 ) -> int:
-    """Migrate capacity_credit -> planning_reserve_credit, dropping period and vintage."""
+    """Migrate capacity_credit and reserve_capacity_derate -> planning_reserve_credit.
+
+    A credit row applies to a reserve if its region is one of the reserve's regions or
+    an exchange pair with exactly one endpoint among them. Both sources are averaged
+    together per (reserve_name, region, tech), since planning_reserve_credit has no
+    period or season dimension.
+    """
+    rows: list[tuple[str, str, float]] = []
     try:
-        rows = con_old.execute(
-            'SELECT region, tech, AVG(credit), notes FROM capacity_credit GROUP BY region, tech'
+        rows += con_old.execute('SELECT region, tech, credit FROM capacity_credit').fetchall()
+    except sqlite3.OperationalError:
+        pass
+    try:
+        rows += con_old.execute(
+            'SELECT region, tech, factor FROM reserve_capacity_derate'
         ).fetchall()
     except sqlite3.OperationalError:
-        return 0
+        pass
     if not rows:
         return 0
+    if not reserve_names:
+        print(
+            f'WARNING: Dropping {len(rows)} row(s) from capacity_credit/reserve_capacity_derate; '
+            'no planning reserve was migrated to attach them to. Populate '
+            'planning_reserve_credit manually.'
+        )
+        return 0
     print(
-        'WARNING: Dropping period and vintage from capacity_credit; '
-        'using average credit for each region/tech'
+        'WARNING: planning_reserve_credit is now keyed by (reserve_name, region, tech); using '
+        'the average capacity_credit/reserve_capacity_derate value over period, season, and '
+        'vintage for each reserve/region/tech'
     )
+
+    migrated: list[tuple[str, str, str, float]] = []
+    for name in reserve_names:
+        regions = set(name.split('+'))
+        credits: dict[tuple[str, str], list[float]] = {}
+        for region, tech, credit in rows:
+            ends = region.split('-')
+            in_reserve = (
+                region in regions
+                if len(ends) == 1
+                else (ends[0] in regions) != (ends[1] in regions)
+            )
+            if in_reserve:
+                credits.setdefault((region, tech), []).append(credit)
+        migrated.extend(
+            (name, region, tech, sum(c) / len(c)) for (region, tech), c in credits.items()
+        )
+
     con_new.executemany(
-        'INSERT OR REPLACE INTO planning_reserve_credit (region, tech, credit, notes) '
+        'INSERT OR REPLACE INTO planning_reserve_credit (reserve_name, region, tech, credit) '
         'VALUES (?, ?, ?, ?)',
-        rows,
+        migrated,
     )
-    print(f'Migrated {len(rows)} rows: capacity_credit -> planning_reserve_credit')
-    return len(rows)
-
-
-def _migrate_operating_reserve_derate(
-    con_old: sqlite3.Connection, con_new: sqlite3.Connection
-) -> int:
-    """Migrate reserve_capacity_derate -> operating_reserve_derate, dropping vintage."""
-    try:
-        rows = con_old.execute(
-            'SELECT region, season, tech, AVG(factor), notes '
-            'FROM reserve_capacity_derate GROUP BY region, season, tech'
-        ).fetchall()
-    except sqlite3.OperationalError:
-        return 0
-    if not rows:
-        return 0
-    print(
-        'WARNING: Dropping vintage from reserve_capacity_derate; '
-        'using average factor for each region/season/tech'
-    )
-    con_new.executemany(
-        'INSERT OR REPLACE INTO operating_reserve_derate (region, season, tech, factor, notes) '
-        'VALUES (?, ?, ?, ?, ?)',
-        rows,
-    )
-    print(f'Migrated {len(rows)} rows: reserve_capacity_derate -> operating_reserve_derate')
-    return len(rows)
+    print(f'Migrated {len(migrated)} rows: capacity_credit -> planning_reserve_credit')
+    return len(migrated)
 
 
 RESERVE_GROUP_NAME = 'migrated_reserve_techs'
@@ -106,33 +119,38 @@ def _build_reserve_tech_group(
 
 def _migrate_planning_reserve_margin(
     con_old: sqlite3.Connection, con_new: sqlite3.Connection, reserve_group_built: bool
-) -> int:
-    """Migrate planning_reserve_margin using the reserve tech group as tech_or_group."""
+) -> list[str]:
+    """Migrate planning_reserve_margin, naming each reserve after its region.
+
+    Returns the migrated reserve names.
+    """
     try:
         rows = con_old.execute(
             'SELECT region, margin, notes FROM planning_reserve_margin'
         ).fetchall()
     except sqlite3.OperationalError:
-        return 0
+        return []
     if not rows:
-        return 0
+        return []
     if not reserve_group_built:
         print(
             f'WARNING: planning_reserve_margin has {len(rows)} row(s) but no reserve-flagged '
             'techs found; skipping migration. Populate planning_reserve_margin manually.'
         )
-        return 0
-    migrated = [(region, RESERVE_GROUP_NAME, margin, notes) for region, margin, notes in rows]
+        return []
+    migrated = [
+        (region, region, RESERVE_GROUP_NAME, margin, notes) for region, margin, notes in rows
+    ]
     con_new.executemany(
-        'INSERT OR REPLACE INTO planning_reserve_margin (region, tech_or_group, margin, notes) '
-        'VALUES (?, ?, ?, ?)',
+        'INSERT OR REPLACE INTO planning_reserve_margin '
+        '(reserve_name, region, tech_or_group, margin, notes) VALUES (?, ?, ?, ?, ?)',
         migrated,
     )
     print(
         f'Migrated {len(migrated)} rows: planning_reserve_margin'
-        f' (tech_or_group={RESERVE_GROUP_NAME!r})'
+        f' (reserve_name=region, tech_or_group={RESERVE_GROUP_NAME!r})'
     )
-    return len(migrated)
+    return [row[0] for row in migrated]
 
 
 def _migrate_rps_requirement(
@@ -220,13 +238,11 @@ def execute_v4_to_v4_1_migration(con_old: sqlite3.Connection, con_new: sqlite3.C
     total += _migrate_common_tables(con_old, con_new)
 
     print('--- Migrating restructured tables ---')
-    total += _migrate_planning_reserve_credit(con_old, con_new)
-    total += _migrate_operating_reserve_derate(con_old, con_new)
-
-    print('--- Building reserve tech group ---')
     reserve_techs = _build_reserve_tech_group(con_old, con_new)
     reserve_group_built = len(reserve_techs) > 0
-    total += _migrate_planning_reserve_margin(con_old, con_new, reserve_group_built)
+    reserve_names = _migrate_planning_reserve_margin(con_old, con_new, reserve_group_built)
+    total += len(reserve_names)
+    total += _migrate_planning_reserve_credit(con_old, con_new, reserve_names)
     total += _migrate_rps_requirement(con_old, con_new, reserve_group_built)
 
     con_new.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MAJOR', 4, 'DB major version')")

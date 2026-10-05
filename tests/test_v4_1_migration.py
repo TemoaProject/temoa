@@ -34,27 +34,21 @@ def _verify_migrated_db(conn: sqlite3.Connection) -> None:
     assert major == 4
     assert minor == 1
 
-    # planning_reserve_credit: capacity_credit aggregated by (region, tech), period/vintage dropped
+    # planning_reserve_credit: capacity_credit and reserve_capacity_derate averaged together
+    # per (reserve_name, tech)
     credits = {
         (r[0], r[1]): r[2]
-        for r in conn.execute('SELECT region, tech, credit FROM planning_reserve_credit').fetchall()
-    }
-    # GasTurbine had credit 0.85 (2030) and 0.80 (2040) -> AVG = 0.825
-    assert ('R1', 'GasTurbine') in credits
-    assert credits[('R1', 'GasTurbine')] == pytest.approx(0.825)
-    assert credits[('R1', 'WindFarm')] == pytest.approx(0.25)
-
-    # operating_reserve_derate: reserve_capacity_derate aggregated by (region, season, tech)
-    derates = {
-        (r[0], r[1], r[2]): r[3]
         for r in conn.execute(
-            'SELECT region, season, tech, factor FROM operating_reserve_derate'
+            'SELECT reserve_name, tech, credit FROM planning_reserve_credit'
         ).fetchall()
     }
-    assert ('R1', 'summer', 'GasTurbine') in derates
-    assert derates[('R1', 'summer', 'GasTurbine')] == pytest.approx(0.95)
-    assert derates[('R1', 'summer', 'WindFarm')] == pytest.approx(0.20)
-    assert derates[('R1', 'winter', 'WindFarm')] == pytest.approx(0.10)
+    # GasTurbine: capacity_credit 0.85 (2030), 0.80 (2040); reserve_capacity_derate 0.95 (summer)
+    # -> AVG = (0.85 + 0.80 + 0.95) / 3
+    assert ('R1', 'GasTurbine') in credits
+    assert credits[('R1', 'GasTurbine')] == pytest.approx((0.85 + 0.80 + 0.95) / 3)
+    # WindFarm: capacity_credit 0.25; reserve_capacity_derate 0.20 (summer), 0.10 (winter)
+    # -> AVG = (0.25 + 0.20 + 0.10) / 3
+    assert credits[('R1', 'WindFarm')] == pytest.approx((0.25 + 0.20 + 0.10) / 3)
 
     # Removed v4 tables must not be present
     tables = {
@@ -62,16 +56,17 @@ def _verify_migrated_db(conn: sqlite3.Connection) -> None:
     }
     assert 'capacity_credit' not in tables
     assert 'reserve_capacity_derate' not in tables
+    assert 'operating_reserve_derate' not in tables
     assert 'rps_requirement' not in tables
 
     # planning_reserve_margin: migrated using reserve tech group as tech_or_group
     from temoa.utilities.migrate_v4_to_v4_1 import RESERVE_GROUP_NAME
 
     margins = conn.execute(
-        'SELECT region, tech_or_group, margin FROM planning_reserve_margin'
+        'SELECT reserve_name, region, tech_or_group, margin FROM planning_reserve_margin'
     ).fetchall()
     assert len(margins) == 1
-    assert margins[0] == ('R1', RESERVE_GROUP_NAME, pytest.approx(0.15))
+    assert margins[0] == ('R1', 'R1', RESERVE_GROUP_NAME, pytest.approx(0.15))
 
     # reserve tech group must exist with GasTurbine and WindFarm (reserve=1), not CoalPlant
     members = {
