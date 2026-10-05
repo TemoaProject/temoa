@@ -29,7 +29,8 @@ test_vals = {
         # increased 2025/08/19 after making annual demands optional
         # increased by 10 after removing period index from storagefrac (more constraints)
         # increased by 48 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 2868,
+        # decreased by 3 after removing redundant regional_exchange_capacity_constraints
+        ExpectedVals.CONSTR_COUNT: 2865,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
@@ -77,7 +78,8 @@ test_vals = {
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
         # reduced by 10 after dropping DAC for single-tech demands
         # reduced by 8 after disabling season ramp for seasonal_timeslices
-        ExpectedVals.CONSTR_COUNT: 224,
+        # decreased by 1 after removing redundant regional_exchange_capacity_constraints
+        ExpectedVals.CONSTR_COUNT: 223,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable

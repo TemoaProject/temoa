@@ -198,6 +198,7 @@ def regional_exchange_capacity_constraint_indices(
         (r_to, r_from, p, t, v)
         for r_from, p, i in model.export_regions
         for r_to, t, v, _o in model.export_regions[r_from, p, i]
+        if r_from < r_to
     }
 
 

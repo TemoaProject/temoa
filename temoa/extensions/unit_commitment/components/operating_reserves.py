@@ -166,6 +166,7 @@ def operating_reserve_online_exchange_indices(
         if t in model.tech_exchange
         for r_e, r_i in (r.split('-'),)
         if (orm, r_i + '-' + r_e, p, s, d, t, v) in model.operating_reserve_online_nrpsdtv
+        if r_e < r_i
     }
 
 
