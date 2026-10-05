@@ -1,6 +1,7 @@
 erDiagram
 planning_reserve_credit {
    TEXT reserve_name PK
+   TEXT region PK
    TEXT tech PK
    REAL credit
    TEXT notes
@@ -9,6 +10,7 @@ planning_reserve_margin {
    TEXT reserve_name PK
    TEXT region
    TEXT tech_or_group
+   TEXT type PK
    REAL margin
    TEXT notes
 }

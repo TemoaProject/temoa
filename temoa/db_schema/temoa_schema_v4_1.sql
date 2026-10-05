@@ -735,10 +735,10 @@ CREATE TABLE IF NOT EXISTS planning_reserve_margin
     reserve_name    TEXT,
     region          TEXT,
     tech_or_group   TEXT,
+    type            TEXT DEFAULT 'static',
     margin          REAL,
     notes           TEXT,
-    type            TEXT DEFAULT 'static',
-    PRIMARY KEY (reserve_name, region, tech_or_group),
+    PRIMARY KEY (reserve_name, region, tech_or_group, type),
     CHECK (margin >= 0),
     CHECK (type IN ('static', 'dynamic'))
 );

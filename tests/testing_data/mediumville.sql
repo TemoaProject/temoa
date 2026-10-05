@@ -147,7 +147,7 @@ REPLACE INTO "metadata_real" VALUES('global_discount_rate',4.2000000000000004e-0
 REPLACE INTO "operator" VALUES('e','equal to');
 REPLACE INTO "operator" VALUES('le','less than or equal to');
 REPLACE INTO "operator" VALUES('ge','greater than or equal to');
-REPLACE INTO "planning_reserve_margin" VALUES('prm_A','A','EF',0.05,NULL,'static');
+REPLACE INTO "planning_reserve_margin" VALUES('prm_A','A','EF','static',0.05,NULL);
 REPLACE INTO "ramp_down_hourly" VALUES('A','EH',0.05,NULL);
 REPLACE INTO "ramp_down_hourly" VALUES('B','EH',0.05,NULL);
 REPLACE INTO "ramp_up_hourly" VALUES('B','EH',0.05,NULL);
