@@ -494,6 +494,12 @@ class TableWriter:
                 iteration=iteration,
                 epsilon=self.output_threshold_capacity,
             )
+            uc_puller.write_operating_reserve_results(
+                model=model,
+                writer=self,
+                iteration=iteration,
+                epsilon=self.output_threshold_capacity,
+            )
 
     def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:
         if self.tech_sectors is None:

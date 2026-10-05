@@ -8,14 +8,23 @@ from pyomo.environ import quicksum, value
 
 from temoa._internal.exchange_tech_cost_ledger import CostType, ExchangeTechCostLedger
 from temoa.components import costs
-from temoa.extensions.unit_commitment.components import startup
+from temoa.components.reserves import reserve_margin_proxy_demand
+from temoa.extensions.unit_commitment.components import operating_reserves, startup
 from temoa.types.model_types import EI, FI, FlowType
 
 if TYPE_CHECKING:
     from temoa._internal.table_writer import TableWriter
     from temoa.core.model import TemoaModel
     from temoa.extensions.unit_commitment.core.model import UnitCommitmentModel
-    from temoa.types import Commodity, Period, Region, Season, Technology, TimeOfDay, Vintage
+    from temoa.types import (
+        Commodity,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +97,95 @@ def write_uc_results(
         pass
 
     writer._bulk_insert('output_unit_commitment', records)
+    writer.connection.commit()
+
+
+class ORI(NamedTuple):
+    """Operating Reserve Index"""
+
+    orm: str
+    r: Region
+    p: Period
+    s: Season
+    d: TimeOfDay
+    t: Technology
+    v: Vintage
+
+
+def poll_operating_reserve_results(
+    model: UnitCommitmentModel,
+) -> dict[ORI, tuple[float, float, float]]:
+    """
+    Poll the generation, online headroom, and offline credits of each process toward
+    each operating reserve product in each time slice.
+    """
+
+    results: dict[ORI, tuple[float, float, float]] = {}
+    for orm, r_g, t_g, p, s, d in model.operating_reserve_nrtpsd:
+        name = f'{orm}_{r_g}_{t_g}'
+        processes = model.operating_reserve_processes[orm, r_g, t_g, p]
+        _, activity_rtv = reserve_margin_proxy_demand(model, processes, r_g, p, s, d)
+        for r, t, v in processes:
+            if t in model.tech_exchange:
+                continue
+            activity = (
+                value(activity_rtv[r, t, v])
+                * value(model.operating_reserve_activity_credit[orm, r, t])
+                if operating_reserves.has_activity_credit(model, orm, r, t)
+                else 0.0
+            )
+            online = (
+                value(model.v_orm_online_credit[orm, r, p, s, d, t, v])
+                if operating_reserves.has_online_credit(model, orm, r, t)
+                else 0.0
+            )
+            offline = (
+                value(operating_reserves.offline_credit(model, orm, r, p, s, d, t, v))
+                if operating_reserves.has_offline_credit(model, orm, r, t)
+                else 0.0
+            )
+            results[ORI(name, r, p, s, d, t, v)] = (activity, online, offline)
+    return results
+
+
+def write_operating_reserve_results(
+    model: TemoaModel, writer: TableWriter, iteration: int | None, epsilon: float = 1e-5
+) -> None:
+    if writer.tech_sectors is None:
+        raise RuntimeError('Missing tech_sectors')
+    model = cast('UnitCommitmentModel', model)
+
+    results = poll_operating_reserve_results(model)
+    scenario = writer._get_scenario_name(iteration)
+    records = []
+
+    for ori, (activity, online, offline) in results.items():
+        if all(abs(v) < epsilon for v in (activity, online, offline)):
+            continue
+        records.append(
+            {
+                'scenario': scenario,
+                'reserve': ori.orm,
+                'region': ori.r,
+                'sector': writer.tech_sectors.get(ori.t),
+                'period': ori.p,
+                'season': ori.s,
+                'tod': ori.d,
+                'tech': ori.t,
+                'vintage': ori.v,
+                'activity_credit': activity,
+                'online_credit': online,
+                'offline_credit': offline,
+            }
+        )
+    try:
+        writer.connection.execute(
+            'DELETE FROM output_operating_reserve WHERE scenario == ?', (scenario,)
+        )
+    except sqlite3.OperationalError:
+        pass
+
+    writer._bulk_insert('output_operating_reserve', records)
     writer.connection.commit()
 
 

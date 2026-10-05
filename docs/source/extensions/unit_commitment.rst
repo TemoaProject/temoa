@@ -6,7 +6,9 @@ Unit Commitment
 The **unit_commitment** extension adds commitment-level operational constraints
 to selected technologies: online/started/stopped unit accounting, minimum
 output floors, maximum output ceilings, and minimum up-time and down-time windows.
-It also supports discounted startup costs and startup emissions and input flows.
+It also supports discounted startup costs and startup emissions and input flows,
+and operating reserve margins credited from current generation, online headroom,
+and offline units (see :ref:`uc-operating-reserves`).
 
 It is disabled by default and enabled per run through configuration:
 
@@ -48,7 +50,6 @@ constraints automatically become UC-aware for registered technologies with no fu
 - :code:`capacity_constraint` — output bounded by online capacity
 - :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint`,
   :code:`storage_throughput_constraint` — storage rates scale with online units
-- :code:`reserve_margin_constraint` (dynamic mode only) — reserve contribution from online units only
 
 Ramp constraints are the only exception: they require explicit knowledge of
 started/stopped units to compute the ramp envelope and are therefore fully replaced by
@@ -99,6 +100,13 @@ Overview
      - Input commodity consumed at startup per unit of capacity started.
      - Added to consumption in :code:`commodity_balance_constraint` and
        results in :code:`output_flow_in`.
+   * - :code:`operating_reserve_margin`
+     - One row per reserve product: region-group, tech-group, margin, sustain hours.
+     - Adds :code:`operating_reserve_margin_constraint` per product and time slice.
+   * - :code:`operating_reserve_credit`
+     - Per-product, per-technology credits for activity, online headroom and
+       offline units.
+     - Credited reserve is written to :code:`output_operating_reserve`.
 
 Parameters
 ----------
@@ -186,6 +194,73 @@ capacity started.  Startup inputs are summed into the
    These inputs are **not** considered in network checking. If no other process produces or consumes the
    input commodity in this region and period, it may be removed from the model and lead to errors.
 
+operating_reserve_margin
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{ORM}_{n, r_g, t_g}`
+
+Defines each operating reserve product :math:`(n, r_g, t_g)`.  Each product applies to
+one region-or-group and technology-or-group.  The same reserve name :math:`n` may be
+repeated over several region-groups and tech-groups (e.g. a regulation reserve held
+separately in several regions), in which case they share the credits of that name (see
+:ref:`uc-operating-reserve-credit`).  Any exchange region (e.g. ``r1-r2``) with exactly
+one endpoint in the region group is automatically included in the proxy demand, as for
+:code:`planning_reserve_margin`.
+
+.. csv-table::
+   :header: "Column", "Symbol", "Default", "Description"
+   :widths: 20, 16, 10, 54
+
+   ":code:`reserve_name`", ":math:`n`", "—", "name of the reserve; primary key with :code:`region` and :code:`tech_or_group`"
+   ":code:`region`", ":math:`r_g`", "—", "region or region group in which the reserve is held"
+   ":code:`tech_or_group`", ":math:`t_g`", "—", "technologies feeding the demand; must include every demand-feeding technology, even those with zero credit, because the group also defines the proxy demand"
+   ":code:`margin`", ":math:`ORM_{n,r_g,t_g}`", "—", "required credited reserve as a fraction of proxy demand (unlike :code:`planning_reserve_margin`, this is not an excess above demand)"
+   ":code:`sustain_hours`", ":math:`SH_{n,r_g,t_g}`", "0", "hours for which storage must be able to sustain its credited reserve from its state of charge; 0 or empty skips the storage energy constraint for this product"
+
+.. _uc-operating-reserve-credit:
+
+operating_reserve_credit
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{AC}_{n,t},\ {ONC}_{n,t},\ {OFC}_{n,t}`
+
+Per-reserve-name, per-technology credits.  **All credits default to 0**, so a technology
+in the tech group contributes to the proxy demand but not to the reserve unless a
+credit is set.  Exchange technologies' :code:`online_credit` must be matched in both
+directions of the link (see :ref:`uc-operating-reserves`).  Credits are keyed by
+reserve name only, so they apply to every region-group and tech-group using that name;
+use a different reserve name to give a region different credits.
+
+.. csv-table::
+   :header: "Column", "Symbol", "Default", "Description"
+   :widths: 20, 16, 10, 54
+
+   ":code:`reserve_name`", ":math:`n`", "—", "reserve product from :code:`operating_reserve_margin`"
+   ":code:`tech`", ":math:`t`", "—", "technology name"
+   ":code:`activity_credit`", ":math:`AC_{n,t}`", "0", "fraction of current net output activity counted as reserve"
+   ":code:`online_credit`", ":math:`ONC_{n,t}`", "0", "maximum online headroom credit, as a fraction of online installed capacity (installed capacity for non-UC technologies)"
+   ":code:`offline_credit`", ":math:`OFC_{n,t}`", "0", "fraction of offline installed capacity counted as reserve; UC technologies only"
+
+.. important::
+
+   **Online and offline credits are fractions of total installed (nameplate) capacity, not of
+   maximum available output.**  Operational limits are not applied to the credit
+   automatically, so they should be folded into the credit value where they apply.
+   For example, the offline credit multiplies the nameplate capacity of offline
+   units (with capacity factors applied) and does **not** account for
+   :code:`max_output_fraction`; a unit with :code:`max_output_fraction = 0.9` that
+   can fully start within the product's response time should have
+   :code:`offline_credit` of at most 0.9.  Similarly, startup times, ramp rates, or
+   forced outage rates should be reflected in the credit.  Online headroom is
+   also a fraction of total nameplate capacity but takes the lesser of the credit
+   available and the actual available headroom to maximum output, which already
+   includes :code:`max_output_fraction` and capacity factors.
+
+.. note::
+
+   A process may contribute to several products at once; products are assumed
+   never to be called on simultaneously, so credits are not shared between them.
+
 Decision Variables
 ------------------
 
@@ -200,6 +275,17 @@ to relax them to continuous non-negative reals.
    ":math:`\textbf{UCN}_{r,p,s,d,t,v}` (:code:`v_uc_online`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units online at the start of timeslice :math:`(s,d)`"
    ":math:`\textbf{UCST}_{r,p,s,d,t,v}` (:code:`v_uc_started`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units that start up during timeslice :math:`(s,d)`"
    ":math:`\textbf{UCSP}_{r,p,s,d,t,v}` (:code:`v_uc_stopped`)", ":math:`\mathbb{Z}_{\ge 0}` when `linearized = 0`; :math:`\mathbb{R}_{\ge 0}` when `linearized = 1`", "number of units that shut down during timeslice :math:`(s,d)`"
+
+One operating reserve variable is added per :math:`(n, r, p, s, d, t, v)` for
+processes with a nonzero :code:`online_credit`.  It is indexed by reserve
+name rather than by product, so a process that falls in several region-groups or
+tech-groups sharing a reserve name contributes the same headroom credit to each:
+
+.. csv-table::
+   :header: "Variable", "Domain", "Description"
+   :widths: 36, 16, 48
+
+   ":math:`\textbf{ORH}_{n,r,p,s,d,t,v}` (:code:`v_orm_online_credit`)", ":math:`\mathbb{R}_{\ge 0}`", "online headroom credited to reserve product :math:`n`"
 
 Constraints
 -----------
@@ -221,7 +307,7 @@ Commitment Transition
 Output Bounds
 ~~~~~~~~~~~~~
 
-The minimum output constraint enforces a floor on generation per online unit.
+The minimum output constraint enforces a floor on output per online unit.
 The maximum output (capacity) constraint is handled by the standard core-model
 :code:`capacity_constraint` — the extension overrides
 :func:`~temoa.components.utils.get_available_output` so that available output
@@ -258,6 +344,37 @@ start and stop at their minimum viable output level, taken as the larger of thei
 
 .. autofunction:: temoa.extensions.unit_commitment.components.commitment.uc_ramp_down_constraint
 
+.. _uc-operating-reserves:
+
+Operating Reserves
+~~~~~~~~~~~~~~~~~~
+
+Each reserve product requires credited reserve to exceed the proxy demand of its
+region-group and tech-group (see
+:func:`~temoa.components.reserves.reserve_margin_proxy_demand`) by its margin in
+every time slice.  Reserve is credited from current activity, headroom on online
+units, and offline unit commitment units that could start.
+
+Although operating reserves live in the :code:`unit_commitment` extension, the tech
+group need not be registered for unit commitment: a non-UC technology is simply
+treated as always fully online, so its online headroom credit is unused installed
+capacity and it is never eligible for offline credit.
+
+Exchange technologies count toward the proxy demand (imports add, exports subtract).
+Their :code:`online_credit` is constrained equal across both directional process
+entries of the link
+(:func:`~temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_online_exchange_symmetry_constraint`).
+
+.. autofunction:: temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_margin_constraint
+
+.. autofunction:: temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_online_headroom_constraint
+
+.. autofunction:: temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_online_headroom_credit_constraint
+
+.. autofunction:: temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_storage_energy_constraint
+
+.. autofunction:: temoa.extensions.unit_commitment.components.operating_reserves.operating_reserve_online_exchange_symmetry_constraint
+
 Objective Contributions
 -----------------------
 
@@ -276,6 +393,17 @@ Results are written to the :code:`output_unit_commitment` table with one row per
    ":code:`online_cap`", "capacity online at the start of the timeslice (:math:`\textbf{UCN} \cdot UC_{r,t}`)"
    ":code:`start_cap`", "capacity started during the timeslice (:math:`\textbf{UCST} \cdot UC_{r,t}`)"
    ":code:`stop_cap`", "capacity stopped during the timeslice (:math:`\textbf{UCSP} \cdot UC_{r,t}`)"
+
+Operating reserve credits are written to the :code:`output_operating_reserve` table
+with one row per :math:`(scenario, reserve\_name, region, period, season, tod, tech, vintage)`:
+
+.. csv-table::
+   :header: "Column", "Description"
+   :widths: 22, 78
+
+   ":code:`activity_credit`", "reserve credited from current generation"
+   ":code:`online_credit`", "reserve credited from online headroom"
+   ":code:`offline_credit`", "reserve credited from offline units"
 
 .. note::
 

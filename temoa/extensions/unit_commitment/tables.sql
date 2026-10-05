@@ -51,6 +51,30 @@ CREATE TABLE IF NOT EXISTS unit_commitment_startup_input
     CHECK (input_per_cap > 0),
     PRIMARY KEY (region, input_comm, tech)
 );
+CREATE TABLE IF NOT EXISTS operating_reserve_margin
+(
+	reserve_name	TEXT,
+    region  		TEXT,
+    tech_or_group	TEXT,
+    margin 			REAL,
+    sustain_hours 	REAL,
+    notes 			TEXT,
+    PRIMARY KEY (reserve_name, region, tech_or_group),
+    CHECK (margin > 0),
+    CHECK (sustain_hours >= 0)
+);
+CREATE TABLE IF NOT EXISTS operating_reserve_credit
+(
+    reserve_name    TEXT,
+    region          TEXT,
+    tech            TEXT
+        REFERENCES technology (tech),
+    activity_credit REAL,
+    online_credit   REAL,
+    offline_credit  REAL,
+    notes           TEXT,
+    PRIMARY KEY (reserve_name, region, tech)
+);
 CREATE TABLE IF NOT EXISTS output_unit_commitment
 (
     scenario        TEXT,
@@ -72,4 +96,26 @@ CREATE TABLE IF NOT EXISTS output_unit_commitment
     stop_cap        REAL,
     units           TEXT,
     PRIMARY KEY (scenario, region, sector, period, season, tod, tech, vintage)
+);
+CREATE TABLE IF NOT EXISTS output_operating_reserve
+(
+    scenario        TEXT,
+    reserve         TEXT,
+    region          TEXT,
+    sector          TEXT
+        REFERENCES sector_label (sector),
+    period          INTEGER
+        REFERENCES time_period (period),
+    season          TEXT
+        REFERENCES time_season (season),
+    tod             TEXT
+        REFERENCES time_of_day (tod),
+    tech            TEXT
+        REFERENCES technology (tech),
+    vintage         INTEGER
+        REFERENCES time_period (period),
+    activity_credit REAL,
+    online_credit   REAL,
+    offline_credit  REAL,
+    PRIMARY KEY (scenario, reserve, region, sector, period, season, tod, tech, vintage)
 );

@@ -8,7 +8,7 @@ Implements:
   - min/max output from online units
   - min up-time and min down-time via cyclic windows
   - ramp-up and ramp-down constraints that account for online units and started/stopped units
-  - dynamic reserve margin constraint that accounts for online units and started/stopped units
+  - operating reserve margin constraint that accounts for online units and started/stopped units
 """
 
 from __future__ import annotations
@@ -236,8 +236,8 @@ def uc_available_output(
     if (r, t) not in model.uc_unit_capacity:
         return available_output_base(model, r, p, s, d, t, v)
     base = (
-        model.capacity_to_activity[r, t]
-        * model.segment_fraction[s, d]
+        value(model.capacity_to_activity[r, t])
+        * value(model.segment_fraction[s, d])
         * value(model.uc_max_output_fraction[r, t])
         * value(model.uc_unit_capacity[r, t])
         * model.v_uc_online[r, p, s, d, t, v]
