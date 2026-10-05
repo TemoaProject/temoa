@@ -1,5 +1,6 @@
 scenario = "reserve_margins"
 scenario_mode = "perfect_foresight"
+extensions = ["unit_commitment"]
 input_database = "tests/testing_outputs/reserve_margins.sqlite"
 output_database = "tests/testing_outputs/reserve_margins.sqlite"
 neos = false
