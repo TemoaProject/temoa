@@ -8,9 +8,9 @@ planning_reserve_credit {
 }
 planning_reserve_margin {
    TEXT reserve_name PK
-   TEXT region
-   TEXT tech_or_group
-   TEXT type PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   TEXT type
    REAL margin
    TEXT notes
 }
