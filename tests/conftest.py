@@ -103,6 +103,7 @@ def refresh_databases() -> None:
         ('materials.sql', 'materials.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
+        ('storage_charge_rate.sql', 'storage_charge_rate.sqlite'),
         ('test_week.sql', 'test_week.sqlite'),
         (None, 'utopia_stochastic.sqlite'),
     ]
