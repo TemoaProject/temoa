@@ -1,0 +1,12 @@
+scenario = "uc_starts"
+scenario_mode = "perfect_foresight"
+extensions = ["unit_commitment"]
+input_database = "tests/testing_outputs/uc_starts.sqlite"
+output_database = "tests/testing_outputs/uc_starts.sqlite"
+neos = false
+solver = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+days_per_period = 8
