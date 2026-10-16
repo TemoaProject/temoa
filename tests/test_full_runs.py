@@ -171,8 +171,27 @@ def test_myopic_utopia(
         # increased after rework of inter-season sequencing
         # reduced by <1 after changing season definition (segfrac no longer rounded)
         # decreased by 41 after activating CF constraints for storage techs
-        assert invest_sum == pytest.approx(10963.1018), (
+        # increased after reporting loan payments to the end of the study horizon,
+        # not to the end of each myopic window (#364)
+        assert invest_sum == pytest.approx(11287.0542), (
             'sum of investment costs did not match expected'
+        )
+
+        # RHO built in 1990 is solved in the first myopic window, which ends in 2010.
+        # Its 30-year life ends with the study in 2020, and its loan rate equals the
+        # global discount rate, so the present value in 1990 of all its loan payments
+        # is its investment cost: built capacity times cost_invest.
+        capacity = cur.execute(
+            "SELECT capacity FROM output_built_capacity WHERE tech = 'RHO' AND vintage = 1990"
+        ).fetchone()[0]
+        unit_cost = cur.execute(
+            "SELECT cost FROM cost_invest WHERE tech = 'RHO' AND vintage = 1990"
+        ).fetchone()[0]
+        d_invest = cur.execute(
+            "SELECT SUM(d_invest) FROM output_cost WHERE tech = 'RHO' AND vintage = 1990"
+        ).fetchone()[0]
+        assert d_invest == pytest.approx(capacity * unit_cost), (
+            'myopic loan costs should run to the end of the study horizon'
         )
 
 
