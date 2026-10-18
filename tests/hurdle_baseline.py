@@ -46,10 +46,14 @@ def capture_outputs(db_path: Path) -> dict[str, Any]:
         return outputs
 
 
-def capture_cases(work_dir: Path, zero_mode: str) -> dict[str, Any]:
+def capture_cases(
+    work_dir: Path, zero_mode: str, *, skip_size_limited: bool = False
+) -> dict[str, Any]:
     """Solve existing cases with Gurobi and capture their complete outputs."""
+    from gurobipy import GRB, GurobiError
+
     work_dir.mkdir(parents=True, exist_ok=True)
-    snapshots = {}
+    snapshots: dict[str, Any] = {}
     for name, (source, config_name) in CASES.items():
         db_path = work_dir / f'{name}.sqlite'
         _build_test_db(db_path, [TEST_DATA_PATH / f'{source}.sql'])
@@ -72,7 +76,15 @@ def capture_cases(work_dir: Path, zero_mode: str) -> dict[str, Any]:
         )
         config = TemoaConfig(output_path=work_dir, silent=True, **settings)
         sequencer = TemoaSequencer(config)
-        sequencer.start()
+        try:
+            sequencer.start()
+        except GurobiError as error:
+            if not skip_size_limited or error.errno != GRB.Error.SIZE_LIMIT_EXCEEDED:
+                raise
+            snapshots[name] = {
+                'skip_reason': f'{name} exceeds the Gurobi size-limited license: {error}'
+            }
+            continue
         snapshots[name] = {
             'objective': float(value(sequencer.pf_solved_instance.total_cost))
             if sequencer.pf_solved_instance is not None
@@ -89,7 +101,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--zero-mode', choices=['default', 'explicit', 'missing'], default='default'
     )
+    parser.add_argument('--skip-size-limited', action='store_true')
     args = parser.parse_args()
-    result = capture_cases(args.work_dir, args.zero_mode)
+    result = capture_cases(args.work_dir, args.zero_mode, skip_size_limited=args.skip_size_limited)
     with gzip.open(args.output, 'wt', encoding='utf-8') as stream:
         json.dump(result, stream, sort_keys=True)

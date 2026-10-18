@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pyomo.environ import value
@@ -22,8 +23,9 @@ from temoa.core.modes import TemoaMode
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
 from tests.conftest import TEST_DATA_PATH, _build_test_db
+from tests.hurdle_baseline import CASES, capture_cases
 
-pytest.importorskip('gurobipy')
+gurobipy = pytest.importorskip('gurobipy')
 
 
 def crf(rate: float, years: int) -> float:
@@ -91,9 +93,11 @@ def totals(config: TemoaConfig) -> dict[str, float]:
         return dict(con.execute('SELECT objective_name, total_system_cost FROM output_objective'))
 
 
-@pytest.mark.parametrize('zero_mode', ['default', 'explicit', 'missing'])
-def test_zero_hurdle_all_output_rows(tmp_path: Path, zero_mode: str) -> None:
-    """Compare every row and objective exactly to Gurobi solves at d5148dbb."""
+@pytest.fixture(scope='module', params=['default', 'explicit', 'missing'])
+def zero_hurdle_outputs(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    tmp_path = tmp_path_factory.mktemp(f'zero_hurdle_{request.param}')
     snapshot = tmp_path / 'actual.json.gz'
     result = subprocess.run(
         [
@@ -103,7 +107,8 @@ def test_zero_hurdle_all_output_rows(tmp_path: Path, zero_mode: str) -> None:
             str(tmp_path),
             str(snapshot),
             '--zero-mode',
-            zero_mode,
+            request.param,
+            '--skip-size-limited',
         ],
         env={**os.environ, 'PYTHONHASHSEED': '0'},
         capture_output=True,
@@ -115,11 +120,58 @@ def test_zero_hurdle_all_output_rows(tmp_path: Path, zero_mode: str) -> None:
         expected = json.load(stream)
     with gzip.open(snapshot, 'rt') as stream:
         actual = json.load(stream)
-    for case, reference in expected.items():
-        assert actual[case]['objective'] == reference['objective'], case
-        assert actual[case]['tables'].keys() == reference['tables'].keys(), case
-        for table, rows in reference['tables'].items():
-            assert actual[case]['tables'][table] == rows, (case, table)
+    assert actual.keys() == expected.keys() == CASES.keys()
+    assert any('skip_reason' not in output for output in actual.values()), (
+        'At least one existing zero-hurdle case must fit the Gurobi license'
+    )
+    return expected, actual
+
+
+@pytest.mark.parametrize('case', CASES)
+def test_zero_hurdle_all_output_rows(
+    zero_hurdle_outputs: tuple[dict[str, Any], dict[str, Any]], case: str
+) -> None:
+    """Compare every row and objective exactly to Gurobi solves at d5148dbb."""
+    expected, actual = zero_hurdle_outputs
+    reference, output = expected[case], actual[case]
+    if 'skip_reason' in output:
+        pytest.skip(output['skip_reason'])
+    assert output['objective'] == reference['objective'], case
+    assert output['tables'].keys() == reference['tables'].keys(), case
+    for table, rows in reference['tables'].items():
+        assert output['tables'][table] == rows, (case, table)
+
+
+@pytest.mark.parametrize(
+    'error,skip_size_limited',
+    [
+        (gurobipy.GurobiError(gurobipy.GRB.Error.NO_LICENSE, 'No license'), True),
+        (
+            gurobipy.GurobiError(
+                gurobipy.GRB.Error.NUMERIC, 'Model too large for size-limited license'
+            ),
+            True,
+        ),
+        (RuntimeError('Model too large for size-limited license'), True),
+        (
+            gurobipy.GurobiError(
+                gurobipy.GRB.Error.SIZE_LIMIT_EXCEEDED, 'Model too large for size-limited license'
+            ),
+            False,
+        ),
+    ],
+    ids=['no_license', 'other_gurobi_error', 'other_exception', 'strict_capture'],
+)
+def test_baseline_capture_propagates_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception, skip_size_limited: bool
+) -> None:
+    def fail_start(self: TemoaSequencer) -> None:
+        raise error
+
+    monkeypatch.setattr(TemoaSequencer, 'start', fail_start)
+    with pytest.raises(type(error)) as caught:
+        capture_cases(tmp_path, 'default', skip_size_limited=skip_size_limited)
+    assert caught.value is error
 
 
 @pytest.mark.parametrize(
