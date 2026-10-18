@@ -391,6 +391,13 @@ loan_rate {
    TEXT notes
    REAL rate
 }
+hurdle_rate {
+ TEXT region PK
+   TEXT tech PK
+   INTEGER vintage PK
+   TEXT notes
+   REAL rate
+}
 metadata {
  TEXT element PK
    TEXT notes
@@ -746,6 +753,8 @@ technology one or zero--0+ loan_lifetime_process : has
 time_period one or zero--0+ loan_lifetime_process : has
 technology one or zero--0+ loan_rate : has
 time_period one or zero--0+ loan_rate : has
+technology one or zero--0+ hurdle_rate : has
+time_period one or zero--0+ hurdle_rate : has
 technology one or zero--0+ myopic_efficiency : has
 sector_label one or zero--0+ output_built_capacity : has
 technology one or zero--0+ output_built_capacity : has

@@ -46,7 +46,7 @@ def evaluate(
     solver_options: dict[str, Any] | None = None,
 ) -> list[float]:
     """
-    Run model for params provided and return objective value and emission value
+    Run model for params provided and return real system cost and emission value
     Note:  This function needs to be a static instance to enable the parallel
     processing, which requires parallelization of the parameters.  It cannot be
     a class or instance function, AFAIK
@@ -56,7 +56,7 @@ def evaluate(
     :param i: indexing number
     :param config: The config file to pull run data from
     :param solver_options: resolved solver options.  If None, the Temoa defaults are used
-    :return: list of objective value and CO2 emission value
+    :return: list of real system cost and CO2 emission value
     """
     # get the logger configured...
     logger = configure_worker_logger(log_queue, log_level)
@@ -98,7 +98,9 @@ def evaluate(
         cur = con.cursor()
         scenario_name = config.scenario + f'-{i}'
         cur.execute(
-            'SELECT total_system_cost FROM output_objective where scenario = ?', (scenario_name,)
+            'SELECT total_system_cost FROM output_objective WHERE scenario = ? '
+            "AND objective_name = 'total_cost'",
+            (scenario_name,),
         )
         output_query = cur.fetchall()
         if len(output_query) > 1:
@@ -122,7 +124,7 @@ def evaluate(
         else:
             y_cumulative_co2 = output_query[0][0] if output_query[0][0] is not None else 0.0
     morris_objectives = [float(y_of), float(y_cumulative_co2)]
-    logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, y_of)
+    logger.info('Finished MM evaluation # %d with real system cost: %0.2f ', i + 1, y_of)
     if not config.silent:
         sys.stdout.write(f'Completed MM run {i + 1}\n')
         sys.stdout.flush()

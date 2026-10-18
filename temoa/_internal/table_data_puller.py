@@ -297,15 +297,25 @@ def poll_storage_level_results(model: TemoaModel, epsilon: float = 1e-5) -> dict
 
 
 def poll_objective(model: TemoaModel) -> list[tuple[str, float]]:
-    """gather objective name, value tuples for all active objectives"""
+    """Report real cost separately from the choice score when a hurdle is active."""
     objs: list[Objective] = list(model.component_data_objects(Objective))
     active_objs = [obj for obj in objs if obj.active]
     if len(active_objs) > 1:
         logger.warning('Multiple active objectives found.  All will be logged in db')
     res = []
+    has_hurdle = costs.has_investment_hurdle(model)
     for obj in active_objs:
         obj_name, obj_value = obj.getname(fully_qualified=True), float(value(obj))
+        if obj_name == 'total_cost':
+            obj_value = float(value(model.real_cost))
         res.append((obj_name, obj_value))
+    if has_hurdle:
+        if not any(name == 'total_cost' for name, _ in res):
+            res.append(('total_cost', float(value(model.real_cost))))
+        choice_score = (
+            model.total_cost if hasattr(model, 'total_cost') else costs.total_cost_rule(model)
+        )
+        res.append(('choice_score', float(value(choice_score))))
     return res
 
 

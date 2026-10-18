@@ -5,7 +5,7 @@ of storage capacity
 
 from pyomo.environ import value
 
-from temoa.components.costs import total_cost_rule
+from temoa.components.costs import real_cost_rule
 from temoa.components.storage import storage_energy_upper_bound_constraint
 from temoa.core.model import TemoaModel
 from temoa.types.core_types import (
@@ -79,7 +79,8 @@ model.v_capacity.construct()
 model.v_capacity[rptv].set_value(1)
 
 # run the total cost rule on our "model":
-tot_cost_expr = total_cost_rule(model)
+model.period_real_cost.construct()
+tot_cost_expr = real_cost_rule(model)
 total_cost = value(tot_cost_expr)
 print()
 print(f'Total cost for building 1 capacity unit of storage:  ${total_cost:0.2f} [$M]')

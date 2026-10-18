@@ -354,7 +354,8 @@ def handle_results(
 
     # normal (non-MGA) run will have a total_cost as the OBJ:
     if hasattr(instance, 'total_cost'):
-        logger.info('Total Cost value: %0.2f', value(instance.total_cost))
+        logger.info('Choice score: %0.2f', value(instance.total_cost))
+        logger.info('Total system cost (without hurdle): %0.2f', value(instance.real_cost))
 
     if config.graphviz_output:
         try:
