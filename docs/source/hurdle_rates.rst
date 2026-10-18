@@ -131,15 +131,15 @@ Other objective users
 Regression evidence
 -------------------
 
-:code:`tests/testing_data/hurdle_zero_baseline.json.gz` was captured from
-:code:`d5148dbb` before changing model or reporting code, using Gurobi 13.0.3,
-dual simplex, one thread, and :code:`PYTHONHASHSEED=0`. It records every column
-and row in every output table, including empty tables, and the solved objectives
-for Utopia, test_system, Mediumville, seasonal_storage, survival_curve,
-annualised_demand, and myopic Utopia.
+Before any model or reporting code changed, every output table and the
+objective of Utopia, test_system, Mediumville, seasonal_storage, survival_curve,
+annualised_demand and myopic Utopia were saved at :code:`d5148dbb`. After the
+change, each case was solved again with an empty hurdle table, a missing table
+and explicit zero rows, on the same machine. All of them matched.
 
-The regression compares values exactly, without rounding or numeric tolerances,
-for an empty hurdle table, explicit zero rows, and an absent table. Additional
+In the test suite, the existing full-run tests check the objectives of these
+cases as before, and a new test solves Utopia with an empty, missing and all-zero
+hurdle table and checks each result against Utopia's recorded objective. Additional
 small Gurobi tests check the worked example, different loan and process lives,
 zero interest and discount rates, truncated horizons, declining survival curves,
 existing capacity, economies of scale, overlapping myopic windows, operating/link

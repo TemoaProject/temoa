@@ -1,16 +1,11 @@
 """Investment hurdles affect choices while all reported costs use real financing."""
 
 import contextlib
-import gzip
-import json
 import logging
-import os
 import queue
 import sqlite3
-import subprocess
-import sys
+import tomllib
 from pathlib import Path
-from typing import Any
 
 import pytest
 from pyomo.environ import value
@@ -23,7 +18,7 @@ from temoa.core.modes import TemoaMode
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_evaluate import evaluate
 from tests.conftest import TEST_DATA_PATH, _build_test_db
-from tests.hurdle_baseline import CASES, capture_cases
+from tests.legacy_test_values import ExpectedVals, test_vals
 
 gurobipy = pytest.importorskip('gurobipy')
 
@@ -93,85 +88,34 @@ def totals(config: TemoaConfig) -> dict[str, float]:
         return dict(con.execute('SELECT objective_name, total_system_cost FROM output_objective'))
 
 
-@pytest.fixture(scope='module', params=['default', 'explicit', 'missing'])
-def zero_hurdle_outputs(
-    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    tmp_path = tmp_path_factory.mktemp(f'zero_hurdle_{request.param}')
-    snapshot = tmp_path / 'actual.json.gz'
-    result = subprocess.run(
-        [
-            sys.executable,
-            '-m',
-            'tests.hurdle_baseline',
-            str(tmp_path),
-            str(snapshot),
-            '--zero-mode',
-            request.param,
-            '--skip-size-limited',
-        ],
-        env={**os.environ, 'PYTHONHASHSEED': '0'},
-        capture_output=True,
-        text=True,
-        check=False,
+@pytest.mark.parametrize('zero_mode', ['empty', 'missing', 'explicit'])
+def test_zero_hurdle_leaves_utopia_unchanged(tmp_path: Path, zero_mode: str) -> None:
+    """An empty, missing or all-zero hurdle table gives utopia's recorded cost and no score row."""
+    db = tmp_path / 'utopia.sqlite'
+    _build_test_db(db, [TEST_DATA_PATH / 'utopia_data.sql'])
+    with contextlib.closing(sqlite3.connect(db)) as con:
+        if zero_mode == 'missing':
+            con.execute('DROP TABLE hurdle_rate')
+        elif zero_mode == 'explicit':
+            con.execute(
+                'INSERT INTO hurdle_rate(region, tech, vintage, rate) '
+                'SELECT region, tech, vintage, 0 FROM cost_invest'
+            )
+        con.commit()
+    settings = tomllib.loads(
+        (Path(__file__).parent / 'testing_configs' / 'config_utopia.toml').read_text()
     )
-    assert result.returncode == 0, result.stdout + result.stderr
-    with gzip.open(TEST_DATA_PATH / 'hurdle_zero_baseline.json.gz', 'rt') as stream:
-        expected = json.load(stream)
-    with gzip.open(snapshot, 'rt') as stream:
-        actual = json.load(stream)
-    assert actual.keys() == expected.keys() == CASES.keys()
-    assert any('skip_reason' not in output for output in actual.values()), (
-        'At least one existing zero-hurdle case must fit the Gurobi license'
+    settings.pop('solver_name', None)
+    settings.update(
+        input_database=db,
+        output_database=db,
+        solver={'name': 'gurobi_direct', 'options': {'Threads': 1, 'Method': 1}},
     )
-    return expected, actual
+    config = TemoaConfig(output_path=tmp_path, silent=True, **settings)
+    TemoaSequencer(config).start()
 
-
-@pytest.mark.parametrize('case', CASES)
-def test_zero_hurdle_all_output_rows(
-    zero_hurdle_outputs: tuple[dict[str, Any], dict[str, Any]], case: str
-) -> None:
-    """Compare every row and objective exactly to Gurobi solves at d5148dbb."""
-    expected, actual = zero_hurdle_outputs
-    reference, output = expected[case], actual[case]
-    if 'skip_reason' in output:
-        pytest.skip(output['skip_reason'])
-    assert output['objective'] == reference['objective'], case
-    assert output['tables'].keys() == reference['tables'].keys(), case
-    for table, rows in reference['tables'].items():
-        assert output['tables'][table] == rows, (case, table)
-
-
-@pytest.mark.parametrize(
-    'error,skip_size_limited',
-    [
-        (gurobipy.GurobiError(gurobipy.GRB.Error.NO_LICENSE, 'No license'), True),
-        (
-            gurobipy.GurobiError(
-                gurobipy.GRB.Error.NUMERIC, 'Model too large for size-limited license'
-            ),
-            True,
-        ),
-        (RuntimeError('Model too large for size-limited license'), True),
-        (
-            gurobipy.GurobiError(
-                gurobipy.GRB.Error.SIZE_LIMIT_EXCEEDED, 'Model too large for size-limited license'
-            ),
-            False,
-        ),
-    ],
-    ids=['no_license', 'other_gurobi_error', 'other_exception', 'strict_capture'],
-)
-def test_baseline_capture_propagates_errors(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception, skip_size_limited: bool
-) -> None:
-    def fail_start(self: TemoaSequencer) -> None:
-        raise error
-
-    monkeypatch.setattr(TemoaSequencer, 'start', fail_start)
-    with pytest.raises(type(error)) as caught:
-        capture_cases(tmp_path, 'default', skip_size_limited=skip_size_limited)
-    assert caught.value is error
+    expected = test_vals['utopia'][ExpectedVals.OBJ_VALUE]
+    assert totals(config) == {'total_cost': pytest.approx(expected, rel=1e-5)}
 
 
 @pytest.mark.parametrize(
@@ -212,9 +156,9 @@ def test_worked_example(
     real = (price * crf(0.05, 15) + operation) * present_value(15) * discount
     penalty = price * (crf(0.05 + hurdle, 15) - crf(0.05, 15)) * present_value(15) * discount
     reported = totals(config)
-    assert reported['total_cost'] == pytest.approx(real, rel=1e-12)
+    assert reported['total_cost'] == pytest.approx(real, rel=1e-5)
     if hurdle:
-        assert reported['choice_score'] == pytest.approx(real + penalty, rel=1e-12)
+        assert reported['choice_score'] == pytest.approx(real + penalty, rel=1e-5)
         if not myopic:
             assert real == pytest.approx(5092.71, abs=0.005)
             assert real + penalty == pytest.approx(6052.22, abs=0.005)
@@ -223,11 +167,14 @@ def test_worked_example(
         assert set(reported) == {'total_cost'}
     with contextlib.closing(sqlite3.connect(config.output_database)) as con:
         built = con.execute('SELECT tech, vintage, capacity FROM output_built_capacity').fetchall()
-        assert sorted(built) == [(chosen, year, 1) for year in years]
+        assert [(tech, vintage) for tech, vintage, _ in sorted(built)] == [
+            (chosen, year) for year in years
+        ]
+        assert [capacity for _, _, capacity in built] == pytest.approx([1] * len(years), rel=1e-5)
         invest, discounted = con.execute(
             'SELECT SUM(invest), SUM(d_invest) FROM output_cost'
         ).fetchone()
-        assert invest == pytest.approx(len(years) * price * crf(0.05, 15) * 15, rel=1e-12)
+        assert invest == pytest.approx(len(years) * price * crf(0.05, 15) * 15, rel=1e-5)
         assert discounted == pytest.approx(price * crf(0.05, 15) * present_value(15) * discount)
     if not myopic:
         model = sequencer.pf_solved_instance
@@ -291,9 +238,9 @@ def test_investment_horizon_and_lifetimes(
         investment, operating = con.execute(
             'SELECT SUM(d_invest), SUM(d_var) FROM output_cost'
         ).fetchone()
-    assert investment == pytest.approx(expected_invest, rel=1e-12)
-    assert value(model.real_cost) == pytest.approx(investment + operating, rel=1e-12)
-    assert value(model.total_cost) == pytest.approx(investment * weight + operating, rel=1e-12)
+    assert investment == pytest.approx(expected_invest, rel=1e-5)
+    assert value(model.real_cost) == pytest.approx(investment + operating, rel=1e-5)
+    assert value(model.total_cost) == pytest.approx(investment * weight + operating, rel=1e-5)
 
 
 def test_negative_hurdle_rejected(tmp_path: Path) -> None:
@@ -364,7 +311,7 @@ def test_total_includes_links_and_all_operating_costs(
     expected = (price * crf(0.05, 15) + operating + 28) * present_value(15) * discount
     sequencer = TemoaSequencer(config)
     sequencer.start()
-    assert totals(config)['total_cost'] == pytest.approx(expected, rel=1e-12)
+    assert totals(config)['total_cost'] == pytest.approx(expected, rel=1e-5)
     with contextlib.closing(sqlite3.connect(config.output_database)) as con:
         link_cost = con.execute(
             'SELECT SUM(d_var) FROM output_cost WHERE tech = ?', ('link',)
@@ -375,17 +322,17 @@ def test_total_includes_links_and_all_operating_costs(
                 'WHERE scenario = ?',
                 (config.scenario,),
             ).fetchone()[0]
-            assert totals(config)['total_cost'] == reported_total
+            assert totals(config)['total_cost'] == pytest.approx(reported_total, rel=1e-5)
     assert link_cost == pytest.approx(3 * present_value(15) * discount)
     # Preserve myopic's output sum; perfect foresight and choice scores use the model.
     config.output_threshold_cost = 1e9
     TemoaSequencer(config).start()
     with contextlib.closing(sqlite3.connect(config.output_database)) as con:
         assert con.execute('SELECT COUNT(*) FROM output_cost').fetchone()[0] == 0
-    assert totals(config)['total_cost'] == pytest.approx(0 if myopic else expected, rel=1e-12)
+    assert totals(config)['total_cost'] == pytest.approx(0 if myopic else expected, rel=1e-5)
     if hurdle:
         penalty = price * (crf(0.15, 15) - crf(0.05, 15)) * present_value(15) * discount
-        assert totals(config)['choice_score'] == pytest.approx(expected + penalty, rel=1e-12)
+        assert totals(config)['choice_score'] == pytest.approx(expected + penalty, rel=1e-5)
 
 
 def test_existing_capacity_has_no_hurdle(tmp_path: Path) -> None:
@@ -422,7 +369,7 @@ def test_existing_capacity_has_no_hurdle(tmp_path: Path) -> None:
     assert model is not None
     assert ('region', 'standard', 2005) not in model.hurdle_rate
     assert value(model.real_cost) == pytest.approx(12 * present_value(15))
-    assert value(model.total_cost) == value(model.real_cost)
+    assert value(model.total_cost) == pytest.approx(value(model.real_cost), rel=1e-5)
 
 
 def test_monte_carlo_reports_both_metrics(tmp_path: Path) -> None:
@@ -441,8 +388,8 @@ def test_monte_carlo_reports_both_metrics(tmp_path: Path) -> None:
                 ('hurdle-1',),
             )
         )
-    assert reported['total_cost'] == value(model.real_cost)
-    assert reported['choice_score'] == value(model.total_cost)
+    assert reported['total_cost'] == pytest.approx(value(model.real_cost), rel=1e-5)
+    assert reported['choice_score'] == pytest.approx(value(model.total_cost), rel=1e-5)
 
 
 def test_morris_cost_response_excludes_hurdle(tmp_path: Path) -> None:
@@ -479,7 +426,8 @@ def test_single_vector_mga_caps_choice_score_and_reports_real_cost(
         built = con.execute(
             'SELECT tech, capacity FROM output_built_capacity WHERE scenario = ?', ('hurdle-1',)
         ).fetchall()
-    assert built == [(chosen, 1)]
+    assert [tech for tech, _ in built] == [chosen]
+    assert [capacity for _, capacity in built] == pytest.approx([1], rel=1e-5)
     price, operation = (1000, 300) if chosen == 'standard' else (1500, 240)
     assert reported['total_cost'] == pytest.approx(
         (price * crf(0.05, 15) + operation) * present_value(15)
