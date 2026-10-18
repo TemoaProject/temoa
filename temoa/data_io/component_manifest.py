@@ -339,6 +339,15 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
             is_period_filtered=False,
             is_table_required=False,
         ),
+        LoadItem(
+            component=model.hurdle_rate,
+            table='hurdle_rate',
+            columns=['region', 'tech', 'vintage', 'rate'],
+            validator_name='viable_rtv_new',
+            validation_map=(0, 1, 2),
+            is_period_filtered=False,
+            is_table_required=False,
+        ),
         # =========================================================================
         # Singleton and Configuration-based Components
         # =========================================================================

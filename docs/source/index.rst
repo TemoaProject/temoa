@@ -17,6 +17,7 @@ Temoa Project Documentation
 
    mathematical_formulation
    computational_implementation
+   hurdle_rates
 
 .. toctree::
    :maxdepth: 2

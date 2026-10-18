@@ -12,6 +12,8 @@ from pathlib import Path
 from sqlite3 import Connection
 from typing import Any, cast
 
+from pyomo.environ import value
+
 from temoa._internal import run_actions
 from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
@@ -95,6 +97,7 @@ class MyopicSequencer:
         self.debugging = False
         self.optimization_periods = None
         self.instance_queue = deque()  # a LIFO queue
+        self.period_costs: dict[int, tuple[float, float, bool]] = {}
         self.progress_mapper = None
         self.config = config
         # allow a "shunt" (None) here so we can test parts of this by passing a None config
@@ -183,6 +186,7 @@ class MyopicSequencer:
 
         # clear out the old riff-raff
         self.clear_old_results()
+        self.period_costs.clear()
 
         # start building the myopic_efficiency table.
         self.initialize_myopic_efficiency_table()
@@ -292,6 +296,7 @@ class MyopicSequencer:
             # backtracking...
             if idx:
                 self.clear_results_after(idx.base_year)
+            self.record_period_costs(model)
             # add the new results...
             if not self.config.silent and self.progress_mapper and idx:
                 self.progress_mapper.report(idx, 'report')
@@ -312,15 +317,21 @@ class MyopicSequencer:
             )
             self.output_con.commit()
 
-        # Total system cost is, theoretically, sum of discounted costs from output_cost table
+        # Preserve the total of discounted costs retained in the output table.
         total_cost = self.get_current_total_cost(
             last_base_year if last_base_year is not None else 0
         )
 
         assert self.output_con is not None
-        self.output_con.execute(
+        totals = [('total_cost', total_cost)]
+        if any(has_hurdle for _, _, has_hurdle in self.period_costs.values()):
+            totals.append(
+                ('choice_score', sum(score for _, score, _ in self.period_costs.values()))
+            )
+        self.output_con.executemany(
             'INSERT INTO output_objective(scenario, objective_name, total_system_cost) '
-            f"VALUES('{self.config.scenario}', 'total_cost', {total_cost})"
+            'VALUES (?, ?, ?)',
+            [(self.config.scenario, name, amount) for name, amount in totals],
         )
         self.output_con.commit()
 
@@ -331,13 +342,29 @@ class MyopicSequencer:
             make_excel(str(self.config.output_database), excel_filename, temp_scenario)
 
     def get_current_total_cost(self, base_year: int) -> float:
+        """Return the discounted cost total from the retained output rows."""
         assert self.output_con is not None
         assert self.config is not None
         total_cost = self.output_con.execute(
             'SELECT SUM(d_invest)+SUM(d_fixed)+SUM(d_var)+SUM(d_emiss) FROM output_cost '
-            f'WHERE scenario == "{self.config.scenario}"'
+            'WHERE scenario == ?',
+            (self.config.scenario,),
         ).fetchone()[0]
         return float(total_cost) if total_cost is not None else 0.0
+
+    def record_period_costs(self, model: TemoaModel) -> None:
+        """Retain solved period costs; later windows replace forecasts and rollbacks."""
+        for p in model.time_optimize:
+            has_hurdle = any(
+                value(model.hurdle_rate[r, t, v]) != 0
+                for r, t, v in model.hurdle_rate.sparse_keys()
+                if v == p
+            )
+            self.period_costs[p] = (
+                float(value(model.period_real_cost[p])),
+                float(value(model.period_choice_score[p])),
+                has_hurdle,
+            )
 
     def initialize_myopic_efficiency_table(self) -> None:
         """
@@ -690,6 +717,7 @@ class MyopicSequencer:
             )
             raise ValueError(f'Trying to clear a year {period} that is not in the optimize periods')
         logger.debug('Clearing periods %s+ from output tables', period)
+        self.period_costs = {p: costs for p, costs in self.period_costs.items() if p < period}
 
         assert self.cursor is not None
         assert self.output_con is not None
