@@ -52,7 +52,11 @@ def poll_commitment_results(model: TemoaModel) -> dict[UCI, tuple[float, float, 
 
 
 def write_uc_results(
-    model: TemoaModel, writer: TableWriter, iteration: int | None, epsilon: float = 1e-5
+    model: TemoaModel,
+    writer: TableWriter,
+    iteration: int | None,
+    epsilon: float = 1e-5,
+    append: bool = False,
 ) -> None:
     if writer.tech_sectors is None:
         raise RuntimeError('Missing tech_sectors')
@@ -80,12 +84,13 @@ def write_uc_results(
             'units': unit_prop.get_capacity_units(uci.t) if unit_prop else None,
         }
         records.append(row)
-    try:
-        writer.connection.execute(
-            'DELETE FROM output_unit_commitment WHERE scenario == ?', (scenario,)
-        )
-    except sqlite3.OperationalError:
-        pass
+    if not append:
+        try:
+            writer.connection.execute(
+                'DELETE FROM output_unit_commitment WHERE scenario == ?', (scenario,)
+            )
+        except sqlite3.OperationalError:
+            pass
 
     writer._bulk_insert('output_unit_commitment', records)
     writer.connection.commit()

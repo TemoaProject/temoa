@@ -47,6 +47,7 @@ class MyopicSequencer:
         'output_objective',
         'output_retired_capacity',
         'output_storage_level',
+        'output_unit_commitment',
     ]
     tables_without_scenario_reference = [
         'myopic_efficiency',
@@ -64,6 +65,7 @@ class MyopicSequencer:
         'output_net_capacity',
         'output_retired_capacity',
         'output_storage_level',
+        'output_unit_commitment',
     ]
 
     capacity_epsilon: float
@@ -651,6 +653,8 @@ class MyopicSequencer:
                     (scenario_name, f'{scenario_name}-%'),
                 )
             except sqlite3.OperationalError as e:
+                if table == 'output_unit_commitment' and str(e) == f'no such table: {table}':
+                    continue
                 sys.stderr.write(f'Could not clear scenario from table {table}.\n')
                 raise sqlite3.OperationalError from e
         for table in self.tables_without_scenario_reference:
@@ -701,6 +705,8 @@ class MyopicSequencer:
                     (period, scenario_name),
                 )
             except sqlite3.OperationalError as e:
+                if table == 'output_unit_commitment' and str(e) == f'no such table: {table}':
+                    continue
                 sys.stderr.write(f'Failed to clear periods from table {table}.\n')
                 raise sqlite3.OperationalError from e
 
