@@ -8,7 +8,6 @@ Implements:
   - min/max output from online units
   - min up-time and min down-time via cyclic windows
   - ramp-up and ramp-down constraints that account for online units and started/stopped units
-  - dynamic reserve margin constraint that accounts for online units and started/stopped units
 """
 
 from __future__ import annotations
