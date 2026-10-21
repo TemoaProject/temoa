@@ -115,6 +115,10 @@ def append_startup_costs(model: UnitCommitmentModel) -> None:
     r"""
     Append discounted startup costs and startup emission costs to the total-cost objective.
 
+    Both are discounted to the same base year as the core cost terms: the first optimization
+    period, or in a myopic run the first period of the whole run
+    (:code:`myopic_discounting_year`), not the first period of each myopic window.
+
     Two cost terms are added:
 
     1. **Direct startup cost**: for each :math:`(r, t)` in :code:`uc_startup_cost`,
@@ -128,6 +132,8 @@ def append_startup_costs(model: UnitCommitmentModel) -> None:
     """
 
     p_0 = min(model.time_optimize)
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
     gdr = value(model.global_discount_rate)
 
     startup_costs = quicksum(
