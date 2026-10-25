@@ -219,7 +219,7 @@ class DatabaseUtil:
             mask = result['region'].str.contains('-')
             result.loc[mask, 'capacity'] /= 2
 
-        result.drop(columns=['region'], inplace=True)
+        result = result.drop(columns=['region'])
         if len(df_columns) == 2:
             return result.sum()
         else:

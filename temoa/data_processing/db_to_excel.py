@@ -77,7 +77,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
             on=['region', 'tech'],
             how='left',
         )
-        df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
+        df_sector = df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'})
         sheet_name = f'Capacity_{sector}'
         df_sector.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
         worksheet = writer.sheets[sheet_name]
@@ -106,7 +106,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
             on=['region', 'tech'],
             how='left',
         )
-        df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'}, inplace=True)
+        df_sector = df_sector.rename(columns={'region': 'Region', 'tech': 'Technology'})
         sheet_name = f'Activity_{sector}'
         df_sector.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
         worksheet = writer.sheets[sheet_name]
@@ -143,14 +143,13 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
             on=['region', 'tech', 'sector', 'emis_comm'],
             how='left',
         )
-        df_emissions.rename(
+        df_emissions = df_emissions.rename(
             columns={
                 'region': 'Region',
                 'tech': 'Technology',
                 'emis_comm': 'Emission Commodity',
                 'sector': 'Sector',
-            },
-            inplace=True,
+            }
         )
         df_emissions.to_excel(writer, sheet_name='Emissions', index=False, startrow=1, header=False)
         worksheet = writer.sheets['Emissions']
