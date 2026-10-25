@@ -1,7 +1,33 @@
-*.pyc
-data_files/debug_logs/*.log
-data_files/debug_logs/lp_files/*.lp
-data_files/untracked_data/
-.DS_Store
-*.ipynb_checkpoints
-*.sqlite
+# ignore all root items
+/*
+
+# unignore folders
+!temoa/
+!tests/
+!docs/
+!notebooks/
+!output_files/
+!.github/
+!stubs/
+!scripts/
+
+# unignore files
+!.gitignore
+!.gitattributes
+!README.md
+!pyproject.toml
+!uv.lock
+!requirements*.txt
+!LICENSE
+!CHANGELOG.md
+!CONTRIBUTING.md
+!.pre-commit-config.yaml
+!.readthedocs.yaml
+!.coderabbit.yaml
+!CITATION.cff
+
+# recursively re-ignore
+__pycache__
+
+# ignore built docs
+docs/_build

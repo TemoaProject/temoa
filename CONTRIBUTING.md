@@ -1,42 +1,129 @@
-# How to contribute #
+# Contributing to Temoa
 
-I'm really happy that you're interested in contributing to Temoa! Building a sustainable energy future with an open source energy system model takes a lot of effort, and we can use all the help we can get.
+Thank you for your interest in contributing to Temoa! Building a sustainable energy future with an open source energy system model takes a lot of effort, and we welcome all contributions.
 
-Here are some resources to help get you started:
-* A [preprint](https://temoacloud.com/wp-content/uploads/2019/12/Hunter_etal_2013.pdf) of our Energy Economics paper laying out the motivation for our effort as well as the core model formulation.
-* The [model documentation](https://temoacloud.com/docs/), which evolves with changes to the model formulation and the addition of new features.
-* Use [our forum](https://groups.google.com/forum/#!forum/temoa-project) to ask questions about the model.
+## Resources
 
-## Bugs and feature requests ##
-If you would like to report a bug in the code or request a feature, please use our [Issue Tracker](https://github.com/TemoaProject/temoa/issues). If you're unsure or have questions, use [the forum](https://groups.google.com/forum/#!forum/). 
+- **Documentation**: [https://docs.temoaproject.org/en/latest/](https://docs.temoaproject.org/en/latest/)
+- **Project Website**: [https://temoaproject.org](https://temoaproject.org)
+- **Issue Tracker**: [https://github.com/TemoaProject/temoa/issues](https://github.com/TemoaProject/temoa/issues)
+- **Academic Paper**: Hunter et al. (2013) - [Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa)](https://doi.org/10.1016/j.eneco.2013.07.014)
 
-## Submitting Changes ##
+## Getting Help
 
-To make changes to the code, first clone the repository. If you would like to share those changes back to our main repository, then you need to issue a pull request on GitHub. Details on how to contribute code are nicely outlined in [this blog post by Rob Allen](https://akrabat.com/the-beginners-guide-to-contributing-to-a-github-project/). If you'd like to make changes but don't feel comfortable with GitHub, get in touch with us through the [forum](https://groups.google.com/forum/#!forum/).
+If you have questions or need help:
+- **Bug Reports & Feature Requests**: Use our [GitHub Issues](https://github.com/TemoaProject/temoa/issues). Please use the provided templates for Bug Reports or Feature Requests.
+- **General Questions**: Open an issue using the **Question** template. We have phased out the legacy Google Group forum in favor of GitHub-based discussions.
 
-When making commits to the repository, please use verbose commit messages for all but the simplest changes. Every commit to the repository should include an appropriate summary message about the accompanying code changes.  Include enough context so that users get a high-level understanding of the changes without having to check the code.  For example, "Fixed broken algorithm" does not convey much information.  A more appropriate and complete summary message might be:
+## Development Setup
 
+### Prerequisites
+
+- Python 3.12 or higher
+- [uv](https://github.com/astral-sh/uv) (recommended)
+- Git
+
+### Setting Up Your Development Environment
+
+
+1. **Fork and clone the repository:**
+
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/temoa.git
+   cd temoa
+   ```
+
+2. **Install dependencies using uv (recommended):**
+
+   ```bash
+   # Install all dependencies including development tools
+   uv sync --all-extras --dev
+   ```
+
+3. **Install pre-commit hooks:**
+
+   ```bash
+   uv run pre-commit install
+   ```
+
+   This will automatically run code quality checks (Ruff, Mypy) before each commit.
+
+## Infrastructure & Testing
+
+We maintain a robust testing infrastructure to ensure model correctness and code reliability.
+
+### Solvers
+All core tests are designed to run using the **HiGHS** solver (provided by the `highspy` core dependency).
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with coverage report
+uv run pytest --cov=temoa --cov-report=html
+
+# Run specific test file
+uv run pytest tests/test_specific.py
 ```
-Add NEOS solve functionality to config file
 
-With this commit, users can now use the NEOS server: https://neos-server.org/neos/ 
-to solve their Temoa models. If users do not have a local install of cplex, this 
-is a potentially faster option. Note that when using NEOS, both --neos and --solver 
-must be used in the config file.
+### Testing Infrastructure
+If you are writing a new feature, you **must** include tests that verify its functionality.
+- Refer to `tests/conftest.py` for the available testing infrastructure.
+- Use the `system_test_run` fixture for full model execution tests.
+- Test databases are automatically refreshed from SQL scripts in `tests/testing_data/` during the test setup phase.
+
+## Code Quality Tools
+
+We use several tools to maintain high code standards:
+
+### Type Checking with mypy
+All new code must include type hints. We enforce strict typing for core modules.
+```bash
+uv run mypy temoa
 ```
 
-In general, we try to follow [these 7 rules](https://chris.beams.io/posts/git-commit/) when writing commit messages:
+### Linting and Formatting with Ruff
+We use Ruff for both linting and formatting.
+```bash
+# Check and auto-fix linting issues
+uv run ruff check --fix .
 
-1. Separate subject from body with a blank line
-2. Limit the subject line to 50 characters
-3. Capitalize the subject line
-4. Do not end the subject line with a period
-5. Use the imperative mood in the subject line
-6. Wrap the body at 72 characters
-7. Use the body to explain what and why vs. how
+# Format code
+uv run ruff format .
+```
 
-Regarding how we format code, please see Chapter 7 of our user manual, which serves as the Temoa Code Style Guide. Be sure that all modified files included in the pull request have unix line endings.
+## Making Changes
 
-Thanks,
-Joe DeCarolis
-NC State University
+### Pull Request Process
+
+1. **Open an Issue first**: For significant changes or new features, please open an issue to discuss the approach before starting work.
+2. **Create a new branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Implement and Test**: Ensure your changes follow the [Code Style Guidelines](#code-style-guidelines) and include relevant tests.
+4. **Verify Locally**: Run `pytest`, `mypy`, and `ruff` locally before pushing.
+5. **Open a Pull Request**: Submit your PR against the `unstable` branch. Ensure the PR description clearly explains the changes and links to the relevant issue.
+
+### Commit Message Guidelines
+
+We advise following the [Conventional Commits](https://www.conventionalcommits.org/) style.
+
+**Format:** `<type>: <subject>` (e.g., `feat: Add new carbon constraint`)
+
+**Rules:**
+1. Use the imperative mood ("Add feature" not "Added feature").
+2. Limit the subject line to 50 characters.
+3. Use the body to explain *what* and *why* vs. *how*.
+
+## Code Style Guidelines
+
+- **Type Hints**: Required for all public function signatures.
+- **Docstrings**: Use Google-style docstrings.
+- **Line Length**: Maximum 100 characters (enforced by Ruff).
+
+---
+
+Thank you for contributing to Temoa!

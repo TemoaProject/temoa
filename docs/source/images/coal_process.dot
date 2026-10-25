@@ -7,6 +7,6 @@ digraph coal {
 	coal_plant [ shape="box", color="darkseagreen", label="coal_plant\n\ninstalled capacity\nefficiency\ninstall cost\nfixed cost\nmarginal cost\nemission per unit activity\nuseful life\nloan life\n..." ] ;
 	electricity [ label="electricity" ];
 
-	coal -> coal_plant [ label="Input, (V_FlowIn)" ];
-	coal_plant -> electricity [ label="Output, (V_FlowOut)"];
+	coal -> coal_plant [ label="Input, (v_flow_in)" ];
+	coal_plant -> electricity [ label="Output, (v_flow_out)"];
 }

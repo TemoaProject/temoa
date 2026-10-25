@@ -1,0 +1,3 @@
+class WriterConfig:
+    symbolic_solver_labels: bool
+    def __init__(self) -> None: ...

@@ -1,133 +1,395 @@
 # TEMOA
-## Model features
 
-This is an extended version of the [TEMOA](https://temoacloud.com/) (Tools for Energy Modeling Optimization and Analysis) energy system modeling framework.
+[![PyPI](https://img.shields.io/pypi/v/temoa?label=pypi%20package)](https://pypi.org/project/temoa/)
+[![CI](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml/badge.svg?branch=unstable)](https://github.com/TemoaProject/temoa/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/TemoaProject/temoa/graph/badge.svg?token=ZAXU1VM8YN)](https://codecov.io/gh/TemoaProject/temoa)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/TemoaProject/temoa/main.svg)](https://results.pre-commit.ci/latest/github/TemoaProject/temoa/main)
+[![Documentation Status](https://readthedocs.org/projects/temoa/badge/?version=latest)](https://temoa.readthedocs.io/en/latest/?badge=latest)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://pyreadiness.org/3.12/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Type Checked with mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-This model version is maintained by the by the [MAHTEP Group](http://www.mahtep.polito.it/) at the Department of Energy of [Politecnico di Torino](https://www.polito.it/) and at the Department of Economics and Statistic of [Università degli Studi di Torino](https://www.unito.it/).
-The group is lead by Prof. [Laura Savoldi](http://www.mahtep.polito.it/people/coordinators/savoldi_laura) ad Prof. [Valeria di Cosmo](http://www.mahtep.polito.it/people/coordinators/di_cosmo_valeria). For any communication related to this TEMOA version, please write to [matteo.nicoli@polito.it](mailto:matteo.nicoli@polito.it).
+## Overview
 
-The public model instances maintained by the MAHTEP Group are:
-* [TEMOA-Europe](https://github.com/MAHTEP/TEMOA-Europe)
-* [TEMOA-Italy](https://github.com/MAHTEP/TEMOA-Italy)
-* [TEMOA-Piedmont](https://github.com/MAHTEP/TEMOA-Piedmont)
-* [TEMOA-NO4](https://github.com/MAHTEP/TEMOA-NO4)
+TEMOA (Tools for Energy Model Optimization and Analysis) is a sophisticated energy systems optimization framework that supports various modeling approaches including perfect foresight, myopic planning, uncertainty analysis, and alternative generation.
 
-Below, the list of publications in which this version was used:
-1. M. Cais, M. Nicoli, M. Gandiglio, L. Savoldi et al., “Hybrid superconducting energy pipelines: key cost thresholds and system implications for Italy,” Int. J. Hydrogen Energy, vol. 210, no. 153627, 2026, doi: 10.1016/j.ijhydene.2026.153627.
-2. A. Mastrantuono, M. Nicoli, V. Di Cosmo, D. Mosso, A. Rodrigo de Queiroz, and L. Savoldi, “Key determinants of nuclear fission competitiveness and implications of its potential restart for the Italian power system,” Energy, vol. 360, p. 141475, Sep. 2026, doi: 10.1016/j.energy.2026.141475.
-3. M. Nicoli et al., “A framework for global sensitivity analysis in long-term energy systems planning using optimal transport,” Energy, vol. 338, p. 138788, Nov. 2025, doi: 10.1016/J.ENERGY.2025.138788.
-4. V. Di Cosmo, M. Nicoli, D. Cottafava, and A. Vai, “Social Acceptability and Transport: An Energy System–Optimisation- Based Analysis of the European Case,” Economics of Energy and Environmental Policy, Jun. 2026, doi: 10.5547/2160-5890.15.1.MNIC.
-5. M. Nicoli, “An energy planning perspective about the multi-sectorial synergies and implications of the energy transition,” PhD Thesis, Politecnico di Torino, Turin, 2025. Accessed: Jul. 07, 2025. [Online]. Available: https://iris.polito.it/handle/11583/3001281
-6. F. Amir Kavei, M. E. Alfano, M. Nicoli, F. Quatraro, and L. Savoldi, “Integrated Water-Energy Modeling in TEMOA Energy System Optimization Model: Pantelleria Case Study,” Energy Nexus, vol. 18, p. 100461, 2025, doi: 10.1016/J.NEXUS.2025.100461.
-7. A. Vai, G. Colucci, M. Nicoli, and L. Savoldi, “May the availability of critical raw materials affect the security of energy systems? An analysis for risk-aware energy planning with TEMOA-Italy,” Mater Today Energy, vol. 48, no. 101805, 2025, doi: 10.1016/j.mtener.2025.101805.
-8. F. Amir Kavei, M. Nicoli, F. Quatraro, and L. Savoldi, “Enhancing energy transition with open-source regional energy system optimization models: TEMOA-Piedmont,” Energy Convers Manag, vol. 327, p. 119536, Mar. 2025, doi: 10.1016/J.ENCONMAN.2025.119536.
-9. M. Nicoli, G. Colucci, V. Di Cosmo, D. Lerede, and L. Savoldi, “Evaluating the impact of hurdle rates on the Italian energy transition through TEMOA,” Appl Energy, vol. 377PC, no. 124633, 2024, doi: 10.1016/j.apenergy.2024.124633.
-10. M. Nicoli, V. A. D. Faria, A. R. de Queiroz, and L. Savoldi, “Modeling energy storage in long-term capacity expansion energy planning: an analysis of the Italian system,” J Energy Storage, vol. 101PA, no. 113814, 2024, doi: 10.1016/j.est.2024.113814.
-11. M. Nicoli et al., “Enabling Coherence Between Energy Policies and SDGs Through Open Energy Models: The TEMOA-Italy Example,” in Aligning the Energy Transition with the Sustainable Development Goals: Key Insights from Energy System Modelling, M. Labriet, K. Espegren, G. Giannakidis, and B. O’Gallachoir, Eds., Springer, 2024, pp. 97–118. doi: 10.1007/978-3-031-58897-6_5.
-12. D. Mosso, G. Colucci, D. Lerede, M. Nicoli, M. S. Piscitelli, and L. Savoldi, “How much do carbon emission reduction strategies comply with a sustainable development of the power sector?,” Energy Reports, vol. 11, pp. 3064–3087, Jun. 2024, doi: 10.1016/J.EGYR.2024.02.056.
-13. G. Colucci, D. Lerede, M. Nicoli, and L. Savoldi, “A dynamic accounting method for CO2 emissions to assess the penetration of low-carbon fuels: application to the TEMOA-Italy energy system optimization model,” Appl Energy, vol. 352, no. 121951, Dec. 2023, doi: 10.1016/j.apenergy.2023.121951.
-14. M. Nicoli, “A TIMES-like open-source model for the Italian energy system,” Politecnico di Torino, Turin, 2021. Accessed: Jul. 05, 2022. [Online]. Available: https://webthesis.biblio.polito.it/18850/
-15. M. Nicoli, F. Gracceva, D. Lerede, and L. Savoldi, “Can We Rely on Open-Source Energy System Optimization Models? The TEMOA-Italy Case Study,” Energies (Basel), vol. 15, no. 18, p. 6505, Sep. 2022, doi: 10.3390/en15186505.
+## Quick Start
 
+### Standard Installation
 
-## Installation Guide
-This guide provides step-by-step instructions to install the required software for running the TEMOA energy system optimization model, assuming the user is eligible for requesting a Gurobi academic license.
+```bash
+# Install from PyPI in a virtual environment
+python -m venv .venv
 
-### Step 1: Install Anaconda
-Anaconda is a Python distribution that simplifies package management and deployment.
+# Activate virtual environment
+# On Linux/Mac:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
 
-1. Download Anaconda from [https://www.anaconda.com/download](https://www.anaconda.com/download).
-2. Select the appropriate version for your operating system (Windows, macOS, or Linux).
-3. Follow the installation instructions provided on the website.
-4. During installation, check the option to add Anaconda to your system's PATH.
-5. To verify the installation, open a terminal (Command Prompt on Windows, Terminal on macOS/Linux) and type:
-   ```sh
-   conda --version
-   ```
-   If installed correctly, this will return the Anaconda version number.
-
-### Step 2: Download the TEMOA source code (MAHTEP version)
-
-1. Go to the MAHTEP version of TEMOA on GitHub: [https://github.com/MAHTEP/TEMOA](https://github.com/MAHTEP/TEMOA).
-2. Download the repository as a ZIP file by clicking on "Code" > "Download ZIP".
-3. Alternatively, you can clone the repository using Git:
-   ```sh
-   git clone https://github.com/MAHTEP/TEMOA.git
-   ```
-4. Extract the ZIP file to a folder on your computer.
-5. Rename the folder with the model source code as "TEMOA".
-
-### Step 3: Create the Conda Virtual Environment
-A virtual environment ensures that dependencies are installed in an isolated environment.
-
-1. Open a terminal (Command Prompt on Windows, Terminal on macOS/Linux).
-2. Navigate to the extracted TEMOA directory using the `cd` command:
-   ```sh
-   cd ../TEMOA/environments/temoa
-   ```
-3. Create the virtual environment:
-   ```sh
-   conda env create -f temoa.yml
-   ```
-4. Activate the environment:
-   ```sh
-   conda activate temoa
-   ```
-5. To check if the environment is activated, type:
-   ```sh
-   conda env list
-   ```
-   The `temoa` environment should be marked with an asterisk `*`.
-
-An alternative virtual environment is required to run TEMOA with stochastic optimization. The guide to install this environment and the necessary steps required to modify accordingly the TEMOA source code are located at:
-```
-..TEMOA/environments/temoa-stochastic
+# Install temoa
+pip install temoa
 ```
 
-### Step 4: Install Gurobi and Register an Academic License
-Gurobi is required to solve optimization models in TEMOA.
+### Get Started in 30 Seconds
 
-1. Download Gurobi from [https://www.gurobi.com/downloads/](https://www.gurobi.com/downloads/).
-2. Follow the installation instructions for your operating system.
-3. After installation, register for an academic named-user license at [https://www.gurobi.com/academia/academic-program-and-licenses/](https://www.gurobi.com/academia/academic-program-and-licenses/).
-4. Ensure that your computer is connected to the academic network during license registration.
-5. Run the following command (provided by the Gurobi website during the license request) to register the license key:
-   ```sh
-   grbgetkey YOUR_LICENSE_KEY
+In a virtual env with temoa installed, run:
+
+```bash
+# Create tutorial files in the current directory
+# Creates tutorial_config.toml and tutorial_database.sqlite
+temoa tutorial
+
+# Run the model
+temoa run tutorial_config.toml
+```
+
+## Package Structure
+
+The Temoa package is organized into clear modules:
+
+- **`temoa.core`** - Public API for end users (TemoaModel, TemoaConfig, TemoaMode)
+- **`temoa.cli`** - Command-line interface and utilities
+- **`temoa.components`** - Model components and constraints
+- **`temoa.data_io`** - Data loading and validation
+- **`temoa.extensions`** - Optional extensions for different modeling approaches
+  - `modeling_to_generate_alternatives` - MGA analysis
+  - `method_of_morris` - Sensitivity analysis
+  - `monte_carlo` - Uncertainty quantification
+  - `myopic` - Sequential decision making
+- **`temoa.model_checking`** - Model validation and integrity checking
+- **`temoa.data_processing`** - Output analysis and visualization
+- **`temoa.utilities`** - Helper scripts and migration tools
+
+## Installation & Setup
+
+### Development Installation
+
+For users who want to contribute to or modify Temoa should install in development mode using `uv`:
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+```
+
+```bash
+# Clone repository
+git clone https://github.com/TemoaProject/temoa.git
+cd temoa
+
+# Setup development environment with uv
+uv sync --all-extras --dev
+
+# Install pre-commit hooks
+uv run pre-commit install
+
+# Run tests
+uv run pytest
+
+# Run type checking
+uv run mypy
+```
+
+## Command Line Interface
+
+Temoa provides a modern, user-friendly CLI built with Typer:
+
+### Basic Commands
+
+**Run a model:**
+
+```bash
+temoa run tutorial_config.toml
+temoa run tutorial_config.toml --output results/
+temoa run tutorial_config.toml --build-only  # Build without solving
+```
+
+**Validate configuration:**
+
+```bash
+temoa validate tutorial_config.toml
+temoa validate tutorial_config.toml --debug
+```
+
+**Database migration:**
+
+```bash
+temoa migrate old_database.sql --output new_database.sql
+temoa migrate old_database.db --type db
+temoa migrate old_database.sqlite --output migrated_v4.sqlite
+```
+
+**Generate tutorial files:**
+
+```bash
+temoa tutorial                    # Creates tutorial_config.toml and tutorial_database.sqlite
+temoa tutorial my_model my_db     # Custom names
+```
+
+### Global Options
+
+```bash
+temoa --version                   # Show version information
+temoa --how-to-cite              # Show citation information
+temoa --help                     # Full help
+```
+
+### Using with uv
+
+When working with the source code, use `uv run` to ensure you're using the correct dependencies:
+
+```bash
+uv run temoa run tutorial_config.toml      # Run with project dependencies
+uv run temoa validate tutorial_config.toml # Validate configuration
+uv run temoa tutorial             # Create tutorial files
+```
+
+## Programmatic Usage
+
+You can use Temoa as a Python library:
+
+```python
+from logging import getLogger
+from pathlib import Path
+from temoa._internal.temoa_sequencer import TemoaSequencer
+from temoa.core.config import TemoaConfig
+from temoa.core.modes import TemoaMode
+from temoa.cli import setup_logging
+from pyomo.environ import value, check_optimal_termination
+
+output_path = Path('output_files/my_run')
+output_path.mkdir(parents=True, exist_ok=True)
+
+setup_logging(output_path, debug=False, silent=False)
+
+logger = getLogger(__name__)
+
+#  ======================================================================
+#  Choose ONE of the following two options for configuring the model run:
+#  ======================================================================
+
+# OPTION 1: build the config in code
+config = TemoaConfig(
+    scenario='zulu',
+    scenario_mode=TemoaMode.PERFECT_FORESIGHT,
+    time_sequencing='seasonal_timeslices',
+    input_database='tutorial_database.sqlite',
+    output_database='tutorial_database.sqlite',
+    solver='appsi_highs',
+    output_path=output_path,
+    silent=False,
+)
+# OPTION 2: load the config from a file
+config = TemoaConfig.build_config(
+    config_file=Path('tutorial_config.toml'),
+    output_path=output_path,
+    silent=False,
+)
+
+ts = TemoaSequencer(config=config)
+ts.start()  # TemoaSequencer runs the model and handles results
+
+# Results are saved to your output_database but can also be accessed in code, here
+solved_instance = ts.pf_solved_instance  # solved Temoa instance with solution values
+solver_results = ts.pf_results  # information from the solver
+
+# Example code usage of the solved instance and solver results
+logger.info(f'Solver results: {solver_results["solver"]}')
+if check_optimal_termination(solver_results):
+    logger.info(f'Model solved! Objective value: {value(solved_instance.total_cost):.2f}')
+    built_capacity = value(solved_instance.v_new_capacity['utopia', 'E51', 2010])
+    logger.info(f'Built {built_capacity:.2f} GW of storage in 2010')
+```
+
+## Database Setup
+
+### Quick Setup with Tutorial
+
+The fastest way to get started:
+
+```bash
+temoa tutorial
+```
+
+This creates:
+
+- `tutorial_config.toml` - Configuration file with example settings
+- `tutorial_database.sqlite` - Sample database for learning
+
+**Migration from older versions:**
+
+```bash
+# Migrate from v3.1 to v4
+temoa migrate old_database_v3.1.sql --output new_database_v4.sql
+
+# or for SQLite databases
+temoa migrate old_database_v4.sqlite --output new_database_v4.sqlite
+```
+
+## Configuration Files
+
+A configuration file is required to run the model. The tutorial command creates a complete example:
+
+```toml
+scenario = "tutorial"
+scenario_mode = "perfect_foresight"
+input_database = "tutorial_database.sqlite"
+output_database = "tutorial_database.sqlite"
+solver = "appsi_highs"
+```
+
+### Configuration Options
+
+| Field | Notes |
+|-------|-------|
+| Scenario Name | Name used in output tables (cannot contain '-' symbol) |
+| Temoa Mode | Execution mode (PERFECT_FORESIGHT, MYOPIC, MGA, etc.) |
+| Input/Output DB | Source and output database paths |
+| Price Checking | Run pricing analysis on built model |
+| Source Tracing | Verify commodity flow network integrity |
+| Plot Network | Generate HTML network visualizations |
+| Solver | Solver executable name (appsi_highs, cbc, gurobi, cplex, etc.) |
+| Save Excel | Export core output to Excel files |
+| Save LP | Save LP model files for external solving |
+
+## Supported Modes
+
+### Perfect Foresight
+
+Solves the entire model at once. Most common mode for optimization.
+
+### Myopic
+
+Sequential solving through iterative builds. Required for stepwise decision analysis.
+
+### MGA (Modeling to Generate Alternatives)
+
+Explores near cost-optimal solutions for robustness analysis.
+
+### SVMGA (Single Vector MGA)
+
+Two-solve process focusing on specific variables in the objective.
+
+### Method of Morris
+
+Limited sensitivity analysis of user-selected variables.
+
+### Build Only
+
+Builds model without solving. Useful for validation and troubleshooting.
+
+## Typical Workflow
+
+1. **Setup**: Create configuration and database files:
+
+   ```bash
+   temoa tutorial
    ```
-6. If successful, Gurobi should now be ready to use.
 
-### Step 5: Running a TEMOA Simulation
-To run a TEMOA simulation, the user can customize the settings in the configuration file located at:
-```
-../TEMOA/temoa_model/config_sample
+2. **Configure**: Edit the configuration file to match your scenario
+
+3. **Validate**: Check configuration before running:
+
+   ```bash
+   temoa validate tutorial_config.toml
+   ```
+
+4. **Run**: Execute the model:
+
+   ```bash
+   temoa run tutorial_config.toml
+   ```
+
+5. **Review**: Check results in `output_files/YYYY-MM-DD_HHMMSS/`
+
+6. **Iterate**: Modify configuration and run again
+
+## Advanced Features
+
+### Extensions
+
+Temoa includes optional extensions for advanced analysis:
+
+- **Monte Carlo**: Uncertainty quantification
+- **Stochastic Programming**: Scenario-based optimization
+- **Method of Morris**: Sensitivity analysis
+
+### Data Processing
+
+- Excel output generation
+- Graphviz network visualization
+- Interactive network diagrams
+
+### Model Validation
+
+- Built-in validation checks
+- Commodity flow verification
+- Price consistency analysis
+
+### Solver Dependencies
+
+TEMOA requires at least one optimization solver:
+
+- **Free**: [HiGHS](https://ergo-code.github.io/HiGHS/)
+  - Included via the `highspy` Python package (automatically installed with Temoa)
+  - Default solver for tutorial and testing
+
+- **Free**: [CBC](https://github.com/coin-or/Cbc)
+  - Requires separate installation (see [CBC documentation](https://github.com/coin-or/Cbc))
+  - Alternative free solver option
+
+- **Commercial**: Gurobi, CPLEX, or Xpress
+  - Requires separate license and installation
+  - See individual solver documentation
+
+## Troubleshooting
+
+### Solver Issues
+
+If you encounter solver errors:
+
+```bash
+# For commercial solvers (Gurobi, CPLEX)
+pip install ".[solver]"  # Include specific solver packages
+
+# For free solver
+temoa run tutorial_config.toml --debug  # Get detailed error information
 ```
 
-In the `config_sample` file, users can specify:
-- **Input database**: The SQLite database containing the model instance.
-- **Output database**: The database where results will be stored.
-- **Scenario name**: The scenario name sed to store results.
-- **Path to data**: The path to the folder containing the input and output database.
-- **Optional settings**, including those necessary to run TEMOA with:
-  - *MGA (Modeling to Generate Alternatives)*: Used to explore alternative solutions.
-  - *MOO (Multi-Objective Optimization)*: Used for multi-objective optimization runs.
-  - *MGPA (Modeling to Generate near-Pareto-optimal Alternatives)*: Used to explore near-pareto optimal alternatives (it combines MOO with MGA).
+## Documentation & Support
 
+- **Full Documentation**: Built by following docs/README.md
+- **API Reference**: See `temoa.core` module for public API
+- **GitHub Issues**: Report bugs and request features
+- **Tutorials**: Run `temoa tutorial` for guided examples
 
-To test that TEMOA is working correctly, users can optimize the `temoa_utopia.sqlite` database, which represents a simple model instance developed for testing purposes.
+## Code Style & Quality
 
-After customizing the settings, navigate to the extracted TEMOA directory using the `cd` command:
-```sh
-cd ../TEMOA
+For contributors:
+
+- **Ruff**: Code formatting and linting
+- **mypy**: Type checking
+- **pytest**: Testing framework
+- **Pre-commit**: Automated quality checks
+
+See CONTRIBUTING.md for detailed development guidelines.
+
+## Citation
+
+If you use Temoa in your research, please cite:
+
+```bibtex
+@article{hunter2013modeling,
+  title={Modeling for insight using Tools for Energy Model Optimization and Analysis (Temoa)},
+  journal={Energy Economics},
+  volume={40},
+  pages={339--349},
+  year={2013},
+  doi={10.1016/j.eneco.2013.07.014}
+}
 ```
-Be sure the virtual enviornment is activated. If not, activate it with:
-```sh
-conda activate temoa
-```
-TEMOA can be run using the following command:
-```sh
-python temoa_model --config=temoa_model/config_sample
-```
-If the installation is correct, TEMOA should successfully solve the test model and fill the output tables of the output database with results.
-___
-For further assistance, refer to the official [TEMOA documentation](https://temoacloud.com/temoaproject/) or write to [matteo.nicoli@polito.it](mailto:matteo.nicoli@polito.it).
+
+Or use: `temoa --how-to-cite`

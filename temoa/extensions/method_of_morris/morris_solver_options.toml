@@ -1,0 +1,13 @@
+# A container for solver options for Method of Morris solves
+# the top level solver name in brackets should align with the solver name in the config.toml
+
+
+[gurobi]
+
+# tbd  (possible use same as MGA?)
+
+[cbc]
+# tbd
+
+[appsi_highs]
+# tbd

@@ -1,0 +1,13 @@
+# ignore everything in the outputs
+/*
+
+#except the logs folder, but ignore its contents
+!/debug_logs
+debug_logs/*
+
+# except the lp_files folder, but ignore its contents
+!/debug_logs/lp_files
+debug_logs/lp_files/*
+
+# except the README.txt, which is needed to force creation of the folder itself
+!/debug_logs/lp_files/README.txt

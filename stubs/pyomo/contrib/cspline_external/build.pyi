@@ -1,0 +1,6 @@
+from pyomo.common.cmake_builder import build_cmake_project as build_cmake_project
+
+def build_cspline_external(user_args=[], parallel=None): ...
+
+class ASLCsplineExternalBuilder:
+    def __call__(self, parallel): ...

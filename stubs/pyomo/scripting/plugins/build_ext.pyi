@@ -1,0 +1,6 @@
+from pyomo.common.extensions import ExtensionBuilderFactory as ExtensionBuilderFactory
+from pyomo.scripting.pyomo_parser import add_subparser as add_subparser
+
+class ExtensionBuilder:
+    def create_parser(self, parser): ...
+    def call(self, args, unparsed): ...

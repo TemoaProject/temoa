@@ -1,0 +1,129 @@
+"""
+This module contains the core "evaluation" function for Method Of Morris.  It needs to be isolated
+(outside of class) to enable parallelization.
+"""
+
+from __future__ import annotations
+
+import logging
+import sqlite3
+import sys
+from logging.handlers import QueueHandler
+from typing import TYPE_CHECKING, Any
+
+from pyomo.dataportal import DataPortal
+
+from temoa._internal import run_actions
+from temoa._internal.table_writer import TableWriter
+
+if TYPE_CHECKING:
+    from temoa.core.config import TemoaConfig
+
+
+def configure_worker_logger(log_queue: Any, log_level: int) -> logging.Logger:
+    """configure the logger"""
+    worker_logger = logging.getLogger('MM evaluate')
+    if not worker_logger.hasHandlers():
+        h = QueueHandler(log_queue)
+        worker_logger.addHandler(h)
+    root_logger = logging.root
+    if not root_logger.hasHandlers():
+        h = QueueHandler(log_queue)
+        root_logger.addHandler(h)
+    worker_logger.setLevel(log_level)
+    root_logger.setLevel(logging.WARNING)
+    return worker_logger
+
+
+def evaluate(
+    param_info: dict[int, list[Any]],
+    mm_sample: Any,
+    data: dict[str, Any],
+    i: int,
+    config: TemoaConfig,
+    log_queue: Any,
+    log_level: int,
+    solver_options: dict[str, Any] | None = None,
+) -> list[float]:
+    """
+    Run model for params provided and return objective value and emission value
+    Note:  This function needs to be a static instance to enable the parallel
+    processing, which requires parallelization of the parameters.  It cannot be
+    a class or instance function, AFAIK
+    :param param_info: The stack of parameter data to pull name/index from
+    :param mm_sample: The values of the parameters to alter
+    :param data: Data used to build the Data Portal
+    :param i: indexing number
+    :param config: The config file to pull run data from
+    :param solver_options: resolved solver options.  If None, the Temoa defaults are used
+    :return: list of objective value and CO2 emission value
+    """
+    # get the logger configured...
+    logger = configure_worker_logger(log_queue, log_level)
+    logger.info('Starting MM evaluation # %d', i + 1)
+    log_entry = ['']
+    for j in range(0, len(mm_sample)):
+        param_name, *set_idx, _ = param_info[j]
+        set_idx_tuple = tuple(set_idx)
+        # tweak the parameter
+        if data.get(param_name) is None:
+            raise ValueError(f'Unrecognized parameter: {param_name}')
+        if data[param_name].get(set_idx_tuple) is None:
+            raise ValueError('index mismatch from data read-in')
+        data[param_name][set_idx_tuple] = mm_sample[j]
+        setting_entry = 'run # %d:  Setting param %s[%s] to value:  %f'
+        log_entry.append(setting_entry)
+    logger.debug('\n  '.join(log_entry))
+
+    dp = DataPortal(data_dict={None: data})
+    instance = run_actions.build_instance(
+        loaded_portal=dp,
+        silent=True,
+        extensions=config.extensions,
+    )
+    mdl, res = run_actions.solve_instance(
+        instance=instance,
+        solver_name=config.solver_name,
+        silent=True,
+        solver_options=solver_options,
+    )
+    status = run_actions.check_solve_status(res)
+    if not status:
+        raise RuntimeError('Bad solve during Method of Morris')
+    with TableWriter(config) as table_writer:
+        table_writer.write_mm_results(model=mdl, iteration=i)
+    import contextlib
+
+    with contextlib.closing(sqlite3.connect(config.input_database)) as con:
+        cur = con.cursor()
+        scenario_name = config.scenario + f'-{i}'
+        cur.execute(
+            'SELECT total_system_cost FROM output_objective where scenario = ?', (scenario_name,)
+        )
+        output_query = cur.fetchall()
+        if len(output_query) > 1:
+            raise RuntimeError(
+                'Multiple outputs found in Objective table matching scenario name.  Coding error.'
+            )
+        else:
+            y_of = output_query[0][0] if output_query[0][0] is not None else 0.0
+        cur.execute(
+            "SELECT SUM(emission) FROM output_emission WHERE emis_comm='co2' AND scenario=?",
+            (scenario_name,),
+        )
+        output_query = cur.fetchall()
+        if len(output_query) == 0:
+            y_cumulative_co2 = 0.0
+        elif len(output_query) > 1:
+            raise RuntimeError(
+                'Multiple outputs found in output_emissions table matching scenario name.  Coding '
+                'error.'
+            )
+        else:
+            y_cumulative_co2 = output_query[0][0] if output_query[0][0] is not None else 0.0
+    morris_objectives = [float(y_of), float(y_cumulative_co2)]
+    logger.info('Finished MM evaluation # %d with OBJ value: %0.2f ', i + 1, y_of)
+    if not config.silent:
+        sys.stdout.write(f'Completed MM run {i + 1}\n')
+        sys.stdout.flush()
+    return morris_objectives

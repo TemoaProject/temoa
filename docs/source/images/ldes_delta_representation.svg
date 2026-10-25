@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="795.14844"
+   height="217.28595"
+   viewBox="0 0 795.14844 217.28595"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="delta_problem.svg"
+   inkscape:export-filename="delta_problem.pdf"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="0.29380287"
+     inkscape:cx="1289.9806"
+     inkscape:cy="352.27702"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     inkscape:export-bgcolor="#ffffffff">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="-2697.3555"
+       originy="-736.86132"
+       spacingx="5"
+       spacingy="5"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-2697.3555,-736.86132)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3040,801.24891 v 150 h 150 v -150"
+       id="path75"
+       inkscape:export-filename="ldes_delta_representation.pdf"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3040,801.24891 h 150"
+       id="path77" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3190,801.24891 v 150 h 150 v -150"
+       id="path78" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3190,801.24891 h 150"
+       id="path82" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3340,801.24891 v 150 h 150 v -150"
+       id="path83" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3340,801.24891 h 150"
+       id="path86" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2700,802.4989 v 147.50001 h 150 V 802.4989"
+       id="path87" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2700,950.00001 c 8.6943,-145.70012 33.6943,-145.70012 150,-146.23827"
+       id="path88"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.99999;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2700,801.24891 h 150"
+       id="path89" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="2697.0117"
+       y="786.80804"
+       id="text91"><tspan
+         sodipodi:role="line"
+         x="2697.0117"
+         y="786.80804"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan91">No adjustment</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="2865.4517"
+       y="819.66083"
+       id="text97"><tspan
+         sodipodi:role="line"
+         x="2865.4517"
+         y="819.66083"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan94">Allowed</tspan><tspan
+         sodipodi:role="line"
+         x="2865.4517"
+         y="839.21631"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan95">positive</tspan><tspan
+         sodipodi:role="line"
+         x="2865.4517"
+         y="858.77185"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan96">seasonal</tspan><tspan
+         sodipodi:role="line"
+         x="2865.4517"
+         y="878.32733"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan97">delta</tspan></text>
+    <path
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:0.2;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 2835,810.91862 V 935.0792"
+       id="path97" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2835,799.99891 -5,20 h 10 l -5,-20"
+       id="path98" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2835,945.93754 -5,-20 h 10 l -5,20"
+       id="path101" />
+    <g
+       id="g101"
+       transform="translate(8.8842546,1373.2489)">
+      <path
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+         d="M 2985.3057,-441 H 2861.1451"
+         id="path99" />
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+         d="m 3010.8099,-441 -36,-9 v 18 l 36,-9"
+         id="path100" />
+      <text
+         xml:space="preserve"
+         style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+         x="2859.6138"
+         y="-449.31201"
+         id="text101"><tspan
+           sodipodi:role="line"
+           x="2859.6138"
+           y="-449.31201"
+           style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+           id="tspan101">Represents</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3040,951.24891 c 8.6943,-48.99608 33.6943,-48.99608 150,-49.17705"
+       id="path103"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3190,902.07186 c 8.6943,-48.99609 33.6943,-48.99609 150,-49.17706"
+       id="path104"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 3340,852.8948 c 8.6943,-48.99608 33.6943,-48.99608 150,-49.17706"
+       id="path105"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:28px;line-height:24.8888px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="2988.6699"
+       y="757.24609"
+       id="text108"><tspan
+         sodipodi:role="line"
+         x="2988.6699"
+         y="757.24609"
+         style="font-size:28px;line-height:24.8888px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan108">Seasonal storage</tspan></text>
+  </g>
+</svg>

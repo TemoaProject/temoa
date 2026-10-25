@@ -1,0 +1,6 @@
+from pyomo.common.errors import ApplicationError as ApplicationError
+from pyomo.opt.solver.shellcmd import SystemCallSolver as SystemCallSolver
+
+class ILMLicensedSystemCallSolver(SystemCallSolver):
+    def __init__(self, **kwds) -> None: ...
+    def available(self, exception_flag: bool = False): ...

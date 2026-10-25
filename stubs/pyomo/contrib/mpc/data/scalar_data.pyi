@@ -1,0 +1,6 @@
+from pyomo.contrib.mpc.data.dynamic_data_base import _DynamicDataBase
+from pyomo.contrib.mpc.data.get_cuid import get_indexed_cuid as get_indexed_cuid
+
+class ScalarData(_DynamicDataBase):
+    def __init__(self, data, time_set=None, context=None) -> None: ...
+    def to_serializable(self): ...

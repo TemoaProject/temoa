@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="723.10059"
+   height="500"
+   viewBox="0 0 723.10058 500"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="adjusted_capacity_plf.svg"
+   inkscape:export-filename="adjusted_capacity_plf.pdf"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="0.58760574"
+     inkscape:cx="187.20035"
+     inkscape:cy="376.95343"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     inkscape:export-bgcolor="#ffffffff">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="-129.39941"
+       originy="-22.346188"
+       spacingx="5"
+       spacingy="5"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-129.39941,-22.346188)">
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect102"
+       width="50"
+       height="199.99998"
+       x="550"
+       y="74.999992"
+       inkscape:export-filename="adjusted_capacity_plf.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect103"
+       width="50"
+       height="199.99998"
+       x="650"
+       y="74.999992" />
+    <rect
+       style="fill:#ffe5e5;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect107"
+       width="150"
+       height="200"
+       x="700"
+       y="74.999992" />
+    <path
+       style="fill:#000000;fill-opacity:0.2;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 700,275 V 75"
+       id="path105" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 500,75 V 275 H 850"
+       id="path56"
+       sodipodi:nodetypes="ccc" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;letter-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       x="712.32782"
+       y="63.094246"
+       id="text215-7-9"><tspan
+         sodipodi:role="line"
+         id="tspan215-7-6"
+         x="712.32782"
+         y="63.094246"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan221">E</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;letter-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       x="512.20105"
+       y="63.16827"
+       id="text215-7-9-1"><tspan
+         sodipodi:role="line"
+         id="tspan215-7-6-0"
+         x="512.20105"
+         y="63.16827"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan221-8">0</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;letter-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       x="450.91309"
+       y="180.8223"
+       id="text218"><tspan
+         sodipodi:role="line"
+         id="tspan218"
+         x="450.91309"
+         y="180.8223"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">Process reaches EOL mid-period</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;letter-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       x="450.91309"
+       y="405.55908"
+       id="text219"
+       inkscape:export-filename="discounting_factor.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96"><tspan
+         sodipodi:role="line"
+         id="tspan219"
+         x="450.91309"
+         y="405.55908"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1">process_life_fraction adjustment</tspan></text>
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect1"
+       width="50"
+       height="199.99998"
+       x="550"
+       y="74.999992"
+       inkscape:export-filename="discounting_factor.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect2"
+       width="50"
+       height="199.99998"
+       x="650"
+       y="74.999992" />
+    <rect
+       style="fill:#ffe5e5;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect3"
+       width="150"
+       height="200"
+       x="700"
+       y="74.999992" />
+    <path
+       style="fill:#000000;fill-opacity:0.2;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 700,275 V 75"
+       id="path37" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 500,75 V 275 H 850"
+       id="path95"
+       sodipodi:nodetypes="ccc" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect95"
+       width="50"
+       height="199.99998"
+       x="550"
+       y="300"
+       inkscape:export-filename="discounting_factor.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect98"
+       width="50"
+       height="199.99998"
+       x="650"
+       y="300" />
+    <rect
+       style="fill:#ffe5e5;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect101"
+       width="150"
+       height="200"
+       x="700"
+       y="300" />
+    <path
+       style="fill:#000000;fill-opacity:0.2;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 700,500.00002 v -200"
+       id="path135" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 500,300.00002 v 200 h 350"
+       id="path178"
+       sodipodi:nodetypes="ccc" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect179"
+       width="50"
+       height="199.99998"
+       x="550"
+       y="300"
+       inkscape:export-filename="discounting_factor.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <rect
+       style="fill:#e0e0e0;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect180"
+       width="50"
+       height="199.99998"
+       x="650"
+       y="300" />
+    <rect
+       style="fill:#ffe5e5;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect181"
+       width="150"
+       height="200"
+       x="700"
+       y="300" />
+    <path
+       style="fill:#000000;fill-opacity:0.2;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 700,500.00002 v -200"
+       id="path213" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 500,300.00002 v 200 h 350"
+       id="path246"
+       sodipodi:nodetypes="ccc" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect247"
+       width="50"
+       height="175"
+       x="500"
+       y="325" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect4"
+       width="50.000065"
+       height="175"
+       x="499.99997"
+       y="100" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect5"
+       width="50"
+       height="175"
+       x="550"
+       y="325" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect6"
+       width="50"
+       height="103.8"
+       x="600"
+       y="396.20001" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect7"
+       width="50.000065"
+       height="175"
+       x="550"
+       y="100" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       id="rect8"
+       width="30.000004"
+       height="175"
+       x="600"
+       y="100" />
+  </g>
+</svg>

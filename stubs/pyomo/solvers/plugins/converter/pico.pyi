@@ -1,0 +1,9 @@
+from pyomo.common.errors import ApplicationError as ApplicationError
+from pyomo.common.tempfiles import TempfileManager as TempfileManager
+from pyomo.opt.base import ConverterError as ConverterError
+from pyomo.opt.base import ProblemFormat as ProblemFormat
+
+class PicoMIPConverter:
+    def can_convert(self, from_type, to_type): ...
+    def available(self): ...
+    def apply(self, *args, **kwargs): ...

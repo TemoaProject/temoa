@@ -1,0 +1,9 @@
+from pyomo.contrib.parmest.examples.reactor_design.reactor_design import (
+    ReactorDesignExperiment as ReactorDesignExperiment,
+)
+
+class MultisensorReactorDesignExperiment(ReactorDesignExperiment):
+    def finalize_model(self): ...
+    def label_model(self): ...
+
+def main(): ...

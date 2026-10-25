@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1938.8599"
+   height="482.53201"
+   viewBox="0 0 1938.8599 482.53201"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="delta_problem.svg"
+   inkscape:export-filename="delta_problem.pdf"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="0.29380287"
+     inkscape:cx="1289.9806"
+     inkscape:cy="352.27702"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     inkscape:export-bgcolor="#ffffffff">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="-297.2124"
+       originy="629.74447"
+       spacingx="5"
+       spacingy="5"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-297.2124,629.74447)">
+    <path
+       id="path43"
+       style="fill:none;stroke:#ff0000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1994.6156,-289.97613 c -16.5698,19.7548 -34.9053,33.76734 -58.1113,49.97613"
+       inkscape:export-filename="ldes_delta_problem.pdf"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <path
+       id="path45"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2072.9637,-290.01086 c -6.9934,-39.38991 -28.0751,-75.12197 -63.7458,-19.63415 -4.7635,7.22449 -9.6025,13.7081 -14.6023,19.66888" />
+    <path
+       id="path44"
+       style="fill:none;stroke:#ff0000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 2086.5043,-190 c -6.8654,-18.46174 -7.7232,-38.24855 -8.6943,-57.67148 -0.6369,-12.73724 -2.2781,-25.93867 -4.2118,-38.50782 -0.1968,-1.27904 -0.4083,-2.55721 -0.6345,-3.83156" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 640,-440 v 150 h 150 v -150"
+       id="path7-2-90"
+       inkscape:export-filename="ldes_delta_problem_positive.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 640,-290 c 6.8654,-18.46176 7.7232,-38.24853 8.6943,-57.67148 0.6369,-12.73725 2.2781,-25.93866 4.2118,-38.50782 6.2791,-40.81402 27.5555,-80.74873 64.3803,-23.46571 20.5505,31.16745 42.5054,48.54539 72.7136,69.64501"
+       id="path8-9-8"
+       sodipodi:nodetypes="csssc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 640,-440 H 790"
+       id="path9-9-7" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 790,-440 v 150 h 150 v -150"
+       id="path7-2-2-3" />
+    <path
+       id="path8-9-2-7"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 881.8892,-439.97552 C 898.4588,-420.22104 916.7942,-406.20862 940,-390" />
+    <path
+       id="path15-7"
+       style="fill:none;stroke:#ff0000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 803.5406,-440.01069 c 6.9933,-39.38998 28.075,-75.12222 63.7458,-19.63432 4.7637,7.22474 9.6029,13.70854 14.6028,19.66949" />
+    <path
+       id="path14-7"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 790,-340 c 6.8654,-18.46174 7.7232,-38.24855 8.6943,-57.67148 0.6369,-12.73724 2.2781,-25.93867 4.2118,-38.50782 0.1968,-1.27898 0.4083,-2.5571 0.6345,-3.83139" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 790,-440 H 940"
+       id="path9-9-3-0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 940,-440 v 150 h 150 v -150"
+       id="path7-2-9-0" />
+    <path
+       id="path8-9-6-7"
+       style="fill:none;stroke:#ff0000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 948.3038,-440.00674 c 0.1375,-2.55863 0.263,-5.11482 0.3905,-7.66474 0.6369,-12.73724 2.2781,-25.93867 4.2118,-38.50782 6.2791,-40.81398 27.5555,-80.74867 64.3803,-23.46571 20.5505,31.16742 42.5054,48.54541 72.7136,69.64501" />
+    <path
+       id="path13-0"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 940,-390 c 5.9641,-16.03801 7.3944,-33.07602 8.3038,-50.00674" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 940,-440 h 150"
+       id="path9-9-1-7" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 300,-601.66209 V -150 h 150 v -451.66209"
+       id="path10" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 300,-150 c 6.8654,-55.58985 7.7232,-115.16941 8.6943,-173.65347 0.6369,-38.35289 2.2781,-78.1034 4.2118,-115.95015 6.2791,-122.89431 27.5555,-243.14091 64.3803,-70.65712 20.5505,93.84771 42.5054,146.17405 72.7136,209.70671"
+       id="path11"
+       sodipodi:nodetypes="csssc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.99999;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 300,-601.66209 H 450"
+       id="path12" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="459.03271"
+       y="-613.9964"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         x="459.03271"
+         y="-613.9964"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none">Adjusted</tspan><tspan
+         sodipodi:role="line"
+         x="459.03271"
+         y="-594.44092"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan2">upper bound</tspan><tspan
+         sodipodi:role="line"
+         x="459.03271"
+         y="-574.88538"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan3">(x 3 days)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="1030.5319"
+       y="-542.66754"
+       id="text1-1"><tspan
+         sodipodi:role="line"
+         x="1030.5319"
+         y="-542.66754"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none"
+         id="tspan3-5">Upper bound</tspan><tspan
+         sodipodi:role="line"
+         x="1030.5319"
+         y="-523.11206"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none"
+         id="tspan9">violated</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="460.03223"
+       y="-239.25195"
+       id="text1-9"><tspan
+         sodipodi:role="line"
+         x="460.03223"
+         y="-239.25195"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan3-7">Allowed</tspan><tspan
+         sodipodi:role="line"
+         x="460.03223"
+         y="-219.69646"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan5">positive</tspan><tspan
+         sodipodi:role="line"
+         x="460.03223"
+         y="-200.14095"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan6">seasonal</tspan><tspan
+         sodipodi:role="line"
+         x="460.03223"
+         y="-180.58545"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan47">delta</tspan></text>
+    <path
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:0.2;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 435,-289.08029 v 124.16058"
+       id="path6" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 435,-300 -5,20 h 10 l -5,-20"
+       id="path7" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 594,-366 H 469.83942"
+       id="path6-8" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 619.50423,-366 -36.00001,-9 v 18 l 36.00001,-9"
+       id="path7-8" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 435,-154.06137 -5,-20 h 10 l -5,20"
+       id="path8" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="468.30811"
+       y="-374.31201"
+       id="text1-0"><tspan
+         sodipodi:role="line"
+         x="468.30811"
+         y="-374.31201"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan3-70">Represents</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1636.2378,-440 v 150 h 150 v -150"
+       id="path16"
+       inkscape:export-filename="delta_problem.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1786.5043,-290 c -6.8654,-18.46176 -7.7232,-38.24853 -8.6943,-57.67148 -0.6369,-12.73725 -2.2781,-25.93866 -4.2118,-38.50782 -6.2791,-40.81402 -27.5555,-80.74873 -64.3803,-23.46571 -20.5505,31.16745 -42.5054,48.54539 -72.7136,69.64501"
+       id="path17"
+       sodipodi:nodetypes="csssc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1636.2378,-440 h 150"
+       id="path18" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1786.2378,-440 h 150"
+       id="path23" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1936.2378,-440 h 150"
+       id="path27" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 1440,-601.66209 V -150 h -150 v -451.66209"
+       id="path28" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:4.99999;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1440,-150 c -6.8654,-55.58985 -7.7232,-115.16941 -8.6943,-173.65347 -0.6369,-38.35289 -2.2781,-78.1034 -4.2118,-115.95015 -6.2791,-122.89431 -27.5555,-243.14091 -64.3803,-70.65712 -20.5505,93.84771 -42.5054,146.17405 -72.7136,209.70671"
+       id="path29"
+       sodipodi:nodetypes="csssc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.99999;stroke-linecap:square;stroke-dasharray:6, 6;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 1440,-601.66209 H 1290"
+       id="path30" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="1456.27"
+       y="-613.74091"
+       id="text32"><tspan
+         sodipodi:role="line"
+         id="tspan30"
+         x="1456.27"
+         y="-613.74091"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none">Adjusted</tspan><tspan
+         sodipodi:role="line"
+         x="1456.27"
+         y="-594.18542"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan31">upper bound</tspan><tspan
+         sodipodi:role="line"
+         x="1456.27"
+         y="-574.62988"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan32">(x 3 days)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="2106.124"
+       y="-227.03264"
+       id="text34"><tspan
+         sodipodi:role="line"
+         x="2106.124"
+         y="-227.03264"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none"
+         id="tspan34">Non-negative</tspan><tspan
+         sodipodi:role="line"
+         x="2106.124"
+         y="-207.47714"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none"
+         id="tspan43">violated</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;letter-spacing:0px;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="1280.0322"
+       y="-239.25195"
+       id="text37"><tspan
+         sodipodi:role="line"
+         x="1280.0322"
+         y="-239.25195"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan35">Allowed</tspan><tspan
+         sodipodi:role="line"
+         x="1280.0322"
+         y="-219.69646"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan48">negative</tspan><tspan
+         sodipodi:role="line"
+         x="1280.0322"
+         y="-200.14095"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan36">seasonal</tspan><tspan
+         sodipodi:role="line"
+         x="1280.0322"
+         y="-180.58545"
+         style="font-size:22px;line-height:19.5555px;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan37">delta</tspan></text>
+    <path
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:square;stroke-dasharray:0.2;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1305,-289.08029 v 124.16058"
+       id="path37" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1305,-300 5,20 h -10 l 5,-20"
+       id="path38" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="M 1590.2002,-366 H 1466.0396"
+       id="path39" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1615.7044,-366 -36,-9 v 18 l 36,-9"
+       id="path40" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;stroke-dashoffset:0;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1305,-154.06137 5,-20 h -10 l 5,20"
+       id="path41" />
+    <text
+       xml:space="preserve"
+       style="font-size:22px;line-height:19.5555px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;letter-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:5;stroke-linecap:square;stroke-dasharray:0.5;paint-order:fill markers stroke"
+       x="1464.5083"
+       y="-374.31201"
+       id="text41"><tspan
+         sodipodi:role="line"
+         x="1464.5083"
+         y="-374.31201"
+         style="font-size:22px;line-height:19.5555px;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan41">Represents</tspan></text>
+    <path
+       id="path42"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1786.5043,-290 v 0" />
+    <path
+       id="path47"
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1928.2005,-290.00674 c -0.1375,-2.55863 -0.263,-5.11482 -0.3905,-7.66474 -0.6369,-12.73724 -2.2781,-25.93867 -4.2118,-38.50782 -6.2791,-40.81398 -27.5555,-80.74867 -64.3803,-23.46571 -20.5505,31.16742 -42.5054,48.54541 -72.7136,69.64501" />
+    <path
+       id="path46"
+       style="fill:none;stroke:#ff0000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1936.5043,-240 c -5.9641,-16.03801 -7.3944,-33.07602 -8.3038,-50.00674" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1786.2378,-440 v 150 h 150 v -150"
+       id="path19" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:square;stroke-opacity:1;paint-order:fill markers stroke"
+       d="m 1936.2378,-440 v 150 h 150 v -150"
+       id="path24" />
+  </g>
+</svg>

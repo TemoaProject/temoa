@@ -1,0 +1,9 @@
+from pyomo.common.download import FileDownloader as FileDownloader
+from pyomo.common.fileutils import find_dir as find_dir
+from pyomo.common.fileutils import this_file_dir as this_file_dir
+
+def build_mcpp(): ...
+
+class MCPPBuilder:
+    def __call__(self, parallel): ...
+    def skip(self): ...

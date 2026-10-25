@@ -1,0 +1,3 @@
+from pyomo.common import DeveloperError as DeveloperError
+
+def disable_methods(methods): ...

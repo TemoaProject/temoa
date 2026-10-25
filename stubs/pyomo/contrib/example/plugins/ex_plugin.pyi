@@ -1,0 +1,6 @@
+from pyomo.core.base import Transformation as Transformation
+from pyomo.core.base import TransformationFactory as TransformationFactory
+
+class Xfrm_PyomoTransformation(Transformation):
+    def __init__(self) -> None: ...
+    def create_using(self, instance, **kwds): ...

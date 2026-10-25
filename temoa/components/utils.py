@@ -1,0 +1,155 @@
+# temoa/components/utils.py
+"""
+This module contains generic, reusable utility functions for the Temoa model.
+
+These helpers are used by various components to perform common tasks like
+building Pyomo expressions from strings or calculating time-variable efficiencies.
+"""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from logging import getLogger
+from typing import TYPE_CHECKING
+
+from pyomo.environ import Expression, value
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pyomo.core.expr.numeric_expr import NumericValue
+
+    from temoa.core.model import TemoaModel
+    from temoa.types import (
+        Commodity,
+        ExprLike,
+        Period,
+        Region,
+        Season,
+        Technology,
+        TimeOfDay,
+        Vintage,
+    )
+
+
+logger = getLogger(__name__)
+
+
+class Operator(StrEnum):
+    EQUAL = 'e'
+    LESS_EQUAL = 'le'
+    GREATER_EQUAL = 'ge'
+
+
+def operator_expression(
+    lhs: Expression | NumericValue | float,
+    operator: Operator,
+    rhs: Expression | NumericValue | float,
+) -> ExprLike:
+    match operator:
+        case Operator.EQUAL:
+            return lhs == rhs
+        case Operator.LESS_EQUAL:
+            return lhs <= rhs
+        case Operator.GREATER_EQUAL:
+            return lhs >= rhs
+    raise ValueError(f'Invalid operator: {operator!r}')
+
+
+def get_variable_efficiency(
+    model: TemoaModel,
+    r: Region,
+    _p: Period,
+    s: Season,
+    d: TimeOfDay,
+    i: Commodity,
+    t: Technology,
+    v: Vintage,
+    o: Commodity,
+) -> float:
+    """
+    Calculates the effective efficiency for a process in a specific time slice.
+
+    This function handles time-varying efficiencies. It checks a pre-computed boolean,
+    `M.is_efficiency_variable`, to determine if a variable efficiency is defined for
+    the given process.
+
+    - If True, it returns `efficiency * efficiency_variable`.
+    - If False, it returns the base `efficiency`.
+
+    This dictionary-lookup approach is used for performance, as it is much faster
+    than repeatedly checking the indices of a large Pyomo parameter during model build.
+    """
+    if model.is_efficiency_variable[r, i, t, v, o]:
+        return value(model.efficiency[r, i, t, v, o]) * value(
+            model.efficiency_variable[r, s, d, i, t, v, o]
+        )
+    return value(model.efficiency[r, i, t, v, o])
+
+
+def available_output_base(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""
+    Maximum available output for a process in a specific time slice.
+
+    .. math::
+
+        \textit{available} =
+        \mathbf{CAP}_{r,p,t,v}
+        \cdot CF_{r,s,d,t,v}
+        \cdot C2A_{r,t}
+        \cdot SEG_{s,d}
+
+    where :math:`CF_{r,s,d,t,v}` is taken from ``capacity_factor_process`` if a
+    process-specific value exists, otherwise from ``capacity_factor_tech``.
+    """
+    base = (
+        model.v_capacity[r, p, t, v]
+        * value(model.capacity_to_activity[r, t])
+        * value(model.segment_fraction[s, d])
+    )
+    if model.is_capacity_factor_process[r, t, v]:
+        return base * value(model.capacity_factor_process[r, s, d, t, v])
+    else:
+        return base * value(model.capacity_factor_tech[r, s, d, t])
+
+
+# May be replaced by extensions (e.g. unit_commitment) during model initialization.
+available_output_function: Callable[..., ExprLike] = available_output_base
+
+
+def get_available_output(
+    model: TemoaModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    d: TimeOfDay,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    """The maximum available output for a process in a specific time slice."""
+    return model.available_output_function(model, r, p, s, d, t, v)
+
+
+def get_adjusted_existing_capacity(
+    model: TemoaModel, r: Region, t: Technology, v: Vintage
+) -> float:
+    """
+    Returns the built existing capacity adjusted for any early retirements.
+
+    Needed for early retirements in myopic mode. Takes into account survival curves
+    and any early retirements that may have occurred prior to this planning step.
+    """
+    capacity_adjustment = sum(
+        value(model.retired_existing_capacity[r, _p, t, v])
+        / (value(model.lifetime_survival_curve[r, _p, t, v]) or 1)
+        for _p in model.time_exist
+    )
+    return value(model.existing_capacity[r, t, v]) - capacity_adjustment

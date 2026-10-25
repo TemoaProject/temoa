@@ -9,7 +9,6 @@ baseload
 temoa
 py
 dat
-teh
 moe
 pre
 Pre

@@ -1,0 +1,66 @@
+# ----------------------------------------------------------
+#            Configuration file for a Temoa Run
+# Allows specification of run type and associated parameters
+#
+# For toml format info see: https://toml.io/en/
+#   - comments may be added with hash
+#   - do NOT comment out table names in brackets like:  [<table>]
+
+# Scenario Name (Mandatory)
+# This scenario name is used to label results within the output .sqlite file
+scenario = "build for set capture"
+
+# Scenaio Mode (Mandatory)
+# See documentation for explanations.  A standard single run is "perfect foresight"
+# mode must be one of (case-insensitive):
+#     [perfect_foresight, MGA, myopic, method_of_morris, build_only]
+scenario_mode = "build_only"
+
+# Input file (Mandatory)
+# Input can be a .sqlite or .dat file
+# Both relative path and absolute path are accepted
+input_database = "../testing_outputs/mediumville.sqlite"
+
+# Output file (Mandatory)
+# The output file must be an existing .sqlite file
+# the user may target the same input file or a separate /
+# copied sqlite file in a different location
+output_database = "../testing_outputs/mediumville.sqlite"
+
+# ------------------------------------
+#             SOLVER
+# Solver Selection
+# ------------------------------------
+
+# use the NEOS server to solve
+neos = false
+
+# solver
+solver_name = "appsi_highs"
+
+# ------------------------------------
+#             OUTPUTS
+# select desired output products/files
+# ------------------------------------
+
+# generate an Excel file in the output_files folder
+save_excel = false
+
+# save the duals in the output .sqlite database
+save_duals = false
+
+# save a copy of the pyomo-generated lp file to the outputs folder (may be large file!)
+save_lp_file = false
+
+# ---------------------------------------------------
+#                   MODE OPTIONS
+# options below are mode-specific and will be ignored
+# if the run is not executed in that mode.
+# ---------------------------------------------------
+[MGA]
+slack = 0.1
+iterations = 4
+weight = "integer"   # currently supported: [integer, normalized]
+
+[myopic]
+myopic_view = 2  # number of periods seen at one iteration
