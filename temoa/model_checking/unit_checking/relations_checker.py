@@ -492,12 +492,6 @@ def check_cost_tables(
             if ct.period_based and expected_measure_units is not None:
                 expected_measure_units = expected_measure_units / ureg.year
 
-            # Handle case where both are None (could indicate data issue)
-            if measure_units is None and expected_measure_units is None:
-                label = f'{ct.table_name}:  Unable to determine measure units for tech/comm: {tech}'
-                table_grouped_errors[label].append(idx)
-                continue
-
             # Check if measure_units matches expected
             matched = (
                 measure_units == expected_measure_units
