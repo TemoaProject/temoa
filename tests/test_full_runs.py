@@ -17,6 +17,7 @@ from pyomo.opt import SolverResults
 from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
+from tests.conftest import TEST_DATA_PATH, _build_test_db
 from tests.legacy_test_values import ExpectedVals, test_vals
 
 if TYPE_CHECKING:
@@ -174,6 +175,40 @@ def test_myopic_utopia(
         assert invest_sum == pytest.approx(10963.1018), (
             'sum of investment costs did not match expected'
         )
+
+
+def test_myopic_unit_commitment_outputs(tmp_path: Path) -> None:
+    database = tmp_path / 'uc_myopic.sqlite'
+    _build_test_db(database, [TEST_DATA_PATH / 'uc_myopic.sql'])
+    config = TemoaConfig(
+        scenario='uc_myopic',
+        scenario_mode='myopic',
+        input_database=database,
+        output_database=database,
+        output_path=tmp_path,
+        solver='gurobi_direct',
+        extensions=['unit_commitment'],
+        time_sequencing='seasonal_timeslices',
+        myopic={'view_depth': 2, 'step_size': 1, 'evolving': False},
+        silent=True,
+    )
+
+    # The windows overlap in 2030. Repeating the run must also replace old output.
+    for _ in range(2):
+        TemoaSequencer(config=config).start()
+        with contextlib.closing(sqlite3.connect(database)) as con:
+            rows = con.execute(
+                'SELECT period, COUNT(*), SUM(online_cap), SUM(start_cap), SUM(stop_cap) '
+                'FROM output_unit_commitment WHERE scenario = ? GROUP BY period ORDER BY period',
+                (config.scenario,),
+            ).fetchall()
+        assert [row[0] for row in rows] == [2020, 2030, 2040]
+        for _, count, online, started, stopped in rows:
+            assert count == 2
+            # One 1 MW unit supplies both half-year slices at full output.
+            assert online == pytest.approx(2.0, rel=1e-5)
+            assert started == pytest.approx(0.0, abs=1e-5)
+            assert stopped == pytest.approx(0.0, abs=1e-5)
 
 
 @pytest.mark.parametrize(
