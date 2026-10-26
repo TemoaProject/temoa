@@ -486,7 +486,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_tech_input_split = Param(
-            self.regions,
+            self.regional_indices,
             self.time_optimize,
             self.commodity_physical,
             self.tech_all,
@@ -494,7 +494,7 @@ class TemoaModel(AbstractModel):
             validate=validate_0to1,
         )
         self.limit_tech_input_split_annual = Param(
-            self.regions,
+            self.regional_indices,
             self.time_optimize,
             self.commodity_physical,
             self.tech_all,
@@ -503,7 +503,7 @@ class TemoaModel(AbstractModel):
         )
 
         self.limit_tech_output_split = Param(
-            self.regions,
+            self.regional_indices,
             self.time_optimize,
             self.tech_all,
             self.commodity_carrier,
@@ -511,7 +511,7 @@ class TemoaModel(AbstractModel):
             validate=validate_0to1,
         )
         self.limit_tech_output_split_annual = Param(
-            self.regions,
+            self.regional_indices,
             self.time_optimize,
             self.tech_all,
             self.commodity_carrier,
