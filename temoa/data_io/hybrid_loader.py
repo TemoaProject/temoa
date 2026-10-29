@@ -323,6 +323,14 @@ class HybridLoader:
                 raise FileNotFoundError(f"Required table '{item.table}' not found in the database.")
             return []
 
+        # Reject vintage-only input before the optional-table fallback can hide it.
+        if item.table == 'limit_annual_capacity_factor':
+            columns = cur.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
+            if not any(row[1].lower() == 'period' for row in columns):
+                raise ValueError(
+                    "Table 'limit_annual_capacity_factor' is missing required column 'period'."
+                )
+
         query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
         params = []
 
