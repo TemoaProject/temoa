@@ -205,9 +205,7 @@ def _migrate_operator_tables(con_old: sqlite3.Connection, con_new: sqlite3.Conne
     return total
 
 
-def _migrate_standard_tables(
-    con_old: sqlite3.Connection, con_new: sqlite3.Connection, *, is_v4: bool = False
-) -> int:
+def _migrate_standard_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
     """Migrate standard tables by mapping names and columns."""
     print('--- Executing standard table migrations ---')
     total = 0
@@ -231,10 +229,6 @@ def _migrate_standard_tables(
         'LoanLifetimeTech',
         'CapacityFactorProcess',
     }.union(OPERATOR_ADDED_TABLES.keys())
-    if is_v4:
-        # Current v4 time tables are already in the target format. Sending them
-        # through the v3 time conversion would lose their data on a v4 upgrade.
-        custom_handled_old_tables -= {'time_season', 'time_of_day', 'time_season_sequential'}
 
     for old in old_tables:
         if old.lower().startswith('sqlite_') or old in custom_handled_old_tables:
@@ -271,15 +265,8 @@ def _migrate_standard_tables(
         if not filtered:
             continue
 
-        if new == 'limit_annual_capacity_factor' and 'vintage' not in insert_new_cols:
-            raise ValueError(
-                'Migrating annual capacity factors without vintage requires an explicit '
-                'cohort mapping; operating periods cannot be substituted for vintages.'
-            )
-
         placeholders = ','.join(['?'] * len(insert_new_cols))
-        verb = 'INSERT' if new == 'limit_annual_capacity_factor' else 'INSERT OR REPLACE'
-        q = f'{verb} INTO {new} ({",".join(insert_new_cols)}) VALUES ({placeholders})'
+        q = f'INSERT OR REPLACE INTO {new} ({",".join(insert_new_cols)}) VALUES ({placeholders})'
         con_new.executemany(q, filtered)
         print(f'Copied {len(filtered)} rows: {old} -> {new}')
         total += len(filtered)
@@ -442,23 +429,15 @@ def _migrate_capacity_factor(con_old: sqlite3.Connection, con_new: sqlite3.Conne
 
 
 def execute_v3_to_v4_migration(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> None:
-    """Migrate older databases, including vintage-only v4 inputs, to the v4 schema."""
-    metadata_columns = {row[1] for row in get_table_info(con_old, 'metadata')}
-    version = (
-        con_old.execute("SELECT value FROM metadata WHERE element = 'DB_MAJOR'").fetchone()
-        if {'element', 'value'} <= metadata_columns
-        else None
-    )
-    is_v4 = version is not None and int(version[0]) == 4
+    """Main migration logic router."""
     total = 0
     total += _migrate_operator_tables(con_old, con_new)
-    total += _migrate_standard_tables(con_old, con_new, is_v4=is_v4)
+    total += _migrate_standard_tables(con_old, con_new)
 
     print('--- Processing custom migration logic ---')
-    if not is_v4:
-        total += _migrate_loan_lifetime(con_old, con_new)
-        total += _migrate_time_tables(con_old, con_new)
-        total += _migrate_capacity_factor(con_old, con_new)
+    total += _migrate_loan_lifetime(con_old, con_new)
+    total += _migrate_time_tables(con_old, con_new)
+    total += _migrate_capacity_factor(con_old, con_new)
 
     # Final Updates
     con_new.execute("UPDATE technology SET flag='p' WHERE flag='r';")
@@ -497,9 +476,6 @@ def migrate_database(source_path: Path, schema_path: Path, output_path: Path) ->
         con_new.close()
         os.replace(temp_path, output_path)
     except Exception:
-        # Windows cannot remove the temporary database while a connection is open.
-        con_old.close()
-        con_new.close()
         if temp_path.exists():
             os.remove(temp_path)
         raise

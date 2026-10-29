@@ -693,8 +693,8 @@ The denominator is available capacity times ``capacity_to_activity``. Available
 capacity already includes lifetime, survival and retirement adjustments. These
 dimensionless utilization factors do not change efficiency, survival, or hourly
 availability. Output is annual, so the constraint does not multiply by period
-length. Omitting ``period`` preserves the vintage-only limit in every eligible
-period; see :ref:`annual-factor-input` for input and migration details.
+length. Each row applies only to its specified period; see
+:ref:`annual-factor-input` for the required input key and an example.
 
 
 limit_capacity

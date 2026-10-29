@@ -432,26 +432,21 @@ CREATE TABLE IF NOT EXISTS limit_activity_share
 );
 CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
 (
-    region      TEXT NOT NULL,
-    -- NULL retains the vintage-only limit in every eligible operating period.
-    period      INTEGER DEFAULT NULL
+    region      TEXT,
+    period      INTEGER NOT NULL
         REFERENCES time_period (period),
-    tech_or_group   TEXT NOT NULL,
-    vintage      INTEGER NOT NULL
+    tech_or_group   TEXT,
+    vintage      INTEGER
         REFERENCES time_period (period),
-    output_comm TEXT NOT NULL
+    output_comm TEXT
         REFERENCES commodity (name),
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
-    factor      REAL NOT NULL,
+    factor      REAL,
     notes       TEXT,
     PRIMARY KEY (region, period, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
--- SQLite composite primary keys do not enforce uniqueness when period is NULL.
-CREATE UNIQUE INDEX IF NOT EXISTS annual_capacity_factor_all_periods
-ON limit_annual_capacity_factor (region, tech_or_group, vintage, output_comm, operator)
-WHERE period IS NULL;
 CREATE TABLE IF NOT EXISTS limit_capacity
 (
     region  TEXT,

@@ -146,17 +146,12 @@ def limit_seasonal_capacity_factor_constraint_indices(
 def limit_annual_capacity_factor_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
-    """Validate the resolved period/cohort keys against the constructed processes."""
-    indices = set(model.limit_annual_capacity_factor_index)
-    for r, p, t, v, o, _op in indices:
-        if not any(
-            o in model.process_outputs.get((_r, p, _t, v), [])
-            for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        ):
-            raise ValueError(
-                f'No active process for limit_annual_capacity_factor: {(r, p, t, v, o)}'
-            )
-    return indices
+    return {
+        (r, p, t, v, o, op)
+        for r, p, t, v, o, op in model.limit_annual_capacity_factor_index
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if o in model.process_outputs.get((_r, p, _t, v), [])
+    }
 
 
 # ============================================================================
@@ -381,9 +376,8 @@ def limit_annual_capacity_factor_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage, o: Commodity, op: str
 ) -> ExprLike:
     r"""
-    The limit_annual_capacity_factor bounds annual utilization for an operating period
-    and vintage, using available capacity (already adjusted for lifetime and survival).
-    The first portion of the constraint pertains to
+    The limit_annual_capacity_factor bounds the annual capacity factor of a specific
+    process in an operating period. The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.

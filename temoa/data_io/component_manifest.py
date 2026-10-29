@@ -691,13 +691,18 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
         LoadItem(
             component=model.limit_annual_capacity_factor,
             table='limit_annual_capacity_factor',
-            # The custom loader resolves legacy/NULL periods before viability filtering.
-            columns=[],
-            validator_name='viable_rptvo',
-            validation_map=(0, 1, 2, 3, 4),
-            is_period_filtered=False,
+            columns=[
+                'region',
+                'period',
+                'tech_or_group',
+                'vintage',
+                'output_comm',
+                'operator',
+                'factor',
+            ],
+            validator_name='viable_rtvo',
+            validation_map=(0, 2, 3, 4),
             is_table_required=False,
-            custom_loader_name='_load_limit_annual_capacity_factor',
             index_set=model.limit_annual_capacity_factor_index,
         ),
         LoadItem(
