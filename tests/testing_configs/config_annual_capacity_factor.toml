@@ -1,0 +1,7 @@
+scenario = "annual_capacity_factor"
+scenario_mode = "perfect_foresight"
+input_database = "tests/testing_outputs/annual_capacity_factor.sqlite"
+output_database = "tests/testing_outputs/annual_capacity_factor.sqlite"
+solver = "appsi_highs"
+time_sequencing = "seasonal_timeslices"
+source_trace = true

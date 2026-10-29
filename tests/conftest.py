@@ -98,6 +98,7 @@ def refresh_databases() -> None:
         ('survival_curve.sql', 'survival_curve.sqlite'),
         ('myopic_capacities.sql', 'myopic_capacities.sqlite'),
         ('annualised_demand.sql', 'annualised_demand.sqlite'),
+        ('annual_capacity_factor.sql', 'annual_capacity_factor.sqlite'),
         # Feature tests (separate for temporal consistency)
         ('emissions.sql', 'emissions.sqlite'),
         ('materials.sql', 'materials.sqlite'),
@@ -219,6 +220,18 @@ def system_test_run(
         output_path=tmp_path,
         silent=True,
     )
+
+    # Isolate parametrized input changes from the shared, refreshed fixture databases.
+    if 'modifications' in request.param:
+        import shutil
+
+        input_copy = tmp_path / 'input.sqlite'
+        shutil.copyfile(config.input_database, input_copy)
+        with sqlite3.connect(input_copy) as con:
+            for sql, params in request.param['modifications']:
+                con.execute(sql, params)
+        config.input_database = input_copy
+        config.output_database = input_copy
 
     # Allow parametrized tests to override myopic settings per case.
     myopic_overrides = request.param.get('myopic')

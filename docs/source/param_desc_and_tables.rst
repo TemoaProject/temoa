@@ -101,7 +101,7 @@ split limits**.
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{LACF}_{r,t,v,o}`", ":code:`limit_annual_capacity_factor`", ":code:`limit_annual_capacity_factor`", "annual capacity factor limits; indexed by vintage (not period); :code:`tech_or_group` column accepts a technology name or group name"
+   ":math:`\text{LACF}_{r,p,t,v,o}`", ":code:`limit_annual_capacity_factor`", ":code:`limit_annual_capacity_factor`", "annual utilization limits by operating period and vintage; omitted period retains vintage-only behavior; :code:`tech_or_group` accepts a technology or group name"
    ":math:`\text{LSCF}_{r,s,t}`", ":code:`limit_seasonal_capacity_factor`", ":code:`limit_seasonal_capacity_factor`", "seasonal capacity factor limits (no period index; applies to all periods)"
    ":math:`\text{LSF}_{r,s,d,t}`", ":code:`limit_storage_level_fraction`", ":code:`limit_storage_fraction`", "limit on storage level in any time slice"
    ":math:`\text{TIS}_{r,p,i,t}`", ":code:`limit_tech_input_split`", ":code:`limit_tech_input_split`", "technology input split constraints specifying input fuel ratio at time slice level"

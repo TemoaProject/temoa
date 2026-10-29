@@ -36,7 +36,7 @@
   "limit_activity_constraint_rpt": "(empty)",
   "limit_activity_share_constraint_rpgg": "(empty)",
   "limit_annual_capacity_factor_constraint_rptvo": "(empty)",
-  "limit_annual_capacity_factor_constraint_rtvo": "(empty)",
+  "limit_annual_capacity_factor_index": "(empty)",
   "limit_capacity_constraint_rpt": "5a43de033187da68c612c5bcef6a76edb6ab9806464b6d865e46d289ccbbd815",
   "limit_capacity_share_constraint_rpgg": "(empty)",
   "limit_emission_constraint_rpe": "(empty)",

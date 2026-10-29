@@ -146,13 +146,17 @@ def limit_seasonal_capacity_factor_constraint_indices(
 def limit_annual_capacity_factor_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
-    return {
-        (r, p, t, v, o, op)
-        for r, t, v, o, op in model.limit_annual_capacity_factor_constraint_rtvo
-        for p in model.time_optimize
-        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        if o in model.process_outputs.get((_r, p, _t, v), [])
-    }
+    """Validate the resolved period/cohort keys against the constructed processes."""
+    indices = set(model.limit_annual_capacity_factor_index)
+    for r, p, t, v, o, _op in indices:
+        if not any(
+            o in model.process_outputs.get((_r, p, _t, v), [])
+            for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        ):
+            raise ValueError(
+                f'No active process for limit_annual_capacity_factor: {(r, p, t, v, o)}'
+            )
+    return indices
 
 
 # ============================================================================
@@ -377,8 +381,9 @@ def limit_annual_capacity_factor_constraint(
     model: TemoaModel, r: Region, p: Period, t: Technology, v: Vintage, o: Commodity, op: str
 ) -> ExprLike:
     r"""
-    The limit_annual_capacity_factor sets an upper bound on the annual capacity factor
-    from a specific process. The first portion of the constraint pertains to
+    The limit_annual_capacity_factor bounds annual utilization for an operating period
+    and vintage, using available capacity (already adjusted for lifetime and survival).
+    The first portion of the constraint pertains to
     technologies with variable output at the time slice level, and the second portion
     pertains to technologies with constant annual output belonging to the
     :code:`tech_annual` set.
@@ -388,7 +393,7 @@ def limit_annual_capacity_factor_constraint(
 
             \sum_{S,D,I} \textbf{FO}_{r, p, s, d, i, t, v, o}
             \quad \le, \ge, \text{or} = \quad
-            LIMACF_{r, t, v, o} \cdot
+            LIMACF_{r, p, t, v, o} \cdot
             \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
             \forall \{r, p, t \notin T^{a}, v, o\}
@@ -396,7 +401,7 @@ def limit_annual_capacity_factor_constraint(
 
             \\\sum_{I} \textbf{FOA}_{r, p, i, t, v, o}
             \quad \le, \ge, \text{or} = \quad
-            LIMACF_{r, t, v, o} \cdot
+            LIMACF_{r, p, t, v, o} \cdot
             \textbf{CAP}_{r, p, t, v} \cdot \text{C2A}_{r, t}
 
             \forall \{r, p, t \in T^{a}, v, o\} \in \Theta_{\text{limit\_annual\_capacity\_factor}}
@@ -428,7 +433,7 @@ def limit_annual_capacity_factor_constraint(
         for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if v in model.process_vintages.get((_r, p, _t), [])
     )
-    annual_cf = value(model.limit_annual_capacity_factor[r, t, v, o, op])
+    annual_cf = value(model.limit_annual_capacity_factor[r, p, t, v, o, op])
     expr = operator_expression(activity_rptvo, Operator(op), annual_cf * possible_activity_rptvo)
     # in the case that there is nothing to sum, skip
     if isinstance(expr, bool):  # an empty list was generated

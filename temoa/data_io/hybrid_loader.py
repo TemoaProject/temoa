@@ -121,7 +121,7 @@ class HybridLoader:
         self.viable_output_comms: ViableSet | None = None
         self.viable_vintages: ViableSet | None = None
         self.viable_ritvo: ViableSet | None = None
-        self.viable_rtvo: ViableSet | None = None
+        self.viable_rptvo: ViableSet | None = None
         self.viable_rtv_new: ViableSet | None = None
         self.viable_rpt: ViableSet | None = None
         self.viable_rpto: ViableSet | None = None
@@ -490,7 +490,7 @@ class HybridLoader:
 
         filts = self.manager.build_filters(tech_groups)
         self.viable_ritvo = filts['ritvo']
-        self.viable_rtvo = filts['rtvo']
+        self.viable_rptvo = filts['rptvo']
         self.viable_rtv_new = filts['rtv_new']
         self.viable_rpt = filts['rpt']
         self.viable_rtv = filts['rtv']
@@ -613,6 +613,134 @@ class HybridLoader:
             self._load_component_data(data, model.time_season_sequential, seq_seasons)
 
     # --- Capacity and Cost Components ---
+    def _load_limit_annual_capacity_factor(
+        self,
+        data: dict[str, object],
+        raw_data: Sequence[tuple[object, ...]],
+        filtered_data: Sequence[tuple[object, ...]],
+    ) -> None:
+        """Resolve legacy/NULL periods into the single period-and-vintage parameter.
+
+        Check duplicates and wildcard overlap before window/source-trace filtering.
+        Explicit periods must be operating periods; explicit in-window processes must
+        be eligible. Legacy rows expand only over eligible periods. Myopic windows
+        may omit previously unbuilt/retired cohorts, as for other process inputs.
+        """
+        table = 'limit_annual_capacity_factor'
+        if not self.table_exists(table):
+            return
+        cur = self.con.cursor()
+        columns = {row[1] for row in cur.execute(f'PRAGMA table_info({table})')}
+        period_column = 'period' if 'period' in columns else 'NULL'
+        # Do not swallow malformed-table errors as an absent optional component.
+        rows = cur.execute(
+            f'SELECT region, {period_column}, tech_or_group, vintage, output_comm, '
+            f'operator, factor FROM {table}'
+        ).fetchall()
+        if not rows:
+            return
+
+        future = [
+            row[0]
+            for row in cur.execute(
+                "SELECT period FROM time_period WHERE flag='f' ORDER BY sequence"
+            )
+        ]
+        operating_periods = set(future[:-1])
+        active_periods = cast('list[int]', data['time_optimize'])
+        regions = {row[0] for row in cur.execute('SELECT region FROM region')}
+        regional_indices = regions | {f'{r1}-{r2}' for r1 in regions for r2 in regions if r1 != r2}
+        techs = {row[0] for row in cur.execute('SELECT tech FROM technology')}
+        tech_groups: defaultdict[str, set[str]] = defaultdict(set)
+        if self.table_exists('tech_group_member'):
+            for group, tech in cur.execute('SELECT group_name, tech FROM tech_group_member'):
+                tech_groups[tech].add(group)
+        groups = set().union(*tech_groups.values()) if tech_groups else set()
+        vintages = {row[0] for row in cur.execute('SELECT period FROM time_period')}
+        commodities = {row[0] for row in cur.execute('SELECT name FROM commodity')}
+
+        seen: set[tuple[object, ...]] = set()
+        periods_by_key: defaultdict[tuple[object, ...], set[int | None]] = defaultdict(set)
+        for r, p, t, v, o, op, factor in rows:
+            key = (r, p, t, v, o, op)
+            regional_members = regions if r == 'global' else set(str(r).split('+'))
+            if (
+                not regional_members <= regional_indices
+                or t not in techs | groups
+                or v not in vintages
+                or o not in commodities
+                or op not in {'le', 'ge', 'e'}
+            ):
+                raise ValueError(f'Invalid {table} key: {key}')
+            if p is not None and (not isinstance(p, int) or p not in operating_periods):
+                raise ValueError(f'Invalid operating period in {table}: {key}')
+            if not isinstance(factor, int | float) or not 0 <= factor <= 1:
+                raise ValueError(f'{table} factor must be in [0, 1]: {key}: {factor}')
+            if key in seen:
+                raise ValueError(f'Duplicate {table} key: {key}')
+            seen.add(key)
+            periods_by_key[r, t, v, o, op].add(p)
+        for cohort_key, periods in periods_by_key.items():
+            if None in periods and len(periods) > 1:
+                raise ValueError(f'Overlapping NULL and explicit periods in {table}: {cohort_key}')
+
+        # Reuse native lifetime/existing-capacity eligibility, before source tracing.
+        network = (
+            self.manager.orig_data
+            if self.manager is not None
+            else network_model_data.build(self.con, self.myopic_index)
+        )
+        eligible: defaultdict[tuple[object, ...], set[str]] = defaultdict(set)
+        efficiency_table = 'myopic_efficiency' if self.myopic_index else 'efficiency'
+        process_outputs = set(
+            cur.execute(
+                f'SELECT DISTINCT region, tech, vintage, output_comm FROM {efficiency_table} '
+                'WHERE efficiency != 0'
+            )
+        )
+        uncapped = cast('list[str]', data.get('tech_uncap', []))
+        for (_r, p), edges in network.available_techs.items():
+            for edge in edges:
+                if (edge.region, edge.tech, edge.vintage, edge.output_comm) not in process_outputs:
+                    continue
+                if (
+                    edge.vintage < min(active_periods)
+                    and edge.tech not in uncapped
+                    and (edge.region, edge.tech, edge.vintage) not in self.viable_existing_rtv
+                ):
+                    continue
+                for t in {edge.tech} | tech_groups[edge.tech]:
+                    eligible[p, t, edge.vintage, edge.output_comm].add(edge.region)
+
+        resolved: list[tuple[object, ...]] = []
+        for r, p, t, v, o, op, factor in rows:
+            if p is not None and p not in active_periods:
+                continue
+            regional_members = regions if r == 'global' else set(r.split('+'))
+            matching_periods = [
+                period
+                for period in (active_periods if p is None else [p])
+                if regional_members & eligible[period, t, v, o]
+            ]
+            if not matching_periods:
+                key = (r, p, t, v, o, op)
+                if p is not None and self.myopic_index is None:
+                    raise ValueError(f'No active process for {table}: {key}')
+                log = logger.info if self.myopic_index else logger.warning
+                log('No eligible operating periods for %s: %s', table, key)
+            resolved.extend((r, period, t, v, o, op, factor) for period in matching_periods)
+
+        item = self.manifest_map[table]
+        filtered = self._filter_data(resolved, item, use_raw_data=self.viable_rptvo is None)
+        if len(filtered) != len(resolved):
+            log = logger.info if self.myopic_index else logger.warning
+            log(
+                '%d values for %s failed source-trace validation and were ignored.',
+                len(resolved) - len(filtered),
+                table,
+            )
+        self._load_component_data(data, item.component, filtered)
+
     def _load_existing_capacity(
         self,
         data: dict[str, object],
