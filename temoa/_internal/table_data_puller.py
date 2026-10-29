@@ -329,7 +329,7 @@ def poll_cost_results(
     else:
         p_0_true = p_0
 
-    p_e = model.time_future.last()
+    p_e = costs.loan_payment_end(model)
 
     # conveniences...
     global_discount_rate = value(model.global_discount_rate)

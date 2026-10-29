@@ -748,6 +748,10 @@ class TemoaModel(AbstractModel):
         )
 
         self.myopic_discounting_year = Param(default=0)
+        # End of the full study horizon in a myopic run, used when reporting loan
+        # costs. Each myopic window holds only its own periods, so time_future.last()
+        # is the end of the window. 0 outside myopic runs.
+        self.myopic_horizon_end = Param(default=0)
 
         ################################################
         #                 Model Variables              #
