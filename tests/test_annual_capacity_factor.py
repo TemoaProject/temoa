@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pyomo.environ import check_optimal_termination, value
 
+from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
+from temoa.core.modes import TemoaMode
 from temoa.data_io.hybrid_loader import HybridLoader
 from tests.conftest import TEST_DATA_PATH, _build_test_db
 
@@ -18,7 +20,6 @@ if TYPE_CHECKING:
 
     from pyomo.opt import SolverResults
 
-    from temoa._internal.temoa_sequencer import TemoaSequencer
     from temoa.core.model import TemoaModel
 
     type Run = tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer]
@@ -392,6 +393,27 @@ def test_period_column_required_for_present_table(factor_db: Path, table_state: 
     else:
         with pytest.raises(ValueError, match='limit_annual_capacity_factor.*missing.*period'):
             _load(factor_db)
+
+
+@pytest.mark.parametrize('myopic', [False, True])
+def test_null_period_rejected_before_window_filter(factor_db: Path, myopic: bool) -> None:
+    """An upgraded nullable column must not hide rows when selecting a myopic window."""
+    with sqlite3.connect(factor_db) as con:
+        con.execute(
+            'CREATE TABLE vintage_only_factors AS SELECT region, tech_or_group, vintage, '
+            'output_comm, operator, factor, notes FROM limit_annual_capacity_factor'
+        )
+        con.execute('DROP TABLE limit_annual_capacity_factor')
+        con.execute('ALTER TABLE vintage_only_factors RENAME TO limit_annual_capacity_factor')
+        con.execute('ALTER TABLE limit_annual_capacity_factor ADD COLUMN period INTEGER')
+        con.execute(INSERT, ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5))
+
+    config = _config(factor_db)
+    if myopic:
+        config.scenario_mode = TemoaMode.MYOPIC
+        config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
+    with pytest.raises(ValueError, match='limit_annual_capacity_factor.*NULL.*period'):
+        TemoaSequencer(config).start()
 
 
 @pytest.mark.parametrize('period', [2020, 2027, 2035, 'all'])

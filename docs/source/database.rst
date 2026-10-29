@@ -108,8 +108,9 @@ recommend that you populate input tables in the following order:
 
 .. _annual-factor-input:
 
+-------------------------------------------
 Annual capacity factor periods and vintages
-------------------------------------------
+-------------------------------------------
 
 ``limit_annual_capacity_factor`` has the key ``(region, period, tech_or_group,
 vintage, output_comm, operator)``. ``factor`` is dimensionless and must be in
@@ -133,9 +134,9 @@ there is no interpolation or carry-forward. Other capacity constraints still app
 
 This is a breaking input-schema change: ``period`` is required. Update existing
 tables and INSERT statements to include it, using one row per eligible operating
-period to retain a constant factor for a vintage. Omitted or SQL ``NULL`` periods
-do not broadcast a factor. Myopic loading selects rows in the current window using
-the standard period filter.
+period to retain a constant factor for a vintage. A present table missing ``period``
+or containing SQL ``NULL`` periods is rejected. Myopic loading selects rows in the
+current window using the standard period filter.
 
 ---------------------------------------
 Group Region and Technology Constraints
