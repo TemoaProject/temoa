@@ -371,6 +371,29 @@ def factor_db(tmp_path: Path) -> Path:
     return db
 
 
+@pytest.mark.parametrize('table_state', ['vintage_only', 'empty_vintage_only', 'absent'])
+def test_period_column_required_for_present_table(factor_db: Path, table_state: str) -> None:
+    with sqlite3.connect(factor_db) as con:
+        if table_state == 'empty_vintage_only':
+            con.execute('DELETE FROM limit_annual_capacity_factor')
+        if table_state != 'absent':
+            con.execute(
+                'CREATE TABLE vintage_only_factors AS SELECT region, tech_or_group, vintage, '
+                'output_comm, operator, factor, notes FROM limit_annual_capacity_factor'
+            )
+        con.execute('DROP TABLE limit_annual_capacity_factor')
+        if table_state != 'absent':
+            con.execute('ALTER TABLE vintage_only_factors RENAME TO limit_annual_capacity_factor')
+
+    if table_state == 'absent':
+        model = _load(factor_db)
+        assert len(model.limit_annual_capacity_factor) == 0
+        assert len(model.limit_annual_capacity_factor_constraint) == 0
+    else:
+        with pytest.raises(ValueError, match='limit_annual_capacity_factor.*missing.*period'):
+            _load(factor_db)
+
+
 @pytest.mark.parametrize('period', [2020, 2027, 2035, 'all'])
 def test_invalid_operating_period(factor_db: Path, period: object) -> None:
     with sqlite3.connect(factor_db) as con:
