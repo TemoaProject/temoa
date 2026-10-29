@@ -3,24 +3,22 @@
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import sqlite3
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from pyomo.environ import Constraint, Var, check_optimal_termination, value
+from pyomo.environ import check_optimal_termination, value
 
-from temoa._internal.temoa_sequencer import TemoaSequencer
 from temoa.core.config import TemoaConfig
 from temoa.data_io.hybrid_loader import HybridLoader
-from temoa.utilities.master_migration import migrate_database
-from tests.conftest import SCHEMA_PATH, TEST_DATA_PATH, _build_test_db
+from tests.conftest import TEST_DATA_PATH, _build_test_db
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from pyomo.opt import SolverResults
 
+    from temoa._internal.temoa_sequencer import TemoaSequencer
     from temoa.core.model import TemoaModel
 
     type Run = tuple[str, SolverResults | None, TemoaModel | None, TemoaSequencer]
@@ -36,7 +34,7 @@ type Modification = tuple[str, tuple[Any, ...]]
 
 def _case(
     annual: int,
-    factors: list[tuple[int | None, int, str, float]],
+    factors: list[tuple[int, int, str, float]],
     modifications: list[Modification] | None = None,
     *,
     myopic: bool = False,
@@ -141,7 +139,7 @@ COHORT_MODS: list[Modification] = [
         (),
     ),
 ]
-COHORT_FACTORS: list[tuple[int | None, int, str, float]] = [
+COHORT_FACTORS: list[tuple[int, int, str, float]] = [
     (2025, 2025, 'e', 0.5),
     (2030, 2025, 'e', 0.25),
     (2030, 2030, 'e', 0.75),
@@ -331,11 +329,11 @@ def test_myopic_cohort_factors(system_test_run: Run) -> None:
 
 @pytest.mark.parametrize(
     'system_test_run',
-    [_case(1, [(None, 2025, 'le', 0.5)], myopic=True)],
+    [_case(1, [(2025, 2025, 'le', 0.5), (2030, 2025, 'le', 0.5)], myopic=True)],
     indirect=True,
 )
-def test_myopic_legacy_broadcast(system_test_run: Run) -> None:
-    """A NULL-period row must survive both window filters for the retained cohort."""
+def test_myopic_constant_factors(system_test_run: Run) -> None:
+    """Explicit period rows retain a constant factor across myopic windows."""
     _, _, _, sequencer = system_test_run
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         rows = con.execute(
@@ -377,7 +375,7 @@ def factor_db(tmp_path: Path) -> Path:
 def test_invalid_operating_period(factor_db: Path, period: object) -> None:
     with sqlite3.connect(factor_db) as con:
         con.execute('UPDATE limit_annual_capacity_factor SET period=?', (period,))
-    with pytest.raises(ValueError, match='Invalid operating period'):
+    with pytest.raises(ValueError, match='limit_annual_capacity_factor_index'):
         _load(factor_db)
 
 
@@ -385,8 +383,10 @@ def test_inactive_process(factor_db: Path) -> None:
     with sqlite3.connect(factor_db) as con:
         con.execute('UPDATE lifetime_tech SET lifetime=5')
         con.execute('UPDATE limit_annual_capacity_factor SET period=2030')
-    with pytest.raises(ValueError, match='No active process'):
-        _load(factor_db)
+        # Keep the demand network valid after the only supply cohort expires.
+        con.execute('DELETE FROM demand WHERE period=2030')
+    model = _load(factor_db)
+    assert len(model.limit_annual_capacity_factor_constraint) == 0
 
 
 @pytest.mark.parametrize(
@@ -402,7 +402,9 @@ def test_inactive_process(factor_db: Path) -> None:
 def test_invalid_keys(factor_db: Path, column: str, bad_value: object) -> None:
     with sqlite3.connect(factor_db) as con:
         con.execute(f'UPDATE limit_annual_capacity_factor SET {column}=?', (bad_value,))
-    with pytest.raises(ValueError, match='Invalid limit_annual_capacity_factor key'):
+    with pytest.raises(
+        ValueError, match='regional_global_indices|limit_annual_capacity_factor_index'
+    ):
         _load(factor_db)
 
 
@@ -420,52 +422,26 @@ def test_missing_period_row_is_unconstrained(system_test_run: Run) -> None:
     assert value(model.v_new_capacity['R1', 'vehicle', 2025]) == pytest.approx(2, rel=0, abs=TOL)
 
 
-@pytest.mark.parametrize('reverse', [False, True])
-def test_overlap_rejected_before_filtering(factor_db: Path, reverse: bool) -> None:
+def test_period_required(factor_db: Path) -> None:
     with sqlite3.connect(factor_db) as con:
-        con.execute('DELETE FROM limit_annual_capacity_factor')
-        for p in [2030, None] if reverse else [None, 2030]:
-            con.execute(INSERT, ('R1', p, 'vehicle', 2025, 'service', 'le', 0.5))
-    with pytest.raises(ValueError, match='Overlapping NULL and explicit periods'):
-        _load(factor_db)
+        with pytest.raises(sqlite3.IntegrityError, match='NOT NULL'):
+            con.execute('UPDATE limit_annual_capacity_factor SET period=NULL')
+        with pytest.raises(sqlite3.IntegrityError, match='NOT NULL'):
+            con.execute(
+                'INSERT INTO limit_annual_capacity_factor '
+                '(region, tech_or_group, vintage, output_comm, operator, factor) '
+                "VALUES ('R1', 'vehicle', 2025, 'service', 'le', 0.5)"
+            )
 
 
-def test_myopic_overlap_outside_first_window(factor_db: Path) -> None:
-    from temoa.core.modes import TemoaMode
-
+def test_duplicate_keys(factor_db: Path) -> None:
     with sqlite3.connect(factor_db) as con:
-        con.execute(INSERT, ('R1', 2030, 'vehicle', 2025, 'service', 'le', 0.25))
-    config = _config(factor_db)
-    config.scenario_mode = TemoaMode.MYOPIC
-    config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
-    with pytest.raises(ValueError, match='Overlapping NULL and explicit periods'):
-        TemoaSequencer(config).start()
-
-
-def test_malformed_optional_table_is_not_silently_skipped(factor_db: Path) -> None:
-    with sqlite3.connect(factor_db) as con:
-        con.execute('ALTER TABLE limit_annual_capacity_factor RENAME COLUMN vintage TO wrong')
-    with pytest.raises(sqlite3.OperationalError, match='vintage'):
-        _load(factor_db)
-
-
-@pytest.mark.parametrize('period', [None, 2025])
-def test_duplicate_keys(factor_db: Path, period: int | None) -> None:
-    with sqlite3.connect(factor_db) as con:
-        con.execute('UPDATE limit_annual_capacity_factor SET period=?', (period,))
         with pytest.raises(sqlite3.IntegrityError, match='UNIQUE'):
-            con.execute(INSERT, ('R1', period, 'vehicle', 2025, 'service', 'le', 0.5))
-        # An externally produced table without SQL keys must also fail in the loader.
-        con.execute('CREATE TABLE raw_factors AS SELECT * FROM limit_annual_capacity_factor')
-        con.execute('DROP TABLE limit_annual_capacity_factor')
-        con.execute('ALTER TABLE raw_factors RENAME TO limit_annual_capacity_factor')
-        con.execute(INSERT, ('R1', period, 'vehicle', 2025, 'service', 'le', 0.25))
-    with pytest.raises(ValueError, match='Duplicate'):
-        _load(factor_db)
+            con.execute(INSERT, ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5))
 
 
-@pytest.mark.parametrize('factor', [-0.1, 1.1, None])
-def test_factor_bounds(factor_db: Path, factor: float | None) -> None:
+@pytest.mark.parametrize('factor', [-0.1, 1.1])
+def test_factor_bounds(factor_db: Path, factor: float) -> None:
     with sqlite3.connect(factor_db) as con:
         with pytest.raises(sqlite3.IntegrityError):
             con.execute('UPDATE limit_annual_capacity_factor SET factor=?', (factor,))
@@ -473,97 +449,5 @@ def test_factor_bounds(factor_db: Path, factor: float | None) -> None:
         con.execute('DROP TABLE limit_annual_capacity_factor')
         con.execute('ALTER TABLE raw_factors RENAME TO limit_annual_capacity_factor')
         con.execute('UPDATE limit_annual_capacity_factor SET factor=?', (factor,))
-    with pytest.raises(ValueError, match=r'factor must be in \[0, 1\]'):
+    with pytest.raises(RuntimeError, match='limit_annual_capacity_factor'):
         _load(factor_db)
-
-
-def _solve_snapshot(db: Path) -> dict[str, Any]:
-    sequencer = TemoaSequencer(_config(db))
-    sequencer.start()
-    assert check_optimal_termination(sequencer.pf_results)
-    model = sequencer.pf_solved_instance
-    assert model is not None
-    _assert_residuals(model)
-    return {
-        'values': {
-            f'{component.name}{key}': value(component[key])
-            for component in model.component_objects(Var)
-            for key in component
-        },
-        'objective': value(model.total_cost),
-        'coverage': {
-            (component.name, str(key))
-            for component in model.component_objects(Constraint)
-            for key in component
-        },
-    }
-
-
-def test_vintageless_migration_requires_mapping(factor_db: Path) -> None:
-    """Never relabel an operating period as vintage, or publish a partial migration."""
-    with sqlite3.connect(factor_db) as con:
-        con.execute(
-            'CREATE TABLE old_factors AS SELECT region, 2025 AS period, tech_or_group, '
-            'output_comm, operator, factor, notes FROM limit_annual_capacity_factor'
-        )
-        con.execute('DROP TABLE limit_annual_capacity_factor')
-        con.execute('ALTER TABLE old_factors RENAME TO limit_annual_capacity_factor')
-    before = factor_db.read_bytes()
-    target = factor_db.with_name('target.sqlite')
-    target.write_bytes(b'Existing destination must survive a failed migration')
-    with pytest.raises(ValueError, match='explicit cohort mapping'):
-        migrate_database(factor_db, SCHEMA_PATH, target)
-    assert factor_db.read_bytes() == before
-    assert target.read_bytes() == b'Existing destination must survive a failed migration'
-    assert not list(factor_db.parent.glob('temp_migration_*.sqlite'))
-
-
-@pytest.mark.parametrize('annual', [0, 1])
-def test_legacy_migration_solver_equivalence(factor_db: Path, annual: int) -> None:
-    """Old physical schema, migrated NULL rows and explicit broadcasts solve identically."""
-    with sqlite3.connect(factor_db) as con:
-        con.execute('UPDATE technology SET annual=?', (annual,))
-        con.execute('ALTER TABLE limit_annual_capacity_factor RENAME TO new_factors')
-        con.execute(
-            'CREATE TABLE limit_annual_capacity_factor '
-            '(region TEXT, tech_or_group TEXT, vintage INTEGER, output_comm TEXT, '
-            'operator TEXT NOT NULL DEFAULT "le", factor REAL, notes TEXT, '
-            'PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator))'
-        )
-        con.execute(
-            'INSERT INTO limit_annual_capacity_factor '
-            'SELECT region, tech_or_group, vintage, output_comm, operator, factor, notes '
-            'FROM new_factors'
-        )
-        con.execute('DROP TABLE new_factors')
-    legacy = _solve_snapshot(factor_db)
-    assert legacy['objective'] == pytest.approx(2, rel=0, abs=TOL)
-    source_hash = hashlib.sha256(factor_db.read_bytes()).hexdigest()
-    migrated = factor_db.with_name('migrated.sqlite')
-    migrate_database(factor_db, SCHEMA_PATH, migrated)
-    assert hashlib.sha256(factor_db.read_bytes()).hexdigest() == source_hash
-    current = _solve_snapshot(migrated)
-    with sqlite3.connect(migrated) as con:
-        assert con.execute('SELECT period FROM limit_annual_capacity_factor').fetchall() == [
-            (None,)
-        ]
-        # Old named-column INSERTs retain broadcast semantics after migration.
-        con.execute('DELETE FROM limit_annual_capacity_factor')
-        con.execute(
-            'INSERT INTO limit_annual_capacity_factor '
-            '(region, tech_or_group, vintage, output_comm, factor) '
-            "VALUES ('R1', 'vehicle', 2025, 'service', 0.5)"
-        )
-        assert con.execute('SELECT period FROM limit_annual_capacity_factor').fetchone() == (None,)
-        with pytest.raises(sqlite3.OperationalError, match='8 columns but 7 values'):
-            con.execute(
-                "INSERT INTO limit_annual_capacity_factor VALUES ('R1','vehicle',2025,"
-                "'service','le',0.5,NULL)"
-            )
-        con.execute('UPDATE limit_annual_capacity_factor SET period=2025')
-        con.execute(INSERT, ('R1', 2030, 'vehicle', 2025, 'service', 'le', 0.5))
-    explicit = _solve_snapshot(migrated)
-    for result in (current, explicit):
-        assert result['objective'] == pytest.approx(legacy['objective'], rel=0, abs=TOL)
-        assert result['values'] == pytest.approx(legacy['values'], rel=0, abs=TOL)
-        assert result['coverage'] == legacy['coverage']

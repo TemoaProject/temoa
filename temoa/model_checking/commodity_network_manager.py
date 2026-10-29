@@ -118,10 +118,9 @@ class CommodityNetworkManager:
                         edge_tuple.output_comm,
                     )
                 )
-                valid_elements['rptvo'].add(
+                valid_elements['rtvo'].add(
                     (
                         edge_tuple.region,
-                        p,
                         edge_tuple.tech,
                         edge_tuple.vintage,
                         edge_tuple.output_comm,
@@ -150,10 +149,9 @@ class CommodityNetworkManager:
                     )
 
                 for tech_group in tech_groups.get(edge_tuple.tech, {}):
-                    valid_elements['rptvo'].add(
+                    valid_elements['rtvo'].add(
                         (
                             edge_tuple.region,
-                            p,
                             tech_group,
                             edge_tuple.vintage,
                             edge_tuple.output_comm,
@@ -191,8 +189,8 @@ class CommodityNetworkManager:
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
-            'rptvo': ViableSet(
-                elements=valid_elements['rptvo'],
+            'rtvo': ViableSet(
+                elements=valid_elements['rtvo'],
                 exception_loc=0,
                 exception_vals=ViableSet.REGION_REGEXES,
             ),
