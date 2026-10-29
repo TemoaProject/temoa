@@ -106,6 +106,61 @@ recommend that you populate input tables in the following order:
   * limit_tech_output_split
 
 
+.. _annual-factor-input:
+
+Annual capacity factor periods and vintages
+------------------------------------------
+
+``limit_annual_capacity_factor`` has the key ``(region, period, tech_or_group,
+vintage, output_comm, operator)``. ``factor`` is dimensionless and must be in
+``[0, 1]``. ``le``, ``ge`` and ``e`` respectively impose an upper bound, lower
+bound and equality on annual output divided by available capacity times
+``capacity_to_activity``. This applies to both annual and timeslice technologies.
+
+For example, these rows limit the same cohort differently in two operating periods:
+
+.. code-block:: sql
+
+   INSERT INTO limit_annual_capacity_factor
+       (region, period, tech_or_group, vintage, output_comm, operator, factor)
+   VALUES ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5),
+          ('R1', 2030, 'vehicle', 2025, 'service', 'le', 0.25);
+
+An explicit period must be a future operating period, excluding the terminal
+boundary, and the period/vintage/output must identify an active process (or at
+least one member of a group). Missing rows impose no annual utilization limit:
+there is no interpolation or carry-forward. Other capacity constraints still apply.
+
+An omitted or SQL ``NULL`` period broadcasts the factor over all eligible periods
+of that vintage, preserving the previous vintage-only behavior. Duplicate keys
+are rejected, including duplicate NULL-period keys. A NULL-period row cannot
+coexist with explicit-period rows for the same region, technology/group, vintage,
+output and operator; loading rejects the overlap regardless of row order. Different
+operators remain separate constraints. Checks run before myopic filtering, so
+invalid keys or overlaps cannot hide outside the current window.
+
+Myopic loading selects explicit rows in the current window and expands NULL rows
+only over currently eligible processes. Cohorts with no retained capacity can be
+absent from later windows. Source-trace exclusions and legacy rows with no eligible
+periods are logged, following the existing loading diagnostics.
+
+This is a backward-compatible v4 input extension; the minimum database version
+remains 4.0. Explicit periods require a Temoa version supporting this input key.
+Existing v4 databases without a ``period`` column load as NULL-period
+inputs without modifying the source. To store explicit periods, use the existing
+master migration with ``temoa/db_schema/temoa_schema_v4.sql`` and a new output path:
+
+.. code-block:: console
+
+   python -m temoa.utilities.master_migration --type db --input old.sqlite \
+       --schema temoa/db_schema/temoa_schema_v4.sql --output period_enabled.sqlite
+
+Migration retains vintage-only rows with NULL periods and preserves v4 time data.
+Old INSERT statements with an explicit column list continue to work on the new
+schema. Positional ``INSERT ... VALUES`` statements must add the new period value
+(NULL for legacy behavior), or preferably name their columns. Pre-vintage schemas
+require an explicit cohort mapping; an operating period must not be used as vintage.
+
 ---------------------------------------
 Group Region and Technology Constraints
 ---------------------------------------
