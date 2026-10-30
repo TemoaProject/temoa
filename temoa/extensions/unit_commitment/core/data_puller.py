@@ -112,6 +112,7 @@ def poll_startup_input_results(
         flow = (
             value(model.uc_startup_input[fi.r, fi.i, fi.t])
             * value(model.uc_unit_capacity[fi.r, fi.t])
+            * startup.days_in_season(model, fi.s)
             * value(model.v_uc_started[fi.r, fi.p, fi.s, fi.d, fi.t, fi.v])
         )
         if abs(flow) < epsilon:
@@ -136,7 +137,10 @@ def poll_emission_results(model: TemoaModel, flows: dict[EI, float]) -> None:
         unit_cap = value(model.uc_unit_capacity[ei.r, ei.t])
         emis_per_cap = value(model.uc_startup_emissions[ei.r, ei.e, ei.t])
         emis = quicksum(
-            value(model.v_uc_started[ei.r, ei.p, s, d, ei.t, ei.v]) * unit_cap * emis_per_cap
+            value(model.v_uc_started[ei.r, ei.p, s, d, ei.t, ei.v])
+            * startup.days_in_season(model, s)
+            * unit_cap
+            * emis_per_cap
             for s in model.time_season
             for d in model.time_of_day
         )
@@ -214,7 +218,7 @@ def poll_startup_cost_results(
     }
     for r, p, e, t, v in valid_rpetv:
         startups = sum(
-            value(model.v_uc_started[r, p, s, d, t, v])
+            value(model.v_uc_started[r, p, s, d, t, v]) * startup.days_in_season(model, s)
             for s in model.time_season
             for d in model.time_of_day
         )

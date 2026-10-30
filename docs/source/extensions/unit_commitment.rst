@@ -135,7 +135,13 @@ per unit of capacity.  The total startup cost in a timeslice :math:`(s, d)` is:
 
 .. math::
 
-   \text{startup cost} = \textbf{UCST}_{r,p,s,d,t,v} \cdot UC_{r,t} \cdot UCSC_{r,t}
+   \text{startup cost} = \textbf{UCST}_{r,p,s,d,t,v} \cdot SFS_s \cdot DPP \cdot UC_{r,t} \cdot UCSC_{r,t}
+
+:math:`\textbf{UCST}_{r,p,s,d,t,v}` counts the units started on one day of season
+:math:`s`.  :math:`SFS_s \cdot DPP` (:code:`segment_fraction_per_season` times the
+:code:`days_per_period` setting) is the number of days that season stands for, so the
+cost counts the starts on every one of those days.  Summed over all timeslices this is
+the startup cost for one year of the period, which is added to variable costs.
 
 .. csv-table::
    :header: "Column", "Symbol", "Description"
@@ -152,7 +158,10 @@ unit_commitment_startup_emissions
 
 Optional.  Specifies an emission produced at startup per unit of capacity
 started.  Startup emissions are summed into the :code:`limit_emission_constraint`
-alongside normal activity-based emissions.
+alongside normal activity-based emissions.  As with startup costs, they count every
+day a season stands for:
+:math:`\textbf{UCST}_{r,p,s,d,t,v} \cdot SFS_s \cdot DPP \cdot UC_{r,t} \cdot UCSE_{r,e,t}`
+in timeslice :math:`(s, d)`.
 
 .. csv-table::
    :header: "Column", "Symbol", "Description"
@@ -170,7 +179,10 @@ unit_commitment_startup_input
 
 Optional.  Specifies a physical commodity consumed at startup per unit of
 capacity started.  Startup inputs are summed into the
-:code:`commodity_balance_constraint` alongside normal flow-based consumption.
+:code:`commodity_balance_constraint` alongside normal flow-based consumption.  As with
+startup costs, they count every day a season stands for:
+:math:`\textbf{UCST}_{r,p,s,d,t,v} \cdot SFS_s \cdot DPP \cdot UC_{r,t} \cdot UCSI_{r,i,t}`
+in timeslice :math:`(s, d)`.
 
 .. csv-table::
    :header: "Column", "Symbol", "Description"
@@ -276,6 +288,10 @@ Results are written to the :code:`output_unit_commitment` table with one row per
    ":code:`online_cap`", "capacity online at the start of the timeslice (:math:`\textbf{UCN} \cdot UC_{r,t}`)"
    ":code:`start_cap`", "capacity started during the timeslice (:math:`\textbf{UCST} \cdot UC_{r,t}`)"
    ":code:`stop_cap`", "capacity stopped during the timeslice (:math:`\textbf{UCSP} \cdot UC_{r,t}`)"
+
+These columns describe one day of the season, like the UC variables themselves.  When a
+season stands for more than one day, multiply :code:`start_cap` or :code:`stop_cap` by
+:math:`SFS_s \cdot DPP` to get the capacity started or stopped over all of its days.
 
 .. note::
 

@@ -45,7 +45,8 @@ test_vals = {
         # reduced after changing fixed costs from MLP to PL
         # reduced by <1 after changing season definition (segfrac no longer rounded)
         # increased by 143 after activating CF constraints for storage techs
-        ExpectedVals.OBJ_VALUE: 34853.6835,
+        # increased by 162 after limiting storage charging at the draw (#376)
+        ExpectedVals.OBJ_VALUE: 35015.9790,
         ExpectedVals.EFF_DOMAIN_SIZE: 12312,
         ExpectedVals.EFF_INDEX_SIZE: 64,
         # reduced 3/27:  unlim_cap techs now employed.
