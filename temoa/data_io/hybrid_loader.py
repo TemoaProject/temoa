@@ -69,6 +69,45 @@ BASE_REGIONAL_GROUP_TABLES = {
 }
 
 
+def validate_annual_capacity_factor_periods(con: Connection) -> None:
+    """Validate operating periods and unique keys for the optional annual factor table."""
+    columns = con.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
+    if not columns:
+        return
+    if not any(row[1].lower() == 'period' for row in columns):
+        raise ValueError(
+            "Table 'limit_annual_capacity_factor' is missing required column 'period'."
+        )
+    null_period_row = con.execute(
+        'SELECT 1 FROM main.limit_annual_capacity_factor WHERE period IS NULL LIMIT 1'
+    ).fetchone()
+    if null_period_row is not None:
+        raise ValueError("Table 'limit_annual_capacity_factor' contains NULL period values.")
+
+    # Use the full horizon so valid rows for later myopic windows remain eligible.
+    future_periods = con.execute(
+        "SELECT period FROM main.time_period WHERE flag = 'f' ORDER BY sequence"
+    ).fetchall()
+    time_optimize = {row[0] for row in future_periods[:-1]}
+    for (period,) in con.execute('SELECT DISTINCT period FROM main.limit_annual_capacity_factor'):
+        if period not in time_optimize:
+            raise ValueError(
+                "Table 'limit_annual_capacity_factor' contains invalid operating period "
+                f'{period!r}; expected one of {sorted(time_optimize)}.'
+            )
+
+    duplicate_key = con.execute(
+        'SELECT region, period, tech_or_group, vintage, output_comm, operator '
+        'FROM main.limit_annual_capacity_factor '
+        'GROUP BY region, period, tech_or_group, vintage, output_comm, operator '
+        'HAVING COUNT(*) > 1 LIMIT 1'
+    ).fetchone()
+    if duplicate_key is not None:
+        raise ValueError(
+            f"Table 'limit_annual_capacity_factor' contains duplicate key {duplicate_key!r}."
+        )
+
+
 class HybridLoader:
     """
     Drives the loading of model data from a SQLite database into a format
@@ -322,6 +361,10 @@ class HybridLoader:
             if item.is_table_required:
                 raise FileNotFoundError(f"Required table '{item.table}' not found in the database.")
             return []
+
+        # Validate periods before optional-table or myopic filtering can hide them.
+        if item.table == 'limit_annual_capacity_factor':
+            validate_annual_capacity_factor_periods(self.con)
 
         query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
         params = []

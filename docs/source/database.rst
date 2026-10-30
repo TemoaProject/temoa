@@ -106,6 +106,43 @@ recommend that you populate input tables in the following order:
   * limit_tech_output_split
 
 
+.. _annual-factor-input:
+
+-------------------------------------------
+Annual capacity factor periods and vintages
+-------------------------------------------
+
+``limit_annual_capacity_factor`` has the key ``(region, period, tech_or_group,
+vintage, output_comm, operator)``. ``factor`` is dimensionless and must be in
+``[0, 1]``. ``le``, ``ge`` and ``e`` respectively impose an upper bound, lower
+bound and equality on annual output divided by available capacity times
+``capacity_to_activity``. This applies to both annual and timeslice technologies.
+
+For example, these rows limit the same cohort differently in two operating periods:
+
+.. code-block:: sql
+
+   INSERT INTO limit_annual_capacity_factor
+       (region, period, tech_or_group, vintage, output_comm, operator, factor)
+   VALUES ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5),
+          ('R1', 2030, 'vehicle', 2025, 'service', 'le', 0.25);
+
+An explicit period must be a future operating period, excluding the terminal
+boundary, and the period/vintage/output must identify an active process (or at
+least one member of a group). Missing rows impose no annual utilization limit:
+there is no interpolation or carry-forward. Other capacity constraints still apply.
+
+This is a breaking input-schema change: ``period`` is required. Rebuild existing
+tables with the primary key shown above, including ``period``; adding a column
+alone does not replace the old primary key. Copy each existing row into one row
+per eligible operating period to retain a constant factor for a vintage, and
+include ``period`` in INSERT statements.
+
+A present table missing ``period``, containing SQL ``NULL`` or invalid operating
+periods, or repeating a full key is rejected before a myopic run clears saved
+results. Myopic loading selects rows in the current window using the standard
+period filter.
+
 ---------------------------------------
 Group Region and Technology Constraints
 ---------------------------------------

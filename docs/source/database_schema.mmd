@@ -252,8 +252,9 @@ limit_annual_capacity_factor {
  TEXT operator PK
    TEXT output_comm PK
    INTEGER period PK
+   INTEGER vintage PK
    TEXT region PK
-   TEXT tech PK
+   TEXT tech_or_group PK
    REAL factor
    TEXT notes
 }

@@ -691,12 +691,19 @@ def build_manifest(model: TemoaModel, extension_ids: Sequence[str] | None = None
         LoadItem(
             component=model.limit_annual_capacity_factor,
             table='limit_annual_capacity_factor',
-            columns=['region', 'tech_or_group', 'vintage', 'output_comm', 'operator', 'factor'],
+            columns=[
+                'region',
+                'period',
+                'tech_or_group',
+                'vintage',
+                'output_comm',
+                'operator',
+                'factor',
+            ],
             validator_name='viable_rtvo',
-            validation_map=(0, 1, 2, 3),
-            is_period_filtered=False,
+            validation_map=(0, 2, 3, 4),
             is_table_required=False,
-            index_set=model.limit_annual_capacity_factor_constraint_rtvo,
+            index_set=model.limit_annual_capacity_factor_index,
         ),
         LoadItem(
             component=model.limit_emission,

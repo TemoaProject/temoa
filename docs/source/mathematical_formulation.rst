@@ -679,13 +679,22 @@ or equality.
 limit_annual_capacity_factor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{LACF}_{r \in R, t \in T, v \in V, o \in C_c}`
+:math:`{LACF}_{r \in R, p \in P, t \in T, v \in V, o \in C_c}`
 
 The :code:`limit_annual_capacity_factor` parameter limits the annual capacity
 factor of a process — that is, the ratio of actual annual output to maximum
 possible output.  The :code:`tech_or_group` column accepts a technology name or
-group name.  Note this is indexed by vintage, not period, and will be applied to
-all valid time periods for that process.
+group name. Both operating period and vintage are retained: cohorts operating in
+the same period can have different factors, and a cohort's factor can change as
+it ages. The operator selects an upper bound (``le``), lower bound (``ge``), or
+equality (``e``).
+
+The denominator is available capacity times ``capacity_to_activity``. Available
+capacity already includes lifetime, survival and retirement adjustments. These
+dimensionless utilization factors do not change efficiency, survival, or hourly
+availability. Output is annual, so the constraint does not multiply by period
+length. Each row applies only to its specified period; see
+:ref:`annual-factor-input` for the required input key and an example.
 
 
 limit_capacity

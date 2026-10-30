@@ -433,6 +433,8 @@ CREATE TABLE IF NOT EXISTS limit_activity_share
 CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
 (
     region      TEXT,
+    period      INTEGER NOT NULL
+        REFERENCES time_period (period),
     tech_or_group   TEXT,
     vintage      INTEGER
         REFERENCES time_period (period),
@@ -442,7 +444,7 @@ CREATE TABLE IF NOT EXISTS limit_annual_capacity_factor
     	REFERENCES operator (operator),
     factor      REAL,
     notes       TEXT,
-    PRIMARY KEY (region, tech_or_group, vintage, output_comm, operator),
+    PRIMARY KEY (region, period, tech_or_group, vintage, output_comm, operator),
     CHECK (factor >= 0 AND factor <= 1)
 );
 CREATE TABLE IF NOT EXISTS limit_capacity
