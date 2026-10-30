@@ -203,9 +203,9 @@ class MgaSequencer:
 
         # 3a. Capture cost and make it a constraint
         tot_cost = pyo.value(instance.total_cost)
-        logger.info('Completed initial solve with total cost:  %0.2f', tot_cost)
-        logger.info('Relaxing cost by fraction:  %0.3f', self.cost_epsilon)
-        # get hook on the expression generator for total cost...
+        logger.info('Completed initial solve with choice score:  %0.2f', tot_cost)
+        logger.info('Relaxing choice score by fraction:  %0.3f', self.cost_epsilon)
+        # Retain the choice-score cap, including the hurdle and extension costs.
         cost_expression = total_cost_rule(instance)
         instance.cost_cap = pyo.Constraint(
             expr=cost_expression <= (1 + self.cost_epsilon) * tot_cost
