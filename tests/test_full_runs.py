@@ -171,7 +171,8 @@ def test_myopic_utopia(
         # increased after rework of inter-season sequencing
         # reduced by <1 after changing season definition (segfrac no longer rounded)
         # decreased by 41 after activating CF constraints for storage techs
-        assert invest_sum == pytest.approx(10963.1018), (
+        # decreased by 27 after limiting storage charging at the draw (#376)
+        assert invest_sum == pytest.approx(10935.8768), (
             'sum of investment costs did not match expected'
         )
 
@@ -275,7 +276,8 @@ def test_stochastic_utopia(
     # Stochastic Expected Value for current utopia configuration
     # reduced by <1 after changing season definition (segfrac no longer rounded)
     # increased by 145 after activating CF constraints for storage techs
-    expected_obj = 34534.1822
+    # increased by 171 after limiting storage charging at the draw (#376)
+    expected_obj = 34705.3051
 
     assert sequencer.stochastic_sequencer is not None
     assert sequencer.stochastic_sequencer.objective_value == pytest.approx(expected_obj, rel=1e-5)

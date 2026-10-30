@@ -429,10 +429,16 @@ def storage_charge_rate_constraint(
     This constraint ensures that the charge rate of the storage unit is
     limited by the power capacity (typically GW) of the storage unit.
 
+    The limit applies to the energy drawn from the input commodity, before the
+    storage efficiency is applied. Capacity therefore limits charging and
+    discharging on the same side of the storage losses: what is drawn from the
+    input commodity and what is delivered to the output commodity. Losses are
+    still taken on charging, in :code:`storage_energy_constraint`.
+
     .. math::
        :label: StorageChargeRate
 
-          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
+          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o}
           \le
           \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
@@ -440,10 +446,9 @@ def storage_charge_rate_constraint(
           \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageChargeRate}}
 
     """
-    # Calculate energy charge in each time slice
+    # Energy drawn from the input commodity in each time slice
     slice_charge = quicksum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
-        * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )
@@ -488,14 +493,16 @@ def storage_throughput_constraint(
 
     It is not enough to only limit the charge and discharge rate separately. We also
     need to ensure that the maximum throughput (charge + discharge) does not exceed
-    the capacity (typically GW) of the storage unit.
+    the capacity (typically GW) of the storage unit. As in
+    :code:`storage_charge_rate_constraint`, charging is counted as the energy drawn
+    from the input commodity, before the storage efficiency is applied.
 
     .. math::
        :label: StorageThroughput
 
           \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
           +
-          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o} \cdot EFF_{r,i,t,v,o}
+          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o}
           \le
           \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
 
@@ -508,9 +515,9 @@ def storage_throughput_constraint(
         for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
     )
 
+    # Energy drawn from the input commodity, as in storage_charge_rate_constraint
     charge = quicksum(
         model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
-        * get_variable_efficiency(model, r, p, s, d, S_i, t, v, S_o)
         for S_i in model.process_inputs[r, p, t, v]
         for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
     )

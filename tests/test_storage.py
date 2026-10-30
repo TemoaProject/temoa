@@ -7,8 +7,10 @@ import logging
 from typing import Any
 
 import pytest
+from pyomo.environ import value
 
 from temoa.core.model import TemoaModel
+from temoa.types.core_types import Period, Region, Season, Technology, TimeOfDay, Vintage
 
 logger = logging.getLogger(__name__)
 # suitable scenarios for storage testing....singleton for now.
@@ -151,6 +153,70 @@ def test_storage_flow_balance(system_test_run: tuple[str, Any, TemoaModel, Any])
             f'total inflow and outflow of storage tech {s_tech} do not match',
             ' - there is a discontinuity of storage states',
         )
+
+
+charge_rate_config_files = [
+    {'name': 'storage_charge_rate', 'filename': 'config_storage_charge_rate.toml'},
+]
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=charge_rate_config_files,
+    indirect=True,
+    ids=[d['name'] for d in charge_rate_config_files],
+)
+def test_storage_charge_limited_at_draw(system_test_run: tuple[str, Any, TemoaModel, Any]) -> None:
+    """
+    Capacity limits the energy a storage process draws while charging, not the energy
+    that enters storage after the efficiency is applied (issue #376).
+
+    The battery has capacity 1, efficiency 0.8 and C2A 1, and each of the four time slices
+    is a quarter of the year, so each slice's limit is 0.25. Free solar is available only in
+    d1 and gas is expensive, so the battery charges as fast as it is allowed in d1.
+    """
+    model: TemoaModel
+    _, _, model, _ = system_test_run
+    r, p, t, v = Region('R'), Period(2025), Technology('batt'), Vintage(2025)
+
+    assert model.v_capacity[r, p, t, v].value == pytest.approx(1.0)
+
+    total_drawn = 0.0
+    total_delivered = 0.0
+    for s in model.time_season:
+        for d in model.time_of_day:
+            drawn = sum(
+                model.v_flow_in[r, p, s, d, S_i, t, v, S_o].value
+                for S_i in model.process_inputs[r, p, t, v]
+                for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
+            )
+            delivered = sum(
+                model.v_flow_out[r, p, s, d, S_i, t, v, S_o].value
+                for S_o in model.process_outputs[r, p, t, v]
+                for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
+            )
+            limit = (
+                model.v_capacity[r, p, t, v].value
+                * value(model.capacity_to_activity[r, t])
+                * value(model.segment_fraction[s, d])
+            )
+            assert drawn <= limit + 1e-6, f'draw {drawn} exceeds the limit {limit} in {s, d}'
+            assert drawn + delivered <= limit + 1e-6, (
+                f'draw plus discharge {drawn + delivered} exceeds the limit {limit} in {s, d}'
+            )
+            total_drawn += drawn
+            total_delivered += delivered
+
+    # The battery charges at its limit in d1 (0.3125 = 0.25 / 0.8 before the change)
+    d1_drawn = sum(
+        model.v_flow_in[r, p, Season('s1'), TimeOfDay('d1'), S_i, t, v, S_o].value
+        for S_i in model.process_inputs[r, p, t, v]
+        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
+    )
+    assert d1_drawn == pytest.approx(0.25, abs=1e-6)
+    # Losses are still taken on charging
+    assert total_drawn == pytest.approx(0.25, abs=1e-6)
+    assert total_delivered == pytest.approx(0.8 * 0.25, abs=1e-6)
 
 
 # devnote: the storage_init constraint was reworked into LimitStorageLevelFraction
