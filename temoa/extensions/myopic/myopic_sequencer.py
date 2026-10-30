@@ -17,7 +17,7 @@ from temoa._internal.table_writer import TableWriter
 from temoa.core.config import TemoaConfig
 from temoa.core.model import TemoaModel
 from temoa.core.solver_spec import resolve_solver_options
-from temoa.data_io.hybrid_loader import HybridLoader
+from temoa.data_io.hybrid_loader import HybridLoader, validate_annual_capacity_factor_periods
 from temoa.data_processing.db_to_excel import make_excel
 from temoa.extensions.myopic.myopic_index import MyopicIndex
 from temoa.extensions.myopic.myopic_progress_mapper import MyopicProgressMapper
@@ -173,6 +173,10 @@ class MyopicSequencer:
     def start(self) -> None:
         if self.config is None:
             raise RuntimeError('Config is not initialized')
+
+        # Reject invalid annual-factor inputs before changing saved results or myopic tables.
+        assert self.output_con is not None
+        validate_annual_capacity_factor_periods(self.output_con)
 
         # load up the instance queue
         self.characterize_run()

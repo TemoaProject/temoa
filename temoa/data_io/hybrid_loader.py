@@ -69,6 +69,22 @@ BASE_REGIONAL_GROUP_TABLES = {
 }
 
 
+def validate_annual_capacity_factor_periods(con: Connection) -> None:
+    """Reject missing or NULL operating periods when the optional table is present."""
+    columns = con.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
+    if not columns:
+        return
+    if not any(row[1].lower() == 'period' for row in columns):
+        raise ValueError(
+            "Table 'limit_annual_capacity_factor' is missing required column 'period'."
+        )
+    null_period_row = con.execute(
+        'SELECT 1 FROM main.limit_annual_capacity_factor WHERE period IS NULL LIMIT 1'
+    ).fetchone()
+    if null_period_row is not None:
+        raise ValueError("Table 'limit_annual_capacity_factor' contains NULL period values.")
+
+
 class HybridLoader:
     """
     Drives the loading of model data from a SQLite database into a format
@@ -325,18 +341,7 @@ class HybridLoader:
 
         # Validate periods before optional-table or myopic filtering can hide them.
         if item.table == 'limit_annual_capacity_factor':
-            columns = cur.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
-            if not any(row[1].lower() == 'period' for row in columns):
-                raise ValueError(
-                    "Table 'limit_annual_capacity_factor' is missing required column 'period'."
-                )
-            null_period_row = cur.execute(
-                'SELECT 1 FROM main.limit_annual_capacity_factor WHERE period IS NULL LIMIT 1'
-            ).fetchone()
-            if null_period_row is not None:
-                raise ValueError(
-                    "Table 'limit_annual_capacity_factor' contains NULL period values."
-                )
+            validate_annual_capacity_factor_periods(self.con)
 
         query = f'SELECT {", ".join(item.columns)} FROM main.{item.table}'
         params = []
