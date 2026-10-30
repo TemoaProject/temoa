@@ -329,20 +329,23 @@ def test_myopic_cohort_factors(system_test_run: Run) -> None:
 
 
 @pytest.mark.parametrize(
-    'system_test_run',
-    [_case(1, [(2025, 2025, 'le', 0.5), (2030, 2025, 'le', 0.5)], myopic=True)],
-    indirect=True,
+    ('system_test_run', 'expected_capacity'),
+    [
+        (_case(1, [(2025, 2025, 'le', 0.5), (2030, 2025, 'le', 0.5)], myopic=True), 2),
+        (_case(1, [], [('DROP TABLE limit_annual_capacity_factor', ())], myopic=True), 1),
+    ],
+    indirect=['system_test_run'],
 )
-def test_myopic_constant_factors(system_test_run: Run) -> None:
-    """Explicit period rows retain a constant factor across myopic windows."""
+def test_myopic_constant_or_absent_factors(system_test_run: Run, expected_capacity: float) -> None:
+    """Explicit factors apply across windows; an absent table imposes no annual factor."""
     _, _, _, sequencer = system_test_run
     with contextlib.closing(sqlite3.connect(sequencer.config.output_database)) as con:
         rows = con.execute(
             "SELECT period, capacity FROM output_net_capacity WHERE tech='vehicle' ORDER BY period"
         ).fetchall()
     assert rows == [
-        (2025, pytest.approx(2, rel=0, abs=TOL)),
-        (2030, pytest.approx(2, rel=0, abs=TOL)),
+        (2025, pytest.approx(expected_capacity, rel=0, abs=TOL)),
+        (2030, pytest.approx(expected_capacity, rel=0, abs=TOL)),
     ]
 
 
@@ -396,8 +399,27 @@ def test_period_column_required_for_present_table(factor_db: Path, table_state: 
 
 
 @pytest.mark.parametrize('myopic', [False, True])
-def test_null_period_rejected_before_window_filter(factor_db: Path, myopic: bool) -> None:
-    """An upgraded nullable column must not hide rows when selecting a myopic window."""
+def test_null_period_rejected_without_changing_results(factor_db: Path, myopic: bool) -> None:
+    """Reject upgraded NULL periods before filtering or clearing saved results."""
+    config = _config(factor_db)
+    if myopic:
+        config.scenario_mode = TemoaMode.MYOPIC
+        config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
+    TemoaSequencer(config).start()
+
+    with contextlib.closing(sqlite3.connect(factor_db)) as con:
+        output_tables = [
+            row[0]
+            for row in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'output_%'"
+            )
+        ]
+        saved_results = {
+            table: con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
+            for table in output_tables
+        }
+    assert any(saved_results.values())
+
     with sqlite3.connect(factor_db) as con:
         con.execute(
             'CREATE TABLE vintage_only_factors AS SELECT region, tech_or_group, vintage, '
@@ -408,12 +430,14 @@ def test_null_period_rejected_before_window_filter(factor_db: Path, myopic: bool
         con.execute('ALTER TABLE limit_annual_capacity_factor ADD COLUMN period INTEGER')
         con.execute(INSERT, ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5))
 
-    config = _config(factor_db)
-    if myopic:
-        config.scenario_mode = TemoaMode.MYOPIC
-        config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
     with pytest.raises(ValueError, match='limit_annual_capacity_factor.*NULL.*period'):
         TemoaSequencer(config).start()
+
+    with contextlib.closing(sqlite3.connect(factor_db)) as con:
+        assert {
+            table: con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
+            for table in output_tables
+        } == saved_results
 
 
 @pytest.mark.parametrize('period', [2020, 2027, 2035, 'all'])
