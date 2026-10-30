@@ -134,9 +134,10 @@ there is no interpolation or carry-forward. Other capacity constraints still app
 
 This is a breaking input-schema change: ``period`` is required. Update existing
 tables and INSERT statements to include it, using one row per eligible operating
-period to retain a constant factor for a vintage. A present table missing ``period``
-or containing SQL ``NULL`` periods is rejected. Myopic loading selects rows in the
-current window using the standard period filter.
+period to retain a constant factor for a vintage. A present table missing ``period``,
+containing SQL ``NULL`` periods, or referring to periods outside the optimization
+horizon is rejected before a myopic run clears saved results. Myopic loading selects
+rows in the current window using the standard period filter.
 
 ---------------------------------------
 Group Region and Technology Constraints

@@ -70,7 +70,7 @@ BASE_REGIONAL_GROUP_TABLES = {
 
 
 def validate_annual_capacity_factor_periods(con: Connection) -> None:
-    """Reject missing or NULL operating periods when the optional table is present."""
+    """Reject invalid operating periods when the optional table is present."""
     columns = con.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
     if not columns:
         return
@@ -83,6 +83,18 @@ def validate_annual_capacity_factor_periods(con: Connection) -> None:
     ).fetchone()
     if null_period_row is not None:
         raise ValueError("Table 'limit_annual_capacity_factor' contains NULL period values.")
+
+    # Use the full horizon so valid rows for later myopic windows remain eligible.
+    future_periods = con.execute(
+        "SELECT period FROM main.time_period WHERE flag = 'f' ORDER BY sequence"
+    ).fetchall()
+    time_optimize = {row[0] for row in future_periods[:-1]}
+    for (period,) in con.execute('SELECT DISTINCT period FROM main.limit_annual_capacity_factor'):
+        if period not in time_optimize:
+            raise ValueError(
+                "Table 'limit_annual_capacity_factor' contains invalid operating period "
+                f'{period!r}; expected one of {sorted(time_optimize)}.'
+            )
 
 
 class HybridLoader:

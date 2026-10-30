@@ -399,8 +399,11 @@ def test_period_column_required_for_present_table(factor_db: Path, table_state: 
 
 
 @pytest.mark.parametrize('myopic', [False, True])
-def test_null_period_rejected_without_changing_results(factor_db: Path, myopic: bool) -> None:
-    """Reject upgraded NULL periods before filtering or clearing saved results."""
+@pytest.mark.parametrize('period', [None, 2020, 2027, 2035, 2040, 'all'])
+def test_invalid_period_rejected_without_changing_results(
+    factor_db: Path, myopic: bool, period: int | str | None
+) -> None:
+    """Reject invalid periods before filtering or clearing saved results."""
     config = _config(factor_db)
     if myopic:
         config.scenario_mode = TemoaMode.MYOPIC
@@ -421,6 +424,8 @@ def test_null_period_rejected_without_changing_results(factor_db: Path, myopic: 
     assert any(saved_results.values())
 
     with sqlite3.connect(factor_db) as con:
+        if period == 2020:
+            con.execute("INSERT INTO time_period VALUES (-1, 2020, 'e')")
         con.execute(
             'CREATE TABLE vintage_only_factors AS SELECT region, tech_or_group, vintage, '
             'output_comm, operator, factor, notes FROM limit_annual_capacity_factor'
@@ -428,9 +433,11 @@ def test_null_period_rejected_without_changing_results(factor_db: Path, myopic: 
         con.execute('DROP TABLE limit_annual_capacity_factor')
         con.execute('ALTER TABLE vintage_only_factors RENAME TO limit_annual_capacity_factor')
         con.execute('ALTER TABLE limit_annual_capacity_factor ADD COLUMN period INTEGER')
+        con.execute('UPDATE limit_annual_capacity_factor SET period=?', (period,))
         con.execute(INSERT, ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5))
 
-    with pytest.raises(ValueError, match='limit_annual_capacity_factor.*NULL.*period'):
+    expected_error = 'NULL.*period' if period is None else 'invalid operating period'
+    with pytest.raises(ValueError, match=f'limit_annual_capacity_factor.*{expected_error}'):
         TemoaSequencer(config).start()
 
     with contextlib.closing(sqlite3.connect(factor_db)) as con:
@@ -444,7 +451,7 @@ def test_null_period_rejected_without_changing_results(factor_db: Path, myopic: 
 def test_invalid_operating_period(factor_db: Path, period: object) -> None:
     with sqlite3.connect(factor_db) as con:
         con.execute('UPDATE limit_annual_capacity_factor SET period=?', (period,))
-    with pytest.raises(ValueError, match='limit_annual_capacity_factor_index'):
+    with pytest.raises(ValueError, match='limit_annual_capacity_factor.*invalid operating period'):
         _load(factor_db)
 
 
