@@ -70,7 +70,7 @@ BASE_REGIONAL_GROUP_TABLES = {
 
 
 def validate_annual_capacity_factor_periods(con: Connection) -> None:
-    """Reject invalid operating periods when the optional table is present."""
+    """Validate operating periods and unique keys for the optional annual factor table."""
     columns = con.execute('PRAGMA main.table_info(limit_annual_capacity_factor)').fetchall()
     if not columns:
         return
@@ -95,6 +95,17 @@ def validate_annual_capacity_factor_periods(con: Connection) -> None:
                 "Table 'limit_annual_capacity_factor' contains invalid operating period "
                 f'{period!r}; expected one of {sorted(time_optimize)}.'
             )
+
+    duplicate_key = con.execute(
+        'SELECT region, period, tech_or_group, vintage, output_comm, operator '
+        'FROM main.limit_annual_capacity_factor '
+        'GROUP BY region, period, tech_or_group, vintage, output_comm, operator '
+        'HAVING COUNT(*) > 1 LIMIT 1'
+    ).fetchone()
+    if duplicate_key is not None:
+        raise ValueError(
+            f"Table 'limit_annual_capacity_factor' contains duplicate key {duplicate_key!r}."
+        )
 
 
 class HybridLoader:

@@ -132,12 +132,16 @@ boundary, and the period/vintage/output must identify an active process (or at
 least one member of a group). Missing rows impose no annual utilization limit:
 there is no interpolation or carry-forward. Other capacity constraints still apply.
 
-This is a breaking input-schema change: ``period`` is required. Update existing
-tables and INSERT statements to include it, using one row per eligible operating
-period to retain a constant factor for a vintage. A present table missing ``period``,
-containing SQL ``NULL`` periods, or referring to periods outside the optimization
-horizon is rejected before a myopic run clears saved results. Myopic loading selects
-rows in the current window using the standard period filter.
+This is a breaking input-schema change: ``period`` is required. Rebuild existing
+tables with the primary key shown above, including ``period``; adding a column
+alone does not replace the old primary key. Copy each existing row into one row
+per eligible operating period to retain a constant factor for a vintage, and
+include ``period`` in INSERT statements.
+
+A present table missing ``period``, containing SQL ``NULL`` or invalid operating
+periods, or repeating a full key is rejected before a myopic run clears saved
+results. Myopic loading selects rows in the current window using the standard
+period filter.
 
 ---------------------------------------
 Group Region and Technology Constraints

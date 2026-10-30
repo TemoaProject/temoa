@@ -368,6 +368,20 @@ def _load(db: Path) -> TemoaModel:
         return loader.model.create_instance(loader.load_data_portal())
 
 
+def _output_rows(db: Path) -> dict[str, list[tuple[Any, ...]]]:
+    with contextlib.closing(sqlite3.connect(db)) as con:
+        output_tables = [
+            row[0]
+            for row in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'output_%'"
+            )
+        ]
+        return {
+            table: con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
+            for table in output_tables
+        }
+
+
 @pytest.fixture
 def factor_db(tmp_path: Path) -> Path:
     db = tmp_path / 'factor.sqlite'
@@ -410,17 +424,7 @@ def test_invalid_period_rejected_without_changing_results(
         config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
     TemoaSequencer(config).start()
 
-    with contextlib.closing(sqlite3.connect(factor_db)) as con:
-        output_tables = [
-            row[0]
-            for row in con.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'output_%'"
-            )
-        ]
-        saved_results = {
-            table: con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
-            for table in output_tables
-        }
+    saved_results = _output_rows(factor_db)
     assert any(saved_results.values())
 
     with sqlite3.connect(factor_db) as con:
@@ -440,11 +444,7 @@ def test_invalid_period_rejected_without_changing_results(
     with pytest.raises(ValueError, match=f'limit_annual_capacity_factor.*{expected_error}'):
         TemoaSequencer(config).start()
 
-    with contextlib.closing(sqlite3.connect(factor_db)) as con:
-        assert {
-            table: con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
-            for table in output_tables
-        } == saved_results
+    assert _output_rows(factor_db) == saved_results
 
 
 @pytest.mark.parametrize('period', [2020, 2027, 2035, 'all'])
@@ -510,10 +510,28 @@ def test_period_required(factor_db: Path) -> None:
             )
 
 
-def test_duplicate_keys(factor_db: Path) -> None:
+@pytest.mark.parametrize('myopic', [False, True])
+@pytest.mark.parametrize('period', [2025, 2030])
+def test_duplicate_keys(factor_db: Path, period: int, myopic: bool) -> None:
+    config = _config(factor_db)
+    if myopic:
+        config.scenario_mode = TemoaMode.MYOPIC
+        config.myopic_inputs = {'view_depth': 1, 'step_size': 1, 'evolving': False}
+    TemoaSequencer(config).start()
+    saved_results = _output_rows(factor_db)
+    assert any(saved_results.values())
+
     with sqlite3.connect(factor_db) as con:
+        con.execute('UPDATE limit_annual_capacity_factor SET period=?', (period,))
         with pytest.raises(sqlite3.IntegrityError, match='UNIQUE'):
-            con.execute(INSERT, ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5))
+            con.execute(INSERT, ('R1', period, 'vehicle', 2025, 'service', 'le', 0.5))
+        con.execute('CREATE TABLE raw_factors AS SELECT * FROM limit_annual_capacity_factor')
+        con.execute('DROP TABLE limit_annual_capacity_factor')
+        con.execute('ALTER TABLE raw_factors RENAME TO limit_annual_capacity_factor')
+        con.execute(INSERT, ('R1', period, 'vehicle', 2025, 'service', 'le', 0.25))
+    with pytest.raises(ValueError, match='limit_annual_capacity_factor.*duplicate key'):
+        TemoaSequencer(config).start()
+    assert _output_rows(factor_db) == saved_results
 
 
 @pytest.mark.parametrize('factor', [-0.1, 1.1])
