@@ -66,7 +66,7 @@ def pv_to_annuity(rate: float, periods: float) -> float | Expression:
     .. math::
         :label: pv_to_annuity
 
-        \frac{A}{P}(i, N) = \frac{i + (1 + i)^N}{(1 + i)^N - 1}
+        \frac{A}{P}(i, N) = \frac{i(1 + i)^N}{(1 + i)^N - 1}
     """
     if rate == 0:
         return 1 / periods
