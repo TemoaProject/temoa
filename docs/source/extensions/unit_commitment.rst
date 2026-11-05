@@ -46,8 +46,8 @@ installed capacity.  Because this function is used throughout the core model, th
 constraints automatically become UC-aware for registered technologies with no further changes:
 
 - :code:`capacity_constraint` — output bounded by online capacity
-- :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint`,
-  :code:`storage_throughput_constraint` — storage rates scale with online units
+- :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint` —
+  storage rates scale with online units
 
 The dynamic :code:`reserve_margin_constraint` uses installed plant and exchange capacity,
 multiplied by the time-slice capacity factor and reserve derate, whether units are online or
