@@ -147,15 +147,19 @@ class ExchangeTechCostLedger:
                 if (
                     partner_cost
                 ):  # they are both entered, so we just record the costs... no splitting
-                    region_costs[r2, period, tech, vintage].update({cost_type: cost})
-                    region_costs[r1, period, tech, vintage].update({cost_type: partner_cost})
+                    # a region may have links to several others with the same tech and vintage,
+                    # so add to any cost already recorded for it
+                    r2_costs = region_costs[r2, period, tech, vintage]
+                    r2_costs[cost_type] = r2_costs.get(cost_type, 0.0) + cost
+                    r1_costs = region_costs[r1, period, tech, vintage]
+                    r1_costs[cost_type] = r1_costs.get(cost_type, 0.0) + partner_cost
                 else:
                     # only one side had costs: the signal to split based on use
                     use_ratio = self.get_use_ratio(r1, r2, period, tech, vintage)
                     # not r2 is the "importer" and that is the ratio assignment
-                    region_costs[r1, period, tech, vintage].update(
-                        {cost_type: cost * (1.0 - use_ratio)}
-                    )
-                    region_costs[r2, period, tech, vintage].update({cost_type: cost * use_ratio})
+                    r1_costs = region_costs[r1, period, tech, vintage]
+                    r1_costs[cost_type] = r1_costs.get(cost_type, 0.0) + cost * (1.0 - use_ratio)
+                    r2_costs = region_costs[r2, period, tech, vintage]
+                    r2_costs[cost_type] = r2_costs.get(cost_type, 0.0) + cost * use_ratio
 
         return region_costs
