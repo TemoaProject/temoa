@@ -1372,8 +1372,6 @@ various physical and operational real-world phenomena.
 
 .. autofunction:: temoa.components.storage.storage_discharge_rate_constraint
 
-.. autofunction:: temoa.components.storage.storage_throughput_constraint
-
 .. autofunction:: temoa.components.operations.ramp_up_constraint
 
 .. autofunction:: temoa.components.operations.ramp_down_constraint

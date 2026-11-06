@@ -954,10 +954,6 @@ class TemoaModel(AbstractModel):
             self.storage_constraints_rpsdtv, rule=storage.storage_discharge_rate_constraint
         )
 
-        self.storage_throughput_constraint = Constraint(
-            self.storage_constraints_rpsdtv, rule=storage.storage_throughput_constraint
-        )
-
         self.limit_storage_fraction_constraint = Constraint(
             self.limit_storage_fraction_constraint_rpsdtv,
             rule=storage.limit_storage_fraction_constraint,

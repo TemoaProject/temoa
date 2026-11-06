@@ -46,8 +46,8 @@ installed capacity.  Because this function is used throughout the core model, th
 constraints automatically become UC-aware for registered technologies with no further changes:
 
 - :code:`capacity_constraint` — output bounded by online capacity
-- :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint`,
-  :code:`storage_throughput_constraint` — storage rates scale with online units
+- :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint` —
+  storage rates scale with online units
 - :code:`reserve_margin_constraint` (dynamic mode only) — reserve contribution from online units only
 
 Ramp constraints are the only exception: they require explicit knowledge of
