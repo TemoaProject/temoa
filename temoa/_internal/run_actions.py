@@ -244,7 +244,20 @@ def solve_instance(
                     if dual_suffix is not None:
                         dual_suffix.direction = original_direction
             else:
-                result = optimizer.solve(instance, suffixes=solver_suffixes_list)
+                # build_instance always declares model.dual, and Pyomo asks the solver for every
+                # active import suffix on the model (adding it to solver_suffixes_list), so switch
+                # the duals off for this solve unless they were asked for
+                dual_suffix = None
+                if 'dual' not in solver_suffixes_list:
+                    dual_suffix = instance.component('dual')
+                if dual_suffix is not None:
+                    original_direction = dual_suffix.direction
+                    dual_suffix.direction = Suffix.LOCAL
+                try:
+                    result = optimizer.solve(instance, suffixes=solver_suffixes_list)
+                finally:
+                    if dual_suffix is not None:
+                        dual_suffix.direction = original_direction
         except RuntimeError as error:
             logger.exception('Solver failed to solve and returned an error: %s', error)
             logger.error(

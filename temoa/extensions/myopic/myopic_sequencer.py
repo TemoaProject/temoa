@@ -272,6 +272,7 @@ class MyopicSequencer:
                 instance=instance,
                 solver_name=self.config.solver_name,
                 silent=True,
+                solver_suffixes=['dual'] if self.config.save_duals else None,
                 solver_options=resolve_solver_options(self.config.solver),
             )
 
