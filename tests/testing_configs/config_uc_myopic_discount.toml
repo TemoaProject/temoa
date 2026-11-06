@@ -1,0 +1,17 @@
+scenario = "uc_myopic_discount"
+scenario_mode = "myopic"
+extensions = ["unit_commitment"]
+input_database = "tests/testing_outputs/uc_myopic_discount.sqlite"
+output_database = "tests/testing_outputs/uc_myopic_discount.sqlite"
+neos = false
+solver = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+
+[myopic]
+view_depth = 1
+step_size = 1
+evolving = false
+evolution_script = ''
