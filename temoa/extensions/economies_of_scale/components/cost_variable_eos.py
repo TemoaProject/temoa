@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from pyomo.environ import quicksum, value
 
 from temoa.components import capacity
-from temoa.components.costs import fixed_or_variable_cost
+from temoa.components.costs import add_period_cost, fixed_or_variable_cost
 
 if TYPE_CHECKING:
     from pyomo.core import Expression
-    from pyomo.core.base.objective import ObjectiveData
     from pyomo.core.base.var import VarData
 
     from temoa.extensions.economies_of_scale.core.model import EOSModel
@@ -315,8 +314,8 @@ def total_cost(model: EOSModel) -> None:
     if value(model.myopic_discounting_year) != 0:
         p_0 = value(model.myopic_discounting_year)
 
-    total_cost = quicksum(
-        fixed_or_variable_cost(
+    for r, p, t in model.cost_variable_eos_period_rpt:
+        cost = fixed_or_variable_cost(
             1,
             period_cost(model, r, p, t),
             value(model.period_length[p]),
@@ -324,8 +323,4 @@ def total_cost(model: EOSModel) -> None:
             p_0,
             p=p,
         )
-        for r, p, t in model.cost_variable_eos_period_rpt
-    )
-
-    # Append to total cost objective
-    model.total_cost.set_value(cast('ObjectiveData', model.total_cost).expr + total_cost)
+        add_period_cost(model, p, cost)

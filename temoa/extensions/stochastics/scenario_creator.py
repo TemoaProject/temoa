@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 from mpisppy.utils.sputils import attach_root_node  # type: ignore[import-untyped]
 
 from temoa._internal.run_actions import build_instance
-from temoa.components.costs import period_cost_rule
 from temoa.data_io.hybrid_loader import HybridLoader
 
 if TYPE_CHECKING:
@@ -132,8 +131,7 @@ def scenario_creator(scenario_name: str, **kwargs: Any) -> Any:
         raise ValueError(f'No first-stage variables found for scenario {scenario_name}')
 
     # First stage cost: PeriodCost[first_period]
-    # We can use the period_cost_rule directly
-    first_stage_cost_expr = period_cost_rule(instance, first_period)
+    first_stage_cost_expr = instance.period_choice_score[first_period]
 
     # Attach root node
     attach_root_node(instance, first_stage_cost_expr, first_stage_vars)

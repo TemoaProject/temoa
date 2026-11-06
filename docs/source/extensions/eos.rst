@@ -71,7 +71,7 @@ period-specific).
    driving quantity (capacity or activity) are summed.  For
    :code:`cost_invest_eos`, all technologies in a cluster must share the
    same :code:`lifetime_process`, :code:`lifetime_survival_curve`,
-   :code:`loan_lifetime_process`, and :code:`loan_rate` in every period
+   :code:`loan_lifetime_process`, :code:`loan_rate`, and :code:`hurdle_rate` in every period
    they appear together.
 
 .. _eos-invest:

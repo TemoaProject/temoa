@@ -7,13 +7,13 @@ This module is responsible for:
 -  Pre-computing and populating cost parameters.
 -  Defining the rules for calculating all investment, fixed, variable, and emission-related
     costs incurred over the model horizon.
--  Defining the model's objective function (total_cost_rule) to minimize the
-    net present value of the total system cost.
+-  Defining the choice objective (total_cost_rule), including any investment hurdle,
+   separately from the net present value of real system costs.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from deprecated import deprecated
 from pyomo.environ import quicksum, value
@@ -21,6 +21,8 @@ from pyomo.environ import quicksum, value
 if TYPE_CHECKING:
     from pyomo.core import Expression, Var
     from pyomo.core.base.component import ComponentData
+    from pyomo.core.base.expression import ExpressionData
+    from pyomo.core.base.objective import ObjectiveData
 
     from temoa.core.model import TemoaModel
     from temoa.types.core_types import Period, Region, Technology, Vintage
@@ -66,7 +68,7 @@ def pv_to_annuity(rate: float, periods: float) -> float | Expression:
     .. math::
         :label: pv_to_annuity
 
-        \frac{A}{P}(i, N) = \frac{i + (1 + i)^N}{(1 + i)^N - 1}
+        \frac{A}{P}(i, N) = \frac{i (1 + i)^N}{(1 + i)^N - 1}
     """
     if rate == 0:
         return 1 / periods
@@ -305,10 +307,14 @@ def fixed_or_variable_cost(
 # ============================================================================
 
 
-def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
+def period_cost_rule(
+    model: TemoaModel, p: int, *, include_hurdle: bool = True
+) -> float | Expression:
+    """Build a period's cost expression, optionally weighting new investment for choice."""
     p_0 = min(model.time_optimize)
     p_e = model.time_future.last()  # End point of modeled horizon
     global_discount_rate = value(model.global_discount_rate)
+    annualize = model.investment_choice_annualize if include_hurdle else model.loan_annualize
     # MPL = M.ModelProcessLife
 
     if value(model.myopic_discounting_year) != 0:
@@ -318,7 +324,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
         loan_cost(
             model.v_new_capacity[r, S_t, S_v],
             value(model.cost_invest[r, S_t, S_v]),
-            value(model.loan_annualize[r, S_t, S_v]),
+            value(annualize[r, S_t, S_v]),
             value(model.loan_lifetime_process[r, S_t, S_v]),
             value(model.lifetime_process[r, S_t, S_v]),
             p_0,
@@ -337,7 +343,7 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
             S_v,
             model.v_new_capacity[r, S_t, S_v],
             value(model.cost_invest[r, S_t, S_v]),
-            value(model.loan_annualize[r, S_t, S_v]),
+            value(annualize[r, S_t, S_v]),
             value(model.loan_lifetime_process[r, S_t, S_v]),
             p_0,
             p_e,
@@ -508,6 +514,42 @@ def period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
     return period_costs
 
 
+def real_period_cost_rule(model: TemoaModel, p: int) -> float | Expression:
+    """Value the chosen quantities at the real loan rate, without a hurdle."""
+    return period_cost_rule(model, p, include_hurdle=False)
+
+
+def real_cost_rule(model: TemoaModel) -> Expression:
+    """Sum model costs, including links and extension costs, without output thresholds."""
+    return quicksum(
+        cast('ExpressionData', model.period_real_cost[p]).expr for p in model.time_optimize
+    )
+
+
+def add_period_cost(
+    model: TemoaModel,
+    p: Period,
+    real_cost: float | Expression,
+    choice_score: float | Expression | None = None,
+) -> None:
+    """Include an extension's cost in both accounting and the choice objective."""
+    if choice_score is None:
+        choice_score = real_cost
+    real_period = cast('ExpressionData', model.period_real_cost[p])
+    choice_period = cast('ExpressionData', model.period_choice_score[p])
+    real_period.set_value(real_period.expr + real_cost)
+    choice_period.set_value(choice_period.expr + choice_score)
+    total_real = cast('ExpressionData', model.real_cost)
+    total_choice = cast('ObjectiveData', model.total_cost)
+    total_real.set_value(total_real.expr + real_cost)
+    total_choice.set_value(total_choice.expr + choice_score)
+
+
+def has_investment_hurdle(model: TemoaModel) -> bool:
+    """Whether any eligible new investment has a nonzero hurdle."""
+    return any(value(model.hurdle_rate[idx]) != 0 for idx in model.hurdle_rate.sparse_keys())
+
+
 # ---------------------------------------------------------------
 # Define the Objective Function
 # ---------------------------------------------------------------
@@ -521,6 +563,10 @@ def total_cost_rule(model: TemoaModel) -> Expression:
     Each term on the right-hand side represents the cost incurred over the model
     time horizon and discounted to the initial year in the horizon (:math:`{P}_0`).
     The calculation of each term is given below.
+
+    These equations describe real costs. For the choice objective only, the
+    investment annuity uses LR + hurdle_rate in place of LR, in both investment
+    branches. The other rates, lifetimes, and cost terms are unchanged.
 
     .. math::
         :label: obj_invest
@@ -653,7 +699,9 @@ def total_cost_rule(model: TemoaModel) -> Expression:
         \end{aligned}
     """
 
-    return quicksum(period_cost_rule(model, p) for p in model.time_optimize)
+    return quicksum(
+        cast('ExpressionData', model.period_choice_score[p]).expr for p in model.time_optimize
+    )
 
 
 # ============================================================================
@@ -715,6 +763,19 @@ def param_loan_annualize_rule(
     lln = value(model.loan_lifetime_process[r, t, v])
     annualized_rate = pv_to_annuity(dr, lln)
     return annualized_rate
+
+
+def param_investment_choice_annualize_rule(
+    model: TemoaModel, r: Region, t: Technology, v: Vintage
+) -> float | Expression:
+    """Annualize new investment at loan rate plus the additive choice-only hurdle."""
+    hurdle = value(model.hurdle_rate[r, t, v])
+    if hurdle == 0:
+        return value(model.loan_annualize[r, t, v])
+    return pv_to_annuity(
+        value(model.loan_rate[r, t, v]) + hurdle,
+        value(model.loan_lifetime_process[r, t, v]),
+    )
 
 
 # ============================================================================

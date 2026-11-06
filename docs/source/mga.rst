@@ -163,6 +163,7 @@ You can use SQL queries to compare results across different MGA iterations.
    SELECT scenario, total_system_cost
    FROM output_objective
    WHERE scenario LIKE 'utopia_mga-%'
+     AND objective_name = 'total_cost'
    ORDER BY scenario;
 
 **Comparing Capacity for a Specific Technology:**

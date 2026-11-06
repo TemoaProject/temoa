@@ -359,6 +359,17 @@ CREATE TABLE IF NOT EXISTS loan_rate
     notes   TEXT,
     PRIMARY KEY (region, tech, vintage)
 );
+CREATE TABLE IF NOT EXISTS hurdle_rate
+(
+    region  TEXT,
+    tech    TEXT
+        REFERENCES technology (tech),
+    vintage INTEGER
+        REFERENCES time_period (period),
+    rate    REAL,
+    notes   TEXT,
+    PRIMARY KEY (region, tech, vintage)
+);
 CREATE TABLE IF NOT EXISTS lifetime_process
 (
     region   TEXT,

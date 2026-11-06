@@ -63,6 +63,7 @@ OPTIONAL_OUTPUT_TABLES = [
     'output_flow_out_summary',
     'output_mc_delta',
     'output_storage_level',
+    'output_unit_commitment',
 ]
 
 OUTPUT_THRESHOLD_DEFAULTS = {
@@ -292,7 +293,7 @@ class TableWriter:
                 self._set_tech_sectors()
 
             self.write_objective(model, iteration=iteration)
-            self.write_capacity_tables(model, iteration=iteration)
+            self.write_capacity_tables(model, iteration=iteration, append=append)
 
             # Poll and Write Emissions
             if self.config.scenario_mode == TemoaMode.MYOPIC:
@@ -479,7 +480,9 @@ class TableWriter:
         self._bulk_insert('output_emission', records)
         self.connection.commit()
 
-    def write_capacity_tables(self, model: TemoaModel, iteration: int | None = None) -> None:
+    def write_capacity_tables(
+        self, model: TemoaModel, iteration: int | None = None, append: bool = False
+    ) -> None:
         if not self.tech_sectors:
             self._set_tech_sectors()
         cap_data = poll_capacity_results(model=model, epsilon=self.output_threshold_capacity)
@@ -493,6 +496,7 @@ class TableWriter:
                 writer=self,
                 iteration=iteration,
                 epsilon=self.output_threshold_capacity,
+                append=append,
             )
 
     def _insert_capacity_results(self, cap_data: CapData, iteration: int | None) -> None:

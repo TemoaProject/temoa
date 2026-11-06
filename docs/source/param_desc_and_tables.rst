@@ -47,6 +47,7 @@ Parameters in the table below relate to the specification of **costs**.
    ":math:`\text{DLR}`", ":code:`metadata_real`", ":code:`default_loan_rate`", "default loan rate used to amortize investment costs"
    ":math:`\text{LLP}_{r,t,v}`", ":code:`loan_lifetime_process`", ":code:`loan_lifetime_process`", "process-specific loan term (default=lifetime_process)"
    ":math:`\text{LR}_{r,t,v}`", ":code:`loan_rate`", ":code:`loan_rate`", "process-specific interest rate on investment cost"
+   ":math:`\text{HR}_{r,t,v}`", ":code:`hurdle_rate`", ":code:`hurdle_rate`", "additional nonnegative rate for investment choices only; default zero"
 
 Parameters in the table below relate to the specification of **technology efficiency
 and performance**.
@@ -147,6 +148,7 @@ therefore do not appear in the database**.
 
    ":math:`{}^*\text{LEN}_p`", "", ":code:`period_length`", "number of years in period :math:`p`; computed from time periods"
    ":math:`{}^*\text{LA}_{t,v}`", "", ":code:`loan_annualize`", "loan amortization by tech and vintage; based on :math:`DR_t`; computed from loan rate and lifetime"
+   ":math:`{}^*\text{ICA}_{r,t,v}`", "", ":code:`investment_choice_annualize`", "investment choice annuity at loan rate plus hurdle rate; excluded from reported costs"
    ":math:`{}^*\text{PLF}_{r,p,t,v}`", "", ":code:`process_life_frac`", "fraction of available process capacity by region and period; computed from process life fraction"
 
 The tables below specify **model outputs.** When constructing a new database,

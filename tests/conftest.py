@@ -97,6 +97,7 @@ def refresh_databases() -> None:
         ('seasonal_storage.sql', 'seasonal_storage.sqlite'),
         ('survival_curve.sql', 'survival_curve.sqlite'),
         ('myopic_capacities.sql', 'myopic_capacities.sqlite'),
+        ('uc_myopic_discount.sql', 'uc_myopic_discount.sqlite'),
         ('annualised_demand.sql', 'annualised_demand.sqlite'),
         ('annual_capacity_factor.sql', 'annual_capacity_factor.sqlite'),
         # Feature tests (separate for temporal consistency)

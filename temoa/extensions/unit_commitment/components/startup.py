@@ -21,11 +21,9 @@ from typing import TYPE_CHECKING, cast
 
 from pyomo.environ import Expression, quicksum, value
 
-from temoa.components.costs import fixed_or_variable_cost
+from temoa.components.costs import add_period_cost, fixed_or_variable_cost
 
 if TYPE_CHECKING:
-    from pyomo.core.base.objective import ObjectiveData
-
     from temoa.core.model import TemoaModel
     from temoa.extensions.unit_commitment.core.model import UnitCommitmentModel
     from temoa.types.core_types import (
@@ -129,6 +127,10 @@ def append_startup_costs(model: UnitCommitmentModel) -> None:
     r"""
     Append discounted startup costs and startup emission costs to the total-cost objective.
 
+    Both are discounted to the same base year as the core cost terms: the first optimization
+    period, or in a myopic run the first period of the whole run
+    (:code:`myopic_discounting_year`), not the first period of each myopic window.
+
     Two cost terms are added:
 
     1. **Direct startup cost**: for each :math:`(r, t)` in :code:`uc_startup_cost`,
@@ -145,31 +147,36 @@ def append_startup_costs(model: UnitCommitmentModel) -> None:
     """
 
     p_0 = min(model.time_optimize)
+    if value(model.myopic_discounting_year) != 0:
+        p_0 = value(model.myopic_discounting_year)
     gdr = value(model.global_discount_rate)
 
-    startup_costs = quicksum(
-        fixed_or_variable_cost(
-            cap_or_flow=1.0,
-            cost_factor=uc_startup_cost_rptv(model, r, p, t, v),
-            cost_years=value(model.period_length[p]),
-            global_discount_rate=gdr,
-            p_0=p_0,
-            p=p,
+    for p in model.time_optimize:
+        startup_costs = quicksum(
+            fixed_or_variable_cost(
+                cap_or_flow=1.0,
+                cost_factor=uc_startup_cost_rptv(model, r, p, t, v),
+                cost_years=value(model.period_length[p]),
+                global_discount_rate=gdr,
+                p_0=p_0,
+                p=p,
+            )
+            for (r, t) in model.uc_startup_cost.sparse_keys()
+            for v in model.process_vintages.get((r, p, t), [])
         )
-        for (r, t) in model.uc_startup_cost.sparse_keys()
-        for p in model.time_optimize
-        for v in model.process_vintages.get((r, p, t), [])
-    )
-    startup_costs += quicksum(
-        fixed_or_variable_cost(
-            cap_or_flow=1.0,
-            cost_factor=(model.cost_emission[r, p, e] * uc_startup_emissions_rpe(model, r, p, e)),
-            cost_years=value(model.period_length[p]),
-            global_discount_rate=gdr,
-            p_0=p_0,
-            p=p,
+        startup_costs += quicksum(
+            fixed_or_variable_cost(
+                cap_or_flow=1.0,
+                cost_factor=(
+                    model.cost_emission[r, p, e] * uc_startup_emissions_rpe(model, r, p, e)
+                ),
+                cost_years=value(model.period_length[p]),
+                global_discount_rate=gdr,
+                p_0=p_0,
+                p=p,
+            )
+            for (r, period, e) in model.cost_emission
+            if period == p
         )
-        for (r, p, e) in model.cost_emission
-    )
 
-    model.total_cost.set_value(cast('ObjectiveData', model.total_cost).expr + startup_costs)
+        add_period_cost(model, p, startup_costs)

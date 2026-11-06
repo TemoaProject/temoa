@@ -48,9 +48,13 @@ constraints automatically become UC-aware for registered technologies with no fu
 - :code:`capacity_constraint` — output bounded by online capacity
 - :code:`storage_charge_rate_constraint`, :code:`storage_discharge_rate_constraint`,
   :code:`storage_throughput_constraint` — storage rates scale with online units
-- :code:`reserve_margin_constraint` (dynamic mode only) — reserve contribution from online units only
 
-Ramp constraints are the only exception: they require explicit knowledge of
+The dynamic :code:`reserve_margin_constraint` uses installed plant and exchange capacity,
+multiplied by the time-slice capacity factor and reserve derate, whether units are online or
+offline. Unit commitment does not change these planning reserve contributions. Storage
+continues to contribute derated net output flow.
+
+Ramp constraints require explicit knowledge of
 started/stopped units to compute the ramp envelope and are therefore fully replaced by
 UC-aware versions for technologies that appear in both :code:`unit_commitment` and the
 ramp tables.

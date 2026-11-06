@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from pyomo.environ import Constraint, Expression, value
 
-from .utils import get_available_output, get_variable_efficiency
+from .utils import available_output_base, get_variable_efficiency
 
 if TYPE_CHECKING:
     from temoa.core.model import TemoaModel
@@ -52,7 +52,7 @@ def _available_activity_dynamic(
     # Everything but storage and exchange techs
     # Derated available generation
     available = sum(
-        get_available_output(model, r, p, s, d, t, v)
+        available_output_base(model, r, p, s, d, t, v)
         * value(model.reserve_capacity_derate[r, s, t, v])
         for (t, v) in model.process_reserve_periods[r, p]
         if t not in model.tech_uncap and t not in model.tech_storage
@@ -94,7 +94,7 @@ def _available_activity_dynamic(
         r1, r2 = r1r2.split('-')
 
         output = sum(
-            get_available_output(model, r1r2, p, s, d, t, v)
+            available_output_base(model, r1r2, p, s, d, t, v)
             * value(model.reserve_capacity_derate[r1r2, s, t, v])
             for (t, v) in model.process_reserve_periods[r1r2, p]
         )
@@ -253,9 +253,10 @@ def reserve_margin_dynamic(
     model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay
 ) -> Constraint:
     r"""
-    A dynamic alternative to the traditional, static reserve margin constraint. Capacity values
-    are calculated from availability of generation in each hour—like an operating reserve margin—\
-    accounting for a capacity derate factor subtracting, for example, forced outage due to icing.
+    A dynamic planning reserve margin based on installed capacity, time-slice capacity factors,
+    and reserve capacity derates (for example, forced outages due to icing). Unit commitment
+    does not change the plant or exchange capacity contributions: offline units still count.
+    Storage continues to contribute derated net output flow.
 
     .. math::
         :label: reserve_margin_dynamic

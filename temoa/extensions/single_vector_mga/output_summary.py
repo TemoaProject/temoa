@@ -57,7 +57,7 @@ def summarize(config: TemoaConfig, orig_cost: float, option_cost: float) -> None
     print(
         '\nFor complete results, see the database records for:\n'
         f'\t{scenarios[0]}: Original\n'
-        f'\t{scenarios[1]}: Option (relaxed cost)\n'
+        f'\t{scenarios[1]}: Option (relaxed choice score)\n'
     )
     conn.close()
 
