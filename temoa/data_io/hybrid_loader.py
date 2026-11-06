@@ -293,6 +293,11 @@ class HybridLoader:
             ).fetchone()
             if p0_result:
                 data[model.myopic_discounting_year.name] = {None: int(p0_result[0])}
+            pe_result = cur.execute(
+                "SELECT max(period) FROM time_period WHERE flag == 'f'"
+            ).fetchone()
+            if pe_result:
+                data[model.myopic_horizon_end.name] = {None: int(pe_result[0])}
 
         # Create derived index sets for parameters now that all base data is loaded
         set_data = self.load_param_idx_sets(data=data)
