@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from pyomo.environ import quicksum, value
 
 import temoa.components.geography as geography
 import temoa.components.technology as technology
 from temoa.components import capacity
-from temoa.components.costs import loan_cost, loan_cost_survival_curve
+from temoa.components.costs import add_period_cost, loan_cost, loan_cost_survival_curve
 
 if TYPE_CHECKING:
     from pyomo.core import Expression
-    from pyomo.core.base.objective import ObjectiveData
     from pyomo.core.base.var import VarData
 
     from temoa.extensions.economies_of_scale.core.model import EOSModel
@@ -113,6 +112,7 @@ def initialize_cost_invest_eos(model: EOSModel) -> None:
     life = model.lifetime_process
     loan_life = model.loan_lifetime_process
     loan_rate = model.loan_rate
+    hurdle_rate = model.hurdle_rate
 
     # Get a viable built process for each EOS invest period, for discounting
     # parameters.  Check that all r, t combos in the cluster share the same
@@ -130,16 +130,19 @@ def initialize_cost_invest_eos(model: EOSModel) -> None:
                     abs(life[r0, t0, p] - life[_r, _t, p]) >= 0.001,
                     abs(loan_life[r0, t0, p] - loan_life[_r, _t, p]) >= 0.001,
                     abs(loan_rate[r0, t0, p] - loan_rate[_r, _t, p]) >= 0.001,
+                    hurdle_rate[r0, t0, p] != hurdle_rate[_r, _t, p],
                 )
             ):
                 msg = (
                     'Processes assigned to the same cost_invest_eos cost curve must all have '
-                    'the same process lifetime, loan lifetime, and loan rate. These two '
-                    'processes do not match:\n '
+                    'the same process lifetime, loan lifetime, loan rate, and hurdle rate. '
+                    'These two processes do not match:\n '
                     f'({r0}, {t0}, {p}) : lifetime = {life[r0, t0, p]}, '
-                    f'loan life = {loan_life[r0, t0, p]}, loan rate = {loan_rate[r0, t0, p]}\n'
+                    f'loan life = {loan_life[r0, t0, p]}, loan rate = {loan_rate[r0, t0, p]}, '
+                    f'hurdle rate = {hurdle_rate[r0, t0, p]}\n'
                     f'({_r}, {_t}, {p}) : lifetime = {life[_r, _t, p]}, '
-                    f'loan life = {loan_life[_r, _t, p]}, loan rate = {loan_rate[_r, _t, p]}'
+                    f'loan life = {loan_life[_r, _t, p]}, loan rate = {loan_rate[_r, _t, p]}, '
+                    f'hurdle rate = {hurdle_rate[_r, _t, p]}'
                 )
                 logger.error(msg)
                 raise ValueError(msg)
@@ -433,12 +436,10 @@ def total_cost(model: EOSModel) -> None:
     if value(model.myopic_discounting_year) != 0:
         p_0 = value(model.myopic_discounting_year)
 
-    total_cost = 0.0
-
     for _r, _p, _t in model.cost_invest_eos_period_rpt:
         _r0, _t0 = model.cost_invest_eos_reference_process[_r, _p, _t]
         if model.is_survival_curve_process[_r0, _t0, _p]:
-            total_cost += loan_cost_survival_curve(
+            real_cost = loan_cost_survival_curve(
                 model,
                 _r0,
                 _t0,
@@ -452,7 +453,7 @@ def total_cost(model: EOSModel) -> None:
                 global_discount_rate,
             )
         else:
-            total_cost += loan_cost(
+            real_cost = loan_cost(
                 1,
                 period_cost(model, _r, _p, _t),
                 value(model.loan_annualize[_r0, _t0, _p]),
@@ -464,5 +465,7 @@ def total_cost(model: EOSModel) -> None:
                 vintage=_p,
             )
 
-    # Append to total cost objective
-    model.total_cost.set_value(cast('ObjectiveData', model.total_cost).expr + total_cost)
+        weight = value(model.investment_choice_annualize[_r0, _t0, _p]) / value(
+            model.loan_annualize[_r0, _t0, _p]
+        )
+        add_period_cost(model, _p, real_cost, real_cost * weight)

@@ -17,6 +17,7 @@ from pyomo.environ import (
     AbstractModel,
     BuildAction,
     Constraint,
+    Expression,
     Integers,
     NonNegativeReals,
     Objective,
@@ -587,8 +588,12 @@ class TemoaModel(AbstractModel):
         self.loan_rate = Param(
             self.cost_invest_rtv, domain=NonNegativeReals, default=costs.get_default_loan_rate
         )
+        self.hurdle_rate = Param(self.cost_invest_rtv, domain=NonNegativeReals, default=0)
         self.loan_annualize = Param(
             self.cost_invest_rtv, initialize=costs.param_loan_annualize_rule
+        )
+        self.investment_choice_annualize = Param(
+            self.cost_invest_rtv, initialize=costs.param_investment_choice_annualize_rule
         )
 
         self.cost_emission_rpe = Set(
@@ -835,9 +840,12 @@ class TemoaModel(AbstractModel):
 
         ################################################
         #              Objective Function              #
-        #             (minimize total cost)            #
+        #            (minimize choice score)           #
         ################################################
 
+        self.period_real_cost = Expression(self.time_optimize, rule=costs.real_period_cost_rule)
+        self.period_choice_score = Expression(self.time_optimize, rule=costs.period_cost_rule)
+        self.real_cost = Expression(rule=costs.real_cost_rule)
         self.total_cost = Objective(rule=costs.total_cost_rule, sense=minimize)
 
         ################################################

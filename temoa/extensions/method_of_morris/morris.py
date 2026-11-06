@@ -54,7 +54,10 @@ def evaluate(
 
     with contextlib.closing(sqlite3.connect(db_file)) as con:
         cur = con.cursor()
-        cur.execute('SELECT * FROM output_objective')
+        cur.execute(
+            "SELECT * FROM output_objective WHERE scenario = ? AND objective_name = 'total_cost'",
+            (config.scenario,),
+        )
         output_query = cur.fetchall()
         for row in output_query:
             y_of = row[-1]
@@ -221,7 +224,7 @@ with contextlib.closing(sqlite3.connect(str(db_file))) as con:
         with open('MMResults.csv', 'w') as f:
             writer = csv.writer(f, delimiter=',')
             writer.writerow(unique_group_names)
-            writer.writerow('Objective Function')
+            writer.writerow('Real System Cost')
             writer.writerow(line1)
             writer.writerow(line2)
             writer.writerow('Cumulative CO2 Emissions')

@@ -641,6 +641,18 @@ The interest rate used for loans supporting investment costs.  The default
 loan rate is accessible in the metadata_real table in the database.
 
 
+hurdle_rate
+~~~~~~~~~~~
+
+:math:`{HR}_{r \in R, t \in T, v \in V}`
+
+A nonnegative additive rate applied only to new investment in the choice objective.
+It defaults to zero and has the same index and optional table layout as
+:code:`loan_rate`. Investment is annualized at :code:`loan_rate + hurdle_rate`
+for choices, while reported costs use :code:`loan_rate`. See :doc:`hurdle_rates`
+for the formula, output row meanings, and shadow-price interpretation.
+
+
 default_loan_rate
 ~~~~~~~~~~~~~~~~~
 

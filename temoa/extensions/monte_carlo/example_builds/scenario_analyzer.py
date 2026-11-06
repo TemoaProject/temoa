@@ -25,7 +25,8 @@ with Connection(db_resource) as conn:
     cur = conn.cursor()
     # Check if results exist before attempting to plot
     obj_values = cur.execute(
-        'SELECT total_system_cost FROM output_objective WHERE scenario LIKE ?',
+        'SELECT total_system_cost FROM output_objective WHERE scenario LIKE ? '
+        "AND objective_name = 'total_cost'",
         (f'{scenario_name}-%',),
     ).fetchall()
 
