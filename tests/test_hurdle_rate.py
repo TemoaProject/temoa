@@ -79,6 +79,7 @@ def example_config(tmp_path: Path, hurdle: float, *, myopic: bool = False) -> Te
         time_sequencing='seasonal_timeslices',
         reserve_margin='static',
         silent=True,
+        save_duals=True,
         myopic={'view_depth': 2, 'step_size': 1, 'evolving': False} if myopic else None,
     )
 
