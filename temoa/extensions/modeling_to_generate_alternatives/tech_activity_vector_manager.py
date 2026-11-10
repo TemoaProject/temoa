@@ -283,7 +283,7 @@ class TechActivityVectorManager(VectorManager):
                 ] * reps
                 coeffs_list.extend(element)
         coeffs = np.array(coeffs_list)
-        coeffs /= np.sum(coeffs)  # normalize
+        coeffs /= -np.sum(np.abs(coeffs))  # normalize
 
         obj_vars = self.var_vector(model)
 
