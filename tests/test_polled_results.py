@@ -14,7 +14,11 @@ from temoa._internal.table_writer import TableWriter, check_flow_balance, dual_v
 from temoa.core.config import TemoaConfig
 from temoa.core.modes import TemoaMode
 from temoa.data_io.hybrid_loader import HybridLoader
-from temoa.extensions.modeling_to_generate_alternatives.worker import WORKER_CONTEXT, Worker
+from temoa.extensions.modeling_to_generate_alternatives.worker import (
+    SOLVE_FAILED,
+    WORKER_CONTEXT,
+    Worker,
+)
 from temoa.types.core_types import (
     Commodity,
     Period,
@@ -222,4 +226,4 @@ def test_worker_extraction_in_process(tmp_path: Path) -> None:
     assert len(models) == 1
     assert hasattr(models[0], 'total_cost')
 
-    assert _run_worker(config, _failing_extractor) == []
+    assert _run_worker(config, _failing_extractor) == [SOLVE_FAILED]

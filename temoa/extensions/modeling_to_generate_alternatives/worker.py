@@ -27,6 +27,9 @@ verbose = False  # for T/S or monitoring...
 WORKER_CONTEXT = multiprocessing.get_context('spawn')
 
 
+SOLVE_FAILED = 'SOLVE_FAILED'
+
+
 class Worker(SpawnProcess):
     worker_idx: int = 1
     worker_number: int
@@ -149,6 +152,7 @@ class Worker(SpawnProcess):
             toc = datetime.now()
 
             # guard against a bad "res" object...
+            good_solve = False
             try:
                 good_solve = check_optimal_termination(solve_res)
                 if good_solve:
@@ -172,6 +176,8 @@ class Worker(SpawnProcess):
                         )
             except AttributeError:
                 pass
+            if not good_solve:
+                self.results_queue.put(SOLVE_FAILED)
 
     def extract(self, model: TemoaModel, logger: logging.Logger) -> Any:
         """The solved model, or the results its extractor takes from it"""
@@ -186,4 +192,4 @@ class Worker(SpawnProcess):
                 model.name,
                 e,
             )
-            return None
+            return SOLVE_FAILED

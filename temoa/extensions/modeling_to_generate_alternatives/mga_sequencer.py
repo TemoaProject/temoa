@@ -37,7 +37,11 @@ from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
-from temoa.extensions.modeling_to_generate_alternatives.worker import WORKER_CONTEXT, Worker
+from temoa.extensions.modeling_to_generate_alternatives.worker import (
+    SOLVE_FAILED,
+    WORKER_CONTEXT,
+    Worker,
+)
 from temoa.model_checking.pricing_check import price_checker
 
 logger = getLogger(__name__)
@@ -61,6 +65,7 @@ class MgaSequencer:
     time_limit_hrs: float
     cost_epsilon: float
     solve_count: int
+    alternatives_recorded: int
     seen_instance_indices: set[int]
     orig_label: str
     writer: TableWriter
@@ -132,6 +137,8 @@ class MgaSequencer:
         self.num_workers = int(cast('str | int', all_options.get('num_workers', 1)))
         logger.info('MGA workers are set to %s', self.num_workers)
         self.iteration_limit = int(cast('str | int', mga_inputs.get('iteration_limit', 20)))
+        if self.iteration_limit < 0:
+            raise ValueError('MGA iteration_limit must be non-negative')
         logger.info('Set MGA iteration limit to: %d', self.iteration_limit)
         self.time_limit_hrs = float(cast('str | float', mga_inputs.get('time_limit_hrs', 12)))
         logger.info('Set MGA time limit hours to: %0.1f', self.time_limit_hrs)
@@ -140,6 +147,7 @@ class MgaSequencer:
 
         # internal records
         self.solve_count = 0
+        self.alternatives_recorded = 0
         self.seen_instance_indices = set()
         self.orig_label = self.config.scenario
 
@@ -257,15 +265,22 @@ class MgaSequencer:
 
         # 6.  Start the iterative solve process and let the manager run the show
         instance_generator = vector_manager.model_generator()
-        instance = next(instance_generator)
+        outstanding = 0
+        next_instance: TemoaModel | None = None
+        if self.iteration_limit == 0:
+            self.internal_stop = True
         while not vector_manager.expired and not self.internal_stop:
-            try:
-                work_queue.put(instance, block=False)  # put a log on the fire, if room
-                logger.info('Putting an instance in the work queue')
-                instance = next(instance_generator)
-            except queue.Full:
-                # print('work queue is full')
-                pass
+            if self.alternatives_recorded + outstanding < self.iteration_limit:
+                if next_instance is None:
+                    next_instance = next(instance_generator)
+                try:
+                    work_queue.put(next_instance, block=False)  # put a log on the fire, if room
+                    logger.info('Putting an instance in the work queue')
+                    outstanding += 1
+                    next_instance = None
+                except queue.Full:
+                    # print('work queue is full')
+                    pass
             # see if there is a result ready to pick up, if not, pass
             try:
                 next_result = result_queue.get_nowait()
@@ -273,13 +288,9 @@ class MgaSequencer:
                 next_result = None
                 # print('no result')
             if next_result is not None:
-                vector_manager.process_results(model=next_result)
-                self.process_solve_results(next_result)
-                logger.info('Solve count: %d', self.solve_count)
-                self.solve_count += 1
-                if self.verbose or not self.config.silent:
-                    print(f'MGA Solve count: {self.solve_count}')
-                if self.solve_count >= self.iteration_limit:
+                outstanding -= 1
+                self.handle_worker_result(next_result, vector_manager)
+                if self.alternatives_recorded >= self.iteration_limit:
                     logger.info('Starting shutdown process based on MGA iteration limit')
                     self.internal_stop = True
             # pull anything from the logging queue and log it...
@@ -317,12 +328,7 @@ class MgaSequencer:
                 next_result = None
             if next_result is not None and next_result != 'COYOTE':
                 logger.debug('bagged a result post-shutdown')
-                vector_manager.process_results(model=next_result)
-                self.process_solve_results(next_result)
-                logger.info('Solve count: %d', self.solve_count)
-                self.solve_count += 1
-                if self.verbose or not self.config.silent:
-                    print(f'MGA Solve count: {self.solve_count}')
+                self.handle_worker_result(next_result, vector_manager)
             while True:
                 try:
                     record = log_queue.get_nowait()
@@ -332,6 +338,12 @@ class MgaSequencer:
                     break
             if empty == num_workers:
                 break
+
+        logger.info(
+            'MGA recorded %d alternative solutions (iteration limit: %d)',
+            self.alternatives_recorded,
+            self.iteration_limit,
+        )
 
         for proc_join in workers:
             proc_join.join()
@@ -369,6 +381,21 @@ class MgaSequencer:
             status == pyo.TerminationCondition.optimal
             or str(status) == 'convergenceCriteriaSatisfied'
         )
+
+    def handle_worker_result(self, result: TemoaModel | str, vector_manager: VectorManager) -> None:
+        if isinstance(result, str):
+            if result == SOLVE_FAILED:
+                logger.warning('A worker reported a failed solve.  No results recorded for it.')
+            else:
+                logger.error('Unrecognized signal in the MGA results queue: %s', result)
+            return
+        vector_manager.process_results(model=result)
+        self.process_solve_results(result)
+        self.alternatives_recorded += 1
+        self.solve_count += 1
+        logger.info('Solve count: %d', self.solve_count)
+        if self.verbose or not self.config.silent:
+            print(f'MGA Solve count: {self.solve_count}')
 
     def process_solve_results(self, instance: TemoaModel) -> None:
         """write the results as required"""

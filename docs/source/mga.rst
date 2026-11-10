@@ -28,7 +28,7 @@ configuration TOML file and provide an ``[MGA]`` section:
 
    [MGA]
    cost_epsilon = 0.05        # Relax cost by 5%
-   iteration_limit = 20       # Maximum number of MGA iterations
+   iteration_limit = 20       # Number of alternative solutions to generate
    time_limit_hrs = 12        # Stop after 12 hours
    axis = "TECH_CATEGORY_ACTIVITY"
    weighting = "HULL_EXPANSION"
@@ -38,7 +38,9 @@ Options
 
 * **cost_epsilon**: The fraction by which the optimal cost is allowed to increase
   (e.g., ``0.05`` for 5%).
-* **iteration_limit**: The maximum number of alternative solutions to generate.
+* **iteration_limit**: The number of alternative solutions to generate, in addition to
+  the baseline solve. The run produces exactly this many alternatives, unless it is
+  stopped earlier by ``time_limit_hrs``.
 * **time_limit_hrs**: The maximum wall-clock time for the entire MGA run.
 * **axis**: The dimension along which to optimize. Supported values:
     * ``TECH_CAPACITY``
