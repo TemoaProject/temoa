@@ -138,3 +138,35 @@ def test_annual_flex_tech_keeps_slice_rows(
     assert sum(flow for key, flow in per_slice.items() if key[3] == flex_tech) > 0, (
         f'{flex_tech} must run for this test to mean anything'
     )
+
+
+def test_database_made_before_the_yearly_flow_in_table(tmp_path: Path) -> None:
+    """A database whose schema predates output_flow_in_summary, and the units column of
+    output_flow_out_summary, gets both before the yearly flows are written."""
+    config = TemoaConfig.build_config(
+        config_file=Path(__file__).parent / 'testing_configs' / 'config_materials.toml',
+        output_path=tmp_path,
+        silent=True,
+    )
+    db = tmp_path / 'older_schema.sqlite'
+    shutil.copyfile(config.input_database, db)
+    with contextlib.closing(sqlite3.connect(db)) as con:
+        con.executescript(
+            'DROP TABLE output_flow_in_summary; DROP TABLE output_flow_out_summary; '
+            'CREATE TABLE output_flow_out_summary (scenario TEXT, region TEXT, sector TEXT, '
+            'period INTEGER, input_comm TEXT, tech TEXT, vintage INTEGER, output_comm TEXT, '
+            'flow REAL, PRIMARY KEY (scenario, region, period, input_comm, tech, vintage, '
+            'output_comm));'
+        )
+    config.input_database = db
+    config.output_database = db
+    config.scenario = SCENARIO
+    TemoaSequencer(config=config).start()
+    with contextlib.closing(sqlite3.connect(db)) as con:
+        for table in ('output_flow_in_summary', 'output_flow_out_summary'):
+            columns = {row[1] for row in con.execute(f'PRAGMA table_info({table})')}
+            assert 'units' in columns, f'{table} has no units column'
+            rows = con.execute(
+                f'SELECT count(*) FROM {table} WHERE scenario = ?', (SCENARIO,)
+            ).fetchone()[0]
+            assert rows > 0, f'{table} is empty'

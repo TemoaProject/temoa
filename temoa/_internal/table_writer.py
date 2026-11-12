@@ -659,8 +659,12 @@ class TableWriter:
         scenario = self._get_scenario_name(iteration)
         self.flow_register = flow_data
         if not self._summary_flow_tables_made:
-            # databases made before output_flow_in_summary was added to the schema lack it
+            # databases made before output_flow_in_summary was added to the schema lack it, and
+            # their output_flow_out_summary lacks the units column
             self.make_summary_flow_table()
+            if 'units' not in self._get_table_columns('output_flow_out_summary'):
+                self.connection.execute('ALTER TABLE output_flow_out_summary ADD COLUMN units TEXT')
+                self._table_columns_cache.pop('output_flow_out_summary')
             self._summary_flow_tables_made = True
 
         # Aggregate flows (sum across seasons/time of day). Every technology's flows are
