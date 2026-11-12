@@ -240,12 +240,12 @@ class EI(NamedTuple):
 
 
 class FI(NamedTuple):
-    """Flow Index"""
+    """Flow Index. Season and time of day are None for a flow reported once a year."""
 
     r: Region
     p: Period
-    s: Season
-    d: TimeOfDay
+    s: Season | None
+    d: TimeOfDay | None
     i: Commodity | None
     t: Technology
     v: Vintage

@@ -60,6 +60,7 @@ BASIC_OUTPUT_TABLES = [
 ]
 
 OPTIONAL_OUTPUT_TABLES = [
+    'output_flow_in_summary',
     'output_flow_out_summary',
     'output_mc_delta',
     'output_storage_level',
@@ -89,6 +90,7 @@ class TableWriter:
         self.flow_register: dict[FI, dict[FlowType, float]] = {}
         self.emission_register: dict[EI, float] | None = None
         self.con = None
+        self._summary_flow_tables_made = False
 
         # Cache for table columns to avoid repeated PRAGMA calls
         self._table_columns_cache: dict[str, set[str]] = {}
@@ -576,6 +578,9 @@ class TableWriter:
         }
 
         for fi, flows in self.flow_register.items():
+            if fi.s is None:
+                # an annual technology's flow, reported once a year in the yearly tables only
+                continue
             sector = self.tech_sectors.get(fi.t)
 
             for flow_type, val in flows.items():
@@ -611,7 +616,7 @@ class TableWriter:
         for table_name, records in table_data.items():
             self._bulk_insert(table_name, records)
 
-        self.connection.commit()
+        self._insert_summary_flow_results(flow_data=self.flow_register, iteration=iteration)
 
     def _get_flow_units(
         self, flow_type: FlowType, input_comm: str | None, output_comm: str | None
@@ -653,38 +658,49 @@ class TableWriter:
 
         scenario = self._get_scenario_name(iteration)
         self.flow_register = flow_data
+        if not self._summary_flow_tables_made:
+            # databases made before output_flow_in_summary was added to the schema lack it
+            self.make_summary_flow_table()
+            self._summary_flow_tables_made = True
 
-        # Aggregate flows (sum across seasons/time of day)
-        output_flows: defaultdict[
-            tuple[str, Period, str | None, Technology, Vintage, str | None], float
-        ] = defaultdict(float)
+        # Aggregate flows (sum across seasons/time of day). Every technology's flows are
+        # included; an annual technology's flows are reported only here.
+        yearly_tables = {
+            FlowType.OUT: 'output_flow_out_summary',
+            FlowType.IN: 'output_flow_in_summary',
+        }
+        yearly_flows: dict[
+            FlowType,
+            defaultdict[tuple[str, Period, str | None, Technology, Vintage, str | None], float],
+        ] = {flow_type: defaultdict(float) for flow_type in yearly_tables}
 
         for fi, flows in self.flow_register.items():
-            val = flows.get(FlowType.OUT)
-            if val:
-                key = (fi.r, fi.p, fi.i, fi.t, fi.v, fi.o)
-                output_flows[key] += val
+            key = (fi.r, fi.p, fi.i, fi.t, fi.v, fi.o)
+            for flow_type, totals in yearly_flows.items():
+                val = flows.get(flow_type)
+                if val:
+                    totals[key] += val
 
-        records = []
-        for (r, p, i, t, v, o), val in output_flows.items():
-            if abs(val) < self.output_threshold_activity:
-                continue
-            records.append(
-                {
-                    'scenario': scenario,
-                    'region': r,
-                    'sector': self.tech_sectors.get(t),
-                    'period': p,
-                    'input_comm': i,
-                    'tech': t,
-                    'vintage': v,
-                    'output_comm': o,
-                    'flow': val,
-                    'units': None,
-                }
-            )
-
-        self._bulk_insert('output_flow_out_summary', records)
+        for flow_type, table_name in yearly_tables.items():
+            records = []
+            for (r, p, i, t, v, o), val in yearly_flows[flow_type].items():
+                if abs(val) < self.output_threshold_activity:
+                    continue
+                records.append(
+                    {
+                        'scenario': scenario,
+                        'region': r,
+                        'sector': self.tech_sectors.get(t),
+                        'period': p,
+                        'input_comm': i,
+                        'tech': t,
+                        'vintage': v,
+                        'output_comm': o,
+                        'flow': val,
+                        'units': self._get_flow_units(flow_type, i, o),
+                    }
+                )
+            self._bulk_insert(table_name, records)
         self.connection.commit()
 
     def check_flow_balance(self, model: TemoaModel) -> bool:

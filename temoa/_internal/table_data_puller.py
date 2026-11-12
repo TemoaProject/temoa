@@ -186,6 +186,18 @@ def poll_flow_results(model: TemoaModel, epsilon: float = 1e-5) -> dict[FI, dict
         # Make sure this isn't just a non-annual demand tech
         if t not in model.tech_annual:
             continue
+        # An annual technology's flow is reported once a year (season and time of day None),
+        # so it is written to the yearly flow tables only. Annual flex technologies keep their
+        # per-slice flows, because their flex is reported per time slice in output_curtailment.
+        if t not in model.tech_flex:
+            fi = FI(r, p, None, None, i, t, v, o)
+            flow = value(model.v_flow_out_annual[r, p, i, t, v, o])
+            if abs(flow) < epsilon:
+                continue
+            res[fi][FlowType.OUT] = flow
+            res[fi][FlowType.IN] = flow / value(model.efficiency[ritvo(fi)])
+            res[fi][FlowType.LOST] = (1 - value(model.efficiency[ritvo(fi)])) * res[fi][FlowType.IN]
+            continue
         for s in model.time_season:
             for d in model.time_of_day:
                 if o in model.commodity_demand:

@@ -163,10 +163,19 @@ successful run completion.
 - :code:`output_retired_capacity`
 - :code:`output_flow_in`
 - :code:`output_flow_out`
+- :code:`output_flow_in_summary`
 - :code:`output_flow_out_summary`
 - :code:`output_storage_level`
 - :code:`output_emission`
 - :code:`output_cost`
+
+:code:`output_flow_in` and :code:`output_flow_out` hold each flow by time slice.
+:code:`output_flow_in_summary` and :code:`output_flow_out_summary` hold each flow summed
+over the time slices of its period, for every technology. An annual technology has one
+flow per period, so its flows are written only to the two summary tables. Annual flex
+technologies are the exception: their flex is reported by time slice in
+:code:`output_curtailment`, so their flows are also written by time slice. For yearly totals,
+read the summary tables.
 
 Finally, the database tables below do not have a directed mapping to the model
 code.
