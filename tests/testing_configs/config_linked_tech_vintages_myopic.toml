@@ -1,0 +1,16 @@
+scenario = "linked_tech_vintages"
+scenario_mode = "myopic"
+input_database = "tests/testing_outputs/linked_tech_vintages.sqlite"
+output_database = "tests/testing_outputs/linked_tech_vintages.sqlite"
+neos = false
+solver_name = "appsi_highs"
+save_excel = false
+save_duals = false
+save_lp_file = false
+time_sequencing = "seasonal_timeslices"
+days_per_period = 365
+reserve_margin = "static"
+
+[myopic]
+view_depth = 1
+step_size = 1

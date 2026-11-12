@@ -103,6 +103,7 @@ def refresh_databases() -> None:
         ('emissions.sql', 'emissions.sqlite'),
         ('materials.sql', 'materials.sqlite'),
         ('simple_linked_tech.sql', 'simple_linked_tech.sqlite'),
+        ('linked_tech_vintages.sql', 'linked_tech_vintages.sqlite'),
         ('storageville.sql', 'storageville.sqlite'),
         ('storage_charge_rate.sql', 'storage_charge_rate.sqlite'),
         ('test_week.sql', 'test_week.sqlite'),
