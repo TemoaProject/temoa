@@ -49,13 +49,20 @@ def emission_activity_indices(
 def linked_tech_constraint_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage, Commodity]]:
+    """
+    Every active vintage of the primary technology or of its linked technology. A linked
+    vintage can be active without its primary vintage: a primary vintage that was never
+    built is dropped between myopic windows while an unlimited-capacity linked technology
+    is kept, and a historical primary vintage without existing capacity is skipped at
+    loading. Indexing those vintages holds the linked technology's output to zero.
+    """
     return {
         (r, p, s, d, t, v, e)
         for r, t, e in model.linked_techs.sparse_keys()
         for p in model.time_optimize
-        if (r, p, t) in model.process_vintages
-        for v in model.process_vintages[r, p, t]
-        if model.active_activity_rptv and (r, p, t, v) in model.active_activity_rptv
+        for tech in (t, value(model.linked_techs[r, t, e]))
+        for v in model.process_vintages.get((r, p, tech), ())
+        if (r, p, tech, v) in model.active_activity_rptv
         for s in model.time_season
         for d in model.time_of_day
     }
@@ -102,9 +109,14 @@ def linked_emissions_tech_constraint(
     in the :code:`linked_techs` table. It is implicit that
     the primary region corresponds to the linked technology as well. The lifetimes
     of the primary and linked technologies should be specified and identical.
+
+    Where a linked technology's vintage is active but the primary's same vintage is
+    not, the primary flow is zero, so the linked technology cannot produce.
     """
 
-    if t in model.tech_annual:
+    if (r, p, t, v) not in model.active_activity_rptv:
+        primary_flow = 0
+    elif t in model.tech_annual:
         primary_flow = quicksum(
             (
                 value(model.demand_specific_distribution[r, p, s, d, S_o])

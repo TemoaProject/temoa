@@ -65,7 +65,13 @@ def validate_linked_tech(model: TemoaModel) -> bool:
 
     base_idx = model.linked_emissions_tech_constraint_rpsdtve
 
-    drivers = {(r, t, v, e) for r, p, s, d, t, v, e in base_idx}
+    # the set also holds driven vintages whose driver vintage is absent; those have no driver
+    # lifetime to compare
+    drivers = {
+        (r, t, v, e)
+        for r, p, s, d, t, v, e in base_idx
+        if (r, p, t, v) in model.active_activity_rptv
+    }
     for r, t_driver, v, e in drivers:
         # get the linked tech of same region, emission
         t_driven = model.linked_techs[r, t_driver, e]
