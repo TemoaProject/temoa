@@ -175,7 +175,35 @@ def test_two_cohorts(system_test_run: Run) -> None:
             a,
             [(2025, 2025, op, 0.5), (2030, 2025, op, 0.25)],
             [
-                ('UPDATE demand SET demand=CASE period WHEN 2025 THEN 1 ELSE 0.5 END', ()),
+                (
+                    'UPDATE demand SET demand=CASE period WHEN 2025 THEN 1.5 ELSE 0.75 END',
+                    (),
+                ),
+                # A cheaper supplier can meet all demand if the utilization bound is lost.
+                (
+                    'INSERT INTO technology (tech,flag,sector,annual) '
+                    "VALUES ('backup','p','transport',?)",
+                    (a,),
+                ),
+                (
+                    'INSERT INTO efficiency '
+                    '(region,input_comm,tech,vintage,output_comm,efficiency) '
+                    "VALUES ('R1','source','backup',2025,'service',1)",
+                    (),
+                ),
+                (
+                    "INSERT INTO capacity_to_activity (region,tech,c2a) VALUES ('R1','backup',1)",
+                    (),
+                ),
+                (
+                    "INSERT INTO lifetime_tech (region,tech,lifetime) VALUES ('R1','backup',10)",
+                    (),
+                ),
+                (
+                    'INSERT INTO cost_invest (region,tech,vintage,cost) '
+                    "VALUES ('R1','backup',2025,0.01)",
+                    (),
+                ),
                 (
                     'INSERT INTO limit_new_capacity '
                     '(region, tech_or_group, vintage, operator, new_cap) '
@@ -195,7 +223,7 @@ def test_two_cohorts(system_test_run: Run) -> None:
     indirect=True,
 )
 def test_lower_bound_and_equality(system_test_run: Run) -> None:
-    """Apply lower and equality factors to each operating period."""
+    """Force period-specific output despite a cheaper alternative supplier."""
     _, results, model, _ = system_test_run
     assert model is not None and check_optimal_termination(results)
     assert _output(model, 'R1', 2025, 'vehicle', 2025, 'service') == pytest.approx(
