@@ -653,7 +653,7 @@ class TemoaModel(AbstractModel):
             initialize=limits.limit_seasonal_capacity_factor_constraint_indices,
         )
 
-        self.limit_annual_capacity_factor_index = Set(
+        self.limit_annual_capacity_factor_rptvo = Set(
             within=self.regional_global_indices
             * self.time_optimize
             * self.tech_or_group
@@ -662,7 +662,7 @@ class TemoaModel(AbstractModel):
             * self.operator
         )
         self.limit_annual_capacity_factor = Param(
-            self.limit_annual_capacity_factor_index, validate=validate_0to1
+            self.limit_annual_capacity_factor_rptvo, validate=validate_0to1
         )
 
         self.limit_emission_constraint_rpe = Set(

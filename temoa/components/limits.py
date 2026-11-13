@@ -146,9 +146,10 @@ def limit_seasonal_capacity_factor_constraint_indices(
 def limit_annual_capacity_factor_indices(
     model: TemoaModel,
 ) -> set[tuple[Region, Period, Technology, Vintage, Commodity, str]]:
+    """Select annual factor keys with an active process and matching output."""
     return {
         (r, p, t, v, o, op)
-        for r, p, t, v, o, op in model.limit_annual_capacity_factor_index
+        for r, p, t, v, o, op in model.limit_annual_capacity_factor_rptvo
         for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
         if o in model.process_outputs.get((_r, p, _t, v), [])
     }
