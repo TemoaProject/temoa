@@ -273,9 +273,12 @@ def test_time_sequence_tests(
     _, _, _, sequencer = system_test_run
 
     objectives = {
-        'consecutive_days': 1445.875735,
-        'representative_periods': 1467.912766,
-        'seasonal_timeslices': 1467.912766,
+        # reduced from 1445.875735 after removing the storage throughput constraint
+        'consecutive_days': 1445.117941,
+        # reduced from 1467.912766 after removing the storage throughput constraint
+        'representative_periods': 1467.779360,
+        # reduced from 1467.912766 after removing the storage throughput constraint
+        'seasonal_timeslices': 1467.779360,
     }
     time_sequencing = str(sequencer.config.time_sequencing)
     expected_obj = objectives[time_sequencing]

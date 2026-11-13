@@ -7,8 +7,8 @@ including:
 -  Defining the state variables for storage levels (both daily and seasonal).
 -  Enforcing the conservation of energy from one time slice to the next.
 -  Constraining the storage level to be within the device's energy capacity.
--  Constraining the charge, discharge, and throughput rates to be within the
-    device's power capacity.
+-  Constraining the charge and discharge rates to be within the device's power
+    capacity.
 """
 
 from __future__ import annotations
@@ -484,46 +484,6 @@ def storage_discharge_rate_constraint(
 
     # Energy discharge cannot exceed the capacity of the storage unit
     return slice_discharge <= get_available_output(model, r, p, s, d, t, v)
-
-
-def storage_throughput_constraint(
-    model: TemoaModel, r: Region, p: Period, s: Season, d: TimeOfDay, t: Technology, v: Vintage
-) -> ExprLike:
-    r"""
-
-    It is not enough to only limit the charge and discharge rate separately. We also
-    need to ensure that the maximum throughput (charge + discharge) does not exceed
-    the capacity (typically GW) of the storage unit. As in
-    :code:`storage_charge_rate_constraint`, charging is counted as the energy drawn
-    from the input commodity, before the storage efficiency is applied.
-
-    .. math::
-       :label: StorageThroughput
-
-          \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-          +
-          \sum_{I, O} \textbf{FIS}_{r, p, s, d, i, t, v, o}
-          \le
-          \textbf{CAP}_{r,p,t,v} \cdot C2A_{r,t} \cdot SEG_{s,d}
-
-          \\
-          \forall \{r, p, s, d, t, v\} \in \Theta_{\text{StorageThroughput}}
-    """
-    discharge = quicksum(
-        model.v_flow_out[r, p, s, d, S_i, t, v, S_o]
-        for S_o in model.process_outputs[r, p, t, v]
-        for S_i in model.process_inputs_by_output[r, p, t, v, S_o]
-    )
-
-    # Energy drawn from the input commodity, as in storage_charge_rate_constraint
-    charge = quicksum(
-        model.v_flow_in[r, p, s, d, S_i, t, v, S_o]
-        for S_i in model.process_inputs[r, p, t, v]
-        for S_o in model.process_outputs_by_input[r, p, t, v, S_i]
-    )
-
-    throughput = charge + discharge
-    return throughput <= get_available_output(model, r, p, s, d, t, v)
 
 
 # A limit but more cohesive here than in limits.py
