@@ -161,6 +161,8 @@ class TechActivityVectorManager(VectorManager):
             self.variable_index_mapping[tech][self.base_model.v_flow_out.name].append(idx)
         for idx_annual in self.base_model.active_flow_rpitvo or set():
             tech = idx_annual[3]
+            if tech not in self.base_model.tech_annual:
+                continue
             self.technology_size[tech] += 1
             self.variable_index_mapping[tech][self.base_model.v_flow_out_annual.name].append(
                 idx_annual
