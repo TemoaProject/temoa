@@ -88,7 +88,7 @@ def make_excel(ifile: str | None, ofile: Path | None, scenario: set[str]) -> Non
 
     query_activity = """
         SELECT region, tech, sector, period, SUM(flow) as vflow_out
-        FROM output_flow_out WHERE scenario = ?
+        FROM output_flow_out_summary WHERE scenario = ?
         GROUP BY region, tech, sector, period
     """
     df_activity = pd.read_sql_query(query_activity, con, params=(scenario_name,))

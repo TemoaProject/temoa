@@ -137,7 +137,8 @@ def test_flows(solved_connection: tuple[sqlite3.Connection, str, str, int, float
     con, name, tech, period, flow_target, _mode = solved_connection
     cursor = con.cursor()
     row = cursor.execute(
-        'SELECT SUM(flow) FROM main.output_flow_out WHERE tech = ? AND period = ? AND scenario = ?',
+        'SELECT SUM(flow) FROM main.output_flow_out_summary '
+        'WHERE tech = ? AND period = ? AND scenario = ?',
         (tech, period, name),
     ).fetchone()
     # If the query returns no rows, row will be None.

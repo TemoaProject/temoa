@@ -147,7 +147,7 @@ The results are spread across several tables, consistent with standard Temoa run
 
 *   **output_objective**: Stores the total system cost and MGA optimization objective for each iteration.
 *   **output_net_capacity**: Stores the installed capacity for each technology, period, and iteration.
-*   **output_flow_out** / **output_flow_out_summary**: Stores energy flows between technologies.
+*   **output_flow_out_summary** / **output_flow_in_summary**: Stores energy flows between technologies, summed over the year, for each iteration; the baseline solve also fills **output_flow_out** and **output_flow_in** by time slice.
 *   **output_emission**: Stores emission results per commodity and technology.
 *   **output_cost**: Stores detailed cost breakdowns (investment, fixed, variable).
 
