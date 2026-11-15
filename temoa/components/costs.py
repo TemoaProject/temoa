@@ -783,6 +783,18 @@ def param_investment_choice_annualize_rule(
 # ============================================================================
 
 
+def loan_payment_end(model: TemoaModel) -> Period:
+    """
+    The year in which reported loan payments stop: the end of the study horizon.
+    In a myopic run each window holds only its own periods, so time_future.last() is the
+    end of the window, and payments after it would not be reported by any later window.
+    The end of the full study horizon is then taken from myopic_horizon_end.
+    """
+    if value(model.myopic_horizon_end) != 0:
+        return cast('Period', int(value(model.myopic_horizon_end)))
+    return cast('Period', int(model.time_future.last()))
+
+
 def poll_loan_costs(
     loan_life: float,
     loan_annualize: float,
