@@ -40,24 +40,6 @@ def hull_point(model: TemoaModel, terms: Sequence[Sequence[tuple[str, Any, float
     return point
 
 
-class DefaultItem:
-    """A dummy class just to hold items that will have a reasonable __str__ and __repr__"""
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return self.name
-
-
-# just a convenience to have something other than a None item for placeholder
-# for use in categories listings for categories that are empty in the model
-default_cat = DefaultItem('DEFAULT')
-
-
 class TechActivityVectorManager(VectorManager):
     completed_solves: int
     conn: sqlite3.Connection
@@ -66,7 +48,7 @@ class TechActivityVectorManager(VectorManager):
     cost_relaxation: float
     config: TemoaConfig
     generation_index: int
-    category_mapping: dict[str | DefaultItem, list[str]]
+    category_mapping: dict[str, list[str]]
     technology_size: dict[str, int]
     variable_index_mapping: dict[str, dict[str, list[tuple[Any, ...]]]]
     coefficient_vector_queue: Queue[np.ndarray]
@@ -143,18 +125,29 @@ class TechActivityVectorManager(VectorManager):
         logger.debug('Initializing Technology Vectors data elements')
         raw = self.conn.execute('SELECT category, tech FROM Technology').fetchall()
         self.category_mapping = defaultdict(list)
+        uncategorized = 0
         for row in raw:
             cat, tech = row
-            if cat in {None, ''}:
-                cat = default_cat
             if tech in techs_implemented:
-                self.category_mapping[cat].append(tech)
                 self.variable_index_mapping[tech] = defaultdict(list)
+                if cat in {None, ''}:
+                    uncategorized += 1
+                else:
+                    self.category_mapping[cat].append(tech)
+        if uncategorized:
+            logger.info(
+                '%d technologies without a category are not part of the MGA axis', uncategorized
+            )
 
         for cat in self.category_mapping:
             logger.debug('Category %s members: %d', cat, len(self.category_mapping[cat]))
 
         # now pull the flow variables and map them
+        self.map_variables()
+        logger.debug('Catalogued %d Technology Variables', sum(self.technology_size.values()))
+        self.drop_empty_categories()
+
+    def map_variables(self) -> None:
         for idx in self.base_model.active_flow_rpsditvo or set():
             tech = idx[5]
             self.technology_size[tech] += 1
@@ -167,7 +160,17 @@ class TechActivityVectorManager(VectorManager):
             self.variable_index_mapping[tech][self.base_model.v_flow_out_annual.name].append(
                 idx_annual
             )
-        logger.debug('Catalogued %d Technology Variables', sum(self.technology_size.values()))
+
+    def drop_empty_categories(self) -> None:
+        for cat in list(self.category_mapping):
+            if sum(self.technology_size[tech] for tech in self.category_mapping[cat]) == 0:
+                logger.warning('Category %s has no variables for the MGA axis and is excluded', cat)
+                del self.category_mapping[cat]
+        if len(self.category_mapping) < 2:
+            raise ValueError(
+                'MGA needs at least 2 technology categories with variables for the selected axis, '
+                f'found: {[str(cat) for cat in self.category_mapping]}'
+            )
 
     @property
     def expired(self) -> bool:
@@ -263,7 +266,7 @@ class TechActivityVectorManager(VectorManager):
     def groups(self) -> Iterable[Any]:
         return self.category_mapping.keys()
 
-    def group_members(self, group: str | DefaultItem) -> list[str]:
+    def group_members(self, group: str) -> list[str]:
         return self.category_mapping.get(group, [])
 
     def _make_basis_objective_vector(self) -> np.ndarray | None:
@@ -317,14 +320,19 @@ class TechActivityVectorManager(VectorManager):
         res = []
         for cat in self.category_mapping:
             for tech in self.category_mapping[cat]:
-                for var_name in self.variable_index_mapping[tech]:
-                    var = model.find_component(var_name)
-                    if not isinstance(var, Var):
-                        raise RuntimeError(
-                            'Failed to retrieve a named variable from the model: %s', var_name
-                        )
-                    for idx in self.variable_index_mapping[tech][var_name]:
-                        res.append(var[idx])
+                res.extend(self.tech_variables(model, tech))
+        return res
+
+    def tech_variables(self, model: TemoaModel, tech: str) -> list[Any]:
+        res = []
+        for var_name in self.variable_index_mapping[tech]:
+            var = model.find_component(var_name)
+            if not isinstance(var, Var):
+                raise RuntimeError(
+                    'Failed to retrieve a named variable from the model: %s', var_name
+                )
+            for idx in self.variable_index_mapping[tech][var_name]:
+                res.append(var[idx])
         return res
 
     def regenerate_hull(self) -> None:
@@ -370,8 +378,6 @@ class TechActivityVectorManager(VectorManager):
         q: Queue[np.ndarray] = Queue()
         for selected_cat in category_mapping:
             res = []
-            if selected_cat == default_cat:
-                continue
             for cat in category_mapping:
                 num_marks = sum(technology_size[tech] for tech in category_mapping[cat])
                 if cat == selected_cat:

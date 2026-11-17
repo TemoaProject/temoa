@@ -7,8 +7,8 @@ for MGA.
 ### Design Comments
 An MGA process is orchestrated by the MGA Sequencer, but fundamentally employs 2 pieces of
 functionality:  A `Vector Manager` and a `Weighting` plan.  It is up to the designer to decide
-which pairings are supported.  Currently, only `Tech Activity` is employed as a manager and `Hull Expansion`
-is employed as the weighting plan to support it.
+which pairings are supported.  Currently, the `Tech Activity`, `Tech Capacity` and `Tech Emission` managers are employed, with
+`Hull Expansion` as the weighting plan to support them.
 - `Vector Manager`:  Responsible for producing new models to be solved and internally managing
 the weighting of variable vectors for production of alternative objective functions.  New Vector
 Managers should subclass `vector_manager.py` and implement all abstract methods.  The Sequencer is

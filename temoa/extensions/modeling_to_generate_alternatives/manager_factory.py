@@ -6,6 +6,12 @@ from temoa.extensions.modeling_to_generate_alternatives.mga_constants import Mga
 from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_manager import (
     TechActivityVectorManager,
 )
+from temoa.extensions.modeling_to_generate_alternatives.tech_capacity_vector_manager import (
+    TechCapacityVectorManager,
+)
+from temoa.extensions.modeling_to_generate_alternatives.tech_emission_vector_manager import (
+    TechEmissionVectorManager,
+)
 
 if TYPE_CHECKING:
     import sqlite3
@@ -21,16 +27,18 @@ def get_manager(
     con: sqlite3.Connection | None,
     **kwargs: Any,
 ) -> VectorManager:
+    manager_class: type[TechActivityVectorManager]
     match axis:
         case MgaAxis.TECH_CATEGORY_ACTIVITY:
-            if weighting != MgaWeighting.HULL_EXPANSION:
-                raise NotImplementedError(
-                    'TECH_CATEGORY_ACTIVITY is only implemented for HULL_EXPANSION'
-                )
-            if con is None:
-                raise ValueError('Connection is required for TECH_CATEGORY_ACTIVITY')
-            return TechActivityVectorManager(
-                base_model=model, conn=con, weighting=weighting, **kwargs
-            )
+            manager_class = TechActivityVectorManager
+        case MgaAxis.TECH_CATEGORY_CAPACITY:
+            manager_class = TechCapacityVectorManager
+        case MgaAxis.TECH_CATEGORY_EMISSION:
+            manager_class = TechEmissionVectorManager
         case _:
             raise NotImplementedError('This axis is not yet supported')
+    if weighting != MgaWeighting.HULL_EXPANSION:
+        raise NotImplementedError(f'{axis.name} is only implemented for HULL_EXPANSION')
+    if con is None:
+        raise ValueError(f'Connection is required for {axis.name}')
+    return manager_class(base_model=model, conn=con, weighting=weighting, **kwargs)

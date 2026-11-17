@@ -190,7 +190,8 @@ cache_size = -512000
 cost_epsilon = 0.03    # proportional relaxation on optimal cost (ex: 0.05 = bound at 105% of original optimal cost)
 iteration_limit = 55   # alternatives to record
 time_limit_hrs = 1     # max time
-axis = "tech_category_activity"   # use the tech activity Manager to control exploration based on categories in Tech
+axis = "tech_category_activity"   # tech_category_activity, tech_category_capacity or tech_category_emission
+# axis_emission_commodities = ['co2']   # required for tech_category_emission
 weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight exploration
 hull_max_dimension = 8                  # most categories in one hull; more are split into groups of hulls
 num_workers = 4                         # parallel solves of the alternatives (fallback: MGA_solver_options.toml)
