@@ -44,13 +44,21 @@ class MyopicSequencer:
         'output_dual_variable',
         'output_emission',
         'output_flow_in',
+        'output_flow_in_summary',
         'output_flow_out',
+        'output_flow_out_summary',
         'output_net_capacity',
         'output_objective',
         'output_retired_capacity',
         'output_storage_level',
         'output_unit_commitment',
     ]
+    # Tables a database may not have yet: the writer makes them when it first writes to them
+    tables_that_may_be_missing = (
+        'output_flow_in_summary',
+        'output_flow_out_summary',
+        'output_unit_commitment',
+    )
     tables_without_scenario_reference = [
         'myopic_efficiency',
     ]
@@ -63,7 +71,9 @@ class MyopicSequencer:
         'output_curtailment',
         'output_emission',
         'output_flow_in',
+        'output_flow_in_summary',
         'output_flow_out',
+        'output_flow_out_summary',
         'output_net_capacity',
         'output_retired_capacity',
         'output_storage_level',
@@ -681,7 +691,7 @@ class MyopicSequencer:
                     (scenario_name, f'{scenario_name}-%'),
                 )
             except sqlite3.OperationalError as e:
-                if table == 'output_unit_commitment' and str(e) == f'no such table: {table}':
+                if table in self.tables_that_may_be_missing and str(e) == f'no such table: {table}':
                     continue
                 sys.stderr.write(f'Could not clear scenario from table {table}.\n')
                 raise sqlite3.OperationalError from e
@@ -734,7 +744,7 @@ class MyopicSequencer:
                     (period, scenario_name),
                 )
             except sqlite3.OperationalError as e:
-                if table == 'output_unit_commitment' and str(e) == f'no such table: {table}':
+                if table in self.tables_that_may_be_missing and str(e) == f'no such table: {table}':
                     continue
                 sys.stderr.write(f'Failed to clear periods from table {table}.\n')
                 raise sqlite3.OperationalError from e

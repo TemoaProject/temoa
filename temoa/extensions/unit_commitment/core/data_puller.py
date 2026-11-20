@@ -114,6 +114,7 @@ def poll_startup_input_results(
         for d in model.time_of_day
     }
     for fi in keys:
+        assert fi.s is not None  # startup flows are per time slice
         flow = (
             value(model.uc_startup_input[fi.r, fi.i, fi.t])
             * value(model.uc_unit_capacity[fi.r, fi.t])

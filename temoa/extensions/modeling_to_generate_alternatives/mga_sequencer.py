@@ -196,10 +196,8 @@ class MgaSequencer:
             logger.error('The baseline MGA solve failed.  Terminating run.')
             raise RuntimeError('Baseline MGA solve failed.  Terminating run.')
 
-        # record the 0-solve in all tables
+        # record the 0-solve in all tables, the yearly flow tables included
         self.writer.write_results(instance, iteration=0)
-        self.writer.make_summary_flow_table()  # make the flow summary table, if it doesn't exist
-        self.writer.write_summary_flow(instance, iteration=0)
 
         # 3a. Capture cost and make it a constraint
         tot_cost = pyo.value(instance.total_cost)

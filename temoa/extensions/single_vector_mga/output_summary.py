@@ -78,7 +78,7 @@ def poll_activity(conn: sqlite3.Connection, scenario: str, label: str) -> float:
     poll the Flow Out activity for the given emission label total
     """
     row = conn.execute(
-        'SELECT sum(flow) FROM main.output_flow_out WHERE scenario=? AND tech=?',
+        'SELECT sum(flow) FROM main.output_flow_out_summary WHERE scenario=? AND tech=?',
         (scenario, label),
     ).fetchone()
     return float(row[0] if row and row[0] is not None else 0.0)

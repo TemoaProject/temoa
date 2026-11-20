@@ -26,12 +26,12 @@ def get_tperiods(inp_f: str) -> dict[str, list[int]]:
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out_summary')
     x = []
     for row in cur:
         x.append(row[0])
     for y in x:
-        cur.execute('SELECT DISTINCT period FROM output_flow_out WHERE scenario = ?', (y,))
+        cur.execute('SELECT DISTINCT period FROM output_flow_out_summary WHERE scenario = ?', (y,))
         periods_list[y] = []
         for per in cur:
             z = per[0]
@@ -59,7 +59,7 @@ def get_scenario(inp_f: str) -> dict[str, str]:
     con.text_factory = str  # this ensures data is explored with the correct UTF-8 encoding
 
     print(inp_f)
-    cur.execute('SELECT DISTINCT scenario FROM output_flow_out')
+    cur.execute('SELECT DISTINCT scenario FROM output_flow_out_summary')
     for row in cur:
         x = row[0]
         scene_list[x] = x
@@ -91,8 +91,8 @@ def get_comm(inp_f: str, db_dat: bool) -> OrderedDict[str, str]:
 
         if not is_query_empty:
             cur.execute(
-                'SELECT input_comm FROM output_flow_out UNION SELECT output_comm FROM '
-                'output_flow_out'
+                'SELECT input_comm FROM output_flow_out_summary UNION SELECT output_comm FROM '
+                'output_flow_out_summary'
             )
 
         for row in cur:
@@ -157,7 +157,7 @@ def get_tech(inp_f: str, db_dat: bool) -> OrderedDict[str, str]:
             tech_list[x] = x
 
         if not is_query_empty:
-            cur.execute('SELECT DISTINCT tech FROM output_flow_out')
+            cur.execute('SELECT DISTINCT tech FROM output_flow_out_summary')
 
         for row in cur:
             x = row[0]

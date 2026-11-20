@@ -500,6 +500,18 @@ output_flow_out {
    REAL flow
    TEXT sector
 }
+output_flow_in_summary {
+ TEXT input_comm PK
+   TEXT output_comm PK
+   INTEGER period PK
+   TEXT region PK
+   TEXT scenario PK
+   TEXT tech PK
+   INTEGER vintage PK
+   REAL flow
+   TEXT sector
+   TEXT units
+}
 output_flow_out_summary {
  TEXT input_comm PK
    TEXT output_comm PK
@@ -510,6 +522,7 @@ output_flow_out_summary {
    INTEGER vintage PK
    REAL flow
    TEXT sector
+   TEXT units
 }
 output_net_capacity {
  INTEGER period PK
@@ -791,6 +804,7 @@ time_period one or zero--0+ output_flow_out : has
 season_label one or zero--0+ output_flow_out : has
 time_of_day one or zero--0+ output_flow_out : has
 commodity one or zero--0+ output_flow_out : has
+technology 1--0+ output_flow_in_summary : has
 technology 1--0+ output_flow_out_summary : has
 technology one or zero--0+ output_net_capacity : has
 time_period one or zero--0+ output_net_capacity : has

@@ -239,11 +239,11 @@ class DatabaseUtil:
         columns: list[str] = []
         table = ''
         if comm_type == 'input':
-            table = 'output_flow_in'
+            table = 'output_flow_in_summary'
             if commodity is None:
                 columns.append('input_comm')
         elif comm_type == 'output':
-            table = 'output_flow_out'
+            table = 'output_flow_out_summary'
             if commodity is None:
                 columns.append('output_comm')
         columns.append('tech')
@@ -278,7 +278,7 @@ class DatabaseUtil:
 
         query = f"""
             SELECT E.emis_comm, E.tech, SUM(E.activity * O.flow)
-            FROM emission_activity E, output_flow_out O
+            FROM emission_activity E, output_flow_out_summary O
             WHERE E.input_comm = O.input_comm
               AND E.tech = O.tech
               AND E.vintage = O.vintage
@@ -308,13 +308,13 @@ class DatabaseUtil:
             FROM (
                 SELECT region, scenario, period, input_comm, tech, vintage, output_comm,
                 SUM(flow) AS vflow_in
-                FROM output_flow_in
+                FROM output_flow_in_summary
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OF
             INNER JOIN (
                 SELECT region, scenario, period, input_comm, tech, vintage, output_comm,
                 SUM(flow) AS vflow_out
-                FROM output_flow_out
+                FROM output_flow_out_summary
                 GROUP BY region, scenario, period, input_comm, tech, vintage, output_comm
             ) AS OFO ON
                 OF.region = OFO.region AND
