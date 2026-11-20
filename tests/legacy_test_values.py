@@ -29,7 +29,8 @@ test_vals = {
         # increased 2025/08/19 after making annual demands optional
         # increased by 10 after removing period index from storagefrac (more constraints)
         # increased by 48 after tying v_storage_level[d_last] to v_storage_init
-        ExpectedVals.CONSTR_COUNT: 2868,
+        # reduced by 96 after removing the storage throughput constraint (one per storage slice)
+        ExpectedVals.CONSTR_COUNT: 2772,
         # reduced by 6 when reworking storageinit.
         # increased after making annualretirement derived var
         # reduced 2025/07/21 after removing existing vintage v_new_capacity indices
@@ -55,7 +56,8 @@ test_vals = {
         # increased 2025/08/19 after making annual demands optional
         # increased by 27 after tying v_storage_level[d_last] to v_storage_init
         # reduced by 14 after dropping DAC for single-tech demands
-        ExpectedVals.CONSTR_COUNT: 1499,
+        # reduced by 54 after removing the storage throughput constraint (one per storage slice)
+        ExpectedVals.CONSTR_COUNT: 1445,
         # reduced 3/27:  unlim_cap techs now employed.
         # reduced by 4 in storageinit rework.
         # increased after making annualretirement derived var
@@ -78,7 +80,8 @@ test_vals = {
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
         # reduced by 10 after dropping DAC for single-tech demands
         # reduced by 8 after disabling season ramp for seasonal_timeslices
-        ExpectedVals.CONSTR_COUNT: 224,
+        # reduced by 4 after removing the storage throughput constraint (one per storage slice)
+        ExpectedVals.CONSTR_COUNT: 220,
         # reduced 2025/07/25 by 18 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable
@@ -94,7 +97,8 @@ test_vals = {
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after tying v_storage_level[d_last] to v_storage_init
         # reduced by 9 after dropping DAC for single-tech demands
-        ExpectedVals.CONSTR_COUNT: 176,
+        # reduced by 16 after removing the storage throughput constraint (one per storage slice)
+        ExpectedVals.CONSTR_COUNT: 160,
         # reduced 2025/07/25 by 7 after annualising demands
         # increased 2025/08/19 after making annual demands optional
         # increased by 2 after adding v_storage_init variable

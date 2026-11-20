@@ -201,9 +201,6 @@ def test_storage_charge_limited_at_draw(system_test_run: tuple[str, Any, TemoaMo
                 * value(model.segment_fraction[s, d])
             )
             assert drawn <= limit + 1e-6, f'draw {drawn} exceeds the limit {limit} in {s, d}'
-            assert drawn + delivered <= limit + 1e-6, (
-                f'draw plus discharge {drawn + delivered} exceeds the limit {limit} in {s, d}'
-            )
             total_drawn += drawn
             total_delivered += delivered
 
@@ -217,6 +214,71 @@ def test_storage_charge_limited_at_draw(system_test_run: tuple[str, Any, TemoaMo
     # Losses are still taken on charging
     assert total_drawn == pytest.approx(0.25, abs=1e-6)
     assert total_delivered == pytest.approx(0.8 * 0.25, abs=1e-6)
+
+
+inflow_config_files = [
+    {'name': 'storage_inflow', 'filename': 'config_storage_inflow.toml'},
+]
+
+
+@pytest.mark.parametrize(
+    'system_test_run',
+    argvalues=inflow_config_files,
+    indirect=True,
+    ids=[d['name'] for d in inflow_config_files],
+)
+def test_storage_takes_in_and_generates_at_rating(
+    system_test_run: tuple[str, Any, TemoaModel, Any],
+) -> None:
+    """
+    A storage process fed by an inflow takes in water and generates at its full rating in
+    the same time slice, without spilling (issue #381).
+
+    The inflow and the reservoir both have capacity 1 and C2A 1, and each of the four time
+    slices is a quarter of the year, so each can move at most 0.25 per slice. Gas is
+    expensive, so all the water is wanted.
+    """
+    model: TemoaModel
+    _, _, model, _ = system_test_run
+    r, p, v = Region('R'), Period(2025), Vintage(2025)
+    hydro, inflow = Technology('hydro'), Technology('inflow')
+
+    assert model.v_capacity[r, p, hydro, v].value == pytest.approx(1.0, abs=1e-5)
+    assert model.v_capacity[r, p, inflow, v].value == pytest.approx(1.0, abs=1e-5)
+
+    total_generated = 0.0
+    for s in model.time_season:
+        for d in model.time_of_day:
+            rating = (
+                model.v_capacity[r, p, hydro, v].value
+                * value(model.capacity_to_activity[r, hydro])
+                * value(model.segment_fraction[s, d])
+            )
+            arrived = sum(
+                model.v_flow_out[r, p, s, d, S_i, inflow, v, S_o].value
+                for S_o in model.process_outputs[r, p, inflow, v]
+                for S_i in model.process_inputs_by_output[r, p, inflow, v, S_o]
+            )
+            taken_in = sum(
+                model.v_flow_in[r, p, s, d, S_i, hydro, v, S_o].value
+                for S_i in model.process_inputs[r, p, hydro, v]
+                for S_o in model.process_outputs_by_input[r, p, hydro, v, S_i]
+            )
+            generated = sum(
+                model.v_flow_out[r, p, s, d, S_i, hydro, v, S_o].value
+                for S_o in model.process_outputs[r, p, hydro, v]
+                for S_i in model.process_inputs_by_output[r, p, hydro, v, S_o]
+            )
+            assert rating == pytest.approx(0.25, abs=1e-5)
+            # Nothing is spilled: the inflow runs at its capacity and all of it is taken in
+            assert arrived == pytest.approx(0.25, abs=1e-5), f'water arriving in {s, d}'
+            assert taken_in == pytest.approx(arrived, abs=1e-5), f'water taken in {s, d}'
+            # In the same slice the reservoir generates at its full rating
+            assert generated == pytest.approx(rating, abs=1e-5), f'generation in {s, d}'
+            total_generated += generated
+
+    # Charging plus discharging used to share the rating, which allowed only 0.5 in total
+    assert total_generated == pytest.approx(1.0, abs=1e-5)
 
 
 # devnote: the storage_init constraint was reworked into LimitStorageLevelFraction
