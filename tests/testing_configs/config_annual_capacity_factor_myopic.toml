@@ -1,0 +1,11 @@
+scenario = "annual_capacity_factor"
+scenario_mode = "myopic"
+input_database = "tests/testing_outputs/annual_capacity_factor.sqlite"
+output_database = "tests/testing_outputs/annual_capacity_factor.sqlite"
+solver = "appsi_highs"
+time_sequencing = "seasonal_timeslices"
+
+[myopic]
+view_depth = 1
+step_size = 1
+evolving = false

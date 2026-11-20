@@ -106,6 +106,28 @@ recommend that you populate input tables in the following order:
   * limit_tech_output_split
 
 
+.. _annual-factor-input:
+
+-------------------------------------------
+Annual capacity factor periods and vintages
+-------------------------------------------
+
+``limit_annual_capacity_factor`` has the key ``(region, period, tech_or_group,
+vintage, output_comm, operator)``. ``factor`` is dimensionless and must be in
+``[0, 1]``. A row applies only to its required operating ``period``.
+``le``, ``ge`` and ``e`` respectively impose an upper bound, lower
+bound and equality on annual output divided by available capacity times
+``capacity_to_activity``. This applies to both annual and timeslice technologies.
+
+For example, these rows limit the same cohort differently in two operating periods:
+
+.. code-block:: sql
+
+   INSERT INTO limit_annual_capacity_factor
+       (region, period, tech_or_group, vintage, output_comm, operator, factor)
+   VALUES ('R1', 2025, 'vehicle', 2025, 'service', 'le', 0.5),
+          ('R1', 2030, 'vehicle', 2025, 'service', 'le', 0.25);
+
 ---------------------------------------
 Group Region and Technology Constraints
 ---------------------------------------
