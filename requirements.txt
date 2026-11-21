@@ -644,9 +644,9 @@ pint==0.26.2 \
     --hash=sha256:391e5d2fc01fdb121c113b8eb47386688575542c1f5144c465ff318bf5133573 \
     --hash=sha256:c94124cdb19baa1a84bb65c8bb9a620a9636b9b9cd80f32f30ad7ff795ea2eb8
     # via temoa
-platformdirs==4.14.7 \
-    --hash=sha256:391513b74707c42335fff3ea17eaac657a7ee9ffcadd809634d34ea594d0122c \
-    --hash=sha256:5472257c1cf97a14658af52997011c7e59e4aebf3a24950b973c11b579e1b074
+platformdirs==4.14.8 \
+    --hash=sha256:1e34af590de4d978631b751eb2202f2fee4497537a17c1720b12fcf57b331392 \
+    --hash=sha256:96893d686e84e9e6f358a9ea41a8de544df66dbf2ba6cda250e7dc73acf85b9b
     # via pint
 pluggy==1.7.0 \
     --hash=sha256:7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec \
@@ -996,7 +996,7 @@ wrapt==2.5.2 \
     --hash=sha256:fa642d3781c061579cb138773add4a55b16f99de9ebc41603e89a756cf9e62c6 \
     --hash=sha256:fabc60720d1e4a36bbe8aaf1c32024f04c6674991313f5acaca5eeadb564c600
     # via deprecated
-xlsxwriter==3.3.2 \
-    --hash=sha256:a7ec4285416ee246753ad21c18ef6c161cdeaf2c29a7b9475236cce6098b21fe \
-    --hash=sha256:bc10b314ec3bbcc910b489f095f1a365863d9482afa681748f97d6d5e976f944
+xlsxwriter==3.3.3 \
+    --hash=sha256:2b83c5e184d872275e87718ebc88688acc258a50fc84dcad965b3d10be6e345f \
+    --hash=sha256:ad3743bd5f96019ee75aae19a51e9c26faf03f218670b934dac1159692d0d5e3
     # via temoa
