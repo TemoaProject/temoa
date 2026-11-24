@@ -1,6 +1,7 @@
 """
 Test that an MGA run records exactly the number of alternative solutions requested with the
-iteration_limit option, regardless of the number of workers solving in parallel.
+iteration_limit option, regardless of the number of workers solving in parallel, and that it
+writes storage levels for each of them only when save_storage_levels is set.
 """
 
 import contextlib
@@ -25,6 +26,7 @@ solver = "appsi_highs"
 time_sequencing = "seasonal_timeslices"
 days_per_period = 365
 reserve_margin = "static"
+save_storage_levels = {save_storage_levels}
 
 [MGA]
 cost_epsilon = 0.03
@@ -35,13 +37,19 @@ weighting = "hull_expansion"
 """
 
 
-@pytest.mark.parametrize('iteration_limit', [1, 4])
-def test_mga_iteration_limit_is_exact(iteration_limit: int, tmp_path: Path) -> None:
+@pytest.mark.parametrize(('iteration_limit', 'save_storage_levels'), [(1, True), (4, False)])
+def test_mga_iteration_limit_is_exact(
+    iteration_limit: int, save_storage_levels: bool, tmp_path: Path
+) -> None:
     db = tmp_path / 'utopia_mga_limit.sqlite'
     shutil.copy(UTOPIA_DB, db)
     config_file = tmp_path / 'config.toml'
     config_file.write_text(
-        CONFIG_TEMPLATE.format(db=db.as_posix(), iteration_limit=iteration_limit)
+        CONFIG_TEMPLATE.format(
+            db=db.as_posix(),
+            iteration_limit=iteration_limit,
+            save_storage_levels=str(save_storage_levels).lower(),
+        )
     )
 
     config = TemoaConfig.build_config(config_file=config_file, output_path=tmp_path, silent=True)
@@ -55,8 +63,12 @@ def test_mga_iteration_limit_is_exact(iteration_limit: int, tmp_path: Path) -> N
                 "WHERE scenario LIKE 'mga_limit-%'"
             ).fetchall()
         }
+        storage_scenarios = {
+            row[0] for row in con.execute('SELECT DISTINCT scenario FROM output_storage_level')
+        }
 
     assert 'mga_limit-0' in scenarios
     assert len(scenarios) == iteration_limit + 1, (
         f'expected the base solve + {iteration_limit} alternatives, got: {sorted(scenarios)}'
     )
+    assert storage_scenarios == (scenarios if save_storage_levels else set())

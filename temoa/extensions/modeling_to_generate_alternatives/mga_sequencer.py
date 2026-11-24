@@ -233,7 +233,9 @@ class MgaSequencer:
             raise RuntimeError('Baseline MGA solve failed.  Terminating run.')
 
         # record the 0-solve in all tables
-        self.writer.write_results(instance, iteration=0)
+        self.writer.write_results(
+            instance, save_storage_levels=self.config.save_storage_levels, iteration=0
+        )
         self.writer.make_summary_flow_table()  # make the flow summary table, if it doesn't exist
         self.writer.write_summary_flow(instance, iteration=0)
 
@@ -444,6 +446,7 @@ class MgaSequencer:
         self.seen_instance_indices.add(idx)
         self.writer.write_polled_capacity(result.results, iteration=idx)
         self.writer._insert_summary_flow_results(result.results.flows, iteration=idx)
+        self.writer.write_polled_optional(result.results, iteration=idx)
 
     def __del__(self) -> None:
         if hasattr(self, 'con') and self.con is not None:

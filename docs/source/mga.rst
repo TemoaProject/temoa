@@ -144,6 +144,10 @@ For example, if your base scenario is ``utopia_mga``, the results for the base
 case will be found under scenario ``utopia_mga-0``, and the first alternative
 will be under ``utopia_mga-1``.
 
+With ``save_storage_levels = true`` in the configuration file, **output_storage_level**
+holds the storage levels of the baseline solve and of each iteration. Duals are not
+saved in MGA runs.
+
 Key Database Tables
 ~~~~~~~~~~~~~~~~~~~
 
