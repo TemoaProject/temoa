@@ -4,6 +4,7 @@ Performs top-level control over an MGA model run
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import queue
 import sqlite3
@@ -31,12 +32,15 @@ import pyomo.environ as pyo
 from pyomo.opt import check_optimal_termination
 
 from temoa._internal.run_actions import build_instance
-from temoa._internal.table_writer import TableWriter
+from temoa._internal.table_writer import PolledResults, ResultPoller, TableWriter
 from temoa.components.costs import total_cost_rule
 from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
+from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_manager import (
+    hull_point,
+)
 from temoa.extensions.modeling_to_generate_alternatives.worker import (
     SOLVE_FAILED,
     WORKER_CONTEXT,
@@ -50,6 +54,30 @@ solver_options_path = (
     resources.files('temoa.extensions.modeling_to_generate_alternatives')
     / 'MGA_solver_options.toml'
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class MgaResult:
+    """What a worker sends back for a solved alternative, instead of the model"""
+
+    name: str
+    hull_point: list[float]
+    results: PolledResults
+
+
+@dataclasses.dataclass(frozen=True)
+class MgaResultExtractor:
+    """Takes the hull point and the results out of a solved alternative, in the worker"""
+
+    poller: ResultPoller
+    hull_terms: list[list[tuple[str, Any, float]]]
+
+    def __call__(self, model: TemoaModel) -> MgaResult:
+        return MgaResult(
+            name=model.name,
+            hull_point=hull_point(model, self.hull_terms),
+            results=self.poller(model),
+        )
 
 
 class MgaSequencer:
@@ -248,6 +276,7 @@ class MgaSequencer:
         s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
+        result_extractor = self.result_extractor(vector_manager)
         for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
@@ -258,6 +287,7 @@ class MgaSequencer:
                 solver_name=self.config.solver_name,
                 solver_options=self.worker_solver_options,
                 solver_log_path=s_path,
+                result_extractor=result_extractor,
             )
             w.start()
             workers.append(w)
@@ -382,14 +412,17 @@ class MgaSequencer:
             or str(status) == 'convergenceCriteriaSatisfied'
         )
 
-    def handle_worker_result(self, result: TemoaModel | str, vector_manager: VectorManager) -> None:
+    def result_extractor(self, vector_manager: VectorManager) -> MgaResultExtractor:
+        return MgaResultExtractor(self.writer.result_poller(), vector_manager.hull_point_terms())
+
+    def handle_worker_result(self, result: MgaResult | str, vector_manager: VectorManager) -> None:
         if isinstance(result, str):
             if result == SOLVE_FAILED:
                 logger.warning('A worker reported a failed solve.  No results recorded for it.')
             else:
                 logger.error('Unrecognized signal in the MGA results queue: %s', result)
             return
-        vector_manager.process_results(model=result)
+        vector_manager.add_hull_point(result.hull_point)
         self.process_solve_results(result)
         self.alternatives_recorded += 1
         self.solve_count += 1
@@ -397,20 +430,20 @@ class MgaSequencer:
         if self.verbose or not self.config.silent:
             print(f'MGA Solve count: {self.solve_count}')
 
-    def process_solve_results(self, instance: TemoaModel) -> None:
+    def process_solve_results(self, result: MgaResult) -> None:
         """write the results as required"""
         # get the instance number from the model name, if provided
-        if '-' not in instance.name:
+        if '-' not in result.name:
             raise ValueError(
                 'Instance name does not appear to contain a -idx value.  The manager should be '
                 'tagging/updating this'
             )
-        idx = int(instance.name.split('-')[-1])
+        idx = int(result.name.split('-')[-1])
         if idx in self.seen_instance_indices:
             raise ValueError('Instance index already seen.  Likely coding error')
         self.seen_instance_indices.add(idx)
-        self.writer.write_capacity_tables(model=instance, iteration=idx)
-        self.writer.write_summary_flow(instance, iteration=idx)
+        self.writer.write_polled_capacity(result.results, iteration=idx)
+        self.writer._insert_summary_flow_results(result.results.flows, iteration=idx)
 
     def __del__(self) -> None:
         if hasattr(self, 'con') and self.con is not None:

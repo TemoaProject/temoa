@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import sqlite3
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Sequence
 
     from temoa.core.model import TemoaModel
 
@@ -70,6 +70,19 @@ class VectorManager(ABC):
     @abstractmethod
     def process_results(self, model: TemoaModel) -> Any:
         raise NotImplementedError('the manager subclass must implement process_results')
+
+    @abstractmethod
+    def hull_point_terms(self) -> list[list[tuple[str, Any, float]]]:
+        """
+        The terms of each coordinate of a hull point, as (variable name, index, coefficient), so
+        that worker processes can compute the hull point of the models they solve
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_hull_point(self, point: Sequence[float]) -> None:
+        """Add the hull point of a solved model"""
+        raise NotImplementedError
 
     @abstractmethod
     def finalize_tracker(self) -> None:

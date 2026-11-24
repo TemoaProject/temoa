@@ -25,6 +25,20 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
+def hull_point(model: TemoaModel, terms: Sequence[Sequence[tuple[str, Any, float]]]) -> list[float]:
+    """The coordinates of the hull point of a solved model, from VectorManager.hull_point_terms"""
+    variables: dict[str, Any] = {}
+    point = []
+    for coordinate in terms:
+        total = 0.0
+        for var_name, idx, coefficient in coordinate:
+            if var_name not in variables:
+                variables[var_name] = model.find_component(var_name)
+            total += coefficient * value(variables[var_name][idx])
+        point.append(total)
+    return point
+
+
 class DefaultItem:
     """A dummy class just to hold items that will have a reasonable __str__ and __repr__"""
 
@@ -211,29 +225,33 @@ class TechActivityVectorManager(VectorManager):
         :param M:
         :return: None
         """
-        self.completed_solves += 1
-        res: list[float] = []
-        for cat in self.category_mapping:
-            element = 0
-            for tech in self.category_mapping[cat]:
-                for var_name in self.variable_index_mapping[tech]:
-                    model_var = model.find_component(var_name)
-                    if not isinstance(model_var, Var):
-                        raise RuntimeError('hooked a bad fish')
-                    element += sum(
-                        value(model_var[idx]) for idx in self.variable_index_mapping[tech][var_name]
-                    )
-            res.append(element)
+        res = hull_point(model, self.hull_point_terms())
+        self.add_hull_point(res)
+        return res
 
+    def hull_point_terms(self) -> list[list[tuple[str, Any, float]]]:
+        return [
+            [term for tech in self.category_mapping[cat] for term in self.tech_terms(tech)]
+            for cat in self.category_mapping
+        ]
+
+    def tech_terms(self, tech: str) -> list[tuple[str, Any, float]]:
+        return [
+            (var_name, idx, 1.0)
+            for var_name, indices in self.variable_index_mapping[tech].items()
+            for idx in indices
+        ]
+
+    def add_hull_point(self, point: Sequence[float]) -> None:
+        self.completed_solves += 1
         # add it to the hull points
-        hull_point = np.array(res)
+        new_point = np.array(point)
         if self.hull_points is None:
-            self.hull_points = np.atleast_2d(hull_point)
+            self.hull_points = np.atleast_2d(new_point)
         else:
-            self.hull_points = np.vstack((self.hull_points, hull_point))
+            self.hull_points = np.vstack((self.hull_points, new_point))
         if self.hull_monitor:
             self.tracker()
-        return res
 
     def stop_resolving(self) -> bool:
         return False

@@ -99,7 +99,9 @@ Parallel Execution and Solver Options
 
 Standard MGA supports parallel execution of iterative solves to maximize
 performance. **Note: SVMGA executes sequentially and does not utilize parallel
-workers.**
+workers.** Each worker also takes the results out of the alternative it solved
+(capacities, flows, and the point of the hull it adds) and sends back only those,
+so the main process only writes them and updates the hull.
 
 The number of worker processes and solver-specific settings are defined in a
 ``MGA_solver_options.toml`` file. By default, Temoa looks for this file in the
