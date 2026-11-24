@@ -5,21 +5,29 @@ Class to contain Workers that execute solves in separate processes
 from __future__ import annotations
 
 import logging.handlers
+import multiprocessing
 from datetime import datetime
 from logging import getLogger
-from multiprocessing import Process, Queue
+from multiprocessing import Queue
+from multiprocessing.context import SpawnProcess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from temoa.core.model import TemoaModel
 
 verbose = False  # for T/S or monitoring...
 
+# Workers always start as new processes, as on Windows and macOS: forked (Linux before Python 3.14),
+# they inherit the state of the solvers already run by the main process, such as HiGHS threads.
+WORKER_CONTEXT = multiprocessing.get_context('spawn')
 
-class Worker(Process):
+
+class Worker(SpawnProcess):
     worker_idx: int = 1
     worker_number: int
     model_queue: Queue[Any]
@@ -28,6 +36,8 @@ class Worker(Process):
     solver_name: str
     solver_options: dict[str, Any]
     solver_log_path: Path | None
+    result_extractor: Callable[[TemoaModel], Any] | None
+    _extractor_to_send: Callable[[TemoaModel], Any] | None
     opt: Any
     log_root_name: str
     log_level: int
@@ -43,6 +53,7 @@ class Worker(Process):
         solver_name: str = 'appsi_highs',
         solver_options: dict[str, Any] | None = None,
         solver_log_path: Path | None = None,
+        result_extractor: Callable[[TemoaModel], Any] | None = None,
     ):
         super().__init__(daemon=True)
         self.worker_number = Worker.worker_idx
@@ -53,11 +64,28 @@ class Worker(Process):
         self.solver_name = solver_name
         self.solver_options = solver_options or {}
         self.solver_log_path = solver_log_path
+        # sent through a queue after the process starts, as it can be too large for the pipe that
+        # carries the pickled process: writing it would wait for the new process to start
+        self.result_extractor = None
+        self._extractor_to_send = result_extractor
+        self._extractor_queue: Queue[Any] | None = (
+            WORKER_CONTEXT.Queue(1) if result_extractor else None
+        )
         self.opt = None  # Initialize in run()
 
         self.log_root_name = log_root_name
         self.log_level = log_level
         self.solve_count = 0
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        state['_extractor_to_send'] = None
+        return state
+
+    def start(self) -> None:
+        super().start()
+        if self._extractor_queue is not None:
+            self._extractor_queue.put(self._extractor_to_send)
 
     def run(self) -> None:
         logger: logging.Logger = getLogger(
@@ -69,6 +97,8 @@ class Worker(Process):
         logger.setLevel(self.log_level)
         logger.addHandler(handler)
         logger.info('Worker %d spun up', self.worker_number)
+        if self._extractor_queue is not None:
+            self.result_extractor = self._extractor_queue.get()
 
         # Initialize the solver here  in the child process to avoid pickling issues
         # Note: We do not set the options here because appsi_highs does not accept options in
@@ -122,7 +152,9 @@ class Worker(Process):
             try:
                 good_solve = check_optimal_termination(solve_res)
                 if good_solve:
-                    self.results_queue.put(model)
+                    result = self.extract(model, logger)
+                    if result is not None:
+                        self.results_queue.put(result)
                     logger.info(
                         'Worker %d solved a model in %0.2f minutes',
                         self.worker_number,
@@ -140,3 +172,18 @@ class Worker(Process):
                         )
             except AttributeError:
                 pass
+
+    def extract(self, model: TemoaModel, logger: logging.Logger) -> Any:
+        """The solved model, or the results its extractor takes from it"""
+        if self.result_extractor is None:
+            return model
+        try:
+            return self.result_extractor(model)
+        except Exception as e:
+            logger.warning(
+                'Worker %d failed to extract the results of model %s: %s',
+                self.worker_number,
+                model.name,
+                e,
+            )
+            return None

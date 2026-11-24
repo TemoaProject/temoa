@@ -52,16 +52,20 @@ def poll_commitment_results(model: TemoaModel) -> dict[UCI, tuple[float, float, 
 
 
 def write_uc_results(
-    model: TemoaModel,
+    model: TemoaModel | None,
     writer: TableWriter,
     iteration: int | None,
     epsilon: float = 1e-5,
     append: bool = False,
+    results: dict[UCI, tuple[float, float, float]] | None = None,
 ) -> None:
     if writer.tech_sectors is None:
         raise RuntimeError('Missing tech_sectors')
 
-    results = poll_commitment_results(model)
+    if results is None:
+        if model is None:
+            raise ValueError('write_uc_results needs a model or the polled results')
+        results = poll_commitment_results(model)
     scenario = writer._get_scenario_name(iteration)
     unit_prop = writer.unit_propagator
     records = []

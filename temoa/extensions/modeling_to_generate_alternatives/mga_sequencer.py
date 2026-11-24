@@ -12,11 +12,11 @@ import tomllib
 from datetime import datetime
 from importlib import resources
 from logging import getLogger
-from multiprocessing import Queue
 from queue import Empty
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
+    from multiprocessing import Queue
     from multiprocessing.process import BaseProcess
 
     from pyomo.contrib.solver.common.results import Results
@@ -37,7 +37,7 @@ from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
-from temoa.extensions.modeling_to_generate_alternatives.worker import Worker
+from temoa.extensions.modeling_to_generate_alternatives.worker import WORKER_CONTEXT, Worker
 from temoa.model_checking.pricing_check import price_checker
 
 logger = getLogger(__name__)
@@ -227,11 +227,13 @@ class MgaSequencer:
 
         # 5.  Set up the Workers
         num_workers = self.num_workers
-        work_queue: Queue[Any] = Queue(1)  # restrict the queue to hold just 1 models in it max
-        result_queue: Queue[Any] = Queue(
+        work_queue: Queue[Any] = WORKER_CONTEXT.Queue(
+            1
+        )  # restrict the queue to hold just 1 models in it max
+        result_queue: Queue[Any] = WORKER_CONTEXT.Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue: Queue[Any] = Queue(50)
+        log_queue: Queue[Any] = WORKER_CONTEXT.Queue(50)
         # make workers
         workers: list[BaseProcess] = []
         # construct path for the solver logs
