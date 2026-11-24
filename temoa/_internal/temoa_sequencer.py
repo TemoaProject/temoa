@@ -32,6 +32,7 @@ from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.method_of_morris.morris_sequencer import MorrisSequencer
 from temoa.extensions.modeling_to_generate_alternatives.mga_sequencer import MgaSequencer
 from temoa.extensions.monte_carlo.mc_sequencer import MCSequencer
+from temoa.extensions.multi_objective_optimization.moo_sequencer import MooSequencer
 from temoa.extensions.myopic.myopic_sequencer import MyopicSequencer
 from temoa.extensions.single_vector_mga.sv_mga_sequencer import SvMgaSequencer
 from temoa.extensions.stochastics.stochastic_sequencer import StochasticSequencer
@@ -192,6 +193,10 @@ class TemoaSequencer:
             case TemoaMode.SVMGA:
                 sv_mga_sequencer = SvMgaSequencer(config=self.config)
                 sv_mga_sequencer.start()
+
+            case TemoaMode.MOO:
+                moo_sequencer = MooSequencer(config=self.config)
+                moo_sequencer.start()
 
             case TemoaMode.METHOD_OF_MORRIS:
                 mm_sequencer = MorrisSequencer(config=self.config)

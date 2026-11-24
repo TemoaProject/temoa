@@ -15,7 +15,7 @@ scenario = "zulu"
 # Scenario Mode (Mandatory)
 # See documentation for explanations.  A standard single run is "perfect_foresight"
 # mode must be one of (case-insensitive):
-#     [perfect_foresight, MGA, myopic, method_of_morris, build_only, check, monte_carlo]
+#     [perfect_foresight, MGA, MOO, myopic, method_of_morris, build_only, check, monte_carlo]
 scenario_mode = "perfect_foresight"
 
 # Optional extensions list
@@ -221,6 +221,16 @@ cost_epsilon = 0.05
 emission_labels = ['co2', 'nox']
 capacity_labels = ['TXD', 'TXG']
 activity_labels = []
+
+[MOO]
+f1 = "cost"                             # minimized objective (cost, emission, construction_input or custom)
+f2 = "emission"                         # capped objective (cost, emission, construction_input or custom)
+ncaps = 11                              # number of Pareto optimal solutions
+c = 0.0001                              # slack variable weight
+emission_commodities = []               # empty = all
+construction_input_commodities = []     # empty = all
+num_workers = 4                         # parallel solves of the Pareto optimal solutions (fallback: MOO_solver_options.toml)
+solver_options = { threads = 4 }
 
 [monte_carlo]
 # a path from the PROJECT ROOT to the settings file that contains the run data.
