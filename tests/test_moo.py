@@ -17,6 +17,16 @@ from temoa.extensions.multi_objective_optimization.moo_sequencer import is_subop
 TESTING_OUTPUTS = Path(__file__).parent / 'testing_outputs'
 
 
+def _gurobi_available() -> bool:
+    try:
+        import gurobipy
+
+        gurobipy.Model().dispose()
+    except Exception:
+        return False
+    return True
+
+
 def run_moo(
     tmp_path: Path,
     db_name: str,
@@ -109,6 +119,34 @@ def test_storage_levels(tmp_path: Path, save_storage_levels: bool) -> None:
     assert set(res) == {'moo-0', 'moo-1', 'moo-2'}
     storage = _scenarios(tmp_path / 'utopia.sqlite', 'output_storage_level')
     assert set(storage) == (set(res) if save_storage_levels else set())
+
+
+@pytest.mark.skipif(not _gurobi_available(), reason='needs a licensed Gurobi')
+def test_duals(tmp_path: Path) -> None:
+    """Every solution has its duals, and the dual of the cap on f2 is the slope of the front"""
+    inputs = {'f1': 'cost', 'f2': 'emission', 'ncaps': 5, 'emission_commodities': ['co2']}
+    res = run_moo(tmp_path, 'utopia.sqlite', inputs, solver='gurobi', save_duals=True)
+    db = tmp_path / 'utopia.sqlite'
+    assert set(_scenarios(db, 'output_dual_variable')) == set(res)
+    con = sqlite3.connect(db)
+    try:
+        cap_duals = dict(
+            con.execute(
+                'SELECT scenario, dual FROM output_dual_variable '
+                "WHERE constraint_name = 'moo_f2_cap'"
+            ).fetchall()
+        )
+    finally:
+        con.close()
+    points = [res[f'moo-{n}'] for n in range(5)]
+    slopes = [
+        (b['cost'] - a['cost']) / (b['emission'] - a['emission'])
+        for a, b in zip(points[:-1], points[1:], strict=True)
+    ]
+    for n in range(1, 4):
+        dual = cap_duals[f'moo-{n}']
+        low, high = sorted((slopes[n - 1], slopes[n]))
+        assert low - 1e-6 * abs(dual) <= dual <= high + 1e-6 * abs(dual)
 
 
 def test_workers(tmp_path: Path) -> None:

@@ -118,9 +118,6 @@ class MooSequencer:
         if config.save_lp_file:
             logger.warning('Saving LP file is disabled during MOO runs.')
             config.save_lp_file = False
-        if config.save_duals:
-            logger.warning('Saving duals is disabled during MOO runs.')
-            config.save_duals = False
         if config.save_excel:
             logger.warning('Saving excel is disabled during MOO runs.')
             config.save_excel = False
@@ -295,7 +292,7 @@ class MooSequencer:
         finally:
             instance.del_component(model.moo_f2_cap)
             instance.del_component(model.moo_objective)
-        if point.component('dual') is not None:
+        if not self.config.save_duals and point.component('dual') is not None:
             point.del_component('dual')
         point.name = f'{self.config.scenario}-{iteration}'
         return point
@@ -444,6 +441,12 @@ class MooSequencer:
             cap,
             ', '.join(f'{name}: {val:0.6g}' for name, val in values),
         )
+        if self.config.save_duals and not result.results.duals:
+            logger.warning(
+                'The solver returned no duals for MOO solution %d: solvers return none for '
+                'mixed-integer models.',
+                iteration,
+            )
         self.writer.write_polled_results(result.results, iteration=iteration)
         self.writer._insert_objective_results(values, iteration=iteration)
 

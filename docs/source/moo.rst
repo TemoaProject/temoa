@@ -188,4 +188,12 @@ which were selected as ``f1`` and ``f2``, and of the custom objective functions
 selected as ``f1`` or ``f2``.
 
 With ``save_storage_levels = true`` in the configuration file,
-``output_storage_level`` holds the storage levels of each solution.
+``output_storage_level`` holds the storage levels of each solution. With
+``save_duals = true``, ``output_dual_variable`` holds the duals of each solution.
+They are the duals of the problem solved for that solution: the dual of
+``moo_f2_cap``, the cap on ``f2``, is the change of ``f1`` per unit of ``f2``
+(for cost × CO2, the marginal cost of abatement at that solution), and, when
+``f1`` is ``cost``, the duals of the commodity balance constraints are the
+commodity prices under that cap. Duals need a solver that returns them (not
+``appsi_highs``), and solvers return none for mixed-integer models (for example
+with ``discrete_capacity`` or ``unit_commitment``).
