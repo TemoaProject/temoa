@@ -103,19 +103,28 @@ workers.** Each worker also takes the results out of the alternative it solved
 (capacities, flows, and the point of the hull it adds) and sends back only those,
 so the main process only writes them and updates the hull.
 
-The number of worker processes and solver-specific settings are defined in a
-``MGA_solver_options.toml`` file. By default, Temoa looks for this file in the
-same directory as your main configuration file.
+The number of worker processes and their solver options are set in the
+``[MGA]`` section of the configuration file:
 
 .. code-block:: toml
 
-   # Global setting at the top level of the file
+   [MGA]
    num_workers = 4
+   solver_options = { Method = 2, Threads = 4, BarConvTol = 0.01 }
 
-   [gurobi]
-   Method = 2
-   Threads = 4  # Threads per solver instance
-   BarConvTol = 0.01
+The solver options of the workers are merged as follows, the last layer taking
+precedence:
+
+1. Temoa's default options for the solver.
+2. The section of the solver in
+   ``temoa/extensions/modeling_to_generate_alternatives/MGA_solver_options.toml``,
+   which also holds a fallback ``num_workers``.
+3. The ``options`` of the ``solver`` entry of the configuration file.
+4. The ``solver_options`` of the ``[MGA]`` section.
+
+The ``num_workers`` of the ``[MGA]`` section takes precedence over the one of
+``MGA_solver_options.toml``. The initial solve, which sets the optimal cost,
+only uses the ``options`` of the ``solver`` entry.
 
 .. tip::
    When choosing ``num_workers``, a good rule of thumb is to set it to the

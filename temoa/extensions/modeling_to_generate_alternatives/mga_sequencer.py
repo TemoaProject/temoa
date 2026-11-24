@@ -9,7 +9,6 @@ import logging
 import queue
 import sqlite3
 import time
-import tomllib
 from datetime import datetime
 from importlib import resources
 from logging import getLogger
@@ -34,7 +33,13 @@ from pyomo.opt import check_optimal_termination
 from temoa._internal.run_actions import build_instance
 from temoa._internal.table_writer import PolledResults, ResultPoller, TableWriter
 from temoa.components.costs import total_cost_rule
-from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
+from temoa.core.solver_spec import (
+    mode_solver_options,
+    read_options_file,
+    redact_solver_options,
+    resolve_num_workers,
+    resolve_solver_options,
+)
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
@@ -122,16 +127,9 @@ class MgaSequencer:
         self.config = config
 
         # read in the options
-        try:
-            with resources.as_file(solver_options_path) as path:
-                with open(path, 'rb') as f:
-                    all_options = tomllib.load(f)
-            s_options = all_options.get(self.config.solver_name, {})
-
-        except FileNotFoundError:
-            logger.warning('Unable to find solver options toml file.  Using default options.')
-            s_options = {}
-            all_options = {}
+        all_options = read_options_file(solver_options_path)
+        s_options = all_options.get(self.config.solver_name, {})
+        mga_inputs = self.config.mga_inputs or {}
 
         # get handle on solver instance.  The base solve only receives the user's
         # [solver.options] (no Temoa defaults, no worker options) to get a more precise base cost
@@ -140,14 +138,17 @@ class MgaSequencer:
             self.config.solver, include_defaults=False
         ).items():
             self.opt.options[option] = option_value
-        self.worker_solver_options = resolve_solver_options(self.config.solver, s_options)
+        self.worker_solver_options = resolve_solver_options(
+            self.config.solver,
+            mode_solver_options(mga_inputs, 'MGA'),
+            fallback_options=s_options,
+        )
         logger.info(
             'Using worker solver options: %s', redact_solver_options(self.worker_solver_options)
         )
 
         # some defaults, etc.
         self.internal_stop = False
-        mga_inputs = self.config.mga_inputs or {}
         axis_label = str(mga_inputs.get('axis', '')).upper()
         try:
             self.mga_axis = MgaAxis[axis_label]
@@ -162,7 +163,7 @@ class MgaSequencer:
         except KeyError:
             logger.warning('No/bad MGA Weighting specified.  Using default: Hull Expansion')
             self.mga_weighting = MgaWeighting.HULL_EXPANSION
-        self.num_workers = int(cast('str | int', all_options.get('num_workers', 1)))
+        self.num_workers = resolve_num_workers(mga_inputs, all_options, 'MGA')
         logger.info('MGA workers are set to %s', self.num_workers)
         self.iteration_limit = int(cast('str | int', mga_inputs.get('iteration_limit', 20)))
         if self.iteration_limit < 0:
