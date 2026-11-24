@@ -59,7 +59,7 @@ def poll_costs(
                 capacity=1,
                 invest_cost=cost,
                 p_0=p_0,
-                p_e=model.time_future.last(),
+                p_e=costs.loan_payment_end(model),
                 global_discount_rate=global_discount_rate,
             )
         else:
@@ -70,7 +70,7 @@ def poll_costs(
                 invest_cost=cost,
                 process_life=life,
                 p_0=p_0,
-                p_e=model.time_future.last(),
+                p_e=costs.loan_payment_end(model),
                 global_discount_rate=global_discount_rate,
                 vintage=p,
             )
