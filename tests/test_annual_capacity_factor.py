@@ -433,7 +433,7 @@ def test_invalid_keys(factor_db: Path, column: str, bad_value: object) -> None:
     with sqlite3.connect(factor_db) as con:
         con.execute(f'UPDATE limit_annual_capacity_factor SET {column}=?', (bad_value,))
     with pytest.raises(
-        ValueError, match='regional_global_indices|limit_annual_capacity_factor_rptvo'
+        ValueError, match='regional_global_indices|limit_annual_capacity_factor_constraint_rptvo'
     ):
         _load(factor_db)
 
