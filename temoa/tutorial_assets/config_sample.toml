@@ -192,6 +192,7 @@ iteration_limit = 55   # alternatives to record
 time_limit_hrs = 1     # max time
 axis = "tech_category_activity"   # use the tech activity Manager to control exploration based on categories in Tech
 weighting = "hull_expansion"  # use a convex hull expansion algorithm to weight exploration
+hull_max_dimension = 8                  # most categories in one hull; more are split into groups of hulls
 num_workers = 4                         # parallel solves of the alternatives (fallback: MGA_solver_options.toml)
 solver_options = { threads = 4 }
 

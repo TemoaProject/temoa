@@ -49,6 +49,11 @@ Options
     * ``EMISSION_ACTIVITY``
 * **weighting**: The algorithm used to select the next optimization vector.
   Currently, only ``HULL_EXPANSION`` is supported.
+* **hull_max_dimension**: The largest number of axes (technology categories) for a single
+  convex hull (default ``8``). With more categories, the axes are split at random into groups
+  of at most this many, each with its own hull, and the groups are drawn again whenever the
+  search directions run low. The progress report and ``hull_performance.png`` then show the
+  geometric mean of the axis ranges, relative to the first hull, instead of the hull volume.
 
 Single-Vector MGA (SVMGA)
 -------------------------

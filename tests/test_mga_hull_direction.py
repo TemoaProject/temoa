@@ -14,6 +14,7 @@ import pyomo.environ as pyo
 import pytest
 
 from temoa.extensions.modeling_to_generate_alternatives import manager_factory
+from temoa.extensions.modeling_to_generate_alternatives.worker import set_objective
 
 
 def _manager_and_model(vectors: list[list[float]]) -> tuple[Any, pyo.ConcreteModel]:
@@ -45,14 +46,15 @@ def _manager_and_model(vectors: list[list[float]]) -> tuple[Any, pyo.ConcreteMod
 
 def _category_coefficients(manager: Any, model: pyo.ConcreteModel) -> dict[str, float]:
     """Pull the next objective from the manager and total its coefficients by category"""
-    expr = manager._next_objective_vector(model)
-    assert expr is not None
-    coefficients = []
+    coeffs = manager._next_objective_vector()
+    assert coeffs is not None
     x: Any = model.x
+    set_objective(model, list(x.values()), coeffs)
+    coefficients = []
     for i in x:
         for j in x:
             x[j].value = 1.0 if i == j else 0.0
-        coefficients.append(pyo.value(expr))
+        coefficients.append(pyo.value(model.obj))
     res: dict[str, float] = defaultdict(float)
     for cat, idxs in (('A', [0, 1, 2]), ('B', [3])):
         res[cat] = sum(coefficients[i] for i in idxs)

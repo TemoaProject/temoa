@@ -4,8 +4,10 @@ Class to contain Workers that execute solves in separate processes
 
 from __future__ import annotations
 
+import dataclasses
 import logging.handlers
 import multiprocessing
+import pickle
 from datetime import datetime
 from logging import getLogger
 from multiprocessing import Queue
@@ -13,10 +15,12 @@ from multiprocessing.context import SpawnProcess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+from pyomo.core import Objective, quicksum
 from pyomo.opt import SolverFactory, SolverResults, check_optimal_termination
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from temoa.core.model import TemoaModel
 
@@ -28,6 +32,23 @@ WORKER_CONTEXT = multiprocessing.get_context('spawn')
 
 
 SOLVE_FAILED = 'SOLVE_FAILED'
+
+
+@dataclasses.dataclass(frozen=True)
+class ObjectiveJob:
+    """A model to solve: the objective coefficients of the terms of the worker's base model"""
+
+    name: str
+    coefficients: np.ndarray
+
+
+def set_objective(model: Any, variables: Sequence[Any], coefficients: np.ndarray) -> None:
+    """Replace the objective of the model by the sum of coefficients x variables"""
+    if model.component('obj') is not None:
+        model.del_component('obj')
+    model.obj = Objective(
+        expr=quicksum(c * v for v, c in zip(variables, coefficients, strict=True) if c != 0)
+    )
 
 
 class Worker(SpawnProcess):
@@ -57,6 +78,8 @@ class Worker(SpawnProcess):
         solver_options: dict[str, Any] | None = None,
         solver_log_path: Path | None = None,
         result_extractor: Callable[[TemoaModel], Any] | None = None,
+        base_model: bytes | None = None,
+        objective_terms: Sequence[tuple[str, Any, float]] | None = None,
     ):
         super().__init__(daemon=True)
         self.worker_number = Worker.worker_idx
@@ -74,6 +97,14 @@ class Worker(SpawnProcess):
         self._extractor_queue: Queue[Any] | None = (
             WORKER_CONTEXT.Queue(1) if result_extractor else None
         )
+        # the model that ObjectiveJobs are solved on (pickled once, sent the same way)
+        self.base_model: Any = None
+        self.objective_variables: list[Any] = []
+        self.objective_weights: Any = None
+        self._base_to_send = (base_model, objective_terms) if base_model is not None else None
+        self._base_queue: Queue[Any] | None = (
+            WORKER_CONTEXT.Queue(1) if base_model is not None else None
+        )
         self.opt = None  # Initialize in run()
 
         self.log_root_name = log_root_name
@@ -83,12 +114,15 @@ class Worker(SpawnProcess):
     def __getstate__(self) -> dict[str, Any]:
         state = self.__dict__.copy()
         state['_extractor_to_send'] = None
+        state['_base_to_send'] = None
         return state
 
     def start(self) -> None:
         super().start()
         if self._extractor_queue is not None:
             self._extractor_queue.put(self._extractor_to_send)
+        if self._base_queue is not None:
+            self._base_queue.put(self._base_to_send)
 
     def run(self) -> None:
         logger: logging.Logger = getLogger(
@@ -102,6 +136,13 @@ class Worker(SpawnProcess):
         logger.info('Worker %d spun up', self.worker_number)
         if self._extractor_queue is not None:
             self.result_extractor = self._extractor_queue.get()
+        if self._base_queue is not None:
+            base_bytes, terms = self._base_queue.get()
+            self.base_model = pickle.loads(base_bytes)
+            self.objective_variables = [
+                self.base_model.find_component(name)[idx] for name, idx, _ in terms or ()
+            ]
+            self.objective_weights = np.array([weight for _, _, weight in terms or ()])
 
         # Initialize the solver here  in the child process to avoid pickling issues
         # Note: We do not set the options here because appsi_highs does not accept options in
@@ -127,8 +168,15 @@ class Worker(SpawnProcess):
 
             self.opt.options = self.solver_options
 
-            model: TemoaModel = self.model_queue.get()
-            if model == 'ZEBRA':  # shutdown signal
+            model: Any = self.model_queue.get()
+            if isinstance(model, ObjectiveJob):
+                job = model
+                model = self.base_model
+                set_objective(
+                    model, self.objective_variables, job.coefficients * self.objective_weights
+                )
+                model.name = job.name
+            elif model == 'ZEBRA':  # shutdown signal
                 if verbose:
                     print(f'worker {self.worker_number} got shutdown signal')
                 logger.info('Worker %d received shutdown signal', self.worker_number)

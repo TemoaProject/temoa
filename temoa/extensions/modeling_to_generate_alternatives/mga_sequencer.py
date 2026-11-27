@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import pickle
 import queue
 import sqlite3
 import time
@@ -49,6 +50,7 @@ from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_man
 from temoa.extensions.modeling_to_generate_alternatives.worker import (
     SOLVE_FAILED,
     WORKER_CONTEXT,
+    ObjectiveJob,
     Worker,
 )
 from temoa.model_checking.pricing_check import price_checker
@@ -280,6 +282,8 @@ class MgaSequencer:
         if not s_path.exists():
             s_path.mkdir()
         result_extractor = self.result_extractor(vector_manager)
+        base_model = pickle.dumps(vector_manager.base_model)
+        objective_terms = vector_manager.objective_terms()
         for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
@@ -291,6 +295,8 @@ class MgaSequencer:
                 solver_options=self.worker_solver_options,
                 solver_log_path=s_path,
                 result_extractor=result_extractor,
+                base_model=base_model,
+                objective_terms=objective_terms,
             )
             w.start()
             workers.append(w)
@@ -299,21 +305,26 @@ class MgaSequencer:
         # 6.  Start the iterative solve process and let the manager run the show
         instance_generator = vector_manager.model_generator()
         outstanding = 0
-        next_instance: TemoaModel | None = None
+        next_instance: ObjectiveJob | None = None
         if self.iteration_limit == 0:
             self.internal_stop = True
         while not vector_manager.expired and not self.internal_stop:
             if self.alternatives_recorded + outstanding < self.iteration_limit:
                 if next_instance is None:
                     next_instance = next(instance_generator)
-                try:
-                    work_queue.put(next_instance, block=False)  # put a log on the fire, if room
-                    logger.info('Putting an instance in the work queue')
-                    outstanding += 1
-                    next_instance = None
-                except queue.Full:
-                    # print('work queue is full')
-                    pass
+                if next_instance is None:
+                    if outstanding == 0:
+                        logger.info('Starting shutdown process: no new search direction left')
+                        self.internal_stop = True
+                else:
+                    try:
+                        work_queue.put(next_instance, block=False)  # put a log on the fire, if room
+                        logger.info('Putting an instance in the work queue')
+                        outstanding += 1
+                        next_instance = None
+                    except queue.Full:
+                        # print('work queue is full')
+                        pass
             # see if there is a result ready to pick up, if not, pass
             try:
                 next_result = result_queue.get_nowait()
