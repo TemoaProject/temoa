@@ -23,9 +23,9 @@ BarOrder = -1  # auto ordering (gurobi default)
 # 'LPWarmStart': 2,  # pass basis
 
 [cplex]
-# CPLEX's own defaults, restating them overrides the Temoa cplex defaults for MGA workers
-lpmethod = 0  # automatic
-solutiontype = 0  # automatic
+# Barrier without crossover as in the Temoa cplex defaults, with CPLEX's own tolerances
+lpmethod = 4  # barrier
+solutiontype = 2  # non basic solution, ie no crossover
 'barrier convergetol' = 1.0e-8
 'feasopt tolerance' = 1.0e-6
 
