@@ -9,12 +9,15 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import sqlite3
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Sequence
 
     from temoa.core.model import TemoaModel
+    from temoa.extensions.modeling_to_generate_alternatives.worker import ObjectiveJob
 
 
 class VectorManager(ABC):
+    base_model: TemoaModel
+
     @abstractmethod
     def __init__(
         self,
@@ -58,18 +61,39 @@ class VectorManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def random_input_vector_model(self) -> TemoaModel:
-        """Random model vector for use as"""
+    def random_input_vector_model(self) -> ObjectiveJob:
+        """Random objective, as coefficients of objective_terms()"""
         raise NotImplementedError()
 
     @abstractmethod
-    def model_generator(self) -> Iterator[TemoaModel]:
-        """generator for model instances to be solved"""
+    def model_generator(self) -> Iterator[ObjectiveJob | None]:
+        """
+        generator for the objectives to be solved on the base model, as coefficients of
+        objective_terms(); None when no new objective is available until more results arrive
+        """
         raise NotImplementedError('the manager subclass must implement instance_generator')
+
+    @abstractmethod
+    def objective_terms(self) -> list[tuple[str, Any, float]]:
+        """The (variable name, index, weight) of each objective coefficient, in order"""
+        raise NotImplementedError
 
     @abstractmethod
     def process_results(self, model: TemoaModel) -> Any:
         raise NotImplementedError('the manager subclass must implement process_results')
+
+    @abstractmethod
+    def hull_point_terms(self) -> list[list[tuple[str, Any, float]]]:
+        """
+        The terms of each coordinate of a hull point, as (variable name, index, coefficient), so
+        that worker processes can compute the hull point of the models they solve
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_hull_point(self, point: Sequence[float]) -> None:
+        """Add the hull point of a solved model"""
+        raise NotImplementedError
 
     @abstractmethod
     def finalize_tracker(self) -> None:

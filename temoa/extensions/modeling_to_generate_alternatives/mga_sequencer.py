@@ -4,19 +4,20 @@ Performs top-level control over an MGA model run
 
 from __future__ import annotations
 
+import dataclasses
 import logging
+import pickle
 import queue
 import sqlite3
 import time
-import tomllib
 from datetime import datetime
 from importlib import resources
 from logging import getLogger
-from multiprocessing import Queue
 from queue import Empty
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
+    from multiprocessing import Queue
     from multiprocessing.process import BaseProcess
 
     from pyomo.contrib.solver.common.results import Results
@@ -31,13 +32,27 @@ import pyomo.environ as pyo
 from pyomo.opt import check_optimal_termination
 
 from temoa._internal.run_actions import build_instance
-from temoa._internal.table_writer import TableWriter
+from temoa._internal.table_writer import PolledResults, ResultPoller, TableWriter
 from temoa.components.costs import total_cost_rule
-from temoa.core.solver_spec import redact_solver_options, resolve_solver_options
+from temoa.core.solver_spec import (
+    mode_solver_options,
+    read_options_file,
+    redact_solver_options,
+    resolve_num_workers,
+    resolve_solver_options,
+)
 from temoa.data_io.hybrid_loader import HybridLoader
 from temoa.extensions.modeling_to_generate_alternatives.manager_factory import get_manager
 from temoa.extensions.modeling_to_generate_alternatives.mga_constants import MgaAxis, MgaWeighting
-from temoa.extensions.modeling_to_generate_alternatives.worker import Worker
+from temoa.extensions.modeling_to_generate_alternatives.tech_activity_vector_manager import (
+    hull_point,
+)
+from temoa.extensions.modeling_to_generate_alternatives.worker import (
+    SOLVE_FAILED,
+    WORKER_CONTEXT,
+    ObjectiveJob,
+    Worker,
+)
 from temoa.model_checking.pricing_check import price_checker
 
 logger = getLogger(__name__)
@@ -46,6 +61,30 @@ solver_options_path = (
     resources.files('temoa.extensions.modeling_to_generate_alternatives')
     / 'MGA_solver_options.toml'
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class MgaResult:
+    """What a worker sends back for a solved alternative, instead of the model"""
+
+    name: str
+    hull_point: list[float]
+    results: PolledResults
+
+
+@dataclasses.dataclass(frozen=True)
+class MgaResultExtractor:
+    """Takes the hull point and the results out of a solved alternative, in the worker"""
+
+    poller: ResultPoller
+    hull_terms: list[list[tuple[str, Any, float]]]
+
+    def __call__(self, model: TemoaModel) -> MgaResult:
+        return MgaResult(
+            name=model.name,
+            hull_point=hull_point(model, self.hull_terms),
+            results=self.poller(model),
+        )
 
 
 class MgaSequencer:
@@ -61,6 +100,7 @@ class MgaSequencer:
     time_limit_hrs: float
     cost_epsilon: float
     solve_count: int
+    alternatives_recorded: int
     seen_instance_indices: set[int]
     orig_label: str
     writer: TableWriter
@@ -89,16 +129,9 @@ class MgaSequencer:
         self.config = config
 
         # read in the options
-        try:
-            with resources.as_file(solver_options_path) as path:
-                with open(path, 'rb') as f:
-                    all_options = tomllib.load(f)
-            s_options = all_options.get(self.config.solver_name, {})
-
-        except FileNotFoundError:
-            logger.warning('Unable to find solver options toml file.  Using default options.')
-            s_options = {}
-            all_options = {}
+        all_options = read_options_file(solver_options_path)
+        s_options = all_options.get(self.config.solver_name, {})
+        mga_inputs = self.config.mga_inputs or {}
 
         # get handle on solver instance.  The base solve only receives the user's
         # [solver.options] (no Temoa defaults, no worker options) to get a more precise base cost
@@ -107,14 +140,17 @@ class MgaSequencer:
             self.config.solver, include_defaults=False
         ).items():
             self.opt.options[option] = option_value
-        self.worker_solver_options = resolve_solver_options(self.config.solver, s_options)
+        self.worker_solver_options = resolve_solver_options(
+            self.config.solver,
+            mode_solver_options(mga_inputs, 'MGA'),
+            fallback_options=s_options,
+        )
         logger.info(
             'Using worker solver options: %s', redact_solver_options(self.worker_solver_options)
         )
 
         # some defaults, etc.
         self.internal_stop = False
-        mga_inputs = self.config.mga_inputs or {}
         axis_label = str(mga_inputs.get('axis', '')).upper()
         try:
             self.mga_axis = MgaAxis[axis_label]
@@ -129,9 +165,11 @@ class MgaSequencer:
         except KeyError:
             logger.warning('No/bad MGA Weighting specified.  Using default: Hull Expansion')
             self.mga_weighting = MgaWeighting.HULL_EXPANSION
-        self.num_workers = int(cast('str | int', all_options.get('num_workers', 1)))
+        self.num_workers = resolve_num_workers(mga_inputs, all_options, 'MGA')
         logger.info('MGA workers are set to %s', self.num_workers)
         self.iteration_limit = int(cast('str | int', mga_inputs.get('iteration_limit', 20)))
+        if self.iteration_limit < 0:
+            raise ValueError('MGA iteration_limit must be non-negative')
         logger.info('Set MGA iteration limit to: %d', self.iteration_limit)
         self.time_limit_hrs = float(cast('str | float', mga_inputs.get('time_limit_hrs', 12)))
         logger.info('Set MGA time limit hours to: %0.1f', self.time_limit_hrs)
@@ -140,6 +178,7 @@ class MgaSequencer:
 
         # internal records
         self.solve_count = 0
+        self.alternatives_recorded = 0
         self.seen_instance_indices = set()
         self.orig_label = self.config.scenario
 
@@ -197,7 +236,9 @@ class MgaSequencer:
             raise RuntimeError('Baseline MGA solve failed.  Terminating run.')
 
         # record the 0-solve in all tables
-        self.writer.write_results(instance, iteration=0)
+        self.writer.write_results(
+            instance, save_storage_levels=self.config.save_storage_levels, iteration=0
+        )
         self.writer.make_summary_flow_table()  # make the flow summary table, if it doesn't exist
         self.writer.write_summary_flow(instance, iteration=0)
 
@@ -227,17 +268,22 @@ class MgaSequencer:
 
         # 5.  Set up the Workers
         num_workers = self.num_workers
-        work_queue: Queue[Any] = Queue(1)  # restrict the queue to hold just 1 models in it max
-        result_queue: Queue[Any] = Queue(
+        work_queue: Queue[Any] = WORKER_CONTEXT.Queue(
+            1
+        )  # restrict the queue to hold just 1 models in it max
+        result_queue: Queue[Any] = WORKER_CONTEXT.Queue(
             num_workers + 1
         )  # must be able to hold a shutdown signal from all workers at once!
-        log_queue: Queue[Any] = Queue(50)
+        log_queue: Queue[Any] = WORKER_CONTEXT.Queue(50)
         # make workers
         workers: list[BaseProcess] = []
         # construct path for the solver logs
         s_path = self.config.output_path / 'solver_logs'
         if not s_path.exists():
             s_path.mkdir()
+        result_extractor = self.result_extractor(vector_manager)
+        base_model = pickle.dumps(vector_manager.base_model)
+        objective_terms = vector_manager.objective_terms()
         for _ in range(num_workers):
             w = Worker(
                 model_queue=work_queue,
@@ -248,6 +294,9 @@ class MgaSequencer:
                 solver_name=self.config.solver_name,
                 solver_options=self.worker_solver_options,
                 solver_log_path=s_path,
+                result_extractor=result_extractor,
+                base_model=base_model,
+                objective_terms=objective_terms,
             )
             w.start()
             workers.append(w)
@@ -255,15 +304,27 @@ class MgaSequencer:
 
         # 6.  Start the iterative solve process and let the manager run the show
         instance_generator = vector_manager.model_generator()
-        instance = next(instance_generator)
+        outstanding = 0
+        next_instance: ObjectiveJob | None = None
+        if self.iteration_limit == 0:
+            self.internal_stop = True
         while not vector_manager.expired and not self.internal_stop:
-            try:
-                work_queue.put(instance, block=False)  # put a log on the fire, if room
-                logger.info('Putting an instance in the work queue')
-                instance = next(instance_generator)
-            except queue.Full:
-                # print('work queue is full')
-                pass
+            if self.alternatives_recorded + outstanding < self.iteration_limit:
+                if next_instance is None:
+                    next_instance = next(instance_generator)
+                if next_instance is None:
+                    if outstanding == 0:
+                        logger.info('Starting shutdown process: no new search direction left')
+                        self.internal_stop = True
+                else:
+                    try:
+                        work_queue.put(next_instance, block=False)  # put a log on the fire, if room
+                        logger.info('Putting an instance in the work queue')
+                        outstanding += 1
+                        next_instance = None
+                    except queue.Full:
+                        # print('work queue is full')
+                        pass
             # see if there is a result ready to pick up, if not, pass
             try:
                 next_result = result_queue.get_nowait()
@@ -271,13 +332,9 @@ class MgaSequencer:
                 next_result = None
                 # print('no result')
             if next_result is not None:
-                vector_manager.process_results(model=next_result)
-                self.process_solve_results(next_result)
-                logger.info('Solve count: %d', self.solve_count)
-                self.solve_count += 1
-                if self.verbose or not self.config.silent:
-                    print(f'MGA Solve count: {self.solve_count}')
-                if self.solve_count >= self.iteration_limit:
+                outstanding -= 1
+                self.handle_worker_result(next_result, vector_manager)
+                if self.alternatives_recorded >= self.iteration_limit:
                     logger.info('Starting shutdown process based on MGA iteration limit')
                     self.internal_stop = True
             # pull anything from the logging queue and log it...
@@ -315,12 +372,7 @@ class MgaSequencer:
                 next_result = None
             if next_result is not None and next_result != 'COYOTE':
                 logger.debug('bagged a result post-shutdown')
-                vector_manager.process_results(model=next_result)
-                self.process_solve_results(next_result)
-                logger.info('Solve count: %d', self.solve_count)
-                self.solve_count += 1
-                if self.verbose or not self.config.silent:
-                    print(f'MGA Solve count: {self.solve_count}')
+                self.handle_worker_result(next_result, vector_manager)
             while True:
                 try:
                     record = log_queue.get_nowait()
@@ -330,6 +382,12 @@ class MgaSequencer:
                     break
             if empty == num_workers:
                 break
+
+        logger.info(
+            'MGA recorded %d alternative solutions (iteration limit: %d)',
+            self.alternatives_recorded,
+            self.iteration_limit,
+        )
 
         for proc_join in workers:
             proc_join.join()
@@ -368,20 +426,39 @@ class MgaSequencer:
             or str(status) == 'convergenceCriteriaSatisfied'
         )
 
-    def process_solve_results(self, instance: TemoaModel) -> None:
+    def result_extractor(self, vector_manager: VectorManager) -> MgaResultExtractor:
+        return MgaResultExtractor(self.writer.result_poller(), vector_manager.hull_point_terms())
+
+    def handle_worker_result(self, result: MgaResult | str, vector_manager: VectorManager) -> None:
+        if isinstance(result, str):
+            if result == SOLVE_FAILED:
+                logger.warning('A worker reported a failed solve.  No results recorded for it.')
+            else:
+                logger.error('Unrecognized signal in the MGA results queue: %s', result)
+            return
+        vector_manager.add_hull_point(result.hull_point)
+        self.process_solve_results(result)
+        self.alternatives_recorded += 1
+        self.solve_count += 1
+        logger.info('Solve count: %d', self.solve_count)
+        if self.verbose or not self.config.silent:
+            print(f'MGA Solve count: {self.solve_count}')
+
+    def process_solve_results(self, result: MgaResult) -> None:
         """write the results as required"""
         # get the instance number from the model name, if provided
-        if '-' not in instance.name:
+        if '-' not in result.name:
             raise ValueError(
                 'Instance name does not appear to contain a -idx value.  The manager should be '
                 'tagging/updating this'
             )
-        idx = int(instance.name.split('-')[-1])
+        idx = int(result.name.split('-')[-1])
         if idx in self.seen_instance_indices:
             raise ValueError('Instance index already seen.  Likely coding error')
         self.seen_instance_indices.add(idx)
-        self.writer.write_capacity_tables(model=instance, iteration=idx)
-        self.writer.write_summary_flow(instance, iteration=idx)
+        self.writer.write_polled_capacity(result.results, iteration=idx)
+        self.writer._insert_summary_flow_results(result.results.flows, iteration=idx)
+        self.writer.write_polled_optional(result.results, iteration=idx)
 
     def __del__(self) -> None:
         if hasattr(self, 'con') and self.con is not None:
