@@ -57,6 +57,7 @@ class TemoaConfig:
         reserve_margin: str | None = None,
         MGA: dict[str, object] | None = None,
         SVMGA: dict[str, object] | None = None,
+        MOO: dict[str, object] | None = None,
         myopic: dict[str, object] | None = None,
         morris: dict[str, object] | None = None,
         monte_carlo: dict[str, object] | None = None,
@@ -159,6 +160,7 @@ class TemoaConfig:
 
         self.mga_inputs = MGA
         self.svmga_inputs = SVMGA
+        self.moo_inputs = MOO
         self.myopic_inputs = myopic
         self.morris_inputs = morris
         self.monte_carlo_inputs = monte_carlo

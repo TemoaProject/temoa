@@ -58,6 +58,7 @@ The Temoa package is organized into clear modules:
   - `modeling_to_generate_alternatives` - MGA analysis
   - `method_of_morris` - Sensitivity analysis
   - `monte_carlo` - Uncertainty quantification
+  - `multi_objective_optimization` - Multi-Objective Optimization (MOO)
   - `myopic` - Sequential decision making
 - **`temoa.model_checking`** - Model validation and integrity checking
 - **`temoa.data_processing`** - Output analysis and visualization
@@ -273,6 +274,10 @@ Explores near cost-optimal solutions for robustness analysis.
 
 Two-solve process focusing on specific variables in the objective.
 
+### MOO (Multi-Objective Optimization)
+
+Traces the Pareto front between two objective functions.
+
 ### Method of Morris
 
 Limited sensitivity analysis of user-selected variables.
@@ -316,6 +321,7 @@ Temoa includes optional extensions for advanced analysis:
 - **Monte Carlo**: Uncertainty quantification
 - **Stochastic Programming**: Scenario-based optimization
 - **Method of Morris**: Sensitivity analysis
+- **Multi-Objective Optimization (MOO)**: Pareto front between two objective functions
 
 ### Data Processing
 

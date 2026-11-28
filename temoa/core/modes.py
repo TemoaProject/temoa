@@ -18,3 +18,4 @@ class TemoaMode(Enum):
     SVMGA = 7  # single-vector MGA
     MONTE_CARLO = 8  # MC optimization
     STOCHASTIC = 9  # Stochastic optimization
+    MOO = 10  # Multi-objective optimization, multiple runs along a Pareto front

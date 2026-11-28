@@ -1,0 +1,19 @@
+# Fallback options for the parallel solves of the Pareto optimal solutions in MOO runs
+# the top level solver name in brackets should align with the solver name in the config.toml
+# These are layered on top of Temoa's solver defaults.  The config's [solver.options], and the
+# num_workers and solver_options of the [MOO] section, take precedence over them.
+# (see temoa/core/solver_spec.py)
+
+num_workers = 4
+
+[gurobi]
+Threads = 4  # per solver instance
+
+[cplex]
+threads = 4
+
+[cbc]
+threads = 4
+
+[appsi_highs]
+threads = 4

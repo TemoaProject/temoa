@@ -8,11 +8,13 @@ import math
 import sqlite3
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from importlib import resources
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from pyomo.core import value
+from pyomo.opt import SolverResults
 
 from temoa._internal.exchange_tech_cost_ledger import CostType
 from temoa._internal.table_data_puller import (
@@ -30,11 +32,9 @@ from temoa._internal.table_data_puller import (
 from temoa.core.modes import TemoaMode
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Container, Iterable
     from pathlib import Path
     from types import TracebackType
-
-    from pyomo.opt import SolverResults
 
     from temoa._internal.data_brick import DataBrick
     from temoa.core.config import TemoaConfig
@@ -78,6 +78,108 @@ FLOW_SUMMARY_FILE_LOC = (
     / 'make_flow_summary_table.sql'
 )
 MC_TWEAKS_FILE_LOC = resources.files('temoa.extensions.monte_carlo') / 'make_deltas_table.sql'
+
+
+CostEntries = dict[tuple['Region', 'Period', 'Technology', 'Vintage'], dict[CostType, float]]
+
+
+@dataclass(frozen=True)
+class PolledResults:
+    """The results of a solved model, polled as the TableWriter polls them"""
+
+    capacity: CapData
+    emission_costs: CostEntries
+    emission_flows: dict[EI, float]
+    regular_costs: CostEntries
+    exchange_costs: CostEntries
+    flows: dict[FI, dict[FlowType, float]]
+    unit_commitment: dict[Any, tuple[float, float, float]] | None = None
+    storage_levels: dict[Any, float] | None = None
+    duals: dict[str, float] | None = None
+
+
+@dataclass(frozen=True)
+class ResultPoller:
+    """
+    Polls the results of a solved model with the thresholds of a TableWriter, so that worker
+    processes can do it and send back only the results, for TableWriter.write_polled_results
+    """
+
+    capacity_threshold: float
+    activity_threshold: float
+    emission_threshold: float
+    cost_threshold: float
+    check_balance: bool = False
+    save_storage_levels: bool = False
+    save_duals: bool = False
+
+    def __call__(self, model: TemoaModel) -> PolledResults:
+        emission_costs, emission_flows = poll_emissions(
+            model=model, p_0=None, epsilon=self.emission_threshold
+        )
+        regular_costs, exchange_costs = poll_cost_results(
+            model, value(min(model.time_optimize)), self.cost_threshold
+        )
+        flows = poll_flow_results(model, self.activity_threshold)
+        if self.check_balance:
+            check_flow_balance(flows, model.tech_storage)
+        unit_commitment = None
+        if 'unit_commitment' in model.enabled_extensions:
+            import temoa.extensions.unit_commitment.core.data_puller as uc_puller
+
+            unit_commitment = uc_puller.poll_commitment_results(model)
+        duals = None
+        if self.save_duals:
+            results = SolverResults()
+            model.solutions.store_to(results)
+            duals = dual_values(results)
+        return PolledResults(
+            capacity=poll_capacity_results(model=model, epsilon=self.capacity_threshold),
+            emission_costs=emission_costs,
+            emission_flows=emission_flows,
+            regular_costs=regular_costs,
+            exchange_costs=exchange_costs,
+            flows=flows,
+            unit_commitment=unit_commitment,
+            storage_levels=poll_storage_level_results(model=model)
+            if self.save_storage_levels
+            else None,
+            duals=duals,
+        )
+
+
+def dual_values(results: SolverResults) -> dict[str, float]:
+    """The duals of the constraints, by constraint name, from solver results that hold them"""
+    return {name: data['Dual'] for name, data in results['Solution'].Constraint.items()}
+
+
+def check_flow_balance(flows: dict[FI, dict[FlowType, float]], storage: Container[Any]) -> bool:
+    """Sanity check to ensure that the flow tables are balanced."""
+    all_good = True
+
+    for fi, flow_vals in flows.items():
+        if fi.t in storage:
+            continue
+        if fi.i is None or fi.o is None:
+            continue
+
+        fin = flow_vals.get(FlowType.IN, 0)
+        fout = flow_vals.get(FlowType.OUT, 0)
+        flost = flow_vals.get(FlowType.LOST, 0)
+        fflex = flow_vals.get(FlowType.FLEX, 0)
+
+        delta = fin - fout - flost - fflex
+
+        # Check logic
+        if fin != 0:
+            if abs(delta / fin) > 0.02:
+                all_good = False
+                logger.warning('Flow imbalance > 2%% for %s: delta=%.2f', fi, delta)
+        elif abs(delta) > 0.02:
+            all_good = False
+            logger.warning('Flow imbalance (zero input) for %s: delta=%.2f', fi, delta)
+
+    return all_good
 
 
 class TableWriter:
@@ -341,6 +443,62 @@ class TableWriter:
             self._validate_foreign_keys()
             self.connection.commit()
 
+    def result_poller(self, check_balance: bool = False) -> ResultPoller:
+        """A poller of the results of solved models, with the thresholds of this writer"""
+        return ResultPoller(
+            capacity_threshold=self.output_threshold_capacity,
+            activity_threshold=self.output_threshold_activity,
+            emission_threshold=self.output_threshold_emission,
+            cost_threshold=self.output_threshold_cost,
+            check_balance=check_balance,
+            save_storage_levels=self.config.save_storage_levels,
+            save_duals=self.config.save_duals,
+        )
+
+    def write_polled_capacity(self, results: PolledResults, iteration: int | None = None) -> None:
+        """Write the capacity and unit commitment results polled by a ResultPoller"""
+        if not self.tech_sectors:
+            self._set_tech_sectors()
+        self._insert_capacity_results(results.capacity, iteration=iteration)
+        if results.unit_commitment is not None:
+            import temoa.extensions.unit_commitment.core.data_puller as uc_puller
+
+            uc_puller.write_uc_results(
+                model=None,
+                writer=self,
+                iteration=iteration,
+                epsilon=self.output_threshold_capacity,
+                results=results.unit_commitment,
+            )
+
+    def write_polled_results(self, results: PolledResults, iteration: int | None = None) -> None:
+        """Write the capacity, emission, cost and flow results polled by a ResultPoller"""
+        try:
+            self.write_polled_capacity(results, iteration=iteration)
+            self.emission_register = results.emission_flows
+            self.write_emissions(iteration=iteration)
+            self._insert_cost_results(
+                regular_entries=results.regular_costs,
+                exchange_entries=results.exchange_costs,
+                emission_entries=results.emission_costs,
+                iteration=iteration,
+            )
+            self.flow_register = results.flows
+            self.write_flow_tables(iteration=iteration)
+            self.write_polled_optional(results, iteration=iteration)
+        finally:
+            self._validate_foreign_keys()
+            self.connection.commit()
+
+    def write_polled_optional(self, results: PolledResults, iteration: int | None = None) -> None:
+        """Write the storage levels and duals polled by a ResultPoller, if they were asked for"""
+        if results.storage_levels is not None:
+            if not self.tech_sectors:
+                self._set_tech_sectors()
+            self._insert_storage_levels(results.storage_levels, iteration=iteration)
+        if results.duals is not None:
+            self._insert_dual_variables(results.duals, iteration=iteration)
+
     def write_mc_results(self, brick: DataBrick, iteration: int) -> None:
         try:
             if not self.tech_sectors:
@@ -401,10 +559,14 @@ class TableWriter:
     # -------------------------------------------------------------------------
 
     def write_storage_level(self, model: TemoaModel, iteration: int | None = None) -> None:
+        self._insert_storage_levels(poll_storage_level_results(model=model), iteration=iteration)
+
+    def _insert_storage_levels(
+        self, storage_levels: dict[Any, float], iteration: int | None
+    ) -> None:
         if self.tech_sectors is None:
             raise RuntimeError('tech sectors not available... code error')
 
-        storage_levels = poll_storage_level_results(model=model)
         scenario = self._get_scenario_name(iteration)
         unit_prop = self.unit_propagator
 
@@ -689,32 +851,7 @@ class TableWriter:
 
     def check_flow_balance(self, model: TemoaModel) -> bool:
         """Sanity check to ensure that the flow tables are balanced."""
-        flows = self.flow_register
-        all_good = True
-
-        for fi, flow_vals in flows.items():
-            if fi.t in model.tech_storage:
-                continue
-            if fi.i is None or fi.o is None:
-                continue
-
-            fin = flow_vals.get(FlowType.IN, 0)
-            fout = flow_vals.get(FlowType.OUT, 0)
-            flost = flow_vals.get(FlowType.LOST, 0)
-            fflex = flow_vals.get(FlowType.FLEX, 0)
-
-            delta = fin - fout - flost - fflex
-
-            # Check logic
-            if fin != 0:
-                if abs(delta / fin) > 0.02:
-                    all_good = False
-                    logger.warning('Flow imbalance > 2%% for %s: delta=%.2f', fi, delta)
-            elif abs(delta) > 0.02:
-                all_good = False
-                logger.warning('Flow imbalance (zero input) for %s: delta=%.2f', fi, delta)
-
-        return all_good
+        return check_flow_balance(self.flow_register, model.tech_storage)
 
     def calculate_flows(self, model: TemoaModel) -> dict[FI, dict[FlowType, float]]:
         return poll_flow_results(model, self.output_threshold_activity)
@@ -807,16 +944,17 @@ class TableWriter:
         self.connection.commit()
 
     def write_dual_variables(self, results: SolverResults, iteration: int | None = None) -> None:
-        scenario = self._get_scenario_name(iteration)
-        constraint_data = results['Solution'].Constraint.items()
+        self._insert_dual_variables(dual_values(results), iteration=iteration)
 
+    def _insert_dual_variables(self, duals: dict[str, float], iteration: int | None) -> None:
+        scenario = self._get_scenario_name(iteration)
         records = [
             {
                 'scenario': scenario,
                 'constraint_name': name,
-                'dual': data['Dual'],
+                'dual': dual,
             }
-            for name, data in constraint_data
+            for name, dual in duals.items()
         ]
         self._bulk_insert('output_dual_variable', records)
         self.connection.commit()
