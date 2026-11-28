@@ -6,6 +6,8 @@
 
 - The general description of the inputs to diversify.  Default now is TECH CATEGORY ACTIVITY
 implying that we will try to diversify activity of each labeled tech category in `Technology` table.
+TECH CATEGORY CAPACITY (net capacity) and TECH CATEGORY EMISSION (activity-related emissions of selected
+emission commodities) diversify those quantities across the same categories.
 - **DIMENSION**: number of categories.  This defines the dimensionality of the convex hull
 - Notions for possible Axis:
   - Techs:  All(?) techs

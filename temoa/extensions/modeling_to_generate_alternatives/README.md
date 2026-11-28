@@ -15,11 +15,13 @@ larger models
 
 - The Config file options
   - cost_epsilon:  The proportion to relax the minimal cost by to enable exploration
-  - iteration_limit:  The max iterations to run.  Note:  Currently the process will run until either the
-    iteration limit OR time limit is reached.  If using hull expansion as the weighting scheme (default), realize
+  - iteration_limit:  The number of alternative solutions to generate, in addition to the base solve.  The
+    process runs until exactly this many alternatives are recorded OR the time limit is reached.  If using hull expansion as the weighting scheme (default), realize
     that "the magic" of that doesn't start until the hull is built which takes 2x |categories| solves to produce.
   - time_limit_hrs:  Self explanatory.  A backstop for long runs
-  - axis:  The type of manager to use.  Only `tech_category_activity` is currently implemented
+  - axis:  The quantity to diversify across the tech categories labeled in the `Technology` table:
+    `tech_category_activity` (default), `tech_category_capacity` (net capacity) or `tech_category_emission`
+    (activity-related emissions of the commodities listed in `axis_emission_commodities`, which is then required)
   - weighting:  The type of weighting to use by the manager
 - The `MGA_solver_options.toml` file
   - Contains solver settings to optimize performance.  These settings are used *after* the first solve, which sets

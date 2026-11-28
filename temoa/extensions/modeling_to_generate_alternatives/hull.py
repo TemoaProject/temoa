@@ -8,7 +8,7 @@ from logging import getLogger
 from typing import Any
 
 import numpy as np
-from scipy.spatial import ConvexHull  # type: ignore[import-untyped]
+from scipy.spatial import ConvexHull, cKDTree  # type: ignore[import-untyped]
 
 logger = getLogger(__name__)
 
@@ -109,13 +109,13 @@ class Hull:
 
         # update the available norms from the new hull
         equations = self.cv_hull.equations[:, 0:-1]
-        for norm in equations:
-            norm = norm / np.linalg.norm(norm)  # ensure it is a unit vector
-            if self.is_new_direction(norm):
-                if self._valid_norms is None:
-                    self._valid_norms = np.atleast_2d(norm)
-                else:
-                    self._valid_norms = np.vstack((self._valid_norms, norm))
+        norms = equations / np.linalg.norm(equations, axis=1, keepdims=True)
+        new_norms = self.new_directions(norms)
+        if len(new_norms):
+            if self._valid_norms is None:
+                self._valid_norms = new_norms
+            else:
+                self._valid_norms = np.vstack((self._valid_norms, new_norms))
 
     def add_point(self, point: np.ndarray) -> None:
         if len(point) != self.dim:
@@ -157,14 +157,106 @@ class Hull:
         compare vector to all directions already processed
         :param vec: the new vector to consider
         :return: True if the new vector is a valid direction, False otherwise"""
-        self.norms_checked += 1
-        if self.seen_norms is None:
-            self.seen_norms = np.atleast_2d(vec)
-            return True
-        max_similarity = np.max(self.seen_norms.dot(vec))
-        if 1 - max_similarity < self.tolerance:
-            self.norms_rejected += 1
-            return False
+        return len(self.new_directions(np.atleast_2d(vec))) == 1
+
+    def new_directions(self, vecs: np.ndarray) -> np.ndarray:
+        """
+        The unit vectors that are not within the tolerance of a direction already seen, nor of an
+        earlier vector of the batch, in order.  They are added to the seen directions.
+        """
+        self.norms_checked += len(vecs)
+        # 1 - cos(a, b) < tolerance  <=>  |a - b| < sqrt(2 * tolerance), for unit vectors
+        radius = np.sqrt(2 * self.tolerance)
+        keep = np.ones(len(vecs), dtype=bool)
+        if self.seen_norms is not None and len(vecs):
+            dist, _ = cKDTree(self.seen_norms).query(vecs, distance_upper_bound=radius)
+            keep &= ~(dist < radius)
+        candidates = np.flatnonzero(keep)
+        if len(candidates) > 1:
+            tree = cKDTree(vecs[candidates])
+            for pos in range(len(candidates)):
+                if keep[candidates[pos]]:
+                    for other in tree.query_ball_point(vecs[candidates[pos]], radius):
+                        if other > pos:
+                            keep[candidates[other]] = False
+        accepted = vecs[keep]
+        self.norms_rejected += len(vecs) - len(accepted)
+        if len(accepted):
+            self.seen_norms = (
+                accepted if self.seen_norms is None else np.vstack((self.seen_norms, accepted))
+            )
+        return accepted
+
+
+class HullSet:
+    """
+    The convex hulls that supply the search directions.  Up to max_dimension axes, a single hull
+    over all of them.  Above it, the axes are split at random into groups of at most max_dimension
+    axes, one hull per group, and the directions of each hull are lifted back to all the axes
+    (zero on the other groups).  The groups are drawn again with repartition().
+    """
+
+    def __init__(self, points: np.ndarray, max_dimension: int, rng: np.random.Generator) -> None:
+        if max_dimension < 2:
+            raise ValueError('The hull dimension limit must be at least 2')
+        self.dim = points.shape[1]
+        self.max_dimension = max_dimension
+        self.rng = rng
+        self.points = np.atleast_2d(points).copy()
+        self._base_range: np.ndarray | None = None
+        self.groups: list[np.ndarray] = []
+        self.hulls: list[Hull] = []
+        self.repartition()
+
+    @property
+    def partitioned(self) -> bool:
+        return self.dim > self.max_dimension
+
+    def repartition(self) -> None:
+        if self.partitioned:
+            order = self.rng.permutation(self.dim)
+            n_groups = -(-self.dim // self.max_dimension)
+            self.groups = [np.sort(g) for g in np.array_split(order, n_groups)]
+            logger.info(
+                'Hull axes split into %d groups of up to %d axes', n_groups, self.max_dimension
+            )
         else:
-            self.seen_norms = np.vstack((self.seen_norms, vec))
-            return True
+            self.groups = [np.arange(self.dim)]
+        self.hulls = [Hull(self.points[:, g]) for g in self.groups]
+
+    def add_point(self, point: np.ndarray) -> None:
+        self.points = np.vstack((self.points, point))
+        for g, hull in zip(self.groups, self.hulls, strict=True):
+            hull.add_point(np.asarray(point)[g])
+            hull.update()
+
+    def get_all_norms(self) -> np.ndarray:
+        lifted = []
+        for g, hull in zip(self.groups, self.hulls, strict=True):
+            norms = hull.get_all_norms()
+            if len(norms):
+                full = np.zeros((len(norms), self.dim))
+                full[:, g] = norms
+                lifted.append(full)
+        return np.vstack(lifted) if lifted else np.array([])
+
+    @property
+    def norm_rejection_proportion(self) -> float:
+        checked = sum(h.norms_checked for h in self.hulls)
+        return sum(h.norms_rejected for h in self.hulls) / checked if checked else 0.0
+
+    def progress(self) -> tuple[str, float]:
+        """
+        The hull volume up to max_dimension axes.  Above it, the geometric mean of the ranges of
+        the points along each axis, relative to the range of the first hull built, which grows
+        as the alternatives spread out and is cheap in any dimension.
+        """
+        if not self.partitioned:
+            return 'hull volume', float(self.hulls[0].volume)
+        if self._base_range is None:
+            self._base_range = np.ptp(self.points, axis=0)
+        ranges = np.ptp(self.points, axis=0)
+        scale = np.where(self._base_range > 0, self._base_range, 1.0)
+        return 'mean range growth', float(
+            np.exp(np.mean(np.log(np.maximum(ranges / scale, 1e-12))))
+        )
